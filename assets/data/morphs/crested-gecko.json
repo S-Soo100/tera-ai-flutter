@@ -1,0 +1,140 @@
+{
+  "species_id": "crested-gecko",
+  "species_name_ko": "크레스티드 게코",
+  "species_name_en": "Crested Gecko",
+  "scientific_name": "Correlophus ciliatus",
+  "last_updated": "2026-04-01",
+  "calculator_type": "mini",
+  "calculator_note": "멘델 유전 계산 가능한 유전자 4개. 나머지 대부분은 폴리제닉/라인브리드로 확률 계산 불가.",
+  "genes": [
+    {
+      "id": "lilly-white",
+      "name": "릴리 화이트",
+      "name_en": "Lilly White",
+      "inheritance": "incomplete_dominant",
+      "allele_group": null,
+      "description": "불완전 우성. 헤테로: 크림~화이트 패턴 과발현. 호모: 치사 — 부화 불가.",
+      "homozygous_lethal": true,
+      "health_warning": "릴리 화이트 × 릴리 화이트 교배 시 25% 치사"
+    },
+    {
+      "id": "axanthic",
+      "name": "액산틱",
+      "name_en": "Axanthic",
+      "inheritance": "recessive",
+      "allele_group": null,
+      "description": "단순 열성. 황색~적색 색소 제거. 흑백 개체. 최초로 유전 확인된 크레스티드 게코 모프."
+    },
+    {
+      "id": "phantom",
+      "name": "팬텀",
+      "name_en": "Phantom",
+      "inheritance": "recessive",
+      "allele_group": null,
+      "description": "단순 열성. 흰색 색소 억제. 매우 어두운 흑~갈색 개체."
+    },
+    {
+      "id": "cappuccino",
+      "name": "카푸치노",
+      "name_en": "Cappuccino",
+      "inheritance": "incomplete_dominant",
+      "allele_group": null,
+      "description": "불완전 우성. 헤테로: 어두운 갈색~흑갈색. 호모(슈퍼 카푸치노 = 구칭 멜라니스틱): 매우 짙은 흑색."
+    }
+  ],
+  "morphs": [
+    {
+      "id": "normal",
+      "name": "노말",
+      "name_en": "Normal / Wild Type",
+      "genes": [],
+      "genetics_type": "baseline",
+      "description": "유전적 돌연변이 없는 기본 표현형."
+    },
+    {
+      "id": "lilly-white",
+      "name": "릴리 화이트",
+      "name_en": "Lilly White",
+      "genes": ["lilly-white"],
+      "genetics_type": "proven_mendelian",
+      "description": "릴리 화이트 헤테로. 크림~화이트 패턴 과발현."
+    },
+    {
+      "id": "axanthic",
+      "name": "액산틱",
+      "name_en": "Axanthic",
+      "genes": ["axanthic"],
+      "genetics_type": "proven_mendelian",
+      "description": "액산틱 호모. 흑백 개체."
+    },
+    {
+      "id": "phantom",
+      "name": "팬텀",
+      "name_en": "Phantom",
+      "genes": ["phantom"],
+      "genetics_type": "proven_mendelian",
+      "description": "팬텀 호모. 고대비 흑~갈색."
+    },
+    {
+      "id": "cappuccino",
+      "name": "카푸치노",
+      "name_en": "Cappuccino",
+      "genes": ["cappuccino"],
+      "genetics_type": "proven_mendelian",
+      "description": "카푸치노 헤테로. 어두운 갈색~흑갈색."
+    },
+    {
+      "id": "super-cappuccino",
+      "name": "슈퍼 카푸치노",
+      "name_en": "Super Cappuccino",
+      "genes": ["cappuccino"],
+      "genetics_type": "proven_mendelian",
+      "description": "카푸치노 호모. 매우 짙은 흑색. 구칭 멜라니스틱.",
+      "note": "카푸치노 호모 발현"
+    },
+    {
+      "id": "frappuccino",
+      "name": "프라푸치노",
+      "name_en": "Frappuccino",
+      "genes": ["cappuccino", "lilly-white"],
+      "genetics_type": "proven_combo",
+      "description": "카푸치노 + 릴리 화이트 콤보. 고대비 패턴."
+    },
+    {
+      "id": "phantom-lilly-white",
+      "name": "팬텀 릴리 화이트",
+      "name_en": "Phantom Lilly White",
+      "genes": ["phantom", "lilly-white"],
+      "genetics_type": "proven_combo",
+      "description": "매우 어두운 바탕에 극명한 화이트 패턴."
+    },
+    {
+      "id": "axanthic-lilly-white",
+      "name": "액산틱 릴리 화이트",
+      "name_en": "Axanthic Lilly White",
+      "genes": ["axanthic", "lilly-white"],
+      "genetics_type": "proven_combo",
+      "description": "흑백 바탕의 화이트 패턴 극대화."
+    }
+  ],
+  "line_bred_traits": [
+    { "id": "flame", "name": "플레임", "name_en": "Flame", "type": "pattern", "description": "등에 크림/화이트 불꽃 패턴. 가장 기본적인 패턴." },
+    { "id": "harlequin", "name": "할리퀸", "name_en": "Harlequin", "type": "pattern", "description": "플레임 + 측면/사지 패턴 확장." },
+    { "id": "extreme-harlequin", "name": "익스트림 할리퀸", "name_en": "Extreme Harlequin", "type": "pattern", "description": "할리퀸 고표현형. 80%+ 패턴 커버리지." },
+    { "id": "dalmatian", "name": "달마시안", "name_en": "Dalmatian", "type": "spot", "description": "전신 반점. 어떤 패턴과도 조합 가능." },
+    { "id": "tricolor", "name": "트라이컬러", "name_en": "Tricolor", "type": "color_pattern", "description": "세 가지 색상이 명확히 구분." },
+    { "id": "bicolor", "name": "바이컬러", "name_en": "Bicolor", "type": "pattern", "description": "두 색상 명확히 구분." },
+    { "id": "pinstripe", "name": "핀스트라이프", "name_en": "Pinstripe", "type": "structural", "description": "등 측면 융기 비늘 줄. 우성 추정이나 미검증." },
+    { "id": "tiger", "name": "타이거", "name_en": "Tiger", "type": "pattern", "description": "측면 어두운 줄무늬." },
+    { "id": "lavender", "name": "라벤더", "name_en": "Lavender", "type": "color", "description": "회보라~라벤더 기본색." },
+    { "id": "red-base", "name": "레드 베이스", "name_en": "Red Base", "type": "color", "description": "붉은 기본색. 폴리제닉." },
+    { "id": "orange-base", "name": "오렌지 베이스", "name_en": "Orange Base", "type": "color", "description": "오렌지 기본색. 폴리제닉." }
+  ],
+  "sources": [
+    "kvgeckos.com — Crested Gecko Genetics",
+    "rockstargeckos.com — Simplified Perspective",
+    "LIL MONSTERS Reptiles — Foundation Genetics",
+    "terrariumquest.com — Morphs and Genetics Guide",
+    "ibexotic.com — Crestie Morph Calculator"
+  ]
+}

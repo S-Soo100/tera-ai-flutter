@@ -1,0 +1,228 @@
+{
+  "species_id": "fat-tailed-gecko",
+  "species_name_ko": "펫테일 게코",
+  "species_name_en": "African Fat-tailed Gecko",
+  "scientific_name": "Hemitheconyx caudicinctus",
+  "last_updated": "2026-04-01",
+  "calculator_type": "full",
+  "genes": [
+    {
+      "id": "amel",
+      "name": "아멜라니스틱",
+      "name_en": "Amelanistic / Albino",
+      "inheritance": "recessive",
+      "allele_group": null,
+      "description": "멜라닌 생성 불가. 흰/분홍/노란 바탕에 루비 눈."
+    },
+    {
+      "id": "caramel",
+      "name": "카라멜 알비노",
+      "name_en": "Caramel Albino",
+      "inheritance": "recessive",
+      "allele_group": null,
+      "description": "별도 알비노 계열. 카라멜-구리 톤.",
+      "health_warning": "암컷 일부 불임 보고 — W 염색체 연관 추정"
+    },
+    {
+      "id": "ghost",
+      "name": "고스트",
+      "name_en": "Ghost",
+      "inheritance": "recessive",
+      "allele_group": null,
+      "description": "색소 희석. 창백하고 유령 같은 톤.",
+      "health_warning": "암컷 일부 불임 보고"
+    },
+    {
+      "id": "oreo",
+      "name": "오레오",
+      "name_en": "Oreo",
+      "inheritance": "recessive",
+      "allele_group": null,
+      "description": "노란/빨간 색소 제거. 흑백 대비 극대화."
+    },
+    {
+      "id": "patternless",
+      "name": "패턴리스",
+      "name_en": "Patternless",
+      "inheritance": "recessive",
+      "allele_group": "patternless-locus",
+      "description": "패턴 완전 소실. Zero/Stinger와 같은 로커스에 대립유전자."
+    },
+    {
+      "id": "zulu",
+      "name": "줄루",
+      "name_en": "Zulu",
+      "inheritance": "recessive",
+      "allele_group": null,
+      "description": "패턴 변형. 등을 따라 창날 모양 무늬."
+    },
+    {
+      "id": "white-out",
+      "name": "화이트아웃",
+      "name_en": "White Out",
+      "inheritance": "incomplete_dominant",
+      "allele_group": null,
+      "description": "불완전 우성. 1카피: 높은 화이트 체색. 2카피(슈퍼): 치사.",
+      "homozygous_lethal": true,
+      "health_warning": "White Out × White Out 교배 시 25% 치사"
+    },
+    {
+      "id": "zero",
+      "name": "제로 / 스팅거",
+      "name_en": "Zero / Stinger",
+      "inheritance": "incomplete_dominant",
+      "allele_group": "patternless-locus",
+      "description": "Patternless locus 대립유전자. 1카피: Zero(+Stripe) 또는 Stinger(-Stripe). 2카피(슈퍼 제로): 거의 완전 패턴리스."
+    },
+    {
+      "id": "stripe",
+      "name": "스트라이프",
+      "name_en": "Stripe",
+      "inheritance": "dominant",
+      "allele_group": null,
+      "description": "우성. 등 중앙 흰색 줄이 머리~꼬리. Zero/Stinger 외형 차이를 결정."
+    },
+    {
+      "id": "white-socks",
+      "name": "화이트 삭스",
+      "name_en": "White Socks",
+      "inheritance": "recessive",
+      "allele_group": null,
+      "description": "발가락/발 부위 흰색 마킹. 독립 유전자 여부 일부 논란.",
+      "note": "ReptiMate에서 공식 recessive 등록. 커뮤니티 논란 있음."
+    }
+  ],
+  "morphs": [
+    {
+      "id": "normal",
+      "name": "노말",
+      "name_en": "Normal / Banded",
+      "genes": [],
+      "description": "야생형. 갈색-탄 밴드 패턴."
+    },
+    {
+      "id": "stripe",
+      "name": "스트라이프",
+      "name_en": "Stripe",
+      "genes": ["stripe"],
+      "description": "등 중앙 흰 줄. 우성."
+    },
+    {
+      "id": "amel",
+      "name": "아멜",
+      "name_en": "Amelanistic",
+      "genes": ["amel/amel"],
+      "description": "흑색 색소 부재. 분홍/노란 밴드, 루비 눈."
+    },
+    {
+      "id": "caramel-albino",
+      "name": "카라멜 알비노",
+      "name_en": "Caramel Albino",
+      "genes": ["caramel/caramel"],
+      "description": "카라멜-구리 톤."
+    },
+    {
+      "id": "ghost",
+      "name": "고스트",
+      "name_en": "Ghost",
+      "genes": ["ghost/ghost"],
+      "description": "창백한 워시드아웃 컬러."
+    },
+    {
+      "id": "oreo",
+      "name": "오레오",
+      "name_en": "Oreo",
+      "genes": ["oreo/oreo"],
+      "description": "선명한 흑백 밴드."
+    },
+    {
+      "id": "patternless",
+      "name": "패턴리스",
+      "name_en": "Patternless",
+      "genes": ["patternless/patternless"],
+      "description": "패턴 소실. 단색."
+    },
+    {
+      "id": "zulu",
+      "name": "줄루",
+      "name_en": "Zulu",
+      "genes": ["zulu/zulu"],
+      "description": "창날 형태 독특한 패턴."
+    },
+    {
+      "id": "white-out",
+      "name": "화이트아웃",
+      "name_en": "White Out",
+      "genes": ["white-out"],
+      "description": "1카피 발현. 높은 화이트 체색."
+    },
+    {
+      "id": "zero",
+      "name": "제로",
+      "name_en": "Zero",
+      "genes": ["zero", "stripe"],
+      "description": "Stinger + Stripe. 스트라이프 있는 패턴리스에 가까운 외형."
+    },
+    {
+      "id": "stinger",
+      "name": "스팅거",
+      "name_en": "Stinger",
+      "genes": ["zero"],
+      "description": "Zero와 동일 유전자, Stripe 없는 버전."
+    },
+    {
+      "id": "super-zero",
+      "name": "슈퍼 제로",
+      "name_en": "Super Zero",
+      "genes": ["zero/zero"],
+      "description": "Zero 호모. 거의 완전 패턴리스."
+    },
+    {
+      "id": "snow",
+      "name": "스노우",
+      "name_en": "Snow",
+      "genes": ["amel/amel", "oreo/oreo"],
+      "description": "Amel + Oreo. 흰색과 연한 밴드."
+    },
+    {
+      "id": "caramel-snow",
+      "name": "카라멜 스노우",
+      "name_en": "Caramel Snow",
+      "genes": ["caramel/caramel", "oreo/oreo"],
+      "description": "Caramel + Oreo."
+    },
+    {
+      "id": "purple-haze",
+      "name": "퍼플 헤이즈",
+      "name_en": "Purple Haze",
+      "genes": ["ghost/ghost", "oreo/oreo", "patternless/patternless"],
+      "description": "Ghost + Oreo + Patternless 3중 콤보. 보라빛. 극희귀."
+    },
+    {
+      "id": "white-out-patternless",
+      "name": "화이트아웃 패턴리스",
+      "name_en": "White Out Patternless",
+      "genes": ["white-out", "patternless/patternless"],
+      "description": "White Out + Patternless 콤보."
+    },
+    {
+      "id": "super-stinger",
+      "name": "슈퍼 스팅거",
+      "name_en": "Super Stinger",
+      "genes": ["patternless/patternless", "zero"],
+      "description": "Patternless + Stinger. 거의 완전 패턴리스."
+    }
+  ],
+  "notes": {
+    "patternless_locus": "Patternless와 Zero/Stinger는 같은 로커스의 대립유전자. 교배 시 별도 확률 계산 필요.",
+    "white_out_lethal": "Super White Out(호모)은 치사. 계산기에서 경고 처리 필수.",
+    "ghost_caramel_infertility": "Ghost와 Caramel은 암컷 일부 불임. W 염색체 연관 추정.",
+    "line_bred_excluded": "Tangerine, Aberrant, Jungle, Granite, Starburst 등 라인브리드 제외."
+  },
+  "sources": [
+    "ReptiMate — AFT Genetics Calculator",
+    "MorphMarket Community",
+    "Gecko Time — AFT Morph Guide",
+    "Gecko Forums"
+  ]
+}

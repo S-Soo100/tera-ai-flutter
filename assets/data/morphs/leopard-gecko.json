@@ -1,0 +1,289 @@
+{
+  "species_id": "leopard-gecko",
+  "species_name_ko": "레오파드 게코",
+  "species_name_en": "Leopard Gecko",
+  "scientific_name": "Eublepharis macularius",
+  "last_updated": "2026-04-01",
+  "calculator_type": "full",
+  "genes": [
+    {
+      "id": "tremper-albino",
+      "name": "트렘퍼 알비노",
+      "name_en": "Tremper Albino",
+      "inheritance": "recessive",
+      "allele_group": "albino",
+      "description": "1991년 론 트렘퍼 발견. 눈이 은색에 붉은 혈관 패턴. 벨/레인워터와 같은 로커스가 아닌 별개 로커스."
+    },
+    {
+      "id": "bell-albino",
+      "name": "벨 알비노",
+      "name_en": "Bell Albino",
+      "inheritance": "recessive",
+      "allele_group": "albino",
+      "description": "마크 벨 발견. 연한 분홍색 눈이 특징. 라벤더 색조와 작은 갈색 점."
+    },
+    {
+      "id": "rainwater-albino",
+      "name": "레인워터 알비노",
+      "name_en": "Rainwater Albino",
+      "inheritance": "recessive",
+      "allele_group": "albino",
+      "description": "팀 레인워터 발견. 3개 알비노 중 가장 소형. 눈이 가장 어둡고 창백한 몸."
+    },
+    {
+      "id": "eclipse",
+      "name": "이클립스",
+      "name_en": "Eclipse",
+      "inheritance": "recessive",
+      "allele_group": "eye",
+      "description": "완전 단색 눈(솔리드 아이). 스네이크 아이(부분 발현) 존재. RAPTOR 핵심 유전자."
+    },
+    {
+      "id": "murphy-patternless",
+      "name": "머피 패턴리스",
+      "name_en": "Murphy Patternless",
+      "inheritance": "recessive",
+      "allele_group": null,
+      "description": "팻 머피 1991년 개발. 성장하면서 반점 소실. RAPTOR의 P 성분."
+    },
+    {
+      "id": "blizzard",
+      "name": "블리자드",
+      "name_en": "Blizzard",
+      "inheritance": "recessive",
+      "allele_group": null,
+      "description": "1995년 제이 빌라 발견. 완전 무늬 없이 단색. 머피 패턴리스와 별개 유전자."
+    },
+    {
+      "id": "enigma",
+      "name": "에니그마",
+      "name_en": "Enigma",
+      "inheritance": "dominant",
+      "allele_group": null,
+      "description": "불규칙 패턴과 발색. 1카피 우성. 주의: 에니그마 증후군(신경학적 이상) 위험.",
+      "health_warning": "에니그마 증후군 — 별 보기, 빙글빙글 돌기, 경련 위험"
+    },
+    {
+      "id": "mack-snow",
+      "name": "맥 스노우",
+      "name_en": "Mack Snow",
+      "inheritance": "incomplete_dominant",
+      "allele_group": "snow",
+      "description": "2004년 맥 리피 발표. 헤테로: 흑백 밴드. 호모(슈퍼 스노우): 완전 흑백 + 솔리드 블랙 아이."
+    },
+    {
+      "id": "gem-snow",
+      "name": "젬 스노우",
+      "name_en": "Gem Snow",
+      "inheritance": "incomplete_dominant",
+      "allele_group": "snow",
+      "description": "짐 홀러 개발. 맥 스노우와 같은 allele group. 교배 시 슈퍼 스노우 생산 가능."
+    },
+    {
+      "id": "tug-snow",
+      "name": "TUG 스노우",
+      "name_en": "TUG Snow",
+      "inheritance": "dominant",
+      "allele_group": "snow",
+      "description": "The Urban Gecko 개발. 우성 돌연변이. 맥/젬과 외형 유사하나 유전 방식 차이."
+    },
+    {
+      "id": "giant",
+      "name": "자이언트",
+      "name_en": "Giant",
+      "inheritance": "codominant",
+      "allele_group": "giant",
+      "description": "헤테로=자이언트(크게 성장), 호모=슈퍼 자이언트(최대 크기)."
+    },
+    {
+      "id": "lemon-frost",
+      "name": "레몬 프로스트",
+      "name_en": "Lemon Frost",
+      "inheritance": "codominant",
+      "allele_group": null,
+      "description": "밝은 노란색+흰색 형광감. 주의: 악성 이리도포어 종양(피부암) 고위험.",
+      "health_warning": "악성 이리도포어 종양(피부암) 발생률 높음"
+    },
+    {
+      "id": "white-and-yellow",
+      "name": "화이트 앤 옐로우",
+      "name_en": "White and Yellow",
+      "inheritance": "dominant",
+      "allele_group": null,
+      "description": "1996년 유럽 최초. 흰색/노란색 대비 강한 측면과 등. 건강 이상 주의."
+    },
+    {
+      "id": "cipher",
+      "name": "사이퍼",
+      "name_en": "Cipher",
+      "inheritance": "recessive",
+      "allele_group": "eye",
+      "description": "2015년 존 스카버러 생산. 솔리드 블랙 눈. 이클립스/마블 아이와 별개 유전자."
+    },
+    {
+      "id": "marble-eye",
+      "name": "마블 아이",
+      "name_en": "Marble Eye",
+      "inheritance": "recessive",
+      "allele_group": "eye",
+      "description": "눈에 대리석 패턴. 이클립스와 별개 유전자. 몸 색상 영향 없음."
+    }
+  ],
+  "morphs": [
+    {
+      "id": "raptor",
+      "name": "랩터",
+      "name_en": "RAPTOR",
+      "genes": ["tremper-albino", "eclipse", "murphy-patternless"],
+      "description": "2004년 론 트렘퍼 개발. 붉은 눈 + 주황색 몸. 가장 유명한 콤보."
+    },
+    {
+      "id": "aptor",
+      "name": "앱터",
+      "name_en": "APTOR",
+      "genes": ["tremper-albino", "murphy-patternless"],
+      "description": "RAPTOR에서 이클립스 제외. 알비노 무늬없는 주황색."
+    },
+    {
+      "id": "radar",
+      "name": "레이더",
+      "name_en": "Radar",
+      "genes": ["bell-albino", "eclipse"],
+      "description": "벨 알비노 + 이클립스. RAPTOR의 벨 버전."
+    },
+    {
+      "id": "typhoon",
+      "name": "타이푼",
+      "name_en": "Typhoon",
+      "genes": ["rainwater-albino", "eclipse"],
+      "description": "레인워터 알비노 + 이클립스. RAPTOR의 레인워터 버전."
+    },
+    {
+      "id": "blazing-blizzard",
+      "name": "블레이징 블리자드",
+      "name_en": "Blazing Blizzard",
+      "genes": ["tremper-albino", "blizzard"],
+      "description": "트렘퍼 알비노 + 블리자드. 알비노 무늬없는 흰색/노란색."
+    },
+    {
+      "id": "diablo-blanco",
+      "name": "디아블로 블랑코",
+      "name_en": "Diablo Blanco",
+      "genes": ["tremper-albino", "blizzard", "eclipse"],
+      "description": "트렘퍼 알비노 + 블리자드 + 이클립스. 붉은 눈 + 완전 흰색."
+    },
+    {
+      "id": "white-knight",
+      "name": "화이트 나이트",
+      "name_en": "White Knight",
+      "genes": ["bell-albino", "eclipse", "blizzard"],
+      "description": "디아블로 블랑코의 벨 알비노 버전."
+    },
+    {
+      "id": "total-eclipse",
+      "name": "토탈 이클립스",
+      "name_en": "Total Eclipse",
+      "genes": ["mack-snow", "eclipse"],
+      "description": "슈퍼 스노우 + 이클립스. 흰 몸 + 솔리드 블랙 눈.",
+      "note": "맥 스노우 호모(슈퍼) 필요"
+    },
+    {
+      "id": "bee",
+      "name": "비",
+      "name_en": "BEE",
+      "genes": ["enigma", "eclipse"],
+      "description": "에니그마 + 이클립스. 에니그마 증후군 주의."
+    },
+    {
+      "id": "black-hole",
+      "name": "블랙 홀",
+      "name_en": "Black Hole",
+      "genes": ["mack-snow", "enigma", "eclipse"],
+      "description": "맥 스노우 + 에니그마 + 이클립스. 어두운 흑백 패턴."
+    },
+    {
+      "id": "dreamsicle",
+      "name": "드림시클",
+      "name_en": "Dreamsicle",
+      "genes": ["mack-snow", "tremper-albino", "eclipse", "enigma"],
+      "description": "4중 콤보. 크림색~흰색 바탕에 주황/노랑."
+    },
+    {
+      "id": "super-nova",
+      "name": "슈퍼 노바",
+      "name_en": "Super Nova",
+      "genes": ["mack-snow", "tremper-albino", "eclipse", "enigma"],
+      "description": "드림시클의 슈퍼 스노우 버전.",
+      "note": "맥 스노우 호모(슈퍼) 필요"
+    },
+    {
+      "id": "ember",
+      "name": "엠버",
+      "name_en": "Ember",
+      "genes": ["tremper-albino", "eclipse", "murphy-patternless"],
+      "description": "RAPTOR와 유사. 3중 열성 조합."
+    },
+    {
+      "id": "cyclone",
+      "name": "사이클론",
+      "name_en": "Cyclone",
+      "genes": ["rainwater-albino", "eclipse", "murphy-patternless"],
+      "description": "타이푼 + 머피 패턴리스."
+    },
+    {
+      "id": "banana-blizzard",
+      "name": "바나나 블리자드",
+      "name_en": "Banana Blizzard",
+      "genes": ["murphy-patternless", "blizzard"],
+      "description": "두 열성 패턴리스 유전자 조합. 노란색~흰색."
+    },
+    {
+      "id": "nova",
+      "name": "노바",
+      "name_en": "Nova",
+      "genes": ["tremper-albino", "eclipse", "enigma"],
+      "description": "RAPTOR + 에니그마."
+    },
+    {
+      "id": "stealth",
+      "name": "스텔스",
+      "name_en": "Stealth",
+      "genes": ["mack-snow", "enigma", "bell-albino", "eclipse"],
+      "description": "맥 스노우 + 에니그마 + 레이더. 흑백에 라벤더."
+    },
+    {
+      "id": "sunglow",
+      "name": "선글로우",
+      "name_en": "Sunglow",
+      "genes": ["tremper-albino"],
+      "description": "슈퍼 하이포 탄저린 + 트렘퍼 알비노. 탄저린은 라인브리드.",
+      "note": "탄저린(라인브리드) 포함"
+    },
+    {
+      "id": "normal",
+      "name": "노말",
+      "name_en": "Normal / Wild Type",
+      "genes": [],
+      "description": "야생형. 노란 바탕에 갈색~검은 반점과 밴드."
+    },
+    {
+      "id": "super-snow",
+      "name": "슈퍼 스노우",
+      "name_en": "Super Snow",
+      "genes": ["mack-snow"],
+      "description": "맥 스노우 호모. 완전 흑백 + 솔리드 블랙 아이.",
+      "note": "맥 스노우 호모 발현"
+    }
+  ],
+  "notes": {
+    "albino_locus": "트렘퍼/벨/레인워터는 서로 다른 로커스. 혼혈 시 정상 자손만 나옴.",
+    "eye_locus": "이클립스/사이퍼/마블 아이는 별개 로커스. 상호작용 없음.",
+    "line_bred_excluded": "탄저린, 하이포, 슈퍼하이포, 정글, 밸디, 카로트 등 폴리제닉 형질은 계산기에서 제외."
+  },
+  "sources": [
+    "MorphMarket Morphpedia",
+    "Leopard Gecko Wiki",
+    "GeckoBoa Reptiles — Genetics Guide",
+    "The Geckopia — Albino 101"
+  ]
+}

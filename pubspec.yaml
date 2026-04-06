@@ -1,0 +1,37 @@
+name: tera_ai
+description: 파충류 사육자를 위한 올인원 앱
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.8.1
+  easy_localization: ^3.0.7+1
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.4
+  connectivity_plus: ^6.1.2
+  google_fonts: ^6.2.1
+  intl: ^0.20.0
+  image_picker: ^1.1.2
+  uuid: ^4.5.1
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/l10n/
+    - assets/data/
+    - assets/data/care_info/
+    - assets/data/morphs/

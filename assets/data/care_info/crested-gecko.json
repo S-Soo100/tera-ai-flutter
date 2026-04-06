@@ -1,0 +1,70 @@
+{
+  "species_id": "crested-gecko",
+  "species_name_ko": "크레스티드 게코",
+  "scientific_name": "Correlophus ciliatus",
+  "last_updated": "2026-04-01",
+  "difficulty": "beginner",
+  "lifespan": "15~20년",
+  "adult_size": "전장 18~23cm, 체중 35~55g",
+  "temperament": "온순하고 핸들링 적응 좋음. 황혼성/야행성. 스트레스 시 'fire up' 색 변화.",
+  "temperature": {
+    "hot_zone": { "min": 26, "max": 29 },
+    "cool_zone": { "min": 21, "max": 24 },
+    "night": { "min": 18, "max": 22 },
+    "unit": "℃",
+    "notes": "27℃ 이상 지속 시 스트레스, 29℃ 초과 시 치명적. 실온 유지 가능하면 별도 열원 불필요. 한국 여름 냉방 필수."
+  },
+  "humidity": {
+    "min": 60,
+    "max": 80,
+    "unit": "%",
+    "misting": "저녁 1회 집중 분무(80%+) → 다음 분무 전 45~50%까지 건조. 건습 사이클이 핵심.",
+    "notes": "상시 고습은 곰팡이/세균 번식 → 호흡기 감염. 물방울을 핥아 수분 섭취."
+  },
+  "enclosure": {
+    "min_size": "45×45×60cm (성체, 세로형)",
+    "type": "arboreal",
+    "substrate": [
+      "코코넛 코이어 + 배양토 혼합",
+      "바이오액티브 기질 (스프링테일 + 이소포드)",
+      "페이퍼타월 (유체/격리용)"
+    ],
+    "essentials": [
+      "코르크 튜브 (낮 은신처)",
+      "세로 나뭇가지 (등반용)",
+      "인조/생식물 (포토스, 틸란드시아 등)",
+      "얕은 물그릇",
+      "디지털 온습도계"
+    ],
+    "lighting": "10~14시간 조명 주기. UVB 권장(Ferguson Zone 1) — 없어도 치명적이지 않으나 건강 향상. 야간 조명 금지."
+  },
+  "diet": {
+    "main": [
+      "크레스티드 게코 완전식(CGD) — Pangea, Repashy 분말",
+      "귀뚜라미",
+      "듀비아 로치"
+    ],
+    "supplement": [
+      "칼슘+D3 — 곤충 더스팅 필수",
+      "구트로딩 — 급이 24시간 전 곤충에 채소 먹이기"
+    ],
+    "frequency": "유체: 매일 (CGD+곤충 번갈아) / 성체: 격일",
+    "water": "분무된 물방울로 수분 섭취. 물그릇은 보조.",
+    "notes": "CGD 표면에 핥은 자국 보이면 정상 섭식. 과일 퓨레는 간식 한정(고당도)."
+  },
+  "common_mistakes": [
+    "과열 방치 — 27℃+ 지속 노출. 직사광선 창가, 여름철 방치가 주원인. 열사병 사망 가능",
+    "상시 고습 유지 — 건습 사이클 없으면 곰팡이/호흡기 감염. 밤 분무 → 낮 건조",
+    "꼬리 재생 불가 인지 부족 — 크레스티드 게코는 꼬리 재생 안 됨. 절대 꼬리 잡지 말 것",
+    "명암 주기 미제공 — 어둠만 유지하면 일주기 리듬/식욕 교란. 최소 형광등/LED 10~14시간",
+    "곤충 더스팅 생략 — 칼슘 결핍 → 대사성 골질환(MBD)",
+    "유체를 큰 케이지에 바로 입주 — 먹이 못 찾아 거식. 12주 이하는 소형 케이지로 시작",
+    "합사 과신 — 수컷 동거 싸움, 암수 동거 원치 않는 번식. 초보자는 단독 사육"
+  ],
+  "sources": [
+    "ReptiFiles — Crested Gecko Care",
+    "Pangea Reptile — Care Guide",
+    "Reptropolis — Crested Gecko Care",
+    "Zen Habitats — Substrate Guide"
+  ]
+}
