@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '../../wiki/data/care_info_repository.dart';
+import '../../wiki/presentation/wiki_providers.dart';
 import '../domain/pet.dart';
 import '../domain/weight_log.dart';
 import 'my_pets_providers.dart';
@@ -59,7 +60,11 @@ class PetDetailScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: OutlinedButton.icon(
-                onPressed: () => context.push('/wiki'),
+                onPressed: () {
+                  ref.read(selectedWikiSpeciesProvider.notifier).state =
+                      pet.speciesId;
+                  context.go('/wiki');
+                },
                 icon: const Icon(Icons.menu_book_outlined),
                 label: const Text('이 종의 사육 위키 보기'),
               ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_constants.dart';
 import 'home_providers.dart';
-import '../../my_pets/data/pet_repository.dart';
+import '../../my_pets/presentation/my_pets_providers.dart';
+import '../../wiki/presentation/wiki_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -10,11 +12,9 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final speciesRepo = ref.watch(speciesRepositoryProvider);
-    final petRepo = ref.watch(petRepositoryProvider);
-    final pets = petRepo.getAllPets();
+    final pets = ref.watch(petListProvider);
     final featuredSpecies = speciesRepo.featuredSpecies;
-    final daysLeft =
-        DateTime(2026, 6, 13).difference(DateTime.now()).inDays;
+    final daysLeft = AppConstants.daysUntilDeadline;
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -49,7 +49,11 @@ class HomeScreen extends ConsumerWidget {
                   title: Text(species.koreanName),
                   subtitle: Text(species.tags.join(' / ')),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.go('/wiki'),
+                  onTap: () {
+                    ref.read(selectedWikiSpeciesProvider.notifier).state =
+                        species.id;
+                    context.go('/wiki');
+                  },
                 ),
               );
             }),
@@ -80,8 +84,14 @@ class _DdayBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isExpired = daysLeft < 0;
+    final displayText =
+        isExpired ? '자진신고 기한이 지났습니다' : '자진신고 마감 D-$daysLeft';
+
     return Card(
-      color: colorScheme.primaryContainer,
+      color: isExpired
+          ? colorScheme.errorContainer
+          : colorScheme.primaryContainer,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => context.go('/guide'),
@@ -89,31 +99,43 @@ class _DdayBanner extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              Icon(Icons.calendar_today, color: colorScheme.onPrimaryContainer),
+              Icon(Icons.calendar_today,
+                  color: isExpired
+                      ? colorScheme.onErrorContainer
+                      : colorScheme.onPrimaryContainer),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '자진신고 마감 D-$daysLeft',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      displayText,
+                      style:
+                          Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: isExpired
+                                    ? colorScheme.onErrorContainer
+                                    : colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '2026년 6월 13일까지',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onPrimaryContainer
-                                .withOpacity(0.7),
-                          ),
+                      style:
+                          Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: (isExpired
+                                        ? colorScheme.onErrorContainer
+                                        : colorScheme.onPrimaryContainer)
+                                    .withValues(alpha: 0.7),
+                              ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: colorScheme.onPrimaryContainer),
+              Icon(Icons.chevron_right,
+                  color: isExpired
+                      ? colorScheme.onErrorContainer
+                      : colorScheme.onPrimaryContainer),
             ],
           ),
         ),
@@ -142,7 +164,7 @@ class _EmptyPetsSection extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: () => context.go('/my-pets/add'),
+              onPressed: () => context.push('/my-pets/add'),
               icon: const Icon(Icons.add),
               label: const Text('첫 개체 등록하기'),
             ),
@@ -173,7 +195,6 @@ class _PetsSection extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             itemCount: pets.length + 1,
             itemBuilder: (context, index) {
-              // 마지막: 추가 카드
               if (index == pets.length) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -182,7 +203,7 @@ class _PetsSection extends StatelessWidget {
                     child: Card(
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap: () => context.go('/my-pets/add'),
+                        onTap: () => context.push('/my-pets/add'),
                         child: const Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -215,10 +236,8 @@ class _PetsSection extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Text(
-                                  pet.sexIcon,
-                                  style: theme.textTheme.titleMedium,
-                                ),
+                                Text(pet.sexIcon,
+                                    style: theme.textTheme.titleMedium),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(

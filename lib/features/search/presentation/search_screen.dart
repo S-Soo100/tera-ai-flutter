@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../home/presentation/home_providers.dart';
-import '../../home/data/species_repository.dart';
+import '../../wiki/presentation/wiki_providers.dart';
 
 final _searchQueryProvider = StateProvider<String>((ref) => '');
 
@@ -89,7 +89,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       trailing: featured
                           ? ActionChip(
                               label: const Text('상세 정보'),
-                              onPressed: () => context.go('/wiki'),
+                              onPressed: () {
+                                ref
+                                    .read(selectedWikiSpeciesProvider.notifier)
+                                    .state = species.id;
+                                context.go('/wiki');
+                              },
                               avatar: const Icon(Icons.menu_book, size: 16),
                             )
                           : Chip(

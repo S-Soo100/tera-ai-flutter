@@ -34,6 +34,7 @@ class CareInfoDetail {
   final int humidityMin;
   final int humidityMax;
   final TempRange? humidHide;
+  final String? humidHideText; // 펫테일처럼 문자열인 경우
   final String? humidityMisting;
   final String? humidityNotes;
 
@@ -77,6 +78,7 @@ class CareInfoDetail {
     required this.humidityMin,
     required this.humidityMax,
     this.humidHide,
+    this.humidHideText,
     this.humidityMisting,
     this.humidityNotes,
     required this.minSize,
@@ -103,8 +105,12 @@ class CareInfoDetail {
     final diet = json['diet'] as Map<String, dynamic>;
 
     TempRange? humidHide;
-    if (humidity['humid_hide'] is Map<String, dynamic>) {
-      humidHide = TempRange.fromJson(humidity['humid_hide']);
+    String? humidHideText;
+    final rawHumidHide = humidity['humid_hide'];
+    if (rawHumidHide is Map<String, dynamic>) {
+      humidHide = TempRange.fromJson(rawHumidHide);
+    } else if (rawHumidHide is String) {
+      humidHideText = rawHumidHide;
     }
 
     return CareInfoDetail(
@@ -128,6 +134,7 @@ class CareInfoDetail {
       humidityMin: humidity['min'] as int,
       humidityMax: humidity['max'] as int,
       humidHide: humidHide,
+      humidHideText: humidHideText,
       humidityMisting: humidity['misting'] as String?,
       humidityNotes: humidity['notes'] as String?,
       minSize: enclosure['min_size'] as String,

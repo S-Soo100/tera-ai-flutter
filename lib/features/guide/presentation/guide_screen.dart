@@ -228,6 +228,42 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                     ],
                   );
                 }),
+                const SizedBox(height: 24),
+
+                // --- 면책 조항 ---
+                Card(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '안내사항',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '이 정보는 참고용이며 법적 효력이 없습니다. '
+                          '정확한 내용은 관할 시·군·구청 또는 WIMS에서 확인하세요. '
+                          '법령 개정 시 내용이 달라질 수 있습니다.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '최종 업데이트: ${guide.deadline}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 32),
               ],
             ),
