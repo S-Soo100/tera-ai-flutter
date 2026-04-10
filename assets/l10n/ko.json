@@ -107,5 +107,26 @@
 
   "error_title": "오류가 발생했습니다",
   "error_retry": "다시 시도",
-  "placeholder_preparing": "준비 중입니다"
+  "placeholder_preparing": "준비 중입니다",
+
+  "chat_title": "AI 채팅",
+  "chat_history": "대화 기록",
+  "chat_new": "새 대화",
+  "chat_ask_ai": "AI에게 물어보기",
+  "chat_welcome": "사육이 궁금하다면 무엇이든 물어보세요!",
+  "chat_example_1": "레오파드 게코 온도 세팅은?",
+  "chat_example_2": "크레스티드 게코 먹이 추천",
+  "chat_example_3": "탈피가 잘 안 돼요",
+  "chat_example_4": "초보가 자주 하는 실수는?",
+  "chat_input_hint": "질문을 입력하세요...",
+  "chat_send": "전송",
+  "chat_loading": "답변 생성 중...",
+  "chat_from_cache": "이전 답변에서 가져왔습니다",
+  "chat_cache_no_quota": "일일 한도 미차감",
+  "chat_quota_remaining": "남은 횟수 {count}/20",
+  "chat_quota_exceeded": "오늘 질문 횟수를 다 사용했어요. 내일 다시 이용해주세요.",
+  "chat_error": "답변을 가져오지 못했습니다. 다시 시도해주세요.",
+  "chat_empty_history": "아직 대화 기록이 없어요",
+  "chat_delete_confirm": "이 대화를 삭제할까요?",
+  "chat_ask_new": "새로 질문하기"
 }

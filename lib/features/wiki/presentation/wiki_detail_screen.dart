@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../data/care_info_repository.dart';
 import '../domain/care_info_detail.dart';
 import 'wiki_providers.dart';
@@ -32,6 +33,13 @@ class WikiDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('$_speciesName — $categoryName'),
+      ),
+      floatingActionButton: FloatingActionButton.small(
+        heroTag: 'wiki_detail_chat_fab',
+        onPressed: () =>
+            context.push('/chat/new?speciesId=$speciesId'),
+        tooltip: 'AI에게 물어보기',
+        child: const Icon(Icons.chat),
       ),
       body: careInfoAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

@@ -2,6 +2,10 @@
 
 part of 'pet.dart';
 
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
 class PetAdapter extends TypeAdapter<Pet> {
   @override
   final int typeId = 0;
@@ -9,10 +13,9 @@ class PetAdapter extends TypeAdapter<Pet> {
   @override
   Pet read(BinaryReader reader) {
     final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{};
-    for (int i = 0; i < numOfFields; i++) {
-      fields[reader.readByte()] = reader.read();
-    }
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
     return Pet(
       id: fields[0] as String,
       name: fields[1] as String,
@@ -25,8 +28,8 @@ class PetAdapter extends TypeAdapter<Pet> {
       weight: fields[8] as double?,
       photoPath: fields[9] as String?,
       memo: fields[10] as String?,
-      createdAt: fields[11] as DateTime,
-      updatedAt: fields[12] as DateTime,
+      createdAt: fields[11] as DateTime?,
+      updatedAt: fields[12] as DateTime?,
     );
   }
 

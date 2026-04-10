@@ -19,6 +19,7 @@ class WikiScreen extends ConsumerWidget {
     ('mistakes', '⚠️ 초보 실수'),
     ('morph-calc', '🧬 모프 계산기'),
     ('compare', '📋 종 비교'),
+    ('ai-chat', '🤖 AI에게 물어보기'),
   ];
 
   @override
@@ -29,6 +30,20 @@ class WikiScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('사육 위키'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: '대화 기록',
+            onPressed: () => context.push('/chat'),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'wiki_chat_fab',
+        onPressed: () =>
+            context.push('/chat/new?speciesId=$selectedSpecies'),
+        tooltip: 'AI에게 물어보기',
+        child: const Icon(Icons.chat),
       ),
       body: Column(
         children: [
@@ -136,6 +151,9 @@ class WikiScreen extends ConsumerWidget {
                         context.push('/wiki/compare');
                       } else if (categoryId == 'morph-calc') {
                         context.push('/wiki/$selectedSpecies/morph-calc');
+                      } else if (categoryId == 'ai-chat') {
+                        context.push(
+                            '/chat/new?speciesId=$selectedSpecies');
                       } else {
                         context.push('/wiki/$selectedSpecies/$categoryId');
                       }

@@ -19,6 +19,7 @@ class MyPetsScreen extends ConsumerWidget {
       body: pets.isEmpty ? _buildEmptyState(context) : _buildList(context, pets),
       floatingActionButton: pets.isNotEmpty
           ? FloatingActionButton(
+              heroTag: 'my_pets_add_fab',
               onPressed: () => context.push('/my-pets/add'),
               child: const Icon(Icons.add),
             )

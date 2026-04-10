@@ -48,6 +48,13 @@ class PetDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.small(
+        heroTag: 'pet_detail_chat_fab',
+        onPressed: () => context.push(
+            '/chat/new?petId=${pet.id}&speciesId=${pet.speciesId}'),
+        tooltip: 'AI에게 물어보기',
+        child: const Icon(Icons.chat),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

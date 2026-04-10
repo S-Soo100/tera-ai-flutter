@@ -14,6 +14,8 @@ import '../../features/my_pets/presentation/pet_edit_screen.dart';
 import '../../features/guide/presentation/guide_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
+import '../../features/chat/presentation/chat_screen.dart';
+import '../../features/chat/presentation/chat_list_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -117,6 +119,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/search',
         builder: (context, state) => const SearchScreen(),
+      ),
+      GoRoute(
+        path: '/chat',
+        builder: (context, state) => const ChatListScreen(),
+      ),
+      GoRoute(
+        path: '/chat/new',
+        builder: (context, state) {
+          final petId = state.uri.queryParameters['petId'];
+          final speciesId = state.uri.queryParameters['speciesId'];
+          return ChatScreen(petId: petId, speciesId: speciesId);
+        },
+      ),
+      GoRoute(
+        path: '/chat/:conversationId',
+        builder: (context, state) {
+          final id = state.pathParameters['conversationId'] ?? '';
+          return ChatScreen(conversationId: id);
+        },
       ),
       GoRoute(
         path: '/error',

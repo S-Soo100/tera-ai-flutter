@@ -1,44 +1,35 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'weight_log.dart';
+part of 'chat_quota.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class WeightLogAdapter extends TypeAdapter<WeightLog> {
+class ChatQuotaAdapter extends TypeAdapter<ChatQuota> {
   @override
-  final int typeId = 1;
+  final int typeId = 5;
 
   @override
-  WeightLog read(BinaryReader reader) {
+  ChatQuota read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return WeightLog(
-      id: fields[0] as String,
-      petId: fields[1] as String,
-      weight: fields[2] as double,
-      date: fields[3] as DateTime,
-      note: fields[4] as String?,
+    return ChatQuota(
+      date: fields[0] as String,
+      messageCount: fields[1] as int,
     );
   }
 
   @override
-  void write(BinaryWriter writer, WeightLog obj) {
+  void write(BinaryWriter writer, ChatQuota obj) {
     writer
-      ..writeByte(5)
-      ..writeByte(0)
-      ..write(obj.id)
-      ..writeByte(1)
-      ..write(obj.petId)
       ..writeByte(2)
-      ..write(obj.weight)
-      ..writeByte(3)
+      ..writeByte(0)
       ..write(obj.date)
-      ..writeByte(4)
-      ..write(obj.note);
+      ..writeByte(1)
+      ..write(obj.messageCount);
   }
 
   @override
@@ -47,7 +38,7 @@ class WeightLogAdapter extends TypeAdapter<WeightLog> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is WeightLogAdapter &&
+      other is ChatQuotaAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
