@@ -68,5 +68,14 @@
     "The Bio Dude — Leopard Gecko Caresheet 2024",
     "Zen Habitats — Substrate Guide",
     "Reptizen — Feeding Guide 2025"
-  ]
+  ],
+  "citation_ids": [
+    "cit-reptifiles-leogecko-01",
+    "cit-biodude-leogecko-01",
+    "cit-zenhab-substrate-01",
+    "cit-reptizen-feeding-01",
+    "cit-devosjoli-leogecko-01",
+    "cit-tera-internal-01"
+  ],
+  "graph_entity_id": "ent-species-leogecko"
 }
