@@ -48,17 +48,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const WikiScreen(),
                 routes: [
                   GoRoute(
-                    path: ':speciesId/:category',
-                    builder: (context, state) {
-                      final speciesId = state.pathParameters['speciesId'] ?? '';
-                      final category = state.pathParameters['category'] ?? '';
-                      return WikiDetailScreen(
-                        speciesId: speciesId,
-                        category: category,
-                      );
-                    },
-                  ),
-                  GoRoute(
                     path: 'compare',
                     builder: (context, state) =>
                         const SpeciesCompareScreen(),
@@ -80,6 +69,17 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final speciesId = state.pathParameters['speciesId'] ?? '';
                       return MorphCalcScreen(speciesId: speciesId);
+                    },
+                  ),
+                  GoRoute(
+                    path: ':speciesId/:category',
+                    builder: (context, state) {
+                      final speciesId = state.pathParameters['speciesId'] ?? '';
+                      final category = state.pathParameters['category'] ?? '';
+                      return WikiDetailScreen(
+                        speciesId: speciesId,
+                        category: category,
+                      );
                     },
                   ),
                 ],
