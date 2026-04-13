@@ -7,8 +7,8 @@ class WikiScreen extends ConsumerWidget {
   const WikiScreen({super.key});
 
   static const _speciesChips = [
-    ('leopard-gecko', '레오파드 게코'),
     ('crested-gecko', '크레스티드 게코'),
+    ('leopard-gecko', '레오파드 게코'),
     ('fat-tailed-gecko', '펫테일 게코'),
   ];
 

@@ -8,7 +8,7 @@ import '../domain/graph_entity.dart';
 import '../domain/morph_genetics.dart';
 
 final selectedWikiSpeciesProvider =
-    StateProvider<String>((ref) => 'leopard-gecko');
+    StateProvider<String>((ref) => 'crested-gecko');
 
 final careInfoProvider =
     FutureProvider.family<CareInfoDetail, String>((ref, speciesId) async {
