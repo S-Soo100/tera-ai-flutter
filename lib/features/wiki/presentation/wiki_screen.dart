@@ -50,23 +50,26 @@ class WikiScreen extends ConsumerWidget {
           // Species selection chips
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: _speciesChips.map((chip) {
-                final (id, label) = chip;
-                final isSelected = selectedSpecies == id;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(label),
-                    selected: isSelected,
-                    onSelected: (_) {
-                      ref.read(selectedWikiSpeciesProvider.notifier).state = id;
-                    },
-                    selectedColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                  ),
-                );
-              }).toList(),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _speciesChips.map((chip) {
+                  final (id, label) = chip;
+                  final isSelected = selectedSpecies == id;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(label),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        ref.read(selectedWikiSpeciesProvider.notifier).state = id;
+                      },
+                      selectedColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
 
