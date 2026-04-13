@@ -2,10 +2,14 @@
 
 ## 프로젝트 개요
 파충류 사육자를 위한 올인원 앱. 백색목록 검색, 사육 정보, 모프 유전 계산기, 자진신고 가이드.
-- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization
+- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase
 - **현재 Phase**: P0 (로컬 전용, 인증 없음, 백엔드 없음)
 - **기획서**: `docs/spec.md`
 - **자진신고 기한**: 2026-06-13 (D-day 기준)
+
+### Supabase 관련 문서
+- **DB 스키마 (DDL 원본)**: `docs/supabase-schema.md`
+- **연동 현황 (접속 정보/RLS/시드/Flutter 코드 예시)**: `docs/supabase-setup.md`
 
 ## Phase 로드맵
 
@@ -13,7 +17,7 @@
 |-------|------|------|
 | P0 | 로컬 데이터, 검색/상세/모프계산기/가이드, 3탭 | 현재 (AutoForge 생성) |
 | P1 | OnboardingScreen, ProfileScreen(내 사육장), 로컬 알림(D-day 리마인더), en 다국어, Pretendard 폰트 | 예정 |
-| P2 | Supabase 도입, 인증(이메일+소셜), 클라우드 동기화, FCM 푸시, 거래 기록 | 예정 |
+| P2 | Supabase 도입, 인증(이메일+소셜), 클라우드 동기화, FCM 푸시, 거래 기록 | DB 구축 완료 (`docs/supabase-setup.md`) |
 
 ## 아키텍처
 
@@ -62,6 +66,7 @@ lib/
 ### 데이터 접근
 - **Repository 패턴 필수**. Widget에서 Hive/데이터 직접 접근 금지.
 - P0은 로컬 상수 → P2에서 Repository 구현체만 Supabase로 교체.
+- Supabase 테이블/RLS/접속 정보는 `docs/supabase-setup.md` 참조.
 
 ### UI/테마
 - **하드코딩 색상 금지**. `AppTheme` 또는 `Theme.of(context)` 사용.
