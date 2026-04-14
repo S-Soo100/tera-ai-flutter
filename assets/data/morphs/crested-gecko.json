@@ -3,9 +3,9 @@
   "species_name_ko": "크레스티드 게코",
   "species_name_en": "Crested Gecko",
   "scientific_name": "Correlophus ciliatus",
-  "last_updated": "2026-04-01",
+  "last_updated": "2026-04-14",
   "calculator_type": "mini",
-  "calculator_note": "멘델 유전 계산 가능한 유전자 4개. 나머지 대부분은 폴리제닉/라인브리드로 확률 계산 불가.",
+  "calculator_note": "멘델 유전 계산 가능한 유전자 6개(릴리/아잔틱/팬텀/카푸치노/세이블/하이웨이). 카푸치노·세이블·하이웨이는 같은 좌위의 대립유전자 복합체. 나머지 대부분은 폴리제닉/라인브리드로 확률 계산 불가.",
   "genes": [
     {
       "id": "lilly-white",
@@ -13,17 +13,23 @@
       "name_en": "Lilly White",
       "inheritance": "incomplete_dominant",
       "allele_group": null,
-      "description": "불완전 우성. 헤테로: 크림~화이트 패턴 과발현. 호모: 치사 — 부화 불가.",
+      "discovered_by": "Nick Lumb (Lilly Exotics, UK)",
+      "discovered_year": 2010,
+      "description": "불완전 우성. 헤테로: 크림~화이트 패턴 과발현, 순백 꼬리, 아이시 실버 눈. 호모: 류시스틱(전신 순백) → 치사.",
       "homozygous_lethal": true,
-      "health_warning": "릴리 화이트 × 릴리 화이트 교배 시 25% 치사"
+      "health_warning": "릴리 화이트 × 릴리 화이트 교배 시 25% 치사 (류시스틱 슈퍼폼). 커뮤니티에서 강하게 비권장."
     },
     {
       "id": "axanthic",
-      "name": "액산틱",
+      "name": "아잔틱",
       "name_en": "Axanthic",
       "inheritance": "recessive",
       "allele_group": null,
-      "description": "단순 열성. 황색~적색 색소 제거. 흑백 개체. 최초로 유전 확인된 크레스티드 게코 모프."
+      "discovered_by": "UK 브리더 → Brian Butler (Altitude Exotics, US)",
+      "discovered_year": null,
+      "lines": ["AE (Altitude Exotics)", "MSL (Eddie Shelton)", "Obscurial"],
+      "lines_compatible": true,
+      "description": "단순 열성. 잔토포어(황색 색소세포) 결여 → 황색·적색 색소 제거. 흑백~회색~갈색 개체. 크레스티드 게코 최초의 증명된 열성 모프."
     },
     {
       "id": "phantom",
@@ -31,17 +37,62 @@
       "name_en": "Phantom",
       "inheritance": "recessive",
       "allele_group": null,
-      "description": "단순 열성. 흰색 색소 억제. 매우 어두운 흑~갈색 개체."
+      "discovered_by": null,
+      "discovered_year": null,
+      "description": "단순 열성. 멜라닌 증가 + 흰색 패턴 억제. 매우 어두운 흑~갈색 개체. 크레스티드 게코의 2번째 증명된 열성 형질. 파이어드/언파이어드 상태에서 동일하게 어두움."
     },
     {
       "id": "cappuccino",
       "name": "카푸치노",
       "name_en": "Cappuccino",
       "inheritance": "incomplete_dominant",
-      "allele_group": null,
-      "description": "불완전 우성. 헤테로: 어두운 갈색~흑갈색. 호모(슈퍼 카푸치노 = 구칭 멜라니스틱): 매우 짙은 흑색."
+      "allele_group": "cappuccino-sable-highway",
+      "discovered_by": "Reptile City Korea (RCK)",
+      "discovered_year": 2020,
+      "description": "불완전 우성. 세이블·하이웨이와 같은 좌위(대립유전자 복합체). 헤테로: 어두운 갈색~흑갈색, Y자 꼬리 기저 패턴. 호모(슈퍼 카푸치노): 실크 피부, 순흑 눈, 반투명 피부.",
+      "health_warning": "슈퍼 카푸치노(호모)에서 콧구멍 축소 ~11%, 스펙터클 아이 ~3%. 헤테로는 건강 이슈 없음. MorphMarket에서 슈퍼 카푸치노 판매 금지."
+    },
+    {
+      "id": "sable",
+      "name": "세이블",
+      "name_en": "Sable",
+      "inheritance": "incomplete_dominant",
+      "allele_group": "cappuccino-sable-highway",
+      "discovered_by": "Cindy Olsen McDannell (Gecko Haven, US)",
+      "discovered_year": 2017,
+      "description": "불완전 우성. 카푸치노·하이웨이와 같은 좌위. 헤테로: 짙은 회색~흑색 바탕 + 두터운 흰색 새들 패치 + 프로스티드 크레스트. 호모(슈퍼 세이블): 크림색 도섬, 벨벳 질감. 적색·황색 기저 없음.",
+      "health_warning": null
+    },
+    {
+      "id": "highway",
+      "name": "하이웨이",
+      "name_en": "Highway",
+      "inheritance": "incomplete_dominant",
+      "allele_group": "cappuccino-sable-highway",
+      "discovered_by": null,
+      "discovered_year": null,
+      "description": "불완전 우성. 카푸치노·세이블과 같은 좌위(대립유전자 복합체). Cold Fusion으로도 불림. 초기 프로젝트 단계.",
+      "health_warning": "슈퍼 하이웨이에서 슈퍼 카푸치노와 유사한 콧구멍 축소·건강 문제 보고."
     }
   ],
+  "allele_groups": {
+    "cappuccino-sable-highway": {
+      "name": "카푸치노-세이블-하이웨이 복합체",
+      "name_en": "Cappuccino–Sable–Highway Allelic Complex",
+      "description": "크레스티드 게코 최초의 대립유전자 복합체. 같은 유전자 좌위의 서로 다른 대립유전자. 교차 교배 시 복합 헤테로(루왁 등) 생성.",
+      "members": ["cappuccino", "sable", "highway"],
+      "cross_results": {
+        "cappuccino+sable": { "name": "루왁", "name_en": "Luwak", "note": "콧구멍 문제 없음. 슈퍼 카푸치노의 안전한 대안." },
+        "cappuccino+highway": { "name": "카푸치노-하이웨이 복합헤테로", "name_en": "Cappuccino-Highway Compound Het", "note": "데이터 제한적." },
+        "sable+highway": { "name": "세이블-하이웨이 복합헤테로", "name_en": "Sable-Highway Compound Het", "note": "데이터 제한적." }
+      },
+      "super_health": {
+        "super_cappuccino": "⚠️ 콧구멍 축소 ~11%, 스펙터클 아이 ~3%",
+        "super_sable": "✅ 건강 문제 보고 없음",
+        "super_highway": "⚠️ 슈퍼 카푸치노와 유사한 문제 보고"
+      }
+    }
+  },
   "morphs": [
     {
       "id": "normal",
@@ -57,15 +108,15 @@
       "name_en": "Lilly White",
       "genes": ["lilly-white"],
       "genetics_type": "proven_mendelian",
-      "description": "릴리 화이트 헤테로. 크림~화이트 패턴 과발현."
+      "description": "릴리 화이트 헤테로. 크림~화이트 패턴 과발현, 순백 꼬리, 아이시 실버 눈."
     },
     {
       "id": "axanthic",
-      "name": "액산틱",
+      "name": "아잔틱",
       "name_en": "Axanthic",
       "genes": ["axanthic"],
       "genetics_type": "proven_mendelian",
-      "description": "액산틱 호모. 흑백 개체."
+      "description": "아잔틱 호모. 흑백~회색~갈색 개체. 잔토포어 결여."
     },
     {
       "id": "phantom",
@@ -73,7 +124,7 @@
       "name_en": "Phantom",
       "genes": ["phantom"],
       "genetics_type": "proven_mendelian",
-      "description": "팬텀 호모. 고대비 흑~갈색."
+      "description": "팬텀 호모. 멜라닌 증가 + 흰색 억제. 고대비 흑~갈색."
     },
     {
       "id": "cappuccino",
@@ -81,7 +132,7 @@
       "name_en": "Cappuccino",
       "genes": ["cappuccino"],
       "genetics_type": "proven_mendelian",
-      "description": "카푸치노 헤테로. 어두운 갈색~흑갈색."
+      "description": "카푸치노 헤테로. 어두운 갈색~흑갈색, Y자 꼬리 기저 패턴."
     },
     {
       "id": "super-cappuccino",
@@ -89,8 +140,34 @@
       "name_en": "Super Cappuccino",
       "genes": ["cappuccino"],
       "genetics_type": "proven_mendelian",
-      "description": "카푸치노 호모. 매우 짙은 흑색. 구칭 멜라니스틱.",
-      "note": "카푸치노 호모 발현"
+      "zygosity": "homozygous",
+      "description": "카푸치노 호모. 실크 피부, 순흑 눈(→성장 시 스네이크아이), 반투명 피부. 구칭 멜라니스틱.",
+      "health_warning": "콧구멍 축소 ~11%, 스펙터클 아이 ~3%. MorphMarket 판매 금지."
+    },
+    {
+      "id": "sable",
+      "name": "세이블",
+      "name_en": "Sable",
+      "genes": ["sable"],
+      "genetics_type": "proven_mendelian",
+      "description": "세이블 헤테로. 짙은 회색~흑색 + 두터운 흰색 새들 패치 + 프로스티드 크레스트."
+    },
+    {
+      "id": "super-sable",
+      "name": "슈퍼 세이블",
+      "name_en": "Super Sable",
+      "genes": ["sable"],
+      "genetics_type": "proven_mendelian",
+      "zygosity": "homozygous",
+      "description": "세이블 호모. 크림색 도섬, 벨벳 질감 스케일, 해골형 headstamp 패턴. 건강 문제 보고 없음."
+    },
+    {
+      "id": "luwak",
+      "name": "루왁",
+      "name_en": "Luwak",
+      "genes": ["cappuccino", "sable"],
+      "genetics_type": "proven_combo",
+      "description": "카푸치노 × 세이블 복합 헤테로. 양쪽 표현형 혼합. 콧구멍 문제 없음 — 슈퍼 카푸치노의 안전한 대안."
     },
     {
       "id": "frappuccino",
@@ -98,7 +175,25 @@
       "name_en": "Frappuccino",
       "genes": ["cappuccino", "lilly-white"],
       "genetics_type": "proven_combo",
-      "description": "카푸치노 + 릴리 화이트 콤보. 고대비 패턴."
+      "description": "카푸치노 + 릴리 화이트 콤보. 형광 크림/황색 패턴 + 어두운 바탕."
+    },
+    {
+      "id": "sorak",
+      "name": "소락",
+      "name_en": "Sorak",
+      "genes": ["cappuccino", "lilly-white"],
+      "genetics_type": "proven_combo",
+      "zygosity_note": "cappuccino homozygous + lilly-white heterozygous",
+      "description": "슈퍼 카푸치노 × 릴리 화이트. 반투명 어두운 몸 + 형광 패치. 슈퍼 카푸치노와 같은 건강 우려.",
+      "health_warning": "슈퍼 카푸치노 유래 콧구멍 축소 가능."
+    },
+    {
+      "id": "lilly-sable",
+      "name": "릴리 세이블",
+      "name_en": "Lilly Sable",
+      "genes": ["lilly-white", "sable"],
+      "genetics_type": "proven_combo",
+      "description": "릴리 화이트 + 세이블. 순백 꼬리 + 극명한 흑백 대비."
     },
     {
       "id": "phantom-lilly-white",
@@ -106,35 +201,253 @@
       "name_en": "Phantom Lilly White",
       "genes": ["phantom", "lilly-white"],
       "genetics_type": "proven_combo",
-      "description": "매우 어두운 바탕에 극명한 화이트 패턴."
+      "description": "팬텀의 어둠 + 릴리의 흰색 → 고대비."
     },
     {
       "id": "axanthic-lilly-white",
-      "name": "액산틱 릴리 화이트",
+      "name": "아잔틱 릴리 화이트",
       "name_en": "Axanthic Lilly White",
       "genes": ["axanthic", "lilly-white"],
       "genetics_type": "proven_combo",
-      "description": "흑백 바탕의 화이트 패턴 극대화."
+      "description": "흑백 바탕의 화이트 패턴 극대화. 은색~흰색 모노크롬. 극히 희귀."
+    },
+    {
+      "id": "phantom-axanthic",
+      "name": "팬텀 아잔틱",
+      "name_en": "Phantom Axanthic",
+      "genes": ["phantom", "axanthic"],
+      "genetics_type": "proven_combo",
+      "description": "거의 모노크롬. 유령 같은 외형. 두 열성 유전자 결합."
+    },
+    {
+      "id": "phantom-cappuccino",
+      "name": "팬텀 카푸치노",
+      "name_en": "Phantom Cappuccino",
+      "genes": ["phantom", "cappuccino"],
+      "genetics_type": "proven_combo",
+      "description": "이중 어둠 효과. 팬텀 흰색 억제 + 카푸치노 어두운 기저."
+    },
+    {
+      "id": "luwak-lilly",
+      "name": "루왁 릴리",
+      "name_en": "Luwak Lilly",
+      "genes": ["cappuccino", "sable", "lilly-white"],
+      "genetics_type": "proven_combo",
+      "description": "카푸치노 + 세이블 + 릴리 화이트 3중 조합. 매우 희귀."
     }
   ],
   "line_bred_traits": [
-    { "id": "flame", "name": "플레임", "name_en": "Flame", "type": "pattern", "description": "등에 크림/화이트 불꽃 패턴. 가장 기본적인 패턴." },
-    { "id": "harlequin", "name": "할리퀸", "name_en": "Harlequin", "type": "pattern", "description": "플레임 + 측면/사지 패턴 확장." },
-    { "id": "extreme-harlequin", "name": "익스트림 할리퀸", "name_en": "Extreme Harlequin", "type": "pattern", "description": "할리퀸 고표현형. 80%+ 패턴 커버리지." },
-    { "id": "dalmatian", "name": "달마시안", "name_en": "Dalmatian", "type": "spot", "description": "전신 반점. 어떤 패턴과도 조합 가능." },
-    { "id": "tricolor", "name": "트라이컬러", "name_en": "Tricolor", "type": "color_pattern", "description": "세 가지 색상이 명확히 구분." },
-    { "id": "bicolor", "name": "바이컬러", "name_en": "Bicolor", "type": "pattern", "description": "두 색상 명확히 구분." },
-    { "id": "pinstripe", "name": "핀스트라이프", "name_en": "Pinstripe", "type": "structural", "description": "등 측면 융기 비늘 줄. 우성 추정이나 미검증." },
-    { "id": "tiger", "name": "타이거", "name_en": "Tiger", "type": "pattern", "description": "측면 어두운 줄무늬." },
-    { "id": "lavender", "name": "라벤더", "name_en": "Lavender", "type": "color", "description": "회보라~라벤더 기본색." },
-    { "id": "red-base", "name": "레드 베이스", "name_en": "Red Base", "type": "color", "description": "붉은 기본색. 폴리제닉." },
-    { "id": "orange-base", "name": "오렌지 베이스", "name_en": "Orange Base", "type": "color", "description": "오렌지 기본색. 폴리제닉." }
+    {
+      "id": "flame",
+      "name": "플레임",
+      "name_en": "Flame",
+      "type": "pattern",
+      "group": "flame-harlequin",
+      "description": "등에 크림/화이트 불꽃 패턴. 측면·다리 패턴 거의 없음. 할리퀸 스펙트럼의 기본 단계."
+    },
+    {
+      "id": "harlequin",
+      "name": "할리퀸",
+      "name_en": "Harlequin",
+      "type": "pattern",
+      "group": "flame-harlequin",
+      "description": "플레임 + 측면/사지 패턴 확장. 어두운 기저색과 밝은 패턴의 대비."
+    },
+    {
+      "id": "extreme-harlequin",
+      "name": "익스트림 할리퀸",
+      "name_en": "Extreme Harlequin",
+      "type": "pattern",
+      "group": "flame-harlequin",
+      "description": "할리퀸 최고 표현형. 75%+ 패턴 커버리지. 밝은 색이 몸 대부분 차지."
+    },
+    {
+      "id": "tricolor",
+      "name": "트라이컬러",
+      "name_en": "Tricolor",
+      "type": "color_pattern",
+      "group": "flame-harlequin",
+      "description": "3가지 뚜렷한 색상 균등 분포. 대표: 레드/오렌지 + 크림 + 다크 브라운."
+    },
+    {
+      "id": "patternless",
+      "name": "패턴리스",
+      "name_en": "Patternless",
+      "type": "pattern",
+      "group": "flame-harlequin",
+      "description": "전신 단색. 패턴 없음. 플레임-할리퀸 스펙트럼의 0% 지점."
+    },
+    {
+      "id": "bicolor",
+      "name": "바이컬러",
+      "name_en": "Bicolor",
+      "type": "pattern",
+      "group": "flame-harlequin",
+      "description": "패턴리스와 유사하나 등면이 나머지와 약간 다른 톤."
+    },
+    {
+      "id": "tiger",
+      "name": "타이거",
+      "name_en": "Tiger",
+      "type": "pattern",
+      "group": "tiger-brindle",
+      "description": "등에서 측면으로 내려가는 연속적 수직 줄무늬(호랑이 무늬)."
+    },
+    {
+      "id": "brindle",
+      "name": "브린들",
+      "name_en": "Brindle",
+      "type": "pattern",
+      "group": "tiger-brindle",
+      "description": "불규칙하게 파편화된 타이거 줄무늬. 격자/마블 느낌. 타이거와 연속 스펙트럼."
+    },
+    {
+      "id": "pinstripe",
+      "name": "핀스트라이프",
+      "name_en": "Pinstripe",
+      "type": "structural",
+      "group": "pinstripe",
+      "description": "등 양옆 크레스트→꼬리 기저까지 돌출 스케일 2줄. 독립 형질로 모든 패턴과 결합 가능.",
+      "variants": ["full", "partial", "reverse", "inverted", "pin-dashed"]
+    },
+    {
+      "id": "quadstripe",
+      "name": "쿼드스트라이프",
+      "name_en": "Quadstripe",
+      "type": "structural",
+      "group": "pinstripe",
+      "description": "핀스트라이프 2줄 + 등 중앙 2줄 = 총 4줄."
+    },
+    {
+      "id": "superstripe",
+      "name": "슈퍼스트라이프",
+      "name_en": "Superstripe",
+      "type": "structural",
+      "group": "pinstripe",
+      "description": "극도로 두꺼운 핀스트라이프 + 등 중앙 어두운 줄."
+    },
+    {
+      "id": "empty-back",
+      "name": "엠프티 백",
+      "name_en": "Empty Back",
+      "type": "structural",
+      "group": "pinstripe",
+      "description": "핀스트라이프 줄은 밝고 그 사이 등면이 기저색으로 어둡게 채워짐."
+    },
+    {
+      "id": "dalmatian",
+      "name": "달마시안",
+      "name_en": "Dalmatian",
+      "type": "spot",
+      "group": "spot",
+      "description": "전신 검은 반점(25개+). 슈퍼 달마시안 = 100개+. 해칭 시 적고 25g에서 본격 발달."
+    },
+    {
+      "id": "snowflake",
+      "name": "스노우플레이크",
+      "name_en": "Snowflake",
+      "type": "spot",
+      "group": "spot",
+      "description": "흰색 반점이 눈송이처럼 흩뿌려진 형태. 달마시안과 반대로 밝은 점."
+    },
+    {
+      "id": "whitewall",
+      "name": "화이트월",
+      "name_en": "Whitewall",
+      "type": "pattern",
+      "group": "whitewall",
+      "description": "하부 측면에 두꺼운 흰색 벽. 해칭 시부터 존재. 릴리 화이트와 혼동 주의 — 릴리 부모 불필요, 확대 안 됨."
+    },
+    {
+      "id": "chevron",
+      "name": "쉐브론",
+      "name_en": "Chevron",
+      "type": "pattern",
+      "group": "chevron",
+      "description": "등면에 V자 패턴 반복."
+    },
+    {
+      "id": "halloween",
+      "name": "할로윈",
+      "name_en": "Halloween",
+      "type": "color_pattern",
+      "group": "halloween",
+      "description": "진정한 블랙 + 오렌지 조합. 브라운/옐로우 대체는 해당 안 됨."
+    },
+    {
+      "id": "lavender",
+      "name": "라벤더",
+      "name_en": "Lavender",
+      "type": "color",
+      "group": "color",
+      "description": "회보라~라벤더 기본색. 이리도포어 반사 효과. 블루 페이즈 포함."
+    },
+    {
+      "id": "red-base",
+      "name": "레드 베이스",
+      "name_en": "Red Base",
+      "type": "color",
+      "group": "color",
+      "description": "붉은 기본색. 폴리제닉. 네온/파이어트럭/살몬/핑크 세부 분류."
+    },
+    {
+      "id": "orange-base",
+      "name": "오렌지 베이스",
+      "name_en": "Orange Base",
+      "type": "color",
+      "group": "color",
+      "description": "오렌지 기본색. 폴리제닉. 탠저린/하이퍼탠저린은 선별교배 극대화."
+    },
+    {
+      "id": "cream",
+      "name": "크림",
+      "name_en": "Cream",
+      "type": "color",
+      "group": "color",
+      "description": "크림색 기본색."
+    },
+    {
+      "id": "crowned",
+      "name": "크라운드",
+      "name_en": "Crowned",
+      "type": "structural",
+      "group": "structural",
+      "description": "머리가 유독 크고 크레스트가 발달. 구조적 형질."
+    }
   ],
+  "pattern_groups": {
+    "flame-harlequin": {
+      "name": "플레임–할리퀸 계열",
+      "type": "coverage_spectrum",
+      "description": "패턴 커버리지 연속 스펙트럼: 패턴리스(0%) → 바이컬러 → 플레임 → 할리퀸 → 익스트림 할리퀸(75%+). 트라이컬러는 색상 변형."
+    },
+    "tiger-brindle": {
+      "name": "타이거–브린들 계열",
+      "type": "continuity_spectrum",
+      "description": "줄무늬 연속성 스펙트럼: 타이거(연속 줄) ↔ 브린들(파편화)."
+    },
+    "pinstripe": {
+      "name": "핀스트라이프 계열",
+      "type": "structural_variants",
+      "description": "등면 돌출 스케일 줄. 줄 수·두께·배치에 따라 핀/쿼드/슈퍼/엠프티백으로 분류. 독립 형질로 모든 패턴과 결합."
+    },
+    "spot": {
+      "name": "스팟 계열",
+      "type": "spot_variants",
+      "description": "점 유형. 달마시안(어두운 점) vs 스노우플레이크(밝은 점)."
+    }
+  },
   "sources": [
     "kvgeckos.com — Crested Gecko Genetics",
     "rockstargeckos.com — Simplified Perspective",
     "LIL MONSTERS Reptiles — Foundation Genetics",
     "terrariumquest.com — Morphs and Genetics Guide",
-    "ibexotic.com — Crestie Morph Calculator"
+    "ibexotic.com — Crestie Morph Calculator",
+    "tennyscrestedgeckos.com — Morph Guide & Investment Guide 2025",
+    "Gecko Haven — Sable Discovery History",
+    "MorphMarket Morphpedia — Axanthic, Sable, Cappuccino, Lilly White",
+    "Pangea Reptile — Cappuccino/Frappuccino/Melanistic White Paper",
+    "Zen Habitats — Crested Gecko Guide to Morphs",
+    "Fringemorphs — Crested Gecko Morphs"
   ]
 }
