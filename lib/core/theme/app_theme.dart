@@ -5,15 +5,15 @@ class AppTheme {
   AppTheme._();
 
   // 레퍼런스 디자인 색상 팔레트
-  static const _amber = Color(0xFFFF8F00); // Amber 800 — 메인 액센트
-  static const _amberLight = Color(0xFFFFB300); // Amber 600 — 밝은 변형
+  static const _green = Color(0xFF2E7D32); // Green 800 — 메인 액센트
+  static const _greenLight = Color(0xFF4CAF50); // Green 500 — 밝은 변형
   static const _surface = Color(0xFF121212); // 메인 배경
   static const _surfaceContainer = Color(0xFF1E1E1E); // 카드/컨테이너
   static const _surfaceContainerHigh = Color(0xFF2A2A2A); // 상위 컨테이너
 
   static ThemeData get light {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: _amber,
+      seedColor: _green,
       brightness: Brightness.light,
     );
 
@@ -26,12 +26,12 @@ class AppTheme {
 
   static ThemeData get dark {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: _amber,
+      seedColor: _green,
       brightness: Brightness.dark,
     ).copyWith(
-      primary: _amberLight,
+      primary: _greenLight,
       onPrimary: Colors.black,
-      secondary: _amber,
+      secondary: _green,
       surface: _surface,
       onSurface: const Color(0xFFE0E0E0),
       surfaceContainerLowest: const Color(0xFF0A0A0A),
@@ -39,10 +39,10 @@ class AppTheme {
       surfaceContainer: _surfaceContainer,
       surfaceContainerHigh: _surfaceContainerHigh,
       surfaceContainerHighest: const Color(0xFF333333),
-      primaryContainer: const Color(0xFF3A2800),
-      onPrimaryContainer: _amberLight,
-      secondaryContainer: const Color(0xFF2E2000),
-      onSecondaryContainer: const Color(0xFFFFDEA6),
+      primaryContainer: const Color(0xFF003A00),
+      onPrimaryContainer: _greenLight,
+      secondaryContainer: const Color(0xFF002E00),
+      onSecondaryContainer: const Color(0xFFA6F5A6),
       errorContainer: const Color(0xFF3B1010),
       onErrorContainer: const Color(0xFFFFB4AB),
       outline: const Color(0xFF444444),
@@ -85,12 +85,12 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: _surface,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: _amber.withValues(alpha: 0.2),
+        indicatorColor: _green.withValues(alpha: 0.2),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: _amber,
-          foregroundColor: Colors.black,
+          backgroundColor: _green,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -109,12 +109,12 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: _amber, width: 2),
+          borderSide: BorderSide(color: _green, width: 2),
         ),
       ),
       tabBarTheme: TabBarThemeData(
-        indicatorColor: _amber,
-        labelColor: _amberLight,
+        indicatorColor: _green,
+        labelColor: _greenLight,
         unselectedLabelColor: const Color(0xFF9E9E9E),
       ),
       expansionTileTheme: const ExpansionTileThemeData(
