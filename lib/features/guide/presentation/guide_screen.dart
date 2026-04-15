@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/guide_data.dart';
 
@@ -133,9 +134,7 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                 // --- 10단계 절차 ---
                 Text(
                   '신고 절차',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppStyles.subsectionTitle(context),
                 ),
                 const SizedBox(height: 8),
                 ...guide.steps.map((step) {
@@ -167,9 +166,7 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                 // --- 필요 서류 ---
                 Text(
                   '필요 서류',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppStyles.subsectionTitle(context),
                 ),
                 const SizedBox(height: 8),
                 ...guide.requiredDocuments.asMap().entries.map((entry) {
@@ -209,9 +206,7 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
                 // --- FAQ ---
                 Text(
                   '자주 묻는 질문',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppStyles.subsectionTitle(context),
                 ),
                 const SizedBox(height: 8),
                 ...guide.faq.map((item) {

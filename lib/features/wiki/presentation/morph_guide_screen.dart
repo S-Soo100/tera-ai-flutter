@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/morph_genetics.dart';
 import 'wiki_providers.dart';
@@ -114,7 +115,7 @@ class _AlleleGroupBanner extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(group.name, style: textTheme.titleMedium),
+            Text(group.name, style: AppStyles.subsectionTitle(context)),
             const SizedBox(height: 4),
             Text(
               group.description,
@@ -749,9 +750,7 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+        style: AppStyles.subsectionTitle(context),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import 'wiki_providers.dart';
 
@@ -101,7 +102,7 @@ class WikiScreen extends ConsumerWidget {
                     children: [
                       Text(
                         info.speciesNameKo,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: AppStyles.subsectionTitle(context),
                       ),
                       const SizedBox(height: 4),
                       Text(

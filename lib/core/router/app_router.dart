@@ -247,6 +247,8 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
+        height: 65,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) {
           navigationShell.goBranch(
@@ -254,23 +256,26 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
             initialLocation: index == navigationShell.currentIndex,
           );
         },
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: '홈',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),
             selectedIcon: Icon(Icons.menu_book),
             label: '사육 위키',
           ),
           NavigationDestination(
-            icon: Icon(Icons.pets_outlined),
-            selectedIcon: Icon(Icons.pets),
+            icon: Opacity(
+              opacity: 0.7,
+              child: Image.asset('assets/images/logo.png', width: 24, height: 24),
+            ),
+            selectedIcon: Image.asset('assets/images/logo.png', width: 24, height: 24),
             label: '내 개체',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.gavel_outlined),
             selectedIcon: Icon(Icons.gavel),
             label: '자진신고',
