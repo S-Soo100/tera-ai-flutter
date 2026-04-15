@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../../wiki/presentation/wiki_providers.dart';
 import '../domain/pet.dart';
@@ -34,6 +36,7 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
   bool _isCustomSpecies = false;
   bool _initialized = false;
   File? _selectedPhoto;
+  File? _existingLocalPhoto;
 
   static final List<MapEntry<String, String>> _speciesOptions = [
     ...CareInfoRepository.speciesNames.entries,
@@ -88,6 +91,16 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
     // 실제 판별은 build에서 morphDataProvider 로드 후 처리
     if (pet.morph != null && pet.morph!.isNotEmpty) {
       _selectedMorph = pet.morph;
+    }
+
+    // photoPath가 로컬 파일이면 File 객체로 로드
+    if (pet.photoPath != null &&
+        pet.photoPath!.isNotEmpty &&
+        !pet.photoPath!.startsWith('http')) {
+      final file = File(pet.photoPath!);
+      if (file.existsSync()) {
+        _existingLocalPhoto = file;
+      }
     }
   }
 
@@ -145,7 +158,15 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
         ? _memoController.text.trim()
         : null;
     if (_selectedPhoto != null) {
-      original.photoPath = _selectedPhoto!.path;
+      final dir = await getApplicationDocumentsDirectory();
+      final petPhotosDir = Directory('${dir.path}/pet_photos');
+      if (!petPhotosDir.existsSync()) {
+        petPhotosDir.createSync(recursive: true);
+      }
+      final ext = _selectedPhoto!.path.split('.').last;
+      final fileName = '${const Uuid().v4()}.$ext';
+      final savedFile = await _selectedPhoto!.copy('${petPhotosDir.path}/$fileName');
+      original.photoPath = savedFile.path;
     }
 
     await ref.read(petListProvider.notifier).update(original);
@@ -178,8 +199,13 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
           children: [
             // 사진
             PhotoPickerButton(
-              currentPhoto: _selectedPhoto,
-              currentPhotoUrl: _selectedPhoto == null ? pet.photoPath : null,
+              currentPhoto: _selectedPhoto ?? _existingLocalPhoto,
+              currentPhotoUrl: _selectedPhoto == null &&
+                      _existingLocalPhoto == null &&
+                      pet.photoPath != null &&
+                      pet.photoPath!.startsWith('http')
+                  ? pet.photoPath
+                  : null,
               onPhotoPicked: (file) => setState(() => _selectedPhoto = file),
             ),
             const SizedBox(height: 16),

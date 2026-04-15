@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../../wiki/presentation/wiki_providers.dart';
@@ -91,6 +92,19 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
         ? double.tryParse(_weightController.text.trim())
         : null;
 
+    String? photoPath;
+    if (_selectedPhoto != null) {
+      final dir = await getApplicationDocumentsDirectory();
+      final petPhotosDir = Directory('${dir.path}/pet_photos');
+      if (!petPhotosDir.existsSync()) {
+        petPhotosDir.createSync(recursive: true);
+      }
+      final ext = _selectedPhoto!.path.split('.').last;
+      final fileName = '${const Uuid().v4()}.$ext';
+      final savedFile = await _selectedPhoto!.copy('${petPhotosDir.path}/$fileName');
+      photoPath = savedFile.path;
+    }
+
     final pet = Pet(
       id: const Uuid().v4(),
       name: _nameController.text.trim(),
@@ -101,7 +115,7 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
       birthDate: _birthDate,
       adoptionDate: _adoptionDate,
       weight: weight,
-      photoPath: _selectedPhoto?.path,
+      photoPath: photoPath,
       memo: _memoController.text.trim().isNotEmpty
           ? _memoController.text.trim()
           : null,
