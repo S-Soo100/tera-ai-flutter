@@ -28,6 +28,15 @@ class ChatMessage extends HiveObject {
   @HiveField(7)
   final String? knowledgeEntryId;
 
+  @HiveField(8)
+  final List<String> citationIds;
+
+  @HiveField(9)
+  final String? sourceType; // "care_data" | "general_knowledge" | "web_search"
+
+  @HiveField(10)
+  final List<String> webSources; // 웹 검색 출처 ["title|url", ...]
+
   ChatMessage({
     required this.id,
     required this.conversationId,
@@ -37,5 +46,8 @@ class ChatMessage extends HiveObject {
     this.tokenCount,
     this.fromCache = false,
     this.knowledgeEntryId,
+    this.citationIds = const [],
+    this.sourceType,
+    this.webSources = const [],
   });
 }

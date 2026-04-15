@@ -398,40 +398,71 @@ Day 10: 비슷한 탈피 질문
 
 ## 9. 출처 시스템
 
-### 9.1 앱 데이터 출처
+### 9.1 출처 데이터 관리
 
-care_info JSON의 `sources` 필드에서 가져옴. URL은 `ContextBuilder._sourceUrls`에 하드코딩 매핑.
+출처는 `assets/data/citations.json`에서 중앙 관리 (28개). 각 care_info JSON의 `citation_ids` 필드로 참조.
 
-**현재 등록된 출처 (11개):**
+| 종 | citation_ids 수 | 주요 출처 |
+|----|----------------|----------|
+| 레오파드 게코 | 6 | ReptiFiles, Bio Dude, Zen Habitats, Reptizen 등 |
+| 크레스티드 게코 | 3 | ReptiFiles, Pangea Reptile, Reptropolis |
+| 펫테일 게코 | 4 | ReptiFiles, Gecko Time, Josh's Frogs, Reptile Magazine |
 
-| 출처명 | URL |
-|--------|-----|
-| ReptiFiles — Leopard Gecko Care | reptifiles.com/leopard-gecko-care/ |
-| ReptiFiles — Crested Gecko Care | reptifiles.com/crested-gecko-care/ |
-| ReptiFiles — AFT Care Sheet | reptifiles.com/african-fat-tailed-gecko-care/ |
-| Pangea Reptile — Care Guide | pangeareptile.com/store/crested-gecko-care-sheet |
-| The Bio Dude — Leopard Gecko Caresheet 2024 | thebiodude.com/blogs/how-to-guides/leopard-gecko-care-sheet |
-| Zen Habitats — Substrate Guide | zenhabitats.com/blogs/reptile-care-sheets |
-| Reptizen — Feeding Guide 2025 | reptizen.com/ |
-| Gecko Time — Fat-tailed Gecko Husbandry | geckotime.com/african-fat-tailed-gecko/ |
-| Josh's Frogs — AFT Care Guide | joshsfrogs.com/catalog/blog/care-sheets/ |
-| Reptile Magazine — Species Profile | reptilesmagazine.com/ |
-| Reptropolis — Crested Gecko Care | reptropolis.com/ |
+`CitationRepository`가 JSON을 로드하여 ID 기반 조회 (`hydrate()`) 제공.
 
-### 9.2 출처 표시 규칙
+### 9.2 출처 표시 아키텍처
 
-| 상황 | 출처 표시 |
-|------|----------|
-| 카테고리 매칭 + care_info 주입됨 | 📎 출처: (앱 데이터 출처 + URL) |
-| 카테고리 미매칭 (기본 정보만) | 출처 미표시 |
-| 일반 지식으로만 답변 | ⚠️ 일반 지식 기반입니다 |
-| AI가 실제 활용한 출처만 | LLM 판단에 위임 |
+출처는 `ChatMessage`의 **구조적 필드**로 관리 (content 문자열에 삽입하지 않음):
 
-### 9.3 현재 한계
+| HiveField | 필드 | 타입 | 용도 |
+|-----------|------|------|------|
+| 8 | `citationIds` | `List<String>` | Citation ID 리스트 |
+| 9 | `sourceType` | `String?` | `"care_data"` / `"web_search"` / `"general_knowledge"` |
+| 10 | `webSources` | `List<String>` | 웹 검색 출처 (`"title|url"` 형식) |
 
-- LLM이 출처 규칙을 일관되게 따르지 않음 (llama-3.3-70b 한계)
-- 외부 URL은 LLM이 정확히 기억하지 못함 → 앱 데이터 출처 URL만 신뢰 가능
+**sourceType 결정 로직** (`chat_providers.dart`):
+1. `citationIds`가 있으면 → `care_data`
+2. `webSources`가 있으면 → `web_search`
+3. 둘 다 없으면 → `general_knowledge`
+
+### 9.3 출처 표시 UI
+
+| sourceType | 표시 | 위젯 |
+|-----------|------|------|
+| `care_data` | 인라인 칩 (`[ReptiFiles🔗] [Pangea🔗]`) | `_CitationChips` (ConsumerWidget) |
+| `web_search` | 웹 출처 칩 (🌐 아이콘) | `_WebSourceChips` |
+| `general_knowledge` | 면책 배지 ("AI 학습 데이터 기반 · 전문가 확인 권장") | `_GeneralKnowledgeBadge` |
+| 레거시 (null) | content에서 `\n\n출처:\n` 패턴 파싱 | `_parseContentBody()` |
+
+칩 탭 → `url_launcher`로 외부 브라우저 열기.
+
+### 9.4 웹 검색 통합
+
+모든 질문에 DuckDuckGo Lite 웹 검색을 **비동기 병행** 실행하여 LLM 컨텍스트에 보조 정보 주입.
+
+| 항목 | 내용 |
+|------|------|
+| 엔진 | DuckDuckGo Lite (HTML 파싱) |
+| API 키 | 불필요 |
+| 결과 수 | 최대 3건 |
+| 타임아웃 | 5초 |
+| 실패 시 | graceful degradation (빈 결과, 앱 정상 작동) |
+| 쿼리 구성 | `"{종 이름} 사육 {질문(80자 제한)}"` |
+| 트리거 | 항상 (care_info 유무 무관) |
+
+웹 검색 결과는 시스템 프롬프트의 `[웹 검색 참고]` 섹션으로 주입되며, 출처 URL은 `ChatMessage.webSources`에 저장.
+
+### 9.5 레거시 호환
+
+기존 메시지 (citationIds/sourceType 필드 없음)는 content 문자열을 파싱하여 처리:
+- `\n\n출처:\n` 패턴 → 본문만 추출
+- `\n\n일반 지식 기반 답변입니다.` 패턴 → 면책 배지 표시
+
+### 9.6 현재 한계
+
+- DuckDuckGo HTML 파싱은 구조 변경 시 무음 실패 가능 (graceful degradation으로 앱 영향 없음)
 - AI의 "일반 지식" 답변은 hallucination 위험 존재
+- care_data와 web_search 출처가 동시에 존재할 수 있으나 sourceType은 단일 값 (primary source 기준)
 
 ---
 
@@ -441,10 +472,10 @@ care_info JSON의 `sources` 필드에서 가져옴. URL은 `ContextBuilder._sour
 
 | 한계 | 영향 | 개선 방안 |
 |------|------|---------|
-| llama-3.3-70b의 출처 표기 불일관 | 출처 누락/과다 나열 | 모델 업그레이드 또는 후처리 로직 |
+| llama-3.3-70b의 출처 표기 불일관 | 출처 누락/과다 나열 | 앱 레이어에서 구조적 출처 관리로 해결됨 |
 | 3종 외 종에 대한 hallucination | 잘못된 정보 제공 가능 | 프롬프트 가드레일 (구현됨) |
 | 한국어 뉘앙스 부족 | 간혹 어색한 표현 | 한국어 특화 모델 검토 |
-| 외부 URL 기억 못함 | 참고 자료 링크 부재 | 앱 데이터 출처만 신뢰, 외부는 포기 |
+| 외부 URL 기억 못함 | 참고 자료 링크 부재 | DuckDuckGo 웹 검색 + citation_ids로 해결됨 |
 
 ### 10.2 키워드 매칭 관련
 
@@ -485,7 +516,8 @@ care_info JSON의 `sources` 필드에서 가져옴. URL은 `ContextBuilder._sour
 | 한도 관리 | Hive (기기별) | 서버 유저별 관리 |
 | 지식 검색 | 키워드 매칭 | 벡터 임베딩 유사도 |
 | 지식 검증 | 없음 | 관리자 리뷰 |
-| 출처 관리 | 하드코딩 매핑 | DB 테이블 |
+| 출처 관리 | citations.json + citation_ids | Supabase `citations` 테이블 |
+| 웹 검색 | DuckDuckGo Lite (클라이언트) | Edge Function 프록시 |
 
 **마이그레이션 방법:** Repository 구현체만 교체. Provider/UI 레이어 변경 없음.
 

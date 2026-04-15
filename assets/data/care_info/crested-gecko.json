@@ -67,7 +67,11 @@
     "Reptropolis — Crested Gecko Care",
     "Zen Habitats — Substrate Guide"
   ],
-  "citation_ids": [],
+  "citation_ids": [
+    "cit-reptifiles-crested-01",
+    "cit-pangea-crested-01",
+    "cit-reptropolis-crested-01"
+  ],
   "graph_entity_id": "ent-species-crested",
   "_note": "P0.5 큐레이션 대기"
 }

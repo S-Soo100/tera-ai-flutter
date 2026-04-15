@@ -119,6 +119,27 @@ SkeletonListLoading(itemCount: 5)
 
 > **규칙**: `CircularProgressIndicator` 사용 금지. 모든 로딩 상태는 스켈레톤 UI 사용.
 
+### `CitationCard` (`lib/shared/widgets/citation_card.dart`)
+
+Wiki 상세 화면용 풀사이즈 출처 카드. confidence 배지 + type 칩 + 외부 링크.
+
+```dart
+CitationCard(citation: citation)
+```
+
+### 채팅 출처 위젯 (`lib/features/chat/presentation/widgets/chat_bubble.dart`)
+
+채팅 버블 내 인라인 출처 표시. 3가지 타입:
+
+| 위젯 | 용도 | 배경색 |
+|------|------|--------|
+| `_CitationChips` | care_info 출처 칩 | `primaryContainer` 40% |
+| `_WebSourceChips` | 웹 검색 출처 칩 | `tertiaryContainer` 40% |
+| `_GeneralKnowledgeBadge` | 면책 배지 | `errorContainer` 30% |
+
+- 칩: publisher명 + 외부링크 아이콘, 탭 시 URL 열기
+- 면책 배지: "AI 학습 데이터 기반 · 전문가 확인 권장"
+
 ---
 
 ## 3. 테마 (`lib/core/theme/app_theme.dart`)

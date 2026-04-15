@@ -25,13 +25,16 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
       tokenCount: fields[5] as int?,
       fromCache: fields[6] as bool,
       knowledgeEntryId: fields[7] as String?,
+      citationIds: (fields[8] as List?)?.cast<String>() ?? const [],
+      sourceType: fields[9] as String?,
+      webSources: (fields[10] as List?)?.cast<String>() ?? const [],
     );
   }
 
   @override
   void write(BinaryWriter writer, ChatMessage obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +50,13 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
       ..writeByte(6)
       ..write(obj.fromCache)
       ..writeByte(7)
-      ..write(obj.knowledgeEntryId);
+      ..write(obj.knowledgeEntryId)
+      ..writeByte(8)
+      ..write(obj.citationIds)
+      ..writeByte(9)
+      ..write(obj.sourceType)
+      ..writeByte(10)
+      ..write(obj.webSources);
   }
 
   @override
