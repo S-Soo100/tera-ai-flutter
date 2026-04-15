@@ -283,6 +283,18 @@ class MorphGeneticsData {
 
   List<String> get selectableMorphNames => morphs.map((m) => m.name).toList();
 
+  /// 개체 등록용 — 멘델 모프 + 라인브리드 형질 이름 합산 (중복 제거)
+  List<String> get allSelectableNames {
+    final names = <String>{};
+    for (final m in morphs) {
+      names.add(m.name);
+    }
+    for (final t in lineBredTraits) {
+      names.add(t.name);
+    }
+    return names.toList();
+  }
+
   AlleleGroup? alleleGroupFor(String geneId) {
     for (final group in alleleGroups) {
       if (group.members.contains(geneId)) return group;

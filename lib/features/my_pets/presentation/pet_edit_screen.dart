@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../wiki/data/care_info_repository.dart';
+import '../../wiki/presentation/wiki_providers.dart';
 import '../domain/pet.dart';
 import 'my_pets_providers.dart';
 import 'widgets/photo_picker_button.dart';
@@ -38,51 +39,6 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
     ...CareInfoRepository.speciesNames.entries,
     const MapEntry('custom', '기타 (직접입력)'),
   ];
-
-  static const Map<String, List<String>> _morphsBySpecies = {
-    'leopard-gecko': [
-      '노멀',
-      '하이 옐로',
-      '탱제린',
-      '슈퍼 하이포 탱제린',
-      '마크 벨 알비노',
-      '트렘퍼 알비노',
-      '레인워터 알비노',
-      '블리자드',
-      '머피 패턴리스',
-      '엑립스',
-      '라프터',
-      '볼드 스트라이프',
-      '정글',
-      '자이언트',
-      '슈퍼 자이언트',
-      '블랙 나이트',
-    ],
-    'crested-gecko': [
-      '노멀',
-      '플레임',
-      '할리퀸',
-      '달마시안',
-      '릴리 화이트',
-      '핀스트라이프',
-      '팬텀',
-      '트라이 컬러',
-      '레드',
-      '옐로',
-      '크림',
-    ],
-    'fat-tailed-gecko': [
-      '노멀',
-      '화이트 아웃',
-      '오레오',
-      '제로',
-      '파타너리스',
-      '스트라이프',
-      '탱제린',
-      '알비노',
-      '카라멜 알비노',
-    ],
-  };
 
   @override
   void initState() {
@@ -127,18 +83,12 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
       _customSpeciesController.text = pet.speciesName;
     }
 
-    // 모프 판별
-    final morphList = _morphsBySpecies[pet.speciesId] ?? [];
-    if (morphList.contains(pet.morph)) {
+    // 모프 판별 — 비동기 로드 전이므로 일단 값만 저장
+    // 드롭다운에 없는 모프면 _morphController에, 있으면 _selectedMorph에 설정됨
+    // 실제 판별은 build에서 morphDataProvider 로드 후 처리
+    if (pet.morph != null && pet.morph!.isNotEmpty) {
       _selectedMorph = pet.morph;
-    } else {
-      _morphController.text = pet.morph ?? '';
     }
-  }
-
-  List<String> get _currentMorphList {
-    if (_selectedSpeciesId == null || _isCustomSpecies) return [];
-    return _morphsBySpecies[_selectedSpeciesId] ?? [];
   }
 
   Future<void> _pickDate({required bool isBirth}) async {
@@ -174,11 +124,10 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
         ? _customSpeciesController.text.trim()
         : CareInfoRepository.speciesNames[_selectedSpeciesId] ?? '';
 
-    final morph = _currentMorphList.isNotEmpty
-        ? _selectedMorph
-        : _morphController.text.trim().isNotEmpty
+    final morph = _selectedMorph ??
+        (_morphController.text.trim().isNotEmpty
             ? _morphController.text.trim()
-            : null;
+            : null);
 
     final weight = _weightController.text.trim().isNotEmpty
         ? double.tryParse(_weightController.text.trim())
@@ -296,20 +245,71 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
             const SizedBox(height: 16),
 
             // 모프
-            if (_currentMorphList.isNotEmpty)
-              DropdownButtonFormField<String>(
-                value: _selectedMorph,
-                decoration: const InputDecoration(
-                  labelText: '모프',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('선택 안 함')),
-                  ..._currentMorphList.map(
-                    (m) => DropdownMenuItem(value: m, child: Text(m)),
-                  ),
-                ],
-                onChanged: (v) => setState(() => _selectedMorph = v),
+            if (_selectedSpeciesId != null && !_isCustomSpecies)
+              Consumer(
+                builder: (context, ref, _) {
+                  final morphAsync =
+                      ref.watch(morphDataProvider(_selectedSpeciesId!));
+                  return morphAsync.when(
+                    data: (data) {
+                      final morphNames = data.allSelectableNames;
+                      if (morphNames.isEmpty) {
+                        return TextFormField(
+                          controller: _morphController,
+                          decoration: const InputDecoration(
+                            labelText: '모프',
+                            hintText: '모프 정보 (선택사항)',
+                            border: OutlineInputBorder(),
+                          ),
+                        );
+                      }
+                      // 현재 선택된 모프가 목록에 없으면 _morphController로 이동
+                      if (_selectedMorph != null &&
+                          !morphNames.contains(_selectedMorph)) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            setState(() {
+                              _morphController.text = _selectedMorph!;
+                              _selectedMorph = null;
+                            });
+                          }
+                        });
+                      }
+                      return DropdownButtonFormField<String>(
+                        value: morphNames.contains(_selectedMorph)
+                            ? _selectedMorph
+                            : null,
+                        decoration: const InputDecoration(
+                          labelText: '모프',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                              value: null, child: Text('선택 안 함')),
+                          ...morphNames.map(
+                            (m) => DropdownMenuItem(value: m, child: Text(m)),
+                          ),
+                        ],
+                        onChanged: (v) => setState(() => _selectedMorph = v),
+                      );
+                    },
+                    loading: () => const InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: '모프',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text('로딩 중...'),
+                    ),
+                    error: (_, __) => TextFormField(
+                      controller: _morphController,
+                      decoration: const InputDecoration(
+                        labelText: '모프',
+                        hintText: '모프 정보 (선택사항)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  );
+                },
               )
             else
               TextFormField(
