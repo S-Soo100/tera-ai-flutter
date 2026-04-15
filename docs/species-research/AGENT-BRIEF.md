@@ -95,13 +95,16 @@
 
 ---
 
-## 주의사항
+## 구현 현황 (2026-04-14 업데이트)
 
-- `allele_groups`는 새 섹션이므로 **파서가 이 필드를 읽을 수 있는지 확인** 필요
-- `pattern_groups`도 새 섹션 — 위키 UI에서 활용하려면 모델 클래스 확장 필요
-- `line_bred_traits`의 `group` 필드도 신규 — 기존 파서와 호환성 체크
-- `zygosity` 필드가 일부 morphs에 추가됨 (super-cappuccino, super-sable, sorak)
-- JSON 스키마 변경이므로 **기존 Hive/모델 클래스 업데이트 후 적용** 권장
+| 레이어 | 상태 | 비고 |
+|--------|------|------|
+| 데이터 (JSON) | 완성 | genes 6, morphs 17, traits 22, allele_groups, pattern_groups |
+| 모델 클래스 | 완성 | AlleleGroup, PatternGroup, AlleleGroupCrossResult 신규. MorphGene/MorphEntry/LineBredTrait/MorphGeneticsData 확장 |
+| 퍼넷 스퀘어 엔진 | 완성 | 단일/다중 좌위, 대립유전자 복합체, 건강 경고, 치사 마킹 |
+| 모프 도감 UI | 완성 | 3탭 (유전자/콤보/형질), allele_groups 배너, pattern_groups 그룹핑 |
+| 모프 계산기 UI | 완성 | 퍼넷 엔진 연동, het 선택, 확률 결과 카드 |
+| Supabase DB | 완성 | allele_groups, pattern_groups JSONB 컬럼 추가 + 시드 동기화 |
 
 ---
 

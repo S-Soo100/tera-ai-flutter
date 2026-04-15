@@ -17,6 +17,7 @@ class WikiScreen extends ConsumerWidget {
     ('enclosure', '🏠 사육장'),
     ('diet', '🍽️ 먹이'),
     ('mistakes', '⚠️ 초보 실수'),
+    ('morph-guide', '📖 모프 도감'),
     ('morph-calc', '🧬 모프 계산기'),
     ('compare', '📋 종 비교'),
     ('ai-chat', '🤖 AI에게 물어보기'),
@@ -152,6 +153,8 @@ class WikiScreen extends ConsumerWidget {
                     onTap: () {
                       if (categoryId == 'compare') {
                         context.push('/wiki/compare');
+                      } else if (categoryId == 'morph-guide') {
+                        context.push('/wiki/$selectedSpecies/morph-guide');
                       } else if (categoryId == 'morph-calc') {
                         context.push('/wiki/$selectedSpecies/morph-calc');
                       } else if (categoryId == 'ai-chat') {

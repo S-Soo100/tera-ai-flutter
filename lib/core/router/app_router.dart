@@ -7,6 +7,7 @@ import '../../features/wiki/presentation/wiki_screen.dart';
 import '../../features/wiki/presentation/wiki_detail_screen.dart';
 import '../../features/wiki/presentation/species_compare_screen.dart';
 import '../../features/wiki/presentation/morph_calc_screen.dart';
+import '../../features/wiki/presentation/morph_guide_screen.dart';
 import '../../features/wiki/presentation/graph_detail_screen.dart';
 import '../../features/my_pets/presentation/my_pets_screen.dart';
 import '../../features/my_pets/presentation/pet_add_screen.dart';
@@ -69,6 +70,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final speciesId = state.pathParameters['speciesId'] ?? '';
                       return MorphCalcScreen(speciesId: speciesId);
+                    },
+                  ),
+                  GoRoute(
+                    path: ':speciesId/morph-guide',
+                    builder: (context, state) {
+                      final speciesId = state.pathParameters['speciesId'] ?? '';
+                      return MorphGuideScreen(speciesId: speciesId);
                     },
                   ),
                   GoRoute(

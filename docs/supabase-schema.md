@@ -76,6 +76,8 @@ CREATE TABLE morph_genetics (
   genes            JSONB NOT NULL,
   morphs           JSONB NOT NULL,
   line_bred_traits JSONB,
+  allele_groups    JSONB DEFAULT '{}',
+  pattern_groups   JSONB DEFAULT '{}',
   notes            JSONB,
   created_at       TIMESTAMPTZ DEFAULT now(),
   updated_at       TIMESTAMPTZ DEFAULT now()
