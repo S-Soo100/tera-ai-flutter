@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -160,12 +161,17 @@ class _PetCard extends StatelessWidget {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: isNetwork
-            ? Image.network(
-                pet.photoPath!,
+            ? CachedNetworkImage(
+                imageUrl: pet.photoPath!,
                 width: 56,
                 height: 56,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildIconAvatar(context),
+                placeholder: (_, __) => Container(
+                  width: 56,
+                  height: 56,
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                ),
+                errorWidget: (_, __, ___) => _buildIconAvatar(context),
               )
             : Image.file(
                 File(pet.photoPath!),

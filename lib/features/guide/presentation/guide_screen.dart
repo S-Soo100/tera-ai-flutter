@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/guide_data.dart';
 
 final guideDataProvider = FutureProvider<GuideData>((ref) async {
@@ -31,7 +32,7 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
         title: const Text('자진신고 가이드'),
       ),
       body: guideAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SkeletonPageLoading(cardCount: 4),
         error: (err, stack) => Center(
           child: Text('데이터를 불러오지 못했어요\n$err', textAlign: TextAlign.center),
         ),

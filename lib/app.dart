@@ -15,7 +15,7 @@ class App extends ConsumerWidget {
       title: 'app_name'.tr(),
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.dark,
+      themeMode: ThemeMode.system,
       routerConfig: router,
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
 import 'wiki_providers.dart';
 
 class WikiScreen extends ConsumerWidget {
@@ -77,8 +78,8 @@ class WikiScreen extends ConsumerWidget {
           // Summary card
           careInfoAsync.when(
             loading: () => const Padding(
-              padding: EdgeInsets.all(32),
-              child: Center(child: CircularProgressIndicator()),
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SkeletonCard(lineCount: 4),
             ),
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(16),

@@ -1,7 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../shared/widgets/skeleton_loading.dart';
 import '../../domain/media_item.dart';
 import '../my_pets_providers.dart';
 
@@ -25,7 +27,7 @@ class MediaGallery extends ConsumerWidget {
             Text('media_gallery'.tr(), style: theme.textTheme.titleMedium),
             const SizedBox(height: 12),
             mediaAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const SkeletonListLoading(itemCount: 3),
               error: (e, _) => Text('$e'),
               data: (items) {
                 if (items.isEmpty) {
@@ -75,10 +77,13 @@ class _MediaTile extends ConsumerWidget {
       onLongPress: () => _confirmDelete(context, ref),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          item.url,
+        child: CachedNetworkImage(
+          imageUrl: item.url,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
+          placeholder: (_, __) => Container(
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          ),
+          errorWidget: (_, __, ___) => Container(
             color: Theme.of(context).colorScheme.surfaceContainerHigh,
             child: const Icon(Icons.broken_image),
           ),
@@ -96,7 +101,13 @@ class _MediaTile extends ConsumerWidget {
         child: GestureDetector(
           onTap: () => ctx.pop(),
           child: InteractiveViewer(
-            child: Image.network(item.url),
+            child: CachedNetworkImage(
+              imageUrl: item.url,
+              placeholder: (_, __) => const Center(
+                child: SkeletonLoading(width: 200, height: 200, borderRadius: 8),
+              ),
+              errorWidget: (_, __, ___) => const Icon(Icons.broken_image, size: 64, color: Colors.white),
+            ),
           ),
         ),
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/morph_genetics.dart';
 import 'wiki_providers.dart';
 
@@ -15,7 +16,7 @@ class MorphGuideScreen extends ConsumerWidget {
     return morphAsync.when(
       loading: () => Scaffold(
         appBar: AppBar(title: const Text('모프 도감')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const SkeletonPageLoading(cardCount: 4),
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: const Text('모프 도감')),

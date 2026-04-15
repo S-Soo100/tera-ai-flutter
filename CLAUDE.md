@@ -145,3 +145,4 @@ flutter test             # 테스트 실행
 - dio로 실제 API 호출하지 않기 (P0은 로컬 전용)
 - flutter_secure_storage 실제 사용하지 않기 (P2 대비 의존성만 포함)
 - 새 패키지 추가 시 사용자 승인 없이 pubspec.yaml 수정하지 않기
+- **CircularProgressIndicator 사용 금지** — 로딩 상태는 항상 `shimmer` 패키지의 스켈레톤 UI를 사용할 것

@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
 import '../../auth/data/auth_repository.dart';
 import '../domain/user_profile.dart';
 import 'profile_providers.dart';
@@ -101,7 +103,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(title: Text('profile_title'.tr())),
       body: profileAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SkeletonPageLoading(cardCount: 3),
         error: (e, _) => Center(child: Text('$e')),
         data: (profile) {
           _initFromProfile(profile);
@@ -119,7 +121,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         radius: 60,
                         backgroundColor: colorScheme.surfaceContainerHigh,
                         backgroundImage: profile?.avatarUrl != null
-                            ? NetworkImage(profile!.avatarUrl!)
+                            ? CachedNetworkImageProvider(profile!.avatarUrl!)
                             : null,
                         child: profile?.avatarUrl == null
                             ? Icon(Icons.person, size: 48, color: colorScheme.onSurfaceVariant)
