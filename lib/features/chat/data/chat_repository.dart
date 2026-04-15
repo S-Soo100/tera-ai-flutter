@@ -35,6 +35,15 @@ class ChatRepository {
   // Conversation CRUD
 
   List<Conversation> getAllConversations() {
+    // 빈 세션(메시지 0개) 자동 정리 — 기존에 쌓인 빈 세션도 제거
+    final emptyIds = _convBox.values
+        .where((c) => !c.isArchived && c.messageCount == 0)
+        .map((c) => c.id)
+        .toList();
+    for (final id in emptyIds) {
+      _convBox.delete(id);
+    }
+
     return _convBox.values
         .where((c) => !c.isArchived)
         .toList()

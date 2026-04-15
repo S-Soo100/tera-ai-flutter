@@ -26,6 +26,7 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   late String _conversationId;
+  late bool _isNewConversation;
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
@@ -35,16 +36,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.initState();
     if (widget.conversationId == null) {
       _conversationId = const Uuid().v4();
-      final conv = Conversation(
-        id: _conversationId,
-        title: '새 대화',
-        petId: widget.petId,
-        speciesId: widget.speciesId,
-        createdAt: DateTime.now(),
-      );
-      ref.read(chatRepositoryProvider).createConversation(conv);
+      _isNewConversation = true;
     } else {
       _conversationId = widget.conversationId!;
+      _isNewConversation = false;
     }
   }
 
@@ -75,23 +70,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _textController.clear();
     _scrollToBottom();
 
+    if (_isNewConversation) {
+      final chatRepo = ref.read(chatRepositoryProvider);
+      if (chatRepo.getConversation(_conversationId) == null) {
+        final conv = Conversation(
+          id: _conversationId,
+          title: trimmed.length > 30 ? trimmed.substring(0, 30) : trimmed,
+          petId: widget.petId,
+          speciesId: widget.speciesId,
+          createdAt: DateTime.now(),
+        );
+        await chatRepo.createConversation(conv);
+      }
+      _isNewConversation = false;
+    }
+
     final notifier =
         ref.read(chatMessagesProvider(_conversationId).notifier);
     await notifier.sendMessage(trimmed);
-
-    // 첫 메시지이면 대화 제목 업데이트
-    final messages =
-        ref.read(chatMessagesProvider(_conversationId)).messages;
-    if (messages.length <= 2) {
-      final chatRepo = ref.read(chatRepositoryProvider);
-      final conv = chatRepo.getConversation(_conversationId);
-      if (conv != null && conv.title == '새 대화') {
-        final newTitle =
-            trimmed.length > 30 ? trimmed.substring(0, 30) : trimmed;
-        conv.title = newTitle;
-        await chatRepo.updateConversation(conv);
-      }
-    }
 
     _scrollToBottom();
   }
@@ -136,7 +132,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          conv?.title ?? 'AI 채팅',
+          conv?.title ?? '새 대화',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
