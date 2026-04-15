@@ -19,6 +19,7 @@ Future<void> main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
   await ChatRepository.init();
+  await Hive.openBox('app_settings');
 
   await EasyLocalization.ensureInitialized();
 

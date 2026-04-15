@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/auth_repository.dart';
 
@@ -17,6 +18,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final lastEmail =
+        Hive.box('app_settings').get('last_login_email') as String?;
+    if (lastEmail != null) {
+      _emailController.text = lastEmail;
+    }
+  }
 
   @override
   void dispose() {
@@ -29,10 +41,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
+      final email = _emailController.text.trim();
       await ref.read(authRepositoryProvider).signIn(
-            email: _emailController.text.trim(),
+            email: email,
             password: _passwordController.text,
           );
+      await Hive.box('app_settings').put('last_login_email', email);
       if (mounted) context.go('/home');
     } on AuthException catch (e) {
       if (mounted) {
@@ -105,8 +119,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     decoration: InputDecoration(
                       labelText: 'auth_password'.tr(),
                       prefixIcon: const Icon(Icons.lock_outlined),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
                     ),
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                     validator: (v) {
                       if (v == null || v.isEmpty) {
                         return 'auth_password_required'.tr();

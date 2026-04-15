@@ -20,16 +20,30 @@ import '../../features/chat/presentation/chat_screen.dart';
 import '../../features/chat/presentation/chat_list_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
+import '../../features/auth/presentation/email_verification_screen.dart';
 import '../../features/auth/presentation/auth_providers.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 
+/// 인증 상태 변경 시 redirect만 재평가 (GoRouter 재생성 방지)
+class _AuthChangeNotifier extends ChangeNotifier {
+  void notify() => notifyListeners();
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final isAuthenticated = ref.watch(isAuthenticatedProvider);
+  final authNotifier = _AuthChangeNotifier();
+  ref.listen(isAuthenticatedProvider, (_, __) {
+    authNotifier.notify();
+  });
 
   return GoRouter(
     initialLocation: '/splash',
+    refreshListenable: authNotifier,
     redirect: (context, state) {
+      final isAuthenticated = ref.read(isAuthenticatedProvider);
       final path = state.uri.path;
+
+      // 스플래시는 앱 시작 시에만 — redirect 간섭 없음
+      if (path == '/splash') return null;
 
       // 인증 필요 없는 공개 경로
       const publicPaths = [
@@ -40,6 +54,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/search',
         '/login',
         '/signup',
+        '/verify-email',
         '/error',
       ];
       final isPublic = publicPaths.any(
@@ -49,7 +64,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (!isAuthenticated && !isPublic) {
         return '/login';
       }
-      if (isAuthenticated && (path == '/login' || path == '/signup')) {
+      if (isAuthenticated &&
+          (path == '/login' ||
+              path == '/signup' ||
+              path == '/verify-email')) {
         return '/home';
       }
       return null;
@@ -203,6 +221,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/signup',
         builder: (context, state) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return EmailVerificationScreen(email: email);
+        },
       ),
       GoRoute(
         path: '/profile',

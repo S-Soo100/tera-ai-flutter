@@ -150,6 +150,12 @@
   "auth_password_mismatch": "비밀번호가 일치하지 않습니다",
   "auth_name_required": "닉네임을 입력해주세요",
   "auth_signup_success": "가입 완료! 환영합니다",
+  "auth_verify_title": "이메일 인증",
+  "auth_verify_description": "{} 으로 인증 코드를 보냈습니다.\n이메일을 확인해주세요.",
+  "auth_verify_button": "인증하기",
+  "auth_verify_resend": "인증 코드 다시 보내기",
+  "auth_verify_resend_cooldown": "{}초 후 재전송 가능",
+  "auth_verify_resent": "인증 코드를 다시 보냈습니다",
 
   "profile_title": "프로필",
   "profile_display_name": "닉네임",

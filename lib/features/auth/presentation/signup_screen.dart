@@ -19,6 +19,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _displayNameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
   @override
   void dispose() {
@@ -39,10 +41,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             displayName: _displayNameController.text.trim(),
           );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('auth_signup_success'.tr())),
-        );
-        context.go('/home');
+        context.go('/verify-email?email=${Uri.encodeComponent(_emailController.text.trim())}');
       }
     } on AuthException catch (e) {
       if (mounted) {
@@ -108,8 +107,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     decoration: InputDecoration(
                       labelText: 'auth_password'.tr(),
                       prefixIcon: const Icon(Icons.lock_outlined),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
                     ),
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                     validator: (v) {
                       if (v == null || v.isEmpty) {
                         return 'auth_password_required'.tr();
@@ -126,8 +137,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     decoration: InputDecoration(
                       labelText: 'auth_confirm_password'.tr(),
                       prefixIcon: const Icon(Icons.lock_outlined),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirm
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureConfirm = !_obscureConfirm;
+                          });
+                        },
+                      ),
                     ),
-                    obscureText: true,
+                    obscureText: _obscureConfirm,
                     validator: (v) {
                       if (v != _passwordController.text) {
                         return 'auth_password_mismatch'.tr();
