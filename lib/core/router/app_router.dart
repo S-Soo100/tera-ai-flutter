@@ -18,10 +18,42 @@ import '../../features/search/presentation/search_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
 import '../../features/chat/presentation/chat_screen.dart';
 import '../../features/chat/presentation/chat_list_screen.dart';
+import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/signup_screen.dart';
+import '../../features/auth/presentation/auth_providers.dart';
+import '../../features/profile/presentation/profile_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final isAuthenticated = ref.watch(isAuthenticatedProvider);
+
   return GoRouter(
     initialLocation: '/splash',
+    redirect: (context, state) {
+      final path = state.uri.path;
+
+      // 인증 필요 없는 공개 경로
+      const publicPaths = [
+        '/splash',
+        '/home',
+        '/wiki',
+        '/guide',
+        '/search',
+        '/login',
+        '/signup',
+        '/error',
+      ];
+      final isPublic = publicPaths.any(
+        (p) => path == p || path.startsWith('$p/'),
+      );
+
+      if (!isAuthenticated && !isPublic) {
+        return '/login';
+      }
+      if (isAuthenticated && (path == '/login' || path == '/signup')) {
+        return '/home';
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/splash',
@@ -163,6 +195,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/error',
         builder: (context, state) => const ErrorScreen(),
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
     ],
   );

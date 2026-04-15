@@ -1,0 +1,62 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'pet_event.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
+class PetEventAdapter extends TypeAdapter<PetEvent> {
+  @override
+  final int typeId = 4;
+
+  @override
+  PetEvent read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return PetEvent(
+      id: fields[0] as String,
+      petId: fields[1] as String,
+      type: fields[2] as String,
+      value: fields[3] as double?,
+      title: fields[4] as String?,
+      note: fields[5] as String?,
+      eventDate: fields[6] as DateTime,
+      createdAt: fields[7] as DateTime?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, PetEvent obj) {
+    writer
+      ..writeByte(8)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.petId)
+      ..writeByte(2)
+      ..write(obj.type)
+      ..writeByte(3)
+      ..write(obj.value)
+      ..writeByte(4)
+      ..write(obj.title)
+      ..writeByte(5)
+      ..write(obj.note)
+      ..writeByte(6)
+      ..write(obj.eventDate)
+      ..writeByte(7)
+      ..write(obj.createdAt);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PetEventAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

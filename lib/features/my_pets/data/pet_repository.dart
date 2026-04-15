@@ -1,10 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../domain/pet.dart';
 import '../domain/weight_log.dart';
+import 'pet_event_repository.dart';
+import 'supabase_pet_repository.dart';
 
+/// 항상 Hive 로컬 리포지토리 반환 (P0 기본값)
 final petRepositoryProvider = Provider<PetRepository>((ref) {
   return PetRepository();
+});
+
+/// 인증 상태에 따라 Supabase 리포지토리 반환 (미인증 시 null)
+final supabasePetRepositoryProvider = Provider<SupabasePetRepository?>((ref) {
+  final isAuth = ref.watch(isAuthenticatedProvider);
+  if (!isAuth) return null;
+  return SupabasePetRepository(Supabase.instance.client);
 });
 
 class PetRepository {
@@ -19,6 +31,8 @@ class PetRepository {
     Hive.registerAdapter(WeightLogAdapter());
     await Hive.openBox<Pet>(_petsBoxName);
     await Hive.openBox<WeightLog>(_weightLogsBoxName);
+    await PetEventRepository.init();
+    await PetEventRepository.migrateWeightLogs();
   }
 
   // Pet CRUD

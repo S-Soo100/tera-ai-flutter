@@ -2,12 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:uuid/uuid.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../../wiki/presentation/wiki_providers.dart';
 import '../domain/pet.dart';
-import '../domain/weight_log.dart';
 import 'my_pets_providers.dart';
+import 'widgets/event_timeline.dart';
+import 'widgets/media_gallery.dart';
 
 class PetDetailScreen extends ConsumerWidget {
   final String petId;
@@ -23,7 +23,6 @@ class PetDetailScreen extends ConsumerWidget {
     final pet = ref.watch(petDetailProvider(petId));
     // petList를 watch해서 변경사항 반영
     ref.watch(petListProvider);
-    final weightLogs = ref.watch(weightLogsProvider(petId));
 
     if (pet == null) {
       return Scaffold(
@@ -77,11 +76,12 @@ class PetDetailScreen extends ConsumerWidget {
               ),
             ),
 
-          // 체중 기록 섹션
-          _WeightSection(
-            petId: petId,
-            logs: weightLogs,
-          ),
+          // 이벤트 타임라인
+          EventTimeline(petId: petId),
+          const SizedBox(height: 16),
+
+          // 미디어 갤러리
+          MediaGallery(petId: petId),
 
           // 메모 섹션
           if (pet.memo != null && pet.memo!.isNotEmpty) ...[
@@ -181,15 +181,24 @@ class _ProfileSection extends StatelessWidget {
 
   Widget _buildPhoto(BuildContext context) {
     if (pet.photoPath != null && pet.photoPath!.isNotEmpty) {
+      final isNetwork = pet.photoPath!.startsWith('http');
       return ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: Image.file(
-          File(pet.photoPath!),
-          width: 120,
-          height: 120,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildIconPlaceholder(context),
-        ),
+        child: isNetwork
+            ? Image.network(
+                pet.photoPath!,
+                width: 120,
+                height: 120,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildIconPlaceholder(context),
+              )
+            : Image.file(
+                File(pet.photoPath!),
+                width: 120,
+                height: 120,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildIconPlaceholder(context),
+              ),
       );
     }
     return _buildIconPlaceholder(context);
@@ -241,142 +250,6 @@ class _InfoChip extends StatelessWidget {
                 ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _WeightSection extends ConsumerWidget {
-  final String petId;
-  final List<WeightLog> logs;
-
-  const _WeightSection({required this.petId, required this.logs});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '체중 기록',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  tooltip: '체중 기록 추가',
-                  onPressed: () => _showAddDialog(context, ref),
-                ),
-              ],
-            ),
-            if (logs.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  '아직 체중 기록이 없어요',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              )
-            else
-              ...logs.map((log) => _WeightLogTile(log: log, petId: petId)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
-    final weightController = TextEditingController();
-    final noteController = TextEditingController();
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('체중 기록'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: weightController,
-              decoration: const InputDecoration(
-                labelText: '체중 (g)',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: noteController,
-              decoration: const InputDecoration(
-                labelText: '메모 (선택)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => ctx.pop(false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => ctx.pop(true),
-            child: const Text('추가'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      final w = double.tryParse(weightController.text.trim());
-      if (w == null || w <= 0) return;
-
-      final log = WeightLog(
-        id: const Uuid().v4(),
-        petId: petId,
-        weight: w,
-        date: DateTime.now(),
-        note: noteController.text.trim().isNotEmpty
-            ? noteController.text.trim()
-            : null,
-      );
-      await ref.read(weightLogsProvider(petId).notifier).add(log);
-    }
-
-    weightController.dispose();
-    noteController.dispose();
-  }
-}
-
-class _WeightLogTile extends ConsumerWidget {
-  final WeightLog log;
-  final String petId;
-
-  const _WeightLogTile({required this.log, required this.petId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.monitor_weight_outlined),
-      title: Text('${log.weight}g'),
-      subtitle: Text(
-        '${log.date.year}.${log.date.month.toString().padLeft(2, '0')}.${log.date.day.toString().padLeft(2, '0')}'
-        '${log.note != null ? '  ${log.note}' : ''}',
-      ),
-      trailing: IconButton(
-        icon: const Icon(Icons.close, size: 18),
-        onPressed: () async {
-          await ref.read(weightLogsProvider(petId).notifier).delete(log.id);
-        },
       ),
     );
   }
