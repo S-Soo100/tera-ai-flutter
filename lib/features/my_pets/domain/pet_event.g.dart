@@ -8,7 +8,7 @@ part of 'pet_event.dart';
 
 class PetEventAdapter extends TypeAdapter<PetEvent> {
   @override
-  final int typeId = 4;
+  final int typeId = 6;
 
   @override
   PetEvent read(BinaryReader reader) {

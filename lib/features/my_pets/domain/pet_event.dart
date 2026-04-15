@@ -64,7 +64,7 @@ class PetEventType {
   }
 }
 
-@HiveType(typeId: 4)
+@HiveType(typeId: 6)
 class PetEvent extends HiveObject {
   @HiveField(0)
   final String id;
