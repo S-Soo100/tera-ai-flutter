@@ -212,10 +212,9 @@ class _ProfileSection extends StatelessWidget {
         color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Icon(
-        Icons.pets,
-        size: 48,
-        color: Theme.of(context).colorScheme.onPrimaryContainer,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.asset('assets/images/logo.png', width: 64, height: 64),
       ),
     );
   }

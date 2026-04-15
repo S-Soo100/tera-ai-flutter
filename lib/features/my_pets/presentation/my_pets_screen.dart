@@ -34,11 +34,7 @@ class MyPetsScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.pets,
-              size: 64,
-              color: Theme.of(context).colorScheme.outline,
-            ),
+            Image.asset('assets/images/logo.png', width: 72, height: 72),
             const SizedBox(height: 16),
             Text(
               '아직 등록된 개체가 없어요',
@@ -191,9 +187,9 @@ class _PetCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(
-        Icons.pets,
-        color: Theme.of(context).colorScheme.onPrimaryContainer,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.asset('assets/images/logo.png', width: 56, height: 56),
       ),
     );
   }

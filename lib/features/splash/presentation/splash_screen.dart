@@ -39,6 +39,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Image.asset('assets/images/logo.png', width: 120, height: 120),
+            const SizedBox(height: 24),
             Text(
               'Tera AI',
               style: theme.textTheme.headlineLarge?.copyWith(

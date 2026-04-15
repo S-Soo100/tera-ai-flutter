@@ -164,7 +164,7 @@ class _EmptyPetsSection extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(Icons.pets, size: 48, color: colorScheme.outline),
+            Image.asset('assets/images/logo.png', width: 56, height: 56),
             const SizedBox(height: 12),
             const Text(
               '개체를 등록하고 맞춤 사육 가이드를 받아보세요',
