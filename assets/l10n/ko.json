@@ -39,6 +39,9 @@
   "wiki_lifespan": "수명",
   "wiki_size": "성체 크기",
   "wiki_temperament": "성격",
+  "wiki_difficulty_beginner": "쉬움",
+  "wiki_difficulty_intermediate": "보통",
+  "wiki_difficulty_advanced": "어려움",
 
   "care_basking": "바스킹 표면",
   "care_hot_zone": "핫존",
