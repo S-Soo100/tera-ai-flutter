@@ -69,10 +69,12 @@ lib/
 - Supabase 테이블/RLS/접속 정보는 `docs/supabase-setup.md` 참조.
 
 ### UI/테마
+- **디자인 시스템**: `docs/design-system.md` — 토큰, 공유 위젯, 사용 규칙 정의
 - **하드코딩 색상 금지**. `AppTheme` 또는 `Theme.of(context)` 사용.
 - **하드코딩 문자열 금지**. `assets/l10n/ko.json`에 키 추가 후 `.tr()` 사용.
 - Primary: #2E7D32 (Green 800), Secondary: #FF8F00 (Amber 800)
-- 폰트: Noto Sans KR (Google Fonts) — P1에서 Pretendard로 교체 예정.
+- 폰트: Pretendard (Regular/Medium/SemiBold/Bold)
+- 간격: `AppStyles.spacingN` 토큰 사용, 태그: `AppTag` 위젯, 섹션 제목: `SectionHeader` 위젯
 
 ### 라우팅
 - GoRouter 사용. 경로는 `core/router/app_router.dart`에서 중앙 관리.
