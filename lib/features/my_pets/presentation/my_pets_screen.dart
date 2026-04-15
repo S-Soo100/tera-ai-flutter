@@ -160,15 +160,24 @@ class _PetCard extends StatelessWidget {
 
   Widget _buildAvatar(BuildContext context) {
     if (pet.photoPath != null && pet.photoPath!.isNotEmpty) {
+      final isNetwork = pet.photoPath!.startsWith('http');
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Image.file(
-          File(pet.photoPath!),
-          width: 56,
-          height: 56,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildIconAvatar(context),
-        ),
+        child: isNetwork
+            ? Image.network(
+                pet.photoPath!,
+                width: 56,
+                height: 56,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildIconAvatar(context),
+              )
+            : Image.file(
+                File(pet.photoPath!),
+                width: 56,
+                height: 56,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildIconAvatar(context),
+              ),
       );
     }
     return _buildIconAvatar(context);

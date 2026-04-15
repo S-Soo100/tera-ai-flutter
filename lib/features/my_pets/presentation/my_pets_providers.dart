@@ -1,38 +1,71 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/media_repository.dart';
+import '../data/pet_event_repository.dart';
 import '../data/pet_repository.dart';
+import '../data/supabase_pet_repository.dart';
+import '../domain/media_item.dart';
 import '../domain/pet.dart';
+import '../domain/pet_event.dart';
 import '../domain/weight_log.dart';
 
-/// Pet 목록 — Hive에서 전체 로드, invalidate로 refresh
+/// Pet 목록 — 인증 시 Supabase, 미인증 시 Hive
 final petListProvider = StateNotifierProvider<PetListNotifier, List<Pet>>((ref) {
-  final repo = ref.watch(petRepositoryProvider);
-  return PetListNotifier(repo);
+  final localRepo = ref.watch(petRepositoryProvider);
+  final supabaseRepo = ref.watch(supabasePetRepositoryProvider);
+  return PetListNotifier(localRepo, supabaseRepo);
 });
 
 class PetListNotifier extends StateNotifier<List<Pet>> {
-  final PetRepository _repo;
+  final PetRepository _localRepo;
+  final SupabasePetRepository? _supabaseRepo;
 
-  PetListNotifier(this._repo) : super([]) {
+  PetListNotifier(this._localRepo, this._supabaseRepo) : super([]) {
     refresh();
   }
 
+  bool get _useCloud => _supabaseRepo != null;
+
   void refresh() {
-    state = _repo.getAllPets();
+    if (_useCloud) {
+      state = _supabaseRepo!.getAllPets();
+    } else {
+      state = _localRepo.getAllPets();
+    }
   }
 
   Future<void> add(Pet pet) async {
-    await _repo.addPet(pet);
+    if (_useCloud) {
+      await _supabaseRepo!.addPet(pet);
+    } else {
+      await _localRepo.addPet(pet);
+    }
     refresh();
   }
 
   Future<void> update(Pet pet) async {
-    await _repo.updatePet(pet);
+    if (_useCloud) {
+      await _supabaseRepo!.updatePet(pet);
+    } else {
+      await _localRepo.updatePet(pet);
+    }
     refresh();
   }
 
   Future<void> delete(String id) async {
-    await _repo.deletePet(id);
+    if (_useCloud) {
+      await _supabaseRepo!.deletePet(id);
+    } else {
+      await _localRepo.deletePet(id);
+    }
     refresh();
+  }
+
+  /// 로그인 후 Supabase에서 데이터 동기화
+  Future<void> syncFromRemote() async {
+    if (_useCloud) {
+      await _supabaseRepo!.syncFromRemote();
+      refresh();
+    }
   }
 }
 
@@ -71,5 +104,57 @@ class WeightLogsNotifier extends StateNotifier<List<WeightLog>> {
   Future<void> delete(String id) async {
     await _repo.deleteWeightLog(id);
     refresh();
+  }
+}
+
+/// 펫 이벤트 (전체) — family provider
+final petEventsProvider =
+    StateNotifierProvider.family<PetEventsNotifier, List<PetEvent>, String>(
+  (ref, petId) {
+    final repo = ref.watch(petEventRepositoryProvider);
+    return PetEventsNotifier(repo, petId);
+  },
+);
+
+class PetEventsNotifier extends StateNotifier<List<PetEvent>> {
+  final PetEventRepository _repo;
+  final String _petId;
+
+  PetEventsNotifier(this._repo, this._petId) : super([]) {
+    refresh();
+  }
+
+  void refresh() {
+    state = _repo.getEvents(_petId);
+  }
+
+  Future<void> add(PetEvent event) async {
+    await _repo.addEvent(event);
+    refresh();
+  }
+
+  Future<void> delete(String id) async {
+    await _repo.deleteEvent(id);
+    refresh();
+  }
+}
+
+/// 펫 미디어 — family provider
+final petMediaProvider =
+    AsyncNotifierProvider.family<PetMediaNotifier, List<MediaItem>, String>(
+  PetMediaNotifier.new,
+);
+
+class PetMediaNotifier extends FamilyAsyncNotifier<List<MediaItem>, String> {
+  @override
+  Future<List<MediaItem>> build(String arg) async {
+    final repo = ref.watch(mediaRepositoryProvider);
+    return repo.getMedia(arg);
+  }
+
+  Future<void> delete(String mediaId) async {
+    final repo = ref.read(mediaRepositoryProvider);
+    await repo.deleteMedia(mediaId);
+    ref.invalidateSelf();
   }
 }

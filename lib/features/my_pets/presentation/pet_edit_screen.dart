@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../domain/pet.dart';
 import 'my_pets_providers.dart';
+import 'widgets/photo_picker_button.dart';
 
 class PetEditScreen extends ConsumerStatefulWidget {
   final String petId;
@@ -30,6 +32,7 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
   DateTime? _adoptionDate;
   bool _isCustomSpecies = false;
   bool _initialized = false;
+  File? _selectedPhoto;
 
   static final List<MapEntry<String, String>> _speciesOptions = [
     ...CareInfoRepository.speciesNames.entries,
@@ -192,6 +195,9 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
     original.memo = _memoController.text.trim().isNotEmpty
         ? _memoController.text.trim()
         : null;
+    if (_selectedPhoto != null) {
+      original.photoPath = _selectedPhoto!.path;
+    }
 
     await ref.read(petListProvider.notifier).update(original);
     if (mounted) context.pop();
@@ -221,6 +227,14 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // 사진
+            PhotoPickerButton(
+              currentPhoto: _selectedPhoto,
+              currentPhotoUrl: _selectedPhoto == null ? pet.photoPath : null,
+              onPhotoPicked: (file) => setState(() => _selectedPhoto = file),
+            ),
+            const SizedBox(height: 16),
+
             // 이름
             TextFormField(
               controller: _nameController,

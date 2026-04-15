@@ -7,8 +7,8 @@ class WikiScreen extends ConsumerWidget {
   const WikiScreen({super.key});
 
   static const _speciesChips = [
-    ('leopard-gecko', '레오파드 게코'),
     ('crested-gecko', '크레스티드 게코'),
+    ('leopard-gecko', '레오파드 게코'),
     ('fat-tailed-gecko', '펫테일 게코'),
   ];
 
@@ -17,6 +17,7 @@ class WikiScreen extends ConsumerWidget {
     ('enclosure', '🏠 사육장'),
     ('diet', '🍽️ 먹이'),
     ('mistakes', '⚠️ 초보 실수'),
+    ('morph-guide', '📖 모프 도감'),
     ('morph-calc', '🧬 모프 계산기'),
     ('compare', '📋 종 비교'),
     ('ai-chat', '🤖 AI에게 물어보기'),
@@ -50,23 +51,26 @@ class WikiScreen extends ConsumerWidget {
           // Species selection chips
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: _speciesChips.map((chip) {
-                final (id, label) = chip;
-                final isSelected = selectedSpecies == id;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(label),
-                    selected: isSelected,
-                    onSelected: (_) {
-                      ref.read(selectedWikiSpeciesProvider.notifier).state = id;
-                    },
-                    selectedColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                  ),
-                );
-              }).toList(),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _speciesChips.map((chip) {
+                  final (id, label) = chip;
+                  final isSelected = selectedSpecies == id;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(label),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        ref.read(selectedWikiSpeciesProvider.notifier).state = id;
+                      },
+                      selectedColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
 
@@ -149,6 +153,8 @@ class WikiScreen extends ConsumerWidget {
                     onTap: () {
                       if (categoryId == 'compare') {
                         context.push('/wiki/compare');
+                      } else if (categoryId == 'morph-guide') {
+                        context.push('/wiki/$selectedSpecies/morph-guide');
                       } else if (categoryId == 'morph-calc') {
                         context.push('/wiki/$selectedSpecies/morph-calc');
                       } else if (categoryId == 'ai-chat') {

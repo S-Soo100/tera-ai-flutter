@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'features/chat/data/chat_repository.dart';
 import 'features/my_pets/data/pet_repository.dart';
@@ -13,7 +14,12 @@ Future<void> main() async {
   await Hive.initFlutter();
   await PetRepository.init();
   await dotenv.load(fileName: '.env');
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  );
   await ChatRepository.init();
+  await Hive.openBox('app_settings');
 
   await EasyLocalization.ensureInitialized();
 

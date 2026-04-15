@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../domain/pet.dart';
 import 'my_pets_providers.dart';
+import 'widgets/photo_picker_button.dart';
 
 class PetAddScreen extends ConsumerStatefulWidget {
   const PetAddScreen({super.key});
@@ -28,6 +30,7 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
   DateTime? _birthDate;
   DateTime? _adoptionDate;
   bool _isCustomSpecies = false;
+  File? _selectedPhoto;
 
   // 3종 + 기타
   static final List<MapEntry<String, String>> _speciesOptions = [
@@ -149,6 +152,7 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
       birthDate: _birthDate,
       adoptionDate: _adoptionDate,
       weight: weight,
+      photoPath: _selectedPhoto?.path,
       memo: _memoController.text.trim().isNotEmpty
           ? _memoController.text.trim()
           : null,
@@ -169,6 +173,13 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // 사진
+            PhotoPickerButton(
+              currentPhoto: _selectedPhoto,
+              onPhotoPicked: (file) => setState(() => _selectedPhoto = file),
+            ),
+            const SizedBox(height: 16),
+
             // 이름
             TextFormField(
               controller: _nameController,

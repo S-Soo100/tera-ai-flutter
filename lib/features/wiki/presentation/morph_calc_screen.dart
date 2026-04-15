@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/morph_genetics.dart';
+import '../domain/punnett_engine.dart';
 import 'wiki_providers.dart';
 
 class MorphCalcScreen extends ConsumerStatefulWidget {
@@ -16,6 +17,9 @@ class _MorphCalcScreenState extends ConsumerState<MorphCalcScreen> {
   String? _fatherMorph;
   String? _motherMorph;
   bool _showResult = false;
+  List<String> _fatherHets = [];
+  List<String> _motherHets = [];
+  PunnettResult? _result;
 
   @override
   Widget build(BuildContext context) {
@@ -77,9 +81,22 @@ class _MorphCalcScreenState extends ConsumerState<MorphCalcScreen> {
             onChanged: (value) {
               setState(() {
                 _fatherMorph = value;
+                _fatherHets = [];
                 _showResult = false;
+                _result = null;
               });
             },
+          ),
+          _buildHetSelector(
+            context,
+            data,
+            _fatherMorph,
+            _fatherHets,
+            (newHets) => setState(() {
+              _fatherHets = newHets;
+              _showResult = false;
+              _result = null;
+            }),
           ),
           const SizedBox(height: 16),
 
@@ -99,9 +116,22 @@ class _MorphCalcScreenState extends ConsumerState<MorphCalcScreen> {
             onChanged: (value) {
               setState(() {
                 _motherMorph = value;
+                _motherHets = [];
                 _showResult = false;
+                _result = null;
               });
             },
+          ),
+          _buildHetSelector(
+            context,
+            data,
+            _motherMorph,
+            _motherHets,
+            (newHets) => setState(() {
+              _motherHets = newHets;
+              _showResult = false;
+              _result = null;
+            }),
           ),
           const SizedBox(height: 24),
 
@@ -111,52 +141,150 @@ class _MorphCalcScreenState extends ConsumerState<MorphCalcScreen> {
           // Calculate button
           FilledButton.icon(
             onPressed: _fatherMorph != null && _motherMorph != null
-                ? () => setState(() => _showResult = true)
+                ? () {
+                    final fatherEntry = data.morphs
+                        .where((m) => m.name == _fatherMorph)
+                        .first;
+                    final motherEntry = data.morphs
+                        .where((m) => m.name == _motherMorph)
+                        .first;
+
+                    final fatherGenotype = PunnettEngine.genotypeFromMorph(
+                      morph: fatherEntry,
+                      hetGeneIds: _fatherHets,
+                      morphData: data,
+                    );
+                    final motherGenotype = PunnettEngine.genotypeFromMorph(
+                      morph: motherEntry,
+                      hetGeneIds: _motherHets,
+                      morphData: data,
+                    );
+
+                    final result = PunnettEngine.calculate(
+                      father: fatherGenotype,
+                      mother: motherGenotype,
+                      morphData: data,
+                    );
+
+                    setState(() {
+                      _showResult = true;
+                      _result = result;
+                    });
+                  }
                 : null,
             icon: const Icon(Icons.calculate),
             label: const Text('결과 보기'),
           ),
 
           // Result
-          if (_showResult) ...[
+          if (_showResult && _result != null) ...[
             const SizedBox(height: 24),
-            Card(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.science_outlined,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '$_fatherMorph × $_motherMorph',
-                      style:
-                          Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '이 조합의 데이터를 준비 중입니다.\n퍼넷 스퀘어 엔진이 곧 추가될 예정이에요.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+
+            // 전체 교배 경고
+            for (final warning in _result!.warnings) ...[
+              Card(
+                color: Theme.of(context).colorScheme.errorContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning,
+                          color:
+                              Theme.of(context).colorScheme.onErrorContainer),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          warning,
+                          style: TextStyle(
                             color: Theme.of(context)
                                 .colorScheme
-                                .onSurfaceVariant,
+                                .onErrorContainer,
+                            fontWeight: FontWeight.w600,
                           ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(height: 12),
+            ],
+
+            // 결과 제목
+            Text(
+              '$_fatherMorph × $_motherMorph',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 12),
+
+            // 각 결과 카드
+            for (final outcome in _result!.outcomes) ...[
+              _OutcomeCard(outcome: outcome),
+              const SizedBox(height: 8),
+            ],
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildHetSelector(
+    BuildContext context,
+    MorphGeneticsData data,
+    String? selectedMorph,
+    List<String> hets,
+    void Function(List<String>) onChanged,
+  ) {
+    if (selectedMorph == null) return const SizedBox.shrink();
+
+    // 선택된 모프의 유전자 ID 집합
+    final morphGenes = data.morphs
+            .where((m) => m.name == selectedMorph)
+            .firstOrNull
+            ?.genes
+            .toSet() ??
+        {};
+
+    // het 후보: 열성 유전자 중 모프에 없는 것
+    final candidates = data.genes
+        .where((g) =>
+            g.inheritance == 'recessive' && !morphGenes.contains(g.id))
+        .toList();
+
+    if (candidates.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Text('보유 가능 het',
+            style: Theme.of(context).textTheme.labelSmall),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: candidates.map((gene) {
+            final selected = hets.contains(gene.id);
+            return FilterChip(
+              label: Text(gene.name,
+                  style: const TextStyle(fontSize: 12)),
+              selected: selected,
+              onSelected: (v) {
+                final newHets = List<String>.from(hets);
+                if (v) {
+                  newHets.add(gene.id);
+                } else {
+                  newHets.remove(gene.id);
+                }
+                onChanged(newHets);
+              },
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -223,17 +351,18 @@ class _MorphCalcScreenState extends ConsumerState<MorphCalcScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Card(
-              color: Colors.orange.shade50,
+              color: Colors.orange.withValues(alpha: 0.12),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    Icon(Icons.health_and_safety, color: Colors.orange.shade800),
+                    Icon(Icons.health_and_safety,
+                        color: Colors.orange.shade300),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         '${gene.name}: ${gene.healthWarning}',
-                        style: TextStyle(color: Colors.orange.shade900),
+                        style: TextStyle(color: Colors.orange.shade200),
                       ),
                     ),
                   ],
@@ -246,5 +375,115 @@ class _MorphCalcScreenState extends ConsumerState<MorphCalcScreen> {
     }
 
     return widgets;
+  }
+}
+
+class _OutcomeCard extends StatelessWidget {
+  final OffspringOutcome outcome;
+
+  const _OutcomeCard({required this.outcome});
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = (outcome.probability * 100).toStringAsFixed(1);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      color: outcome.isLethal ? colorScheme.errorContainer : null,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 표현형 이름 + 확률
+            Row(
+              children: [
+                if (outcome.isLethal)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Icon(
+                      Icons.dangerous,
+                      size: 18,
+                      color: colorScheme.onErrorContainer,
+                    ),
+                  ),
+                Expanded(
+                  child: Text(
+                    outcome.phenotypeName,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: outcome.isLethal
+                              ? colorScheme.onErrorContainer
+                              : null,
+                        ),
+                  ),
+                ),
+                Text(
+                  '$percent%',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: outcome.isLethal
+                            ? colorScheme.onErrorContainer
+                            : colorScheme.primary,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            // 확률 바
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: outcome.probability,
+                minHeight: 6,
+                backgroundColor: outcome.isLethal
+                    ? colorScheme.error.withValues(alpha: 0.2)
+                    : colorScheme.surfaceContainerHighest,
+                valueColor: AlwaysStoppedAnimation(
+                  outcome.isLethal ? colorScheme.error : colorScheme.primary,
+                ),
+              ),
+            ),
+            // 유전형 상세
+            if (outcome.genotypeDetails.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                outcome.genotypeDetails.join(' · '),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: outcome.isLethal
+                          ? colorScheme.onErrorContainer
+                          : colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+            // 건강 경고 (치사 아닌 경우)
+            if (outcome.healthWarning != null && !outcome.isLethal) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.health_and_safety,
+                        size: 14, color: Colors.orange.shade300),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        outcome.healthWarning!,
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.orange.shade200),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

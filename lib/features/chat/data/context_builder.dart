@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../my_pets/data/pet_repository.dart';
 import '../../wiki/data/care_info_repository.dart';
+import '../../wiki/data/citation_repository.dart';
 import 'chat_repository.dart';
 import 'knowledge_repository.dart';
 
@@ -40,30 +41,6 @@ class ContextBuilder {
   static const List<String> _comprehensiveKeywords = [
     '자료', '정보', '가이드', '전체', '전부', '총정리', '사육법', '키우는 법', '기르는 법',
   ];
-
-  // 출처명 → URL 매핑 (홈페이지 루트 URL 제거)
-  static const Map<String, String> _sourceUrls = {
-    'ReptiFiles — Leopard Gecko Care': 'https://reptifiles.com/leopard-gecko-care/',
-    'ReptiFiles — Crested Gecko Care': 'https://reptifiles.com/crested-gecko-care/',
-    'ReptiFiles — AFT Care Sheet': 'https://reptifiles.com/african-fat-tailed-gecko-care/',
-    'Pangea Reptile — Care Guide': 'https://www.pangeareptile.com/store/crested-gecko-care-sheet',
-    'The Bio Dude — Leopard Gecko Caresheet 2024': 'https://www.thebiodude.com/blogs/how-to-guides/leopard-gecko-care-sheet',
-    'Zen Habitats — Substrate Guide': 'https://www.zenhabitats.com/blogs/reptile-care-sheets',
-    'Gecko Time — Fat-tailed Gecko Husbandry': 'https://www.geckotime.com/african-fat-tailed-gecko/',
-    "Josh's Frogs — AFT Care Guide": 'https://www.joshsfrogs.com/catalog/blog/care-sheets/',
-  };
-
-  // 출처 → 관련 카테고리 매핑 (해당 카테고리 질문에서만 표시)
-  static const Map<String, Set<String>> _sourceCategories = {
-    'ReptiFiles — Leopard Gecko Care': {'temperature', 'humidity', 'enclosure', 'diet', 'health'},
-    'ReptiFiles — Crested Gecko Care': {'temperature', 'humidity', 'enclosure', 'diet', 'health'},
-    'ReptiFiles — AFT Care Sheet': {'temperature', 'humidity', 'enclosure', 'diet', 'health'},
-    'Pangea Reptile — Care Guide': {'diet', 'humidity', 'enclosure'},
-    'The Bio Dude — Leopard Gecko Caresheet 2024': {'enclosure', 'humidity'},
-    'Zen Habitats — Substrate Guide': {'enclosure'},
-    'Gecko Time — Fat-tailed Gecko Husbandry': {'temperature', 'humidity', 'enclosure', 'diet'},
-    "Josh's Frogs — AFT Care Guide": {'enclosure', 'diet'},
-  };
 
   static const Map<String, List<String>> _speciesKeywords = {
     'leopard-gecko': ['레오파드', '레파게', '레게'],
@@ -265,20 +242,19 @@ class ContextBuilder {
       buffer.writeln('성격: ${info.temperament}');
     }
 
-    // 출처: 매칭된 카테고리와 관련된 출처만 필터링
+    // 출처: citation_ids를 CitationRepository로 hydrate.
+    // URL(또는 DOI fallback) 있는 citation만 포함. 레거시 형식 'label url' 유지.
     final resolvedSources = <String>[];
-    if (categories.isNotEmpty && info.sources.isNotEmpty) {
-      for (final source in info.sources) {
-        // 카테고리 관련도 체크
-        final sourceCats = _sourceCategories[source];
-        if (sourceCats != null && sourceCats.intersection(categories).isEmpty) {
-          continue; // 관련 없는 출처 스킵
-        }
-        final url = _sourceUrls[source];
-        if (url != null) {
-          resolvedSources.add('$source $url');
-        }
-        // URL 없는 출처(홈페이지 루트 삭제된 것)는 포함하지 않음
+    if (info.citationIds.isNotEmpty) {
+      final citationRepo = ref.read(citationRepositoryProvider);
+      final citations = await citationRepo.hydrate(info.citationIds);
+      for (final c in citations) {
+        final url = c.resolvedUrl;
+        if (url == null) continue;
+        final label = (c.publisher != null && c.publisher!.isNotEmpty)
+            ? '${c.publisher} — ${c.title}'
+            : c.title;
+        resolvedSources.add('$label $url');
       }
     }
 
