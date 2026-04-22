@@ -20,7 +20,16 @@ class PetListNotifier extends StateNotifier<List<Pet>> {
   final SupabasePetRepository? _supabaseRepo;
 
   PetListNotifier(this._localRepo, this._supabaseRepo) : super([]) {
-    refresh();
+    _init();
+  }
+
+  Future<void> _init() async {
+    if (_useCloud) {
+      // 클라우드 모드: Supabase에서 동기화하여 로컬 캐시 갱신
+      await syncFromRemote();
+    } else {
+      refresh();
+    }
   }
 
   bool get _useCloud => _supabaseRepo != null;

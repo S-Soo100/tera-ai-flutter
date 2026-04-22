@@ -5,8 +5,6 @@
   "tab_home": "홈",
   "tab_wiki": "사육 위키",
   "tab_my_pets": "내 개체",
-  "tab_guide": "자진신고",
-
   "search_hint": "종 이름, 학명, 영어명으로 검색",
   "search_no_result": "검색 결과가 없습니다",
   "search_placeholder": "우리 집 도마뱀, 합법일까?",
@@ -19,8 +17,6 @@
   "category_turtle": "거북",
   "category_amphibian": "양서류",
 
-  "home_dday_banner": "자진신고 마감 D-{days}",
-  "home_dday_expired": "자진신고 기한이 지났습니다",
   "home_my_pets_title": "내 개체",
   "home_my_pets_empty": "개체를 등록하고 맞춤 사육 가이드를 받아보세요",
   "home_my_pets_register": "첫 개체 등록하기",
@@ -39,6 +35,9 @@
   "wiki_lifespan": "수명",
   "wiki_size": "성체 크기",
   "wiki_temperament": "성격",
+  "wiki_difficulty_beginner": "쉬움",
+  "wiki_difficulty_intermediate": "보통",
+  "wiki_difficulty_advanced": "어려움",
 
   "care_basking": "바스킹 표면",
   "care_hot_zone": "핫존",
@@ -91,17 +90,6 @@
   "pet_weight_log": "체중 기록",
   "pet_add_weight": "체중 기록 추가",
   "pet_other_species": "기타 (직접입력)",
-
-  "guide_title": "자진신고 가이드",
-  "guide_dday_title": "자진신고 마감까지",
-  "guide_deadline": "기한: 2026년 6월 13일",
-  "guide_grace_period": "계도기간: ~2026년 12월 13일",
-  "guide_wims_warning": "정부24가 아닙니다!",
-  "guide_wims_desc": "WIMS (야생동물종합관리시스템)에서 신고하세요",
-  "guide_wims_open": "WIMS 바로가기",
-  "guide_steps_title": "신고 절차 (10단계)",
-  "guide_documents_title": "필요 서류",
-  "guide_faq_title": "자주 묻는 질문",
 
   "compare_title": "3종 비교",
 
@@ -186,5 +174,65 @@
   "media_from_gallery": "앨범에서 선택",
   "media_delete_confirm": "이 사진을 삭제할까요?",
   "media_uploading": "업로드 중...",
-  "media_empty": "아직 사진이 없어요"
+  "media_empty": "아직 사진이 없어요",
+
+  "my_cage_title": "내 사육장·장비",
+  "my_cage_empty_title": "아직 연결된 카메라가 없어요",
+  "my_cage_empty_subtitle": "게코 캠을 등록하고 녹화 영상을 확인해보세요",
+  "my_cage_add_camera": "카메라 연결하기",
+
+  "camera_form_title": "카메라 등록",
+  "camera_form_display_name": "카메라 이름",
+  "camera_form_display_name_hint": "예: 거실 테라리움",
+  "camera_form_host": "IP 주소",
+  "camera_form_host_hint": "예: 192.168.0.100",
+  "camera_form_port": "포트",
+  "camera_form_path": "RTSP 경로",
+  "camera_form_path_hint": "Tapo는 stream2 권장",
+  "camera_form_username": "아이디",
+  "camera_form_password": "비밀번호",
+  "camera_form_pet": "연결할 개체 (선택)",
+  "camera_form_pet_none": "연결 안 함",
+
+  "camera_test_connection": "연결 테스트",
+  "camera_test_running": "연결 중...",
+  "camera_test_success": "연결 성공!",
+  "camera_test_fail": "연결 실패",
+
+  "camera_register": "등록",
+  "camera_register_success": "카메라 등록 완료",
+  "camera_register_conflict": "이미 등록된 카메라입니다",
+
+  "camera_delete": "삭제",
+  "camera_delete_confirm": "이 카메라를 삭제하시겠습니까?",
+  "camera_delete_confirm_yes": "삭제",
+  "camera_delete_confirm_no": "취소",
+
+  "camera_detail_info": "연결 정보",
+  "camera_detail_last_connected": "마지막 연결",
+  "camera_detail_clips": "녹화 영상",
+  "camera_detail_clips_empty": "아직 녹화된 영상이 없어요",
+
+  "clip_motion_badge": "움직임",
+  "clip_duration_seconds": "{seconds}초",
+  "clip_filter_motion_only": "움직임만",
+  "clip_filter_all": "전체",
+  "clip_date_today": "오늘",
+  "clip_date_yesterday": "어제",
+  "clip_date_picker_title": "날짜 선택",
+  "clip_empty_motion_only": "움직임 감지된 클립이 없어요",
+  "clip_empty_motion_only_action": "전체 보기로 전환",
+  "clip_empty_date": "이 날짜에 녹화 영상이 없어요",
+
+  "error_generic": "오류가 발생했어요",
+  "retry": "다시 시도",
+
+  "pet_detail_cameras_title": "이 개체의 카메라",
+  "pet_detail_cameras_empty": "연결된 카메라가 없어요",
+  "pet_detail_cameras_add": "카메라 연결하기",
+
+  "my_cage_select_hour": "시간 선택",
+  "my_cage_no_clips_this_date": "이 날짜에 녹화된 영상이 없습니다",
+  "my_cage_select_another_date": "다른 날짜 선택",
+  "clip_hour_count_zero": "—"
 }

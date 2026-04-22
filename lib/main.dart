@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -10,6 +11,46 @@ import 'app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Directionality(
+      textDirection: ui.TextDirection.ltr,
+      child: Container(
+        color: const Color(0xFF121212),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Color(0xFF4CAF50),
+              size: 64,
+            ),
+            SizedBox(height: 16),
+            Text(
+              '오류가 발생했습니다',
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                color: Color(0xFFE0E0E0),
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.none,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '앱을 다시 시작해 주세요',
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                color: Color(0xFF9E9E9E),
+                fontSize: 14,
+                decoration: TextDecoration.none,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  };
 
   await Hive.initFlutter();
   await PetRepository.init();

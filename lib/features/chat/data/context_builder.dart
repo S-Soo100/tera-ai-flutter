@@ -4,6 +4,7 @@ import '../../wiki/data/care_info_repository.dart';
 import '../../wiki/data/citation_repository.dart';
 import 'chat_repository.dart';
 import 'knowledge_repository.dart';
+import 'web_search_repository.dart';
 
 final contextBuilderProvider = Provider<ContextBuilder>((ref) {
   return ContextBuilder(ref);
@@ -14,12 +15,16 @@ class BuildContextResult {
   final bool hasCareData;
   final String? speciesId;
   final List<String> sources;
+  final List<String> citationIds;
+  final List<String> webSources; // "title|url" 형식
 
   const BuildContextResult({
     required this.messages,
     required this.hasCareData,
     this.speciesId,
     this.sources = const [],
+    this.citationIds = const [],
+    this.webSources = const [],
   });
 }
 
@@ -87,22 +92,27 @@ class ContextBuilder {
       }
     }
 
-    // 3. CareInfo 스니펫 (출처 분리)
+    // 3. 웹 검색을 비동기로 먼저 시작 (병행)
+    final webSearchFuture = _searchWeb(question, resolvedSpeciesId);
+
+    // 4. CareInfo 스니펫 (출처 분리)
     String careSnippet = '';
     List<String> sources = [];
+    List<String> citationIds = [];
     bool hasCareData = false;
 
     if (resolvedSpeciesId != null) {
       final snippetResult = await _buildCareSnippet(resolvedSpeciesId, categories);
       careSnippet = snippetResult.snippet;
       sources = snippetResult.sources;
+      citationIds = snippetResult.citationIds;
       hasCareData = careSnippet.isNotEmpty;
     }
 
-    // 4. 개체 정보
+    // 5. 개체 정보
     final petContext = petId != null ? _buildPetContext(petId) : '';
 
-    // 5. Knowledge 검색
+    // 6. Knowledge 검색
     String knowledgeContext = '';
     if (resolvedSpeciesId != null) {
       final knowledgeRepo = ref.read(knowledgeRepositoryProvider);
@@ -118,18 +128,33 @@ class ContextBuilder {
       }
     }
 
-    // 6. 최근 대화 히스토리 (최근 6개)
+    // 7. 웹 검색 결과 수집
+    final webResult = await webSearchFuture;
+    String webContext = '';
+    final webSources = <String>[];
+    if (webResult.success && webResult.items.isNotEmpty) {
+      final buf = StringBuffer('\n[웹 검색 참고]\n');
+      for (final item in webResult.items) {
+        buf.writeln('${item.title}: ${item.description}');
+        webSources.add(item.encoded);
+      }
+      webContext = buf.toString();
+    }
+
+    // 8. 최근 대화 히스토리 (최근 6개)
     final chatRepo = ref.read(chatRepositoryProvider);
     final history =
         chatRepo.getRecentMessages(conversationId, limit: 6);
 
-    // 7. messages 배열 조립
+    // 9. messages 배열 조립
     final systemContent = StringBuffer(systemPrompt);
-    if (careSnippet.isNotEmpty || petContext.isNotEmpty || knowledgeContext.isNotEmpty) {
+    if (careSnippet.isNotEmpty || petContext.isNotEmpty ||
+        knowledgeContext.isNotEmpty || webContext.isNotEmpty) {
       systemContent.write('\n\n[앱 데이터]\n');
       if (careSnippet.isNotEmpty) systemContent.write(careSnippet);
       if (petContext.isNotEmpty) systemContent.write(petContext);
       if (knowledgeContext.isNotEmpty) systemContent.write(knowledgeContext);
+      if (webContext.isNotEmpty) systemContent.write(webContext);
     }
 
     final messages = <Map<String, String>>[
@@ -147,6 +172,8 @@ class ContextBuilder {
       hasCareData: hasCareData,
       speciesId: resolvedSpeciesId,
       sources: sources,
+      citationIds: citationIds,
+      webSources: webSources,
     );
   }
 
@@ -188,7 +215,7 @@ class ContextBuilder {
     return pet?.speciesId;
   }
 
-  Future<({String snippet, List<String> sources})> _buildCareSnippet(
+  Future<({String snippet, List<String> sources, List<String> citationIds})> _buildCareSnippet(
     String speciesId,
     Set<String> categories,
   ) async {
@@ -258,7 +285,7 @@ class ContextBuilder {
       }
     }
 
-    return (snippet: buffer.toString(), sources: resolvedSources);
+    return (snippet: buffer.toString(), sources: resolvedSources, citationIds: info.citationIds);
   }
 
   String _buildPetContext(String petId) {
@@ -272,5 +299,23 @@ class ContextBuilder {
     if (pet.ageDisplay.isNotEmpty) buffer.writeln('나이: ${pet.ageDisplay}');
     if (pet.weight != null) buffer.writeln('체중: ${pet.weight}g');
     return buffer.toString();
+  }
+
+  /// 웹 검색 (DuckDuckGo Lite). 실패 시 빈 결과 반환.
+  Future<WebSearchResult> _searchWeb(
+      String question, String? speciesId) async {
+    final webRepo = ref.read(webSearchRepositoryProvider);
+
+    // 종 이름을 쿼리에 포함하여 관련성 향상
+    final speciesHint = switch (speciesId) {
+      'leopard-gecko' => '레오파드 게코',
+      'crested-gecko' => '크레스티드 게코',
+      'fat-tailed-gecko' => '펫테일 게코',
+      _ => '파충류',
+    };
+    final trimmedQ = question.length > 80 ? question.substring(0, 80) : question;
+    final query = '$speciesHint 사육 $trimmedQ';
+
+    return webRepo.search(query, count: 3);
   }
 }

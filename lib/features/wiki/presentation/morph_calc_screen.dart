@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/morph_genetics.dart';
 import '../domain/punnett_engine.dart';
 import 'wiki_providers.dart';
@@ -28,7 +29,7 @@ class _MorphCalcScreenState extends ConsumerState<MorphCalcScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('모프 계산기')),
       body: morphAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SkeletonPageLoading(cardCount: 3),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

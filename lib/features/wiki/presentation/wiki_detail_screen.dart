@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/citation_card.dart';
 import '../../../shared/widgets/relation_card.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
 import '../data/care_info_repository.dart';
 import '../domain/care_info_detail.dart';
 import '../domain/graph_entity.dart';
@@ -45,7 +46,7 @@ class WikiDetailScreen extends ConsumerWidget {
         child: const Icon(Icons.chat),
       ),
       body: careInfoAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SkeletonPageLoading(cardCount: 3),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

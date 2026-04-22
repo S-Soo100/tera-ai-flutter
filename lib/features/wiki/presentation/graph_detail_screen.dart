@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/citation_card.dart';
 import '../../../shared/widgets/relation_card.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
 import '../data/citation_repository.dart';
 import '../data/graph_repository.dart';
 import '../domain/citation.dart';
@@ -74,7 +75,7 @@ class GraphDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(_kindLabel(kind))),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SkeletonPageLoading(cardCount: 3),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

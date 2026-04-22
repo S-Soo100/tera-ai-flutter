@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
 import '../data/care_info_repository.dart';
 import '../domain/care_info_detail.dart';
 import 'wiki_providers.dart';
@@ -22,7 +23,7 @@ class SpeciesCompareScreen extends ConsumerWidget {
     if (isLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text('종 비교')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const SkeletonPageLoading(cardCount: 3),
       );
     }
 

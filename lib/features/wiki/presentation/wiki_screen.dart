@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_styles.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
 import 'wiki_providers.dart';
 
 class WikiScreen extends ConsumerWidget {
@@ -12,16 +14,35 @@ class WikiScreen extends ConsumerWidget {
     ('fat-tailed-gecko', '펫테일 게코'),
   ];
 
-  static const _categories = [
-    ('temperature', '🌡️ 온도·습도'),
-    ('enclosure', '🏠 사육장'),
-    ('diet', '🍽️ 먹이'),
-    ('mistakes', '⚠️ 초보 실수'),
-    ('morph-guide', '📖 모프 도감'),
-    ('morph-calc', '🧬 모프 계산기'),
-    ('compare', '📋 종 비교'),
-    ('ai-chat', '🤖 AI에게 물어보기'),
+  static final _categories = <({String id, String label, IconData icon, bool highlighted})>[
+    (id: 'temperature', label: '온도·습도', icon: Icons.thermostat_rounded, highlighted: false),
+    (id: 'diet', label: '먹이', icon: Icons.restaurant_rounded, highlighted: false),
+    (id: 'enclosure', label: '사육장', icon: Icons.house_rounded, highlighted: false),
+    (id: 'mistakes', label: '초보 실수', icon: Icons.warning_amber_rounded, highlighted: false),
+    (id: 'morph-guide', label: '모프 도감', icon: Icons.auto_stories_rounded, highlighted: false),
+    (id: 'morph-calc', label: '모프 계산기', icon: Icons.biotech_rounded, highlighted: false),
+    (id: 'compare', label: '종 비교', icon: Icons.compare_arrows_rounded, highlighted: false),
+    (id: 'ai-chat', label: 'AI에게 물어보기', icon: Icons.smart_toy_rounded, highlighted: false),
   ];
+
+  String _difficultyLabel(String raw) {
+    switch (raw) {
+      case 'beginner':
+        return '쉬움';
+      case 'intermediate':
+        return '보통';
+      case 'advanced':
+        return '어려움';
+      default:
+        return raw;
+    }
+  }
+
+  String _shortTemperament(String value) {
+    final dotIndex = value.indexOf('.');
+    if (dotIndex == -1) return value;
+    return value.substring(0, dotIndex);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,12 +60,15 @@ class WikiScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'wiki_chat_fab',
-        onPressed: () =>
-            context.push('/chat/new?speciesId=$selectedSpecies'),
-        tooltip: 'AI에게 물어보기',
-        child: const Icon(Icons.chat),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: FloatingActionButton(
+          heroTag: 'wiki_chat_fab',
+          onPressed: () =>
+              context.push('/chat/new?speciesId=$selectedSpecies'),
+          tooltip: 'AI에게 물어보기',
+          child: const Icon(Icons.chat),
+        ),
       ),
       body: Column(
         children: [
@@ -60,10 +84,16 @@ class WikiScreen extends ConsumerWidget {
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
-                      label: Text(label),
+                      label: Text(
+                        label,
+                        style: isSelected
+                            ? const TextStyle(fontWeight: FontWeight.bold)
+                            : null,
+                      ),
                       selected: isSelected,
                       onSelected: (_) {
-                        ref.read(selectedWikiSpeciesProvider.notifier).state = id;
+                        ref.read(selectedWikiSpeciesProvider.notifier).state =
+                            id;
                       },
                       selectedColor:
                           Theme.of(context).colorScheme.primaryContainer,
@@ -77,8 +107,8 @@ class WikiScreen extends ConsumerWidget {
           // Summary card
           careInfoAsync.when(
             loading: () => const Padding(
-              padding: EdgeInsets.all(32),
-              child: Center(child: CircularProgressIndicator()),
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SkeletonCard(lineCount: 4),
             ),
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(16),
@@ -100,7 +130,7 @@ class WikiScreen extends ConsumerWidget {
                     children: [
                       Text(
                         info.speciesNameKo,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: AppStyles.subsectionTitle(context),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -115,17 +145,33 @@ class WikiScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          _SummaryChip(label: '난이도', value: info.difficulty),
+                          _SummaryChip(
+                            label: '난이도',
+                            value: _difficultyLabel(info.difficulty),
+                            icon: Icons.star_rounded,
+                          ),
                           const SizedBox(width: 8),
-                          _SummaryChip(label: '수명', value: info.lifespan),
+                          _SummaryChip(
+                            label: '수명',
+                            value: info.lifespan,
+                            icon: Icons.hourglass_empty_rounded,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          _SummaryChip(label: '크기', value: info.adultSize),
+                          _SummaryChip(
+                            label: '크기',
+                            value: info.adultSize,
+                            icon: Icons.straighten_rounded,
+                          ),
                           const SizedBox(width: 8),
-                          _SummaryChip(label: '성격', value: info.temperament),
+                          _SummaryChip(
+                            label: '성격',
+                            value: _shortTemperament(info.temperament),
+                            icon: Icons.pets_rounded,
+                          ),
                         ],
                       ),
                     ],
@@ -143,25 +189,26 @@ class WikiScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: GridView.count(
                 crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.6,
+                mainAxisSpacing: 6,
+                crossAxisSpacing: 8,
+                childAspectRatio: 1.9,
                 children: _categories.map((cat) {
-                  final (categoryId, label) = cat;
                   return _CategoryCard(
-                    label: label,
+                    label: cat.label,
+                    icon: cat.icon,
+                    highlighted: cat.highlighted,
                     onTap: () {
-                      if (categoryId == 'compare') {
+                      if (cat.id == 'compare') {
                         context.push('/wiki/compare');
-                      } else if (categoryId == 'morph-guide') {
+                      } else if (cat.id == 'morph-guide') {
                         context.push('/wiki/$selectedSpecies/morph-guide');
-                      } else if (categoryId == 'morph-calc') {
+                      } else if (cat.id == 'morph-calc') {
                         context.push('/wiki/$selectedSpecies/morph-calc');
-                      } else if (categoryId == 'ai-chat') {
+                      } else if (cat.id == 'ai-chat') {
                         context.push(
                             '/chat/new?speciesId=$selectedSpecies');
                       } else {
-                        context.push('/wiki/$selectedSpecies/$categoryId');
+                        context.push('/wiki/$selectedSpecies/${cat.id}');
                       }
                     },
                   );
@@ -178,8 +225,13 @@ class WikiScreen extends ConsumerWidget {
 class _SummaryChip extends StatelessWidget {
   final String label;
   final String value;
+  final IconData icon;
 
-  const _SummaryChip({required this.label, required this.value});
+  const _SummaryChip({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -193,11 +245,21 @@ class _SummaryChip extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
             ),
             const SizedBox(height: 2),
             Text(
@@ -217,21 +279,43 @@ class _SummaryChip extends StatelessWidget {
 
 class _CategoryCard extends StatelessWidget {
   final String label;
+  final IconData icon;
+  final bool highlighted;
   final VoidCallback onTap;
 
-  const _CategoryCard({required this.label, required this.onTap});
+  const _CategoryCard({
+    required this.label,
+    required this.icon,
+    required this.highlighted,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = highlighted
+        ? Theme.of(context).colorScheme.primaryContainer
+        : null;
+    final iconColor = highlighted
+        ? Theme.of(context).colorScheme.onPrimaryContainer
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+
     return Card(
       clipBehavior: Clip.antiAlias,
+      color: bgColor,
       child: InkWell(
         onTap: onTap,
         child: Center(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.titleSmall,
-            textAlign: TextAlign.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 28, color: iconColor),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.titleSmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       ),

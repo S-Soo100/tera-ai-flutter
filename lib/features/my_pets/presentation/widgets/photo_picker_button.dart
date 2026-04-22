@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -99,10 +100,11 @@ class PhotoPickerButton extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: Image.network(
-              currentPhotoUrl!,
+            child: CachedNetworkImage(
+              imageUrl: currentPhotoUrl!,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _buildPlaceholder(colorScheme),
+              placeholder: (_, __) => Container(color: colorScheme.surfaceContainerHigh),
+              errorWidget: (_, __, ___) => _buildPlaceholder(colorScheme),
             ),
           ),
           Positioned(

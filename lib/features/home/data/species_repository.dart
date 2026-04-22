@@ -4,18 +4,6 @@ class SpeciesRepository {
   // 메인 3종 (상세 사육 위키 지원)
   static const List<Species> _featuredSpecies = [
     Species(
-      id: 'leopard-gecko',
-      koreanName: '레오파드 게코',
-      scientificName: 'Eublepharis macularius',
-      commonName: 'Leopard Gecko',
-      category: '도마뱀',
-      family: '표범도마뱀��이과',
-      registrationRequired: true,
-      hasCareInfo: true,
-      hasMorphData: true,
-      tags: ['입문', '인기', '야행성'],
-    ),
-    Species(
       id: 'crested-gecko',
       koreanName: '크레스티드 게코',
       scientificName: 'Correlophus ciliatus',
@@ -26,6 +14,18 @@ class SpeciesRepository {
       hasCareInfo: true,
       hasMorphData: true,
       tags: ['입문', '인기', '수목성'],
+    ),
+    Species(
+      id: 'leopard-gecko',
+      koreanName: '레오파드 게코',
+      scientificName: 'Eublepharis macularius',
+      commonName: 'Leopard Gecko',
+      category: '도마뱀',
+      family: '표범도마뱀붙이과',
+      registrationRequired: true,
+      hasCareInfo: true,
+      hasMorphData: true,
+      tags: ['입문', '인기', '야행성'],
     ),
     Species(
       id: 'fat-tailed-gecko',

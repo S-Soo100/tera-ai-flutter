@@ -14,7 +14,10 @@ dependencies:
   easy_localization: ^3.0.7+1
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  google_fonts: ^6.2.1
+  shimmer: ^3.0.0
+  cached_network_image: ^3.4.1
+  video_player: ^2.9.2
+  infinite_scroll_pagination: ^4.1.0
   intl: ^0.20.0
   image_picker: ^1.1.2
   uuid: ^4.5.1
@@ -28,6 +31,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.6
   hive_generator: ^2.0.1
   build_runner: ^2.4.13
 
@@ -39,3 +44,29 @@ flutter:
     - assets/data/
     - assets/data/care_info/
     - assets/data/morphs/
+    - assets/images/
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Pretendard-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Pretendard-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Pretendard-Bold.otf
+          weight: 700
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  adaptive_icon_background: "#1B5E20"
+  adaptive_icon_foreground: "assets/images/logo.png"
+
+flutter_native_splash:
+  color: "#1B5E20"
+  image: assets/images/logo.png
+  android_12:
+    color: "#1B5E20"
+    image: assets/images/logo.png

@@ -76,7 +76,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 로고
-                  Icon(Icons.pets, size: 64, color: colorScheme.primary),
+                  Image.asset('assets/images/logo.png', width: 80, height: 80),
                   const SizedBox(height: 16),
                   Text(
                     'Tera AI',

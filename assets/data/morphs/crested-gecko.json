@@ -3,7 +3,7 @@
   "species_name_ko": "크레스티드 게코",
   "species_name_en": "Crested Gecko",
   "scientific_name": "Correlophus ciliatus",
-  "last_updated": "2026-04-14",
+  "last_updated": "2026-04-15",
   "calculator_type": "mini",
   "calculator_note": "멘델 유전 계산 가능한 유전자 6개(릴리/아잔틱/팬텀/카푸치노/세이블/하이웨이). 카푸치노·세이블·하이웨이는 같은 좌위의 대립유전자 복합체. 나머지 대부분은 폴리제닉/라인브리드로 확률 계산 불가.",
   "genes": [
@@ -234,6 +234,56 @@
       "genes": ["cappuccino", "sable", "lilly-white"],
       "genetics_type": "proven_combo",
       "description": "카푸치노 + 세이블 + 릴리 화이트 3중 조합. 매우 희귀."
+    },
+    {
+      "id": "phantom-sable",
+      "name": "팬텀 세이블",
+      "name_en": "Phantom Sable",
+      "genes": ["phantom", "sable"],
+      "genetics_type": "proven_combo",
+      "description": "팬텀(흰색 억제)과 세이블(어두운 기저)의 이중 효과. 극도로 어두운 개체."
+    },
+    {
+      "id": "axanthic-cappuccino",
+      "name": "아잔틱 카푸치노",
+      "name_en": "Axanthic Cappuccino",
+      "genes": ["axanthic", "cappuccino"],
+      "genetics_type": "proven_combo",
+      "description": "아잔틱의 흑백 톤 + 카푸치노의 어두운 기저. 블루-그레이 개체. 적색/황색 색소 완전 제거."
+    },
+    {
+      "id": "axanthic-sable",
+      "name": "아잔틱 세이블",
+      "name_en": "Axanthic Sable",
+      "genes": ["axanthic", "sable"],
+      "genetics_type": "proven_combo",
+      "description": "아잔틱의 흑백 + 세이블의 흰색 새들 패치 강조. 순수 흑백 조화."
+    },
+    {
+      "id": "super-highway",
+      "name": "슈퍼 하이웨이",
+      "name_en": "Super Highway",
+      "genes": ["highway"],
+      "genetics_type": "proven_mendelian",
+      "zygosity": "homozygous",
+      "description": "하이웨이 호모. 슈퍼 카푸치노와 유사한 외형. 데이터 제한적.",
+      "health_warning": "슈퍼 카푸치노와 유사한 콧구멍 축소 및 건강 문제 보고. 의도적 생산 비권장."
+    },
+    {
+      "id": "lilly-highway",
+      "name": "릴리 하이웨이",
+      "name_en": "Lilly White Highway",
+      "genes": ["lilly-white", "highway"],
+      "genetics_type": "proven_combo",
+      "description": "릴리 화이트 + 하이웨이 콤보. 프로젝트 초기 단계."
+    },
+    {
+      "id": "phantom-luwak",
+      "name": "팬텀 루왁",
+      "name_en": "Phantom Luwak",
+      "genes": ["phantom", "cappuccino", "sable"],
+      "genetics_type": "proven_combo",
+      "description": "팬텀 + 카푸치노-세이블 복합헤테로(루왁). 3유전자 콤보. 극도로 어둡고 패턴 억제."
     }
   ],
   "line_bred_traits": [
@@ -340,7 +390,15 @@
       "name_en": "Dalmatian",
       "type": "spot",
       "group": "spot",
-      "description": "전신 검은 반점(25개+). 슈퍼 달마시안 = 100개+. 해칭 시 적고 25g에서 본격 발달."
+      "description": "전신 검은 반점(25개+). 해칭 시 적고 25g에서 본격 발달."
+    },
+    {
+      "id": "super-dalmatian",
+      "name": "슈퍼 달마시안",
+      "name_en": "Super Dalmatian",
+      "type": "spot",
+      "group": "spot",
+      "description": "달마시안 반점 100개 이상. 전신이 반점으로 뒤덮인 극단적 표현형. 선별교배로 달성."
     },
     {
       "id": "snowflake",
@@ -405,6 +463,30 @@
       "type": "color",
       "group": "color",
       "description": "크림색 기본색."
+    },
+    {
+      "id": "buckskin",
+      "name": "벅스킨",
+      "name_en": "Buckskin",
+      "type": "color",
+      "group": "color",
+      "description": "갈색~회색 탄(tan) 기저의 패턴리스/바이컬러 개체. 야생형에 가까운 독특한 색조."
+    },
+    {
+      "id": "charcoal",
+      "name": "차콜",
+      "name_en": "Charcoal",
+      "type": "color",
+      "group": "color",
+      "description": "어두운 회색~흑회색 기저. 팬텀과 구분되는 라인브리드 색상 분류."
+    },
+    {
+      "id": "creamsicle",
+      "name": "크림씨클",
+      "name_en": "Creamsicle",
+      "type": "color_pattern",
+      "group": "color",
+      "description": "오렌지 + 크림/화이트 조합. 다양한 패턴과 결합 가능. 한국에서도 인기 있는 형질."
     },
     {
       "id": "crowned",

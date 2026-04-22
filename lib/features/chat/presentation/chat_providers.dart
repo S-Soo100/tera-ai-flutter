@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import '../../wiki/data/citation_repository.dart';
+import '../../wiki/domain/citation.dart';
 import '../data/chat_repository.dart';
 import '../data/knowledge_repository.dart';
 import '../data/groq_api_repository.dart';
@@ -156,13 +158,15 @@ class ChatMessagesNotifier extends StateNotifier<ChatState> {
         return;
       }
 
-      // 앱 레이어에서 출처 직접 첨부
-      var finalContent = response.content;
-      if (result.hasCareData && result.sources.isNotEmpty) {
-        finalContent += '\n\n출처:\n${result.sources.map((s) => '- $s').join('\n')}';
-      }
-      if (!result.hasCareData) {
-        finalContent += '\n\n일반 지식 기반 답변입니다. 전문가 확인을 권장합니다.';
+      // 출처는 content에 삽입하지 않고 구조적 필드로 분리
+      final finalContent = response.content;
+      final String sourceType;
+      if (result.citationIds.isNotEmpty) {
+        sourceType = 'care_data';
+      } else if (result.webSources.isNotEmpty) {
+        sourceType = 'web_search';
+      } else {
+        sourceType = 'general_knowledge';
       }
 
       // AI 응답 저장
@@ -173,6 +177,9 @@ class ChatMessagesNotifier extends StateNotifier<ChatState> {
         content: finalContent,
         createdAt: DateTime.now(),
         tokenCount: response.completionTokens,
+        citationIds: result.citationIds,
+        sourceType: sourceType,
+        webSources: result.webSources,
       );
       await chatRepo.addMessage(assistantMsg);
       await chatRepo.incrementQuota();
@@ -217,4 +224,14 @@ class ChatMessagesNotifier extends StateNotifier<ChatState> {
 // 남은 메시지 수
 final remainingMessagesProvider = Provider<int>((ref) {
   return ref.watch(chatRepositoryProvider).remainingMessages();
+});
+
+// Citation ID 리스트 → Citation 객체 리스트 resolve
+// family 키를 String으로 정규화 (List는 참조 동등성이라 캐싱 안 됨)
+final chatCitationsProvider =
+    FutureProvider.family<List<Citation>, String>((ref, idsKey) async {
+  if (idsKey.isEmpty) return const [];
+  final ids = idsKey.split(',');
+  final repo = ref.read(citationRepositoryProvider);
+  return repo.hydrate(ids);
 });

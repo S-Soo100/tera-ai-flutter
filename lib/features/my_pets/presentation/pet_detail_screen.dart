@@ -1,7 +1,11 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
+import '../../my_cage/presentation/my_cage_providers.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../../wiki/presentation/wiki_providers.dart';
 import '../domain/pet.dart';
@@ -88,6 +92,11 @@ class PetDetailScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             _MemoSection(memo: pet.memo!),
           ],
+
+          // 이 개체의 카메라 섹션
+          const SizedBox(height: 16),
+          _PetCamerasSection(petId: petId),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -185,12 +194,17 @@ class _ProfileSection extends StatelessWidget {
       return ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: isNetwork
-            ? Image.network(
-                pet.photoPath!,
+            ? CachedNetworkImage(
+                imageUrl: pet.photoPath!,
                 width: 120,
                 height: 120,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildIconPlaceholder(context),
+                placeholder: (_, __) => Container(
+                  width: 120,
+                  height: 120,
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                ),
+                errorWidget: (_, __, ___) => _buildIconPlaceholder(context),
               )
             : Image.file(
                 File(pet.photoPath!),
@@ -212,10 +226,9 @@ class _ProfileSection extends StatelessWidget {
         color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Icon(
-        Icons.pets,
-        size: 48,
-        color: Theme.of(context).colorScheme.onPrimaryContainer,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.asset('assets/images/logo.png', width: 64, height: 64),
       ),
     );
   }
@@ -277,6 +290,146 @@ class _MemoSection extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PetCamerasSection extends ConsumerWidget {
+  final String petId;
+
+  const _PetCamerasSection({required this.petId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final camerasAsync = ref.watch(petCamerasProvider(petId));
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'pet_detail_cameras_title'.tr(),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        camerasAsync.when(
+          loading: () => const SkeletonListTile(),
+          error: (_, __) => _CamerasError(
+            onRetry: () => ref.invalidate(petCamerasProvider(petId)),
+          ),
+          data: (cameras) {
+            if (cameras.isEmpty) {
+              return _CamerasEmpty(petId: petId);
+            }
+            return Column(
+              children: [
+                ...cameras.map(
+                  (camera) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: Icon(
+                        camera.isActive
+                            ? Icons.videocam
+                            : Icons.videocam_off_outlined,
+                        color: camera.isActive
+                            ? colorScheme.primary
+                            : colorScheme.outline,
+                      ),
+                      title: Text(camera.displayName),
+                      subtitle: Text(
+                        '${camera.host}:${camera.port}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          context.push('/my-cage/cameras/${camera.id}'),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonal(
+                    onPressed: () =>
+                        context.push('/my-cage/cameras/add?petId=$petId'),
+                    child: Text('pet_detail_cameras_add'.tr()),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _CamerasEmpty extends StatelessWidget {
+  final String petId;
+
+  const _CamerasEmpty({required this.petId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      color: Theme.of(context).colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(
+              'pet_detail_cameras_empty'.tr(),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonal(
+              onPressed: () =>
+                  context.push('/my-cage/cameras/add?petId=$petId'),
+              child: Text('pet_detail_cameras_add'.tr()),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CamerasError extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _CamerasError({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          Icons.error_outline,
+          size: 16,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'error_generic'.tr(),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const Spacer(),
+        TextButton(
+          onPressed: onRetry,
+          child: Text('retry'.tr()),
+        ),
+      ],
     );
   }
 }

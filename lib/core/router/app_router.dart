@@ -13,7 +13,10 @@ import '../../features/my_pets/presentation/my_pets_screen.dart';
 import '../../features/my_pets/presentation/pet_add_screen.dart';
 import '../../features/my_pets/presentation/pet_detail_screen.dart';
 import '../../features/my_pets/presentation/pet_edit_screen.dart';
-import '../../features/guide/presentation/guide_screen.dart';
+import '../../features/my_cage/presentation/my_cage_screen.dart';
+import '../../features/my_cage/presentation/camera_add_screen.dart';
+import '../../features/my_cage/presentation/camera_detail_screen.dart';
+import '../../features/my_cage/presentation/clip_player_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
 import '../../features/chat/presentation/chat_screen.dart';
@@ -50,7 +53,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/splash',
         '/home',
         '/wiki',
-        '/guide',
         '/search',
         '/login',
         '/signup',
@@ -175,12 +177,35 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Tab 4: Guide
+          // Tab 4: My Cage (내 사육장·장비)
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/guide',
-                builder: (context, state) => const GuideScreen(),
+                path: '/my-cage',
+                builder: (context, state) => const MyCageScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'cameras/add',
+                    builder: (context, state) {
+                      final petId = state.uri.queryParameters['petId'];
+                      return CameraAddScreen(prefilledPetId: petId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'cameras/:cameraId',
+                    builder: (context, state) {
+                      final id = state.pathParameters['cameraId']!;
+                      return CameraDetailScreen(cameraId: id);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'clips/:clipId',
+                    builder: (context, state) {
+                      final id = state.pathParameters['clipId']!;
+                      return ClipPlayerScreen(clipId: id);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -247,6 +272,8 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
+        height: 65,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) {
           navigationShell.goBranch(
@@ -254,26 +281,29 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
             initialLocation: index == navigationShell.currentIndex,
           );
         },
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: '홈',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),
             selectedIcon: Icon(Icons.menu_book),
             label: '사육 위키',
           ),
           NavigationDestination(
-            icon: Icon(Icons.pets_outlined),
-            selectedIcon: Icon(Icons.pets),
+            icon: Opacity(
+              opacity: 0.7,
+              child: Image.asset('assets/images/logo.png', width: 24, height: 24),
+            ),
+            selectedIcon: Image.asset('assets/images/logo.png', width: 24, height: 24),
             label: '내 개체',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.gavel_outlined),
-            selectedIcon: Icon(Icons.gavel),
-            label: '자진신고',
+          const NavigationDestination(
+            icon: Icon(Icons.videocam_outlined),
+            selectedIcon: Icon(Icons.videocam),
+            label: '내 사육장',
           ),
         ],
       ),

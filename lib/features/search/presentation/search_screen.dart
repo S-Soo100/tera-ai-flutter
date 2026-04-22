@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/app_tag.dart';
 import '../../home/presentation/home_providers.dart';
 import '../../wiki/presentation/wiki_providers.dart';
 
@@ -78,14 +79,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     return ListTile(
                       title: Text(species.koreanName),
                       subtitle: Text(species.scientificName),
-                      leading: Chip(
-                        label: Text(
-                          species.category,
-                          style: theme.textTheme.labelSmall,
-                        ),
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                      ),
+                      leading: AppTag(label: species.category),
                       trailing: featured
                           ? ActionChip(
                               label: const Text('상세 정보'),
@@ -97,15 +91,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               },
                               avatar: const Icon(Icons.menu_book, size: 16),
                             )
-                          : Chip(
-                              label: const Text('합법'),
-                              backgroundColor:
-                                  colorScheme.primaryContainer,
-                              labelStyle: TextStyle(
-                                color: colorScheme.onPrimaryContainer,
-                              ),
-                              side: BorderSide.none,
-                            ),
+                          : const AppTag(label: '합법'),
                     );
                   },
                 ),
