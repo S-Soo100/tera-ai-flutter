@@ -20,9 +20,5 @@ class AppConstants {
     'fat-tailed-gecko': '펫테일 게코',
   };
 
-  static final DateTime registrationDeadline = DateTime(2026, 6, 13);
-  static final DateTime gracePeriodEnd = DateTime(2026, 12, 13);
 
-  static int get daysUntilDeadline =>
-      registrationDeadline.difference(DateTime.now()).inDays;
 }

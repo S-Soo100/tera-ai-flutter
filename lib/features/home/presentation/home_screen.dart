@@ -4,7 +4,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/app_tag.dart';
 import '../../../shared/widgets/section_header.dart';
@@ -20,7 +19,6 @@ class HomeScreen extends ConsumerWidget {
     final speciesRepo = ref.watch(speciesRepositoryProvider);
     final pets = ref.watch(petListProvider);
     final featuredSpecies = speciesRepo.featuredSpecies;
-    final daysLeft = AppConstants.daysUntilDeadline;
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -41,10 +39,6 @@ class HomeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- D-day 배너 ---
-            _DdayBanner(daysLeft: daysLeft, colorScheme: colorScheme),
-            const SizedBox(height: 24),
-
             // --- 내 개체 섹션 ---
             if (pets.isEmpty)
               _EmptyPetsSection(colorScheme: colorScheme)
@@ -99,75 +93,6 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _DdayBanner extends StatelessWidget {
-  final int daysLeft;
-  final ColorScheme colorScheme;
-
-  const _DdayBanner({required this.daysLeft, required this.colorScheme});
-
-  @override
-  Widget build(BuildContext context) {
-    final isExpired = daysLeft < 0;
-    final displayText =
-        isExpired ? '자진신고 기한이 지났습니다' : '자진신고 마감 D-$daysLeft';
-
-    return Card(
-      color: isExpired
-          ? colorScheme.errorContainer
-          : colorScheme.primaryContainer,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => context.go('/guide'),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Icon(Icons.calendar_today,
-                  size: 20,
-                  color: isExpired
-                      ? colorScheme.onErrorContainer
-                      : colorScheme.onPrimaryContainer),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayText,
-                      style:
-                          Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: isExpired
-                                    ? colorScheme.onErrorContainer
-                                    : colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.bold,
-                              ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '2026년 6월 13일까지',
-                      style:
-                          Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: (isExpired
-                                        ? colorScheme.onErrorContainer
-                                        : colorScheme.onPrimaryContainer)
-                                    .withValues(alpha: 0.7),
-                              ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right,
-                  color: isExpired
-                      ? colorScheme.onErrorContainer
-                      : colorScheme.onPrimaryContainer),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _EmptyPetsSection extends StatelessWidget {
   final ColorScheme colorScheme;
 
@@ -175,8 +100,6 @@ class _EmptyPetsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
