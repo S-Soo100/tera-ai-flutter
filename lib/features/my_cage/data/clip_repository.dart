@@ -1,7 +1,16 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../domain/behavior_inference.dart';
+import '../domain/behavior_label.dart';
 import '../domain/clip.dart';
+import '../domain/clip_media_url.dart';
 import '../domain/clip_page.dart';
+import '../domain/highlights_page.dart';
+import '../domain/labeler_status.dart';
+import 'camera_exceptions.dart';
 
 class ClipRepository {
   final SupabaseClient _supabase;
@@ -137,17 +146,158 @@ class ClipRepository {
     return Clip.fromJson(list.first as Map<String, dynamic>);
   }
 
-  // ── Backend URL 생성 (파일/썸네일) ─────────────────────────────────────────
+  // ── Backend API (JWT 필요) ─────────────────────────────────────────────────
 
-  /// mp4 스트리밍 URL. video_player에 넘길 것.
-  String fileUrl(String id) => '$_backendUrl/clips/$id/file';
+  /// 서명된 파일 URL. TTL은 ClipMediaUrl.ttlSec 참조.
+  Future<ClipMediaUrl> getFileUrl(String id, {int retries = 1}) async {
+    try {
+      final resp = await _authedRequest(() async => http.get(
+            Uri.parse('$_backendUrl/clips/$id/file/url'),
+            headers: await _authHeadersHttp(),
+          ));
+      if (resp.statusCode == 200) {
+        return ClipMediaUrl.fromJson(
+            jsonDecode(resp.body) as Map<String, dynamic>);
+      }
+      // 5xx만 retry, 4xx는 영구 에러
+      if (retries > 0 && resp.statusCode >= 500) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        return getFileUrl(id, retries: retries - 1);
+      }
+      throw BackendException(resp.statusCode, _extractDetail(resp.body));
+    } on http.ClientException {
+      if (retries > 0) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        return getFileUrl(id, retries: retries - 1);
+      }
+      rethrow;
+    }
+  }
 
-  /// 썸네일 이미지 URL. thumbnailPath == null인 레거시 클립은 caller가 placeholder 표시.
-  String thumbnailUrl(String id) => '$_backendUrl/clips/$id/thumbnail';
+  /// 서명된 썸네일 URL. TTL은 ClipMediaUrl.ttlSec 참조.
+  Future<ClipMediaUrl> getThumbnailUrl(String id, {int retries = 1}) async {
+    try {
+      final resp = await _authedRequest(() async => http.get(
+            Uri.parse('$_backendUrl/clips/$id/thumbnail/url'),
+            headers: await _authHeadersHttp(),
+          ));
+      if (resp.statusCode == 200) {
+        return ClipMediaUrl.fromJson(
+            jsonDecode(resp.body) as Map<String, dynamic>);
+      }
+      // 5xx만 retry, 4xx는 영구 에러
+      if (retries > 0 && resp.statusCode >= 500) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        return getThumbnailUrl(id, retries: retries - 1);
+      }
+      throw BackendException(resp.statusCode, _extractDetail(resp.body));
+    } on http.ClientException {
+      if (retries > 0) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        return getThumbnailUrl(id, retries: retries - 1);
+      }
+      rethrow;
+    }
+  }
 
-  /// Authorization 헤더. video_player httpHeaders, CachedNetworkImage httpHeaders에 사용.
-  Future<Map<String, String>> authHeaders() async {
+  /// 해당 클립의 사람 라벨 목록. 404면 빈 리스트 반환.
+  Future<List<BehaviorLabel>> getLabels(String id) async {
+    final resp = await _authedRequest(() async => http.get(
+          Uri.parse('$_backendUrl/clips/$id/labels'),
+          headers: await _authHeadersHttp(),
+        ));
+    if (resp.statusCode == 200) {
+      final body = jsonDecode(resp.body) as List;
+      return body
+          .map((e) => BehaviorLabel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    if (resp.statusCode == 404) return const [];
+    throw BackendException(resp.statusCode, _extractDetail(resp.body));
+  }
+
+  /// VLM 추론 결과. 204/404면 null 반환.
+  Future<BehaviorInference?> getInference(String id) async {
+    final resp = await _authedRequest(() async => http.get(
+          Uri.parse('$_backendUrl/clips/$id/inference'),
+          headers: await _authHeadersHttp(),
+        ));
+    if (resp.statusCode == 200) {
+      if (resp.body.isEmpty || resp.body == 'null') return null;
+      final decoded = jsonDecode(resp.body);
+      if (decoded == null) return null;
+      return BehaviorInference.fromJson(decoded as Map<String, dynamic>);
+    }
+    if (resp.statusCode == 204 || resp.statusCode == 404) return null;
+    throw BackendException(resp.statusCode, _extractDetail(resp.body));
+  }
+
+  /// 현재 사용자의 라벨러 여부. 404/501면 null 반환 (미구현 fallback).
+  Future<LabelerStatus?> getMyLabelerStatus() async {
+    final resp = await _authedRequest(() async => http.get(
+          Uri.parse('$_backendUrl/me/is_labeler'),
+          headers: await _authHeadersHttp(),
+        ));
+    if (resp.statusCode == 200) {
+      return LabelerStatus.fromJson(
+          jsonDecode(resp.body) as Map<String, dynamic>);
+    }
+    if (resp.statusCode == 404 || resp.statusCode == 501) return null;
+    throw BackendException(resp.statusCode, _extractDetail(resp.body));
+  }
+
+  /// 하이라이트 클립 페이지. cursor-based, 404/501면 empty 반환.
+  Future<HighlightsPage> getHighlights({
+    DateTime? cursor,
+    int limit = 50,
+    String? petId,
+  }) async {
+    final params = <String, String>{'limit': '$limit'};
+    if (cursor != null) params['cursor'] = cursor.toUtc().toIso8601String();
+    if (petId != null) params['pet_id'] = petId;
+    final uri = Uri.parse('$_backendUrl/clips/highlights')
+        .replace(queryParameters: params);
+    final resp = await _authedRequest(() async => http.get(
+          uri,
+          headers: await _authHeadersHttp(),
+        ));
+    if (resp.statusCode == 200) {
+      return HighlightsPage.fromJson(
+          jsonDecode(resp.body) as Map<String, dynamic>);
+    }
+    if (resp.statusCode == 404 || resp.statusCode == 501) {
+      return HighlightsPage.empty;
+    }
+    throw BackendException(resp.statusCode, _extractDetail(resp.body));
+  }
+
+  // ── 내부 헬퍼 ─────────────────────────────────────────────────────────────
+
+  /// 401 응답 시 전역 signOut으로 /login 자동 이동 유도.
+  Future<http.Response> _authedRequest(
+      Future<http.Response> Function() send) async {
+    final resp = await send();
+    if (resp.statusCode == 401) {
+      await _supabase.auth.signOut();
+    }
+    return resp;
+  }
+
+  /// HTTP 요청용 Bearer 헤더. 기존 동기 authHeaders()와 이름 구분.
+  Future<Map<String, String>> _authHeadersHttp() async {
     final token = await _tokenProvider();
     return {if (token != null) 'Authorization': 'Bearer $token'};
+  }
+
+  String _extractDetail(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map && decoded['detail'] != null) {
+        return decoded['detail'].toString();
+      }
+      return body;
+    } catch (_) {
+      return body;
+    }
   }
 }

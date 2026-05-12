@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import '../../../core/storage/safe_hive.dart';
 import '../domain/pet_event.dart';
 import '../domain/weight_log.dart';
 
@@ -14,7 +15,7 @@ class PetEventRepository {
 
   static Future<void> init() async {
     Hive.registerAdapter(PetEventAdapter());
-    await Hive.openBox<PetEvent>(_boxName);
+    await openBoxSafely<PetEvent>(_boxName);
   }
 
   List<PetEvent> getEvents(String petId) {

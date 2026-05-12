@@ -234,5 +234,30 @@
   "my_cage_select_hour": "시간 선택",
   "my_cage_no_clips_this_date": "이 날짜에 녹화된 영상이 없습니다",
   "my_cage_select_another_date": "다른 날짜 선택",
-  "clip_hour_count_zero": "—"
+  "clip_hour_count_zero": "—",
+
+  "clip_label_section_title": "사람이 단 라벨",
+  "clip_inference_section_title": "AI 추론",
+
+  "behavior_action_eating_paste": "에그푸드 식사",
+  "behavior_action_drinking": "물 마심",
+  "behavior_action_moving": "이동",
+  "behavior_action_unknown": "알 수 없음",
+  "behavior_action_eating_prey": "먹이 식사",
+  "behavior_action_defecating": "배변",
+  "behavior_action_shedding": "탈피",
+  "behavior_action_basking": "일광욕",
+  "behavior_action_unseen": "보이지 않음",
+
+  "behavior_lick_target_air": "허공",
+  "behavior_lick_target_dish": "그릇",
+  "behavior_lick_target_floor": "바닥",
+  "behavior_lick_target_wall": "벽",
+  "behavior_lick_target_object": "사물",
+  "behavior_lick_target_other": "기타",
+
+  "live_view_title": "라이브",
+  "live_view_connecting": "연결 중...",
+  "live_view_error": "스트림 연결 실패",
+  "live_view_reconnect": "다시 연결"
 }

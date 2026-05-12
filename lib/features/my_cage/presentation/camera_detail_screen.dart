@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_styles.dart';
-import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import 'my_cage_providers.dart';
-import 'widgets/clip_filter_bar.dart';
 import 'widgets/clip_grid_card.dart';
 import 'widgets/hour_chip_row.dart';
+import 'widgets/live_mjpeg_view.dart';
 
 class CameraDetailScreen extends ConsumerStatefulWidget {
   const CameraDetailScreen({super.key, required this.cameraId});
@@ -24,7 +24,6 @@ class CameraDetailScreen extends ConsumerStatefulWidget {
 class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
   DateTime? _selectedDate; // 로컬 기준 y-m-d, 시분초=0
   int? _selectedHour; // 0~23
-  bool _onlyMotion = true;
   bool _didInitialJump = false;
 
   // ── 초기 점프 ──────────────────────────────────────────────────────────────
@@ -58,13 +57,6 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
     if (nearest != null && mounted) {
       setState(() => _selectedHour = nearest);
     }
-  }
-
-  // ── 필터 토글 ──────────────────────────────────────────────────────────────
-
-  void _setMotionOnly(bool value) {
-    if (_onlyMotion == value) return;
-    setState(() => _onlyMotion = value);
   }
 
   // ── 달력 선택 ──────────────────────────────────────────────────────────────
@@ -151,7 +143,6 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
         hourCountsProvider((
           cameraId: widget.cameraId,
           date: _selectedDate!,
-          onlyMotion: _onlyMotion,
         )),
         (_, next) => next.whenData(_maybeShiftHour),
       );
@@ -180,14 +171,15 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // 라이브 스트림 뷰 (임시 데모)
+          LiveMjpegView(
+            url: AppConstants.tempLiveStreamUrl,
+            username: AppConstants.tempLiveStreamUser,
+            password: AppConstants.tempLiveStreamPass,
+          ),
+
           // 카메라 정보 카드
           _CameraInfoCard(cameraId: widget.cameraId),
-
-          // 필터 칩 바
-          ClipFilterBar(
-            motionOnly: _onlyMotion,
-            onChanged: _setMotionOnly,
-          ),
 
           // 날짜+시간 선택 영역 + 그리드
           Expanded(
@@ -221,13 +213,11 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
     final hourCountsKey = (
       cameraId: widget.cameraId,
       date: date,
-      onlyMotion: _onlyMotion,
     );
     final clipsKey = (
       cameraId: widget.cameraId,
       date: date,
       hour: hour,
-      onlyMotion: _onlyMotion,
     );
 
     final hourCountsAsync = ref.watch(hourCountsProvider(hourCountsKey));
@@ -417,44 +407,52 @@ class _CameraInfoCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cameraAsync = ref.watch(cameraProvider(cameraId));
 
+    final colorScheme = Theme.of(context).colorScheme;
+    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        );
+
     return Padding(
-      padding: AppStyles.pagePadding,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppStyles.spacing16,
+        vertical: AppStyles.spacing4,
+      ),
       child: cameraAsync.when(
-        loading: () => const SkeletonCard(lineCount: 4, height: 120),
-        error: (e, _) => Text(e.toString()),
+        loading: () => const SkeletonLoading(
+          width: double.infinity,
+          height: 20,
+        ),
+        error: (e, _) => Text(e.toString(), style: textStyle),
         data: (camera) {
           if (camera == null) {
-            return Center(child: Text('error_generic'.tr()));
+            return Text('error_generic'.tr(), style: textStyle);
           }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          return Row(
             children: [
-              SectionHeader(title: 'camera_detail_info'.tr()),
-              Card(
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.dns_outlined),
-                      title: Text('${camera.host}:${camera.port}'),
-                      subtitle: Text('rtsp:///${camera.path}'),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.person_outline),
-                      title: Text(camera.username),
-                    ),
-                    if (camera.lastConnectedAt != null)
-                      ListTile(
-                        leading: const Icon(Icons.access_time),
-                        title: Text('camera_detail_last_connected'.tr()),
-                        subtitle: Text(
-                          DateFormat('yyyy.MM.dd HH:mm').format(
-                            camera.lastConnectedAt!.toLocal(),
-                          ),
-                        ),
-                      ),
-                  ],
+              Icon(Icons.dns_outlined, size: 14, color: colorScheme.outline),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${camera.host}:${camera.port} · ${camera.username}',
+                  style: textStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (camera.lastConnectedAt != null) ...[
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.access_time,
+                  size: 12,
+                  color: colorScheme.outline,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  DateFormat('MM.dd HH:mm')
+                      .format(camera.lastConnectedAt!.toLocal()),
+                  style: textStyle,
+                ),
+              ],
             ],
           );
         },

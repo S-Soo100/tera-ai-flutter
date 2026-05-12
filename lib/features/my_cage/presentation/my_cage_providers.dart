@@ -4,8 +4,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/config/env_config.dart';
 import '../data/camera_repository.dart';
 import '../data/clip_repository.dart';
+import '../data/video_cache_repository.dart';
+import '../domain/behavior_inference.dart';
+import '../domain/behavior_label.dart';
 import '../domain/camera.dart';
 import '../domain/clip.dart';
+import '../domain/clip_media_url.dart';
 
 // ── 내부 인프라 Provider ───────────────────────────────────────────────────────
 
@@ -59,12 +63,11 @@ final cameraProvider =
 
 // ── 시간대별 클립 조회 Provider ────────────────────────────────────────────────
 
-/// family 키: cameraId + 날짜(y-m-d 정규화) + hour(0~23) + onlyMotion
+/// family 키: cameraId + 날짜(y-m-d 정규화) + hour(0~23)
 typedef ClipsHourKey = ({
   String cameraId,
   DateTime date,
   int hour,
-  bool onlyMotion
 });
 
 /// 선택된 1시간 구간의 클립 목록 (ASC 정렬, 페이징 없음).
@@ -77,15 +80,13 @@ final clipsForHourProvider =
         cameraId: key.cameraId,
         startedAtGte: start,
         startedAtLt: end,
-        hasMotion: key.onlyMotion ? true : null,
       );
 });
 
-/// family 키: cameraId + 날짜(y-m-d 정규화) + onlyMotion
+/// family 키: cameraId + 날짜(y-m-d 정규화)
 typedef HourCountsKey = ({
   String cameraId,
   DateTime date,
-  bool onlyMotion
 });
 
 /// 해당 날짜의 시간대별 클립 개수 (hour → count, 키 0~23 전체 포함).
@@ -94,7 +95,6 @@ final hourCountsProvider =
   return ref.watch(clipRepositoryProvider).countByHourForDate(
         cameraId: key.cameraId,
         date: key.date,
-        hasMotion: key.onlyMotion ? true : null,
       );
 });
 
@@ -104,4 +104,37 @@ final latestClipTimeProvider =
   return ref.watch(clipRepositoryProvider).getLatestStartedAt(
         cameraId: cameraId,
       );
+});
+
+/// 클립 영상 presigned URL. clip_player_screen이 await + 만료 시 ref.refresh.
+final clipFileUrlProvider =
+    FutureProvider.autoDispose.family<ClipMediaUrl, String>((ref, clipId) async {
+  return ref.watch(clipRepositoryProvider).getFileUrl(clipId);
+});
+
+/// 클립 썸네일 presigned URL. ClipThumbnail이 watch.
+final clipThumbnailUrlProvider =
+    FutureProvider.autoDispose.family<ClipMediaUrl, String>((ref, clipId) async {
+  return ref.watch(clipRepositoryProvider).getThumbnailUrl(clipId);
+});
+
+/// 클립 human 라벨 목록. 빈 배열 정상, 에러는 silent fail (섹션 숨김).
+final clipLabelsProvider =
+    FutureProvider.autoDispose.family<List<BehaviorLabel>, String>(
+        (ref, clipId) async {
+  return ref.watch(clipRepositoryProvider).getLabels(clipId);
+});
+
+/// 클립 VLM 추론 1건 또는 null. 추론 없으면 null, 에러는 silent fail.
+final clipInferenceProvider =
+    FutureProvider.autoDispose.family<BehaviorInference?, String>(
+        (ref, clipId) async {
+  return ref.watch(clipRepositoryProvider).getInference(clipId);
+});
+
+// ── 캐시 Repository Provider ───────────────────────────────────────────────────
+
+/// 영상 로컬 캐시 Repository. VideoCacheRepository.init()은 main()에서 선 실행.
+final videoCacheRepositoryProvider = Provider<VideoCacheRepository>((ref) {
+  return VideoCacheRepository();
 });

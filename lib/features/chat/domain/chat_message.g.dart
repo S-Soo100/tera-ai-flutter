@@ -25,9 +25,9 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
       tokenCount: fields[5] as int?,
       fromCache: fields[6] as bool,
       knowledgeEntryId: fields[7] as String?,
-      citationIds: (fields[8] as List?)?.cast<String>() ?? const [],
+      citationIds: (fields[8] as List).cast<String>(),
       sourceType: fields[9] as String?,
-      webSources: (fields[10] as List?)?.cast<String>() ?? const [],
+      webSources: (fields[10] as List).cast<String>(),
     );
   }
 

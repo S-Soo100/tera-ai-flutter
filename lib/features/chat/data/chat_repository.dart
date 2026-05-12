@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import '../../../core/storage/safe_hive.dart';
 import '../domain/chat_message.dart';
 import '../domain/chat_quota.dart';
 import '../domain/conversation.dart';
@@ -26,10 +27,10 @@ class ChatRepository {
     Hive.registerAdapter(ChatMessageAdapter());
     Hive.registerAdapter(KnowledgeEntryAdapter());
     Hive.registerAdapter(ChatQuotaAdapter());
-    await Hive.openBox<Conversation>(_conversationsBox);
-    await Hive.openBox<ChatMessage>(_messagesBox);
-    await Hive.openBox<KnowledgeEntry>('knowledge_entries');
-    await Hive.openBox<ChatQuota>(_quotaBox);
+    await openBoxSafely<Conversation>(_conversationsBox);
+    await openBoxSafely<ChatMessage>(_messagesBox);
+    await openBoxSafely<KnowledgeEntry>('knowledge_entries');
+    await openBoxSafely<ChatQuota>(_quotaBox);
   }
 
   // Conversation CRUD

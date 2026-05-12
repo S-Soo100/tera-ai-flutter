@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/storage/safe_hive.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../domain/pet.dart';
 import '../domain/weight_log.dart';
@@ -29,8 +30,8 @@ class PetRepository {
   static Future<void> init() async {
     Hive.registerAdapter(PetAdapter());
     Hive.registerAdapter(WeightLogAdapter());
-    await Hive.openBox<Pet>(_petsBoxName);
-    await Hive.openBox<WeightLog>(_weightLogsBoxName);
+    await openBoxSafely<Pet>(_petsBoxName);
+    await openBoxSafely<WeightLog>(_weightLogsBoxName);
     await PetEventRepository.init();
     await PetEventRepository.migrateWeightLogs();
   }

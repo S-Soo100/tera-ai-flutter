@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +9,9 @@ import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/app_tag.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/clip.dart';
+import '../domain/clip_media_url.dart';
 import 'my_cage_providers.dart';
+import 'widgets/behavior_chip_section.dart';
 
 class ClipPlayerScreen extends ConsumerStatefulWidget {
   const ClipPlayerScreen({super.key, required this.clipId});
@@ -23,6 +27,8 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
   Clip? _clip;
   String? _error;
   bool _initialized = false;
+  bool _didRetryUrl = false;
+  VoidCallback? _errorListener;
 
   @override
   void initState() {
@@ -30,9 +36,10 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
     _initPlayer();
   }
 
-  Future<void> _initPlayer() async {
+  Future<void> _initPlayer({bool isRetry = false}) async {
     try {
       final repo = ref.read(clipRepositoryProvider);
+      final cacheRepo = ref.read(videoCacheRepositoryProvider);
       final clip = await repo.getById(widget.clipId);
       if (clip == null) {
         if (mounted) {
@@ -40,19 +47,50 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
         }
         return;
       }
-      final headers = await repo.authHeaders();
-      final url = repo.fileUrl(widget.clipId);
 
-      final controller = VideoPlayerController.networkUrl(
-        Uri.parse(url),
-        httpHeaders: headers,
-      );
+      // Cache hit 시도 (retry 진입 시는 skip — 만료된 URL이 캐시된 거 아니라 미러링)
+      File? cachedFile;
+      if (!isRetry) {
+        cachedFile = await cacheRepo.getCached(widget.clipId);
+      }
+
+      final VideoPlayerController controller;
+      if (cachedFile != null) {
+        controller = VideoPlayerController.file(cachedFile);
+      } else {
+        // Cache miss → presigned URL → 다운로드 후 file 재생
+        final ClipMediaUrl media;
+        if (isRetry) {
+          ref.invalidate(clipFileUrlProvider(widget.clipId));
+        }
+        media = await ref.read(clipFileUrlProvider(widget.clipId).future);
+
+        final downloadedFile =
+            await cacheRepo.downloadAndCache(widget.clipId, media.url);
+        controller = VideoPlayerController.file(downloadedFile);
+      }
+
       await controller.initialize();
 
       if (!mounted) {
         await controller.dispose();
         return;
       }
+
+      _errorListener = () {
+        final ctrlValue = controller.value;
+        if (ctrlValue.hasError && !_didRetryUrl && mounted) {
+          _didRetryUrl = true;
+          controller.removeListener(_errorListener!);
+          controller.dispose();
+          setState(() {
+            _controller = null;
+            _initialized = false;
+          });
+          _initPlayer(isRetry: true);
+        }
+      };
+      controller.addListener(_errorListener!);
 
       setState(() {
         _controller = controller;
@@ -61,6 +99,11 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
       });
       _controller!.play();
     } catch (e) {
+      if (!isRetry && mounted) {
+        _didRetryUrl = true;
+        await _initPlayer(isRetry: true);
+        return;
+      }
       if (mounted) {
         setState(() => _error = e.toString());
       }
@@ -69,6 +112,9 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
 
   @override
   void dispose() {
+    if (_controller != null && _errorListener != null) {
+      _controller!.removeListener(_errorListener!);
+    }
     _controller?.dispose();
     super.dispose();
   }
@@ -178,6 +224,8 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
                         .bodySmall
                         ?.copyWith(color: Colors.white70),
                   ),
+                  const SizedBox(height: AppStyles.spacing8),
+                  BehaviorChipSection(clipId: widget.clipId),
                 ],
               ),
             ),
