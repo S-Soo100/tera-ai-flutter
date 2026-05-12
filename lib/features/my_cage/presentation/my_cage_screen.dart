@@ -7,6 +7,7 @@ import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../my_pets/presentation/my_pets_providers.dart';
 import 'my_cage_providers.dart';
+import 'widgets/environment_card.dart';
 
 class MyCageScreen extends ConsumerWidget {
   const MyCageScreen({super.key});
@@ -25,60 +26,74 @@ class MyCageScreen extends ConsumerWidget {
         tooltip: 'my_cage_add_camera'.tr(),
         child: const Icon(Icons.add),
       ),
-      body: camerasAsync.when(
-        loading: () => const _CameraListSkeleton(),
-        error: (error, _) => _ErrorBody(
-          message: error.toString(),
-          onRetry: () => ref.invalidate(camerasProvider),
-        ),
-        data: (cameras) {
-          if (cameras.isEmpty) {
-            return _EmptyBody(
-              onAdd: () => context.push('/my-cage/cameras/add'),
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.only(
-              top: AppStyles.spacing8,
-              bottom: AppStyles.spacing32 * 3,
-            ),
-            itemCount: cameras.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final camera = cameras[index];
-              final pet = pets.where((p) => p.id == camera.petId).firstOrNull;
-              return ListTile(
-                leading: Icon(
-                  camera.isActive ? Icons.videocam : Icons.videocam_off_outlined,
-                  color: camera.isActive
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.outline,
-                ),
-                title: Text(camera.displayName),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${camera.host}:${camera.port}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    Text(
-                      pet?.name ?? '개체 미연결',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: pet != null
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.outline,
+      body: Column(
+        children: [
+          const EnvironmentCard(),
+          Expanded(
+            child: camerasAsync.when(
+              loading: () => const _CameraListSkeleton(),
+              error: (error, _) => _ErrorBody(
+                message: error.toString(),
+                onRetry: () => ref.invalidate(camerasProvider),
+              ),
+              data: (cameras) {
+                if (cameras.isEmpty) {
+                  return _EmptyBody(
+                    onAdd: () => context.push('/my-cage/cameras/add'),
+                  );
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.only(
+                    top: AppStyles.spacing8,
+                    bottom: AppStyles.spacing32 * 3,
+                  ),
+                  itemCount: cameras.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final camera = cameras[index];
+                    final pet =
+                        pets.where((p) => p.id == camera.petId).firstOrNull;
+                    return ListTile(
+                      leading: Icon(
+                        camera.isActive
+                            ? Icons.videocam
+                            : Icons.videocam_off_outlined,
+                        color: camera.isActive
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outline,
+                      ),
+                      title: Text(camera.displayName),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${camera.host}:${camera.port}',
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
-                    ),
-                  ],
-                ),
-                isThreeLine: true,
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/my-cage/cameras/${camera.id}'),
-              );
-            },
-          );
-        },
+                          Text(
+                            pet?.name ?? '개체 미연결',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: pet != null
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.outline,
+                                ),
+                          ),
+                        ],
+                      ),
+                      isThreeLine: true,
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          context.push('/my-cage/cameras/${camera.id}'),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

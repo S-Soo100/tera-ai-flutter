@@ -176,6 +176,16 @@
   "media_uploading": "업로드 중...",
   "media_empty": "아직 사진이 없어요",
 
+  "environment_card_title": "메인 사육장 (임시)",
+  "environment_card_target": "목표: 24°C / 70%",
+  "environment_demo_badge": "DEMO",
+  "environment_current_temp": "현재 온도",
+  "environment_current_humidity": "현재 습도",
+  "environment_action_ventilate": "환기 조절",
+  "environment_action_water": "물 뿌리기",
+  "environment_action_settings": "환경 설정",
+  "environment_coming_soon": "준비 중인 기능입니다",
+
   "my_cage_title": "내 사육장·장비",
   "my_cage_empty_title": "아직 연결된 카메라가 없어요",
   "my_cage_empty_subtitle": "게코 캠을 등록하고 녹화 영상을 확인해보세요",
