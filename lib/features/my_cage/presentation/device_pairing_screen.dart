@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -30,6 +31,18 @@ enum _PairingStep {
   failed,
 }
 
+/// scanning 단계에서 errorMessage 외 추가 컨텍스트
+enum _ScanErrorKind {
+  /// 일반 오류 (어댑터 꺼짐, 스캔 오류 등)
+  generic,
+
+  /// BLE 권한 요청 필요 (요청 전 또는 요청 중)
+  permissionRequired,
+
+  /// BLE 권한 영구 거부 — 설정 열기 필요
+  permissionDenied,
+}
+
 class _PairingState {
   final _PairingStep step;
   final List<BleDeviceScanResult> scanResults;
@@ -38,6 +51,7 @@ class _PairingState {
   final double jwtProgress; // 0.0 ~ 1.0
   final String? pairedDeviceId;
   final String? errorMessage;
+  final _ScanErrorKind errorKind;
 
   const _PairingState({
     this.step = _PairingStep.scanning,
@@ -47,6 +61,7 @@ class _PairingState {
     this.jwtProgress = 0.0,
     this.pairedDeviceId,
     this.errorMessage,
+    this.errorKind = _ScanErrorKind.generic,
   });
 
   _PairingState copyWith({
@@ -57,6 +72,7 @@ class _PairingState {
     double? jwtProgress,
     String? pairedDeviceId,
     String? errorMessage,
+    _ScanErrorKind? errorKind,
   }) {
     return _PairingState(
       step: step ?? this.step,
@@ -66,6 +82,7 @@ class _PairingState {
       jwtProgress: jwtProgress ?? this.jwtProgress,
       pairedDeviceId: pairedDeviceId ?? this.pairedDeviceId,
       errorMessage: errorMessage ?? this.errorMessage,
+      errorKind: errorKind ?? this.errorKind,
     );
   }
 }
@@ -115,10 +132,70 @@ class _DevicePairingScreenState extends ConsumerState<DevicePairingScreen> {
   // ── 어댑터 상태 확인 + 스캔 시작 ─────────────────────────────────────────────
 
   Future<void> _checkAdapterAndScan() async {
+    // 1단계: BLE 런타임 권한 요청
+    final statuses = await [
+      Permission.bluetoothScan,
+      Permission.bluetoothConnect,
+      Permission.locationWhenInUse,
+    ].request();
+
+    final scanGranted =
+        statuses[Permission.bluetoothScan]?.isGranted ?? false;
+    final connectGranted =
+        statuses[Permission.bluetoothConnect]?.isGranted ?? false;
+
+    // Android 12+에서는 bluetoothScan+Connect가 실권한.
+    // Android 11 이하에서는 두 Permission이 자동 granted이고 location이 실권한.
+    // permission_handler가 버전별 처리하므로 granted 여부만 확인한다.
+    final bleGranted = scanGranted && connectGranted;
+
+    if (!bleGranted) {
+      if (!mounted) return;
+      // 영구 거부 여부 확인 (shouldShowRequestRationale = false + 거부)
+      final permanentlyDenied =
+          (statuses[Permission.bluetoothScan]?.isPermanentlyDenied ?? false) ||
+          (statuses[Permission.bluetoothConnect]?.isPermanentlyDenied ?? false);
+
+      setState(() {
+        _state = _state.copyWith(
+          step: _PairingStep.scanning,
+          errorMessage: permanentlyDenied
+              ? 'ble_permission_denied'.tr()
+              : 'ble_permission_required'.tr(),
+          errorKind: permanentlyDenied
+              ? _ScanErrorKind.permissionDenied
+              : _ScanErrorKind.permissionRequired,
+        );
+      });
+      return;
+    }
+
+    // 2단계: 권한 granted → 어댑터 상태 확인
     final adapterState = FlutterBluePlus.adapterStateNow;
 
+    if (adapterState == BluetoothAdapterState.unauthorized) {
+      // 권한 granted인데 unauthorized면 iOS NSBluetoothAlwaysUsageDescription 누락 등
+      if (!mounted) return;
+      setState(() {
+        _state = _state.copyWith(
+          step: _PairingStep.scanning,
+          errorMessage: 'ble_permission_denied'.tr(),
+          errorKind: _ScanErrorKind.permissionDenied,
+        );
+      });
+      return;
+    }
+
     if (adapterState != BluetoothAdapterState.on) {
-      // 어댑터 켜질 때까지 대기
+      // 어댑터 꺼짐 — Android에서 켜기 시도, 실패해도 무시하고 대기
+      try {
+        await FlutterBluePlus.turnOn();
+      } catch (_) {
+        // 무시 — 아래 adapterState 리스닝으로 on 대기
+      }
+
+      if (!mounted) return;
+      _adapterSub?.cancel();
       _adapterSub = FlutterBluePlus.adapterState.listen((s) {
         if (s == BluetoothAdapterState.on) {
           _adapterSub?.cancel();
@@ -138,6 +215,7 @@ class _DevicePairingScreenState extends ConsumerState<DevicePairingScreen> {
       _state = _state.copyWith(
         step: _PairingStep.scanning,
         errorMessage: 'ble_adapter_off'.tr(),
+        errorKind: _ScanErrorKind.generic,
       );
     });
   }
@@ -353,8 +431,10 @@ class _DevicePairingScreenState extends ConsumerState<DevicePairingScreen> {
       _PairingStep.scanning => _ScanningBody(
           results: _state.scanResults,
           errorMessage: _state.errorMessage,
+          errorKind: _state.errorKind,
           onDeviceSelected: _onDeviceSelected,
-          onRetry: _startScan,
+          onRetry: _checkAdapterAndScan,
+          onOpenSettings: openAppSettings,
         ),
       _PairingStep.form => _FormBody(
           selectedDeviceName: _state.selectedDeviceName ?? '',
@@ -387,14 +467,18 @@ class _ScanningBody extends StatelessWidget {
   const _ScanningBody({
     required this.results,
     required this.errorMessage,
+    required this.errorKind,
     required this.onDeviceSelected,
     required this.onRetry,
+    required this.onOpenSettings,
   });
 
   final List<BleDeviceScanResult> results;
   final String? errorMessage;
+  final _ScanErrorKind errorKind;
   final ValueChanged<BleDeviceScanResult> onDeviceSelected;
   final VoidCallback onRetry;
+  final VoidCallback onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -422,7 +506,7 @@ class _ScanningBody extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           if (errorMessage != null)
-            _ErrorBanner(message: errorMessage!, onRetry: onRetry),
+            _buildErrorBanner(context, cs, errorMessage!),
           if (results.isEmpty && errorMessage == null)
             _ScanShimmer(),
           if (results.isNotEmpty)
@@ -440,15 +524,77 @@ class _ScanningBody extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: Text('ble_rescan'.tr()),
+          // 권한 거부 상태에서는 "다시 스캔" 버튼 숨김 (사용자 액션으로만 재시도)
+          if (errorKind != _ScanErrorKind.permissionDenied)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text('ble_rescan'.tr()),
+              ),
             ),
-          ),
           const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorBanner(
+    BuildContext context,
+    ColorScheme cs,
+    String message,
+  ) {
+    final bool isDenied = errorKind == _ScanErrorKind.permissionDenied;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.errorContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: cs.error, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(color: cs.onErrorContainer, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          if (isDenied) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: onOpenSettings,
+                icon: const Icon(Icons.settings_rounded, size: 16),
+                label: Text('ble_open_settings'.tr()),
+                style: TextButton.styleFrom(
+                  foregroundColor: cs.onErrorContainer,
+                ),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: onRetry,
+                style: TextButton.styleFrom(
+                  foregroundColor: cs.onErrorContainer,
+                ),
+                child: Text('retry'.tr()),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -893,40 +1039,3 @@ class _FailedBody extends StatelessWidget {
   }
 }
 
-// ── 에러 배너 ─────────────────────────────────────────────────────────────────
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cs.errorContainer.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.warning_amber_rounded, color: cs.error, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: cs.onErrorContainer, fontSize: 13),
-            ),
-          ),
-          TextButton(
-            onPressed: onRetry,
-            child: Text('retry'.tr()),
-          ),
-        ],
-      ),
-    );
-  }
-}

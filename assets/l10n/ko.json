@@ -430,5 +430,9 @@
   "ble_scan_error": "스캔 오류: {0}",
   "ble_adapter_off": "블루투스가 꺼져 있습니다. 블루투스를 켜고 다시 시도해주세요.",
   "ble_no_jwt": "로그인이 필요합니다. 다시 로그인해주세요.",
-  "ble_retry": "다시 시도"
+  "ble_retry": "다시 시도",
+
+  "ble_permission_required": "BLE 기기를 검색하려면 블루투스 권한이 필요합니다.",
+  "ble_permission_denied": "블루투스 권한이 거부되었습니다. 설정에서 직접 허용해주세요.",
+  "ble_open_settings": "설정 열기"
 }
