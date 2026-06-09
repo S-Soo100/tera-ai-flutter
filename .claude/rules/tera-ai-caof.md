@@ -33,7 +33,7 @@ Tera AI 요청 수신
 ├─ Provider/Repository 추가 (기존 feature 내) → Standard
 ├─ 오타/상수/스타일/문자열 수정 → Trivial (flutter-dev 직행)
 ├─ ko.json 문자열 키 추가 → Trivial
-├─ RLS/인증 관련 (P2 예정) → 현재 Phase에서 구현 금지, 보고만
+├─ RLS/인증 관련 → Supabase 실연동 완료. 기존 RLS/인증 수정 = Standard, 새 RLS 정책·소셜 로그인 도입 = Critical
 └─ 단순 질문 → 메인 Claude 직접
 ```
 
@@ -57,9 +57,11 @@ Tera AI 요청 수신
 - 파충류 사육 정보(온도, 습도, 먹이)는 생명과 직결. 데이터 수정 시 반드시 출처 확인.
 - D-day 계산: DateTime(2026, 6, 13) 기준. timezone, 0시 기준 등 엣지케이스.
 
-**Phase 경계:**
-- P0에서 P1/P2 기능을 구현하려는 시도를 차단. placeholder는 placeholder로 유지.
-- "나중에 Supabase로 교체할 거니까 미리..." → 지금은 로컬 전용. Repository 인터페이스만 깔끔하게.
+**Phase 경계 (2026-06-09 갱신):**
+- P0 "로컬 전용/인증 없음" 제약은 **해제됨** — Supabase 인증·유저 CRUD + terra-server 사육장 IoT 실연동 완료.
+- 현재 유효 경계: Phase C/D(게코캠 마이그레이션 petcam-lab + 5탭 UI 안정화) + terra-server IoT 기능 확장. 소셜 로그인(Apple/Google/Kakao)·FCM은 후속.
+- 미구현 placeholder(onboarding/profile/notification)는 기획 확정 전 구현 금지. auth는 Email 인증 구현 완료(예외).
+- terra-server IoT 작업 전 단일 진실 소스 `~/Downloads/APP_INTEGRATION.md` 확인.
 
 **Riverpod 패턴:**
 - 새 Provider 추가 시 기존 Provider와 의존 관계 확인

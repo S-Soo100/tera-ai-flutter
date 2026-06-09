@@ -153,8 +153,8 @@ flutter test             # 테스트 실행
 - `flutter build`는 Claude Code 안에서 직접 실행 가능 (리소스 경합 낮음, Unity와 다름).
 
 ## 금지 사항
-- placeholder feature(auth, onboarding, profile, notification)를 P0에서 구현하지 않기
-- dio로 실제 API 호출하지 않기 (P0은 로컬 전용)
-- flutter_secure_storage 실제 사용하지 않기 (P2 대비 의존성만 포함)
+- placeholder feature(onboarding, profile, notification)를 기획 확정 전 구현하지 않기 (auth는 Email 인증 구현 완료 — 제외)
+- dio 패키지 추가 금지 — HTTP 통신은 `http` 패키지 사용 (현재 dio 미포함·미사용)
+- flutter_secure_storage 실사용 금지 — 필요 시 사용자 승인 후 도입 (현재 미포함)
 - 새 패키지 추가 시 사용자 승인 없이 pubspec.yaml 수정하지 않기
 - **CircularProgressIndicator 사용 금지** — 로딩 상태는 항상 `shimmer` 패키지의 스켈레톤 UI를 사용할 것
