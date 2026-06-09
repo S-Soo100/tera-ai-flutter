@@ -4,6 +4,8 @@
 Tera AI Flutter 앱의 전체 데이터를 Supabase로 이관하기 위한 스키마 설계.
 레퍼런스 데이터 + 유저 데이터 모두 포함 (방안 B).
 
+> 아래 **Tables (15개)** 는 메인 앱 소유 테이블이다. 사육장 IoT 제어용 terra-server 테이블(`devices`/`telemetry`/`commands` 등)은 동일 Supabase 프로젝트를 공유하며 별도 섹션 [terra-server IoT 테이블](#terra-server-iot-테이블-사육장-제어--동일-프로젝트-공유)에 정리.
+
 ## 단계별 진행 계획
 1. 테이블 구조 생성 (스키마 + 인덱스)
 2. 레퍼런스 데이터 시딩 (species, care_info, morph_genetics, guide, citations, graph)
@@ -274,6 +276,83 @@ CREATE POLICY "User reads own clips" ON camera_clips
 - 목록: Supabase 에 직접 SELECT (RLS 로 본인 것만 나옴)
 - 재생: `petcam-lab` 서버의 `GET /clips/{id}/file` (HTTP Range 지원) 호출 — 영상 바이트는 Supabase 가 아닌 petcam-lab 서버에서 스트리밍
 - Storage 업로드는 Stage E 이후 (용량 이슈로 전부 업로드 X, "중요 클립" 선별만)
+
+---
+
+## terra-server IoT 테이블 (사육장 제어 — 동일 프로젝트 공유)
+
+> **소유**: terra-server 백엔드. **DDL 원본**: terra-server `docs/DATABASE.md` + `~/Downloads/APP_INTEGRATION.md`(앱 통합 단일 진실 소스, v0.1.0).
+> **프로젝트**: 메인 앱과 **동일한 Supabase 프로젝트**(`slxjvzzfisxqwnghvrit`)를 공유한다 (`lib/core/config/env_config.dart` 참조). `api.terra-server.uk`는 페어링/presigned URL 등 서버 로직용 REST(terra-api)이고, IoT 데이터(디바이스/명령/센서)는 Supabase Postgres + RLS 로 직결한다.
+> **아래 DDL은 Flutter가 실제 의존하는 컬럼만 표기** (terra-server가 추가 컬럼을 소유할 수 있음). 매핑 코드: `lib/features/my_cage/domain/{device,telemetry_reading,device_command}.dart`.
+
+terra-server는 `enclosures` / `devices` / `cameras` / `commands` / `telemetry` / `telemetry_1m` / `alerts` / `motion_clips` 테이블을 정의한다. **현재 Flutter 앱이 연동한 것은 `devices` / `telemetry` / `commands` 3개**이며(사육장 캠은 전환 범위 밖 — petcam-lab `camera_clips` 유지), 나머지는 명세만 존재하고 앱 미연동 상태다.
+
+#### IoT-1. devices
+```sql
+-- terra-server 소유. 앱은 SELECT 만 (페어링은 ESP32가 POST /devices/pair 로 생성).
+CREATE TABLE devices (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id     UUID REFERENCES auth.users(id),
+  enclosure_id UUID,                  -- REFERENCES enclosures(id)
+  name         TEXT,
+  is_online    BOOLEAN DEFAULT false,
+  last_seen_at TIMESTAMPTZ
+  -- (+ terra-server 소유 컬럼: mqtt_token 등)
+);
+```
+
+#### IoT-2. telemetry
+```sql
+-- 디바이스가 3초 주기로 INSERT. 7일 보관(telemetry_1m 로 1분 평균 롤업, 1년 보관).
+-- relay/fan/heater_state: DB에서 bool 또는 'ON'/'OFF' 문자열 둘 다 허용(클라가 양쪽 파싱).
+CREATE TABLE telemetry (
+  device_id     UUID NOT NULL REFERENCES devices(id),
+  t_a           DOUBLE PRECISION,     -- DHT22-A 메인 온도(℃)
+  h_a           DOUBLE PRECISION,     -- DHT22-A 메인 습도(%)
+  a_ok          BOOLEAN,              -- A 센서 정상 여부
+  t_b           DOUBLE PRECISION,     -- DHT22-B 보조 온도
+  h_b           DOUBLE PRECISION,     -- DHT22-B 보조 습도
+  b_ok          BOOLEAN,
+  relay         TEXT,                 -- 워터펌프 상태 (ON/OFF)
+  fan           TEXT,                 -- 팬 상태
+  heater_state  TEXT,                 -- 히터 상태
+  heater_locked BOOLEAN,              -- safety latch 활성 여부
+  ts            TIMESTAMPTZ
+);
+```
+
+#### IoT-3. commands
+```sql
+-- 앱이 INSERT(=명령 발행). terra-bridge dispatcher가 1초 내 SELECT → MQTT publish.
+-- ESP32 ack → status='acked' + result + acked_at 로 UPDATE. 앱은 Realtime UPDATE 구독.
+CREATE TABLE commands (
+  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  device_id UUID NOT NULL REFERENCES devices(id),
+  issued_by UUID NOT NULL REFERENCES auth.users(id),
+  action    TEXT NOT NULL,            -- relay_toggle | fan_toggle | heater_toggle |
+                                      -- heater_clear | led_on | led_up | led_down | token_rotate
+  payload   JSONB,                    -- 예: token_rotate 시 {"new_token": "..."}
+  ttl_sec   INT DEFAULT 10,
+  status    TEXT DEFAULT 'pending',   -- pending → sent → acked | rejected | expired
+  result    TEXT,                     -- ok | rejected_locked | rejected_ttl_expired |
+                                      -- rejected_unknown_action | rejected_duplicate_msg_id
+  issued_at TIMESTAMPTZ DEFAULT now(),
+  acked_at  TIMESTAMPTZ
+);
+```
+
+**명령 상태 머신**: `INSERT(pending)` → dispatcher가 TTL 검사 → `expired` / `rejected` / MQTT publish 성공 시 `sent` → ESP32 ack 시 `acked`(+result).
+
+**RLS** (terra-server 정의):
+- `devices`: `auth.uid() = owner_id` — 본인 디바이스만 SELECT.
+- `telemetry`: 본인 `devices`의 telemetry 만 SELECT (다른 사용자 센서값 격리).
+- `commands` INSERT: `issued_by = auth.uid()` 이면서 본인 소유 `device_id` 여야 통과.
+
+**앱 연동 노트:**
+- 디바이스 목록: `devices` 직접 SELECT (`order by last_seen_at desc`).
+- 온/습도 실시간: `telemetry` INSERT 를 Supabase Realtime 구독(`telemetry-<deviceId>` 채널, `device_id` 필터) + 진입 시 최신값 1건 seed.
+- 제어: `commands` INSERT(편의 메서드 `toggleFan`/`toggleRelay`/`toggleHeater`/`clearHeater`/`ledOn`/`ledUp`/`ledDown`) + `commands` UPDATE Realtime 로 ack 추적.
+- 페어링: BLE(`flutter_blue_plus` + `permission_handler`) 로 SSID/PASS/NAME/JWT 전달 → ESP32 가 `POST /devices/pair`. 프로토콜 §6은 `APP_INTEGRATION.md` 참조.
 
 ## Indexes
 ```sql

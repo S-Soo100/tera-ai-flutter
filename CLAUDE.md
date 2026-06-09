@@ -1,23 +1,27 @@
 # Tera AI — Claude Code 행동 규칙
 
 ## 프로젝트 개요
-파충류 사육자를 위한 올인원 앱. 백색목록 검색, 사육 정보, 모프 유전 계산기, 자진신고 가이드.
-- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase
-- **현재 Phase**: P0 (로컬 전용, 인증 없음, 백엔드 없음)
+파충류 사육자를 위한 올인원 앱. 백색목록 검색, 사육 정보, 모프 유전 계산기, 자진신고 가이드 + 게코캠 + 사육장 IoT 제어.
+- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE)
+- **현재 상태(2026-06-09)**: P2 상당 구현 — Supabase 인증/유저 CRUD + 게코캠(petcam-lab) + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE 페어링). 5탭 IA(`StatefulShellRoute`).
+  - (P0 "로컬 전용/인증 없음/백엔드 없음"은 초기 설계 — 더 이상 유효하지 않음. 신규 작업은 아래 Phase 경계/CAOF 규칙을 따른다.)
 - **기획서**: `docs/spec.md`
 - **자진신고 기한**: 2026-06-13 (D-day 기준)
 
-### Supabase 관련 문서
-- **DB 스키마 (DDL 원본)**: `docs/supabase-schema.md`
+### Supabase / 백엔드 관련 문서
+- **DB 스키마 (DDL 원본)**: `docs/supabase-schema.md` (메인 15개 + terra-server IoT 테이블)
 - **연동 현황 (접속 정보/RLS/시드/Flutter 코드 예시)**: `docs/supabase-setup.md`
+- **사육장 IoT 통합 (단일 진실 소스)**: `~/Downloads/APP_INTEGRATION.md` (terra-server) — 디바이스 제어/텔레메트리/BLE 페어링 계약
+- **클라우드 마이그레이션/UI 개편 (Phase C/D)**: `docs/flutter-cloud-migration-plan.md`
 
 ## Phase 로드맵
 
 | Phase | 범위 | 상태 |
 |-------|------|------|
-| P0 | 로컬 데이터, 검색/상세/모프계산기/가이드, 3탭 | 현재 (AutoForge 생성) |
-| P1 | OnboardingScreen, ProfileScreen(내 사육장), 로컬 알림(D-day 리마인더), en 다국어, Pretendard 폰트 | 예정 |
-| P2 | Supabase 도입, 인증(이메일+소셜), 클라우드 동기화, FCM 푸시, 거래 기록 | DB 구축 완료 (`docs/supabase-setup.md`) |
+| P0 | 로컬 데이터, 검색/상세/모프계산기/가이드, 3탭 | ✅ 완료 |
+| P1 | OnboardingScreen, ProfileScreen(내 사육장), 로컬 알림(D-day 리마인더), en 다국어, Pretendard 폰트 | 부분 (알림/en 미완) |
+| P2 | Supabase 도입, 인증(이메일+소셜), 클라우드 동기화, FCM 푸시, 거래 기록 | 상당 구현 (Email 인증·유저 CRUD 완료, 소셜/FCM 후속) |
+| C/D | 게코캠 클라우드 마이그레이션(petcam-lab) + 5탭 UI 개편 + **사육장 IoT(terra-server)** | 진행 중 — `docs/flutter-cloud-migration-plan.md` |
 
 ## 아키텍처
 
@@ -47,14 +51,20 @@ lib/
 
 ### 핵심 feature
 
-| feature | 화면 | 데이터 소스 |
-|---------|------|------------|
-| home | HomeScreen (검색+카테고리 필터) | SpeciesRepository (로컬 18종) |
-| species_detail | SpeciesDetailScreen | SpeciesRepository + CareInfo (6종) |
-| morph_calc | MorphCalcScreen | MorphRepository (3세트 하드코딩) |
-| guide | GuideScreen (D-day + 5단계 아코디언) | GuideRepository (5 GuideStep) |
-| splash | SplashScreen (1초 → Home) | — |
-| error | ErrorScreen | — |
+5탭 BottomNav(`StatefulShellRoute`) + 보조 라우트 구조. 경로는 `core/router/app_router.dart` 중앙 관리.
+
+| 탭/라우트 | feature | 화면 | 데이터 소스 |
+|-----------|---------|------|------------|
+| `/home` | home | HomeScreen (대시보드) | 내 개체/사육장 요약 |
+| `/my-pets` | my_pets | MyPetsScreen (개체 CRUD) | Supabase `pets`/`pet_events`/`media` |
+| `/crecam` | my_cage | CrecamScreen (카메라/클립) | petcam-lab `camera_clips` + 클립 스트리밍 |
+| `/smart-cage` | my_cage | SmartCageScreen + DevicePairingScreen | **terra-server** `devices`/`telemetry`/`commands` + BLE |
+| `/community` | community | CommunityScreen (게시판) | Supabase `community` |
+| `/wiki` (보조) | wiki | WikiScreen + 종 상세/모프 계산기/종 비교/지식그래프 | 레퍼런스(로컬/Supabase) |
+| `/search` (보조) | search | 백색목록 검색 | SpeciesRepository |
+| — | splash/error | SplashScreen / ErrorScreen | — |
+
+> 사육장 IoT 데이터 계층: `my_cage/data/{ble_pairing_repository,supabase_module_control_repository}.dart`, `my_cage/domain/{device,telemetry_reading,device_command,actuator_state}.dart`.
 
 ## 코딩 규칙
 

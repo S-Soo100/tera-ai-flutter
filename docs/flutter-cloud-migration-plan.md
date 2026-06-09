@@ -243,6 +243,39 @@ petcam-lab 백엔드가 클라우드 분산 아키텍처로 재설계됐고, 그
 
 > 레퍼런스: `/Users/baek/Desktop/new-app-design/` 6장 (001-main-tab, 002-my-cre-tab, 003-01-cre-cam-tab, 003-02-cre-cam-tab-detail-page, 004-cage-tab, 005-community-tab)
 
+## Phase D 진행 현황 (2026-06-09 업데이트)
+
+5탭 IA + 주요 탭이 구현됨 (커밋 `a62a012`, `55c46d5`). `StatefulShellRoute.indexedStack` 기반 5탭 BottomNav 동작.
+
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| **D1** 5탭 BottomNav 골조 | ✅ 구현 | `/home` `/my-pets` `/crecam` `/smart-cage` `/community` (`app_router.dart`) |
+| **D2** 크레캠 탭 | ✅ 구현 | `crecam_screen.dart` (현 my_cage 흡수), `cameras/:cameraId`, `clips/:clipId` |
+| **D4** 마이 크레 탭 | ✅ 구현 | `my_pets_screen.dart` + `add`/`:petId`/`:petId/edit` (pets CRUD) |
+| **D7** 홈 탭 | ✅ 구현 | `home_screen.dart` 재구성 |
+| **D8** 사육장 탭 (IoT) | ✅ 구현 | **terra-server 채택** — 아래 § 참조. `smart_cage_screen.dart` + BLE 페어링 |
+| **D9** 커뮤니티 탭 | ✅ 구현 | `community_screen.dart` + Supabase `community` 데이터 |
+| D3/D5/D6 sub-tab 세부 | 부분/점진 | 크레캠 detail·하이라이트 모음·리포트 그래프는 점진 적용 |
+
+> 위키/자진신고(P0 3탭)는 BottomNav 에서 빠지고 보조 라우트(`/wiki`, `/search` 등)로 유지.
+
+## terra-server 사육장 IoT 통합 (D8 실현 — 2026-06-09)
+
+미정 사항 #2(사육장 IoT 통합 범위)를 **terra-server 백엔드 채택**으로 확정·구현.
+
+- **백엔드**: terra-server (ESP32-S3 펌웨어 + terra-bridge MQTT dispatcher + terra-api REST). **메인 앱과 동일한 Supabase 프로젝트 공유**.
+- **연동 테이블**(Flutter): `devices`(SELECT) / `telemetry`(Realtime INSERT) / `commands`(INSERT + Realtime UPDATE). 캠(`cameras`/`motion_clips`)은 전환 범위 밖 — 게코캠은 petcam-lab `camera_clips` 유지.
+- **제어**: 팬/히터(safety latch)/LED 밝기/워터펌프 릴레이 → `commands` INSERT → MQTT → ESP32 → ack Realtime.
+- **모니터링**: DHT22 2채널 온/습도 + 액추에이터 상태 실시간(`telemetry` 3초 주기).
+- **페어링**: BLE(`flutter_blue_plus` + `permission_handler`) — SSID/PASS/NAME/JWT 전달 → ESP32 가 `POST /devices/pair`.
+- **단일 진실 소스**: `~/Downloads/APP_INTEGRATION.md`(terra-server v0.1.0). 스키마: `docs/supabase-schema.md § terra-server IoT 테이블`.
+- **E2E 검증 완료**(2026-06-09): 디바이스 목록/온습도 실시간/제어(팬·히터·LED·릴레이)/BLE 페어링 실기 동작 확인. 캠 라이브는 범위 밖.
+
+**신규 파일**(my_cage feature 내):
+- 데이터: `data/ble_pairing_repository.dart`, `data/supabase_module_control_repository.dart`
+- 도메인: `domain/device.dart`, `domain/telemetry_reading.dart`, `domain/device_command.dart`, `domain/actuator_state.dart`
+- 화면/위젯: `presentation/smart_cage_screen.dart`, `presentation/device_pairing_screen.dart`, `presentation/supabase_module_providers.dart`, `presentation/widgets/{actuator_controls,heater_lock_dialog,module_status_card}.dart`
+
 ## IA 변경 (3탭 → 5탭)
 
 | 현재 | 신규 (BottomNav 5탭) |
@@ -289,7 +322,7 @@ petcam-lab 백엔드가 클라우드 분산 아키텍처로 재설계됐고, 그
 ## Phase D 미정 사항 (사용자 후속 결정 필요)
 
 1. **활동량 그래프 데이터 source** — VLM 라벨 시계열을 클라이언트에서 집계 vs 백엔드에 `/pets/{id}/activity-summary?date=` endpoint 추가? (홈 + 마이 크레 리포트 + 크레캠 detail 간단 활동량 3곳에서 공통 사용)
-2. **사육장 IoT 통합 범위** — 어떤 IoT 디바이스 (Tuya / SwitchBot / 자체)? Phase가 P3 이후 인지?
+2. ~~**사육장 IoT 통합 범위**~~ — ✅ **해결(2026-06-09)**: 자체 디바이스(ESP32-S3 + terra-server) 채택, D8 구현 완료. 위 § terra-server 사육장 IoT 통합 참조.
 3. **커뮤니티 백엔드** — Supabase 테이블만으로 가능 vs 별도 서비스 (notification, moderation 필요)?
 4. **마이 크레 vs 기존 P1 ProfileScreen** — 마이 크레 탭이 기존 P1 placeholder를 흡수하는 게 맞나? P1 로드맵 재정의 필요.
 5. **Phase C ↔ Phase D 인터리브** — Phase C 5 PR 끝나고 Phase D 시작 vs D1(BottomNav 골조)을 Phase C 사이에 끼워넣기?
@@ -358,3 +391,4 @@ petcam-lab 백엔드가 클라우드 분산 아키텍처로 재설계됐고, 그
 ## 변경 이력
 
 - 2026-05-07: 초안 작성. Phase C(PR1~5) 사용자 합의 완료. Phase D(PR D1~D9) 큰 그림 + 미정 8개 명시.
+- 2026-06-09: Phase D 진행 현황 추가(5탭 IA + D1/D2/D4/D7/D8/D9 구현). **D8 사육장 IoT = terra-server 채택·구현**(미정 #2 해결). 커밋 `a62a012`(전환) + `55c46d5`(BLE 권한). E2E 검증 완료(캠 제외).

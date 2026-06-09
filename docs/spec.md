@@ -2,28 +2,38 @@
 
 ## 1. 앱 개요
 - **앱 이름**: Tera AI
-- **한줄 설명**: 게코 사육자를 위한 사육 위키, 개체 관리, 모프 유전 계산기, 자진신고 가이드 올인원 앱
+- **한줄 설명**: 게코 사육자를 위한 사육 위키, 개체 관리, 모프 유전 계산기, 자진신고 가이드 + 게코캠·사육장 IoT 제어 올인원 앱
 - **타겟 사용자**: 레오파드 게코 / 크레스티드 게코 / 펫테일 게코 사육자 및 브리더. 2026.6.13 자진신고 기한을 앞둔 국내 사육자
 - **플랫폼**: iOS + Android (Flutter)
 - **MVP 전략**: 3종(레오파드 게코, 크레스티드 게코, 펫테일 게코)을 깊게 → 이후 종 확장
 
 ## 2. 백엔드
-- **종류**: 없음 (로컬 전용)
-- **인증**: 없음 (Phase 0는 로그인 없이 사용)
-- **로컬 저장소**: Hive (내 개체 데이터, 설정)
-- **번들 데이터**: assets/data/ 내 JSON 파일 (사육 정보, 모프 데이터, 가이드)
 
-> **TODO (P1):** 로컬 알림 (자진신고 D-day 리마인더, 급여 알림)
-> **TODO (P2):** Supabase 도입 — 계정, 클라우드 동기화, 커뮤니티. Repository 패턴으로 교체만 하면 됨.
+> **현황(2026-06-09)**: 아래 "로컬 전용" 항목은 P0 초기 설계 기록이다. 현재 앱은 Supabase(인증·유저 데이터·게코캠) + terra-server(사육장 IoT)에 실연동돼 있다.
+
+**현재 아키텍처**
+- **Supabase**: Email/Password 인증 + 유저 데이터 CRUD(`pets`/`pet_events`/`media`/대화) + 레퍼런스 데이터. 게코캠 메타(`camera_clips`). 접속/스키마: `docs/supabase-setup.md`, `docs/supabase-schema.md`.
+- **terra-server (사육장 IoT)**: 동일 Supabase 프로젝트 공유 + REST(`api.terra-server.uk`). 디바이스 제어(`commands`)·온습도 실시간(`telemetry`)·BLE 페어링. 단일 진실 소스: `~/Downloads/APP_INTEGRATION.md`.
+- **petcam-lab (게코캠)**: 영상 클립 스트리밍 백엔드(`docs/flutter-cloud-migration-plan.md` Phase C).
+- **로컬 저장소**: Hive (설정, 캐시).
+
+**P0 초기 설계 (기록용)**
+- ~~종류: 없음 (로컬 전용) / 인증: 없음 / 번들 데이터: assets/data/ JSON~~
+- > TODO(P1) 로컬 알림 · TODO(P2) Supabase 도입 — **P2 완료, 위 현황 참조.**
 
 ## 3. 하단 탭 구성
 
-| 탭 순서 | 이름 | 아이콘 | 화면 | 설명 |
-|---------|------|--------|------|------|
-| 1 | 홈 | home | HomeScreen | 대시보드 — 내 개체 요약 + 사육 가이드 진입 + D-day |
-| 2 | 사육 위키 | menu_book | WikiScreen | 3종 사육 정보 범주별 가이드 |
-| 3 | 내 개체 | pets | MyPetsScreen | 개체 등록/목록/관리 |
-| 4 | 자진신고 | gavel | GuideScreen | D-day + WIMS 신고 가이드 + FAQ |
+> **현황(2026-06-09)**: 3탭 → **5탭**으로 개편(`StatefulShellRoute.indexedStack`, `app_router.dart`). 아래 §4 이후 흐름 서술은 일부 초기 IA(홈/위키/내개체/자진신고) 기준이라 점진 갱신 중. 사육 위키·자진신고는 보조 라우트(`/wiki`, `/search`)로 유지.
+
+| 탭 순서 | 이름 | 경로 | 화면 | 설명 |
+|---------|------|------|------|------|
+| 1 | 홈 | `/home` | HomeScreen | 대시보드 — 내 개체/사육장 요약 + D-day |
+| 2 | 마이 크레 | `/my-pets` | MyPetsScreen | 개체 등록/목록/관리 (CRUD) |
+| 3 | 크레캠 | `/crecam` | CrecamScreen | 게코캠 카메라/클립 (petcam-lab) |
+| 4 | 사육장 | `/smart-cage` | SmartCageScreen | **terra-server IoT** — 온습도 실시간 + 팬/히터/LED/릴레이 제어 + BLE 페어링 |
+| 5 | 커뮤니티 | `/community` | CommunityScreen | 게시판 (Supabase) |
+
+> 보조 라우트: `/wiki`(사육 위키 — 3종 범주별 가이드 + 모프 계산기 + 종 비교 + 지식그래프), `/search`(백색목록 검색), 자진신고 가이드.
 
 ## 4. 핵심 사용자 흐름
 
