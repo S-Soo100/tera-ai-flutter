@@ -21,6 +21,7 @@ class AppConstants {
   };
 
   // TEMP: live stream demo (임시 — 추후 카메라별 URL로 교체)
+  // 라이브 캠과 ESP32 제어 모듈은 비밀번호가 서로 다름 — 절대 동기화하지 말 것.
   static const String tempLiveStreamUrl =
       'http://mycamgb.iptime.org:8080/stream';
   static const String tempLiveStreamUser = 'admin';

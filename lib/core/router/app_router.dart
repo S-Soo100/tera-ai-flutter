@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,10 +14,13 @@ import '../../features/my_pets/presentation/my_pets_screen.dart';
 import '../../features/my_pets/presentation/pet_add_screen.dart';
 import '../../features/my_pets/presentation/pet_detail_screen.dart';
 import '../../features/my_pets/presentation/pet_edit_screen.dart';
-import '../../features/my_cage/presentation/my_cage_screen.dart';
+import '../../features/my_cage/presentation/crecam_screen.dart';
+import '../../features/my_cage/presentation/smart_cage_screen.dart';
 import '../../features/my_cage/presentation/camera_add_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
 import '../../features/my_cage/presentation/clip_player_screen.dart';
+import '../../features/my_cage/presentation/device_pairing_screen.dart';
+import '../../features/community/presentation/community_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
 import '../../features/chat/presentation/chat_screen.dart';
@@ -53,6 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         '/splash',
         '/home',
         '/wiki',
+        '/community',
         '/search',
         '/login',
         '/signup',
@@ -84,7 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return _ScaffoldWithBottomNav(navigationShell: navigationShell);
         },
         branches: [
-          // Tab 1: Home (Dashboard)
+          // Tab 1: Home
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -93,60 +98,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Tab 2: Wiki
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/wiki',
-                builder: (context, state) => const WikiScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'compare',
-                    builder: (context, state) =>
-                        const SpeciesCompareScreen(),
-                  ),
-                  GoRoute(
-                    path: 'graph/:kind/:entityId',
-                    builder: (context, state) {
-                      final kind = state.pathParameters['kind'] ?? '';
-                      final entityId =
-                          state.pathParameters['entityId'] ?? '';
-                      return GraphDetailScreen(
-                        kind: kind,
-                        entityId: entityId,
-                      );
-                    },
-                  ),
-                  GoRoute(
-                    path: ':speciesId/morph-calc',
-                    builder: (context, state) {
-                      final speciesId = state.pathParameters['speciesId'] ?? '';
-                      return MorphCalcScreen(speciesId: speciesId);
-                    },
-                  ),
-                  GoRoute(
-                    path: ':speciesId/morph-guide',
-                    builder: (context, state) {
-                      final speciesId = state.pathParameters['speciesId'] ?? '';
-                      return MorphGuideScreen(speciesId: speciesId);
-                    },
-                  ),
-                  GoRoute(
-                    path: ':speciesId/:category',
-                    builder: (context, state) {
-                      final speciesId = state.pathParameters['speciesId'] ?? '';
-                      final category = state.pathParameters['category'] ?? '';
-                      return WikiDetailScreen(
-                        speciesId: speciesId,
-                        category: category,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Tab 3: My Pets
+          // Tab 2: 마이 크레 (My Pets)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -177,12 +129,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Tab 4: My Cage (내 사육장·장비)
+          // Tab 3: 크레캠 (CreCam)
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/my-cage',
-                builder: (context, state) => const MyCageScreen(),
+                path: '/crecam',
+                builder: (context, state) => const CrecamScreen(),
                 routes: [
                   GoRoute(
                     path: 'cameras/add',
@@ -208,6 +160,77 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ],
               ),
             ],
+          ),
+          // Tab 4: 사육장 (Smart Cage)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/smart-cage',
+                builder: (context, state) => const SmartCageScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'devices/pair',
+                    builder: (context, state) => const DevicePairingScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Tab 5: 커뮤니티 (Community)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/community',
+                builder: (context, state) => const CommunityScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
+      // Wiki (탭에서 제거, 커뮤니티 '사육위키' 카테고리에서 진입)
+      GoRoute(
+        path: '/wiki',
+        builder: (context, state) => const WikiScreen(),
+        routes: [
+          GoRoute(
+            path: 'compare',
+            builder: (context, state) => const SpeciesCompareScreen(),
+          ),
+          GoRoute(
+            path: 'graph/:kind/:entityId',
+            builder: (context, state) {
+              final kind = state.pathParameters['kind'] ?? '';
+              final entityId = state.pathParameters['entityId'] ?? '';
+              return GraphDetailScreen(
+                kind: kind,
+                entityId: entityId,
+              );
+            },
+          ),
+          GoRoute(
+            path: ':speciesId/morph-calc',
+            builder: (context, state) {
+              final speciesId = state.pathParameters['speciesId'] ?? '';
+              return MorphCalcScreen(speciesId: speciesId);
+            },
+          ),
+          GoRoute(
+            path: ':speciesId/morph-guide',
+            builder: (context, state) {
+              final speciesId = state.pathParameters['speciesId'] ?? '';
+              return MorphGuideScreen(speciesId: speciesId);
+            },
+          ),
+          GoRoute(
+            path: ':speciesId/:category',
+            builder: (context, state) {
+              final speciesId = state.pathParameters['speciesId'] ?? '';
+              final category = state.pathParameters['category'] ?? '';
+              return WikiDetailScreen(
+                speciesId: speciesId,
+                category: category,
+              );
+            },
           ),
         ],
       ),
@@ -262,6 +285,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
+
 class _ScaffoldWithBottomNav extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -282,28 +306,30 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
           );
         },
         destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: '홈',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book),
-            label: '사육 위키',
+          NavigationDestination(
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
+            label: 'tab_home'.tr(),
           ),
           NavigationDestination(
-            icon: Opacity(
-              opacity: 0.7,
-              child: Image.asset('assets/images/logo.png', width: 24, height: 24),
-            ),
-            selectedIcon: Image.asset('assets/images/logo.png', width: 24, height: 24),
-            label: '내 개체',
+            icon: const Icon(Icons.image_outlined),
+            selectedIcon: const Icon(Icons.image),
+            label: 'tab_my_pets'.tr(),
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.videocam_outlined),
-            selectedIcon: Icon(Icons.videocam),
-            label: '내 사육장',
+          NavigationDestination(
+            icon: const Icon(Icons.videocam_outlined),
+            selectedIcon: const Icon(Icons.videocam),
+            label: 'tab_crecam'.tr(),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.view_in_ar_outlined),
+            selectedIcon: const Icon(Icons.view_in_ar),
+            label: 'tab_smart_cage'.tr(),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.chat_bubble_outline),
+            selectedIcon: const Icon(Icons.chat_bubble),
+            label: 'tab_community'.tr(),
           ),
         ],
       ),

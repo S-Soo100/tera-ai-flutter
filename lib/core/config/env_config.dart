@@ -7,4 +7,8 @@ class EnvConfig {
 
   static String get backendUrl =>
       dotenv.env['BACKEND_URL'] ?? 'http://localhost:8000';
+
+  /// terra-server (IoT: 페어링, 디바이스, 명령). 현재 앱과 동일한 Supabase 프로젝트를 공유한다.
+  static String get terraServerUrl =>
+      dotenv.env['TERRA_SERVER_URL'] ?? 'https://api.terra-server.uk';
 }

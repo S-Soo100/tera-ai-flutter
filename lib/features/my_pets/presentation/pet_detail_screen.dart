@@ -344,7 +344,7 @@ class _PetCamerasSection extends ConsumerWidget {
                       ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () =>
-                          context.push('/my-cage/cameras/${camera.id}'),
+                          context.push('/crecam/cameras/${camera.id}'),
                     ),
                   ),
                 ),
@@ -353,7 +353,7 @@ class _PetCamerasSection extends ConsumerWidget {
                   width: double.infinity,
                   child: FilledButton.tonal(
                     onPressed: () =>
-                        context.push('/my-cage/cameras/add?petId=$petId'),
+                        context.push('/crecam/cameras/add?petId=$petId'),
                     child: Text('pet_detail_cameras_add'.tr()),
                   ),
                 ),
@@ -395,7 +395,7 @@ class _CamerasEmpty extends StatelessWidget {
             const SizedBox(height: 12),
             FilledButton.tonal(
               onPressed: () =>
-                  context.push('/my-cage/cameras/add?petId=$petId'),
+                  context.push('/crecam/cameras/add?petId=$petId'),
               child: Text('pet_detail_cameras_add'.tr()),
             ),
           ],

@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
-import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
+import '../domain/clip.dart';
 import 'my_cage_providers.dart';
-import 'widgets/clip_grid_card.dart';
-import 'widgets/hour_chip_row.dart';
+import 'supabase_module_providers.dart';
 import 'widgets/live_mjpeg_view.dart';
+
+enum _ActivityRange { yesterday, today }
+
+enum _VideoFilter { highlight, motion, all }
 
 class CameraDetailScreen extends ConsumerStatefulWidget {
   const CameraDetailScreen({super.key, required this.cameraId});
@@ -22,60 +25,8 @@ class CameraDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
-  DateTime? _selectedDate; // 로컬 기준 y-m-d, 시분초=0
-  int? _selectedHour; // 0~23
-  bool _didInitialJump = false;
-
-  // ── 초기 점프 ──────────────────────────────────────────────────────────────
-
-  void _jumpToLatest(DateTime? latest) {
-    if (_didInitialJump) return;
-    final target = (latest ?? DateTime.now()).toLocal();
-    if (!mounted) return;
-    setState(() {
-      _selectedDate = DateTime(target.year, target.month, target.day);
-      _selectedHour = target.hour;
-      _didInitialJump = true;
-    });
-  }
-
-  // ── hourCounts 변경 시 가장 가까운 유효 hour로 자동 이동 ──────────────────
-
-  void _maybeShiftHour(Map<int, int> counts) {
-    if (_selectedHour == null) return;
-    if ((counts[_selectedHour] ?? 0) > 0) return;
-    int? nearest;
-    int minDist = 99;
-    for (final entry in counts.entries) {
-      if (entry.value == 0) continue;
-      final d = (entry.key - _selectedHour!).abs();
-      if (d < minDist) {
-        minDist = d;
-        nearest = entry.key;
-      }
-    }
-    if (nearest != null && mounted) {
-      setState(() => _selectedHour = nearest);
-    }
-  }
-
-  // ── 달력 선택 ──────────────────────────────────────────────────────────────
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime(2025),
-      lastDate: DateTime.now(),
-      helpText: 'clip_date_picker_title'.tr(),
-    );
-    if (picked == null) return;
-    if (!mounted) return;
-    setState(() {
-      _selectedDate = DateTime(picked.year, picked.month, picked.day);
-      // hour는 유지. hourCounts listen이 자동 이동 처리.
-    });
-  }
+  _ActivityRange _activityRange = _ActivityRange.today;
+  _VideoFilter _videoFilter = _VideoFilter.highlight;
 
   // ── 카메라 삭제 ────────────────────────────────────────────────────────────
 
@@ -127,335 +78,776 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
   Widget build(BuildContext context) {
     final cameraAsync = ref.watch(cameraProvider(widget.cameraId));
 
-    // 초기 점프: latestClipTimeProvider 구독
-    ref.listen<AsyncValue<DateTime?>>(
-      latestClipTimeProvider(widget.cameraId),
-      (_, next) => next.whenData(_jumpToLatest),
-    );
-    // cache hit 대비: 첫 build에서도 시도
-    ref
-        .read(latestClipTimeProvider(widget.cameraId))
-        .whenData(_jumpToLatest);
-
-    // selectedDate/Hour이 결정된 이후에만 hourCounts 구독
-    if (_selectedDate != null && _selectedHour != null) {
-      ref.listen<AsyncValue<Map<int, int>>>(
-        hourCountsProvider((
-          cameraId: widget.cameraId,
-          date: _selectedDate!,
-        )),
-        (_, next) => next.whenData(_maybeShiftHour),
-      );
-    }
-
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        centerTitle: true,
         title: cameraAsync.when(
-          data: (cam) => Text(cam?.displayName ?? widget.cameraId),
+          data: (cam) => Text(
+            cam?.displayName ?? widget.cameraId,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
           loading: () => const SizedBox.shrink(),
           error: (_, __) => Text(widget.cameraId),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_today_outlined),
-            onPressed: _pickDate,
-            tooltip: 'clip_date_picker_title'.tr(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: const Icon(Icons.settings_outlined),
             onPressed: () => _deleteCamera(context),
             tooltip: 'camera_delete'.tr(),
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: ListView(
+        padding: EdgeInsets.zero,
         children: [
-          // 라이브 스트림 뷰 (임시 데모)
-          LiveMjpegView(
-            url: AppConstants.tempLiveStreamUrl,
-            username: AppConstants.tempLiveStreamUser,
-            password: AppConstants.tempLiveStreamPass,
+          _LiveSection(cameraId: widget.cameraId),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _SimpleActivityCard(
+              range: _activityRange,
+              onRangeChanged: (r) => setState(() => _activityRange = r),
+            ),
           ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _VideoLogSection(
+              cameraId: widget.cameraId,
+              filter: _videoFilter,
+              onFilterChanged: (f) => setState(() => _videoFilter = f),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
 
-          // 카메라 정보 카드
-          _CameraInfoCard(cameraId: widget.cameraId),
+// ── 라이브 영역 (오버레이 포함) ──────────────────────────────────────────────
 
-          // 날짜+시간 선택 영역 + 그리드
-          Expanded(
-            child: _selectedDate == null || _selectedHour == null
-                ? _buildInitialLoading()
-                : _buildDateTimeContent(),
+class _LiveSection extends StatelessWidget {
+  const _LiveSection({required this.cameraId});
+
+  final String cameraId;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final timeText =
+        DateFormat('yyyy.MM.dd HH:mm:ss').format(now.toLocal());
+
+    return AspectRatio(
+      aspectRatio: 16 / 10,
+      child: Stack(
+        children: [
+          // 라이브 스트림
+          Positioned.fill(
+            child: LiveMjpegView(
+              url: AppConstants.tempLiveStreamUrl,
+              username: AppConstants.tempLiveStreamUser,
+              password: AppConstants.tempLiveStreamPass,
+            ),
+          ),
+          // 상단 우측: 온도 / 습도 배지 (실데이터)
+          const Positioned(
+            top: 12,
+            right: 12,
+            child: _LiveEnvBadge(),
+          ),
+          // 하단 우측: 타임스탬프 + Live
+          Positioned(
+            right: 12,
+            bottom: 12,
+            child: Text(
+              '$timeText (${'crecam_detail_live_label'.tr()})',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                shadows: [
+                  Shadow(color: Colors.black54, blurRadius: 4),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildInitialLoading() {
-    return Padding(
-      padding: AppStyles.pagePadding,
-      child: Column(
-        children: List.generate(
-          2,
-          (i) => const Padding(
-            padding: EdgeInsets.only(bottom: AppStyles.spacing12),
-            child: SkeletonCard(lineCount: 3, height: 100),
+/// 실데이터 환경 배지 — Supabase telemetryStreamProvider를 watch.
+class _LiveEnvBadge extends ConsumerWidget {
+  const _LiveEnvBadge();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final deviceAsync = ref.watch(currentDeviceProvider);
+
+    String tempText = '—°';
+    String humText = '—%';
+
+    final deviceId = deviceAsync.valueOrNull?.id;
+    if (deviceId != null) {
+      final telemetryAsync = ref.watch(telemetryStreamProvider(deviceId));
+      if (telemetryAsync.hasValue && telemetryAsync.value != null) {
+        final t = telemetryAsync.value!;
+        if (t.aOk && t.tA != null) {
+          tempText = '${t.tA!.toStringAsFixed(1)}°';
+          humText = t.hA != null ? '${t.hA!.toStringAsFixed(0)}%' : '—%';
+        }
+      }
+    }
+
+    return _EnvBadgeView(temp: tempText, humidity: humText);
+  }
+}
+
+class _EnvBadgeView extends StatelessWidget {
+  const _EnvBadgeView({required this.temp, required this.humidity});
+
+  final String temp;
+  final String humidity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.thermostat, size: 14, color: Colors.white),
+          const SizedBox(width: 3),
+          Text(
+            temp,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
+          const SizedBox(width: 8),
+          const Icon(Icons.water_drop_outlined, size: 14, color: Colors.white),
+          const SizedBox(width: 3),
+          Text(
+            humidity,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildDateTimeContent() {
-    final date = _selectedDate!;
-    final hour = _selectedHour!;
-    final hourCountsKey = (
-      cameraId: widget.cameraId,
-      date: date,
-    );
-    final clipsKey = (
-      cameraId: widget.cameraId,
-      date: date,
-      hour: hour,
-    );
+// ── 간단 활동량 카드 ─────────────────────────────────────────────────────────
 
-    final hourCountsAsync = ref.watch(hourCountsProvider(hourCountsKey));
-    final clipsAsync = ref.watch(clipsForHourProvider(clipsKey));
+class _SimpleActivityCard extends StatelessWidget {
+  const _SimpleActivityCard({
+    required this.range,
+    required this.onRangeChanged,
+  });
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // 선택된 날짜 텍스트
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppStyles.spacing16,
-            vertical: AppStyles.spacing8,
+  final _ActivityRange range;
+  final ValueChanged<_ActivityRange> onRangeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-          child: Text(
-            DateFormat('yyyy년 M월 d일 (E)', 'ko').format(date),
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'crecam_detail_activity_title'.tr(),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+              ),
+              _RangeToggle(range: range, onChanged: onRangeChanged),
+            ],
           ),
-        ),
-
-        // HourChipRow
-        hourCountsAsync.when(
-          data: (counts) => HourChipRow(
-            selectedHour: hour,
-            counts: counts,
-            onChanged: (h) => setState(() => _selectedHour = h),
-          ),
-          loading: () => const SizedBox(
-            height: 64,
-            child: Center(
-              child: SkeletonCard(lineCount: 1, height: 48),
+          const SizedBox(height: 8),
+          Text(
+            'crecam_detail_activity_baseline'.tr(),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
             ),
           ),
-          error: (_, __) => const SizedBox(height: 64),
-        ),
-
-        const Divider(height: 1),
-
-        // 그리드 영역
-        Expanded(
-          child: clipsAsync.when(
-            data: (clips) => clips.isEmpty
-                ? _buildEmptyDateState(hourCountsAsync)
-                : GridView.builder(
-                    padding: const EdgeInsets.all(AppStyles.spacing8),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: 16 / 9,
-                    ),
-                    itemCount: clips.length,
-                    itemBuilder: (context, index) {
-                      final clip = clips[index];
-                      return ClipGridCard(
-                        clip: clip,
-                        onTap: () =>
-                            context.push('/my-cage/clips/${clip.id}'),
-                      );
-                    },
-                  ),
-            loading: () => _buildGridSkeleton(),
-            error: (e, _) => _buildError(e),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyDateState(AsyncValue<Map<int, int>> hourCountsAsync) {
-    // 해당 날짜 전체 0건인지 확인
-    final isEntireDateEmpty = hourCountsAsync.whenOrNull(
-          data: (counts) => counts.values.every((v) => v == 0),
-        ) ??
-        false;
-
-    if (isEntireDateEmpty) {
-      return Center(
-        child: Padding(
-          padding: AppStyles.pagePadding,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 14),
+          Row(
             children: [
-              Icon(
-                Icons.videocam_off_outlined,
-                size: 48,
-                color: Theme.of(context).colorScheme.outline,
+              Expanded(
+                child: _ActivityStatBox(
+                  label: 'crecam_detail_stat_motion'.tr(),
+                  value: range == _ActivityRange.today ? '2h 15m' : '1h 48m',
+                  valueColor: const Color(0xFF222222),
+                ),
               ),
-              const SizedBox(height: AppStyles.spacing12),
-              Text(
-                'my_cage_no_clips_this_date'.tr(),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ActivityStatBox(
+                  label: 'crecam_detail_stat_drinking'.tr(),
+                  value: 'crecam_detail_count_times'
+                      .tr(namedArgs: {'n': range == _ActivityRange.today ? '3' : '2'}),
+                  valueColor: const Color(0xFF1E88E5),
+                ),
               ),
-              const SizedBox(height: AppStyles.spacing16),
-              FilledButton.tonal(
-                onPressed: _pickDate,
-                child: Text('my_cage_select_another_date'.tr()),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ActivityStatBox(
+                  label: 'crecam_detail_stat_feeding'.tr(),
+                  value: 'crecam_detail_count_times'
+                      .tr(namedArgs: {'n': range == _ActivityRange.today ? '1' : '2'}),
+                  valueColor: const Color(0xFF2E7D32),
+                ),
               ),
             ],
           ),
-        ),
-      );
-    }
+        ],
+      ),
+    );
+  }
+}
 
-    // 해당 시간만 0건 (다른 시간에는 데이터 있음)
-    return Center(
-      child: Padding(
-        padding: AppStyles.pagePadding,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.hourglass_empty_outlined,
-              size: 40,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            const SizedBox(height: AppStyles.spacing8),
-            Text(
-              'clip_empty_date'.tr(),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+class _RangeToggle extends StatelessWidget {
+  const _RangeToggle({required this.range, required this.onChanged});
+
+  final _ActivityRange range;
+  final ValueChanged<_ActivityRange> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _toggleChip(context, 'clip_date_yesterday'.tr(),
+              range == _ActivityRange.yesterday, _ActivityRange.yesterday),
+          _toggleChip(context, 'clip_date_today'.tr(),
+              range == _ActivityRange.today, _ActivityRange.today),
+        ],
+      ),
+    );
+  }
+
+  Widget _toggleChip(
+      BuildContext context, String label, bool selected, _ActivityRange r) {
+    return GestureDetector(
+      onTap: () => onChanged(r),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected
+              ? Theme.of(context).colorScheme.surface
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
                   ),
-            ),
-          ],
+                ]
+              : null,
         ),
-      ),
-    );
-  }
-
-  Widget _buildGridSkeleton() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(AppStyles.spacing8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 16 / 9,
-      ),
-      itemCount: 9,
-      itemBuilder: (_, __) => const SkeletonLoading(
-        width: double.infinity,
-        height: double.infinity,
-      ),
-    );
-  }
-
-  Widget _buildError(Object e) {
-    return Center(
-      child: Padding(
-        padding: AppStyles.pagePadding,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.error_outline,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: AppStyles.spacing8),
-            Text('error_generic'.tr()),
-            const SizedBox(height: AppStyles.spacing8),
-            OutlinedButton(
-              onPressed: () => setState(() {}),
-              child: Text('retry'.tr()),
-            ),
-          ],
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected
+                ? Theme.of(context).colorScheme.onSurface
+                : Theme.of(context).colorScheme.outline,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 13,
+          ),
         ),
       ),
     );
   }
 }
 
-// ── 카메라 정보 카드 (별도 위젯으로 분리해 rebuild 격리) ──────────────────────
+class _ActivityStatBox extends StatelessWidget {
+  const _ActivityStatBox({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
 
-class _CameraInfoCard extends ConsumerWidget {
-  const _CameraInfoCard({required this.cameraId});
+  final String label;
+  final String value;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: valueColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 비디오 기록 섹션 ────────────────────────────────────────────────────────
+
+class _VideoLogSection extends ConsumerWidget {
+  const _VideoLogSection({
+    required this.cameraId,
+    required this.filter,
+    required this.onFilterChanged,
+  });
 
   final String cameraId;
+  final _VideoFilter filter;
+  final ValueChanged<_VideoFilter> onFilterChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cameraAsync = ref.watch(cameraProvider(cameraId));
+    final theme = Theme.of(context);
+    final latestAsync = ref.watch(latestClipTimeProvider(cameraId));
 
-    final colorScheme = Theme.of(context).colorScheme;
-    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: colorScheme.onSurfaceVariant,
-        );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppStyles.spacing16,
-        vertical: AppStyles.spacing4,
-      ),
-      child: cameraAsync.when(
-        loading: () => const SkeletonLoading(
-          width: double.infinity,
-          height: 20,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'crecam_detail_video_log'.tr(),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        error: (e, _) => Text(e.toString(), style: textStyle),
-        data: (camera) {
-          if (camera == null) {
-            return Text('error_generic'.tr(), style: textStyle);
-          }
-          return Row(
-            children: [
-              Icon(Icons.dns_outlined, size: 14, color: colorScheme.outline),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  '${camera.host}:${camera.port} · ${camera.username}',
-                  style: textStyle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+        const SizedBox(height: 12),
+        _FilterChips(filter: filter, onChanged: onFilterChanged),
+        const SizedBox(height: 14),
+        latestAsync.when(
+          loading: () => _buildSkeletonList(),
+          error: (e, _) => _buildError(context),
+          data: (latest) {
+            if (latest == null) {
+              return _buildEmpty(context);
+            }
+            return _ClipListByDay(
+              cameraId: cameraId,
+              date: DateTime(latest.year, latest.month, latest.day),
+              filter: filter,
+              onFilterChanged: onFilterChanged,
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSkeletonList() {
+    return Column(
+      children: List.generate(
+        3,
+        (i) => const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: SkeletonCard(lineCount: 2, height: 80),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmpty(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.videocam_off_outlined,
+              size: 40,
+              color: theme.colorScheme.outline,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'camera_detail_clips_empty'.tr(),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.outline,
               ),
-              if (camera.lastConnectedAt != null) ...[
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.access_time,
-                  size: 12,
-                  color: colorScheme.outline,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  DateFormat('MM.dd HH:mm')
-                      .format(camera.lastConnectedAt!.toLocal()),
-                  style: textStyle,
-                ),
-              ],
-            ],
-          );
-        },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildError(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Text(
+          'error_generic'.tr(),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterChips extends StatelessWidget {
+  const _FilterChips({required this.filter, required this.onChanged});
+
+  final _VideoFilter filter;
+  final ValueChanged<_VideoFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _chip(context, 'crecam_detail_filter_highlight'.tr(),
+            filter == _VideoFilter.highlight, _VideoFilter.highlight),
+        const SizedBox(width: 8),
+        _chip(context, 'crecam_detail_filter_motion'.tr(),
+            filter == _VideoFilter.motion, _VideoFilter.motion),
+        const SizedBox(width: 8),
+        _chip(context, 'crecam_detail_filter_all'.tr(),
+            filter == _VideoFilter.all, _VideoFilter.all),
+      ],
+    );
+  }
+
+  Widget _chip(
+      BuildContext context, String label, bool selected, _VideoFilter f) {
+    const blackColor = Color(0xFF222222);
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () => onChanged(f),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? blackColor : theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? blackColor
+                : theme.colorScheme.outlineVariant,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : theme.colorScheme.onSurface,
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── 클립 리스트 (해당 날짜 hourCounts → 클립 평탄화) ─────────────────────────
+
+class _ClipListByDay extends ConsumerWidget {
+  const _ClipListByDay({
+    required this.cameraId,
+    required this.date,
+    required this.filter,
+    required this.onFilterChanged,
+  });
+
+  final String cameraId;
+  final DateTime date;
+  final _VideoFilter filter;
+  final ValueChanged<_VideoFilter> onFilterChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hourCountsAsync = ref.watch(hourCountsProvider((
+      cameraId: cameraId,
+      date: date,
+    )));
+
+    return hourCountsAsync.when(
+      loading: () => Column(
+        children: List.generate(
+          3,
+          (i) => const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: SkeletonCard(lineCount: 2, height: 80),
+          ),
+        ),
+      ),
+      error: (e, _) => _buildErrorCard(context),
+      data: (counts) {
+        final hoursWithClips = counts.entries
+            .where((e) => e.value > 0)
+            .map((e) => e.key)
+            .toList()
+          ..sort((a, b) => b.compareTo(a));
+
+        if (hoursWithClips.isEmpty) {
+          return _buildEmptyCard(context);
+        }
+
+        return Column(
+          children: hoursWithClips
+              .map((h) => _HourClips(
+                    cameraId: cameraId,
+                    date: date,
+                    hour: h,
+                    filter: filter,
+                    onFilterChanged: onFilterChanged,
+                  ))
+              .toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyCard(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Text(
+          'camera_detail_clips_empty'.tr(),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorCard(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Text(
+          'error_generic'.tr(),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HourClips extends ConsumerWidget {
+  const _HourClips({
+    required this.cameraId,
+    required this.date,
+    required this.hour,
+    required this.filter,
+    required this.onFilterChanged,
+  });
+
+  final String cameraId;
+  final DateTime date;
+  final int hour;
+  final _VideoFilter filter;
+  final ValueChanged<_VideoFilter> onFilterChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final clipsAsync = ref.watch(clipsForHourProvider((
+      cameraId: cameraId,
+      date: date,
+      hour: hour,
+    )));
+
+    return clipsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (clips) {
+        final filtered = _applyFilter(clips);
+        if (filtered.isEmpty) return const SizedBox.shrink();
+        return Column(
+          children: filtered
+              .map((c) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _ClipRow(clip: c),
+                  ))
+              .toList(),
+        );
+      },
+    );
+  }
+
+  List<Clip> _applyFilter(List<Clip> clips) {
+    switch (filter) {
+      case _VideoFilter.highlight:
+        return clips.where((c) => c.hasMotion).toList();
+      case _VideoFilter.motion:
+        return clips.where((c) => c.hasMotion).toList();
+      case _VideoFilter.all:
+        return clips;
+    }
+  }
+}
+
+class _ClipRow extends StatelessWidget {
+  const _ClipRow({required this.clip});
+
+  final Clip clip;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final timeText = DateFormat('hh:mm a').format(clip.startedAt.toLocal());
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => context.push('/crecam/clips/${clip.id}'),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // 썸네일
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.play_circle_outline,
+                size: 28,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 본문
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF222222),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'crecam_detail_stat_drinking'.tr(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'crecam_detail_behavior_drinking'.tr(),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    timeText,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
