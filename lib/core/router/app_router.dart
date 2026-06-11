@@ -16,7 +16,6 @@ import '../../features/my_pets/presentation/pet_detail_screen.dart';
 import '../../features/my_pets/presentation/pet_edit_screen.dart';
 import '../../features/my_cage/presentation/crecam_screen.dart';
 import '../../features/my_cage/presentation/smart_cage_screen.dart';
-import '../../features/my_cage/presentation/camera_add_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
 import '../../features/my_cage/presentation/clip_player_screen.dart';
 import '../../features/my_cage/presentation/device_pairing_screen.dart';
@@ -136,13 +135,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/crecam',
                 builder: (context, state) => const CrecamScreen(),
                 routes: [
-                  GoRoute(
-                    path: 'cameras/add',
-                    builder: (context, state) {
-                      final petId = state.uri.queryParameters['petId'];
-                      return CameraAddScreen(prefilledPetId: petId);
-                    },
-                  ),
                   GoRoute(
                     path: 'cameras/:cameraId',
                     builder: (context, state) {

@@ -5,11 +5,12 @@ import '../../../core/config/env_config.dart';
 import '../data/camera_repository.dart';
 import '../data/clip_repository.dart';
 import '../data/video_cache_repository.dart';
+import '../data/webrtc_signaling_repository.dart';
 import '../domain/behavior_inference.dart';
 import '../domain/behavior_label.dart';
-import '../domain/camera.dart';
 import '../domain/clip.dart';
 import '../domain/clip_media_url.dart';
+import '../domain/terra_camera.dart';
 
 // ── 내부 인프라 Provider ───────────────────────────────────────────────────────
 
@@ -29,8 +30,6 @@ final _tokenProviderProvider = Provider<Future<String?> Function()>(
 final cameraRepositoryProvider = Provider<CameraRepository>((ref) {
   return CameraRepository(
     supabase: ref.watch(_supabaseClientProvider),
-    backendUrl: EnvConfig.backendUrl,
-    tokenProvider: ref.watch(_tokenProviderProvider),
   );
 });
 
@@ -42,22 +41,25 @@ final clipRepositoryProvider = Provider<ClipRepository>((ref) {
   );
 });
 
+final webrtcSignalingRepositoryProvider =
+    Provider<WebRtcSignalingRepository>((ref) {
+  return WebRtcSignalingRepository(
+    terraServerUrl: EnvConfig.terraServerUrl,
+    tokenProvider: ref.watch(_tokenProviderProvider),
+    supabase: ref.watch(_supabaseClientProvider),
+  );
+});
+
 // ── 공개 FutureProvider ────────────────────────────────────────────────────────
 
 /// 현재 유저의 카메라 전체 목록 (최신순).
-final camerasProvider = FutureProvider<List<Camera>>((ref) async {
+final camerasProvider = FutureProvider<List<TerraCamera>>((ref) async {
   return ref.watch(cameraRepositoryProvider).listAll();
-});
-
-/// 특정 펫에 연결된 카메라 목록.
-final petCamerasProvider =
-    FutureProvider.family<List<Camera>, String>((ref, petId) async {
-  return ref.watch(cameraRepositoryProvider).listByPet(petId);
 });
 
 /// 단일 카메라 조회. 존재하지 않으면 null.
 final cameraProvider =
-    FutureProvider.family<Camera?, String>((ref, id) async {
+    FutureProvider.family<TerraCamera?, String>((ref, id) async {
   return ref.watch(cameraRepositoryProvider).getById(id);
 });
 

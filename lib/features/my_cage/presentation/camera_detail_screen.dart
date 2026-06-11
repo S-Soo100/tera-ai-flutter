@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/constants/app_constants.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/clip.dart';
 import 'my_cage_providers.dart';
 import 'supabase_module_providers.dart';
-import 'widgets/live_mjpeg_view.dart';
+import 'widgets/webrtc_live_view.dart';
 
 enum _ActivityRange { yesterday, today }
 
@@ -86,7 +85,7 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
         centerTitle: true,
         title: cameraAsync.when(
           data: (cam) => Text(
-            cam?.displayName ?? widget.cameraId,
+            cam?.name ?? widget.cameraId,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -144,16 +143,12 @@ class _LiveSection extends StatelessWidget {
         DateFormat('yyyy.MM.dd HH:mm:ss').format(now.toLocal());
 
     return AspectRatio(
-      aspectRatio: 16 / 10,
+      aspectRatio: 4 / 3,
       child: Stack(
         children: [
-          // 라이브 스트림
+          // 라이브 스트림 (WebRTC)
           Positioned.fill(
-            child: LiveMjpegView(
-              url: AppConstants.tempLiveStreamUrl,
-              username: AppConstants.tempLiveStreamUser,
-              password: AppConstants.tempLiveStreamPass,
-            ),
+            child: WebRtcLiveView(cameraUuid: cameraId),
           ),
           // 상단 우측: 온도 / 습도 배지 (실데이터)
           const Positioned(

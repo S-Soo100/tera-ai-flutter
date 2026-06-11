@@ -285,7 +285,9 @@ CREATE POLICY "User reads own clips" ON camera_clips
 > **프로젝트**: 메인 앱과 **동일한 Supabase 프로젝트**(`slxjvzzfisxqwnghvrit`)를 공유한다 (`lib/core/config/env_config.dart` 참조). `api.terra-server.uk`는 페어링/presigned URL 등 서버 로직용 REST(terra-api)이고, IoT 데이터(디바이스/명령/센서)는 Supabase Postgres + RLS 로 직결한다.
 > **아래 DDL은 Flutter가 실제 의존하는 컬럼만 표기** (terra-server가 추가 컬럼을 소유할 수 있음). 매핑 코드: `lib/features/my_cage/domain/{device,telemetry_reading,device_command}.dart`.
 
-terra-server는 `enclosures` / `devices` / `cameras` / `commands` / `telemetry` / `telemetry_1m` / `alerts` / `motion_clips` 테이블을 정의한다. **현재 Flutter 앱이 연동한 것은 `devices` / `telemetry` / `commands` 3개**이며(사육장 캠은 전환 범위 밖 — petcam-lab `camera_clips` 유지), 나머지는 명세만 존재하고 앱 미연동 상태다.
+terra-server는 `enclosures` / `devices` / `cameras` / `commands` / `telemetry` / `telemetry_1m` / `alerts` / `motion_clips` 테이블을 정의한다. **현재 Flutter 앱이 연동한 것은 `devices` / `telemetry` / `commands` / `cameras` 4개**이며(클립은 petcam-lab `camera_clips` 유지), 나머지는 명세만 존재하고 앱 미연동 상태다.
+
+> **주의 (2026-06-11)**: `cameras` 테이블은 terra-server 스키마(ESP32-P4 사육장 캠)로 교체되어 있다. 과거 petcam-lab RTSP 카메라용 컬럼(host/port/path/username)은 존재하지 않으며, 앱의 RTSP 등록 흐름(CameraAddScreen)도 제거됨. 앱 의존 컬럼: `id`(uuid, WebRTC API의 camera_uuid) / `camera_id`(text) / `name` / `model` / `resolution` / `is_online` / `last_seen_at` / `enclosure_id` / `created_at`. RLS: `auth.uid() = owner_id`. 라이브 영상은 WebRTC P2P — 시그널링 REST 계약은 `~/Downloads/APP_WEBRTC.md`(terra-server SOT), 클라 구현은 `lib/features/my_cage/{data/webrtc_signaling_repository,presentation/webrtc_live_controller}.dart`.
 
 #### IoT-1. devices
 ```sql

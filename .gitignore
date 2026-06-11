@@ -37,6 +37,9 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Kotlin compiler daemon session cache (build artifact)
+**/.kotlin/
+
 # Symbolication related
 app.*.symbols
 

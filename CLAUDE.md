@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 파충류 사육자를 위한 올인원 앱. 백색목록 검색, 사육 정보, 모프 유전 계산기, 자진신고 가이드 + 게코캠 + 사육장 IoT 제어.
-- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE)
+- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브)
 - **현재 상태(2026-06-09)**: P2 상당 구현 — Supabase 인증/유저 CRUD + 게코캠(petcam-lab) + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE 페어링). 5탭 IA(`StatefulShellRoute`).
   - (P0 "로컬 전용/인증 없음/백엔드 없음"은 초기 설계 — 더 이상 유효하지 않음. 신규 작업은 아래 Phase 경계/CAOF 규칙을 따른다.)
 - **기획서**: `docs/spec.md`
@@ -57,7 +57,7 @@ lib/
 |-----------|---------|------|------------|
 | `/home` | home | HomeScreen (대시보드) | 내 개체/사육장 요약 |
 | `/my-pets` | my_pets | MyPetsScreen (개체 CRUD) | Supabase `pets`/`pet_events`/`media` |
-| `/crecam` | my_cage | CrecamScreen (카메라/클립) | petcam-lab `camera_clips` + 클립 스트리밍 |
+| `/crecam` | my_cage | CrecamScreen (카메라/클립) | **terra-server** `cameras`(ESP32-P4) + WebRTC P2P 라이브 + petcam-lab `camera_clips` 클립 |
 | `/smart-cage` | my_cage | SmartCageScreen + DevicePairingScreen | **terra-server** `devices`/`telemetry`/`commands` + BLE |
 | `/community` | community | CommunityScreen (게시판) | Supabase `community` |
 | `/wiki` (보조) | wiki | WikiScreen + 종 상세/모프 계산기/종 비교/지식그래프 | 레퍼런스(로컬/Supabase) |

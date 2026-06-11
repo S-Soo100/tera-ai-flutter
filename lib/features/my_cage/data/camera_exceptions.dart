@@ -34,3 +34,19 @@ class ClipMissingException implements Exception {
   @override
   String toString() => 'ClipMissingException: clip $clipId not found on disk';
 }
+
+/// WebRTC offer 504 — 카메라가 시그널링 타임아웃 내 응답 없음
+class CameraUnresponsiveException implements Exception {
+  const CameraUnresponsiveException();
+
+  @override
+  String toString() => 'CameraUnresponsiveException: no response from camera';
+}
+
+/// WebRTC offer 502 — 시그널링 게이트웨이 오류
+class SignalingGatewayException implements Exception {
+  const SignalingGatewayException();
+
+  @override
+  String toString() => 'SignalingGatewayException: signaling gateway error';
+}

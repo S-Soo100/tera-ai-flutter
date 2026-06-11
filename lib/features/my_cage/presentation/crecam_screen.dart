@@ -5,8 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
-import '../../my_pets/presentation/my_pets_providers.dart';
-import '../domain/camera.dart';
+import '../domain/terra_camera.dart';
 import 'my_cage_providers.dart';
 
 enum _CrecamView { grid, list }
@@ -20,6 +19,12 @@ class CrecamScreen extends ConsumerStatefulWidget {
 
 class _CrecamScreenState extends ConsumerState<CrecamScreen> {
   _CrecamView _view = _CrecamView.grid;
+
+  void _showPairingComingSoon() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('crecam_pairing_coming_soon'.tr())),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +53,7 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
-        onPressed: () => context.push('/crecam/cameras/add'),
+        onPressed: _showPairingComingSoon,
         tooltip: 'my_cage_add_camera'.tr(),
         child: const Icon(Icons.add),
       ),
@@ -60,10 +65,13 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen> {
         ),
         data: (cameras) {
           if (cameras.isEmpty) {
-            return _EmptyBody(onAdd: () => context.push('/crecam/cameras/add'));
+            return _EmptyBody(onAdd: _showPairingComingSoon);
           }
           return _view == _CrecamView.grid
-              ? _CameraGrid(cameras: cameras)
+              ? _CameraGrid(
+                  cameras: cameras,
+                  onAddTap: _showPairingComingSoon,
+                )
               : _CameraList(cameras: cameras);
         },
       ),
@@ -137,12 +145,14 @@ class _ViewToggle extends StatelessWidget {
 
 // ── 그리드 뷰 ──────────────────────────────────────────────────────────────────
 
-class _CameraGrid extends ConsumerWidget {
-  const _CameraGrid({required this.cameras});
-  final List<Camera> cameras;
+class _CameraGrid extends StatelessWidget {
+  const _CameraGrid({required this.cameras, required this.onAddTap});
+
+  final List<TerraCamera> cameras;
+  final VoidCallback onAddTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -154,9 +164,7 @@ class _CameraGrid extends ConsumerWidget {
       itemCount: cameras.length + 1,
       itemBuilder: (context, index) {
         if (index == cameras.length) {
-          return _AddCameraCard(
-            onTap: () => context.push('/crecam/cameras/add'),
-          );
+          return _AddCameraCard(onTap: onAddTap);
         }
         return _CameraGridCard(camera: cameras[index]);
       },
@@ -166,7 +174,7 @@ class _CameraGrid extends ConsumerWidget {
 
 class _CameraGridCard extends StatelessWidget {
   const _CameraGridCard({required this.camera});
-  final Camera camera;
+  final TerraCamera camera;
 
   @override
   Widget build(BuildContext context) {
@@ -202,6 +210,7 @@ class _CameraGridCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  // 온습도 배지 (하드코딩 유지 — 이번 범위 외)
                   Positioned(
                     right: 8,
                     bottom: 8,
@@ -239,7 +248,7 @@ class _CameraGridCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          camera.displayName,
+                          camera.name,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -248,11 +257,11 @@ class _CameraGridCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          camera.isActive
-                              ? 'crecam_status_good'.tr()
-                              : 'crecam_status_bad'.tr(),
+                          camera.isOnline
+                              ? 'crecam_camera_online'.tr()
+                              : 'crecam_camera_offline'.tr(),
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: camera.isActive
+                            color: camera.isOnline
                                 ? const Color(0xFF2E7D32)
                                 : theme.colorScheme.outline,
                           ),
@@ -319,13 +328,12 @@ class _AddCameraCard extends StatelessWidget {
 
 // ── 리스트 뷰 ──────────────────────────────────────────────────────────────────
 
-class _CameraList extends ConsumerWidget {
+class _CameraList extends StatelessWidget {
   const _CameraList({required this.cameras});
-  final List<Camera> cameras;
+  final List<TerraCamera> cameras;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final pets = ref.watch(petListProvider);
+  Widget build(BuildContext context) {
     return ListView.separated(
       padding: const EdgeInsets.only(
         top: AppStyles.spacing8,
@@ -335,33 +343,18 @@ class _CameraList extends ConsumerWidget {
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final camera = cameras[index];
-        final pet = pets.where((p) => p.id == camera.petId).firstOrNull;
         return ListTile(
           leading: Icon(
-            camera.isActive ? Icons.videocam : Icons.videocam_off_outlined,
-            color: camera.isActive
+            camera.isOnline ? Icons.videocam : Icons.videocam_off_outlined,
+            color: camera.isOnline
                 ? Theme.of(context).colorScheme.primary
                 : Theme.of(context).colorScheme.outline,
           ),
-          title: Text(camera.displayName),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${camera.host}:${camera.port}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text(
-                pet?.name ?? 'crecam_pet_unlinked'.tr(),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: pet != null
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.outline,
-                    ),
-              ),
-            ],
+          title: Text(camera.name),
+          subtitle: Text(
+            camera.model ?? camera.cameraId,
+            style: Theme.of(context).textTheme.bodySmall,
           ),
-          isThreeLine: true,
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/crecam/cameras/${camera.id}'),
         );

@@ -345,6 +345,16 @@
   "live_view_title": "라이브",
   "live_view_connecting": "연결 중...",
   "live_view_error": "스트림 연결 실패",
+
+  "crecam_camera_online": "온라인",
+  "crecam_camera_offline": "오프라인",
+  "crecam_pairing_coming_soon": "카메라 페어링 기능 준비 중",
+
+  "crecam_live_phase_config": "설정 수신 중...",
+  "crecam_live_phase_offering": "카메라 호출 중...",
+  "crecam_live_phase_ice": "영상 연결 중...",
+  "crecam_live_error_unresponsive": "카메라가 응답하지 않습니다. 전원과 네트워크 상태를 확인해주세요.",
+  "crecam_live_error_failed": "연결에 실패했습니다. 다시 시도해주세요.",
   "live_view_reconnect": "다시 연결",
 
   "module_status_title": "환경 모니터링",
