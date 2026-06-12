@@ -13,6 +13,7 @@
 - **연동 현황 (접속 정보/RLS/시드/Flutter 코드 예시)**: `docs/supabase-setup.md`
 - **사육장 IoT 통합 (단일 진실 소스)**: `~/Downloads/APP_INTEGRATION.md` (terra-server) — 디바이스 제어/텔레메트리/BLE 페어링 계약
 - **클라우드 마이그레이션/UI 개편 (Phase C/D)**: `docs/flutter-cloud-migration-plan.md`
+- **Storage 파일 복사 우회 (MCP·service_role 제약)**: 메모리 `project_supabase_storage_edge_workaround` — edge function으로 `storage.copy`, 경로 `pet-media/{user_id}/pets/{pet_id}.png`
 
 ## Phase 로드맵
 
@@ -65,6 +66,7 @@ lib/
 | — | splash/error | SplashScreen / ErrorScreen | — |
 
 > 사육장 IoT 데이터 계층: `my_cage/data/{ble_pairing_repository,supabase_module_control_repository}.dart`, `my_cage/domain/{device,telemetry_reading,device_command,actuator_state}.dart`.
+> SmartCageScreen UI(2026-06-12 개편): 현황(`module_status_card`)+제어(`actuator_controls`)를 단일 통합 카드로 병합 + 테두리. 액추에이터='사육장 제어'(iOS 제어센터 스타일 한 row 타일). LED는 앱이 `CommandAction.ledOff`를 선제 추가(terra-server 계약에 led_off·LED telemetry 없음 → 메모리 `project_led_control_gap`). 목표 온습도는 하드코딩 상수(setpoint 실연동 후속).
 
 ## 코딩 규칙
 
