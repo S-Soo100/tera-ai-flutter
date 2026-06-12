@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../shared/widgets/app_tag.dart';
+import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
+import '../domain/action_type.dart';
 import '../domain/clip.dart';
 import 'my_cage_providers.dart';
 import 'supabase_module_providers.dart';
@@ -12,26 +13,60 @@ import 'widgets/clip_card.dart';
 import 'widgets/webrtc_live_view.dart';
 
 // ── 검증용 클립 설정 ─────────────────────────────────────────────────────────
-// 검증 완료 후 false로 바꾸면 카드가 사라진다 (한 줄 제거).
-const bool kShowVerifyClip = true;
+// 현재 camera_clips RLS("User reads own clips" = 본인 클립만)로 직결 조회가
+// 0건이라 보류(false). RLS에 labeler SELECT 정책을 추가하면 true로 재활성 가능.
+const bool kShowVerifyClip = false;
 
-const String _kVerifyClipId = 'e6f5f2f0-5f8a-4800-b568-0b5bb38b60f1';
+/// 실제 R2 클립이 71개 업로드된 검증용 카메라 ID.
+const String kVerifyCameraId = '3a6cffbf-be83-4c77-9fa7-4fcc517c74a6';
 
-Clip _buildVerifyClip() => Clip(
-      id: _kVerifyClipId,
-      userId: '380d97fd-cb83-4490-ac26-cf691b32614f',
-      cameraId: '3a6cffbf-be83-4c77-9fa7-4fcc517c74a6',
-      startedAt: DateTime.parse('2026-04-28T20:37:44.444665Z'),
-      durationSec: 60.0527,
-      hasMotion: true,
-      filePath: '',
-      createdAt: DateTime.parse('2026-04-28T20:37:44.444665Z'),
-    );
+/// 검증용 카메라의 클립 목록 (최신순, 최대 100개).
+final _verifyClipsProvider =
+    FutureProvider.autoDispose<List<Clip>>((ref) async {
+  final repo = ref.watch(clipRepositoryProvider);
+  final page = await repo.listPage(cameraId: kVerifyCameraId, limit: 100);
+  return page.items;
+});
+// ────────────────────────────────────────────────────────────────────────────
+
+// ── 시연용 데모 행동 매핑 (DB 무수정) ────────────────────────────────────────
+// 실제 behavior_logs 연동 시 actionForClip 함수만 교체하면 된다.
+const Map<String, ActionType> kDemoClipActions = {
+  'a1d5f7b0-b187-48af-8953-9d891989a38c': ActionType.moving,
+  '54e39c68-b557-4ed7-b525-3b072b0c7672': ActionType.moving,
+  '14160742-97b7-4491-a373-7ea6ab16ab2f': ActionType.moving,
+  '2a052abf-ff0b-4f3c-9835-7474ae14ff28': ActionType.drinking,
+  'c45d3754-a9ad-4053-87f8-3bbf50268c5a': ActionType.drinking,
+  '664eb936-05e3-4bd9-abf6-1f7abe31165c': ActionType.eatingPaste,
+  '3eb899c0-d978-428d-89c7-67dfdb30915d': ActionType.eatingPaste,
+  'b72bf88d-ec8e-4089-a6c9-3da8f9e3de93': ActionType.eatingPrey,
+  'fe420ce8-1e49-44b2-b121-12abb3b0d488': ActionType.shedding,
+  '9f6512c1-ef4c-4431-b456-f3cc056ef918': ActionType.defecating,
+};
+
+/// 나중에 실제 behavior_logs 연동 자리: 지금은 데모 매핑만.
+ActionType? actionForClip(Clip c) => kDemoClipActions[c.id];
+
+/// 행동 탭에 표시할 고정 순서 (demo 기준).
+const List<ActionType> kBehaviorTabOrder = [
+  ActionType.moving,
+  ActionType.drinking,
+  ActionType.eatingPaste,
+  ActionType.eatingPrey,
+  ActionType.shedding,
+  ActionType.defecating,
+];
+
+/// 현재 카메라 클립 전체 (최신순 50개). 행동 탭 필터에 사용.
+final _cameraClipsProvider =
+    FutureProvider.autoDispose.family<List<Clip>, String>((ref, cameraId) async {
+  final repo = ref.watch(clipRepositoryProvider);
+  final page = await repo.listPage(cameraId: cameraId, limit: 50);
+  return page.items;
+});
 // ────────────────────────────────────────────────────────────────────────────
 
 enum _ActivityRange { yesterday, today }
-
-enum _VideoFilter { highlight, motion, all }
 
 class CameraDetailScreen extends ConsumerStatefulWidget {
   const CameraDetailScreen({super.key, required this.cameraId});
@@ -45,7 +80,7 @@ class CameraDetailScreen extends ConsumerStatefulWidget {
 
 class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
   _ActivityRange _activityRange = _ActivityRange.today;
-  _VideoFilter _videoFilter = _VideoFilter.highlight;
+  ActionType _selectedAction = ActionType.moving;
 
   // ── 카메라 삭제 ────────────────────────────────────────────────────────────
 
@@ -138,8 +173,8 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _VideoLogSection(
               cameraId: widget.cameraId,
-              filter: _videoFilter,
-              onFilterChanged: (f) => setState(() => _videoFilter = f),
+              selectedAction: _selectedAction,
+              onActionChanged: (a) => setState(() => _selectedAction = a),
             ),
           ),
           const SizedBox(height: 24),
@@ -469,18 +504,18 @@ class _ActivityStatBox extends StatelessWidget {
 class _VideoLogSection extends ConsumerWidget {
   const _VideoLogSection({
     required this.cameraId,
-    required this.filter,
-    required this.onFilterChanged,
+    required this.selectedAction,
+    required this.onActionChanged,
   });
 
   final String cameraId;
-  final _VideoFilter filter;
-  final ValueChanged<_VideoFilter> onFilterChanged;
+  final ActionType selectedAction;
+  final ValueChanged<ActionType> onActionChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final latestAsync = ref.watch(latestClipTimeProvider(cameraId));
+    final clipsAsync = ref.watch(_cameraClipsProvider(cameraId));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,26 +527,55 @@ class _VideoLogSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _FilterChips(filter: filter, onChanged: onFilterChanged),
-        const SizedBox(height: 14),
         if (kShowVerifyClip) ...[
-          _VerifyClipCard(),
+          _VerifyClipsSection(ref: ref),
           const SizedBox(height: 12),
         ],
-        latestAsync.when(
+        clipsAsync.when(
           loading: () => _buildSkeletonList(),
           error: (e, _) => _buildError(context),
-          data: (latest) {
-            if (latest == null) {
-              // 검증용이 켜져 있으면 empty 문구 없이 섹션 종료
-              if (kShowVerifyClip) return const SizedBox.shrink();
-              return _buildEmpty(context);
+          data: (clips) {
+            // 행동별 개수 계산
+            final countByAction = <ActionType, int>{};
+            for (final action in kBehaviorTabOrder) {
+              countByAction[action] =
+                  clips.where((c) => actionForClip(c) == action).length;
             }
-            return _ClipListByDay(
-              cameraId: cameraId,
-              date: DateTime(latest.year, latest.month, latest.day),
-              filter: filter,
-              onFilterChanged: onFilterChanged,
+
+            final filtered = clips
+                .where((c) => actionForClip(c) == selectedAction)
+                .toList();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ActionTabs(
+                  selected: selectedAction,
+                  countByAction: countByAction,
+                  onChanged: onActionChanged,
+                ),
+                const SizedBox(height: 14),
+                if (filtered.isEmpty)
+                  _buildEmptyAction(context)
+                else
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 0.85,
+                    children: filtered
+                        .map(
+                          (c) => ClipCard(
+                            clip: c,
+                            onTap: () =>
+                                context.push('/crecam/clips/${c.id}'),
+                          ),
+                        )
+                        .toList(),
+                  ),
+              ],
             );
           },
         ),
@@ -531,7 +595,7 @@ class _VideoLogSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmpty(BuildContext context) {
+  Widget _buildEmptyAction(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(24),
@@ -540,22 +604,11 @@ class _VideoLogSection extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.videocam_off_outlined,
-              size: 40,
-              color: theme.colorScheme.outline,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'camera_detail_clips_empty'.tr(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
-            ),
-          ],
+        child: Text(
+          'camera_detail_clips_empty'.tr(),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
         ),
       ),
     );
@@ -581,49 +634,77 @@ class _VideoLogSection extends ConsumerWidget {
   }
 }
 
-class _FilterChips extends StatelessWidget {
-  const _FilterChips({required this.filter, required this.onChanged});
+// ── 행동 탭 (가로 스크롤 ChoiceChip) ─────────────────────────────────────────
 
-  final _VideoFilter filter;
-  final ValueChanged<_VideoFilter> onChanged;
+class _ActionTabs extends StatelessWidget {
+  const _ActionTabs({
+    required this.selected,
+    required this.countByAction,
+    required this.onChanged,
+  });
+
+  final ActionType selected;
+  final Map<ActionType, int> countByAction;
+  final ValueChanged<ActionType> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _chip(context, 'crecam_detail_filter_highlight'.tr(),
-            filter == _VideoFilter.highlight, _VideoFilter.highlight),
-        const SizedBox(width: 8),
-        _chip(context, 'crecam_detail_filter_motion'.tr(),
-            filter == _VideoFilter.motion, _VideoFilter.motion),
-        const SizedBox(width: 8),
-        _chip(context, 'crecam_detail_filter_all'.tr(),
-            filter == _VideoFilter.all, _VideoFilter.all),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: kBehaviorTabOrder
+            .map((action) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _ActionChip(
+                    action: action,
+                    count: countByAction[action] ?? 0,
+                    selected: selected == action,
+                    onTap: () => onChanged(action),
+                  ),
+                ))
+            .toList(),
+      ),
     );
   }
+}
 
-  Widget _chip(
-      BuildContext context, String label, bool selected, _VideoFilter f) {
-    const blackColor = Color(0xFF222222);
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({
+    required this.action,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ActionType action;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final selectedColor = theme.colorScheme.primary;
+    final label = count > 0
+        ? '${action.localizationKey.tr()} $count'
+        : action.localizationKey.tr();
+
     return GestureDetector(
-      onTap: () => onChanged(f),
-      child: Container(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? blackColor : theme.colorScheme.surface,
+          color: selected ? selectedColor : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected
-                ? blackColor
-                : theme.colorScheme.outlineVariant,
+            color: selected ? selectedColor : theme.colorScheme.outlineVariant,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : theme.colorScheme.onSurface,
+            color: selected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
             fontSize: 13,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
@@ -633,181 +714,85 @@ class _FilterChips extends StatelessWidget {
   }
 }
 
-// ── 클립 리스트 (해당 날짜 hourCounts → 클립 평탄화) ─────────────────────────
+// ── 검증용 클립 섹션 (실제 R2 클립 그리드) ───────────────────────────────────
 
-class _ClipListByDay extends ConsumerWidget {
-  const _ClipListByDay({
-    required this.cameraId,
-    required this.date,
-    required this.filter,
-    required this.onFilterChanged,
-  });
+class _VerifyClipsSection extends StatelessWidget {
+  const _VerifyClipsSection({required this.ref});
 
-  final String cameraId;
-  final DateTime date;
-  final _VideoFilter filter;
-  final ValueChanged<_VideoFilter> onFilterChanged;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final hourCountsAsync = ref.watch(hourCountsProvider((
-      cameraId: cameraId,
-      date: date,
-    )));
-
-    return hourCountsAsync.when(
-      loading: () => Column(
-        children: List.generate(
-          3,
-          (i) => const Padding(
-            padding: EdgeInsets.only(bottom: 12),
-            child: SkeletonCard(lineCount: 2, height: 80),
-          ),
-        ),
-      ),
-      error: (e, _) => _buildErrorCard(context),
-      data: (counts) {
-        final hoursWithClips = counts.entries
-            .where((e) => e.value > 0)
-            .map((e) => e.key)
-            .toList()
-          ..sort((a, b) => b.compareTo(a));
-
-        if (hoursWithClips.isEmpty) {
-          return _buildEmptyCard(context);
-        }
-
-        return Column(
-          children: hoursWithClips
-              .map((h) => _HourClips(
-                    cameraId: cameraId,
-                    date: date,
-                    hour: h,
-                    filter: filter,
-                    onFilterChanged: onFilterChanged,
-                  ))
-              .toList(),
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyCard(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Center(
-        child: Text(
-          'camera_detail_clips_empty'.tr(),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.outline,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorCard(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Center(
-        child: Text(
-          'error_generic'.tr(),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.outline,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HourClips extends ConsumerWidget {
-  const _HourClips({
-    required this.cameraId,
-    required this.date,
-    required this.hour,
-    required this.filter,
-    required this.onFilterChanged,
-  });
-
-  final String cameraId;
-  final DateTime date;
-  final int hour;
-  final _VideoFilter filter;
-  final ValueChanged<_VideoFilter> onFilterChanged;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clipsAsync = ref.watch(clipsForHourProvider((
-      cameraId: cameraId,
-      date: date,
-      hour: hour,
-    )));
-
-    return clipsAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (clips) {
-        final filtered = _applyFilter(clips);
-        if (filtered.isEmpty) return const SizedBox.shrink();
-        return Column(
-          children: filtered
-              .map((c) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: ClipCard(
-                      clip: c,
-                      onTap: () => context.push('/crecam/clips/${c.id}'),
-                    ),
-                  ))
-              .toList(),
-        );
-      },
-    );
-  }
-
-  List<Clip> _applyFilter(List<Clip> clips) {
-    switch (filter) {
-      case _VideoFilter.highlight:
-        return clips.where((c) => c.hasMotion).toList();
-      case _VideoFilter.motion:
-        return clips.where((c) => c.hasMotion).toList();
-      case _VideoFilter.all:
-        return clips;
-    }
-  }
-}
-
-// ── 검증용 클립 카드 ─────────────────────────────────────────────────────────
-
-class _VerifyClipCard extends StatelessWidget {
-  const _VerifyClipCard();
+  final WidgetRef ref;
 
   @override
   Widget build(BuildContext context) {
-    final clip = _buildVerifyClip();
-    return Stack(
+    final clipsAsync = ref.watch(_verifyClipsProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ClipCard(
-          clip: clip,
-          onTap: () => context.push('/crecam/clips/$_kVerifyClipId'),
-        ),
-        Positioned(
-          top: 8,
-          left: 8,
-          child: AppTag(
-            label: 'camera_detail_verify_clip_badge'.tr(),
-            color: Theme.of(context).colorScheme.tertiary,
+        SectionHeader(title: 'camera_detail_verify_clip_section'.tr()),
+        clipsAsync.when(
+          loading: () => Column(
+            children: List.generate(
+              2,
+              (i) => const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: SkeletonCard(lineCount: 2, height: 80),
+              ),
+            ),
           ),
+          error: (_, __) {
+            final theme = Theme.of(context);
+            return Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Center(
+                child: Text(
+                  'error_generic'.tr(),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+              ),
+            );
+          },
+          data: (clips) {
+            if (clips.isEmpty) {
+              final theme = Theme.of(context);
+              return Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Text(
+                    'camera_detail_clips_empty'.tr(),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ),
+              );
+            }
+            return GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 0.85,
+              children: clips
+                  .map(
+                    (c) => ClipCard(
+                      clip: c,
+                      onTap: () => context.push('/crecam/clips/${c.id}'),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
         ),
       ],
     );
