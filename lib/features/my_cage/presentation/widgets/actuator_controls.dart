@@ -11,12 +11,16 @@ import 'heater_lock_dialog.dart';
 
 /// 액추에이터 제어 카드 (Supabase commands/telemetry 기반).
 ///
+/// - [embedded] = true 이면 외곽 Container(배경/그림자/radius)를 그리지 않고
+///   내용물 Column만 반환한다. 상위 통합 카드 셸이 감쌀 때 사용.
 /// - currentDeviceProvider로 device 획득
 /// - telemetryStreamProvider로 relay/fan/heaterState/heaterLocked 표시
 /// - moduleCommandSenderProvider.notifier.send()로 명령 발행
 /// - commandUpdatesProvider listen으로 pending → acked/rejected 피드백
 class ActuatorControls extends ConsumerStatefulWidget {
-  const ActuatorControls({super.key});
+  const ActuatorControls({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   ConsumerState<ActuatorControls> createState() => _ActuatorControlsState();
@@ -32,6 +36,10 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
 
   // LED 전원 버튼 시각 피드백
   bool _ledPulsing = false;
+
+  // LED 로컬 on/off 상태 — telemetry에 LED 상태 없으므로 세션 내 추적.
+  // 앱 재시작 시 false로 초기화됨 (정상 동작).
+  bool _ledOn = false;
 
   static const int _debounceMs = 220;
 
@@ -128,67 +136,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
       context,
       child: Stack(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── 행 1: 팬 + 히터 ──────────────────────────────────────
-              Row(
-                children: [
-                  _ActuatorChip(
-                    label: 'module_actuator_fan'.tr(),
-                    icon: Icons.air,
-                    state: telemetry.fan,
-                    isBusy: hasPending,
-                    onTap: () => _sendCommand(
-                      context,
-                      device,
-                      CommandAction.fanToggle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _HeaterChip(
-                    heaterState: telemetry.heater,
-                    isBusy: hasPending,
-                    onTap: () =>
-                        _handleHeaterTap(context, device, telemetry),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // ── 행 2: LED 전원 + 밝기 ─────────────────────────────────
-              Row(
-                children: [
-                  _LedOnChip(
-                    pulsing: _ledPulsing,
-                    isBusy: hasPending,
-                    onTap: () => _ledOn(context, device),
-                  ),
-                  const SizedBox(width: 8),
-                  _LedBrightnessRow(
-                    debouncing: _ledBrightnessDebouncing,
-                    isBusy: hasPending,
-                    onUp: () =>
-                        _ledBrightness(context, device, up: true),
-                    onDown: () =>
-                        _ledBrightness(context, device, up: false),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // ── 행 3: 릴레이 ─────────────────────────────────────────
-              _ActuatorChip(
-                label: 'module_actuator_relay'.tr(),
-                icon: Icons.electrical_services_outlined,
-                state: telemetry.relay,
-                isBusy: hasPending,
-                onTap: () => _sendCommand(
-                  context,
-                  device,
-                  CommandAction.relayToggle,
-                ),
-              ),
-            ],
-          ),
+          _buildTileGrid(context, device, telemetry, hasPending),
           // hasValue 있지만 에러 중인 오버레이
           if (isOffline)
             Positioned.fill(
@@ -202,8 +150,96 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     );
   }
 
+  Widget _buildTileGrid(
+    BuildContext context,
+    Device device,
+    TelemetryReading telemetry,
+    bool hasPending,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── 행 1: 팬 + 히터 ──────────────────────────────────────
+        Row(
+          children: [
+            Expanded(
+              child: _ActuatorTile(
+                label: 'module_actuator_fan'.tr(),
+                icon: Icons.air,
+                state: telemetry.fan,
+                isBusy: hasPending,
+                accentColor: const Color(0xFF2E7D32),
+                onTap: () => _sendCommand(
+                  context,
+                  device,
+                  CommandAction.fanToggle,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _HeaterTile(
+                heaterState: telemetry.heater,
+                isBusy: hasPending,
+                onTap: () => _handleHeaterTap(context, device, telemetry),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // ── 행 2: LED 통합 타일 (전폭) ────────────────────────────
+        _LedTile(
+          ledOn: _ledOn,
+          pulsing: _ledPulsing,
+          debouncing: _ledBrightnessDebouncing,
+          isBusy: hasPending,
+          onTurnOn: () => _ledTurnOn(context, device),
+          onTurnOff: () => _ledTurnOff(context, device),
+          onBrightnessUp: () => _ledBrightness(context, device, up: true),
+          onBrightnessDown: () => _ledBrightness(context, device, up: false),
+        ),
+        const SizedBox(height: 12),
+        // ── 행 3: 워터펌프 (전폭) ─────────────────────────────────
+        _ActuatorTile(
+          label: 'module_actuator_relay'.tr(),
+          icon: Icons.water_drop_outlined,
+          state: telemetry.relay,
+          isBusy: hasPending,
+          accentColor: const Color(0xFF2E7D32),
+          onTap: () => _sendCommand(
+            context,
+            device,
+            CommandAction.relayToggle,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCard(BuildContext context, {required Widget child}) {
     final theme = Theme.of(context);
+
+    final titleAndChild = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'module_actuators_title'.tr(),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 14),
+        child,
+      ],
+    );
+
+    if (widget.embedded) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: titleAndChild,
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -217,19 +253,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'module_actuators_title'.tr(),
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 14),
-          child,
-        ],
-      ),
+      child: titleAndChild,
     );
   }
 
@@ -298,16 +322,29 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     // rejected_locked 응답 시 _handleCommandResult → 잠금 다이얼로그.
   }
 
-  // ── LED 전원 ─────────────────────────────────────────────────────────────────
+  // ── LED 전원 켜기 ────────────────────────────────────────────────────────────
 
-  Future<void> _ledOn(BuildContext context, Device device) async {
+  Future<void> _ledTurnOn(BuildContext context, Device device) async {
     if (_ledPulsing) return;
-    setState(() => _ledPulsing = true);
+    setState(() {
+      _ledPulsing = true;
+      _ledOn = true; // 낙관적 업데이트
+    });
     await _sendCommand(context, device, CommandAction.ledOn);
     if (mounted) {
       await Future.delayed(const Duration(milliseconds: 200));
       if (mounted) setState(() => _ledPulsing = false);
     }
+  }
+
+  // ── LED 전원 끄기 ────────────────────────────────────────────────────────────
+  // 낙관적 업데이트: 끄기 명령 발행 즉시 _ledOn = false.
+  // 펌웨어가 led_off 미지원 시 rejected_unknown_action → _handleCommandResult가
+  // 스낵바를 표시하고 _ledOn을 다시 true로 롤백한다.
+
+  Future<void> _ledTurnOff(BuildContext context, Device device) async {
+    setState(() => _ledOn = false); // 낙관적 업데이트
+    await _sendCommand(context, device, CommandAction.ledOff);
   }
 
   // ── LED 밝기 ─────────────────────────────────────────────────────────────────
@@ -354,6 +391,12 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     if (status == CommandStatus.acked && result == CommandResult.ok) {
       // 성공: 조용히 처리 (telemetry stream이 UI 자동 갱신)
       return;
+    }
+
+    // led_off 거부 시 낙관적 업데이트 롤백
+    if (cmd.action == CommandAction.ledOff &&
+        result == CommandResult.rejectedUnknownAction) {
+      setState(() => _ledOn = true);
     }
 
     String message;
@@ -430,14 +473,18 @@ class _NoDeviceContent extends StatelessWidget {
   }
 }
 
-// ── 일반 액추에이터 칩 ────────────────────────────────────────────────────────
+// ── iOS 제어센터 스타일: 일반 액추에이터 타일 (가로 한 row 컴팩트) ───────────
+//
+// 레이아웃: [원형 아이콘 뱃지 32px] [라벨] (Spacer) [ON/OFF 상태 + BusyDot]
+// ON=강조색 채움, OFF=surfaceContainerHighest 반투명
 
-class _ActuatorChip extends StatelessWidget {
-  const _ActuatorChip({
+class _ActuatorTile extends StatelessWidget {
+  const _ActuatorTile({
     required this.label,
     required this.icon,
     required this.state,
     required this.isBusy,
+    required this.accentColor,
     required this.onTap,
   });
 
@@ -445,28 +492,42 @@ class _ActuatorChip extends StatelessWidget {
   final IconData icon;
   final ActuatorState state;
   final bool isBusy;
+  final Color accentColor;
   final VoidCallback onTap;
-
-  static const _green = Color(0xFF2E7D32);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     final isOn = state == ActuatorState.on;
     final isUnavailable = state == ActuatorState.unavailable;
 
-    final bgColor = isUnavailable
-        ? theme.colorScheme.surfaceContainerHigh
+    final Color tileBg = isUnavailable
+        ? cs.surfaceContainerHigh
         : isOn
-            ? _green
-            : theme.colorScheme.surface;
-    final fgColor = isUnavailable
-        ? theme.colorScheme.outline
+            ? accentColor
+            : cs.surfaceContainerHighest;
+
+    final Color iconBgColor = isUnavailable
+        ? cs.surfaceContainerHighest
+        : isOn
+            ? Colors.white.withValues(alpha: 0.25)
+            : accentColor.withValues(alpha: 0.12);
+
+    final Color iconColor = isUnavailable
+        ? cs.outline
         : isOn
             ? Colors.white
-            : theme.colorScheme.onSurface;
-    final borderColor = isOn ? _green : theme.colorScheme.outlineVariant;
-    final stateLabel = isUnavailable
+            : accentColor;
+
+    final Color labelColor = isUnavailable
+        ? cs.outline
+        : isOn
+            ? Colors.white
+            : cs.onSurface;
+
+    final String stateLabel = isUnavailable
         ? ''
         : isOn
             ? 'module_actuator_state_on'.tr()
@@ -480,28 +541,53 @@ class _ActuatorChip extends StatelessWidget {
               : onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor),
+          color: tileBg,
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: fgColor),
-            const SizedBox(width: 6),
-            Text(
-              stateLabel.isNotEmpty ? '$label $stateLabel' : label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: fgColor,
+            // 원형 아이콘 뱃지
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(icon, size: 16, color: iconColor),
               ),
             ),
-            if (isBusy && !isUnavailable) ...[
-              const SizedBox(width: 6),
-              _BusyDot(color: fgColor),
+            const SizedBox(width: 10),
+            // 라벨
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: labelColor,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // ON/OFF 상태 + BusyDot
+            if (stateLabel.isNotEmpty) ...[
+              Text(
+                stateLabel,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: labelColor.withValues(alpha: 0.80),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (isBusy && !isUnavailable) ...[
+                const SizedBox(width: 4),
+                _BusyDot(color: labelColor),
+              ],
+            ] else if (isBusy && !isUnavailable) ...[
+              _BusyDot(color: labelColor),
             ],
           ],
         ),
@@ -519,10 +605,10 @@ class _ActuatorChip extends StatelessWidget {
   }
 }
 
-// ── 히터 칩 (잠금 아이콘 포함) ──────────────────────────────────────────────
+// ── iOS 제어센터 스타일: 히터 타일 (가로 한 row + 잠금 아이콘 인라인) ─────────
 
-class _HeaterChip extends StatelessWidget {
-  const _HeaterChip({
+class _HeaterTile extends StatelessWidget {
+  const _HeaterTile({
     required this.heaterState,
     required this.isBusy,
     required this.onTap,
@@ -532,39 +618,51 @@ class _HeaterChip extends StatelessWidget {
   final bool isBusy;
   final VoidCallback onTap;
 
-  static const _green = Color(0xFF2E7D32);
-  static const _orange = Color(0xFFFF8F00);
+  static const _amber = Color(0xFFFF8F00);
+  static const _amberBg = Color(0xFFFFF3E0);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     final isOn = heaterState.state == ActuatorState.on;
     final isUnavailable = heaterState.state == ActuatorState.unavailable;
     final locked = heaterState.locked;
 
-    final bgColor = locked
-        ? const Color(0xFFFFF3E0)
+    final Color tileBg = locked
+        ? _amberBg
         : isUnavailable
-            ? theme.colorScheme.surfaceContainerHigh
+            ? cs.surfaceContainerHigh
             : isOn
-                ? _green
-                : theme.colorScheme.surface;
+                ? _amber
+                : cs.surfaceContainerHighest;
 
-    final fgColor = locked
-        ? _orange
+    final Color iconBgColor = locked
+        ? _amber.withValues(alpha: 0.2)
         : isUnavailable
-            ? theme.colorScheme.outline
+            ? cs.surfaceContainerHighest
+            : isOn
+                ? Colors.white.withValues(alpha: 0.25)
+                : _amber.withValues(alpha: 0.12);
+
+    final Color iconColor = locked
+        ? _amber
+        : isUnavailable
+            ? cs.outline
             : isOn
                 ? Colors.white
-                : theme.colorScheme.onSurface;
+                : _amber;
 
-    final borderColor = locked
-        ? _orange.withValues(alpha: 0.5)
-        : isOn
-            ? _green
-            : theme.colorScheme.outlineVariant;
+    final Color labelColor = locked
+        ? _amber
+        : isUnavailable
+            ? cs.outline
+            : isOn
+                ? Colors.white
+                : cs.onSurface;
 
-    final stateLabel = locked
+    final String stateLabel = locked
         ? 'module_actuator_state_locked'.tr()
         : isUnavailable
             ? ''
@@ -576,34 +674,58 @@ class _HeaterChip extends StatelessWidget {
       onTap: isBusy ? null : onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor),
+          color: tileBg,
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.whatshot_outlined, size: 16, color: fgColor),
-            const SizedBox(width: 6),
-            Text(
-              stateLabel.isNotEmpty
-                  ? '${'module_actuator_heater'.tr()} $stateLabel'
-                  : 'module_actuator_heater'.tr(),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: fgColor,
+            // 원형 아이콘 뱃지
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.whatshot_outlined,
+                  size: 16,
+                  color: iconColor,
+                ),
               ),
             ),
+            const SizedBox(width: 10),
+            // 라벨
+            Expanded(
+              child: Text(
+                'module_actuator_heater'.tr(),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: labelColor,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // 상태 + 잠금 아이콘 + BusyDot
+            if (stateLabel.isNotEmpty)
+              Text(
+                stateLabel,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: labelColor.withValues(alpha: 0.80),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             if (locked) ...[
               const SizedBox(width: 4),
-              const Icon(Icons.lock_outline, size: 13, color: _orange),
+              Icon(Icons.lock_outline, size: 13, color: _amber),
             ],
             if (isBusy) ...[
-              const SizedBox(width: 6),
-              _BusyDot(color: fgColor),
+              const SizedBox(width: 4),
+              _BusyDot(color: labelColor),
             ],
           ],
         ),
@@ -612,155 +734,208 @@ class _HeaterChip extends StatelessWidget {
   }
 }
 
-// ── LED 전원 칩 ───────────────────────────────────────────────────────────────
+// ── iOS 제어센터 스타일: LED 통합 타일 (전폭, 상태 조건부 우측 컨트롤) ────────
+//
+// _ledOn == false: [아이콘] LED (Spacer) [켜기]
+// _ledOn == true:  [아이콘] LED (Spacer) [끄기] [−] [+]
 
-class _LedOnChip extends StatelessWidget {
-  const _LedOnChip({
+class _LedTile extends StatelessWidget {
+  const _LedTile({
+    required this.ledOn,
     required this.pulsing,
-    required this.isBusy,
-    required this.onTap,
-  });
-
-  final bool pulsing;
-  final bool isBusy;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final dimmed = pulsing || isBusy;
-    return GestureDetector(
-      onTap: dimmed ? null : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: dimmed
-              ? theme.colorScheme.surfaceContainerHigh
-              : theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.power_settings_new,
-              size: 16,
-              color: dimmed
-                  ? theme.colorScheme.outline
-                  : theme.colorScheme.onSurface,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'module_actuator_led'.tr(),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: dimmed
-                    ? theme.colorScheme.outline
-                    : theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── LED 밝기 +/- 행 ───────────────────────────────────────────────────────────
-
-class _LedBrightnessRow extends StatelessWidget {
-  const _LedBrightnessRow({
     required this.debouncing,
     required this.isBusy,
-    required this.onUp,
-    required this.onDown,
+    required this.onTurnOn,
+    required this.onTurnOff,
+    required this.onBrightnessUp,
+    required this.onBrightnessDown,
   });
 
+  final bool ledOn;
+  final bool pulsing;
   final bool debouncing;
   final bool isBusy;
-  final VoidCallback onUp;
-  final VoidCallback onDown;
+  final VoidCallback onTurnOn;
+  final VoidCallback onTurnOff;
+  final VoidCallback onBrightnessUp;
+  final VoidCallback onBrightnessDown;
+
+  // LED 강조색: Green 계열 (기존 프라이머리 컬러 유지)
+  static const _ledAccent = Color(0xFF2E7D32);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dimmed = debouncing || isBusy;
+    final cs = theme.colorScheme;
+
+    final dimmed = pulsing || isBusy;
+
+    final Color tileBg = ledOn
+        ? _ledAccent
+        : cs.surfaceContainerHighest;
+
+    final Color iconBgColor = ledOn
+        ? Colors.white.withValues(alpha: 0.25)
+        : _ledAccent.withValues(alpha: 0.12);
+
+    final Color iconColor = ledOn ? Colors.white : _ledAccent;
+    final Color labelColor = ledOn ? Colors.white : cs.onSurface;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: dimmed
-            ? theme.colorScheme.surfaceContainerHigh
-            : theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: tileBg,
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          _BrightnessBtn(
-            icon: Icons.remove,
-            label: 'module_actuator_brightness_down'.tr(),
-            dimmed: dimmed,
-            onTap: onDown,
-          ),
+          // 원형 아이콘 뱃지
           Container(
-            width: 1,
-            height: 36,
-            color: theme.colorScheme.outlineVariant,
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Icon(
+                Icons.light_mode_outlined,
+                size: 16,
+                color: iconColor,
+              ),
+            ),
           ),
-          _BrightnessBtn(
-            icon: Icons.add,
-            label: 'module_actuator_brightness_up'.tr(),
-            dimmed: dimmed,
-            onTap: onUp,
+          const SizedBox(width: 10),
+          // 라벨
+          Expanded(
+            child: Text(
+              'module_actuator_led'.tr(),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: labelColor,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
+          // 우측 컨트롤 — 상태 조건부
+          if (!ledOn) ...[
+            // OFF 상태: 켜기 버튼만
+            _LedActionBtn(
+              label: 'module_actuator_power_on'.tr(),
+              color: labelColor,
+              tileBg: tileBg,
+              dimmed: dimmed,
+              onTap: dimmed ? null : onTurnOn,
+            ),
+          ] else ...[
+            // ON 상태: 끄기 + 밝기 스테퍼
+            _LedActionBtn(
+              label: 'module_actuator_power_off'.tr(),
+              color: labelColor,
+              tileBg: tileBg,
+              dimmed: dimmed,
+              onTap: dimmed ? null : onTurnOff,
+            ),
+            const SizedBox(width: 6),
+            _StepBtn(
+              icon: Icons.remove,
+              dimmed: debouncing || isBusy,
+              onTap: onBrightnessDown,
+              onColor: Colors.white,
+            ),
+            const SizedBox(width: 4),
+            _StepBtn(
+              icon: Icons.add,
+              dimmed: debouncing || isBusy,
+              onTap: onBrightnessUp,
+              onColor: Colors.white,
+            ),
+          ],
+          if (isBusy) ...[
+            const SizedBox(width: 4),
+            _BusyDot(color: labelColor),
+          ],
         ],
       ),
     );
   }
 }
 
-class _BrightnessBtn extends StatelessWidget {
-  const _BrightnessBtn({
-    required this.icon,
+// ── LED 액션 버튼 (켜기/끄기 텍스트 버튼) ────────────────────────────────────
+
+class _LedActionBtn extends StatelessWidget {
+  const _LedActionBtn({
     required this.label,
+    required this.color,
+    required this.tileBg,
     required this.dimmed,
     required this.onTap,
   });
 
-  final IconData icon;
   final String label;
+  final Color color;
+  final Color tileBg;
   final bool dimmed;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = dimmed
-        ? Theme.of(context).colorScheme.outline
-        : Theme.of(context).colorScheme.onSurface;
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: dimmed ? null : onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: color,
+    final effectiveColor = dimmed ? color.withValues(alpha: 0.45) : color;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: dimmed ? 0.06 : 0.12),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: effectiveColor,
+                fontWeight: FontWeight.w600,
               ),
-            ),
-          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 스텝 버튼 (밝기 −/+) ─────────────────────────────────────────────────────
+
+class _StepBtn extends StatelessWidget {
+  const _StepBtn({
+    required this.icon,
+    required this.dimmed,
+    required this.onTap,
+    this.onColor,
+  });
+
+  final IconData icon;
+  final bool dimmed;
+  final VoidCallback onTap;
+  // ON 상태 타일에서 흰색 계열로 렌더링할 때 지정
+  final Color? onColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final baseColor = onColor ?? cs.onSurface;
+    final color = dimmed ? baseColor.withValues(alpha: 0.35) : baseColor;
+
+    return GestureDetector(
+      onTap: dimmed ? null : onTap,
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: baseColor.withValues(alpha: dimmed ? 0.05 : 0.10),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Icon(icon, size: 15, color: color),
         ),
       ),
     );

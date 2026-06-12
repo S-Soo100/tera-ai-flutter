@@ -8,11 +8,15 @@ import '../supabase_module_providers.dart';
 
 /// 환경 모니터링 카드.
 ///
+/// - [embedded] = true 이면 외곽 Container(배경/그림자/radius)를 그리지 않고
+///   내용물 Column만 반환한다. 상위 통합 카드 셸이 감쌀 때 사용.
 /// - device null / telemetry 미도착: shimmer 스켈레톤
 /// - hasValue + 에러: 마지막 값 유지 + 연결 끊김 표시 (깜빡임 방지)
 /// - 정상: tA/hA(메인), tB/hB(보조) 표시. ds18b20 미노출.
 class ModuleStatusCard extends ConsumerWidget {
-  const ModuleStatusCard({super.key});
+  const ModuleStatusCard({super.key, this.embedded = false});
+
+  final bool embedded;
 
   static const _green = Color(0xFF2E7D32);
   static const _greenBg = Color(0xFFE8F5E9);
@@ -25,7 +29,12 @@ class ModuleStatusCard extends ConsumerWidget {
 
     // 디바이스 로딩 중 or null: shimmer
     if (!deviceAsync.hasValue) {
-      return const SkeletonCard(lineCount: 4, height: 160);
+      return embedded
+          ? const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: SkeletonCard(lineCount: 4, height: 120),
+            )
+          : const SkeletonCard(lineCount: 4, height: 160);
     }
 
     final device = deviceAsync.value;
@@ -37,7 +46,12 @@ class ModuleStatusCard extends ConsumerWidget {
 
     // 첫 telemetry 미도착: shimmer
     if (!telemetryAsync.hasValue) {
-      return const SkeletonCard(lineCount: 4, height: 160);
+      return embedded
+          ? const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: SkeletonCard(lineCount: 4, height: 120),
+            )
+          : const SkeletonCard(lineCount: 4, height: 160);
     }
 
     final telemetry = telemetryAsync.value;
@@ -45,7 +59,83 @@ class ModuleStatusCard extends ConsumerWidget {
     final theme = Theme.of(context);
 
     if (telemetry == null) {
-      return const SkeletonCard(lineCount: 4, height: 160);
+      return embedded
+          ? const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: SkeletonCard(lineCount: 4, height: 120),
+            )
+          : const SkeletonCard(lineCount: 4, height: 160);
+    }
+
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── 헤더: 디바이스 이름 + 연결 상태 점 ──────────────────────
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                device.name ?? 'smart_cage_main_title'.tr(),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            _ConnectionBadge(isError: isError, isOnline: device.isOnline),
+          ],
+        ),
+        if (isError) ...[
+          const SizedBox(height: 6),
+          _DisconnectedLabel(),
+        ],
+        const SizedBox(height: 14),
+        // ── Primary 센서 박스 (tA / hA) ──────────────────────────
+        Row(
+          children: [
+            Expanded(
+              child: _SensorBox(
+                icon: Icons.thermostat,
+                label: 'smart_cage_current_temp'.tr(),
+                value: telemetry.aOk && telemetry.tA != null
+                    ? '${telemetry.tA!.toStringAsFixed(1)}°'
+                    : '—',
+                targetLabel: 'smart_cage_target_temp'.tr(),
+                status: telemetry.aOk,
+                okBg: _greenBg,
+                okFg: _green,
+                faultBg: _faultBg,
+                faultFg: _orange,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _SensorBox(
+                icon: Icons.water_drop_outlined,
+                label: 'smart_cage_current_humidity'.tr(),
+                value: telemetry.aOk && telemetry.hA != null
+                    ? '${telemetry.hA!.toStringAsFixed(0)}%'
+                    : '—',
+                targetLabel: 'smart_cage_target_humidity'.tr(),
+                status: telemetry.aOk,
+                okBg: _greenBg,
+                okFg: _green,
+                faultBg: _faultBg,
+                faultFg: _orange,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // ── 보조 센서 한 줄 (tB / hB) — ds18b20 미노출 ──────────
+        _SecondaryRow(telemetry: telemetry),
+      ],
+    );
+
+    if (embedded) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: content,
+      );
     }
 
     return Container(
@@ -61,93 +151,59 @@ class ModuleStatusCard extends ConsumerWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── 헤더: 디바이스 이름 + 연결 상태 점 ──────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      device.name ?? 'smart_cage_main_title'.tr(),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'smart_cage_main_target'.tr(),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _ConnectionBadge(isError: isError, isOnline: device.isOnline),
-            ],
-          ),
-          const SizedBox(height: 4),
-          // 서브 타이틀
-          Text(
-            'module_status_title'.tr(),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.outline,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          if (isError) ...[
-            const SizedBox(height: 6),
-            _DisconnectedLabel(),
-          ],
-          const SizedBox(height: 14),
-          // ── Primary 센서 박스 (tA / hA) ──────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: _SensorBox(
-                  icon: Icons.thermostat,
-                  label: 'smart_cage_current_temp'.tr(),
-                  value: telemetry.aOk && telemetry.tA != null
-                      ? '${telemetry.tA!.toStringAsFixed(1)}°'
-                      : '—',
-                  status: telemetry.aOk,
-                  okBg: _greenBg,
-                  okFg: _green,
-                  faultBg: _faultBg,
-                  faultFg: _orange,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _SensorBox(
-                  icon: Icons.water_drop_outlined,
-                  label: 'smart_cage_current_humidity'.tr(),
-                  value: telemetry.aOk && telemetry.hA != null
-                      ? '${telemetry.hA!.toStringAsFixed(0)}%'
-                      : '—',
-                  status: telemetry.aOk,
-                  okBg: _greenBg,
-                  okFg: _green,
-                  faultBg: _faultBg,
-                  faultFg: _orange,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // ── 보조 센서 한 줄 (tB / hB) — ds18b20 미노출 ──────────
-          _SecondaryRow(telemetry: telemetry),
-        ],
-      ),
+      child: content,
     );
   }
 
   Widget _buildNoDeviceCard(BuildContext context) {
     final theme = Theme.of(context);
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'module_status_title'.tr(),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.sensors_off_outlined,
+                size: 32,
+                color: theme.colorScheme.outline,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'module_no_device'.tr(),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'module_no_device_subtitle'.tr(),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (embedded) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: content,
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -161,45 +217,7 @@ class ModuleStatusCard extends ConsumerWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'module_status_title'.tr(),
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.sensors_off_outlined,
-                  size: 32,
-                  color: theme.colorScheme.outline,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'module_no_device'.tr(),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'module_no_device_subtitle'.tr(),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      child: content,
     );
   }
 }
@@ -274,6 +292,7 @@ class _SensorBox extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    required this.targetLabel,
     required this.status,
     required this.okBg,
     required this.okFg,
@@ -284,6 +303,7 @@ class _SensorBox extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final String targetLabel;
   final bool status;
   final Color okBg;
   final Color okFg;
@@ -332,14 +352,13 @@ class _SensorBox extends StatelessWidget {
               color: fg,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
+          // 목표값 라인 (하드코딩 상수 표시만 — setpoint 연동은 별도 후속)
           Text(
-            status
-                ? 'module_status_sensor_ok'.tr()
-                : 'module_status_sensor_fault'.tr(),
+            targetLabel,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: fg,
-              fontWeight: FontWeight.w600,
+              color: fg.withValues(alpha: 0.7),
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

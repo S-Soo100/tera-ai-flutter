@@ -108,6 +108,9 @@ class _DeviceBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       children: [
@@ -115,9 +118,32 @@ class _DeviceBody extends ConsumerWidget {
           _DeviceSelector(devices: devices),
           const SizedBox(height: 12),
         ],
-        ModuleStatusCard(),
-        const SizedBox(height: 12),
-        ActuatorControls(),
+        // ── 통합 카드 셸: 현황(ModuleStatusCard) + 구분선 + 제어(ActuatorControls) ──
+        Container(
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: cs.outlineVariant, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              ModuleStatusCard(embedded: true),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: cs.outlineVariant,
+              ),
+              ActuatorControls(embedded: true),
+            ],
+          ),
+        ),
       ],
     );
   }
