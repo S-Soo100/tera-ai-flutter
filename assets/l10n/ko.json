@@ -284,6 +284,8 @@
   "camera_detail_last_connected": "마지막 연결",
   "camera_detail_clips": "녹화 영상",
   "camera_detail_clips_empty": "아직 녹화된 영상이 없어요",
+  "camera_detail_verify_clip_badge": "검증용",
+  "camera_detail_verify_clip_section": "검증용 영상",
 
   "crecam_detail_live_label": "Live",
   "crecam_detail_activity_title": "간단 활동량",
@@ -296,7 +298,6 @@
   "crecam_detail_filter_highlight": "하이라이트",
   "crecam_detail_filter_motion": "움직임만",
   "crecam_detail_filter_all": "전체",
-  "crecam_detail_behavior_drinking": "물 마심",
   "crecam_detail_behavior_motion": "움직임 감지",
 
   "clip_motion_badge": "움직임",

@@ -3,11 +3,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/app_tag.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/clip.dart';
 import 'my_cage_providers.dart';
 import 'supabase_module_providers.dart';
+import 'widgets/clip_card.dart';
 import 'widgets/webrtc_live_view.dart';
+
+// ── 검증용 클립 설정 ─────────────────────────────────────────────────────────
+// 검증 완료 후 false로 바꾸면 카드가 사라진다 (한 줄 제거).
+const bool kShowVerifyClip = true;
+
+const String _kVerifyClipId = 'e6f5f2f0-5f8a-4800-b568-0b5bb38b60f1';
+
+Clip _buildVerifyClip() => Clip(
+      id: _kVerifyClipId,
+      userId: '380d97fd-cb83-4490-ac26-cf691b32614f',
+      cameraId: '3a6cffbf-be83-4c77-9fa7-4fcc517c74a6',
+      startedAt: DateTime.parse('2026-04-28T20:37:44.444665Z'),
+      durationSec: 60.0527,
+      hasMotion: true,
+      filePath: '',
+      createdAt: DateTime.parse('2026-04-28T20:37:44.444665Z'),
+    );
+// ────────────────────────────────────────────────────────────────────────────
 
 enum _ActivityRange { yesterday, today }
 
@@ -474,11 +494,17 @@ class _VideoLogSection extends ConsumerWidget {
         const SizedBox(height: 12),
         _FilterChips(filter: filter, onChanged: onFilterChanged),
         const SizedBox(height: 14),
+        if (kShowVerifyClip) ...[
+          _VerifyClipCard(),
+          const SizedBox(height: 12),
+        ],
         latestAsync.when(
           loading: () => _buildSkeletonList(),
           error: (e, _) => _buildError(context),
           data: (latest) {
             if (latest == null) {
+              // 검증용이 켜져 있으면 empty 문구 없이 섹션 종료
+              if (kShowVerifyClip) return const SizedBox.shrink();
               return _buildEmpty(context);
             }
             return _ClipListByDay(
@@ -738,7 +764,10 @@ class _HourClips extends ConsumerWidget {
           children: filtered
               .map((c) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: _ClipRow(clip: c),
+                    child: ClipCard(
+                      clip: c,
+                      onTap: () => context.push('/crecam/clips/${c.id}'),
+                    ),
                   ))
               .toList(),
         );
@@ -758,92 +787,32 @@ class _HourClips extends ConsumerWidget {
   }
 }
 
-class _ClipRow extends StatelessWidget {
-  const _ClipRow({required this.clip});
+// ── 검증용 클립 카드 ─────────────────────────────────────────────────────────
 
-  final Clip clip;
+class _VerifyClipCard extends StatelessWidget {
+  const _VerifyClipCard();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final timeText = DateFormat('hh:mm a').format(clip.startedAt.toLocal());
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () => context.push('/crecam/clips/${clip.id}'),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+    final clip = _buildVerifyClip();
+    return Stack(
+      children: [
+        ClipCard(
+          clip: clip,
+          onTap: () => context.push('/crecam/clips/$_kVerifyClipId'),
         ),
-        child: Row(
-          children: [
-            // 썸네일
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.play_circle_outline,
-                size: 28,
-                color: theme.colorScheme.outline,
-              ),
-            ),
-            const SizedBox(width: 12),
-            // 본문
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF222222),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'crecam_detail_stat_drinking'.tr(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'crecam_detail_behavior_drinking'.tr(),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    timeText,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        Positioned(
+          top: 8,
+          left: 8,
+          child: AppTag(
+            label: 'camera_detail_verify_clip_badge'.tr(),
+            color: Theme.of(context).colorScheme.tertiary,
+          ),
         ),
-      ),
+      ],
     );
   }
 }
+
+// ── 실제 클립 행 ─────────────────────────────────────────────────────────────
+
