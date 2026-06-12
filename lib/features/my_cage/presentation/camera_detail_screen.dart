@@ -58,8 +58,8 @@ const List<ActionType> kBehaviorTabOrder = [
 ];
 
 /// 현재 카메라 클립 전체 (최신순 50개). 행동 탭 필터에 사용.
-final _cameraClipsProvider =
-    FutureProvider.autoDispose.family<List<Clip>, String>((ref, cameraId) async {
+final _cameraClipsProvider = FutureProvider.autoDispose
+    .family<List<Clip>, String>((ref, cameraId) async {
   final repo = ref.watch(clipRepositoryProvider);
   final page = await repo.listPage(cameraId: cameraId, limit: 50);
   return page.items;
@@ -74,8 +74,7 @@ class CameraDetailScreen extends ConsumerStatefulWidget {
   final String cameraId;
 
   @override
-  ConsumerState<CameraDetailScreen> createState() =>
-      _CameraDetailScreenState();
+  ConsumerState<CameraDetailScreen> createState() => _CameraDetailScreenState();
 }
 
 class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
@@ -194,8 +193,7 @@ class _LiveSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final timeText =
-        DateFormat('yyyy.MM.dd HH:mm:ss').format(now.toLocal());
+    final timeText = DateFormat('yyyy.MM.dd HH:mm:ss').format(now.toLocal());
 
     return AspectRatio(
       aspectRatio: 4 / 3,
@@ -368,8 +366,9 @@ class _SimpleActivityCard extends StatelessWidget {
               Expanded(
                 child: _ActivityStatBox(
                   label: 'crecam_detail_stat_drinking'.tr(),
-                  value: 'crecam_detail_count_times'
-                      .tr(namedArgs: {'n': range == _ActivityRange.today ? '3' : '2'}),
+                  value: 'crecam_detail_count_times'.tr(namedArgs: {
+                    'n': range == _ActivityRange.today ? '3' : '2'
+                  }),
                   valueColor: const Color(0xFF1E88E5),
                 ),
               ),
@@ -377,8 +376,9 @@ class _SimpleActivityCard extends StatelessWidget {
               Expanded(
                 child: _ActivityStatBox(
                   label: 'crecam_detail_stat_feeding'.tr(),
-                  value: 'crecam_detail_count_times'
-                      .tr(namedArgs: {'n': range == _ActivityRange.today ? '1' : '2'}),
+                  value: 'crecam_detail_count_times'.tr(namedArgs: {
+                    'n': range == _ActivityRange.today ? '1' : '2'
+                  }),
                   valueColor: const Color(0xFF2E7D32),
                 ),
               ),
@@ -542,9 +542,8 @@ class _VideoLogSection extends ConsumerWidget {
                   clips.where((c) => actionForClip(c) == action).length;
             }
 
-            final filtered = clips
-                .where((c) => actionForClip(c) == selectedAction)
-                .toList();
+            final filtered =
+                clips.where((c) => actionForClip(c) == selectedAction).toList();
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,8 +568,7 @@ class _VideoLogSection extends ConsumerWidget {
                         .map(
                           (c) => ClipCard(
                             clip: c,
-                            onTap: () =>
-                                context.push('/crecam/clips/${c.id}'),
+                            onTap: () => context.push('/crecam/clips/${c.id}'),
                           ),
                         )
                         .toList(),
@@ -704,7 +702,9 @@ class _ActionChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+            color: selected
+                ? theme.colorScheme.onPrimary
+                : theme.colorScheme.onSurface,
             fontSize: 13,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
@@ -800,4 +800,3 @@ class _VerifyClipsSection extends StatelessWidget {
 }
 
 // ── 실제 클립 행 ─────────────────────────────────────────────────────────────
-
