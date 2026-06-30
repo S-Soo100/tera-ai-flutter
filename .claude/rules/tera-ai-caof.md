@@ -2,9 +2,10 @@
 
 이 프로젝트는 CAOF를 따른다. 원본: `/Users/baek/ideaBank/frameworks/claude-agent-orchestration.md`
 
-### 역할 매핑
-- **Designer**: 메인 Claude (opus) -- 분석/설계/Phase 전환 판단
-- **Implementer**: flutter-dev (sonnet) -- Dart/Flutter 구현
+### 역할 매핑 (에이전트 분리는 Critical 트랙만 — CAOF v1.3)
+- **Designer**: 메인 Claude -- 분석/설계/Phase 전환 판단
+- **Implementer**: flutter-dev -- Dart/Flutter 구현 (Critical에서 투입, 모델은 상속 기본)
+- Standard는 메인이 역할 겸임 (분석서 → 합의 → 직접 구현)
 
 ### 적용 트리거
 Tera AI 프로젝트 내 코드 변경 요청 시 CAOF 트랙을 판단한다.
@@ -13,7 +14,7 @@ Tera AI 프로젝트 내 코드 변경 요청 시 CAOF 트랙을 판단한다.
 
 ```
 Tera AI 요청 수신
-├─ 버그/에러/안 돼/크래시 → 메인 Claude 원인 분석 → flutter-dev 수정 (Standard)
+├─ 버그/에러/안 돼/크래시 → 메인 Claude 원인 분석 → 직접 수정 (Standard, 진단 먼저)
 ├─ 새 feature 추가 (새 탭, 새 화면) → Critical 트랙 (풀 GATE)
 │   ① 기획서(docs/spec.md) 대조 확인
 │   ② 메인 Claude 설계 (파일 구조 + Provider + Repository + 라우트)
@@ -29,9 +30,9 @@ Tera AI 요청 수신
 ├─ 기존 feature 수정/개선 (2~3 파일) → Standard 트랙
 │   ① 메인 Claude 변경 범위 분석 + 수정 방향
 │   ② 사용자 합의
-│   ③ flutter-dev 구현
+│   ③ 메인 Claude 직접 구현
 ├─ Provider/Repository 추가 (기존 feature 내) → Standard
-├─ 오타/상수/스타일/문자열 수정 → Trivial (flutter-dev 직행)
+├─ 오타/상수/스타일/문자열 수정 → Trivial (메인 직접)
 ├─ ko.json 문자열 키 추가 → Trivial
 ├─ RLS/인증 관련 → Supabase 실연동 완료. 기존 RLS/인증 수정 = Standard, 새 RLS 정책·소셜 로그인 도입 = Critical
 └─ 단순 질문 → 메인 Claude 직접

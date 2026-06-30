@@ -100,9 +100,10 @@ lib/
 
 이 프로젝트는 CAOF를 따른다. 원본: `/Users/baek/ideaBank/frameworks/claude-agent-orchestration.md`
 
-### 역할 매핑
-- **Designer**: 메인 Claude (opus) -- 분석, 설계, Phase 전환 판단
-- **Implementer**: flutter-dev (sonnet) -- Dart 코드 구현, 버그 수정
+### 역할 매핑 (에이전트 분리는 Critical 트랙만 — CAOF v1.3)
+- **Designer**: 메인 Claude -- 분석, 설계, Phase 전환 판단
+- **Implementer**: flutter-dev -- Dart 코드 구현 (Critical에서 투입, 모델은 상속 기본)
+- Standard는 메인이 역할 겸임 (분석서 → 합의 → 직접 구현)
 
 ### 사용자 안내 규칙
 작업 요청 시, 메인 Claude는 **트랙 판단 결과를 먼저 알려준다**:
@@ -117,9 +118,9 @@ CAOF 트랙: [Trivial / Standard / Critical]
 
 | 트랙 | 기준 | 파이프라인 |
 |------|------|-----------|
-| Trivial | 상수 수정, 스타일 변경, 텍스트 수정 | flutter-dev 직행 |
-| Standard | 기존 feature 수정, 새 위젯, Provider 추가 | Designer 분석 -> flutter-dev |
-| Critical | 새 feature, Phase 전환, 외부 패키지 도입 | 풀 GATE |
+| Trivial | 상수 수정, 스타일 변경, 텍스트 수정 | 메인 직접 처리 |
+| Standard | 기존 feature 수정, 새 위젯, Provider 추가 | 메인이 분석서 -> 합의 -> 직접 구현 |
+| Critical | 새 feature, Phase 전환, 외부 패키지 도입 | 풀 GATE (에이전트 분리) |
 
 **판단 기준은 줄 수가 아니라 "실패 시 되돌리기 비용"이다.**
 상세 라우팅 트리: `.claude/rules/tera-ai-caof.md`
@@ -137,8 +138,8 @@ CAOF 트랙: [Trivial / Standard / Critical]
 
 ### 실패 에스컬레이션
 ```
-1회 실패: flutter-dev 원인 분석 후 재시도
-2회 실패: Designer(메인 Claude) 원인 재분석 -> 다른 접근법
+1회 실패: 원인 분석 후 재시도
+2회 실패: Designer 역할로 원인 재분석 -> 다른 접근법
 3회 실패: 즉시 중단 + 사용자에게 보고 + 범위 축소 또는 대안 제시
 ```
 "빨리 해", "바로 구현해"는 GATE 스킵 승인이 아니다. "N단계 스킵 승인"만 허용.

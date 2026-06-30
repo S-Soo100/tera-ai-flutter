@@ -1,7 +1,6 @@
 ---
 name: flutter-dev
 description: Tera AI Flutter 앱 코드 구현, 버그 수정, 코드 리뷰 전용. "구현해줘", "버그", "코드", "위젯", "수정해줘", "화면 추가" 등의 요청에 자동 매칭.
-model: sonnet
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 
