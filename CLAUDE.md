@@ -74,6 +74,9 @@ lib/
 - **Riverpod만 사용**. setState, ChangeNotifier 금지.
 - `ref.watch`는 build 안에서만, `ref.read`는 콜백/이벤트에서.
 - Provider는 각 feature의 `presentation/` 폴더에 위치.
+- **인증 의존 Provider stale 방지**: 유저 데이터를 fetch하는 non-autoDispose provider는 반드시 `ref.watch(currentUserProvider.select((u) => u?.id))`로 계정 id만 감시한다. User 객체 전체를 watch하면 무관한 필드(updatedAt 등) 변경에도 재build가 발생한다.
+  - **3층 계정 격리**: ① provider에서 userId select-watch → ② 위젯에서 `_initializedForId` 가드(캐시된 위젯의 중복 init 방지) → ③ 로그아웃 시 Hive 로컬 캐시 clear(타 계정 데이터 프라이버시). 상세: 메모리 `project_auth_provider_stale_pattern`
+  - 비동기 콜백에서 `mounted` 확인 없이 `state=`/`ref.read`/setState 호출 금지.
 
 ### 데이터 접근
 - **Repository 패턴 필수**. Widget에서 Hive/데이터 직접 접근 금지.
