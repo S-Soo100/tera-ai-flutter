@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../data/media_repository.dart';
 import '../data/pet_event_repository.dart';
 import '../data/pet_repository.dart';
@@ -157,6 +158,7 @@ final petMediaProvider =
 class PetMediaNotifier extends FamilyAsyncNotifier<List<MediaItem>, String> {
   @override
   Future<List<MediaItem>> build(String arg) async {
+    ref.watch(currentUserProvider); // 계정 전환 시 자동 재build (stale 방지)
     final repo = ref.watch(mediaRepositoryProvider);
     return repo.getMedia(arg);
   }

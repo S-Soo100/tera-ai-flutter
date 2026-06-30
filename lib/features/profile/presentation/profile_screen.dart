@@ -204,7 +204,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ListTile(
                   leading: Icon(Icons.info_outlined, color: colorScheme.onSurfaceVariant),
                   title: Text('profile_app_version'.tr()),
-                  subtitle: const Text('v1.0.0'),
+                  subtitle: Text(
+                    ref.watch(appVersionProvider).maybeWhen(
+                          data: (v) => 'v$v',
+                          orElse: () => '',
+                        ),
+                  ),
                 ),
               ],
             ),

@@ -15,8 +15,9 @@ final petRepositoryProvider = Provider<PetRepository>((ref) {
 
 /// 인증 상태에 따라 Supabase 리포지토리 반환 (미인증 시 null)
 final supabasePetRepositoryProvider = Provider<SupabasePetRepository?>((ref) {
-  final isAuth = ref.watch(isAuthenticatedProvider);
-  if (!isAuth) return null;
+  // 계정 id를 watch → 로그아웃 없는 직접 계정 전환도 repo 재생성으로 감지 (stale 방지)
+  final userId = ref.watch(currentUserProvider.select((u) => u?.id));
+  if (userId == null) return null;
   return SupabasePetRepository(Supabase.instance.client);
 });
 

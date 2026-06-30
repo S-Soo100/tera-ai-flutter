@@ -1,11 +1,14 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../data/profile_repository.dart';
 import '../domain/user_profile.dart';
 
-final userProfileProvider = FutureProvider<UserProfile?>((ref) async {
-  final repo = ref.watch(profileRepositoryProvider);
-  return repo.getProfile();
+/// 앱 버전 (pubspec → 런타임). 'v0.1.1' 형태로 표시.
+final appVersionProvider = FutureProvider<String>((ref) async {
+  final info = await PackageInfo.fromPlatform();
+  return info.version;
 });
 
 final profileNotifierProvider =
@@ -14,6 +17,8 @@ final profileNotifierProvider =
 class ProfileNotifier extends AsyncNotifier<UserProfile?> {
   @override
   Future<UserProfile?> build() async {
+    // 인증 상태를 watch → 로그인/로그아웃/계정 전환 시 자동 재build (stale 방지)
+    ref.watch(currentUserProvider);
     final repo = ref.watch(profileRepositoryProvider);
     return repo.getProfile();
   }
