@@ -7,6 +7,7 @@ import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/terra_camera.dart';
 import 'my_cage_providers.dart';
+import 'widgets/clip_thumbnail.dart';
 
 enum _CrecamView { grid, list }
 
@@ -199,44 +200,7 @@ class _CameraGridCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF263238), Color(0xFF455A64)],
-                      ),
-                    ),
-                  ),
-                  // 온습도 배지 (하드코딩 유지 — 이번 범위 외)
-                  Positioned(
-                    right: 8,
-                    bottom: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.55),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Text('24°C',
-                              style: TextStyle(
-                                  color: Colors.white, fontSize: 11)),
-                          SizedBox(width: 6),
-                          Text('70%',
-                              style: TextStyle(
-                                  color: Colors.white, fontSize: 11)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              child: _CameraThumbnail(camera: camera),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -279,6 +243,106 @@ class _CameraGridCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── 카메라 썸네일 (상태별) ─────────────────────────────────────────────────────
+//  온라인 → 최근 클립 썸네일을 포스터로 표시 / 오프라인 → "연결 안 됨" 표시.
+class _CameraThumbnail extends ConsumerWidget {
+  const _CameraThumbnail({required this.camera});
+  final TerraCamera camera;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!camera.isOnline) {
+      return const _ThumbnailState(
+        icon: Icons.videocam_off_rounded,
+        labelKey: 'crecam_thumbnail_offline',
+      );
+    }
+
+    // 클립은 cameras.id(UUID)로 연결됨 — camera.cameraId(text) 아님.
+    final latestClip = ref.watch(latestClipProvider(camera.id));
+    return latestClip.when(
+      loading: () => const SkeletonLoading(
+        width: double.infinity,
+        height: double.infinity,
+      ),
+      error: (_, __) => const _ThumbnailState(
+        icon: Icons.videocam_rounded,
+        labelKey: 'crecam_thumbnail_no_preview',
+        online: true,
+      ),
+      data: (clip) {
+        if (clip == null) {
+          return const _ThumbnailState(
+            icon: Icons.videocam_rounded,
+            labelKey: 'crecam_thumbnail_no_preview',
+            online: true,
+          );
+        }
+        // 온라인 + 최근 클립 → 썸네일을 포스터로, 좌상단 온라인 점.
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            ClipThumbnail(clip: clip),
+            const Positioned(top: 8, left: 8, child: _OnlineDot()),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// 썸네일 placeholder (오프라인 / 미리보기 없음 공용). online이면 녹색 톤.
+class _ThumbnailState extends StatelessWidget {
+  const _ThumbnailState({
+    required this.icon,
+    required this.labelKey,
+    this.online = false,
+  });
+
+  final IconData icon;
+  final String labelKey;
+  final bool online;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fg = online ? const Color(0xFF2E7D32) : scheme.outline;
+    return Container(
+      color: scheme.surfaceContainerHighest,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: fg, size: 30),
+          const SizedBox(height: 6),
+          Text(
+            labelKey.tr(),
+            style:
+                Theme.of(context).textTheme.labelMedium?.copyWith(color: fg),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 온라인 표시용 초록 점.
+class _OnlineDot extends StatelessWidget {
+  const _OnlineDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        color: const Color(0xFF2E7D32),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
     );
   }

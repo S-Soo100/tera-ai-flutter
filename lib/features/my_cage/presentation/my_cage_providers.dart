@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -53,8 +55,45 @@ final webrtcSignalingRepositoryProvider =
 // ── 공개 FutureProvider ────────────────────────────────────────────────────────
 
 /// 현재 유저의 카메라 전체 목록 (최신순).
-final camerasProvider = FutureProvider<List<TerraCamera>>((ref) async {
-  return ref.watch(cameraRepositoryProvider).listAll();
+///
+/// Realtime: `cameras` 테이블 변경(특히 `is_online` UPDATE)을 구독해 카메라가
+/// 켜지거나 꺼지면 그리드가 자동 갱신된다. 변경 1건마다 전체 재조회(listAll) —
+/// 카메라 수가 적어 비용 무시 가능, RLS는 재조회 쿼리에서 그대로 적용된다.
+/// (`cameras`는 supabase_realtime 발행 목록에 포함 — 백엔드 변경 불필요)
+final camerasProvider = StreamProvider<List<TerraCamera>>((ref) {
+  final repo = ref.watch(cameraRepositoryProvider);
+  final supabase = ref.watch(_supabaseClientProvider);
+
+  final controller = StreamController<List<TerraCamera>>();
+
+  Future<void> reload() async {
+    try {
+      final list = await repo.listAll();
+      if (!controller.isClosed) controller.add(list);
+    } catch (e, st) {
+      if (!controller.isClosed) controller.addError(e, st);
+    }
+  }
+
+  unawaited(reload()); // 최초 seed
+
+  final channel = supabase.channel('cameras-rt');
+  channel
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'cameras',
+        callback: (_) => unawaited(reload()),
+      )
+      .subscribe();
+
+  ref.onDispose(() {
+    // ignore: discarded_futures
+    supabase.removeChannel(channel);
+    controller.close();
+  });
+
+  return controller.stream;
 });
 
 /// 단일 카메라 조회. 존재하지 않으면 null.
@@ -106,6 +145,15 @@ final latestClipTimeProvider =
   return ref.watch(clipRepositoryProvider).getLatestStartedAt(
         cameraId: cameraId,
       );
+});
+
+/// 카메라별 가장 최근 클립 1건 (크레캠 그리드 썸네일 포스터용). 없으면 null.
+final latestClipProvider =
+    FutureProvider.autoDispose.family<Clip?, String>((ref, cameraId) async {
+  final page = await ref
+      .watch(clipRepositoryProvider)
+      .listPage(cameraId: cameraId, limit: 1);
+  return page.items.isEmpty ? null : page.items.first;
 });
 
 /// 클립 영상 presigned URL. clip_player_screen이 await + 만료 시 ref.refresh.
