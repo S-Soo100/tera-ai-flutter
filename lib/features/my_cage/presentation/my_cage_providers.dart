@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/config/env_config.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../data/camera_repository.dart';
 import '../data/clip_repository.dart';
 import '../data/video_cache_repository.dart';
@@ -61,6 +62,7 @@ final webrtcSignalingRepositoryProvider =
 /// 카메라 수가 적어 비용 무시 가능, RLS는 재조회 쿼리에서 그대로 적용된다.
 /// (`cameras`는 supabase_realtime 발행 목록에 포함 — 백엔드 변경 불필요)
 final camerasProvider = StreamProvider<List<TerraCamera>>((ref) {
+  ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 전환 시 재구독+재조회 (이전 계정 카메라 노출 방지)
   final repo = ref.watch(cameraRepositoryProvider);
   final supabase = ref.watch(_supabaseClientProvider);
 

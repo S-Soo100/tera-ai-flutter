@@ -57,7 +57,9 @@ class ProfileRepository {
           fileOptions: const FileOptions(upsert: true),
         );
 
-    final url = _client.storage.from('user-avatars').getPublicUrl(path);
+    // 캐시버스팅 쿼리 부착 → 같은 경로(upsert)로 덮어써도 URL이 바뀌어 CachedNetworkImage가 새 이미지를 받음
+    final baseUrl = _client.storage.from('user-avatars').getPublicUrl(path);
+    final url = '$baseUrl?v=${DateTime.now().millisecondsSinceEpoch}';
 
     await _client
         .from('user_profiles')

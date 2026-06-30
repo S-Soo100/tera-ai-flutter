@@ -25,17 +25,24 @@ class PetListNotifier extends StateNotifier<List<Pet>> {
   }
 
   Future<void> _init() async {
-    if (_useCloud) {
-      // 클라우드 모드: Supabase에서 동기화하여 로컬 캐시 갱신
-      await syncFromRemote();
-    } else {
-      refresh();
+    try {
+      if (_useCloud) {
+        // 클라우드 모드: Supabase에서 동기화하여 로컬 캐시 갱신
+        await syncFromRemote();
+      } else {
+        // 미인증: 이전 계정 클라우드 캐시가 'pets' 박스에 잔존 → 비우고 빈 목록 (프라이버시)
+        await _localRepo.clearPets();
+        refresh();
+      }
+    } catch (_) {
+      // sync 실패 시 uncaught async 예외 방지 (완전한 로딩/에러 UI는 후속 — AsyncNotifier 전환 필요)
     }
   }
 
   bool get _useCloud => _supabaseRepo != null;
 
   void refresh() {
+    if (!mounted) return; // dispose 후 state 세팅 방지 (계정 전환 중 in-flight 콜백)
     if (_useCloud) {
       state = _supabaseRepo!.getAllPets();
     } else {
@@ -81,6 +88,7 @@ class PetListNotifier extends StateNotifier<List<Pet>> {
 
 /// 단일 Pet 조회 (family provider)
 final petDetailProvider = Provider.family<Pet?, String>((ref, petId) {
+  ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 전환 시 재평가 (detail/edit stale 방지)
   final repo = ref.watch(petRepositoryProvider);
   return repo.getPet(petId);
 });
@@ -158,7 +166,7 @@ final petMediaProvider =
 class PetMediaNotifier extends FamilyAsyncNotifier<List<MediaItem>, String> {
   @override
   Future<List<MediaItem>> build(String arg) async {
-    ref.watch(currentUserProvider); // 계정 전환 시 자동 재build (stale 방지)
+    ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 전환 시에만 재build
     final repo = ref.watch(mediaRepositoryProvider);
     return repo.getMedia(arg);
   }

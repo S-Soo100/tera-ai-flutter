@@ -22,7 +22,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String _experience = 'beginner';
   bool _isUploading = false;
   bool _isSaving = false;
-  bool _initialized = false;
+  String? _initializedForId;
 
   @override
   void dispose() {
@@ -31,8 +31,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _initFromProfile(UserProfile? profile) {
-    if (_initialized || profile == null) return;
-    _initialized = true;
+    // 계정 id가 바뀌면 재초기화 → 로그아웃 없는 계정 전환 시 옛 계정 값 잔존/오염 저장 방지
+    if (profile == null || profile.id == _initializedForId) return;
+    _initializedForId = profile.id;
     _nameController.text = profile.displayName ?? '';
     _experience = profile.experience ?? 'beginner';
   }
@@ -134,11 +135,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           radius: 18,
                           backgroundColor: colorScheme.primary,
                           child: _isUploading
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                                )
+                              ? const SkeletonLoading(width: 16, height: 16, borderRadius: 8)
                               : Icon(Icons.camera_alt, size: 18, color: colorScheme.onPrimary),
                         ),
                       ),
@@ -180,11 +177,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: FilledButton(
                     onPressed: _isSaving ? null : _saveProfile,
                     child: _isSaving
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                        ? const SkeletonLoading(width: 20, height: 20, borderRadius: 10)
                         : Text('profile_save'.tr()),
                   ),
                 ),
@@ -205,9 +198,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   leading: Icon(Icons.info_outlined, color: colorScheme.onSurfaceVariant),
                   title: Text('profile_app_version'.tr()),
                   subtitle: Text(
-                    ref.watch(appVersionProvider).maybeWhen(
+                    ref.watch(appVersionProvider).when(
                           data: (v) => 'v$v',
-                          orElse: () => '',
+                          loading: () => '…',
+                          error: (_, __) => '—',
                         ),
                   ),
                 ),

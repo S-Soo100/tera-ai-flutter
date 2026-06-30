@@ -5,10 +5,10 @@ import '../../auth/presentation/auth_providers.dart';
 import '../data/profile_repository.dart';
 import '../domain/user_profile.dart';
 
-/// 앱 버전 (pubspec → 런타임). 'v0.1.1' 형태로 표시.
+/// 앱 버전 (pubspec → 런타임). 'v0.1.2+3' 형태(버전+빌드번호)로 표시.
 final appVersionProvider = FutureProvider<String>((ref) async {
   final info = await PackageInfo.fromPlatform();
-  return info.version;
+  return '${info.version}+${info.buildNumber}';
 });
 
 final profileNotifierProvider =
@@ -17,8 +17,8 @@ final profileNotifierProvider =
 class ProfileNotifier extends AsyncNotifier<UserProfile?> {
   @override
   Future<UserProfile?> build() async {
-    // 인증 상태를 watch → 로그인/로그아웃/계정 전환 시 자동 재build (stale 방지)
-    ref.watch(currentUserProvider);
+    // 계정 id만 watch → 계정 전환 시에만 재build (volatile User 필드 변경엔 불필요 재fetch 방지)
+    ref.watch(currentUserProvider.select((u) => u?.id));
     final repo = ref.watch(profileRepositoryProvider);
     return repo.getProfile();
   }

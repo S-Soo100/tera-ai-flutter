@@ -71,6 +71,12 @@ class PetRepository {
 
   int get petCount => _petsBox.length;
 
+  /// 로컬 캐시 전체 비우기 (로그아웃 시 이전 계정 데이터 잔존 방지)
+  Future<void> clearPets() async {
+    await _petsBox.clear();
+    await _weightLogsBox.clear();
+  }
+
   // Weight Log CRUD
   List<WeightLog> getWeightLogs(String petId) {
     return _weightLogsBox.values
