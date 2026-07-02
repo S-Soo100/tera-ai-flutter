@@ -229,6 +229,7 @@
   "smart_cage_no_device_subtitle": "BLE로 사육장 모듈을 연결하면\n실시간 환경 모니터링을 시작할 수 있어요",
   "smart_cage_pair_button": "디바이스 페어링하기",
   "smart_cage_select_device": "디바이스 선택",
+  "wifi_reconfigure": "Wi-Fi 재설정",
 
   "community_title": "커뮤니티",
   "community_placeholder": "커뮤니티 화면 준비 중입니다",

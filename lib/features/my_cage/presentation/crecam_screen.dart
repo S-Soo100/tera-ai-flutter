@@ -8,6 +8,7 @@ import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/terra_camera.dart';
 import 'my_cage_providers.dart';
 import 'widgets/clip_thumbnail.dart';
+import 'widgets/wifi_reconfigure_menu.dart';
 
 enum _CrecamView { grid, list }
 
@@ -231,10 +232,10 @@ class _CameraGridCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.more_horiz,
-                    size: 18,
-                    color: theme.colorScheme.outline,
+                  WifiReconfigureMenu(
+                    icon: Icons.more_horiz,
+                    iconSize: 18,
+                    onSelected: () => context.push('/crecam/cameras/pair'),
                   ),
                 ],
               ),
@@ -417,7 +418,9 @@ class _CameraList extends StatelessWidget {
             camera.model ?? camera.cameraId,
             style: Theme.of(context).textTheme.bodySmall,
           ),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: WifiReconfigureMenu(
+            onSelected: () => context.push('/crecam/cameras/pair'),
+          ),
           onTap: () => context.push('/crecam/cameras/${camera.id}'),
         );
       },

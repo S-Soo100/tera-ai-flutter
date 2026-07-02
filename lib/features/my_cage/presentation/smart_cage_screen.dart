@@ -8,6 +8,7 @@ import '../domain/device.dart';
 import 'supabase_module_providers.dart';
 import 'widgets/actuator_controls.dart';
 import 'widgets/module_status_card.dart';
+import 'widgets/wifi_reconfigure_menu.dart';
 
 class SmartCageScreen extends ConsumerWidget {
   const SmartCageScreen({super.key});
@@ -27,6 +28,10 @@ class SmartCageScreen extends ConsumerWidget {
               ),
         ),
         actions: [
+          if (deviceListAsync.valueOrNull?.isNotEmpty ?? false)
+            WifiReconfigureMenu(
+              onSelected: () => context.push('/smart-cage/devices/pair'),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: _CircleAddButton(
