@@ -127,8 +127,10 @@ class BlePairingRepository {
     if (FlutterBluePlus.isScanningNow) {
       await FlutterBluePlus.stopScan();
     }
+    // withServices 필터를 쓰지 않는다: 일부 펌웨어(카메라 NimBLE 등)는 광고
+    // 패킷에 Service UUID를 싣지 않아 이 필터에서 탈락한다(nRF엔 잡히지만 앱엔
+    // 안 뜸). 대신 scanResults의 광고 이름 필터(matchesAdvName)로 종류를 거른다.
     await FlutterBluePlus.startScan(
-      withServices: [Guid(_kServiceUuid)],
       timeout: timeout,
     );
   }
