@@ -54,12 +54,6 @@ class SupabaseModuleControlRepository {
   Future<DeviceCommand> ledOn(String deviceId) =>
       sendCommand(deviceId: deviceId, action: CommandAction.ledOn);
 
-  Future<DeviceCommand> ledUp(String deviceId) =>
-      sendCommand(deviceId: deviceId, action: CommandAction.ledUp);
-
-  Future<DeviceCommand> ledDown(String deviceId) =>
-      sendCommand(deviceId: deviceId, action: CommandAction.ledDown);
-
   // ── 디바이스 목록 ──────────────────────────────────────────────────────────
 
   /// RLS가 본인 소유 디바이스만 반환.

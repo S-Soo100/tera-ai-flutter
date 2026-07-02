@@ -55,7 +55,7 @@ class ModuleStatusCard extends ConsumerWidget {
     }
 
     final telemetry = telemetryAsync.value;
-    final isError = telemetryAsync.hasError;
+    final isOffline = !ref.watch(moduleOnlineProvider(device.id));
     final theme = Theme.of(context);
 
     if (telemetry == null) {
@@ -65,6 +65,13 @@ class ModuleStatusCard extends ConsumerWidget {
               child: SkeletonCard(lineCount: 4, height: 120),
             )
           : const SkeletonCard(lineCount: 4, height: 160);
+    }
+
+    // 오프라인이면 마지막 수신 시각을 상대 시간으로 (1분 tick으로 실시간 갱신).
+    String? lastUpdate;
+    if (isOffline) {
+      final now = ref.watch(nowTickProvider).valueOrNull ?? DateTime.now();
+      lastUpdate = _lastUpdateText(telemetry.ts, now);
     }
 
     final content = Column(
@@ -81,12 +88,12 @@ class ModuleStatusCard extends ConsumerWidget {
                 ),
               ),
             ),
-            _ConnectionBadge(isError: isError, isOnline: device.isOnline),
+            _ConnectionBadge(offline: isOffline),
           ],
         ),
-        if (isError) ...[
+        if (isOffline) ...[
           const SizedBox(height: 6),
-          _DisconnectedLabel(),
+          _DisconnectedLabel(lastUpdate: lastUpdate),
         ],
         const SizedBox(height: 14),
         // ── Primary 센서 박스 (tA / hA) ──────────────────────────
@@ -225,20 +232,16 @@ class ModuleStatusCard extends ConsumerWidget {
 // ── 연결 상태 배지 ────────────────────────────────────────────────────────────
 
 class _ConnectionBadge extends StatelessWidget {
-  const _ConnectionBadge({
-    required this.isError,
-    required this.isOnline,
-  });
+  const _ConnectionBadge({required this.offline});
 
-  final bool isError;
-  final bool isOnline;
+  final bool offline;
 
   static const _green = Color(0xFF2E7D32);
   static const _orange = Color(0xFFFF8F00);
 
   @override
   Widget build(BuildContext context) {
-    final showError = isError || !isOnline;
+    final showError = offline;
     final color = showError ? _orange : _green;
     final label = showError
         ? 'module_status_disconnected'.tr()
@@ -269,13 +272,39 @@ class _ConnectionBadge extends StatelessWidget {
   }
 }
 
+// ── 마지막 수신 상대 시간 ─────────────────────────────────────────────────────
+
+/// [ts](마지막 telemetry 수신 시각)로부터 [now]까지 경과를 사람이 읽는
+/// 상대 시간 문자열로 변환. ts가 없으면 null.
+String? _lastUpdateText(DateTime? ts, DateTime now) {
+  if (ts == null) return null;
+  final diff = now.toUtc().difference(ts.toUtc());
+  final minutes = diff.inMinutes;
+  if (minutes < 1) return 'module_last_update_just'.tr();
+  if (minutes < 60) {
+    return 'module_last_update_min'.tr(namedArgs: {'n': '$minutes'});
+  }
+  final hours = diff.inHours;
+  if (hours < 24) {
+    return 'module_last_update_hour'.tr(namedArgs: {'n': '$hours'});
+  }
+  return 'module_last_update_day'.tr(namedArgs: {'n': '${diff.inDays}'});
+}
+
 // ── 연결 끊김 라벨 ────────────────────────────────────────────────────────────
 
 class _DisconnectedLabel extends StatelessWidget {
+  const _DisconnectedLabel({this.lastUpdate});
+
+  /// "3분 전 업데이트" 같은 마지막 수신 상대 시간. null이면 "연결 끊김"으로 대체.
+  final String? lastUpdate;
+
   @override
   Widget build(BuildContext context) {
+    final reconnecting = 'module_status_reconnecting'.tr();
+    final prefix = lastUpdate ?? 'module_status_disconnected'.tr();
     return Text(
-      '${'module_status_disconnected'.tr()} · ${'module_status_reconnecting'.tr()}',
+      '$prefix · $reconnecting',
       style: const TextStyle(
         fontSize: 11,
         color: Color(0xFFFF8F00),

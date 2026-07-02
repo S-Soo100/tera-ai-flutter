@@ -9,8 +9,6 @@ enum CommandAction {
   heaterClear,
   ledOn,
   ledOff,
-  ledUp,
-  ledDown,
   tokenRotate,
   unknown,
 }
@@ -30,10 +28,6 @@ extension CommandActionWire on CommandAction {
         return 'led_on';
       case CommandAction.ledOff:
         return 'led_off';
-      case CommandAction.ledUp:
-        return 'led_up';
-      case CommandAction.ledDown:
-        return 'led_down';
       case CommandAction.tokenRotate:
         return 'token_rotate';
       case CommandAction.unknown:
@@ -55,10 +49,6 @@ extension CommandActionWire on CommandAction {
         return CommandAction.ledOn;
       case 'led_off':
         return CommandAction.ledOff;
-      case 'led_up':
-        return CommandAction.ledUp;
-      case 'led_down':
-        return CommandAction.ledDown;
       case 'token_rotate':
         return CommandAction.tokenRotate;
       default:

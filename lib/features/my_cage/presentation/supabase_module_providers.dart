@@ -88,6 +88,70 @@ final telemetryStreamProvider = StreamProvider.autoDispose
   return controller.stream;
 });
 
+// ── 텔레메트리 최신성 watchdog ──────────────────────────────────────────────────
+
+/// 연결 끊김 판정 임계값. telemetry 3초 주기(terra-server 계약)의 4배 —
+/// 일시적 지터는 흡수하고 실제 끊김만 감지한다.
+const telemetryStaleThreshold = Duration(seconds: 12);
+
+/// telemetry 최신성 감시자.
+///
+/// [telemetryStreamProvider]가 새 값을 방출할 때마다 이 provider가 재실행되어
+/// watchdog 타이머를 리셋한다. [telemetryStaleThreshold] 동안 새 telemetry가
+/// 없으면 `true`(stale = 연결 끊김)를 방출한다.
+///
+/// Supabase Realtime 스트림은 끊겨도 에러를 내지 않고 조용히 멈추므로
+/// `hasError`로는 오프라인을 감지할 수 없다. 이 watchdog이 그 공백을 메운다.
+final telemetryStaleProvider =
+    StreamProvider.autoDispose.family<bool, String>((ref, deviceId) {
+  final telemetryAsync = ref.watch(telemetryStreamProvider(deviceId));
+  final hasFresh = telemetryAsync.hasValue && telemetryAsync.value != null;
+
+  final controller = StreamController<bool>();
+  // 값이 막 도착했거나 아직 로딩 중이면 우선 not-stale.
+  controller.add(false);
+
+  Timer? timer;
+  if (hasFresh) {
+    timer = Timer(telemetryStaleThreshold, () {
+      if (!controller.isClosed) controller.add(true);
+    });
+  }
+
+  ref.onDispose(() {
+    timer?.cancel();
+    controller.close();
+  });
+
+  return controller.stream;
+});
+
+/// 사육장 제어 가능 여부 = `device.is_online` 스냅샷 **AND** telemetry 최신성.
+/// 둘 중 하나라도 끊기면 `false`(오프라인). 연결 끊김 시 제어 차단에 사용한다.
+///
+/// - `device.is_online`: 진입 시점 스냅샷(devices realtime 미구독) — 초기 판정.
+/// - `telemetryStale`: 3초 주기 telemetry 기반 실시간 watchdog — 진입 후 끊김 감지.
+///
+/// AND 결합은 보수적(둘 다 살아 있어야 제어 허용)이라 "오프라인인데 제어됨"
+/// (위음성)을 최소화한다. 반대 위양성(정상인데 차단)은 재시도로 해소한다.
+final moduleOnlineProvider =
+    Provider.autoDispose.family<bool, String>((ref, deviceId) {
+  final device = ref.watch(currentDeviceProvider).valueOrNull;
+  final isOnlineSnapshot = device?.isOnline ?? false;
+  final isStale =
+      ref.watch(telemetryStaleProvider(deviceId)).valueOrNull ?? false;
+  return isOnlineSnapshot && !isStale;
+});
+
+// ── 상대 시간 tick ──────────────────────────────────────────────────────────────
+
+/// 1분 주기로 현재 시각을 방출. 오프라인 시 "마지막 업데이트 N분 전" 표시를
+/// 실시간으로 늘리기 위해 사용한다. autoDispose라 화면이 구독할 때만 타이머가 돈다.
+final nowTickProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
+  yield DateTime.now();
+  yield* Stream.periodic(const Duration(minutes: 1), (_) => DateTime.now());
+});
+
 // ── 명령 상태 업데이트 Realtime 스트림 ─────────────────────────────────────────
 
 /// commands 테이블 UPDATE를 수신. RLS가 본인 발행 명령만 노출.

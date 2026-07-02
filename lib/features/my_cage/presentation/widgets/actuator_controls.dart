@@ -30,18 +30,12 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
   // pending 명령 ID 집합 — 발행 후 commandUpdatesProvider가 응답하면 제거
   final Set<String> _pendingIds = {};
 
-  // LED 밝기 버튼 디바운스
-  DateTime? _lastLedBrightnessAt;
-  bool _ledBrightnessDebouncing = false;
-
   // LED 전원 버튼 시각 피드백
   bool _ledPulsing = false;
 
   // LED 로컬 on/off 상태 — telemetry에 LED 상태 없으므로 세션 내 추적.
   // 앱 재시작 시 false로 초기화됨 (정상 동작).
   bool _ledOn = false;
-
-  static const int _debounceMs = 220;
 
   @override
   void initState() {
@@ -94,18 +88,9 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     }
 
     final telemetryAsync = ref.watch(telemetryStreamProvider(device.id));
+    final isOffline = !ref.watch(moduleOnlineProvider(device.id));
 
-    // 연결 완전 끊김 (hasValue 없음 + 에러)
-    if (!telemetryAsync.hasValue && telemetryAsync.hasError) {
-      return _buildCard(
-        context,
-        child: _OfflineContent(
-          onRetry: () => ref.invalidate(telemetryStreamProvider(device.id)),
-        ),
-      );
-    }
-
-    // 첫 로딩 (값 없음, 에러도 없음)
+    // 첫 로딩 (값 없음)
     if (!telemetryAsync.hasValue) {
       return _buildCard(
         context,
@@ -117,7 +102,6 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     }
 
     final telemetry = telemetryAsync.value;
-    final isOffline = telemetryAsync.hasError;
 
     // telemetry null 방어
     if (telemetry == null) {
@@ -136,13 +120,20 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
       context,
       child: Stack(
         children: [
-          _buildTileGrid(context, device, telemetry, hasPending),
-          // hasValue 있지만 에러 중인 오버레이
+          // 연결 끊김이면 제어 타일 전체의 탭을 차단 (1층 방어).
+          IgnorePointer(
+            ignoring: isOffline,
+            child: _buildTileGrid(context, device, telemetry, hasPending),
+          ),
+          // 연결 끊김 오버레이 (제어 차단 표시 + 재시도)
           if (isOffline)
             Positioned.fill(
               child: _OfflineContent(
-                onRetry: () =>
-                    ref.invalidate(telemetryStreamProvider(device.id)),
+                onRetry: () {
+                  ref.invalidate(telemetryStreamProvider(device.id));
+                  // is_online 스냅샷도 갱신 (devices realtime 미구독).
+                  ref.invalidate(deviceListProvider);
+                },
               ),
             ),
         ],
@@ -191,12 +182,9 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
         _LedTile(
           ledOn: _ledOn,
           pulsing: _ledPulsing,
-          debouncing: _ledBrightnessDebouncing,
           isBusy: hasPending,
           onTurnOn: () => _ledTurnOn(context, device),
           onTurnOff: () => _ledTurnOff(context, device),
-          onBrightnessUp: () => _ledBrightness(context, device, up: true),
-          onBrightnessDown: () => _ledBrightness(context, device, up: false),
         ),
         const SizedBox(height: 12),
         // ── 행 3: 워터펌프 (전폭) ─────────────────────────────────
@@ -265,6 +253,11 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     CommandAction action,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
+    // 연결 끊김 시 제어 차단 (UI가 뚫려도 명령이 나가지 않도록 최종 방어).
+    if (!ref.read(moduleOnlineProvider(device.id))) {
+      _showOfflineBlockedOn(messenger);
+      return;
+    }
     try {
       final cmd = await ref
           .read(moduleCommandSenderProvider.notifier)
@@ -347,38 +340,6 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     await _sendCommand(context, device, CommandAction.ledOff);
   }
 
-  // ── LED 밝기 ─────────────────────────────────────────────────────────────────
-
-  Future<void> _ledBrightness(
-    BuildContext context,
-    Device device, {
-    required bool up,
-  }) async {
-    final now = DateTime.now();
-    if (_lastLedBrightnessAt != null) {
-      final diff = now.difference(_lastLedBrightnessAt!).inMilliseconds;
-      if (diff < _debounceMs) {
-        if (!_ledBrightnessDebouncing) {
-          setState(() => _ledBrightnessDebouncing = true);
-          final remaining = _debounceMs - diff;
-          Future.delayed(Duration(milliseconds: remaining), () {
-            if (mounted) setState(() => _ledBrightnessDebouncing = false);
-          });
-        }
-        return;
-      }
-    }
-    _lastLedBrightnessAt = now;
-    setState(() => _ledBrightnessDebouncing = true);
-    await _sendCommand(
-      context,
-      device,
-      up ? CommandAction.ledUp : CommandAction.ledDown,
-    );
-    await Future.delayed(const Duration(milliseconds: _debounceMs));
-    if (mounted) setState(() => _ledBrightnessDebouncing = false);
-  }
-
   // ── 명령 결과 피드백 ─────────────────────────────────────────────────────────
 
   void _handleCommandResult(DeviceCommand cmd) {
@@ -428,6 +389,16 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
         content: Text(message),
         backgroundColor: bgColor,
         duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showOfflineBlockedOn(ScaffoldMessengerState messenger) {
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('module_control_offline_blocked'.tr()),
+        backgroundColor: const Color(0xFFFF8F00),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -734,31 +705,25 @@ class _HeaterTile extends StatelessWidget {
   }
 }
 
-// ── iOS 제어센터 스타일: LED 통합 타일 (전폭, 상태 조건부 우측 컨트롤) ────────
+// ── iOS 제어센터 스타일: LED 통합 타일 (전폭, 켜기/끄기 토글) ─────────────────
 //
 // _ledOn == false: [아이콘] LED (Spacer) [켜기]
-// _ledOn == true:  [아이콘] LED (Spacer) [끄기] [−] [+]
+// _ledOn == true:  [아이콘] LED (Spacer) [끄기]
 
 class _LedTile extends StatelessWidget {
   const _LedTile({
     required this.ledOn,
     required this.pulsing,
-    required this.debouncing,
     required this.isBusy,
     required this.onTurnOn,
     required this.onTurnOff,
-    required this.onBrightnessUp,
-    required this.onBrightnessDown,
   });
 
   final bool ledOn;
   final bool pulsing;
-  final bool debouncing;
   final bool isBusy;
   final VoidCallback onTurnOn;
   final VoidCallback onTurnOff;
-  final VoidCallback onBrightnessUp;
-  final VoidCallback onBrightnessDown;
 
   // LED 강조색: Green 계열 (기존 프라이머리 컬러 유지)
   static const _ledAccent = Color(0xFF2E7D32);
@@ -819,40 +784,16 @@ class _LedTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // 우측 컨트롤 — 상태 조건부
-          if (!ledOn) ...[
-            // OFF 상태: 켜기 버튼만
-            _LedActionBtn(
-              label: 'module_actuator_power_on'.tr(),
-              color: labelColor,
-              tileBg: tileBg,
-              dimmed: dimmed,
-              onTap: dimmed ? null : onTurnOn,
-            ),
-          ] else ...[
-            // ON 상태: 끄기 + 밝기 스테퍼
-            _LedActionBtn(
-              label: 'module_actuator_power_off'.tr(),
-              color: labelColor,
-              tileBg: tileBg,
-              dimmed: dimmed,
-              onTap: dimmed ? null : onTurnOff,
-            ),
-            const SizedBox(width: 6),
-            _StepBtn(
-              icon: Icons.remove,
-              dimmed: debouncing || isBusy,
-              onTap: onBrightnessDown,
-              onColor: Colors.white,
-            ),
-            const SizedBox(width: 4),
-            _StepBtn(
-              icon: Icons.add,
-              dimmed: debouncing || isBusy,
-              onTap: onBrightnessUp,
-              onColor: Colors.white,
-            ),
-          ],
+          // 우측 컨트롤 — 켜기 / 끄기 토글
+          _LedActionBtn(
+            label: ledOn
+                ? 'module_actuator_power_off'.tr()
+                : 'module_actuator_power_on'.tr(),
+            color: labelColor,
+            tileBg: tileBg,
+            dimmed: dimmed,
+            onTap: dimmed ? null : (ledOn ? onTurnOff : onTurnOn),
+          ),
           if (isBusy) ...[
             const SizedBox(width: 4),
             _BusyDot(color: labelColor),
@@ -897,45 +838,6 @@ class _LedActionBtn extends StatelessWidget {
                 color: effectiveColor,
                 fontWeight: FontWeight.w600,
               ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── 스텝 버튼 (밝기 −/+) ─────────────────────────────────────────────────────
-
-class _StepBtn extends StatelessWidget {
-  const _StepBtn({
-    required this.icon,
-    required this.dimmed,
-    required this.onTap,
-    this.onColor,
-  });
-
-  final IconData icon;
-  final bool dimmed;
-  final VoidCallback onTap;
-  // ON 상태 타일에서 흰색 계열로 렌더링할 때 지정
-  final Color? onColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final baseColor = onColor ?? cs.onSurface;
-    final color = dimmed ? baseColor.withValues(alpha: 0.35) : baseColor;
-
-    return GestureDetector(
-      onTap: dimmed ? null : onTap,
-      child: Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(
-          color: baseColor.withValues(alpha: dimmed ? 0.05 : 0.10),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Center(
-          child: Icon(icon, size: 15, color: color),
         ),
       ),
     );
