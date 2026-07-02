@@ -20,6 +20,15 @@ const _kTxUuid = '12345678-1234-1234-1234-123456789abd';
 /// BLE write 사이 대기 시간
 const _kWriteDelayMs = 60;
 
+/// BLE 연결 재시도 최대 횟수 (Android status=133 GATT_ERROR 등 일시적 실패 대응)
+const _kConnectMaxAttempts = 3;
+
+/// stopScan → connect 전환 시 BLE 스택 안정화 대기 (133 발생 확률 감소)
+const _kScanToConnectDelayMs = 400;
+
+/// connect() 개별 시도 타임아웃. 짧을수록 재시도·취소 반응성↑ (133은 조기 실패).
+const _kConnectTimeoutSec = 15;
+
 // ── sealed 이벤트 클래스 ──────────────────────────────────────────────────────────
 
 sealed class BlePairingEvent {}
@@ -149,13 +158,24 @@ class BlePairingRepository {
 
   Future<void> connect(BluetoothDevice device) async {
     await stopScan();
+    // 스캔 스택이 완전히 정리되도록 잠시 대기 — 스캔 직후 즉시 connect하면
+    // Android BLE가 status=133(GATT_ERROR)으로 실패하는 경우가 잦다.
+    await Future<void>.delayed(
+      const Duration(milliseconds: _kScanToConnectDelayMs),
+    );
 
     _connectedDevice = device;
-    await device.connect(
-      license: License.nonprofit,
-      timeout: const Duration(seconds: 20),
-      mtu: 512,
-    );
+    await _connectWithRetry(device);
+
+    // 재시도 백오프 중 disconnect()/dispose()로 취소되면 _connectedDevice가 null로
+    // 바뀐다. 그 경우 서비스 탐색·TX 구독을 진행하지 않고 정리 후 종료 — 유저가
+    // 화면을 떠난 뒤 백그라운드 재연결·재구독이 누수되는 것을 막는다.
+    if (!identical(_connectedDevice, device)) {
+      try {
+        await device.disconnect();
+      } catch (_) {}
+      return;
+    }
 
     final services = await device.discoverServices();
     final targetService = services.firstWhere(
@@ -181,6 +201,38 @@ class BlePairingRepository {
       if (msg.isEmpty) return;
       _dispatchTxMessage(msg);
     });
+  }
+
+  /// [device] 연결을 최대 [_kConnectMaxAttempts]회 시도한다.
+  ///
+  /// Android BLE는 스캔 직후·장치 광고 재개 전 등에서 status=133(GATT_ERROR)으로
+  /// 일시적 연결 실패를 자주 낸다. 이 에러는 재시도로 대부분 해소되므로, 실패한
+  /// GATT를 정리(disconnect)한 뒤 백오프를 두고 다시 시도한다. 마지막 시도까지
+  /// 실패하면 원래 예외를 그대로 던진다.
+  Future<void> _connectWithRetry(BluetoothDevice device) async {
+    for (var attempt = 1; attempt <= _kConnectMaxAttempts; attempt++) {
+      try {
+        await device.connect(
+          license: License.nonprofit,
+          timeout: const Duration(seconds: _kConnectTimeoutSec),
+          mtu: 512,
+        );
+        return;
+      } on FlutterBluePlusException {
+        // 실패한 연결의 GATT 리소스를 정리해 다음 시도를 깨끗하게 만든다
+        // (핸들 누수 방지). 어댑터 off·권한 거부 등 비-BLE 예외는 여기서 잡지
+        // 않고 즉시 전파한다 — 재시도해도 무의미하기 때문.
+        try {
+          await device.disconnect();
+        } catch (_) {}
+        // 그사이 취소(disconnect/dispose로 _connectedDevice가 바뀜)됐으면 중단.
+        if (!identical(_connectedDevice, device)) return;
+        // 마지막 시도까지 실패하면 원래 예외를 그대로 던진다.
+        if (attempt >= _kConnectMaxAttempts) rethrow;
+        // 선형 백오프 (300ms → 600ms).
+        await Future<void>.delayed(Duration(milliseconds: 300 * attempt));
+      }
+    }
   }
 
   // ── TX 메시지 파싱 → 이벤트 디스패치 ──────────────────────────────────────────
