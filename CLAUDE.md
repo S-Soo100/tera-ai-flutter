@@ -12,6 +12,7 @@
 - **DB 스키마 (DDL 원본)**: `docs/supabase-schema.md` (메인 15개 + terra-server IoT 테이블)
 - **연동 현황 (접속 정보/RLS/시드/Flutter 코드 예시)**: `docs/supabase-setup.md`
 - **사육장 IoT 통합 (단일 진실 소스)**: `~/Downloads/APP_INTEGRATION.md` (terra-server) — 디바이스 제어/텔레메트리/BLE 페어링 계약
+- **BLE Wi-Fi 프로비저닝 (사육장·카메라 단일 진실 소스)**: `docs/ble-provisioning-protocol.md` — `terra-iot`/`FB2_P4_CAM` 공통 GATT·명령·응답 + 페어링 결정((a): 앱은 WiFi만, 토큰/DB 사전 세팅)
 - **클라우드 마이그레이션/UI 개편 (Phase C/D)**: `docs/flutter-cloud-migration-plan.md`
 - **Storage 파일 복사 우회 (MCP·service_role 제약)**: 메모리 `project_supabase_storage_edge_workaround` — edge function으로 `storage.copy`, 경로 `pet-media/{user_id}/pets/{pet_id}.png`
 
@@ -58,14 +59,15 @@ lib/
 |-----------|---------|------|------------|
 | `/home` | home | HomeScreen (대시보드) | 내 개체/사육장 요약 |
 | `/my-pets` | my_pets | MyPetsScreen (개체 CRUD) | Supabase `pets`/`pet_events`/`media` |
-| `/crecam` | my_cage | CrecamScreen (카메라/클립) | **terra-server** `cameras`(ESP32-P4) + WebRTC P2P 라이브 + petcam-lab `camera_clips` 클립 |
+| `/crecam` | my_cage | CrecamScreen + CameraPairingScreen | **terra-server** `cameras`(ESP32-P4) + WebRTC P2P 라이브 + petcam-lab `camera_clips` 클립 + BLE 페어링 |
 | `/smart-cage` | my_cage | SmartCageScreen + DevicePairingScreen | **terra-server** `devices`/`telemetry`/`commands` + BLE |
 | `/community` | community | CommunityScreen (게시판) | Supabase `community` |
 | `/wiki` (보조) | wiki | WikiScreen + 종 상세/모프 계산기/종 비교/지식그래프 | 레퍼런스(로컬/Supabase) |
 | `/search` (보조) | search | 백색목록 검색 | SpeciesRepository |
 | — | splash/error | SplashScreen / ErrorScreen | — |
 
-> 사육장 IoT 데이터 계층: `my_cage/data/{ble_pairing_repository,supabase_module_control_repository}.dart`, `my_cage/domain/{device,telemetry_reading,device_command,actuator_state}.dart`.
+> 사육장 IoT 데이터 계층: `my_cage/data/{ble_pairing_repository,supabase_module_control_repository}.dart`, `my_cage/domain/{device,telemetry_reading,device_command,actuator_state,wifi_access_point,pair_target_kind}.dart`.
+> BLE 페어링(2026-07-02 개편): Wi-Fi 프로비저닝 프로토콜(`SCAN`→`SSID`→`PASS`→`CONNECT`, JWT 흐름 제거). 사육장·카메라 공통 `presentation/widgets/wifi_provisioning_view.dart` + 래퍼 `{device,camera}_pairing_screen.dart`(라우트 `/smart-cage/devices/pair`, `/crecam/cameras/pair`). **앱은 WiFi 연결만 — 토큰/DB등록/owner는 사전 세팅((a) 방식)**. 상세: `docs/ble-provisioning-protocol.md`, 메모리 `project_ble_provisioning_scheme`.
 > SmartCageScreen UI(2026-06-12 개편): 현황(`module_status_card`)+제어(`actuator_controls`)를 단일 통합 카드로 병합 + 테두리. 액추에이터='사육장 제어'(iOS 제어센터 스타일 한 row 타일). LED는 앱이 `CommandAction.ledOff`를 선제 추가(terra-server 계약에 led_off·LED telemetry 없음 → 메모리 `project_led_control_gap`). 목표 온습도는 하드코딩 상수(setpoint 실연동 후속).
 
 ## 코딩 규칙

@@ -21,10 +21,8 @@ class CrecamScreen extends ConsumerStatefulWidget {
 class _CrecamScreenState extends ConsumerState<CrecamScreen> {
   _CrecamView _view = _CrecamView.grid;
 
-  void _showPairingComingSoon() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('crecam_pairing_coming_soon'.tr())),
-    );
+  void _openPairing() {
+    context.push('/crecam/cameras/pair');
   }
 
   @override
@@ -54,7 +52,7 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
-        onPressed: _showPairingComingSoon,
+        onPressed: _openPairing,
         tooltip: 'my_cage_add_camera'.tr(),
         child: const Icon(Icons.add),
       ),
@@ -66,12 +64,12 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen> {
         ),
         data: (cameras) {
           if (cameras.isEmpty) {
-            return _EmptyBody(onAdd: _showPairingComingSoon);
+            return _EmptyBody(onAdd: _openPairing);
           }
           return _view == _CrecamView.grid
               ? _CameraGrid(
                   cameras: cameras,
-                  onAddTap: _showPairingComingSoon,
+                  onAddTap: _openPairing,
                 )
               : _CameraList(cameras: cameras);
         },

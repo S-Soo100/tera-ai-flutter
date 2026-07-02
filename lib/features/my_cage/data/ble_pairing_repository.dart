@@ -1,71 +1,72 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-// ── UUID 상수 (APP_INTEGRATION.md §6 기준) ──────────────────────────────────────
+import '../domain/pair_target_kind.dart';
+import '../domain/wifi_access_point.dart';
 
-/// 디바이스 BLE 서비스 UUID (scan 필터)
+// ── UUID 상수 (기존과 동일) ────────────────────────────────────────────────────
+
+/// 기기 BLE 서비스 UUID (scan 필터, 사육장·카메라 공통)
 const _kServiceUuid = '12345678-1234-1234-1234-123456789abc';
 
-/// RX characteristic (write): SSID/PASS/JWT 등 전달
+/// RX characteristic (write): SCAN / SSID / PASS / CONNECT 전달
 const _kRxUuid = '12345678-1234-1234-1234-123456789abe';
 
-/// TX characteristic (notify): 디바이스 응답 수신
+/// TX characteristic (notify): 기기 응답 수신
 const _kTxUuid = '12345678-1234-1234-1234-123456789abd';
 
-/// JWT 청크 최대 크기 (정책 §6: 200자 이내)
-const _kJwtChunkSize = 200;
-
-/// BLE write 사이 대기 시간 (정책 §6: 50ms)
-const _kWriteDelayMs = 50;
+/// BLE write 사이 대기 시간
+const _kWriteDelayMs = 60;
 
 // ── sealed 이벤트 클래스 ──────────────────────────────────────────────────────────
 
 sealed class BlePairingEvent {}
 
-/// NAME 저장됨
-class BlePairingNameOk extends BlePairingEvent {}
-
-/// JWT 청크 전송 진행 상황
-class BlePairingJwtProgress extends BlePairingEvent {
-  final int received;
-  final int total;
-  BlePairingJwtProgress({required this.received, required this.total});
+/// WiFi 스캔 완료 — 확정된 AP 목록.
+class BleScanComplete extends BlePairingEvent {
+  final List<WifiAccessPoint> accessPoints;
+  BleScanComplete({required this.accessPoints});
 }
 
-/// JWT 전송 완료
-class BlePairingJwtOk extends BlePairingEvent {
-  final int total;
-  BlePairingJwtOk({required this.total});
-}
+/// WiFi 스캔 진행 중 (SCANNING 수신).
+class BleScanning extends BlePairingEvent {}
 
-/// WiFi 연결 성공
-class BlePairingWifiOk extends BlePairingEvent {}
+/// 검색된 AP 없음 (NO_AP_FOUND).
+class BleNoApFound extends BlePairingEvent {}
 
-/// WiFi 연결 실패
-class BlePairingWifiFail extends BlePairingEvent {}
+/// WiFi 스캔 실패 (SCAN_FAIL).
+class BleScanFail extends BlePairingEvent {}
 
-/// 에러 수신
+/// SSID 저장됨 (SSID_OK).
+class BleSsidOk extends BlePairingEvent {}
+
+/// 비밀번호 저장됨 (PASS_OK).
+class BlePassOk extends BlePairingEvent {}
+
+/// WiFi 연결 시도 중 (CONNECTING).
+class BleConnecting extends BlePairingEvent {}
+
+/// WiFi 연결 성공 (WIFI_OK).
+class BleWifiOk extends BlePairingEvent {}
+
+/// WiFi 연결 실패 (WIFI_FAIL).
+class BleWifiFail extends BlePairingEvent {}
+
+/// 에러 수신 (ERR:<code>).
 class BlePairingErr extends BlePairingEvent {
   final String code;
   BlePairingErr({required this.code});
 }
 
-/// 페어링 완료 — device_id 포함
-class BlePairingPairOk extends BlePairingEvent {
-  final String deviceId;
-  BlePairingPairOk({required this.deviceId});
-}
-
-/// 알 수 없는 TX 메시지 (무시용)
+/// 알 수 없는 TX 메시지 (무시용).
 class BlePairingUnknown extends BlePairingEvent {
   final String raw;
   BlePairingUnknown({required this.raw});
 }
 
-// ── 스캔 결과 ────────────────────────────────────────────────────────────────────
+// ── 스캔 결과 (BLE 기기 목록) ──────────────────────────────────────────────────
 
 class BleDeviceScanResult {
   final BluetoothDevice device;
@@ -89,30 +90,40 @@ class BlePairingRepository {
   final StreamController<BlePairingEvent> _eventController =
       StreamController<BlePairingEvent>.broadcast();
 
-  /// TX notify 이벤트 스트림 (외부 소비)
+  /// WiFi 스캔 AP 누적 버퍼. SCAN_END에 확정 후 비운다.
+  final List<WifiAccessPoint> _apBuffer = [];
+
+  /// TX notify 이벤트 스트림 (외부 소비).
   Stream<BlePairingEvent> get events => _eventController.stream;
 
-  // ── 스캔 ──────────────────────────────────────────────────────────────────────
+  // ── BLE 기기 스캔 ────────────────────────────────────────────────────────────
 
-  /// serviceUuid 필터로 ESP32 BLE 광고 스캔.
+  /// serviceUuid 필터로 광고 스캔하되, [kind]의 광고 이름과 일치하는 기기만 방출.
   /// Stream을 listen하다 dispose 시 자동 정리.
-  Stream<List<BleDeviceScanResult>> get scanResults {
-    return FlutterBluePlus.onScanResults.map(
-      (results) => results
-          .map(
-            (r) => BleDeviceScanResult(
+  Stream<List<BleDeviceScanResult>> scanResults(PairTargetKind kind) {
+    return FlutterBluePlus.onScanResults.map((results) {
+      return results
+          .map((r) {
+            final advName = r.advertisementData.advName.isNotEmpty
+                ? r.advertisementData.advName
+                : (r.device.platformName.isNotEmpty
+                    ? r.device.platformName
+                    : null);
+            return BleDeviceScanResult(
               device: r.device,
-              name: r.advertisementData.advName.isNotEmpty
-                  ? r.advertisementData.advName
-                  : null,
+              name: advName,
               rssi: r.rssi,
-            ),
-          )
-          .toList(),
-    );
+            );
+          })
+          .where((r) => kind.matchesAdvName(r.name))
+          .toList();
+    });
   }
 
-  Future<void> startScan({Duration timeout = const Duration(seconds: 15)}) async {
+  Future<void> startScan({
+    required PairTargetKind kind,
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     if (FlutterBluePlus.isScanningNow) {
       await FlutterBluePlus.stopScan();
     }
@@ -128,7 +139,7 @@ class BlePairingRepository {
     }
   }
 
-  /// BluetoothAdapterState 스트림 — 어댑터 off 감지용
+  /// BluetoothAdapterState 스트림 — 어댑터 off 감지용.
   Stream<BluetoothAdapterState> get adapterState =>
       FlutterBluePlus.adapterState;
 
@@ -165,6 +176,7 @@ class BlePairingRepository {
     _txSubscription = _txChar!.lastValueStream.listen((data) {
       if (data.isEmpty) return;
       final msg = utf8.decode(data, allowMalformed: true).trim();
+      if (msg.isEmpty) return;
       _dispatchTxMessage(msg);
     });
   }
@@ -172,67 +184,115 @@ class BlePairingRepository {
   // ── TX 메시지 파싱 → 이벤트 디스패치 ──────────────────────────────────────────
 
   void _dispatchTxMessage(String msg) {
-    if (msg == 'NAME_OK') {
-      _eventController.add(BlePairingNameOk());
+    // ── 스캔 흐름 ──
+    if (msg == 'SCANNING') {
+      _apBuffer.clear();
+      _eventController.add(BleScanning());
+      return;
+    }
+    if (msg.startsWith('SCAN:')) {
+      // SCAN:<count> — 개수 통지. 버퍼는 이미 SCANNING에서 초기화됨.
+      _apBuffer.clear();
+      return;
+    }
+    if (msg.startsWith('AP:')) {
+      final ap = _parseApLine(msg);
+      if (ap != null) _apBuffer.add(ap);
+      return;
+    }
+    if (msg == 'SCAN_END') {
+      _eventController.add(
+        BleScanComplete(accessPoints: List.unmodifiable(_apBuffer)),
+      );
+      return;
+    }
+    if (msg == 'NO_AP_FOUND') {
+      _apBuffer.clear();
+      _eventController.add(BleNoApFound());
+      return;
+    }
+    if (msg == 'SCAN_FAIL') {
+      _apBuffer.clear();
+      _eventController.add(BleScanFail());
+      return;
+    }
+
+    // ── 설정 흐름 ──
+    if (msg == 'SSID_OK') {
+      _eventController.add(BleSsidOk());
+      return;
+    }
+    if (msg == 'PASS_OK') {
+      _eventController.add(BlePassOk());
+      return;
+    }
+
+    // ── 연결 흐름 ──
+    if (msg == 'CONNECTING') {
+      _eventController.add(BleConnecting());
       return;
     }
     if (msg == 'WIFI_OK') {
-      _eventController.add(BlePairingWifiOk());
+      _eventController.add(BleWifiOk());
       return;
     }
     if (msg == 'WIFI_FAIL') {
-      _eventController.add(BlePairingWifiFail());
+      _eventController.add(BleWifiFail());
       return;
     }
-    // JWT_CHUNK <received>/<total>
-    if (msg.startsWith('JWT_CHUNK ')) {
-      final parts = msg.substring(10).split('/');
-      if (parts.length == 2) {
-        final received = int.tryParse(parts[0]);
-        final total = int.tryParse(parts[1]);
-        if (received != null && total != null) {
-          _eventController.add(
-            BlePairingJwtProgress(received: received, total: total),
-          );
-          return;
-        }
-      }
-    }
-    // JWT_OK <total>
-    if (msg.startsWith('JWT_OK ')) {
-      final total = int.tryParse(msg.substring(7).trim());
-      if (total != null) {
-        _eventController.add(BlePairingJwtOk(total: total));
-        return;
-      }
-    }
-    // PAIR_OK <device_id>
-    if (msg.startsWith('PAIR_OK ')) {
-      final deviceId = msg.substring(8).trim();
-      _eventController.add(BlePairingPairOk(deviceId: deviceId));
-      return;
-    }
-    // ERR:<code>
+
+    // ── 에러 ──
     if (msg.startsWith('ERR:')) {
-      final code = msg.substring(4);
-      _eventController.add(BlePairingErr(code: code));
+      _eventController.add(BlePairingErr(code: msg.substring(4)));
       return;
     }
+
     _eventController.add(BlePairingUnknown(raw: msg));
   }
 
-  // ── 페어링 데이터 전송 (정책 §6 RX write 시퀀스) ─────────────────────────────
+  /// `AP:<no>,<ssid>,<rssi>,<channel>` 파싱.
+  ///
+  /// ssid에 콤마가 포함될 수 있으므로: `AP:` 접두 제거 후 콤마로 split한 뒤
+  /// **맨 앞=no, 맨 뒤=channel, 뒤에서 두 번째=rssi**로 고정하고,
+  /// **가운데 나머지 전체를 콤마로 재조합해 ssid**로 복원한다.
+  /// 최소 4개 토큰이 없으면(파싱 불가) null.
+  WifiAccessPoint? _parseApLine(String msg) {
+    final body = msg.substring(3); // 'AP:' 제거
+    final parts = body.split(',');
+    if (parts.length < 4) return null;
 
-  Future<void> sendPairingData({
+    final no = int.tryParse(parts.first.trim());
+    final channel = int.tryParse(parts.last.trim());
+    final rssi = int.tryParse(parts[parts.length - 2].trim());
+    if (no == null || channel == null || rssi == null) return null;
+
+    // 가운데(인덱스 1 ~ length-3)를 콤마로 재조합 → ssid.
+    final ssid = parts.sublist(1, parts.length - 2).join(',').trim();
+    if (ssid.isEmpty) return null;
+
+    return WifiAccessPoint(
+      no: no,
+      ssid: ssid,
+      rssi: rssi,
+      channel: channel,
+    );
+  }
+
+  // ── WiFi 스캔 요청 ────────────────────────────────────────────────────────────
+
+  Future<void> requestWifiScan() async {
+    final rx = _requireRx();
+    _apBuffer.clear();
+    await _write(rx, 'SCAN');
+  }
+
+  // ── WiFi 자격증명 전송 (SSID → PASS → CONNECT) ────────────────────────────────
+
+  Future<void> sendWifiCredentials({
     required String ssid,
     required String password,
-    required String name,
-    required String jwt,
   }) async {
-    final rx = _rxChar;
-    if (rx == null) {
-      throw StateError('디바이스에 연결되지 않았거나 RX characteristic이 없습니다');
-    }
+    final rx = _requireRx();
 
     await _write(rx, 'SSID:$ssid');
     await Future<void>.delayed(const Duration(milliseconds: _kWriteDelayMs));
@@ -240,23 +300,15 @@ class BlePairingRepository {
     await _write(rx, 'PASS:$password');
     await Future<void>.delayed(const Duration(milliseconds: _kWriteDelayMs));
 
-    await _write(rx, 'NAME:$name');
-    await Future<void>.delayed(const Duration(milliseconds: _kWriteDelayMs));
-
-    // JWT 청크 전송
-    await _write(rx, 'JWT_BEGIN ${jwt.length}');
-    await Future<void>.delayed(const Duration(milliseconds: _kWriteDelayMs));
-
-    final chunks = (jwt.length / _kJwtChunkSize).ceil();
-    for (int i = 0; i < chunks; i++) {
-      final start = i * _kJwtChunkSize;
-      final end = min(start + _kJwtChunkSize, jwt.length);
-      final chunk = jwt.substring(start, end);
-      await _write(rx, 'JWT:$chunk');
-      await Future<void>.delayed(const Duration(milliseconds: _kWriteDelayMs));
-    }
-
     await _write(rx, 'CONNECT');
+  }
+
+  BluetoothCharacteristic _requireRx() {
+    final rx = _rxChar;
+    if (rx == null) {
+      throw StateError('기기에 연결되지 않았거나 RX characteristic이 없습니다');
+    }
+    return rx;
   }
 
   Future<void> _write(BluetoothCharacteristic char, String text) async {
@@ -268,6 +320,7 @@ class BlePairingRepository {
   Future<void> disconnect() async {
     await _txSubscription?.cancel();
     _txSubscription = null;
+    _apBuffer.clear();
 
     if (_connectedDevice != null) {
       try {

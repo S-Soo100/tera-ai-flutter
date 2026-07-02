@@ -19,6 +19,7 @@ import '../../features/my_cage/presentation/smart_cage_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
 import '../../features/my_cage/presentation/clip_player_screen.dart';
 import '../../features/my_cage/presentation/device_pairing_screen.dart';
+import '../../features/my_cage/presentation/camera_pairing_screen.dart';
 import '../../features/community/presentation/community_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
@@ -135,6 +136,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/crecam',
                 builder: (context, state) => const CrecamScreen(),
                 routes: [
+                  // 정적 경로 'cameras/pair'를 ':cameraId'보다 먼저 등록 —
+                  // 'pair'가 cameraId로 오인 매칭되는 것을 방지.
+                  GoRoute(
+                    path: 'cameras/pair',
+                    builder: (context, state) => const CameraPairingScreen(),
+                  ),
                   GoRoute(
                     path: 'cameras/:cameraId',
                     builder: (context, state) {
