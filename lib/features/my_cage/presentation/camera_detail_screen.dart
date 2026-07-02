@@ -11,6 +11,7 @@ import 'my_cage_providers.dart';
 import 'supabase_module_providers.dart';
 import 'widgets/clip_card.dart';
 import 'widgets/webrtc_live_view.dart';
+import 'widgets/wifi_reconfigure_menu.dart';
 
 // ── 검증용 클립 설정 ─────────────────────────────────────────────────────────
 // 현재 camera_clips RLS("User reads own clips" = 본인 클립만)로 직결 조회가
@@ -152,6 +153,9 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => _deleteCamera(context),
             tooltip: 'camera_delete'.tr(),
+          ),
+          WifiReconfigureMenu(
+            onSelected: () => context.push('/crecam/cameras/pair'),
           ),
         ],
       ),
