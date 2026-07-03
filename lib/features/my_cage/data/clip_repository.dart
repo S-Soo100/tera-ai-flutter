@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -176,6 +177,11 @@ class ClipRepository {
 
     final clips = clipRows as List;
     if (clips.isEmpty) return CageActivity.empty;
+    if (clips.length >= clipCap) {
+      // 상한 도달 = 절단 가능 → 과소집계 신호를 남긴다(정상 사용에선 미발생).
+      debugPrint('[getActivity] clip cap $clipCap reached for camera=$cameraId'
+          ' — activity may be undercounted.');
+    }
 
     var motionSeconds = 0.0;
     final clipIds = <String>[];
@@ -187,15 +193,20 @@ class ClipRepository {
       }
     }
 
+    // clipIds를 청크로 나눠 behavior_logs를 병렬 조회 (URL 길이 한계 회피 +
+    // 청크는 서로 독립이라 왕복을 병렬화).
+    final chunks = <List<String>>[];
+    for (var i = 0; i < clipIds.length; i += inFilterChunk) {
+      chunks.add(clipIds.sublist(i, min(i + inFilterChunk, clipIds.length)));
+    }
+    final chunkResults = await Future.wait(chunks.map((chunk) => _supabase
+        .from('behavior_logs')
+        .select('clip_id, action')
+        .inFilter('clip_id', chunk)));
+
     final drinking = <String>{};
     final feeding = <String>{};
-    for (var i = 0; i < clipIds.length; i += inFilterChunk) {
-      final chunk =
-          clipIds.sublist(i, min(i + inFilterChunk, clipIds.length));
-      final logRows = await _supabase
-          .from('behavior_logs')
-          .select('clip_id, action')
-          .inFilter('clip_id', chunk);
+    for (final logRows in chunkResults) {
       for (final row in (logRows as List)) {
         final m = row as Map<String, dynamic>;
         final action = m['action'] as String;

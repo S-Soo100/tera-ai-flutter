@@ -1,3 +1,7 @@
+/// 사육 하루의 시작 시각(오전 7시). 야행성 파충류의 밤 활동을 한 하루로 묶기
+/// 위한 경계. 안내 문구(`crecam_detail_activity_baseline`)와 함께 유지한다.
+const int kCageDayStartHour = 7;
+
 /// 활동량 카드의 하루 집계 범위 (오전 7시 기준).
 enum ActivityRange { yesterday, today }
 
@@ -44,17 +48,17 @@ const String kDrinkingAction = 'drinking';
   // 벽시계 기준 오전 7시 경계. `add(Duration(days:1))`은 절대 24h라 DST
   // 타임존에서 07:00이 06:00/08:00로 밀린다. DateTime 생성자로 벽시계 07:00을
   // 직접 만들고(생성자가 day 오버/언더플로를 자동 정규화) DST에 견고하게 한다.
-  DateTime sevenAmOn(DateTime d, int dayOffset) =>
-      DateTime(d.year, d.month, d.day + dayOffset, 7);
+  DateTime dayStartOn(DateTime d, int dayOffset) =>
+      DateTime(d.year, d.month, d.day + dayOffset, kCageDayStartHour);
 
-  var todayStart = sevenAmOn(now, 0);
+  var todayStart = dayStartOn(now, 0);
   if (now.isBefore(todayStart)) {
-    todayStart = sevenAmOn(now, -1); // 아직 오전 7시 전 → 전날 07:00이 시작
+    todayStart = dayStartOn(now, -1); // 아직 오전 7시 전 → 전날 07:00이 시작
   }
   switch (range) {
     case ActivityRange.today:
-      return (start: todayStart, end: sevenAmOn(todayStart, 1));
+      return (start: todayStart, end: dayStartOn(todayStart, 1));
     case ActivityRange.yesterday:
-      return (start: sevenAmOn(todayStart, -1), end: todayStart);
+      return (start: dayStartOn(todayStart, -1), end: todayStart);
   }
 }

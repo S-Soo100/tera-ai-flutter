@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/inline_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/cage_activity.dart';
@@ -346,26 +347,9 @@ class _SimpleActivityCard extends ConsumerWidget {
           const SizedBox(height: 14),
           activityAsync.when(
             loading: () => _statsRow(loading: true),
-            error: (_, __) => InkWell(
-              onTap: () => ref.invalidate(
+            error: (_, __) => InlineRetry(
+              onRetry: () => ref.invalidate(
                   _cageActivityProvider((cameraId: cameraId, range: range))),
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.refresh,
-                        size: 16, color: theme.colorScheme.outline),
-                    const SizedBox(width: 6),
-                    Text(
-                      'retry'.tr(),
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: theme.colorScheme.outline),
-                    ),
-                  ],
-                ),
-              ),
             ),
             data: (a) => _statsRow(
               motion: _formatMotion(a.motionSeconds),
@@ -576,7 +560,7 @@ class _VideoLogSection extends ConsumerWidget {
         ],
         clipsAsync.when(
           loading: () => _buildSkeletonList(),
-          error: (e, _) => _buildError(context),
+          error: (e, _) => _buildError(context, ref),
           data: (clips) {
             // 실제 camera_clips를 최신순 그대로 표시.
             // behavior 실데이터 연동 전까지 행동 분류 필터 없이 녹화 영상 전체를
@@ -635,7 +619,7 @@ class _VideoLogSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildError(BuildContext context) {
+  Widget _buildError(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(24),
@@ -643,13 +627,20 @@ class _VideoLogSection extends ConsumerWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Center(
-        child: Text(
-          'error_generic'.tr(),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.outline,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'error_generic'.tr(),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+          InlineRetry(
+            onRetry: () => ref.invalidate(_cameraClipsProvider(cameraId)),
+          ),
+        ],
       ),
     );
   }
