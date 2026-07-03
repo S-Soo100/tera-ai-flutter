@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
-import '../domain/action_type.dart';
+import '../domain/cage_activity.dart';
 import '../domain/clip.dart';
 import 'my_cage_providers.dart';
 import 'supabase_module_providers.dart';
@@ -30,44 +30,31 @@ final _verifyClipsProvider =
 });
 // ────────────────────────────────────────────────────────────────────────────
 
-// ── 시연용 데모 행동 매핑 (DB 무수정) ────────────────────────────────────────
-// 실제 behavior_logs 연동 시 actionForClip 함수만 교체하면 된다.
-const Map<String, ActionType> kDemoClipActions = {
-  'a1d5f7b0-b187-48af-8953-9d891989a38c': ActionType.moving,
-  '54e39c68-b557-4ed7-b525-3b072b0c7672': ActionType.moving,
-  '14160742-97b7-4491-a373-7ea6ab16ab2f': ActionType.moving,
-  '2a052abf-ff0b-4f3c-9835-7474ae14ff28': ActionType.drinking,
-  'c45d3754-a9ad-4053-87f8-3bbf50268c5a': ActionType.drinking,
-  '664eb936-05e3-4bd9-abf6-1f7abe31165c': ActionType.eatingPaste,
-  '3eb899c0-d978-428d-89c7-67dfdb30915d': ActionType.eatingPaste,
-  'b72bf88d-ec8e-4089-a6c9-3da8f9e3de93': ActionType.eatingPrey,
-  'fe420ce8-1e49-44b2-b121-12abb3b0d488': ActionType.shedding,
-  '9f6512c1-ef4c-4431-b456-f3cc056ef918': ActionType.defecating,
-};
-
-/// 나중에 실제 behavior_logs 연동 자리: 지금은 데모 매핑만.
-ActionType? actionForClip(Clip c) => kDemoClipActions[c.id];
-
-/// 행동 탭에 표시할 고정 순서 (demo 기준).
-const List<ActionType> kBehaviorTabOrder = [
-  ActionType.moving,
-  ActionType.drinking,
-  ActionType.eatingPaste,
-  ActionType.eatingPrey,
-  ActionType.shedding,
-  ActionType.defecating,
-];
-
-/// 현재 카메라 클립 전체 (최신순 50개). 행동 탭 필터에 사용.
+/// 현재 카메라 클립 전체 (최신순 50개). 비디오 기록 목록에 사용.
 final _cameraClipsProvider = FutureProvider.autoDispose
     .family<List<Clip>, String>((ref, cameraId) async {
   final repo = ref.watch(clipRepositoryProvider);
   final page = await repo.listPage(cameraId: cameraId, limit: 50);
   return page.items;
 });
-// ────────────────────────────────────────────────────────────────────────────
 
-enum _ActivityRange { yesterday, today }
+/// 카메라 하루(오전 7시 기준) 활동량. cameraId + range 별 집계.
+///
+/// 하루 경계를 nowTickProvider(1분 주기)에서 select-watch한다. tick마다 경계를
+/// 재계산하되 record 동등성으로 **07:00을 넘겨 경계가 실제로 바뀔 때만** 재조회된다
+/// (화면을 떠나지 않은 채 경계를 넘겨도 자동 갱신 — lifecycle observer 불필요).
+final _cageActivityProvider = FutureProvider.autoDispose
+    .family<CageActivity, ({String cameraId, ActivityRange range})>(
+        (ref, key) async {
+  final bounds = ref.watch(nowTickProvider.select((asyncNow) =>
+      activityRangeBounds(key.range, asyncNow.valueOrNull ?? DateTime.now())));
+  return ref.watch(clipRepositoryProvider).getActivity(
+        cameraId: key.cameraId,
+        startLocal: bounds.start,
+        endLocal: bounds.end,
+      );
+});
+// ────────────────────────────────────────────────────────────────────────────
 
 class CameraDetailScreen extends ConsumerStatefulWidget {
   const CameraDetailScreen({super.key, required this.cameraId});
@@ -79,8 +66,7 @@ class CameraDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
-  _ActivityRange _activityRange = _ActivityRange.today;
-  ActionType _selectedAction = ActionType.moving;
+  ActivityRange _activityRange = ActivityRange.today;
 
   // ── 카메라 삭제 ────────────────────────────────────────────────────────────
 
@@ -167,6 +153,7 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _SimpleActivityCard(
+              cameraId: widget.cameraId,
               range: _activityRange,
               onRangeChanged: (r) => setState(() => _activityRange = r),
             ),
@@ -174,11 +161,7 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _VideoLogSection(
-              cameraId: widget.cameraId,
-              selectedAction: _selectedAction,
-              onActionChanged: (a) => setState(() => _selectedAction = a),
-            ),
+            child: _VideoLogSection(cameraId: widget.cameraId),
           ),
           const SizedBox(height: 24),
         ],
@@ -308,18 +291,22 @@ class _EnvBadgeView extends StatelessWidget {
 
 // ── 간단 활동량 카드 ─────────────────────────────────────────────────────────
 
-class _SimpleActivityCard extends StatelessWidget {
+class _SimpleActivityCard extends ConsumerWidget {
   const _SimpleActivityCard({
+    required this.cameraId,
     required this.range,
     required this.onRangeChanged,
   });
 
-  final _ActivityRange range;
-  final ValueChanged<_ActivityRange> onRangeChanged;
+  final String cameraId;
+  final ActivityRange range;
+  final ValueChanged<ActivityRange> onRangeChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final activityAsync =
+        ref.watch(_cageActivityProvider((cameraId: cameraId, range: range)));
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -357,48 +344,102 @@ class _SimpleActivityCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _ActivityStatBox(
-                  label: 'crecam_detail_stat_motion'.tr(),
-                  value: range == _ActivityRange.today ? '2h 15m' : '1h 48m',
-                  valueColor: const Color(0xFF222222),
+          activityAsync.when(
+            loading: () => _statsRow(loading: true),
+            error: (_, __) => InkWell(
+              onTap: () => ref.invalidate(
+                  _cageActivityProvider((cameraId: cameraId, range: range))),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.refresh,
+                        size: 16, color: theme.colorScheme.outline),
+                    const SizedBox(width: 6),
+                    Text(
+                      'retry'.tr(),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: theme.colorScheme.outline),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ActivityStatBox(
-                  label: 'crecam_detail_stat_drinking'.tr(),
-                  value: 'crecam_detail_count_times'.tr(namedArgs: {
-                    'n': range == _ActivityRange.today ? '3' : '2'
-                  }),
-                  valueColor: const Color(0xFF1E88E5),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ActivityStatBox(
-                  label: 'crecam_detail_stat_feeding'.tr(),
-                  value: 'crecam_detail_count_times'.tr(namedArgs: {
-                    'n': range == _ActivityRange.today ? '1' : '2'
-                  }),
-                  valueColor: const Color(0xFF2E7D32),
-                ),
-              ),
-            ],
+            ),
+            data: (a) => _statsRow(
+              motion: _formatMotion(a.motionSeconds),
+              drinking: 'crecam_detail_count_times'
+                  .tr(namedArgs: {'n': '${a.drinkingClips}'}),
+              feeding: 'crecam_detail_count_times'
+                  .tr(namedArgs: {'n': '${a.feedingClips}'}),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _statsRow({
+    String motion = '',
+    String drinking = '',
+    String feeding = '',
+    bool loading = false,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: _ActivityStatBox(
+            label: 'crecam_detail_stat_motion'.tr(),
+            value: motion,
+            valueColor: const Color(0xFF222222),
+            loading: loading,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _ActivityStatBox(
+            label: 'crecam_detail_stat_drinking'.tr(),
+            value: drinking,
+            valueColor: const Color(0xFF1E88E5),
+            loading: loading,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _ActivityStatBox(
+            label: 'crecam_detail_stat_feeding'.tr(),
+            value: feeding,
+            valueColor: const Color(0xFF2E7D32),
+            loading: loading,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 초 → "Xh Ym" / "Xh" / "Ym" 표기. 분은 반올림하되, 활동이 조금이라도
+  /// 있으면(seconds>0) 최소 1분으로 올려 미세 활동을 무활동(0m)과 구분한다.
+  /// h>0·m==0이면 "Xh"만 표기.
+  String _formatMotion(int seconds) {
+    var totalMin = (seconds / 60).round();
+    if (totalMin == 0 && seconds > 0) totalMin = 1;
+    final h = totalMin ~/ 60;
+    final m = totalMin % 60;
+    if (h > 0) {
+      return m == 0
+          ? 'crecam_detail_duration_h'.tr(namedArgs: {'h': '$h'})
+          : 'crecam_detail_duration_hm'.tr(namedArgs: {'h': '$h', 'm': '$m'});
+    }
+    return 'crecam_detail_duration_m'.tr(namedArgs: {'m': '$m'});
   }
 }
 
 class _RangeToggle extends StatelessWidget {
   const _RangeToggle({required this.range, required this.onChanged});
 
-  final _ActivityRange range;
-  final ValueChanged<_ActivityRange> onChanged;
+  final ActivityRange range;
+  final ValueChanged<ActivityRange> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -413,16 +454,16 @@ class _RangeToggle extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _toggleChip(context, 'clip_date_yesterday'.tr(),
-              range == _ActivityRange.yesterday, _ActivityRange.yesterday),
+              range == ActivityRange.yesterday, ActivityRange.yesterday),
           _toggleChip(context, 'clip_date_today'.tr(),
-              range == _ActivityRange.today, _ActivityRange.today),
+              range == ActivityRange.today, ActivityRange.today),
         ],
       ),
     );
   }
 
   Widget _toggleChip(
-      BuildContext context, String label, bool selected, _ActivityRange r) {
+      BuildContext context, String label, bool selected, ActivityRange r) {
     return GestureDetector(
       onTap: () => onChanged(r),
       child: AnimatedContainer(
@@ -463,11 +504,13 @@ class _ActivityStatBox extends StatelessWidget {
     required this.label,
     required this.value,
     required this.valueColor,
+    this.loading = false,
   });
 
   final String label;
   final String value;
   final Color valueColor;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -490,13 +533,15 @@ class _ActivityStatBox extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-            ),
-          ),
+          loading
+              ? const SkeletonLoading(width: 44, height: 18)
+              : Text(
+                  value,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: valueColor,
+                  ),
+                ),
         ],
       ),
     );
@@ -506,15 +551,9 @@ class _ActivityStatBox extends StatelessWidget {
 // ── 비디오 기록 섹션 ────────────────────────────────────────────────────────
 
 class _VideoLogSection extends ConsumerWidget {
-  const _VideoLogSection({
-    required this.cameraId,
-    required this.selectedAction,
-    required this.onActionChanged,
-  });
+  const _VideoLogSection({required this.cameraId});
 
   final String cameraId;
-  final ActionType selectedAction;
-  final ValueChanged<ActionType> onActionChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -539,45 +578,25 @@ class _VideoLogSection extends ConsumerWidget {
           loading: () => _buildSkeletonList(),
           error: (e, _) => _buildError(context),
           data: (clips) {
-            // 행동별 개수 계산
-            final countByAction = <ActionType, int>{};
-            for (final action in kBehaviorTabOrder) {
-              countByAction[action] =
-                  clips.where((c) => actionForClip(c) == action).length;
-            }
-
-            final filtered =
-                clips.where((c) => actionForClip(c) == selectedAction).toList();
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ActionTabs(
-                  selected: selectedAction,
-                  countByAction: countByAction,
-                  onChanged: onActionChanged,
-                ),
-                const SizedBox(height: 14),
-                if (filtered.isEmpty)
-                  _buildEmptyAction(context)
-                else
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    childAspectRatio: 0.85,
-                    children: filtered
-                        .map(
-                          (c) => ClipCard(
-                            clip: c,
-                            onTap: () => context.push('/crecam/clips/${c.id}'),
-                          ),
-                        )
-                        .toList(),
-                  ),
-              ],
+            // 실제 camera_clips를 최신순 그대로 표시.
+            // behavior 실데이터 연동 전까지 행동 분류 필터 없이 녹화 영상 전체를
+            // 시간순으로 나열한다 (백엔드가 실클립을 올리면 자동 반영).
+            if (clips.isEmpty) return _buildEmptyAction(context);
+            return GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 0.85,
+              children: clips
+                  .map(
+                    (c) => ClipCard(
+                      clip: c,
+                      onTap: () => context.push('/crecam/clips/${c.id}'),
+                    ),
+                  )
+                  .toList(),
             );
           },
         ),
@@ -629,88 +648,6 @@ class _VideoLogSection extends ConsumerWidget {
           'error_generic'.tr(),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.outline,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── 행동 탭 (가로 스크롤 ChoiceChip) ─────────────────────────────────────────
-
-class _ActionTabs extends StatelessWidget {
-  const _ActionTabs({
-    required this.selected,
-    required this.countByAction,
-    required this.onChanged,
-  });
-
-  final ActionType selected;
-  final Map<ActionType, int> countByAction;
-  final ValueChanged<ActionType> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: kBehaviorTabOrder
-            .map((action) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: _ActionChip(
-                    action: action,
-                    count: countByAction[action] ?? 0,
-                    selected: selected == action,
-                    onTap: () => onChanged(action),
-                  ),
-                ))
-            .toList(),
-      ),
-    );
-  }
-}
-
-class _ActionChip extends StatelessWidget {
-  const _ActionChip({
-    required this.action,
-    required this.count,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final ActionType action;
-  final int count;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final selectedColor = theme.colorScheme.primary;
-    final label = count > 0
-        ? '${action.localizationKey.tr()} $count'
-        : action.localizationKey.tr();
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? selectedColor : theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? selectedColor : theme.colorScheme.outlineVariant,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected
-                ? theme.colorScheme.onPrimary
-                : theme.colorScheme.onSurface,
-            fontSize: 13,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ),
@@ -802,5 +739,3 @@ class _VerifyClipsSection extends StatelessWidget {
     );
   }
 }
-
-// ── 실제 클립 행 ─────────────────────────────────────────────────────────────

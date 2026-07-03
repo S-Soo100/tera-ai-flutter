@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/behavior_inference.dart';
 import '../domain/behavior_label.dart';
+import '../domain/cage_activity.dart';
 import '../domain/clip.dart';
 import '../domain/clip_media_url.dart';
 import '../domain/clip_page.dart';
@@ -144,6 +146,73 @@ class ClipRepository {
     final list = rows as List;
     if (list.isEmpty) return null;
     return Clip.fromJson(list.first as Map<String, dynamic>);
+  }
+
+  /// 카메라의 `[startLocal, endLocal)` 구간 활동량 집계.
+  ///
+  /// 움직임 = `has_motion` 클립 `duration_sec` 합. 음수/식사 = 그 클립들의
+  /// `behavior_logs`를 action별 distinct 클립 수로 집계. behavior_logs는 RLS
+  /// 미적용이나 **본인 소유 clip_id로만 필터**하므로 타 계정 데이터는 조회되지 않는다.
+  Future<CageActivity> getActivity({
+    required String cameraId,
+    required DateTime startLocal,
+    required DateTime endLocal,
+  }) async {
+    // PostgREST db-max-rows에 의한 조용한 절단을 막기 위해 정렬+상한을 명시.
+    // 하루 1440분을 훨씬 넘는 값이라 정상 사용에선 도달하지 않는다.
+    const clipCap = 2000;
+    // clipIds 전체를 한 쿼리스트링에 인라인하면 URL 길이 한계(414)를 넘으므로
+    // behavior_logs 조회는 이 크기로 나눠서 in() 조회한다.
+    const inFilterChunk = 100;
+
+    final clipRows = await _supabase
+        .from('camera_clips')
+        .select('id, has_motion, duration_sec')
+        .eq('camera_id', cameraId)
+        .gte('started_at', startLocal.toUtc().toIso8601String())
+        .lt('started_at', endLocal.toUtc().toIso8601String())
+        .order('started_at', ascending: false)
+        .limit(clipCap);
+
+    final clips = clipRows as List;
+    if (clips.isEmpty) return CageActivity.empty;
+
+    var motionSeconds = 0.0;
+    final clipIds = <String>[];
+    for (final row in clips) {
+      final m = row as Map<String, dynamic>;
+      clipIds.add(m['id'] as String);
+      if (m['has_motion'] == true) {
+        motionSeconds += (m['duration_sec'] as num).toDouble();
+      }
+    }
+
+    final drinking = <String>{};
+    final feeding = <String>{};
+    for (var i = 0; i < clipIds.length; i += inFilterChunk) {
+      final chunk =
+          clipIds.sublist(i, min(i + inFilterChunk, clipIds.length));
+      final logRows = await _supabase
+          .from('behavior_logs')
+          .select('clip_id, action')
+          .inFilter('clip_id', chunk);
+      for (final row in (logRows as List)) {
+        final m = row as Map<String, dynamic>;
+        final action = m['action'] as String;
+        final clipId = m['clip_id'] as String;
+        if (action == kDrinkingAction) {
+          drinking.add(clipId);
+        } else if (kFeedingActions.contains(action)) {
+          feeding.add(clipId);
+        }
+      }
+    }
+
+    return CageActivity(
+      motionSeconds: motionSeconds.round(),
+      drinkingClips: drinking.length,
+      feedingClips: feeding.length,
+    );
   }
 
   // ── Backend API (JWT 필요) ─────────────────────────────────────────────────
