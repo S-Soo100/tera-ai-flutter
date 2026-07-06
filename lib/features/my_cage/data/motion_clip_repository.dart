@@ -21,15 +21,20 @@ class MotionClipRepository {
         _terraApiUrl = terraApiUrl,
         _tokenProvider = tokenProvider;
 
-  /// 카메라의 모션 클립 목록 (최신순). RLS로 본인 카메라 것만 반환.
+  /// 카메라의 모션 클립 목록 (최신순). [day]가 주어지면 그 날(로컬 00:00~24:00)로
+  /// started_at 범위 필터. RLS로 본인 카메라 것만.
   Future<List<MotionClip>> listByCamera(String cameraId,
-      {int limit = 50}) async {
-    final rows = await _supabase
-        .from('motion_clips')
-        .select()
-        .eq('camera_id', cameraId)
-        .order('started_at', ascending: false)
-        .limit(limit);
+      {int limit = 50, DateTime? day}) async {
+    var q = _supabase.from('motion_clips').select().eq('camera_id', cameraId);
+    if (day != null) {
+      final start = DateTime(day.year, day.month, day.day);
+      final end = start.add(const Duration(days: 1));
+      q = q
+          .gte('started_at', start.toUtc().toIso8601String())
+          .lt('started_at', end.toUtc().toIso8601String());
+    }
+    final rows =
+        await q.order('started_at', ascending: false).limit(limit);
     return (rows as List)
         .map((r) => MotionClip.fromJson(r as Map<String, dynamic>))
         .toList();

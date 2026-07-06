@@ -220,11 +220,24 @@ final clipInferenceProvider =
 
 // ── 모션 클립 (motion_clips, S3) ────────────────────────────────────────────────
 
-/// 카메라의 모션 클립 목록 (최신 50개, camera_id 직결).
+/// family 키: cameraId + day(null=전체 기간).
+typedef MotionClipsKey = ({String cameraId, DateTime? day});
+
+/// 카메라의 모션 클립 목록 (최신 50개). day 지정 시 그 날만.
 final motionClipsProvider = FutureProvider.autoDispose
-    .family<List<MotionClip>, String>((ref, cameraId) async {
-  return ref.watch(motionClipRepositoryProvider).listByCamera(cameraId);
+    .family<List<MotionClip>, MotionClipsKey>((ref, key) async {
+  return ref
+      .watch(motionClipRepositoryProvider)
+      .listByCamera(key.cameraId, day: key.day);
 });
+
+/// 비디오 기록 날짜 필터(null = 전체 기간). autoDispose — 화면 이탈 시 리셋.
+final clipDayFilterProvider = StateProvider.autoDispose<DateTime?>((ref) => null);
+
+/// 비디오 기록 분류 필터(null = 전체). 'unlabeled' = 미분류만. 그 외 = 해당 action.
+/// 현재 데이터가 없어 클라이언트 사이드로만 적용된다.
+final clipActionFilterProvider =
+    StateProvider.autoDispose<String?>((ref) => null);
 
 /// 모션 클립 재생 presigned URL. 재생 화면이 await, 만료 시 refresh.
 final motionClipUrlProvider =
