@@ -528,7 +528,7 @@ class _VideoLogSection extends ConsumerWidget {
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
-              childAspectRatio: 0.85,
+              childAspectRatio: 1.15,
               children: clips
                   .map(
                     (c) => MotionClipCard(

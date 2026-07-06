@@ -31,14 +31,14 @@ class MotionClipCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
+            Expanded(
               child: Container(
                 color: cs.surfaceContainerHighest,
+                alignment: Alignment.center,
                 child: Icon(
-                  Icons.videocam_outlined,
-                  color: cs.onSurface.withValues(alpha: 0.3),
-                  size: 32,
+                  Icons.play_circle_outline,
+                  color: cs.onSurface.withValues(alpha: 0.35),
+                  size: 40,
                 ),
               ),
             ),
