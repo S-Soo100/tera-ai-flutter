@@ -20,6 +20,8 @@ import '../../features/my_cage/presentation/camera_detail_screen.dart';
 import '../../features/my_cage/presentation/clip_player_screen.dart';
 import '../../features/my_cage/presentation/device_pairing_screen.dart';
 import '../../features/my_cage/presentation/camera_pairing_screen.dart';
+import '../../features/my_cage/presentation/enclosure_list_screen.dart';
+import '../../features/my_cage/presentation/enclosure_detail_screen.dart';
 import '../../features/community/presentation/community_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
@@ -170,6 +172,19 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'devices/pair',
                     builder: (context, state) => const DevicePairingScreen(),
+                  ),
+                  GoRoute(
+                    path: 'enclosures',
+                    builder: (context, state) => const EnclosureListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':enclosureId',
+                        builder: (context, state) {
+                          final id = state.pathParameters['enclosureId']!;
+                          return EnclosureDetailScreen(enclosureId: id);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),

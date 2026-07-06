@@ -28,6 +28,11 @@ class SmartCageScreen extends ConsumerWidget {
               ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.holiday_village_outlined),
+            tooltip: 'enclosure_manage_title'.tr(),
+            onPressed: () => context.push('/smart-cage/enclosures'),
+          ),
           if (deviceListAsync.valueOrNull?.isNotEmpty ?? false)
             WifiReconfigureMenu(
               onSelected: () => context.push('/smart-cage/devices/pair'),
