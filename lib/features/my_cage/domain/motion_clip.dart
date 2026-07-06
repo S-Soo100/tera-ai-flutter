@@ -10,6 +10,7 @@ class MotionClip {
   final double durationSec;
   final double? motionScore;
   final String? thumbnailKey;
+  final String? action; // 행동 분류. null = 미분류. (motion_clips엔 아직 없음)
 
   const MotionClip({
     required this.id,
@@ -18,6 +19,7 @@ class MotionClip {
     required this.durationSec,
     this.motionScore,
     this.thumbnailKey,
+    this.action,
   });
 
   factory MotionClip.fromJson(Map<String, dynamic> j) {
@@ -30,6 +32,10 @@ class MotionClip {
       durationSec: (j['duration_sec'] as num?)?.toDouble() ?? 0,
       motionScore: (j['motion_score'] as num?)?.toDouble(),
       thumbnailKey: j['thumbnail_key'] as String?,
+      // 후속 연결점: 분류 저장소 생기면 여기만 교체.
+      // 예) motion_clip_labels 조인 시: (j['motion_clip_labels'] as List?)?.isNotEmpty == true
+      //        ? (j['motion_clip_labels'] as List).first['action'] as String? : null
+      action: j['action'] as String?,
     );
   }
 }

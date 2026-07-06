@@ -11,11 +11,13 @@ void main() {
         'duration_sec': 30.7,
         'motion_score': 0.05,
         'thumbnail_key': 'terra-clips/x.jpg',
+        'action': 'moving',
       });
       expect(c.id, 'mc-1');
       expect(c.cameraId, 'cam-1');
       expect(c.durationSec, closeTo(30.7, 0.001));
       expect(c.motionScore, closeTo(0.05, 0.001));
+      expect(c.action, 'moving');
       expect(c.startedAt.isAtSameMomentAs(DateTime.utc(2026, 7, 6, 0, 49, 58)),
           isTrue);
     });
@@ -36,6 +38,7 @@ void main() {
       expect(c.id, '');
       expect(c.cameraId, '');
       expect(c.durationSec, 0);
+      expect(c.action, isNull);
       expect(c.startedAt, isA<DateTime>());
     });
   });
