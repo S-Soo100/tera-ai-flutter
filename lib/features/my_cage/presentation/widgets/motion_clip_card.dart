@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/app_tag.dart';
+import '../../domain/clip_action.dart';
 import '../../domain/motion_clip.dart';
 
 /// 모션 클립 그리드 카드. 썸네일 엔드포인트 미확정이라 아이콘 placeholder.
@@ -50,6 +52,15 @@ class MotionClipCard extends StatelessWidget {
                     child: Text(timeLabel,
                         style: theme.textTheme.bodySmall),
                   ),
+                  AppTag(
+                    label: clip.action == null
+                        ? 'clip_action_unlabeled'.tr()
+                        : clipActionKey(clip.action!).tr(),
+                    color: clip.action == null
+                        ? cs.outline
+                        : cs.secondary,
+                  ),
+                  const SizedBox(width: 6),
                   Text(
                     durationLabel,
                     style: theme.textTheme.bodySmall

@@ -8,7 +8,7 @@ import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/cage_activity.dart';
 import '../domain/clip.dart';
-import '../domain/motion_clip.dart';
+import '../domain/clip_action.dart';
 import 'my_cage_providers.dart';
 import 'supabase_module_providers.dart';
 import 'widgets/clip_card.dart';
@@ -32,13 +32,6 @@ final _verifyClipsProvider =
   return page.items;
 });
 // ────────────────────────────────────────────────────────────────────────────
-
-/// 현재 카메라의 모션 클립 전체 (최신순 50개). 비디오 기록 목록에 사용.
-/// motionClipsProvider를 감싼 파일 로컬 별칭(호출부 변경 최소화).
-final _motionClipsProvider = FutureProvider.autoDispose
-    .family<List<MotionClip>, String>((ref, cameraId) async {
-  return ref.watch(motionClipsProvider(cameraId).future);
-});
 
 /// 카메라 하루(오전 7시 기준) 움직임 시간(초). motionActivityProvider 별칭.
 final _cageActivityProvider = FutureProvider.autoDispose
@@ -514,17 +507,21 @@ class _VideoLogSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final clipsAsync = ref.watch(_motionClipsProvider(cameraId));
+    final day = ref.watch(clipDayFilterProvider);
+    final actionFilter = ref.watch(clipActionFilterProvider);
+    final clipsAsync =
+        ref.watch(motionClipsProvider((cameraId: cameraId, day: day)));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'crecam_detail_video_log'.tr(),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: theme.textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.bold),
         ),
+        const SizedBox(height: 12),
+        _FilterBar(cameraId: cameraId),
         const SizedBox(height: 12),
         if (kShowVerifyClip) ...[
           _VerifyClipsSection(ref: ref),
@@ -534,9 +531,13 @@ class _VideoLogSection extends ConsumerWidget {
           loading: () => _buildSkeletonList(),
           error: (e, _) => _buildError(context, ref),
           data: (clips) {
-            // 미분류 motion_clips 전체를 시간순 표시(태그는 분류 저장소 확정 후 후속).
-            // camera_id 직결이라 enclosure 배정과 독립 — 백엔드 클립이 쌓이면 자동 반영.
-            if (clips.isEmpty) return _buildEmptyAction(context);
+            // 분류 클라 필터: null=전체, 'unlabeled'=미분류(action null), 그 외=action 일치.
+            final filtered = actionFilter == null
+                ? clips
+                : clips.where((c) => actionFilter == 'unlabeled'
+                    ? c.action == null
+                    : c.action == actionFilter).toList();
+            if (filtered.isEmpty) return _buildEmptyAction(context);
             return GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -544,14 +545,12 @@ class _VideoLogSection extends ConsumerWidget {
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
               childAspectRatio: 1.15,
-              children: clips
-                  .map(
-                    (c) => MotionClipCard(
-                      clip: c,
-                      onTap: () =>
-                          context.push('/crecam/motion-clips/${c.id}'),
-                    ),
-                  )
+              children: filtered
+                  .map((c) => MotionClipCard(
+                        clip: c,
+                        onTap: () =>
+                            context.push('/crecam/motion-clips/${c.id}'),
+                      ))
                   .toList(),
             );
           },
@@ -610,10 +609,79 @@ class _VideoLogSection extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           InlineRetry(
-            onRetry: () => ref.invalidate(_motionClipsProvider(cameraId)),
+            onRetry: () => ref.invalidate(motionClipsProvider(
+                (cameraId: cameraId, day: ref.read(clipDayFilterProvider)))),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 비디오 기록 필터 바 — 분류 드롭다운 + 날짜 선택.
+class _FilterBar extends ConsumerWidget {
+  const _FilterBar({required this.cameraId});
+  final String cameraId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final day = ref.watch(clipDayFilterProvider);
+    final actionFilter = ref.watch(clipActionFilterProvider);
+
+    final dayLabel = day == null
+        ? 'clip_filter_date_all'.tr()
+        : DateFormat('yyyy.MM.dd').format(day);
+
+    return Row(
+      children: [
+        // 분류 드롭다운
+        Expanded(
+          child: DropdownButtonFormField<String?>(
+            initialValue: actionFilter,
+            isDense: true,
+            decoration: const InputDecoration(
+              isDense: true,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              DropdownMenuItem(value: null, child: Text('clip_action_all'.tr())),
+              DropdownMenuItem(
+                  value: 'unlabeled',
+                  child: Text('clip_action_unlabeled'.tr())),
+              ...kClipActions.map((a) => DropdownMenuItem(
+                  value: a, child: Text(clipActionKey(a).tr()))),
+            ],
+            onChanged: (v) =>
+                ref.read(clipActionFilterProvider.notifier).state = v,
+          ),
+        ),
+        const SizedBox(width: 8),
+        // 날짜 선택
+        OutlinedButton.icon(
+          icon: const Icon(Icons.calendar_today, size: 16),
+          label: Text(dayLabel),
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: day ?? DateTime.now(),
+              firstDate: DateTime(2020),
+              lastDate: DateTime.now(),
+            );
+            if (picked != null) {
+              ref.read(clipDayFilterProvider.notifier).state = picked;
+            }
+          },
+        ),
+        if (day != null)
+          IconButton(
+            tooltip: 'clip_filter_date_all'.tr(),
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: () =>
+                ref.read(clipDayFilterProvider.notifier).state = null,
+          ),
+      ],
     );
   }
 }
