@@ -7,7 +7,6 @@ const List<String> kClipActions = [
   'eating_prey',
   'drinking',
   'hand_feeding',
-  'defecating',
   'unseen',
 ];
 
