@@ -30,4 +30,13 @@ class CameraRepository {
   Future<void> delete(String id) async {
     await _supabase.from('cameras').delete().eq('id', id);
   }
+
+  /// 카메라를 사육장에 배정. enclosureId=null 이면 배정 해제.
+  /// RLS(owner_id=auth.uid)로 본인 카메라만 UPDATE 가능.
+  Future<void> assignEnclosure(String cameraId, String? enclosureId) async {
+    await _supabase
+        .from('cameras')
+        .update({'enclosure_id': enclosureId})
+        .eq('id', cameraId);
+  }
 }

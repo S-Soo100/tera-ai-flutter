@@ -67,6 +67,15 @@ class SupabaseModuleControlRepository {
         .toList();
   }
 
+  /// 디바이스를 사육장에 배정. enclosureId=null 이면 배정 해제.
+  /// RLS(owner_id=auth.uid)로 본인 디바이스만 UPDATE 가능.
+  Future<void> assignEnclosure(String deviceId, String? enclosureId) async {
+    await _supabase
+        .from('devices')
+        .update({'enclosure_id': enclosureId})
+        .eq('id', deviceId);
+  }
+
   // ── 텔레메트리 최신값 ──────────────────────────────────────────────────────
 
   /// 특정 디바이스의 가장 최신 telemetry 1건. 없으면 null.
