@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/config/env_config.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/camera_repository.dart';
+import '../data/enclosure_repository.dart';
 import '../data/clip_repository.dart';
 import '../data/video_cache_repository.dart';
 import '../data/webrtc_signaling_repository.dart';
@@ -14,6 +15,7 @@ import '../domain/behavior_label.dart';
 import '../domain/clip.dart';
 import '../domain/clip_media_url.dart';
 import '../domain/terra_camera.dart';
+import '../domain/enclosure.dart';
 
 // ── 내부 인프라 Provider ───────────────────────────────────────────────────────
 
@@ -32,6 +34,12 @@ final _tokenProviderProvider = Provider<Future<String?> Function()>(
 
 final cameraRepositoryProvider = Provider<CameraRepository>((ref) {
   return CameraRepository(
+    supabase: ref.watch(_supabaseClientProvider),
+  );
+});
+
+final enclosureRepositoryProvider = Provider<EnclosureRepository>((ref) {
+  return EnclosureRepository(
     supabase: ref.watch(_supabaseClientProvider),
   );
 });
@@ -102,6 +110,21 @@ final camerasProvider = StreamProvider<List<TerraCamera>>((ref) {
 final cameraProvider =
     FutureProvider.family<TerraCamera?, String>((ref, id) async {
   return ref.watch(cameraRepositoryProvider).getById(id);
+});
+
+// ── 사육장(enclosure) Provider ─────────────────────────────────────────────────
+
+/// 현재 유저의 사육장 목록 (최신순). 계정 전환 시 재조회(이전 계정 노출 방지 —
+/// project_auth_provider_stale_pattern). 생성/수정 후 ref.invalidate로 갱신한다.
+final enclosuresProvider = FutureProvider<List<Enclosure>>((ref) async {
+  ref.watch(currentUserProvider.select((u) => u?.id));
+  return ref.watch(enclosureRepositoryProvider).listAll();
+});
+
+/// 단일 사육장 조회. 존재하지 않으면 null.
+final enclosureProvider =
+    FutureProvider.family<Enclosure?, String>((ref, id) async {
+  return ref.watch(enclosureRepositoryProvider).getById(id);
 });
 
 // ── 시간대별 클립 조회 Provider ────────────────────────────────────────────────
