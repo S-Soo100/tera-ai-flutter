@@ -119,6 +119,9 @@
 
   "error_title": "오류가 발생했습니다",
   "error_retry": "다시 시도",
+  "offline_title": "인터넷 연결 없음",
+  "offline_subtitle": "네트워크 연결을 확인한 뒤 다시 시도해 주세요",
+  "offline_retry": "다시 시도",
   "placeholder_preparing": "준비 중입니다",
 
   "chat_title": "AI 채팅",
