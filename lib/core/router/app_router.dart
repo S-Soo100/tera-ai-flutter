@@ -18,6 +18,7 @@ import '../../features/my_cage/presentation/crecam_screen.dart';
 import '../../features/my_cage/presentation/smart_cage_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
 import '../../features/my_cage/presentation/clip_player_screen.dart';
+import '../../features/my_cage/presentation/motion_clip_player_screen.dart';
 import '../../features/my_cage/presentation/device_pairing_screen.dart';
 import '../../features/my_cage/presentation/camera_pairing_screen.dart';
 import '../../features/my_cage/presentation/enclosure_list_screen.dart';
@@ -156,6 +157,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final id = state.pathParameters['clipId']!;
                       return ClipPlayerScreen(clipId: id);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'motion-clips/:clipId',
+                    builder: (context, state) {
+                      final id = state.pathParameters['clipId']!;
+                      return MotionClipPlayerScreen(clipId: id);
                     },
                   ),
                 ],

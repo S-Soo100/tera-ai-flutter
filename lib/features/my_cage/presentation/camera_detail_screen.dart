@@ -8,9 +8,11 @@ import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/cage_activity.dart';
 import '../domain/clip.dart';
+import '../domain/motion_clip.dart';
 import 'my_cage_providers.dart';
 import 'supabase_module_providers.dart';
 import 'widgets/clip_card.dart';
+import 'widgets/motion_clip_card.dart';
 import 'widgets/webrtc_live_view.dart';
 import 'widgets/wifi_reconfigure_menu.dart';
 
@@ -31,29 +33,19 @@ final _verifyClipsProvider =
 });
 // ────────────────────────────────────────────────────────────────────────────
 
-/// 현재 카메라 클립 전체 (최신순 50개). 비디오 기록 목록에 사용.
-final _cameraClipsProvider = FutureProvider.autoDispose
-    .family<List<Clip>, String>((ref, cameraId) async {
-  final repo = ref.watch(clipRepositoryProvider);
-  final page = await repo.listPage(cameraId: cameraId, limit: 50);
-  return page.items;
+/// 현재 카메라의 모션 클립 전체 (최신순 50개). 비디오 기록 목록에 사용.
+/// motionClipsProvider를 감싼 파일 로컬 별칭(호출부 변경 최소화).
+final _motionClipsProvider = FutureProvider.autoDispose
+    .family<List<MotionClip>, String>((ref, cameraId) async {
+  return ref.watch(motionClipsProvider(cameraId).future);
 });
 
-/// 카메라 하루(오전 7시 기준) 활동량. cameraId + range 별 집계.
-///
-/// 하루 경계를 nowTickProvider(1분 주기)에서 select-watch한다. tick마다 경계를
-/// 재계산하되 record 동등성으로 **07:00을 넘겨 경계가 실제로 바뀔 때만** 재조회된다
-/// (화면을 떠나지 않은 채 경계를 넘겨도 자동 갱신 — lifecycle observer 불필요).
+/// 카메라 하루(오전 7시 기준) 움직임 시간(초). motionActivityProvider 별칭.
 final _cageActivityProvider = FutureProvider.autoDispose
-    .family<CageActivity, ({String cameraId, ActivityRange range})>(
-        (ref, key) async {
-  final bounds = ref.watch(nowTickProvider.select((asyncNow) =>
-      activityRangeBounds(key.range, asyncNow.valueOrNull ?? DateTime.now())));
-  return ref.watch(clipRepositoryProvider).getActivity(
-        cameraId: key.cameraId,
-        startLocal: bounds.start,
-        endLocal: bounds.end,
-      );
+    .family<int, ({String cameraId, ActivityRange range})>((ref, key) async {
+  return ref.watch(
+    motionActivityProvider((cameraId: key.cameraId, range: key.range)).future,
+  );
 });
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -351,54 +343,19 @@ class _SimpleActivityCard extends ConsumerWidget {
               onRetry: () => ref.invalidate(
                   _cageActivityProvider((cameraId: cameraId, range: range))),
             ),
-            data: (a) => _statsRow(
-              motion: _formatMotion(a.motionSeconds),
-              drinking: 'crecam_detail_count_times'
-                  .tr(namedArgs: {'n': '${a.drinkingClips}'}),
-              feeding: 'crecam_detail_count_times'
-                  .tr(namedArgs: {'n': '${a.feedingClips}'}),
-            ),
+            data: (seconds) => _statsRow(motion: _formatMotion(seconds)),
           ),
         ],
       ),
     );
   }
 
-  Widget _statsRow({
-    String motion = '',
-    String drinking = '',
-    String feeding = '',
-    bool loading = false,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ActivityStatBox(
-            label: 'crecam_detail_stat_motion'.tr(),
-            value: motion,
-            valueColor: const Color(0xFF222222),
-            loading: loading,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _ActivityStatBox(
-            label: 'crecam_detail_stat_drinking'.tr(),
-            value: drinking,
-            valueColor: const Color(0xFF1E88E5),
-            loading: loading,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _ActivityStatBox(
-            label: 'crecam_detail_stat_feeding'.tr(),
-            value: feeding,
-            valueColor: const Color(0xFF2E7D32),
-            loading: loading,
-          ),
-        ),
-      ],
+  Widget _statsRow({String motion = '', bool loading = false}) {
+    return _ActivityStatBox(
+      label: 'crecam_detail_stat_motion'.tr(),
+      value: motion,
+      valueColor: const Color(0xFF222222),
+      loading: loading,
     );
   }
 
@@ -542,7 +499,7 @@ class _VideoLogSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final clipsAsync = ref.watch(_cameraClipsProvider(cameraId));
+    final clipsAsync = ref.watch(_motionClipsProvider(cameraId));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -562,9 +519,8 @@ class _VideoLogSection extends ConsumerWidget {
           loading: () => _buildSkeletonList(),
           error: (e, _) => _buildError(context, ref),
           data: (clips) {
-            // 실제 camera_clips를 최신순 그대로 표시.
-            // behavior 실데이터 연동 전까지 행동 분류 필터 없이 녹화 영상 전체를
-            // 시간순으로 나열한다 (백엔드가 실클립을 올리면 자동 반영).
+            // 미분류 motion_clips 전체를 시간순 표시(태그는 분류 저장소 확정 후 후속).
+            // camera_id 직결이라 enclosure 배정과 독립 — 백엔드 클립이 쌓이면 자동 반영.
             if (clips.isEmpty) return _buildEmptyAction(context);
             return GridView.count(
               crossAxisCount: 2,
@@ -575,9 +531,10 @@ class _VideoLogSection extends ConsumerWidget {
               childAspectRatio: 0.85,
               children: clips
                   .map(
-                    (c) => ClipCard(
+                    (c) => MotionClipCard(
                       clip: c,
-                      onTap: () => context.push('/crecam/clips/${c.id}'),
+                      onTap: () =>
+                          context.push('/crecam/motion-clips/${c.id}'),
                     ),
                   )
                   .toList(),
@@ -638,7 +595,7 @@ class _VideoLogSection extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           InlineRetry(
-            onRetry: () => ref.invalidate(_cameraClipsProvider(cameraId)),
+            onRetry: () => ref.invalidate(_motionClipsProvider(cameraId)),
           ),
         ],
       ),
