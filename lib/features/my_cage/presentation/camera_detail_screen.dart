@@ -47,6 +47,19 @@ final _cageActivityProvider = FutureProvider.autoDispose
     motionActivityProvider((cameraId: key.cameraId, range: key.range)).future,
   );
 });
+
+/// 카메라가 속한 사육세트(enclosure)의 사육장 모듈 device id.
+/// 카메라 미배정이거나 같은 사육세트에 사육장 모듈이 없으면 null → 뱃지 —/—
+/// (전역 device의 엉뚱한 값을 보여주지 않는다 — 사육 데이터 정확성).
+final _envDeviceIdProvider =
+    FutureProvider.autoDispose.family<String?, String>((ref, cameraId) async {
+  final camera = await ref.watch(cameraProvider(cameraId).future);
+  final enclosureId = camera?.enclosureId;
+  if (enclosureId == null) return null;
+  final devices = await ref.watch(deviceListProvider.future);
+  final matched = devices.where((d) => d.enclosureId == enclosureId).toList();
+  return matched.isEmpty ? null : matched.first.id;
+});
 // ────────────────────────────────────────────────────────────────────────────
 
 class CameraDetailScreen extends ConsumerStatefulWidget {
@@ -184,10 +197,10 @@ class _LiveSection extends StatelessWidget {
             child: WebRtcLiveView(cameraUuid: cameraId),
           ),
           // 상단 우측: 온도 / 습도 배지 (실데이터)
-          const Positioned(
+          Positioned(
             top: 12,
             right: 12,
-            child: _LiveEnvBadge(),
+            child: _LiveEnvBadge(cameraId: cameraId),
           ),
           // 하단 우측: 타임스탬프 + Live
           Positioned(
@@ -211,18 +224,20 @@ class _LiveSection extends StatelessWidget {
   }
 }
 
-/// 실데이터 환경 배지 — Supabase telemetryStreamProvider를 watch.
+/// 실데이터 환경 배지 — 카메라가 속한 사육세트의 사육장 모듈 telemetry를 watch.
 class _LiveEnvBadge extends ConsumerWidget {
-  const _LiveEnvBadge();
+  const _LiveEnvBadge({required this.cameraId});
+
+  final String cameraId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final deviceAsync = ref.watch(currentDeviceProvider);
+    final deviceIdAsync = ref.watch(_envDeviceIdProvider(cameraId));
 
     String tempText = '—°';
     String humText = '—%';
 
-    final deviceId = deviceAsync.valueOrNull?.id;
+    final deviceId = deviceIdAsync.valueOrNull;
     if (deviceId != null) {
       final telemetryAsync = ref.watch(telemetryStreamProvider(deviceId));
       if (telemetryAsync.hasValue && telemetryAsync.value != null) {
