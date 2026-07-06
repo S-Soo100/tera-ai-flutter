@@ -8,12 +8,15 @@ import '../../auth/presentation/auth_providers.dart';
 import '../data/camera_repository.dart';
 import '../data/enclosure_repository.dart';
 import '../data/clip_repository.dart';
+import '../data/motion_clip_repository.dart';
 import '../data/video_cache_repository.dart';
 import '../data/webrtc_signaling_repository.dart';
 import '../domain/behavior_inference.dart';
 import '../domain/behavior_label.dart';
+import '../domain/cage_activity.dart';
 import '../domain/clip.dart';
 import '../domain/clip_media_url.dart';
+import '../domain/motion_clip.dart';
 import '../domain/terra_camera.dart';
 import '../domain/enclosure.dart';
 
@@ -48,6 +51,14 @@ final clipRepositoryProvider = Provider<ClipRepository>((ref) {
   return ClipRepository(
     supabase: ref.watch(_supabaseClientProvider),
     backendUrl: EnvConfig.backendUrl,
+    tokenProvider: ref.watch(_tokenProviderProvider),
+  );
+});
+
+final motionClipRepositoryProvider = Provider<MotionClipRepository>((ref) {
+  return MotionClipRepository(
+    supabase: ref.watch(_supabaseClientProvider),
+    terraApiUrl: EnvConfig.terraServerUrl,
     tokenProvider: ref.watch(_tokenProviderProvider),
   );
 });
@@ -205,6 +216,33 @@ final clipInferenceProvider =
     FutureProvider.autoDispose.family<BehaviorInference?, String>(
         (ref, clipId) async {
   return ref.watch(clipRepositoryProvider).getInference(clipId);
+});
+
+// ── 모션 클립 (motion_clips, S3) ────────────────────────────────────────────────
+
+/// 카메라의 모션 클립 목록 (최신 50개, camera_id 직결).
+final motionClipsProvider = FutureProvider.autoDispose
+    .family<List<MotionClip>, String>((ref, cameraId) async {
+  return ref.watch(motionClipRepositoryProvider).listByCamera(cameraId);
+});
+
+/// 모션 클립 재생 presigned URL. 재생 화면이 await, 만료 시 refresh.
+final motionClipUrlProvider =
+    FutureProvider.autoDispose.family<String, String>((ref, clipId) async {
+  return ref.watch(motionClipRepositoryProvider).getPlaybackUrl(clipId);
+});
+
+/// family 키: cameraId + range. 움직임 시간(초).
+typedef MotionActivityKey = ({String cameraId, ActivityRange range});
+
+/// 활동량(움직임 초) — motion_clips duration 합. 하루 경계는 오전 7시
+/// (activityRangeBounds 재사용). now는 실행 시각.
+final motionActivityProvider =
+    FutureProvider.autoDispose.family<int, MotionActivityKey>((ref, key) async {
+  final bounds = activityRangeBounds(key.range, DateTime.now());
+  return ref
+      .watch(motionClipRepositoryProvider)
+      .motionSeconds(key.cameraId, bounds.start, bounds.end);
 });
 
 // ── 캐시 Repository Provider ───────────────────────────────────────────────────
