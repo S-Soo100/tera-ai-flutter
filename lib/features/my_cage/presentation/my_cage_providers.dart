@@ -13,6 +13,7 @@ import '../data/favorite_clip_repository.dart';
 import '../data/motion_clip_repository.dart';
 import '../data/motion_thumbnail_repository.dart';
 import '../data/video_cache_repository.dart';
+import '../data/video_export_service.dart';
 import '../data/webrtc_signaling_repository.dart';
 import '../domain/behavior_inference.dart';
 import '../domain/behavior_label.dart';
@@ -271,6 +272,12 @@ final motionClipUrlProvider =
   return ref.watch(motionClipRepositoryProvider).getPlaybackUrl(clipId);
 });
 
+/// 단일 모션 클립 메타(즐겨찾기 추가·재생화면 제목용). 없으면 null.
+final motionClipProvider =
+    FutureProvider.autoDispose.family<MotionClip?, String>((ref, clipId) async {
+  return ref.watch(motionClipRepositoryProvider).getById(clipId);
+});
+
 /// family 키: cameraId + range. 움직임 시간(초).
 typedef MotionActivityKey = ({String cameraId, ActivityRange range});
 
@@ -331,3 +338,8 @@ final isFavoriteProvider =
     Provider.autoDispose.family<bool, String>((ref, clipId) {
   return ref.watch(favoriteClipRepositoryProvider).isFavorite(clipId);
 });
+
+// ── 저장/공유 서비스 (#2) ───────────────────────────────────────────────────────
+
+final videoExportServiceProvider =
+    Provider<VideoExportService>((ref) => VideoExportService());
