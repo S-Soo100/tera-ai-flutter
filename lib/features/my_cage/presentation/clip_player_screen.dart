@@ -12,6 +12,7 @@ import '../domain/clip.dart';
 import '../domain/clip_media_url.dart';
 import 'my_cage_providers.dart';
 import 'widgets/behavior_chip_section.dart';
+import 'widgets/video_controls.dart';
 
 class ClipPlayerScreen extends ConsumerStatefulWidget {
   const ClipPlayerScreen({super.key, required this.clipId});
@@ -184,7 +185,7 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
 
           // 컨트롤
           if (_initialized && _controller != null)
-            _VideoControls(controller: _controller!),
+            VideoControls(controller: _controller!),
 
           // 하단 메타
           if (clip != null)
@@ -231,94 +232,6 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
             ),
 
           const Spacer(),
-        ],
-      ),
-    );
-  }
-}
-
-// ── 비디오 컨트롤 위젯 ────────────────────────────────────────────────────────
-
-class _VideoControls extends StatefulWidget {
-  const _VideoControls({required this.controller});
-
-  final VideoPlayerController controller;
-
-  @override
-  State<_VideoControls> createState() => _VideoControlsState();
-}
-
-class _VideoControlsState extends State<_VideoControls> {
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_onControllerUpdate);
-  }
-
-  void _onControllerUpdate() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_onControllerUpdate);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ctrl = widget.controller;
-    final isPlaying = ctrl.value.isPlaying;
-
-    return Container(
-      color: Colors.black87,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppStyles.spacing8,
-        vertical: AppStyles.spacing4,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          VideoProgressIndicator(
-            ctrl,
-            allowScrubbing: true,
-            colors: VideoProgressColors(
-              playedColor: Theme.of(context).colorScheme.primary,
-              bufferedColor: Colors.white30,
-              backgroundColor: Colors.white12,
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.replay_10, color: Colors.white),
-                onPressed: () {
-                  final pos = ctrl.value.position -
-                      const Duration(seconds: 10);
-                  ctrl.seekTo(pos < Duration.zero ? Duration.zero : pos);
-                },
-              ),
-              IconButton(
-                icon: Icon(
-                  isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: Colors.white,
-                  size: 36,
-                ),
-                onPressed: () =>
-                    isPlaying ? ctrl.pause() : ctrl.play(),
-              ),
-              IconButton(
-                icon: const Icon(Icons.forward_10, color: Colors.white),
-                onPressed: () {
-                  final pos = ctrl.value.position +
-                      const Duration(seconds: 10);
-                  final dur = ctrl.value.duration;
-                  ctrl.seekTo(pos > dur ? dur : pos);
-                },
-              ),
-            ],
-          ),
         ],
       ),
     );
