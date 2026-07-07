@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,6 +10,7 @@ import '../data/camera_repository.dart';
 import '../data/enclosure_repository.dart';
 import '../data/clip_repository.dart';
 import '../data/motion_clip_repository.dart';
+import '../data/motion_thumbnail_repository.dart';
 import '../data/video_cache_repository.dart';
 import '../data/webrtc_signaling_repository.dart';
 import '../domain/behavior_inference.dart';
@@ -288,6 +290,20 @@ final hourlyActivityProvider = FutureProvider.autoDispose
   return ref
       .watch(motionClipRepositoryProvider)
       .motionSecondsByHour(key.cameraId, bounds.start, bounds.end);
+});
+
+// ── 모션 클립 썸네일 (클라 추출, #1) ───────────────────────────────────────────
+// 후속: terra-api GET /clips/{id}/thumbnail/url 확정 시, 아래 provider가
+// getOrCreate 대신 presigned 썸네일 URL을 반환하도록 교체(카드는 그대로).
+
+final motionThumbnailRepositoryProvider =
+    Provider<MotionThumbnailRepository>((ref) => MotionThumbnailRepository());
+
+/// 모션 클립 썸네일 파일(첫 프레임 추출+캐시). 없으면 null → 카드 아이콘 폴백.
+final motionThumbnailProvider =
+    FutureProvider.autoDispose.family<File?, String>((ref, clipId) async {
+  final url = await ref.watch(motionClipUrlProvider(clipId).future);
+  return ref.watch(motionThumbnailRepositoryProvider).getOrCreate(clipId, url);
 });
 
 // ── 캐시 Repository Provider ───────────────────────────────────────────────────
