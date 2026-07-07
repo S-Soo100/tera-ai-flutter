@@ -234,6 +234,17 @@
   "smart_cage_select_device": "디바이스 선택",
   "wifi_reconfigure": "Wi-Fi 재설정",
 
+  "telemetry_chart_title": "온습도 추이",
+  "telemetry_chart_temp": "온도",
+  "telemetry_chart_humidity": "습도",
+  "telemetry_range_24h": "24시간",
+  "telemetry_range_7d": "7일",
+  "telemetry_range_30d": "30일",
+  "telemetry_chart_empty": "표시할 추이 데이터가 없습니다",
+  "telemetry_chart_no_target": "목표 범위 미설정",
+  "telemetry_chart_temp_unit": "°C",
+  "telemetry_chart_humidity_unit": "%",
+
   "community_title": "커뮤니티",
   "community_placeholder": "커뮤니티 화면 준비 중입니다",
   "community_empty": "게시글이 없어요",

@@ -2,6 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/device.dart';
 import '../domain/device_command.dart';
+import '../domain/device_targets.dart';
+import '../domain/telemetry_bucket.dart';
 import '../domain/telemetry_reading.dart';
 
 /// terra-server commands/devices/telemetry Supabase 직결 repository.
@@ -89,5 +91,48 @@ class SupabaseModuleControlRepository {
     final list = rows as List;
     if (list.isEmpty) return null;
     return TelemetryReading.fromJson(list.first as Map<String, dynamic>);
+  }
+
+  // ── 텔레메트리 히스토리 (telemetry_30m, 30분 집계 장기 추이) ──────────────────
+
+  /// [deviceId]의 30분 집계 버킷을 [from](inclusive)부터 [to](exclusive, 옵션)까지
+  /// bucket 오름차순으로 반환. RLS가 본인 디바이스만 필터하므로 owner 조건 불필요.
+  /// 잘못된 device_id면 빈 리스트(에러 아님).
+  Future<List<TelemetryBucket>> telemetryHistory(
+    String deviceId,
+    DateTime from, {
+    DateTime? to,
+  }) async {
+    var q = _supabase
+        .from('telemetry_30m')
+        .select(
+          'bucket, sample_count, t_a_avg, t_a_min, t_a_max, h_a_avg, h_a_min, h_a_max',
+        )
+        .eq('device_id', deviceId)
+        .gte('bucket', from.toUtc().toIso8601String());
+    if (to != null) {
+      q = q.lt('bucket', to.toUtc().toIso8601String());
+    }
+    final rows = await q.order('bucket', ascending: true);
+    return (rows as List)
+        .map((r) => TelemetryBucket.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+
+  // ── 목표범위 (device_settings, 없으면 null) ─────────────────────────────────
+
+  /// [deviceId]의 목표 온습도 범위. device_settings 행이 없으면 null.
+  /// **임의 기본값을 지어내지 않는다** — 사육정보 데이터 정확성 원칙.
+  Future<DeviceTargets?> deviceTargets(String deviceId) async {
+    final rows = await _supabase
+        .from('device_settings')
+        .select(
+          'target_temp_min, target_temp_max, target_humid_min, target_humid_max',
+        )
+        .eq('device_id', deviceId)
+        .limit(1);
+    final list = rows as List;
+    if (list.isEmpty) return null;
+    return DeviceTargets.fromJson(list.first as Map<String, dynamic>);
   }
 }

@@ -7,6 +7,8 @@ import '../../../core/supabase/supabase_provider.dart';
 import '../data/supabase_module_control_repository.dart';
 import '../domain/device.dart';
 import '../domain/device_command.dart';
+import '../domain/device_targets.dart';
+import '../domain/telemetry_bucket.dart';
 import '../domain/telemetry_reading.dart';
 
 // ── Repository ─────────────────────────────────────────────────────────────────
@@ -209,4 +211,40 @@ class ModuleCommandSender extends AutoDisposeNotifier<void> {
 final moduleCommandSenderProvider =
     AutoDisposeNotifierProvider<ModuleCommandSender, void>(
   ModuleCommandSender.new,
+);
+
+// ── 텔레메트리 히스토리 (telemetry_30m, 장기 추이 그래프) ───────────────────────
+
+/// 추이 그래프 조회 기간. 각 값은 조회 span과 세그먼트 라벨 키를 가진다.
+enum TelemetryRange {
+  h24(Duration(hours: 24), 'telemetry_range_24h'),
+  d7(Duration(days: 7), 'telemetry_range_7d'),
+  d30(Duration(days: 30), 'telemetry_range_30d');
+
+  const TelemetryRange(this.span, this.labelKey);
+
+  final Duration span;
+  final String labelKey;
+}
+
+/// 선택된 추이 기간. 세그먼트 셀렉터 탭 시 갱신. 기본 7일.
+final telemetryRangeProvider =
+    StateProvider.autoDispose<TelemetryRange>((ref) => TelemetryRange.d7);
+
+/// [deviceId]의 telemetry_30m 히스토리. 선택 기간만큼 조회(range 변경 시 재조회).
+final telemetryHistoryProvider = FutureProvider.autoDispose
+    .family<List<TelemetryBucket>, String>((ref, deviceId) {
+  final from =
+      DateTime.now().toUtc().subtract(ref.watch(telemetryRangeProvider).span);
+  return ref
+      .watch(supabaseModuleControlRepositoryProvider)
+      .telemetryHistory(deviceId, from);
+});
+
+/// [deviceId]의 목표 온습도 범위. device_settings 없으면 null.
+final deviceTargetsProvider =
+    FutureProvider.autoDispose.family<DeviceTargets?, String>(
+  (ref, deviceId) => ref
+      .watch(supabaseModuleControlRepositoryProvider)
+      .deviceTargets(deviceId),
 );

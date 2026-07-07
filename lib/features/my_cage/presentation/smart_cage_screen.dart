@@ -8,6 +8,7 @@ import '../domain/device.dart';
 import 'supabase_module_providers.dart';
 import 'widgets/actuator_controls.dart';
 import 'widgets/module_status_card.dart';
+import 'widgets/telemetry_history_chart.dart';
 import 'widgets/wifi_reconfigure_menu.dart';
 
 class SmartCageScreen extends ConsumerWidget {
@@ -151,6 +152,12 @@ class _DeviceBody extends ConsumerWidget {
                 color: cs.outlineVariant,
               ),
               ActuatorControls(embedded: true),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: cs.outlineVariant,
+              ),
+              const TelemetryHistoryChart(),
             ],
           ),
         ),
