@@ -62,3 +62,28 @@ const String kDrinkingAction = 'drinking';
       return (start: dayStartOn(todayStart, -1), end: todayStart);
   }
 }
+
+/// 하루(24시간) 활동을 1시간 버킷 24개로 집계한다. 홈·크레캠의 시간대별 활동
+/// 그래프 공용 데이터.
+///
+/// - 반환 길이는 항상 24. index i = [from]으로부터 i시간째 구간 `[from+i, from+i+1)`.
+///   하루 경계가 07:00이면 index 0 = 07~08시, index 23 = 익일 06~07시.
+/// - 각 클립은 **시작 시각**이 속한 버킷에 duration 전량 귀속(1시간 경계를 걸치는
+///   클립도 시작 버킷에 몰아줌 — 근사). 0~23 밖(시작 전/24h 이상)은 무시.
+/// - 절대 시각(instant) 차로 계산하므로 startedAt이 UTC/로컬 어느 표현이든
+///   [from]이 로컬 벽시계 07:00이면 결과는 로컬 시간대 기준으로 정확하다.
+List<int> bucketMotionSecondsByHour(
+  Iterable<({DateTime startedAt, double durationSec})> clips,
+  DateTime from,
+) {
+  final buckets = List<double>.filled(24, 0);
+  for (final c in clips) {
+    // isBefore로 하한을 명시(Duration.inHours는 0 방향 절삭이라 from 직전
+    // 몇 분 클립이 -1분→0시간으로 버킷 0에 새는 걸 막는다).
+    if (c.startedAt.isBefore(from)) continue;
+    final idx = c.startedAt.difference(from).inHours;
+    if (idx > 23) continue;
+    buckets[idx] += c.durationSec;
+  }
+  return buckets.map((s) => s.round()).toList();
+}

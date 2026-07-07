@@ -9,9 +9,11 @@ import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/cage_activity.dart';
 import '../domain/clip.dart';
 import '../domain/clip_action.dart';
+import 'activity_format.dart';
 import 'my_cage_providers.dart';
 import 'supabase_module_providers.dart';
 import 'widgets/clip_card.dart';
+import 'widgets/hourly_activity_chart.dart';
 import 'widgets/motion_clip_card.dart';
 import 'widgets/webrtc_live_view.dart';
 import 'widgets/wifi_reconfigure_menu.dart';
@@ -32,14 +34,6 @@ final _verifyClipsProvider =
   return page.items;
 });
 // ────────────────────────────────────────────────────────────────────────────
-
-/// 카메라 하루(오전 7시 기준) 움직임 시간(초). motionActivityProvider 별칭.
-final _cageActivityProvider = FutureProvider.autoDispose
-    .family<int, ({String cameraId, ActivityRange range})>((ref, key) async {
-  return ref.watch(
-    motionActivityProvider((cameraId: key.cameraId, range: key.range)).future,
-  );
-});
 
 /// 카메라가 속한 사육세트(enclosure)의 사육장 모듈 device id.
 /// 카메라 미배정이거나 같은 사육세트에 사육장 모듈이 없으면 null → 뱃지 —/—
@@ -307,7 +301,16 @@ class _SimpleActivityCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final activityAsync =
-        ref.watch(_cageActivityProvider((cameraId: cameraId, range: range)));
+        ref.watch(motionActivityProvider((cameraId: cameraId, range: range)));
+    // 진행 중인 '오늘'은 아직 도래하지 않은 시각을 미래로 구분(무활동과 혼동 방지).
+    // '어제'(완결일)는 24칸 모두 실제 데이터라 null.
+    final activeHours = range == ActivityRange.today
+        ? (DateTime.now()
+                    .difference(activityRangeBounds(range, DateTime.now()).start)
+                    .inHours +
+                1)
+            .clamp(1, 24)
+        : null;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -349,10 +352,37 @@ class _SimpleActivityCard extends ConsumerWidget {
             loading: () => _statsRow(loading: true),
             error: (_, __) => InlineRetry(
               onRetry: () => ref.invalidate(
-                  _cageActivityProvider((cameraId: cameraId, range: range))),
+                  motionActivityProvider((cameraId: cameraId, range: range))),
             ),
-            data: (seconds) => _statsRow(motion: _formatMotion(seconds)),
+            data: (seconds) =>
+                _statsRow(motion: formatMotionDuration(seconds)),
           ),
+          const SizedBox(height: 18),
+          Text(
+            'crecam_detail_activity_pattern'.tr(),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ref
+              .watch(hourlyActivityProvider((cameraId: cameraId, range: range)))
+              .when(
+                loading: () =>
+                    const SkeletonLoading(width: double.infinity, height: 92),
+                error: (_, __) => SizedBox(
+                  height: 92,
+                  child: InlineRetry(
+                    onRetry: () => ref.invalidate(hourlyActivityProvider(
+                        (cameraId: cameraId, range: range))),
+                  ),
+                ),
+                data: (hourly) => HourlyActivityChart(
+                  hourlySeconds: hourly,
+                  dayStartHour: kCageDayStartHour,
+                  activeHours: activeHours,
+                ),
+              ),
         ],
       ),
     );
@@ -362,25 +392,8 @@ class _SimpleActivityCard extends ConsumerWidget {
     return _ActivityStatBox(
       label: 'crecam_detail_stat_motion'.tr(),
       value: motion,
-      valueColor: const Color(0xFF222222),
       loading: loading,
     );
-  }
-
-  /// 초 → "Xh Ym" / "Xh" / "Ym" 표기. 분은 반올림하되, 활동이 조금이라도
-  /// 있으면(seconds>0) 최소 1분으로 올려 미세 활동을 무활동(0m)과 구분한다.
-  /// h>0·m==0이면 "Xh"만 표기.
-  String _formatMotion(int seconds) {
-    var totalMin = (seconds / 60).round();
-    if (totalMin == 0 && seconds > 0) totalMin = 1;
-    final h = totalMin ~/ 60;
-    final m = totalMin % 60;
-    if (h > 0) {
-      return m == 0
-          ? 'crecam_detail_duration_h'.tr(namedArgs: {'h': '$h'})
-          : 'crecam_detail_duration_hm'.tr(namedArgs: {'h': '$h', 'm': '$m'});
-    }
-    return 'crecam_detail_duration_m'.tr(namedArgs: {'m': '$m'});
   }
 }
 
@@ -452,13 +465,11 @@ class _ActivityStatBox extends StatelessWidget {
   const _ActivityStatBox({
     required this.label,
     required this.value,
-    required this.valueColor,
     this.loading = false,
   });
 
   final String label;
   final String value;
-  final Color valueColor;
   final bool loading;
 
   @override
@@ -488,7 +499,7 @@ class _ActivityStatBox extends StatelessWidget {
                   value,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: valueColor,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
         ],

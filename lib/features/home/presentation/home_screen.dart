@@ -1,11 +1,16 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_styles.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
+import '../../my_cage/domain/cage_activity.dart';
+import '../../my_cage/domain/terra_camera.dart';
+import '../../my_cage/presentation/activity_format.dart';
+import '../../my_cage/presentation/my_cage_providers.dart';
+import '../../my_cage/presentation/widgets/hourly_activity_chart.dart';
 import '../../my_pets/domain/pet.dart';
 import '../../my_pets/presentation/my_pets_providers.dart';
 
@@ -321,9 +326,26 @@ class _EmptyLiveCard extends StatelessWidget {
 
 // ── 활동량 분석 요약 ───────────────────────────────────────────────────────────
 
-class _ActivitySection extends StatelessWidget {
+/// 홈 대시보드 활동량 카드. 대표(활성=최근 모션) 카메라 1대의 실측 활동량을
+/// 요약한다. 카메라가 없거나 조회 실패면 섹션 자체를 숨겨 가짜 수치를 안 띄운다.
+class _ActivitySection extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final camAsync = ref.watch(representativeCameraProvider);
+    return camAsync.when(
+      loading: () => _card(
+        context,
+        const SkeletonLoading(width: double.infinity, height: 128),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (cam) {
+        if (cam == null) return const SizedBox.shrink();
+        return _card(context, _ActivityContent(camera: cam));
+      },
+    );
+  }
+
+  Widget _card(BuildContext context, Widget child) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,23 +370,52 @@ class _ActivitySection extends StatelessWidget {
               ),
             ],
           ),
-          child: const _ActivityContent(),
+          child: child,
         ),
       ],
     );
   }
 }
 
-class _ActivityContent extends StatelessWidget {
-  const _ActivityContent();
+/// 대표 카메라의 '어제'(완결된 지난 하루, 07:00~07:00) 활동량 —
+/// 총합 + 시간대별 그래프. 카드에 카메라 이름을 명시해 어느 카메라 데이터인지 밝힌다.
+class _ActivityContent extends ConsumerWidget {
+  const _ActivityContent({required this.camera});
+
+  final TerraCamera camera;
+
+  static const _range = ActivityRange.yesterday;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    const greenColor = Color(0xFF2E7D32);
+    final primary = theme.colorScheme.primary;
+    final totalAsync = ref
+        .watch(motionActivityProvider((cameraId: camera.id, range: _range)));
+    final hourlyAsync = ref
+        .watch(hourlyActivityProvider((cameraId: camera.id, range: _range)));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Icon(Icons.videocam_outlined,
+                size: 14, color: theme.colorScheme.outline),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                camera.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
@@ -374,31 +425,32 @@ class _ActivityContent extends StatelessWidget {
                   Text(
                     'home_activity_total_label'.tr(),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: greenColor.withValues(alpha: 0.8),
+                      color: primary.withValues(alpha: 0.8),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'home_activity_total_value'.tr(),
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: greenColor,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  totalAsync.when(
+                    loading: () => const SkeletonLoading(width: 96, height: 30),
+                    error: (_, __) => _totalText(theme, primary, '—'),
+                    data: (seconds) => _totalText(
+                        theme, primary, formatMotionDuration(seconds)),
                   ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.monitor_heart_outlined,
-              size: 28,
-              color: greenColor,
-            ),
+            Icon(Icons.monitor_heart_outlined, size: 28, color: primary),
           ],
         ),
         const SizedBox(height: 16),
-        const SizedBox(
-          height: 80,
-          child: _ActivityBarChart(),
+        hourlyAsync.when(
+          loading: () =>
+              const SkeletonLoading(width: double.infinity, height: 100),
+          error: (_, __) => const SizedBox(height: 100),
+          data: (hourly) => HourlyActivityChart(
+            hourlySeconds: hourly,
+            dayStartHour: kCageDayStartHour,
+            height: 80,
+          ),
         ),
         const SizedBox(height: 8),
         Center(
@@ -412,38 +464,14 @@ class _ActivityContent extends StatelessWidget {
       ],
     );
   }
-}
 
-class _ActivityBarChart extends StatelessWidget {
-  const _ActivityBarChart();
-
-  // 더미 데이터 (P0). P2에서 실제 활동량 데이터로 교체.
-  static const _values = [0.4, 0.55, 0.35, 0.45, 0.7, 0.65, 0.9, 0.3];
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxHeight = constraints.maxHeight;
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: List.generate(_values.length, (i) {
-            final h = math.max(8.0, _values[i] * maxHeight);
-            return Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Container(
-                  height: h,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF66BB6A),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
-            );
-          }),
-        );
-      },
+  Widget _totalText(ThemeData theme, Color color, String text) {
+    return Text(
+      text,
+      style: theme.textTheme.headlineMedium?.copyWith(
+        color: color,
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../domain/cage_activity.dart';
 import '../domain/motion_clip.dart';
 import 'camera_exceptions.dart';
 
@@ -63,6 +64,9 @@ class MotionClipRepository {
         .eq('camera_id', cameraId)
         .gte('started_at', from.toUtc().toIso8601String())
         .lt('started_at', to.toUtc().toIso8601String())
+        // order 명시: 5000 상한 초과 시에도 motionSecondsByHour와 동일 부분집합을
+        // 집어 총합/그래프 수치 불일치를 방지(현재는 여유 크나 값싼 방어).
+        .order('started_at', ascending: true)
         .limit(5000);
     var sec = 0.0;
     for (final r in rows as List) {
@@ -71,5 +75,45 @@ class MotionClipRepository {
           0;
     }
     return sec.round();
+  }
+
+  /// 구간 [from,to)를 1시간 버킷 24개로 나눈 시간대별 움직임 시간(초).
+  /// index 0 = [from]이 속한 시각 ~ +1h. 홈·크레캠 활동 그래프 공용.
+  Future<List<int>> motionSecondsByHour(
+      String cameraId, DateTime from, DateTime to) async {
+    final rows = await _supabase
+        .from('motion_clips')
+        .select('started_at, duration_sec')
+        .eq('camera_id', cameraId)
+        .gte('started_at', from.toUtc().toIso8601String())
+        .lt('started_at', to.toUtc().toIso8601String())
+        .order('started_at', ascending: true)
+        .limit(5000);
+    final clips = <({DateTime startedAt, double durationSec})>[];
+    for (final r in rows as List) {
+      final m = r as Map<String, dynamic>;
+      final ts = DateTime.tryParse(m['started_at']?.toString() ?? '');
+      if (ts == null) continue;
+      clips.add((
+        startedAt: ts,
+        durationSec: (m['duration_sec'] as num?)?.toDouble() ?? 0.0,
+      ));
+    }
+    return bucketMotionSecondsByHour(clips, from);
+  }
+
+  /// 이 카메라의 가장 최근 모션 클립 시각. 모션 이력이 없으면 null.
+  /// 홈 대시보드 '대표(활성) 카메라' 선정용 — 최근 녹화가 있는 카메라를 고른다.
+  Future<DateTime?> latestMotionAt(String cameraId) async {
+    final rows = await _supabase
+        .from('motion_clips')
+        .select('started_at')
+        .eq('camera_id', cameraId)
+        .order('started_at', ascending: false)
+        .limit(1);
+    final list = rows as List;
+    if (list.isEmpty) return null;
+    final ts = (list.first as Map<String, dynamic>)['started_at'];
+    return DateTime.tryParse(ts?.toString() ?? '');
   }
 }

@@ -123,6 +123,28 @@ final cameraProvider =
   return ref.watch(cameraRepositoryProvider).getById(id);
 });
 
+/// 홈 대시보드 대표 카메라 — 가장 최근 모션이 있는(활성) 카메라. 모션 이력이
+/// 전혀 없으면 최신 등록(cameras 목록 첫 번째)로 폴백. 카메라 없으면 null.
+/// 카메라 1대면 그 카메라, 여러 대면 카메라당 최근 모션시각 1건씩 조회해 최댓값.
+/// ('최신 등록' 대표는 조용한 카메라를 대표로 잡는 문제가 있어 '최근 모션'으로 선정.)
+final representativeCameraProvider =
+    FutureProvider.autoDispose<TerraCamera?>((ref) async {
+  final cameras = await ref.watch(camerasProvider.future);
+  if (cameras.isEmpty) return null;
+  if (cameras.length == 1) return cameras.first;
+  final repo = ref.watch(motionClipRepositoryProvider);
+  TerraCamera? best;
+  DateTime? bestAt;
+  for (final c in cameras) {
+    final at = await repo.latestMotionAt(c.id);
+    if (at != null && (bestAt == null || at.isAfter(bestAt))) {
+      bestAt = at;
+      best = c;
+    }
+  }
+  return best ?? cameras.first; // 모션 이력 전무 시 최신 등록 폴백
+});
+
 // ── 사육장(enclosure) Provider ─────────────────────────────────────────────────
 
 /// 현재 유저의 사육장 목록 (최신순). 계정 전환 시 재조회(이전 계정 노출 방지 —
@@ -256,6 +278,16 @@ final motionActivityProvider =
   return ref
       .watch(motionClipRepositoryProvider)
       .motionSeconds(key.cameraId, bounds.start, bounds.end);
+});
+
+/// 시간대별 움직임(초) 24개 — motion_clips를 1시간 버킷으로. 하루 경계 오전 7시
+/// (activityRangeBounds 재사용). 홈·크레캠 활동 그래프 공용 데이터.
+final hourlyActivityProvider = FutureProvider.autoDispose
+    .family<List<int>, MotionActivityKey>((ref, key) async {
+  final bounds = activityRangeBounds(key.range, DateTime.now());
+  return ref
+      .watch(motionClipRepositoryProvider)
+      .motionSecondsByHour(key.cameraId, bounds.start, bounds.end);
 });
 
 // ── 캐시 Repository Provider ───────────────────────────────────────────────────
