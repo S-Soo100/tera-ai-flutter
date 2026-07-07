@@ -2,7 +2,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/device.dart';
 import '../domain/device_command.dart';
-import '../domain/device_targets.dart';
 import '../domain/telemetry_bucket.dart';
 import '../domain/telemetry_reading.dart';
 
@@ -117,22 +116,5 @@ class SupabaseModuleControlRepository {
     return (rows as List)
         .map((r) => TelemetryBucket.fromJson(r as Map<String, dynamic>))
         .toList();
-  }
-
-  // ── 목표범위 (device_settings, 없으면 null) ─────────────────────────────────
-
-  /// [deviceId]의 목표 온습도 범위. device_settings 행이 없으면 null.
-  /// **임의 기본값을 지어내지 않는다** — 사육정보 데이터 정확성 원칙.
-  Future<DeviceTargets?> deviceTargets(String deviceId) async {
-    final rows = await _supabase
-        .from('device_settings')
-        .select(
-          'target_temp_min, target_temp_max, target_humid_min, target_humid_max',
-        )
-        .eq('device_id', deviceId)
-        .limit(1);
-    final list = rows as List;
-    if (list.isEmpty) return null;
-    return DeviceTargets.fromJson(list.first as Map<String, dynamic>);
   }
 }

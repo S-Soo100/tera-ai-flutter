@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
+import '../../wiki/data/care_info_repository.dart';
 import '../data/supabase_module_control_repository.dart';
 import '../domain/device.dart';
 import '../domain/device_command.dart';
-import '../domain/device_targets.dart';
+import '../domain/species_comfort.dart';
 import '../domain/telemetry_bucket.dart';
 import '../domain/telemetry_reading.dart';
+import 'my_cage_providers.dart';
 
 // ── Repository ─────────────────────────────────────────────────────────────────
 
@@ -241,10 +243,23 @@ final telemetryHistoryProvider = FutureProvider.autoDispose
       .telemetryHistory(deviceId, from);
 });
 
-/// [deviceId]의 목표 온습도 범위. device_settings 없으면 null.
-final deviceTargetsProvider =
-    FutureProvider.autoDispose.family<DeviceTargets?, String>(
-  (ref, deviceId) => ref
-      .watch(supabaseModuleControlRepositoryProvider)
-      .deviceTargets(deviceId),
-);
+/// 현재 사육장 종에서 도출한 적정 안심존. device→enclosure→species→care_info 체인.
+/// 종 미설정이거나 미지원 종이면 null(차트에 안심존 밴드 미표시).
+final currentSpeciesComfortProvider =
+    FutureProvider.autoDispose<SpeciesComfort?>((ref) async {
+  final device = await ref.watch(currentDeviceProvider.future);
+  final encId = device?.enclosureId;
+  if (encId == null || encId.isEmpty) return null;
+  final enclosure = await ref.watch(enclosureProvider(encId).future);
+  final sid = speciesIdFromText(enclosure?.species);
+  if (sid == null) return null;
+  final care = await ref.watch(careInfoRepositoryProvider).getCareInfo(sid);
+  return SpeciesComfort(
+    speciesId: sid,
+    speciesNameKo: care.speciesNameKo,
+    tempMin: care.coolZone.min.toDouble(),
+    tempMax: care.hotZone.max.toDouble(),
+    humidMin: care.humidityMin.toDouble(),
+    humidMax: care.humidityMax.toDouble(),
+  );
+});
