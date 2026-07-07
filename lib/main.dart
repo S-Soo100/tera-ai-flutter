@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/storage/safe_hive.dart';
 import 'features/chat/data/chat_repository.dart';
+import 'features/my_cage/data/favorite_clip_repository.dart';
 import 'features/my_cage/data/video_cache_repository.dart';
 import 'features/my_pets/data/pet_repository.dart';
 import 'app.dart';
@@ -64,6 +65,7 @@ Future<void> main() async {
   await ChatRepository.init();
   await openUntypedBoxSafely('app_settings');
   await VideoCacheRepository.init();
+  await FavoriteClipRepository.init();
 
   await EasyLocalization.ensureInitialized();
 

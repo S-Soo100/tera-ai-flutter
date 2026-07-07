@@ -9,6 +9,7 @@ import '../../auth/presentation/auth_providers.dart';
 import '../data/camera_repository.dart';
 import '../data/enclosure_repository.dart';
 import '../data/clip_repository.dart';
+import '../data/favorite_clip_repository.dart';
 import '../data/motion_clip_repository.dart';
 import '../data/motion_thumbnail_repository.dart';
 import '../data/video_cache_repository.dart';
@@ -18,6 +19,7 @@ import '../domain/behavior_label.dart';
 import '../domain/cage_activity.dart';
 import '../domain/clip.dart';
 import '../domain/clip_media_url.dart';
+import '../domain/favorite_clip.dart';
 import '../domain/motion_clip.dart';
 import '../domain/terra_camera.dart';
 import '../domain/enclosure.dart';
@@ -311,4 +313,21 @@ final motionThumbnailProvider =
 /// 영상 로컬 캐시 Repository. VideoCacheRepository.init()은 main()에서 선 실행.
 final videoCacheRepositoryProvider = Provider<VideoCacheRepository>((ref) {
   return VideoCacheRepository();
+});
+
+// ── 즐겨찾기 (로컬, #4) ─────────────────────────────────────────────────────────
+
+final favoriteClipRepositoryProvider =
+    Provider<FavoriteClipRepository>((ref) => FavoriteClipRepository());
+
+/// 카메라의 즐겨찾기 목록(로컬). add/remove 후 invalidate로 갱신.
+final favoriteClipsProvider =
+    Provider.autoDispose.family<List<FavoriteClip>, String>((ref, cameraId) {
+  return ref.watch(favoriteClipRepositoryProvider).listByCamera(cameraId);
+});
+
+/// 특정 클립 즐겨찾기 여부. add/remove 후 invalidate.
+final isFavoriteProvider =
+    Provider.autoDispose.family<bool, String>((ref, clipId) {
+  return ref.watch(favoriteClipRepositoryProvider).isFavorite(clipId);
 });

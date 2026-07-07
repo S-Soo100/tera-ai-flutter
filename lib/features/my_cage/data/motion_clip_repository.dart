@@ -55,6 +55,18 @@ class MotionClipRepository {
     throw BackendException(resp.statusCode, resp.body);
   }
 
+  /// 단일 모션 클립 조회(즐겨찾기 메타용). 없으면 null. RLS 본인 것만.
+  Future<MotionClip?> getById(String clipId) async {
+    final rows = await _supabase
+        .from('motion_clips')
+        .select()
+        .eq('id', clipId)
+        .limit(1);
+    final list = rows as List;
+    if (list.isEmpty) return null;
+    return MotionClip.fromJson(list.first as Map<String, dynamic>);
+  }
+
   /// 구간 [from, to) 의 움직임 시간(초) = motion_clips duration_sec 합.
   Future<int> motionSeconds(
       String cameraId, DateTime from, DateTime to) async {
