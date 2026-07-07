@@ -339,6 +339,9 @@ final isFavoriteProvider =
   return ref.watch(favoriteClipRepositoryProvider).isFavorite(clipId);
 });
 
+/// 비디오 기록 탭(false=전체, true=즐겨찾기). autoDispose — 화면 이탈 시 리셋.
+final showFavoritesTabProvider = StateProvider.autoDispose<bool>((ref) => false);
+
 // ── 저장/공유 서비스 (#2) ───────────────────────────────────────────────────────
 
 final videoExportServiceProvider =

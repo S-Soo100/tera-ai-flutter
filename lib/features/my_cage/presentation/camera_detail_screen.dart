@@ -9,6 +9,7 @@ import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/cage_activity.dart';
 import '../domain/clip.dart';
 import '../domain/clip_action.dart';
+import '../domain/motion_clip.dart';
 import 'activity_format.dart';
 import 'my_cage_providers.dart';
 import 'supabase_module_providers.dart';
@@ -518,55 +519,77 @@ class _VideoLogSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final day = ref.watch(clipDayFilterProvider);
-    final actionFilter = ref.watch(clipActionFilterProvider);
-    final clipsAsync =
-        ref.watch(motionClipsProvider((cameraId: cameraId, day: day)));
+    final showFav = ref.watch(showFavoritesTabProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'crecam_detail_video_log'.tr(),
-          style: theme.textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            Text(
+              'crecam_detail_video_log'.tr(),
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            _VideoTabToggle(showFavorites: showFav),
+          ],
         ),
         const SizedBox(height: 12),
-        _FilterBar(cameraId: cameraId),
-        const SizedBox(height: 12),
-        if (kShowVerifyClip) ...[
-          _VerifyClipsSection(ref: ref),
+        if (showFav)
+          _FavoritesGrid(cameraId: cameraId)
+        else ...[
+          _FilterBar(cameraId: cameraId),
           const SizedBox(height: 12),
+          if (kShowVerifyClip) ...[
+            _VerifyClipsSection(ref: ref),
+            const SizedBox(height: 12),
+          ],
+          _AllClipsGrid(cameraId: cameraId),
         ],
-        clipsAsync.when(
-          loading: () => _buildSkeletonList(),
-          error: (e, _) => _buildError(context, ref),
-          data: (clips) {
-            // 분류 클라 필터: null=전체, 'unlabeled'=미분류(action null), 그 외=action 일치.
-            final filtered = actionFilter == null
-                ? clips
-                : clips.where((c) => actionFilter == 'unlabeled'
-                    ? c.action == null
-                    : c.action == actionFilter).toList();
-            if (filtered.isEmpty) return _buildEmptyAction(context);
-            return GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 1.15,
-              children: filtered
-                  .map((c) => MotionClipCard(
-                        clip: c,
-                        onTap: () =>
-                            context.push('/crecam/motion-clips/${c.id}'),
-                      ))
-                  .toList(),
-            );
-          },
-        ),
       ],
+    );
+  }
+}
+
+/// 비디오 기록 '전체' 탭 그리드(motion_clips + 분류/날짜 필터). 기존 로직 이동.
+class _AllClipsGrid extends ConsumerWidget {
+  const _AllClipsGrid({required this.cameraId});
+  final String cameraId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final day = ref.watch(clipDayFilterProvider);
+    final actionFilter = ref.watch(clipActionFilterProvider);
+    final clipsAsync =
+        ref.watch(motionClipsProvider((cameraId: cameraId, day: day)));
+    return clipsAsync.when(
+      loading: () => _buildSkeletonList(),
+      error: (e, _) => _buildError(context, ref),
+      data: (clips) {
+        final filtered = actionFilter == null
+            ? clips
+            : clips
+                .where((c) => actionFilter == 'unlabeled'
+                    ? c.action == null
+                    : c.action == actionFilter)
+                .toList();
+        if (filtered.isEmpty) return _buildEmptyAction(context);
+        return GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 1.15,
+          children: filtered
+              .map((c) => MotionClipCard(
+                    clip: c,
+                    onTap: () => context.push('/crecam/motion-clips/${c.id}'),
+                  ))
+              .toList(),
+        );
+      },
     );
   }
 
@@ -778,6 +801,109 @@ class _VerifyClipsSection extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// [전체 | 즐겨찾기] 세그먼트 토글.
+class _VideoTabToggle extends ConsumerWidget {
+  const _VideoTabToggle({required this.showFavorites});
+  final bool showFavorites;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    Widget chip(String label, bool selected, bool value) {
+      return GestureDetector(
+        onTap: () =>
+            ref.read(showFavoritesTabProvider.notifier).state = value,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected ? theme.colorScheme.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 6,
+                        offset: const Offset(0, 1))
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected
+                  ? theme.colorScheme.onSurface
+                  : theme.colorScheme.outline,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          chip('clip_tab_all'.tr(), !showFavorites, false),
+          chip('clip_tab_favorites'.tr(), showFavorites, true),
+        ],
+      ),
+    );
+  }
+}
+
+/// 즐겨찾기 그리드(로컬). 탭 시 로컬 파일 재생(모션 재생화면이 로컬 우선).
+class _FavoritesGrid extends ConsumerWidget {
+  const _FavoritesGrid({required this.cameraId});
+  final String cameraId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final favs = ref.watch(favoriteClipsProvider(cameraId));
+    if (favs.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Center(
+          child: Text('clip_favorites_empty'.tr(),
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.colorScheme.outline)),
+        ),
+      );
+    }
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      childAspectRatio: 1.15,
+      children: favs
+          .map((f) => MotionClipCard(
+                clip: MotionClip(
+                  id: f.clipId,
+                  cameraId: f.cameraId,
+                  startedAt: f.startedAt,
+                  durationSec: f.durationSec,
+                ),
+                onTap: () => context.push('/crecam/motion-clips/${f.clipId}'),
+              ))
+          .toList(),
     );
   }
 }
