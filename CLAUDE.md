@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 파충류 사육자를 위한 올인원 앱. 백색목록 검색, 사육 정보, 모프 유전 계산기, 자진신고 가이드 + 게코캠 + 사육장 IoT 제어.
-- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브)
+- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브) + chart_sparkline(온습도 추이 차트; fl_chart 존치·현재 미사용)
 - **현재 상태(2026-06-09)**: P2 상당 구현 — Supabase 인증/유저 CRUD + 게코캠(petcam-lab) + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE 페어링). 5탭 IA(`StatefulShellRoute`).
   - (P0 "로컬 전용/인증 없음/백엔드 없음"은 초기 설계 — 더 이상 유효하지 않음. 신규 작업은 아래 Phase 경계/CAOF 규칙을 따른다.)
 - **기획서**: `docs/spec.md`
@@ -66,9 +66,11 @@ lib/
 | `/search` (보조) | search | 백색목록 검색 | SpeciesRepository |
 | — | splash/error | SplashScreen / ErrorScreen | — |
 
-> 사육장 IoT 데이터 계층: `my_cage/data/{ble_pairing_repository,supabase_module_control_repository}.dart`, `my_cage/domain/{device,telemetry_reading,device_command,actuator_state,wifi_access_point,pair_target_kind}.dart`.
+> 사육장 IoT 데이터 계층: `my_cage/data/{ble_pairing_repository,supabase_module_control_repository}.dart`, `my_cage/domain/{device,telemetry_reading,telemetry_bucket,device_command,actuator_state,wifi_access_point,pair_target_kind,species_comfort}.dart`.
 > BLE 페어링(2026-07-02 개편): Wi-Fi 프로비저닝 프로토콜(`SCAN`→`SSID`→`PASS`→`CONNECT`, JWT 흐름 제거). 사육장·카메라 공통 `presentation/widgets/wifi_provisioning_view.dart` + 래퍼 `{device,camera}_pairing_screen.dart`(라우트 `/smart-cage/devices/pair`, `/crecam/cameras/pair`). **앱은 WiFi 연결만 — 토큰/DB등록/owner는 사전 세팅((a) 방식)**. 상세: `docs/ble-provisioning-protocol.md`, 메모리 `project_ble_provisioning_scheme`.
-> SmartCageScreen UI(2026-06-12 개편): 현황(`module_status_card`)+제어(`actuator_controls`)를 단일 통합 카드로 병합 + 테두리. 액추에이터='사육장 제어'(iOS 제어센터 스타일 한 row 타일). LED는 앱이 `CommandAction.ledOff`를 선제 추가(terra-server 계약에 led_off·LED telemetry 없음 → 메모리 `project_led_control_gap`). 목표 온습도는 하드코딩 상수(setpoint 실연동 후속).
+> SmartCageScreen UI(2026-06-12 개편): 현황(`module_status_card`)+제어(`actuator_controls`)를 단일 통합 카드로 병합 + 테두리. 액추에이터='사육장 제어'(iOS 제어센터 스타일 한 row 타일). LED는 앱이 `CommandAction.ledOff`를 선제 추가(terra-server 계약에 led_off·LED telemetry 없음 → 메모리 `project_led_control_gap`).
+> 온습도 추이 차트(2026-07-07, v0.12.0+22): `telemetry_history_chart.dart`(chart_sparkline) — 지표별 카드 + 매끈한 스파크라인 + **초록 안심존 밴드** + 최고/최저 마커, 기간 24h/7d/30d. 안심존=종 care_info 자동도출(`SpeciesComfort`; device_settings는 전 디바이스 비어있어 미사용, **임의 수치 금지**). **`telemetry_30m` 0값=센서 오프라인 센티넬 → 로드 시 `v>0` 필터 필수.** 상세: 메모리 `project_telemetry_chart`·`project_telemetry_zero_sentinel`.
+> 목표 온습도는 하드코딩 상수(setpoint 실연동 후속).
 
 ## 코딩 규칙
 
