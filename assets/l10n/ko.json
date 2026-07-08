@@ -309,6 +309,7 @@
   "camera_detail_clips_empty": "아직 녹화된 영상이 없어요",
   "clip_save": "저장",
   "clip_share": "공유",
+  "clip_classification_ai_note": "🔎 분류는 AI 추정이에요 (오탐 있을 수 있어요)",
   "clip_saving": "저장 중…",
   "clip_saved_to_gallery": "사진 앱에 저장했어요",
   "clip_save_failed": "저장에 실패했어요",

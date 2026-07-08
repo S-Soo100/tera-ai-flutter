@@ -12,7 +12,7 @@ import 'camera_exceptions.dart';
 /// 현재 false. 백엔드가 owner SELECT 정책(또는 terra-api 라벨 엔드포인트)을 열면
 /// true로 켜면 [listByCamera]가 라벨을 조인해 카드 칩·분류 필터가 실동작한다.
 /// 상세: docs/backend-handoff-camera-detail-ux.md.
-const bool kClipClassificationEnabled = false;
+const bool kClipClassificationEnabled = true;
 
 /// terra-server `motion_clips` 접근. 목록은 Supabase 직결(RLS 본인 것),
 /// 재생 URL은 terra-api(R2 presigned).

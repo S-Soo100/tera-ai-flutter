@@ -541,6 +541,12 @@ class _VideoLogSection extends ConsumerWidget {
           _FavoritesGrid(cameraId: cameraId)
         else ...[
           _FilterBar(cameraId: cameraId),
+          if (kClipClassificationEnabled) ...[
+            const SizedBox(height: 8),
+            Text('clip_classification_ai_note'.tr(),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.outline)),
+          ],
           const SizedBox(height: 12),
           if (kShowVerifyClip) ...[
             _VerifyClipsSection(ref: ref),

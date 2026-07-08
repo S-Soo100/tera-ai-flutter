@@ -5,7 +5,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/widgets/app_tag.dart';
 import '../../../../shared/widgets/skeleton_loading.dart';
 import '../../domain/clip_action.dart';
 import '../../domain/motion_clip.dart';
@@ -67,10 +66,7 @@ class MotionClipCard extends ConsumerWidget {
                         Text(timeLabel, style: theme.textTheme.bodySmall),
                   ),
                   if (clip.action != null) ...[
-                    AppTag(
-                      label: clipActionKey(clip.action!).tr(),
-                      color: cs.secondary,
-                    ),
+                    _AiActionChip(action: clip.action!, color: cs.secondary),
                     const SizedBox(width: 6),
                   ],
                   Text(
@@ -93,6 +89,38 @@ class MotionClipCard extends ConsumerWidget {
       alignment: Alignment.center,
       child: Icon(Icons.play_circle_outline,
           color: cs.onSurface.withValues(alpha: 0.35), size: 40),
+    );
+  }
+}
+
+/// AI 추정 분류 칩 — sparkle 아이콘 + 라벨(단정 아님 신호). 미지 action은 원문 폴백.
+class _AiActionChip extends StatelessWidget {
+  const _AiActionChip({required this.action, required this.color});
+
+  final String action;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final key = clipActionKey(action);
+    final t = key.tr();
+    final label = t == key ? action : t; // 미지 값이면 원문 그대로
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.auto_awesome, size: 11, color: color),
+          const SizedBox(width: 3),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+        ],
+      ),
     );
   }
 }
