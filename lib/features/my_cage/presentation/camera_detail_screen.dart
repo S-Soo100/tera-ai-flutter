@@ -871,6 +871,7 @@ class _FavoritesGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    ref.watch(favoritesSyncProvider(cameraId)); // cloud→local 동기화 트리거
     final favs = ref.watch(favoriteClipsProvider(cameraId));
     if (favs.isEmpty) {
       return Container(

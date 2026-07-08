@@ -321,7 +321,11 @@ final videoCacheRepositoryProvider = Provider<VideoCacheRepository>((ref) {
 // ── 즐겨찾기 (로컬, #4) ─────────────────────────────────────────────────────────
 
 final favoriteClipRepositoryProvider =
-    Provider<FavoriteClipRepository>((ref) => FavoriteClipRepository());
+    Provider<FavoriteClipRepository>((ref) {
+  return FavoriteClipRepository(
+    supabase: ref.watch(_supabaseClientProvider),
+  );
+});
 
 /// 카메라의 즐겨찾기 목록(로컬). add/remove 후 invalidate로 갱신.
 final favoriteClipsProvider =
@@ -333,6 +337,17 @@ final favoriteClipsProvider =
 final isFavoriteProvider =
     Provider.autoDispose.family<bool, String>((ref, clipId) {
   return ref.watch(favoriteClipRepositoryProvider).isFavorite(clipId);
+});
+
+/// 즐겨찾기 클라우드→로컬 동기화(탭 진입 시 1회). 완료 후 목록 invalidate로 갱신.
+final favoritesSyncProvider =
+    FutureProvider.autoDispose.family<void, String>((ref, cameraId) async {
+  ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 전환 시 재동기화
+  final favRepo = ref.watch(favoriteClipRepositoryProvider);
+  final motionRepo = ref.watch(motionClipRepositoryProvider);
+  await favRepo.syncFromCloud(motionRepo);
+  // pull로 로컬이 늘었을 수 있으니 목록 갱신
+  ref.invalidate(favoriteClipsProvider(cameraId));
 });
 
 /// 비디오 기록 탭(false=전체, true=즐겨찾기). autoDispose — 화면 이탈 시 리셋.
