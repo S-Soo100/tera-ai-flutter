@@ -158,6 +158,8 @@ petcam-lab 백엔드가 클라우드 분산 아키텍처로 재설계됐고, 그
 
 ## PR 4 — 하이라이트 화면 (피처플래그 가드)
 
+> ⚠️ **구현 편차 (2026-07-08, 실제 반영):** 아래 계획(별도 `/my-cage/highlights` 화면·`highlightsEnabled` 플래그·GT 확인루프)과 다르게 구현됨. 실제는 **마이 크레(`/my-pets`) '리포트' 탭에 "어젯밤 요약"**(22~06시 활동시간 + 물/밥 카운트) + **하이라이트 카드(보기/재생, `/my-pets/clips/:clipId`)**로 통합. 데이터=terra-api `GET /clips/highlights`(`HighlightRepository`·`NightlyReport`), 진입점=홈 배지. **GT 라벨(맞아요/정정/오탐)은 앱에서 제거**(관리자 라벨러 웹 몫). 아래 원문은 초기 계획 기록용으로 보존.
+
 **목표**: 별도 라우트로 하이라이트 피드. 백엔드 미구현 시 `EnvConfig.highlightsEnabled = false`로 진입점 자체 숨김.
 
 **신규 파일**:

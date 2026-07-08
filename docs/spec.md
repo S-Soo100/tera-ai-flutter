@@ -28,8 +28,8 @@
 | 탭 순서 | 이름 | 경로 | 화면 | 설명 |
 |---------|------|------|------|------|
 | 1 | 홈 | `/home` | HomeScreen | 대시보드 — 내 개체/사육장 요약 + D-day |
-| 2 | 마이 크레 | `/my-pets` | MyPetsScreen | 개체 등록/목록/관리 (CRUD) |
-| 3 | 크레캠 | `/crecam` | CrecamScreen | 게코캠 카메라/클립 (petcam-lab) |
+| 2 | 마이 크레 | `/my-pets` | MyPetsScreen | [개체목록\|리포트] 탭 — 개체 CRUD + 어젯밤 리포트(요약+하이라이트) |
+| 3 | 크레캠 | `/crecam` | CrecamScreen | 크레캠 카메라 + `motion_clips` 비디오(썸네일·즐겨찾기·AI분류칩) — terra-server |
 | 4 | 사육장 | `/smart-cage` | SmartCageScreen | **terra-server IoT** — 온습도 실시간 + 팬/히터/LED/릴레이 제어 + BLE 페어링 |
 | 5 | 커뮤니티 | `/community` | CommunityScreen | 게시판 (Supabase) |
 
@@ -230,7 +230,7 @@
 ### 내 개체 화면
 | 화면 | 경로 | 설명 |
 |------|------|------|
-| MyPetsScreen | /my-pets | 개체 목록 |
+| MyPetsScreen | /my-pets | 개체 목록 + 어젯밤 리포트 탭 |
 | PetAddScreen | /my-pets/add | 개체 등록 폼 |
 | PetDetailScreen | /my-pets/:petId | 개체 상세 (프로필, 메모, 체중 기록) |
 | PetEditScreen | /my-pets/:petId/edit | 개체 수정 |

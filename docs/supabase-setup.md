@@ -260,6 +260,8 @@ supabase.channel('telemetry-$deviceId')
 | 4 | `enable_rls_reference_tables` | 레퍼런스 RLS + 공개 읽기 정책 |
 | 5 | `enable_rls_user_tables` | 유저 RLS + 본인 CRUD 정책 |
 | 6 | `camera_clips` | 게코캠 영상 메타 테이블 + RLS (petcam-lab Stage C) |
+| 7 | `clip_favorites` | 즐겨찾기 클라우드 동기화 테이블(owner_id, clip_id, created_at) + owner RLS (2026-07-08) |
+| 8 | `behavior_logs_owner_select` | behavior_logs owner SELECT RLS — 앱이 본인 카메라 clip 분류라벨 직접 읽기 (2026-07-08, petcam-lab) |
 
 > terra-server IoT 테이블(`devices`/`telemetry`/`commands`/`enclosures`/`alerts` 등)은 **terra-server 백엔드가 자체 관리**한다(본 이력에 미포함). 동일 프로젝트 공유.
 

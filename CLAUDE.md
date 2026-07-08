@@ -2,8 +2,8 @@
 
 ## 프로젝트 개요
 파충류 사육자를 위한 올인원 앱. 백색목록 검색, 사육 정보, 모프 유전 계산기, 자진신고 가이드 + 게코캠 + 사육장 IoT 제어.
-- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브) + chart_sparkline(온습도 추이 차트; fl_chart 존치·현재 미사용)
-- **현재 상태(2026-06-09)**: P2 상당 구현 — Supabase 인증/유저 CRUD + 게코캠(petcam-lab) + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE 페어링). 5탭 IA(`StatefulShellRoute`).
+- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브) + video_player/gal/share_plus(크레캠 영상 재생·기기저장·공유) + chart_sparkline(온습도 추이 차트; fl_chart 존치·현재 미사용)
+- **현재 상태(2026-07-08)**: P2 상당 구현 — Supabase 인증/유저 CRUD + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE) + **크레캠 영상 개편**(motion_clips 썸네일·저장/공유·즐겨찾기 클라우드·AI분류칩·시크) + **어젯밤 리포트**(마이 크레 탭). 5탭 IA(`StatefulShellRoute`).
   - (P0 "로컬 전용/인증 없음/백엔드 없음"은 초기 설계 — 더 이상 유효하지 않음. 신규 작업은 아래 Phase 경계/CAOF 규칙을 따른다.)
 - **기획서**: `docs/spec.md`
 - **자진신고 기한**: 2026-06-13 (D-day 기준)
@@ -58,8 +58,8 @@ lib/
 | 탭/라우트 | feature | 화면 | 데이터 소스 |
 |-----------|---------|------|------------|
 | `/home` | home | HomeScreen (대시보드) | 내 개체/사육장 요약 |
-| `/my-pets` | my_pets | MyPetsScreen (개체 CRUD) | Supabase `pets`/`pet_events`/`media` |
-| `/crecam` | my_cage | CrecamScreen + CameraPairingScreen | **terra-server** `cameras`(ESP32-P4) + WebRTC P2P 라이브 + petcam-lab `camera_clips` 클립 + BLE 페어링 |
+| `/my-pets` | my_pets | MyPetsScreen ([개체목록\|리포트] — 개체 CRUD + 어젯밤 리포트) | Supabase `pets`/`pet_events`/`media` + terra-api 하이라이트 |
+| `/crecam` | my_cage | CrecamScreen + CameraPairingScreen | **terra-server** `cameras`(ESP32-P4) + WebRTC P2P 라이브 + `motion_clips` 비디오(썸네일·즐겨찾기 클라우드·AI분류칩) + BLE 페어링 |
 | `/smart-cage` | my_cage | SmartCageScreen + DevicePairingScreen | **terra-server** `devices`/`telemetry`/`commands` + BLE |
 | `/community` | community | CommunityScreen (게시판) | Supabase `community` |
 | `/wiki` (보조) | wiki | WikiScreen + 종 상세/모프 계산기/종 비교/지식그래프 | 레퍼런스(로컬/Supabase) |
