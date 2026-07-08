@@ -12,6 +12,9 @@
 |---|------|----------------|-----------|---------|
 | 1 | **모션 클립 썸네일 presigned 엔드포인트** | 클라이언트가 영상 첫 프레임을 추출해 캐시 (느리고 클립당 API 호출 발생) | `GET /clips/{id}/thumbnail/url` 추가 (재생 URL과 동일 로직) | 높음 (소규모) |
 | 2 | **클라우드 즐겨찾기 + R2 보존** | 로컬(Hive) 즐겨찾기 + 기기에 mp4 영구저장 (재설치·기기변경 시 소실) | `clip_favorites` 테이블 + RLS, 즐겨찾기 클립 R2 만료삭제 제외 | 중간 |
+| 3 | **밤새 하이라이트("어젯밤 리포트") API** | (신규 화면, 임시조치 없음) | `GET /clips/highlights` — VLM 판정 하이라이트 목록(서버단 오탐 필터) + 확인→GT | 중간 |
+
+> ℹ️ **요청 1(썸네일)은 3곳 공용**: 앱 상세 그리드 + 관리자 라벨링 웹(label.tera-ai.uk) 큐 + 요청 3 하이라이트 카드가 **모두 같은 `GET /clips/{id}/thumbnail/url`을 재사용**한다. 중복 구현 없이 한 엔드포인트로.
 
 ---
 
@@ -96,6 +99,54 @@ create policy "own favorites: delete" on clip_favorites
 
 ### 앱 이관 방식
 클라우드 즐겨찾기가 준비되면 앱은 로컬 Hive 저장소를 이 테이블과 동기화하도록 확장한다(로컬 mp4 캐시는 오프라인 재생용으로 유지). 현재 로컬 전용 구현은 그 전까지의 stopgap.
+
+---
+
+## 요청 3 — 밤새 하이라이트("어젯밤 리포트") API
+
+### 배경
+mac-mini nightly worker(별도 운영)가 **30분마다 밤(20~06시 KST) 모션 clip을 VLM(Claude Sonnet v4.0)로 샘플 분석**해, 케어행동(hand_feeding·drinking 등) 하이라이트를 `behavior_logs`(`source='vlm'`)에 자동 기록하고 `camera_clips`로 미러한다. **clip_id = motion_clips.id 재사용 → id 정합**(앱 clip 과 그대로 연결). 이걸 앱 "어젯밤 리포트" 화면에서 소비한다. (2026-07-08 auto-register 가동, 첫날밤 hand_feeding 자동 포착 실측.)
+
+### ⚠️ 신뢰도 전제 (설계 핵심 — 실측 기반)
+VLM 은 **오탐이 많다**. 실측: 특정 개체(화이트 많은 트라이익스트림 할리퀸 모프)의 흰 체색을 밤 IR 에서 허물로 오인해 **shedding 판정이 100% 오탐**(누적 30+건 전부 육안 moving). 그래서:
+- 앱은 하이라이트를 **"AI 추정"으로만** 표시(단정 금지).
+- **서버단 필터**: 개체 프로파일 상시오탐(현재: 이 개체 `shedding`)과 저 confidence 는 **하이라이트에서 제외해 내려준다**(앱은 받은 것만 표시).
+- 사용자 확인(👍/👎/정정)이 GT 가 되어 정확도를 높이는 **HITL 루프**.
+
+### 요청 계약
+```
+GET /clips/highlights?since=<ISO8601>&limit=<n>
+Authorization: Bearer <JWT>          # 본인 카메라 clip 만(기존 RLS)
+```
+**200 응답:**
+```json
+{
+  "highlights": [
+    {
+      "clip_id": "e679f8ad-9011-4bc2-a489-1bb93c54ead8",
+      "started_at": "2026-07-07T14:07:00+00:00",
+      "thumbnail_key": "terra-clips/clips/.../....jpg",
+      "vlm_action": "drinking",
+      "confidence": 0.62,
+      "care_level": "care",        // "care"(hand_feeding·drinking·탈피 = 건강) | "enrichment"(놀이·활동 = 복지)
+      "user_confirmed": null        // null=미확인 | true | false | 정정된 action 문자열
+    }
+  ]
+}
+```
+
+### 필터/집계 규칙
+- `behavior_logs` where `source='vlm'` AND `action NOT IN (서버 억제셋)` AND `confidence >= 임계`.
+- **억제셋은 개체 프로파일 기반**(현재: 이 개체 `shedding`). 하드코딩 말고 설정/테이블 권장 — 실제 탈피 영상이 확보되면 해제 가능해야.
+- clip 메타(`started_at`·`thumbnail_key`)는 `motion_clips` join. 썸네일은 요청 1 엔드포인트 재사용.
+
+### 사용자 확인 → GT (HITL)
+- 앱 👍/👎/정정 → `POST /clips/{id}/labels`(**기존 라벨 경로, `behavior_labels` 테이블 — 관리자 라벨웹과 동일 계약**).
+- `user_confirmed` 는 해당 clip 에 본인 `behavior_labels` 존재 여부/값으로 계산.
+
+### 앱 이관
+- 홈에 "🦎 어젯밤 리포트 · 하이라이트 N" 배지 → 이 API 로 하이라이트 카드(썸네일=요청1) + 확인 루프.
+- 활동량 그래프(몇 시에 활발)는 **별개**: `motion_clips` 시간대 집계로 앱/서버에서 산출(VLM 0비용, 항상 정확). 하이라이트(행동 종류)와 2층 구성.
 
 ---
 
