@@ -5,8 +5,8 @@ import 'package:http/http.dart' as http;
 import '../domain/nightly_highlight.dart';
 import 'camera_exceptions.dart';
 
-/// terra-api 하이라이트(어젯밤 리포트) + 라벨 확인(GT). motion_clip_repository와
-/// 동일한 terra-api base + JWT 패턴.
+/// terra-api 하이라이트(어젯밤 리포트) 조회. 보기 전용 — 라벨링(GT)은 관리자
+/// 라벨러 웹 몫. motion_clip_repository와 동일한 terra-api base + JWT 패턴.
 class HighlightRepository {
   final String _terraApiUrl;
   final Future<String?> Function() _tokenProvider;
@@ -37,27 +37,6 @@ class HighlightRepository {
           .toList();
     }
     if (resp.statusCode == 404) return const [];
-    throw BackendException(resp.statusCode, resp.body);
-  }
-
-  /// 확인/정정 GT 제출 (POST /clips/{id}/labels, behavior_labels UPSERT).
-  /// 👍=vlm_action 그대로, 정정=선택 action. 오탐(👎)은 호출하지 않는다.
-  Future<void> submitLabel(String clipId, String action,
-      {String? lickTarget, String? note}) async {
-    final token = await _tokenProvider();
-    final resp = await http.post(
-      Uri.parse('$_terraApiUrl/clips/$clipId/labels'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'action': action,
-        if (lickTarget != null) 'lick_target': lickTarget,
-        if (note != null) 'note': note,
-      }),
-    );
-    if (resp.statusCode == 200 || resp.statusCode == 201) return;
     throw BackendException(resp.statusCode, resp.body);
   }
 }

@@ -21,7 +21,7 @@ import '../domain/clip.dart';
 import '../domain/clip_media_url.dart';
 import '../domain/favorite_clip.dart';
 import '../domain/motion_clip.dart';
-import '../domain/nightly_highlight.dart';
+import '../domain/nightly_report.dart';
 import '../domain/terra_camera.dart';
 import '../domain/enclosure.dart';
 import 'highlights_controller.dart';
@@ -358,7 +358,7 @@ final showFavoritesTabProvider = StateProvider.autoDispose<bool>((ref) => false)
 final videoExportServiceProvider =
     Provider<VideoExportService>((ref) => VideoExportService());
 
-// ── 어젯밤 리포트(하이라이트, terra-api) ──────────────────────────────────────
+// ── 어젯밤 리포트 (terra-api, 보기 전용) ──────────────────────────────────────
 
 final highlightRepositoryProvider = Provider<HighlightRepository>((ref) {
   return HighlightRepository(
@@ -367,19 +367,24 @@ final highlightRepositoryProvider = Provider<HighlightRepository>((ref) {
   );
 });
 
-/// 어젯밤 하이라이트(로드+확인/정정/오탐). 홈 배지·리포트 화면 공용.
-/// 계정 전환 시 재생성(이전 계정 노출 방지 — project_auth_provider_stale_pattern).
-final nightlyHighlightsProvider = StateNotifierProvider.autoDispose<
-    HighlightsController, AsyncValue<List<NightlyHighlight>>>((ref) {
+/// 어젯밤(22~06시) 요약 — 하이라이트(전 카메라) + 활동시간 합. 계정 전환 시 재조회.
+final nightlyReportProvider =
+    FutureProvider.autoDispose<NightlyReport>((ref) async {
   ref.watch(currentUserProvider.select((u) => u?.id));
-  return HighlightsController(ref.watch(highlightRepositoryProvider));
-});
-
-/// 홈 배지 카운트 = 미확인(pending) 하이라이트 수. 0이면 배지 숨김.
-final highlightBadgeCountProvider = Provider.autoDispose<int>((ref) {
-  return ref.watch(nightlyHighlightsProvider).maybeWhen(
-        data: (list) =>
-            list.where((h) => h.review == HighlightReview.pending).length,
-        orElse: () => 0,
-      );
+  final now = DateTime.now();
+  final start = lastNightSince(now);
+  final end = lastNightEnd(now);
+  final all = await ref.watch(highlightRepositoryProvider).list(since: start);
+  // 창 [start,end]로 클램프(늦은 저녁 오늘밤 조기 하이라이트 제외)
+  final highlights = all
+      .where((h) => h.startedAt.isAfter(start) && h.startedAt.isBefore(end))
+      .toList();
+  // 활동시간 = 전 카메라 motionSeconds 합
+  final cameras = await ref.watch(camerasProvider.future);
+  final motionRepo = ref.watch(motionClipRepositoryProvider);
+  var sec = 0;
+  for (final c in cameras) {
+    sec += await motionRepo.motionSeconds(c.id, start, end);
+  }
+  return NightlyReport(activitySeconds: sec, highlights: highlights);
 });

@@ -4,15 +4,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../my_cage/presentation/my_cage_providers.dart';
+import '../../../my_pets/presentation/my_pets_providers.dart';
 
-/// "어젯밤 리포트 · 하이라이트 N" 홈 배지. 미확인 0건이면 아무것도 안 그림.
+/// "어젯밤 리포트" 홈 배지. 밤 활동이 전무하면 숨김, 있으면 하이라이트 건수(0이면
+/// "조용한 밤")를 보여주고 탭 시 마이 크레 리포트 탭으로 이동.
 class NightlyReportBadge extends ConsumerWidget {
   const NightlyReportBadge({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final count = ref.watch(highlightBadgeCountProvider);
-    if (count <= 0) return const SizedBox.shrink();
+    final async = ref.watch(nightlyReportProvider);
+    final report = async.valueOrNull;
+    if (report == null) return const SizedBox.shrink();
+    if (report.highlights.isEmpty && report.activitySeconds == 0) {
+      return const SizedBox.shrink();
+    }
+    final n = report.highlights.length;
+    final sub = n > 0
+        ? 'nightly_report_badge_sub'.tr(namedArgs: {'n': '$n'})
+        : 'nightly_report_badge_quiet'.tr();
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Padding(
@@ -22,7 +32,10 @@ class NightlyReportBadge extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () => context.push('/home/highlights'),
+          onTap: () {
+            ref.read(myPetsTabProvider.notifier).state = 1;
+            context.go('/my-pets');
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -37,8 +50,7 @@ class NightlyReportBadge extends ConsumerWidget {
                           style: theme.textTheme.titleSmall
                               ?.copyWith(fontWeight: FontWeight.bold)),
                       Text(
-                        'nightly_report_badge_sub'
-                            .tr(namedArgs: {'n': '$count'}),
+                        sub,
                         style: theme.textTheme.bodySmall
                             ?.copyWith(color: cs.outline),
                       ),

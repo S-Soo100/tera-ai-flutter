@@ -19,7 +19,6 @@ import '../../features/my_cage/presentation/smart_cage_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
 import '../../features/my_cage/presentation/clip_player_screen.dart';
 import '../../features/my_cage/presentation/motion_clip_player_screen.dart';
-import '../../features/my_cage/presentation/nightly_report_screen.dart';
 import '../../features/my_cage/presentation/device_pairing_screen.dart';
 import '../../features/my_cage/presentation/camera_pairing_screen.dart';
 import '../../features/my_cage/presentation/enclosure_list_screen.dart';
@@ -99,21 +98,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/home',
                 builder: (context, state) => const HomeScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'highlights',
-                    builder: (context, state) => const NightlyReportScreen(),
-                    routes: [
-                      GoRoute(
-                        path: ':clipId',
-                        builder: (context, state) {
-                          final id = state.pathParameters['clipId']!;
-                          return MotionClipPlayerScreen(clipId: id);
-                        },
-                      ),
-                    ],
-                  ),
-                ],
               ),
             ],
           ),
@@ -127,6 +111,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'add',
                     builder: (context, state) => const PetAddScreen(),
+                  ),
+                  // 정적 경로 'clips/:clipId'를 ':petId'보다 먼저 등록 —
+                  // 'clips'가 petId로 오인 매칭되는 것을 방지 (리포트 카드 → 재생).
+                  GoRoute(
+                    path: 'clips/:clipId',
+                    builder: (context, state) => MotionClipPlayerScreen(
+                        clipId: state.pathParameters['clipId']!),
                   ),
                   GoRoute(
                     path: ':petId',

@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_styles.dart';
+import '../../my_cage/presentation/nightly_report_view.dart';
 import '../domain/pet.dart';
 import 'my_pets_providers.dart';
 
-enum _MyPetsTab { list, report, highlights }
+enum _MyPetsTab { list, report }
 
 class MyPetsScreen extends ConsumerStatefulWidget {
   const MyPetsScreen({super.key});
@@ -18,11 +19,11 @@ class MyPetsScreen extends ConsumerStatefulWidget {
 }
 
 class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
-  _MyPetsTab _selected = _MyPetsTab.list;
-
   @override
   Widget build(BuildContext context) {
     final pets = ref.watch(petListProvider);
+    final idx = ref.watch(myPetsTabProvider);
+    final selected = idx == 1 ? _MyPetsTab.report : _MyPetsTab.list;
 
     return Scaffold(
       appBar: AppBar(
@@ -49,39 +50,24 @@ class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: _TabChips(
-              selected: _selected,
-              onChanged: (t) => setState(() => _selected = t),
+              selected: selected,
+              onChanged: (t) => ref.read(myPetsTabProvider.notifier).state =
+                  (t == _MyPetsTab.report ? 1 : 0),
             ),
           ),
           const SizedBox(height: AppStyles.spacing16),
-          Expanded(child: _tabContent(pets)),
+          Expanded(child: _tabContent(selected, pets)),
         ],
       ),
     );
   }
 
-  Widget _tabContent(List<Pet> pets) {
-    switch (_selected) {
+  Widget _tabContent(_MyPetsTab selected, List<Pet> pets) {
+    switch (selected) {
       case _MyPetsTab.list:
         return _PetListView(pets: pets);
       case _MyPetsTab.report:
-        return Center(
-          child: Text(
-            'my_pets_report_placeholder'.tr(),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-          ),
-        );
-      case _MyPetsTab.highlights:
-        return Center(
-          child: Text(
-            'my_pets_highlights_placeholder'.tr(),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-          ),
-        );
+        return const NightlyReportView();
     }
   }
 }
@@ -99,7 +85,6 @@ class _TabChips extends StatelessWidget {
     final items = [
       (_MyPetsTab.list, 'my_pets_tab_list'.tr()),
       (_MyPetsTab.report, 'my_pets_tab_report'.tr()),
-      (_MyPetsTab.highlights, 'my_pets_tab_highlights'.tr()),
     ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,

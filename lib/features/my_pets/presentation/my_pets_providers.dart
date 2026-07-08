@@ -9,6 +9,9 @@ import '../domain/pet.dart';
 import '../domain/pet_event.dart';
 import '../domain/weight_log.dart';
 
+/// 마이 크레 선택 탭: 0=개체목록, 1=리포트. 홈 배지가 1로 세팅 후 이동.
+final myPetsTabProvider = StateProvider<int>((ref) => 0);
+
 /// Pet 목록 — 인증 시 Supabase, 미인증 시 Hive
 final petListProvider = StateNotifierProvider<PetListNotifier, List<Pet>>((ref) {
   final localRepo = ref.watch(petRepositoryProvider);
