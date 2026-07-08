@@ -38,6 +38,12 @@ class _VideoControlsState extends State<VideoControls> {
     super.dispose();
   }
 
+  double _sliderValue(VideoPlayerValue v) {
+    final dur = v.duration.inMilliseconds;
+    if (dur <= 0) return 0;
+    return (v.position.inMilliseconds / dur).clamp(0.0, 1.0);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ctrl = widget.controller;
@@ -53,13 +59,25 @@ class _VideoControlsState extends State<VideoControls> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          VideoProgressIndicator(
-            ctrl,
-            allowScrubbing: true,
-            colors: VideoProgressColors(
-              playedColor: Theme.of(context).colorScheme.primary,
-              bufferedColor: Colors.white30,
-              backgroundColor: Colors.white12,
+          SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 3,
+              overlayShape:
+                  const RoundSliderOverlayShape(overlayRadius: 14),
+              thumbShape:
+                  const RoundSliderThumbShape(enabledThumbRadius: 7),
+              activeTrackColor: Theme.of(context).colorScheme.primary,
+              inactiveTrackColor: Colors.white24,
+              thumbColor: Colors.white,
+            ),
+            child: Slider(
+              value: _sliderValue(v),
+              onChanged: (val) {
+                final dur = v.duration.inMilliseconds;
+                if (dur > 0) {
+                  ctrl.seekTo(Duration(milliseconds: (val * dur).round()));
+                }
+              },
             ),
           ),
           const SizedBox(height: 4),

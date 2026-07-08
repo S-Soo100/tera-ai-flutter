@@ -188,25 +188,26 @@ class _MotionClipPlayerScreenState
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+        leadingWidth: 56,
+        leading: _GlassIconButton(
+          icon: Icons.arrow_back,
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () => context.pop(),
         ),
         actions: [
-          IconButton(
-            icon: Icon(isFav ? Icons.favorite : Icons.favorite_border,
-                color: isFav ? Colors.redAccent : Colors.white),
+          _GlassIconButton(
+            icon: isFav ? Icons.favorite : Icons.favorite_border,
+            color: isFav ? Colors.redAccent : Colors.white,
             tooltip: 'clip_favorite_add'.tr(),
             onPressed: _busy ? null : () => _toggleFavorite(clip),
           ),
-          IconButton(
-            icon: const Icon(Icons.download_outlined),
+          _GlassIconButton(
+            icon: Icons.download_outlined,
             tooltip: 'clip_save'.tr(),
             onPressed: _busy ? null : _save,
           ),
-          IconButton(
-            icon: const Icon(Icons.ios_share),
+          _GlassIconButton(
+            icon: Icons.ios_share,
             tooltip: 'clip_share'.tr(),
             onPressed: _busy ? null : _share,
           ),
@@ -238,6 +239,35 @@ class _MotionClipPlayerScreenState
             VideoControls(controller: _controller!),
           const Spacer(),
         ],
+      ),
+    );
+  }
+}
+
+/// 검은 영상 위에서 잘 보이는 원형 반투명 아이콘 버튼.
+class _GlassIconButton extends StatelessWidget {
+  const _GlassIconButton(
+      {required this.icon, required this.onPressed, this.color, this.tooltip});
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final Color? color;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.35),
+        shape: const CircleBorder(),
+        child: IconButton(
+          icon: Icon(icon,
+              color: onPressed == null
+                  ? Colors.white38
+                  : (color ?? Colors.white)),
+          tooltip: tooltip,
+          onPressed: onPressed,
+        ),
       ),
     );
   }
