@@ -127,7 +127,7 @@ CAOF 트랙: [Trivial / Standard / Critical]
 |------|------|-----------|
 | Trivial | 상수 수정, 스타일 변경, 텍스트 수정 | 메인 직접 처리 |
 | Standard | 기존 feature 수정, 새 위젯, Provider 추가 | 메인이 분석서 -> 합의 -> 직접 구현 |
-| Critical | 새 feature, Phase 전환, 외부 패키지 도입 | 풀 GATE (에이전트 분리) |
+| Critical | 새 feature, Phase 전환 (패키지 도입 제외 — 자유 재량) | 풀 GATE (에이전트 분리) |
 
 **판단 기준은 줄 수가 아니라 "실패 시 되돌리기 비용"이다.**
 상세 라우팅 트리: `.claude/rules/tera-ai-caof.md`
@@ -164,7 +164,10 @@ flutter test             # 테스트 실행
 
 ## 금지 사항
 - placeholder feature(onboarding, profile, notification)를 기획 확정 전 구현하지 않기 (auth는 Email 인증 구현 완료 — 제외)
-- dio 패키지 추가 금지 — HTTP 통신은 `http` 패키지 사용 (현재 dio 미포함·미사용)
-- flutter_secure_storage 실사용 금지 — 필요 시 사용자 승인 후 도입 (현재 미포함)
-- 새 패키지 추가 시 사용자 승인 없이 pubspec.yaml 수정하지 않기
 - **CircularProgressIndicator 사용 금지** — 로딩 상태는 항상 `shimmer` 패키지의 스켈레톤 UI를 사용할 것
+
+## 패키지·버전 관리 (2026-07-08 — 자유 재량)
+- **신규 라이브러리 설치·pubspec 버전 조정은 Claude 재량으로 자유롭게** 한다. 사용자 사전 승인 불필요. (기존 "새 패키지 추가 시 승인" 규칙 해제.)
+- **CAOF "외부 패키지 도입 = Critical 자동 승격" 해제** — 되돌리기 비용은 사안별 판단(대개 Trivial~Standard).
+- 가드레일(승인 게이트 아님, 상식): ① 유지보수되는 패키지 우선 ② 기존 기능과 중복 도입 회피 ③ 커밋/보고에 무엇을·왜 추가했는지 기록 ④ dependency solving 충돌 시 원인·선택을 보고에 남김.
+- 표준 선호(강제 아님): HTTP는 `http` 우선(dio는 특별한 이유 시), 로컬 저장은 Hive 우선(flutter_secure_storage는 필요 시 도입 가능).

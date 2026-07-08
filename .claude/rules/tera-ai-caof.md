@@ -26,7 +26,7 @@ Tera AI 요청 수신
 │   ② 마이그레이션 계획서
 │   ③ 사용자 승인
 │   ④ flutter-dev 단계별 구현
-├─ 새 패키지 도입 → Critical (pubspec.yaml 변경 = 되돌리기 비용 높음)
+├─ 새 패키지 도입/버전 조정 → 자유 재량 (사전승인 불필요, 2026-07-08). 되돌리기 비용 사안별 — 대개 Trivial~Standard
 ├─ 기존 feature 수정/개선 (2~3 파일) → Standard 트랙
 │   ① 메인 Claude 변경 범위 분석 + 수정 방향
 │   ② 사용자 합의
@@ -49,7 +49,7 @@ Tera AI 요청 수신
 | GoRouter 경로 변경 | 중간 (딥링크 영향) | Standard |
 | D-day 계산 로직 | 높음 (사용자가 잘못된 날짜를 믿을 수 있음) | Standard |
 | 새 feature 폴더 추가 | 높음 (구조 결정) | Critical |
-| pubspec.yaml 패키지 추가 | 높음 (빌드 영향) | Critical |
+| pubspec.yaml 패키지 추가/버전 | 낮음~중간 (빌드 확인) | 자유 재량 |
 | Phase 전환 | 매우 높음 | Critical |
 
 ### Designer 분석 시 필수 확인 (메인 Claude)
