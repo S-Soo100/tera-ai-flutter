@@ -29,6 +29,7 @@ class _FavoriteToggleButtonState extends ConsumerState<FavoriteToggleButton> {
     try {
       if (repo.isFavorite(widget.clipId)) {
         final cameraId = await repo.remove(widget.clipId);
+        if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         if (cameraId != null) ref.invalidate(favoriteClipsProvider(cameraId));
         messenger.showSnackBar(
@@ -47,6 +48,7 @@ class _FavoriteToggleButtonState extends ConsumerState<FavoriteToggleButton> {
         final url =
             await ref.read(motionClipUrlProvider(widget.clipId).future);
         await repo.add(clip, url);
+        if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         ref.invalidate(favoriteClipsProvider(clip.cameraId));
         messenger.showSnackBar(

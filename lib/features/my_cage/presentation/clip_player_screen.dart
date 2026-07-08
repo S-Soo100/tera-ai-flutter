@@ -38,6 +38,7 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
   }
 
   Future<void> _initPlayer({bool isRetry = false}) async {
+    VideoPlayerController? controller;
     try {
       final repo = ref.read(clipRepositoryProvider);
       final cacheRepo = ref.read(videoCacheRepositoryProvider);
@@ -55,7 +56,6 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
         cachedFile = await cacheRepo.getCached(widget.clipId);
       }
 
-      final VideoPlayerController controller;
       if (cachedFile != null) {
         controller = VideoPlayerController.file(cachedFile);
       } else {
@@ -78,12 +78,13 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
         return;
       }
 
+      final c = controller; // 클로저 캡처용 non-null 참조
       _errorListener = () {
-        final ctrlValue = controller.value;
+        final ctrlValue = c.value;
         if (ctrlValue.hasError && !_didRetryUrl && mounted) {
           _didRetryUrl = true;
-          controller.removeListener(_errorListener!);
-          controller.dispose();
+          c.removeListener(_errorListener!);
+          c.dispose();
           setState(() {
             _controller = null;
             _initialized = false;
@@ -91,7 +92,7 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
           _initPlayer(isRetry: true);
         }
       };
-      controller.addListener(_errorListener!);
+      c.addListener(_errorListener!);
 
       setState(() {
         _controller = controller;
@@ -100,6 +101,7 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
       });
       _controller!.play();
     } catch (e) {
+      await controller?.dispose();
       if (!isRetry && mounted) {
         _didRetryUrl = true;
         await _initPlayer(isRetry: true);
@@ -178,10 +180,13 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
               ),
             )
           else
-            AspectRatio(
-              aspectRatio: _controller!.value.aspectRatio,
-              child: VideoPlayer(_controller!),
-            ),
+            () {
+              final ar = _controller!.value.aspectRatio;
+              return AspectRatio(
+                aspectRatio: ar.isFinite && ar > 0 ? ar : 16 / 9,
+                child: VideoPlayer(_controller!),
+              );
+            }(),
 
           // 컨트롤
           if (_initialized && _controller != null)

@@ -71,7 +71,8 @@ class FavoriteClipRepository {
   /// 즐겨찾기 추가 = presigned URL로 mp4 다운로드 → 문서 디렉토리 저장 → 메타 INSERT
   /// → 클라우드 upsert(best-effort).
   Future<void> add(MotionClip clip, String presignedUrl) async {
-    if (_box.containsKey(clip.id)) return;
+    if (_uid == null) return;
+    if (isFavorite(clip.id)) return;
     final resp = await http.get(Uri.parse(presignedUrl));
     if (resp.statusCode != 200) {
       throw Exception('favorite download failed: ${resp.statusCode}');

@@ -50,7 +50,9 @@ class MotionClipRepository {
     );
     if (resp.statusCode == 200) {
       final body = jsonDecode(resp.body) as Map<String, dynamic>;
-      return body['url'] as String;
+      final url = body['url'] as String?;
+      if (url == null) throw BackendException(resp.statusCode, resp.body);
+      return url;
     }
     throw BackendException(resp.statusCode, resp.body);
   }

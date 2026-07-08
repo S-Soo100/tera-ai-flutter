@@ -87,11 +87,8 @@
   "my_pets_view_wiki": "이 종의 사육 위키 보기",
   "my_pets_tab_list": "개체 목록",
   "my_pets_tab_report": "리포트",
-  "my_pets_tab_highlights": "하이라이트 모음",
   "my_pets_adoption_date": "입양일: {date}",
   "my_pets_edit_info": "정보 수정",
-  "my_pets_report_placeholder": "리포트 준비 중입니다",
-  "my_pets_highlights_placeholder": "하이라이트 모음 준비 중입니다",
   "my_pets_add_new_title": "새로운 개체 등록하기",
   "my_pets_add_new_subtitle": "이름, 종, 사진 등\n필수/선택 정보를 입력할 수 있어요.",
 

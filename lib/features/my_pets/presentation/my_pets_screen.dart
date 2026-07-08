@@ -19,11 +19,20 @@ class MyPetsScreen extends ConsumerStatefulWidget {
 }
 
 class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
+  _MyPetsTab _selected = _MyPetsTab.list;
+
   @override
   Widget build(BuildContext context) {
     final pets = ref.watch(petListProvider);
-    final idx = ref.watch(myPetsTabProvider);
-    final selected = idx == 1 ? _MyPetsTab.report : _MyPetsTab.list;
+    final intent = ref.watch(myPetsTabProvider);
+    if (intent == 1 && _selected != _MyPetsTab.report) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _selected = _MyPetsTab.report);
+          ref.read(myPetsTabProvider.notifier).state = 0;
+        }
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -50,13 +59,12 @@ class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: _TabChips(
-              selected: selected,
-              onChanged: (t) => ref.read(myPetsTabProvider.notifier).state =
-                  (t == _MyPetsTab.report ? 1 : 0),
+              selected: _selected,
+              onChanged: (t) => setState(() => _selected = t),
             ),
           ),
           const SizedBox(height: AppStyles.spacing16),
-          Expanded(child: _tabContent(selected, pets)),
+          Expanded(child: _tabContent(_selected, pets)),
         ],
       ),
     );

@@ -21,6 +21,7 @@ import '../domain/clip.dart';
 import '../domain/clip_media_url.dart';
 import '../domain/favorite_clip.dart';
 import '../domain/motion_clip.dart';
+import '../domain/nightly_highlight.dart';
 import '../domain/nightly_report.dart';
 import '../domain/terra_camera.dart';
 import '../domain/enclosure.dart';
@@ -374,17 +375,32 @@ final nightlyReportProvider =
   final now = DateTime.now();
   final start = lastNightSince(now);
   final end = lastNightEnd(now);
-  final all = await ref.watch(highlightRepositoryProvider).list(since: start);
-  // 창 [start,end]로 클램프(늦은 저녁 오늘밤 조기 하이라이트 제외)
-  final highlights = all
-      .where((h) => h.startedAt.isAfter(start) && h.startedAt.isBefore(end))
-      .toList();
-  // 활동시간 = 전 카메라 motionSeconds 합
-  final cameras = await ref.watch(camerasProvider.future);
-  final motionRepo = ref.watch(motionClipRepositoryProvider);
-  var sec = 0;
-  for (final c in cameras) {
-    sec += await motionRepo.motionSeconds(c.id, start, end);
+  List<NightlyHighlight> highlights;
+  try {
+    final all = await ref.watch(highlightRepositoryProvider).list(since: start);
+    highlights = all
+        .where((h) =>
+            h.clipId.isNotEmpty &&
+            !h.startedAt.isBefore(start) &&
+            !h.startedAt.isAfter(end))
+        .toList();
+  } catch (_) {
+    highlights = const [];
   }
+  List<TerraCamera> cameras;
+  try {
+    cameras = await ref.watch(camerasProvider.future);
+  } catch (_) {
+    cameras = const [];
+  }
+  final motionRepo = ref.watch(motionClipRepositoryProvider);
+  final secs = await Future.wait(cameras.map((c) async {
+    try {
+      return await motionRepo.motionSeconds(c.id, start, end);
+    } catch (_) {
+      return 0;
+    }
+  }));
+  final sec = secs.fold<int>(0, (a, b) => a + b);
   return NightlyReport(activitySeconds: sec, highlights: highlights);
 });

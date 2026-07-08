@@ -107,13 +107,18 @@ class _SummaryCard extends StatelessWidget {
                               style: const TextStyle(fontSize: 22)),
                           const SizedBox(height: 4),
                           Text(s.$2,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.bodySmall
                                   ?.copyWith(color: cs.outline)),
                           const SizedBox(height: 2),
-                          Text(s.$3,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.onSurface)),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(s.$3,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: cs.onSurface)),
+                          ),
                         ],
                       ),
                     ))

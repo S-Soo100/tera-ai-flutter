@@ -30,6 +30,7 @@ class _MotionClipPlayerScreenState
   String? _error;
   bool _initialized = false;
   bool _busy = false; // 저장/공유/즐겨찾기 진행 중
+  String? _cachedUrl;
 
   @override
   void initState() {
@@ -37,17 +38,23 @@ class _MotionClipPlayerScreenState
     _init();
   }
 
+  Future<String> _presignedUrl() async {
+    _cachedUrl ??=
+        await ref.read(motionClipUrlProvider(widget.clipId).future);
+    return _cachedUrl!;
+  }
+
   Future<void> _init({bool isRetry = false}) async {
+    VideoPlayerController? controller;
     try {
       // 즐겨찾기(로컬 파일) 우선 — 오프라인 재생 가능
       final localFile =
           ref.read(favoriteClipRepositoryProvider).getLocalFile(widget.clipId);
-      final VideoPlayerController controller;
       if (localFile != null) {
         controller = VideoPlayerController.file(localFile);
       } else {
         if (isRetry) ref.invalidate(motionClipUrlProvider(widget.clipId));
-        final url = await ref.read(motionClipUrlProvider(widget.clipId).future);
+        final url = await _presignedUrl();
         controller = VideoPlayerController.networkUrl(Uri.parse(url));
       }
       await controller.initialize();
@@ -61,6 +68,7 @@ class _MotionClipPlayerScreenState
       });
       controller.play();
     } catch (e) {
+      await controller?.dispose();
       if (!isRetry && mounted) {
         await _init(isRetry: true);
         return;
@@ -79,7 +87,7 @@ class _MotionClipPlayerScreenState
   Future<({File? file, String? url})> _source() async {
     final f = ref.read(favoriteClipRepositoryProvider).getLocalFile(widget.clipId);
     if (f != null) return (file: f, url: null);
-    final url = await ref.read(motionClipUrlProvider(widget.clipId).future);
+    final url = await _presignedUrl();
     return (file: null, url: url);
   }
 
@@ -129,6 +137,7 @@ class _MotionClipPlayerScreenState
     try {
       if (repo.isFavorite(widget.clipId)) {
         final cameraId = await repo.remove(widget.clipId);
+        if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         if (cameraId != null) ref.invalidate(favoriteClipsProvider(cameraId));
         messenger.showSnackBar(
@@ -137,9 +146,9 @@ class _MotionClipPlayerScreenState
         if (clip == null) return; // 오프라인 등 메타 없음 → 추가 불가
         messenger.showSnackBar(
             SnackBar(content: Text('clip_favorite_saving'.tr())));
-        final url =
-            await ref.read(motionClipUrlProvider(widget.clipId).future);
+        final url = await _presignedUrl();
         await repo.add(clip, url);
+        if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         ref.invalidate(favoriteClipsProvider(clip.cameraId));
         messenger.showSnackBar(
@@ -223,18 +232,21 @@ class _MotionClipPlayerScreenState
                   width: double.infinity, height: double.infinity, borderRadius: 0),
             )
           else
-            AspectRatio(
-              aspectRatio: _controller!.value.aspectRatio,
-              child: Stack(
-                children: [
-                  Positioned.fill(child: VideoPlayer(_controller!)),
-                  if (startedAt != null)
-                    VideoTimestampOverlay(
-                        controller: _controller!, startedAt: startedAt),
-                  const VideoWatermark(),
-                ],
-              ),
-            ),
+            () {
+              final ar = _controller!.value.aspectRatio;
+              return AspectRatio(
+                aspectRatio: ar.isFinite && ar > 0 ? ar : 16 / 9,
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: VideoPlayer(_controller!)),
+                    if (startedAt != null)
+                      VideoTimestampOverlay(
+                          controller: _controller!, startedAt: startedAt),
+                    const VideoWatermark(),
+                  ],
+                ),
+              );
+            }(),
           if (_initialized && _controller != null)
             VideoControls(controller: _controller!),
           const Spacer(),
