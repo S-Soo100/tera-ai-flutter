@@ -44,6 +44,9 @@ class FavoriteClipRepository {
     return f.existsSync() ? f : null;
   }
 
+  /// 즐겨찾기 메타(오프라인 일시/카메라 등). 없으면 null.
+  FavoriteClip? getMeta(String clipId) => _box.get(clipId);
+
   /// 즐겨찾기 추가 = presigned URL로 mp4 다운로드 → 문서 디렉토리 저장 → 메타 INSERT.
   Future<void> add(MotionClip clip, String presignedUrl) async {
     if (_box.containsKey(clip.id)) return;

@@ -11,6 +11,7 @@ import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/motion_clip.dart';
 import 'my_cage_providers.dart';
 import 'widgets/video_controls.dart';
+import 'widgets/video_timestamp_overlay.dart';
 import 'widgets/video_watermark.dart';
 
 /// motion_clips 재생. 즐겨찾기면 로컬 파일(오프라인), 아니면 terra-api presigned URL.
@@ -176,6 +177,12 @@ class _MotionClipPlayerScreenState
 
     final clip = ref.watch(motionClipProvider(widget.clipId)).valueOrNull;
     final isFav = ref.watch(isFavoriteProvider(widget.clipId));
+    // 일시 오버레이용 녹화 시작 시각 — 온라인은 clip, 오프라인 즐겨찾기는 로컬 메타.
+    final startedAt = clip?.startedAt ??
+        ref
+            .watch(favoriteClipRepositoryProvider)
+            .getMeta(widget.clipId)
+            ?.startedAt;
 
     return Scaffold(
       appBar: AppBar(
@@ -220,6 +227,9 @@ class _MotionClipPlayerScreenState
               child: Stack(
                 children: [
                   Positioned.fill(child: VideoPlayer(_controller!)),
+                  if (startedAt != null)
+                    VideoTimestampOverlay(
+                        controller: _controller!, startedAt: startedAt),
                   const VideoWatermark(),
                 ],
               ),
