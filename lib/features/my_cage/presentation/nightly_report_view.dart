@@ -10,6 +10,7 @@ import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/nightly_highlight.dart';
 import '../domain/nightly_report.dart';
 import 'my_cage_providers.dart';
+import 'widgets/favorite_toggle_button.dart';
 
 /// vlm_action 라벨(clip_action_* 키, 없으면 원문 폴백).
 String reportActionLabel(String action) {
@@ -200,7 +201,7 @@ class _HighlightCard extends ConsumerWidget {
                         theme.textTheme.bodySmall?.copyWith(color: cs.outline),
                   ),
                   const Spacer(),
-                  Icon(Icons.play_circle_outline, color: cs.outline),
+                  FavoriteToggleButton(clipId: highlight.clipId),
                 ],
               ),
             ),
