@@ -55,6 +55,22 @@ class MotionClipRepository {
     throw BackendException(resp.statusCode, resp.body);
   }
 
+  /// 썸네일 presigned URL (terra-api GET /clips/{id}/thumbnail/url).
+  /// 응답 {url, expires_in}. 썸네일 없으면(404) null → 카드 아이콘 폴백.
+  Future<String?> getThumbnailUrl(String clipId) async {
+    final token = await _tokenProvider();
+    final resp = await http.get(
+      Uri.parse('$_terraApiUrl/clips/$clipId/thumbnail/url'),
+      headers: {if (token != null) 'Authorization': 'Bearer $token'},
+    );
+    if (resp.statusCode == 200) {
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      return body['url'] as String?;
+    }
+    if (resp.statusCode == 404) return null;
+    throw BackendException(resp.statusCode, resp.body);
+  }
+
   /// 단일 모션 클립 조회(즐겨찾기 메타용). 없으면 null. RLS 본인 것만.
   Future<MotionClip?> getById(String clipId) async {
     final rows = await _supabase

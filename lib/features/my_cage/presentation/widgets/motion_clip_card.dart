@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +11,7 @@ import '../../domain/clip_action.dart';
 import '../../domain/motion_clip.dart';
 import '../my_cage_providers.dart';
 
-/// 모션 클립 그리드 카드. 상단은 클라 추출 썸네일(로딩=스켈레톤, 실패=아이콘).
+/// 모션 클립 그리드 카드. 상단은 서버 presigned 썸네일(로딩=스켈레톤, 실패=아이콘).
 /// (후속: 분류 태그 확정 시 하단 Row에 태그 칩 — clip.action 이미 반영됨.)
 class MotionClipCard extends ConsumerWidget {
   const MotionClipCard({super.key, required this.clip, required this.onTap});
@@ -38,9 +39,17 @@ class MotionClipCard extends ConsumerWidget {
           children: [
             Expanded(
               child: thumbAsync.when(
-                data: (file) => file != null
-                    ? Image.file(file,
-                        fit: BoxFit.cover, width: double.infinity)
+                data: (url) => url != null
+                    ? CachedNetworkImage(
+                        imageUrl: url,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        placeholder: (_, __) => const SkeletonLoading(
+                            width: double.infinity,
+                            height: double.infinity,
+                            borderRadius: 0),
+                        errorWidget: (_, __, ___) => _placeholder(cs),
+                      )
                     : _placeholder(cs),
                 loading: () => const SkeletonLoading(
                     width: double.infinity,

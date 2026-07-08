@@ -1,7 +1,7 @@
 name: tera_ai
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.15.0+25
+version: 0.15.1+26
 
 environment:
   sdk: ^3.5.0
@@ -17,7 +17,6 @@ dependencies:
   shimmer: ^3.0.0
   cached_network_image: ^3.4.1
   video_player: ^2.9.2
-  video_thumbnail: ^0.5.3
   gal: ^2.3.0
   share_plus: ^13.2.0
   infinite_scroll_pagination: ^4.1.0
