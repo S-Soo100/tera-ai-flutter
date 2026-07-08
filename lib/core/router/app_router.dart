@@ -19,6 +19,7 @@ import '../../features/my_cage/presentation/smart_cage_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
 import '../../features/my_cage/presentation/clip_player_screen.dart';
 import '../../features/my_cage/presentation/motion_clip_player_screen.dart';
+import '../../features/my_cage/presentation/nightly_report_screen.dart';
 import '../../features/my_cage/presentation/device_pairing_screen.dart';
 import '../../features/my_cage/presentation/camera_pairing_screen.dart';
 import '../../features/my_cage/presentation/enclosure_list_screen.dart';
@@ -98,6 +99,21 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/home',
                 builder: (context, state) => const HomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'highlights',
+                    builder: (context, state) => const NightlyReportScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':clipId',
+                        builder: (context, state) {
+                          final id = state.pathParameters['clipId']!;
+                          return MotionClipPlayerScreen(clipId: id);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),

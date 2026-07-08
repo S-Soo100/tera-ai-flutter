@@ -13,6 +13,7 @@ import '../../my_cage/presentation/my_cage_providers.dart';
 import '../../my_cage/presentation/widgets/hourly_activity_chart.dart';
 import '../../my_pets/domain/pet.dart';
 import '../../my_pets/presentation/my_pets_providers.dart';
+import 'widgets/nightly_report_badge.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -54,6 +55,7 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: AppStyles.spacing24),
             _LiveSection(pets: pets),
             const SizedBox(height: AppStyles.spacing24),
+            const NightlyReportBadge(),
             _ActivitySection(),
           ],
         ),
