@@ -24,13 +24,14 @@ class FavoriteClipAdapter extends TypeAdapter<FavoriteClip> {
       filePath: fields[4] as String,
       sizeBytes: fields[5] as int,
       favoritedAt: fields[6] as DateTime,
+      ownerId: fields[7] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, FavoriteClip obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.clipId)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class FavoriteClipAdapter extends TypeAdapter<FavoriteClip> {
       ..writeByte(5)
       ..write(obj.sizeBytes)
       ..writeByte(6)
-      ..write(obj.favoritedAt);
+      ..write(obj.favoritedAt)
+      ..writeByte(7)
+      ..write(obj.ownerId);
   }
 
   @override

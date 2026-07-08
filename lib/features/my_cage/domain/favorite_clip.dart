@@ -4,6 +4,8 @@ part 'favorite_clip.g.dart';
 
 /// 즐겨찾기한 모션 클립(로컬 보관). mp4는 [filePath]에 앱 문서 디렉토리로 영구
 /// 저장되어 presigned URL 만료·R2 삭제와 무관하게 오프라인 재생된다.
+///
+/// ownerId=소유 계정(auth.uid) — 계정 격리(다계정 로그인 시 본인 것만 노출).
 @HiveType(typeId: 11)
 class FavoriteClip extends HiveObject {
   @HiveField(0)
@@ -20,6 +22,8 @@ class FavoriteClip extends HiveObject {
   final int sizeBytes;
   @HiveField(6)
   final DateTime favoritedAt;
+  @HiveField(7)
+  final String ownerId;
 
   FavoriteClip({
     required this.clipId,
@@ -29,5 +33,6 @@ class FavoriteClip extends HiveObject {
     required this.filePath,
     required this.sizeBytes,
     required this.favoritedAt,
+    required this.ownerId,
   });
 }
