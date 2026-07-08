@@ -66,13 +66,13 @@ class MotionClipCard extends ConsumerWidget {
                     child:
                         Text(timeLabel, style: theme.textTheme.bodySmall),
                   ),
-                  AppTag(
-                    label: clip.action == null
-                        ? 'clip_action_unlabeled'.tr()
-                        : clipActionKey(clip.action!).tr(),
-                    color: clip.action == null ? cs.outline : cs.secondary,
-                  ),
-                  const SizedBox(width: 6),
+                  if (clip.action != null) ...[
+                    AppTag(
+                      label: clipActionKey(clip.action!).tr(),
+                      color: cs.secondary,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
                   Text(
                     durationLabel,
                     style: theme.textTheme.bodySmall

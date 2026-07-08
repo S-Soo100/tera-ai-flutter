@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/inline_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
+import '../data/motion_clip_repository.dart' show kClipClassificationEnabled;
 import '../domain/cage_activity.dart';
 import '../domain/clip.dart';
 import '../domain/clip_action.dart';
@@ -668,30 +669,34 @@ class _FilterBar extends ConsumerWidget {
 
     return Row(
       children: [
-        // 분류 드롭다운
-        Expanded(
-          child: DropdownButtonFormField<String?>(
-            initialValue: actionFilter,
-            isDense: true,
-            decoration: const InputDecoration(
+        // 분류 드롭다운 — behavior_logs RLS로 라벨 직접읽기가 막혀 있어 현재 숨김.
+        // 백엔드가 라벨 접근을 열면 kClipClassificationEnabled=true로 재노출(실동작).
+        if (kClipClassificationEnabled) ...[
+          Expanded(
+            child: DropdownButtonFormField<String?>(
+              initialValue: actionFilter,
               isDense: true,
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              border: OutlineInputBorder(),
+              decoration: const InputDecoration(
+                isDense: true,
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                DropdownMenuItem(
+                    value: null, child: Text('clip_action_all'.tr())),
+                DropdownMenuItem(
+                    value: 'unlabeled',
+                    child: Text('clip_action_unlabeled'.tr())),
+                ...kClipActions.map((a) => DropdownMenuItem(
+                    value: a, child: Text(clipActionKey(a).tr()))),
+              ],
+              onChanged: (v) =>
+                  ref.read(clipActionFilterProvider.notifier).state = v,
             ),
-            items: [
-              DropdownMenuItem(value: null, child: Text('clip_action_all'.tr())),
-              DropdownMenuItem(
-                  value: 'unlabeled',
-                  child: Text('clip_action_unlabeled'.tr())),
-              ...kClipActions.map((a) => DropdownMenuItem(
-                  value: a, child: Text(clipActionKey(a).tr()))),
-            ],
-            onChanged: (v) =>
-                ref.read(clipActionFilterProvider.notifier).state = v,
           ),
-        ),
-        const SizedBox(width: 8),
+          const SizedBox(width: 8),
+        ],
         // 날짜 선택
         OutlinedButton.icon(
           icon: const Icon(Icons.calendar_today, size: 16),

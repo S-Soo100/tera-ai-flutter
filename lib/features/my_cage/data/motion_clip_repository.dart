@@ -7,6 +7,13 @@ import '../domain/cage_activity.dart';
 import '../domain/motion_clip.dart';
 import 'camera_exceptions.dart';
 
+/// 크레캠 영상목록의 분류(action) 라벨 배선 on/off.
+/// 라벨은 `behavior_logs`에 있으나 RLS(정책 0개=전면차단)로 앱 직접읽기가 막혀 있어
+/// 현재 false. 백엔드가 owner SELECT 정책(또는 terra-api 라벨 엔드포인트)을 열면
+/// true로 켜면 [listByCamera]가 라벨을 조인해 카드 칩·분류 필터가 실동작한다.
+/// 상세: docs/backend-handoff-camera-detail-ux.md.
+const bool kClipClassificationEnabled = false;
+
 /// terra-server `motion_clips` 접근. 목록은 Supabase 직결(RLS 본인 것),
 /// 재생 URL은 terra-api(R2 presigned).
 class MotionClipRepository {
@@ -36,9 +43,43 @@ class MotionClipRepository {
     }
     final rows =
         await q.order('started_at', ascending: false).limit(limit);
-    return (rows as List)
+    final clips = (rows as List)
         .map((r) => MotionClip.fromJson(r as Map<String, dynamic>))
         .toList();
+    if (!kClipClassificationEnabled || clips.isEmpty) return clips;
+    final labels = await _fetchLabels(clips.map((c) => c.id).toList());
+    return [
+      for (final c in clips)
+        labels.containsKey(c.id) ? c.copyWith(action: labels[c.id]) : c,
+    ];
+  }
+
+  /// clip_id → 대표 행동 라벨(verified/human 우선 > vlm). `behavior_logs` 직결이라
+  /// RLS가 열린 뒤에만 유효(kClipClassificationEnabled). 실패/차단 시 빈 맵.
+  Future<Map<String, String>> _fetchLabels(List<String> clipIds) async {
+    try {
+      final rows = await _supabase
+          .from('behavior_logs')
+          .select('clip_id, action, source, verified')
+          .inFilter('clip_id', clipIds);
+      final rank = <String, int>{};
+      final action = <String, String>{};
+      for (final r in rows as List) {
+        final m = r as Map<String, dynamic>;
+        final cid = m['clip_id'] as String?;
+        final act = m['action'] as String?;
+        if (cid == null || act == null) continue;
+        final score =
+            (m['verified'] == true ? 2 : 0) + (m['source'] == 'human' ? 1 : 0);
+        if (!rank.containsKey(cid) || score > rank[cid]!) {
+          rank[cid] = score;
+          action[cid] = act;
+        }
+      }
+      return action;
+    } catch (_) {
+      return {};
+    }
   }
 
   /// 재생용 presigned URL (terra-api GET /clips/{id}/url). TTL 1h.

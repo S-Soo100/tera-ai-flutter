@@ -22,6 +22,16 @@ class MotionClip {
     this.action,
   });
 
+  MotionClip copyWith({String? action}) => MotionClip(
+        id: id,
+        cameraId: cameraId,
+        startedAt: startedAt,
+        durationSec: durationSec,
+        motionScore: motionScore,
+        thumbnailKey: thumbnailKey,
+        action: action ?? this.action,
+      );
+
   factory MotionClip.fromJson(Map<String, dynamic> j) {
     return MotionClip(
       id: j['id'] as String? ?? '',
