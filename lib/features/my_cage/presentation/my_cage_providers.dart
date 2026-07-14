@@ -36,8 +36,8 @@ final _supabaseClientProvider = Provider<SupabaseClient>(
 
 /// JWT accessToken 공급자. 매 호출마다 currentSession을 읽어 최신 토큰 반환.
 final _tokenProviderProvider = Provider<Future<String?> Function()>(
-  (ref) => () async =>
-      Supabase.instance.client.auth.currentSession?.accessToken,
+  (ref) =>
+      () async => Supabase.instance.client.auth.currentSession?.accessToken,
 );
 
 // ── Repository Provider ────────────────────────────────────────────────────────
@@ -88,7 +88,8 @@ final webrtcSignalingRepositoryProvider =
 /// 카메라 수가 적어 비용 무시 가능, RLS는 재조회 쿼리에서 그대로 적용된다.
 /// (`cameras`는 supabase_realtime 발행 목록에 포함 — 백엔드 변경 불필요)
 final camerasProvider = StreamProvider<List<TerraCamera>>((ref) {
-  ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 전환 시 재구독+재조회 (이전 계정 카메라 노출 방지)
+  ref.watch(currentUserProvider
+      .select((u) => u?.id)); // 계정 전환 시 재구독+재조회 (이전 계정 카메라 노출 방지)
   final repo = ref.watch(cameraRepositoryProvider);
   final supabase = ref.watch(_supabaseClientProvider);
 
@@ -179,8 +180,7 @@ typedef ClipsHourKey = ({
 /// 선택된 1시간 구간의 클립 목록 (ASC 정렬, 페이징 없음).
 final clipsForHourProvider =
     FutureProvider.family<List<Clip>, ClipsHourKey>((ref, key) async {
-  final start =
-      DateTime(key.date.year, key.date.month, key.date.day, key.hour);
+  final start = DateTime(key.date.year, key.date.month, key.date.day, key.hour);
   final end = start.add(const Duration(hours: 1));
   return ref.watch(clipRepositoryProvider).listInRange(
         cameraId: key.cameraId,
@@ -222,28 +222,26 @@ final latestClipProvider =
 });
 
 /// 클립 영상 presigned URL. clip_player_screen이 await + 만료 시 ref.refresh.
-final clipFileUrlProvider =
-    FutureProvider.autoDispose.family<ClipMediaUrl, String>((ref, clipId) async {
+final clipFileUrlProvider = FutureProvider.autoDispose
+    .family<ClipMediaUrl, String>((ref, clipId) async {
   return ref.watch(clipRepositoryProvider).getFileUrl(clipId);
 });
 
 /// 클립 썸네일 presigned URL. ClipThumbnail이 watch.
-final clipThumbnailUrlProvider =
-    FutureProvider.autoDispose.family<ClipMediaUrl, String>((ref, clipId) async {
+final clipThumbnailUrlProvider = FutureProvider.autoDispose
+    .family<ClipMediaUrl, String>((ref, clipId) async {
   return ref.watch(clipRepositoryProvider).getThumbnailUrl(clipId);
 });
 
 /// 클립 human 라벨 목록. 빈 배열 정상, 에러는 silent fail (섹션 숨김).
-final clipLabelsProvider =
-    FutureProvider.autoDispose.family<List<BehaviorLabel>, String>(
-        (ref, clipId) async {
+final clipLabelsProvider = FutureProvider.autoDispose
+    .family<List<BehaviorLabel>, String>((ref, clipId) async {
   return ref.watch(clipRepositoryProvider).getLabels(clipId);
 });
 
 /// 클립 VLM 추론 1건 또는 null. 추론 없으면 null, 에러는 silent fail.
-final clipInferenceProvider =
-    FutureProvider.autoDispose.family<BehaviorInference?, String>(
-        (ref, clipId) async {
+final clipInferenceProvider = FutureProvider.autoDispose
+    .family<BehaviorInference?, String>((ref, clipId) async {
   return ref.watch(clipRepositoryProvider).getInference(clipId);
 });
 
@@ -261,7 +259,8 @@ final motionClipsProvider = FutureProvider.autoDispose
 });
 
 /// 비디오 기록 날짜 필터(null = 전체 기간). autoDispose — 화면 이탈 시 리셋.
-final clipDayFilterProvider = StateProvider.autoDispose<DateTime?>((ref) => null);
+final clipDayFilterProvider =
+    StateProvider.autoDispose<DateTime?>((ref) => null);
 
 /// 비디오 기록 분류 필터(null = 전체). 'unlabeled' = 미분류만. 그 외 = 해당 action.
 /// 현재 데이터가 없어 클라이언트 사이드로만 적용된다.
@@ -283,8 +282,8 @@ final motionClipProvider =
 /// family 키: cameraId + range. 움직임 시간(초).
 typedef MotionActivityKey = ({String cameraId, ActivityRange range});
 
-/// 활동량(움직임 초) — motion_clips duration 합. 하루 경계는 오전 7시
-/// (activityRangeBounds 재사용). now는 실행 시각.
+/// 추정 활동시간(초) — effective activity view 합. view 장애 시 repository가
+/// motion_clips 원본 duration 합으로 fail-open한다. 하루 경계는 오전 7시다.
 final motionActivityProvider =
     FutureProvider.autoDispose.family<int, MotionActivityKey>((ref, key) async {
   final bounds = activityRangeBounds(key.range, DateTime.now());
@@ -293,8 +292,8 @@ final motionActivityProvider =
       .motionSeconds(key.cameraId, bounds.start, bounds.end);
 });
 
-/// 시간대별 움직임(초) 24개 — motion_clips를 1시간 버킷으로. 하루 경계 오전 7시
-/// (activityRangeBounds 재사용). 홈·크레캠 활동 그래프 공용 데이터.
+/// 시간대별 추정 활동시간(초) 24개 — 총합과 같은 effective row를 1시간
+/// bucket으로 나눈다. 하루 경계는 오전 7시다.
 final hourlyActivityProvider = FutureProvider.autoDispose
     .family<List<int>, MotionActivityKey>((ref, key) async {
   final bounds = activityRangeBounds(key.range, DateTime.now());
@@ -321,8 +320,7 @@ final videoCacheRepositoryProvider = Provider<VideoCacheRepository>((ref) {
 
 // ── 즐겨찾기 (로컬, #4) ─────────────────────────────────────────────────────────
 
-final favoriteClipRepositoryProvider =
-    Provider<FavoriteClipRepository>((ref) {
+final favoriteClipRepositoryProvider = Provider<FavoriteClipRepository>((ref) {
   return FavoriteClipRepository(
     supabase: ref.watch(_supabaseClientProvider),
   );
@@ -352,7 +350,8 @@ final favoritesSyncProvider =
 });
 
 /// 비디오 기록 탭(false=전체, true=즐겨찾기). autoDispose — 화면 이탈 시 리셋.
-final showFavoritesTabProvider = StateProvider.autoDispose<bool>((ref) => false);
+final showFavoritesTabProvider =
+    StateProvider.autoDispose<bool>((ref) => false);
 
 // ── 저장/공유 서비스 (#2) ───────────────────────────────────────────────────────
 
@@ -387,20 +386,11 @@ final nightlyReportProvider =
   } catch (_) {
     highlights = const [];
   }
-  List<TerraCamera> cameras;
-  try {
-    cameras = await ref.watch(camerasProvider.future);
-  } catch (_) {
-    cameras = const [];
-  }
+  final cameras = await ref.watch(camerasProvider.future);
   final motionRepo = ref.watch(motionClipRepositoryProvider);
-  final secs = await Future.wait(cameras.map((c) async {
-    try {
-      return await motionRepo.motionSeconds(c.id, start, end);
-    } catch (_) {
-      return 0;
-    }
-  }));
+  final secs = await Future.wait(
+    cameras.map((c) => motionRepo.motionSeconds(c.id, start, end)),
+  );
   final sec = secs.fold<int>(0, (a, b) => a + b);
   return NightlyReport(activitySeconds: sec, highlights: highlights);
 });

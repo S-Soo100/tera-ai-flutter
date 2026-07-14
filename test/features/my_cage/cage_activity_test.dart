@@ -95,7 +95,10 @@ void main() {
     test('범위 밖(시작 전 / 정확히 24h / 24h 초과)은 무시', () {
       final b = bucketMotionSecondsByHour([
         (startedAt: DateTime(2026, 7, 3, 6, 59), durationSec: 100.0), // from 이전
-        (startedAt: DateTime(2026, 7, 4, 7, 0), durationSec: 100.0), // 정확히 24h 후
+        (
+          startedAt: DateTime(2026, 7, 4, 7, 0),
+          durationSec: 100.0
+        ), // 정확히 24h 후
         (startedAt: DateTime(2026, 7, 4, 8, 0), durationSec: 100.0), // 24h 초과
       ], from);
       expect(b.every((v) => v == 0), isTrue);
@@ -107,6 +110,88 @@ void main() {
         (startedAt: DateTime(2026, 7, 3, 7, 30), durationSec: 10.4),
       ], from);
       expect(b[0], 21);
+    });
+  });
+
+  group('activityDurationSeconds', () {
+    test('유효한 effective 값이 있으면 raw보다 우선한다', () {
+      expect(
+        activityDurationSeconds({
+          'effective_activity_sec': 0,
+          'raw_duration_sec': 31.8,
+        }),
+        0,
+      );
+    });
+
+    test('effective가 null이면 view의 raw 값으로 fail-open한다', () {
+      expect(
+        activityDurationSeconds({
+          'effective_activity_sec': null,
+          'raw_duration_sec': 31.8,
+        }),
+        31.8,
+      );
+    });
+
+    test('raw query row의 duration_sec도 읽는다', () {
+      expect(activityDurationSeconds({'duration_sec': 12.5}), 12.5);
+    });
+
+    test('음수·NaN effective는 raw 값으로 fail-open한다', () {
+      expect(
+        activityDurationSeconds({
+          'effective_activity_sec': -1,
+          'raw_duration_sec': 20,
+        }),
+        20,
+      );
+      expect(
+        activityDurationSeconds({
+          'effective_activity_sec': double.nan,
+          'raw_duration_sec': 20,
+        }),
+        20,
+      );
+    });
+
+    test('유효한 초가 하나도 없으면 오류로 드러낸다', () {
+      expect(
+        () => activityDurationSeconds(const {}),
+        throwsFormatException,
+      );
+    });
+
+    test('앱은 decision 이름을 재해석하지 않고 view 계산값만 사용한다', () {
+      final rows = [
+        {
+          'activity_decision': 'active',
+          'effective_activity_sec': 30,
+          'raw_duration_sec': 30,
+        },
+        {
+          'activity_decision': 'exclude_static',
+          'effective_activity_sec': 0,
+          'raw_duration_sec': 30,
+        },
+        {
+          'activity_decision': 'exclude_absent',
+          'effective_activity_sec': 30,
+          'raw_duration_sec': 30,
+        },
+        {
+          'activity_decision': 'unknown',
+          'effective_activity_sec': 30,
+          'raw_duration_sec': 30,
+        },
+        {
+          'activity_decision': 'pending',
+          'effective_activity_sec': 30,
+          'raw_duration_sec': 30,
+        },
+      ];
+
+      expect(rows.map(activityDurationSeconds), [30, 0, 30, 30, 30]);
     });
   });
 }

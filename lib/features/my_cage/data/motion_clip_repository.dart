@@ -1,11 +1,22 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/cage_activity.dart';
 import '../domain/motion_clip.dart';
 import 'camera_exceptions.dart';
+
+/// 활동시간 집계용 row 로더 seam. 테스트가 네트워크 없이 주입할 수 있게 분리한다.
+/// 기본 구현은 Supabase에서 [table]/[columns]를 camera_id·started_at 범위로 조회한다.
+typedef ActivityRowsLoader = Future<List<Map<String, dynamic>>> Function({
+  required String table,
+  required String columns,
+  required String cameraId,
+  required DateTime from,
+  required DateTime to,
+});
 
 /// 크레캠 영상목록의 분류(action) 라벨 배선 on/off.
 /// 라벨은 `behavior_logs`에 있으나 RLS(정책 0개=전면차단)로 앱 직접읽기가 막혀 있어
@@ -20,14 +31,36 @@ class MotionClipRepository {
   final SupabaseClient _supabase;
   final String _terraApiUrl;
   final Future<String?> Function() _tokenProvider;
+  final ActivityRowsLoader _activityRowsLoader;
 
   MotionClipRepository({
     required SupabaseClient supabase,
     required String terraApiUrl,
     required Future<String?> Function() tokenProvider,
+    ActivityRowsLoader? activityRowsLoader,
   })  : _supabase = supabase,
         _terraApiUrl = terraApiUrl,
-        _tokenProvider = tokenProvider;
+        _tokenProvider = tokenProvider,
+        _activityRowsLoader = activityRowsLoader ??
+            (({
+              required table,
+              required columns,
+              required cameraId,
+              required from,
+              required to,
+            }) async {
+              final rows = await supabase
+                  .from(table)
+                  .select(columns)
+                  .eq('camera_id', cameraId)
+                  .gte('started_at', from.toUtc().toIso8601String())
+                  .lt('started_at', to.toUtc().toIso8601String())
+                  .order('started_at', ascending: true)
+                  .limit(5000);
+              return (rows as List)
+                  .map((row) => Map<String, dynamic>.from(row as Map))
+                  .toList();
+            });
 
   /// 카메라의 모션 클립 목록 (최신순). [day]가 주어지면 그 날(로컬 00:00~24:00)로
   /// started_at 범위 필터. RLS로 본인 카메라 것만.
@@ -41,8 +74,7 @@ class MotionClipRepository {
           .gte('started_at', start.toUtc().toIso8601String())
           .lt('started_at', end.toUtc().toIso8601String());
     }
-    final rows =
-        await q.order('started_at', ascending: false).limit(limit);
+    final rows = await q.order('started_at', ascending: false).limit(limit);
     final clips = (rows as List)
         .map((r) => MotionClip.fromJson(r as Map<String, dynamic>))
         .toList();
@@ -116,58 +148,63 @@ class MotionClipRepository {
 
   /// 단일 모션 클립 조회(즐겨찾기 메타용). 없으면 null. RLS 본인 것만.
   Future<MotionClip?> getById(String clipId) async {
-    final rows = await _supabase
-        .from('motion_clips')
-        .select()
-        .eq('id', clipId)
-        .limit(1);
+    final rows =
+        await _supabase.from('motion_clips').select().eq('id', clipId).limit(1);
     final list = rows as List;
     if (list.isEmpty) return null;
     return MotionClip.fromJson(list.first as Map<String, dynamic>);
   }
 
-  /// 구간 [from, to) 의 움직임 시간(초) = motion_clips duration_sec 합.
-  Future<int> motionSeconds(
-      String cameraId, DateTime from, DateTime to) async {
-    final rows = await _supabase
-        .from('motion_clips')
-        .select('duration_sec')
-        .eq('camera_id', cameraId)
-        .gte('started_at', from.toUtc().toIso8601String())
-        .lt('started_at', to.toUtc().toIso8601String())
-        // order 명시: 5000 상한 초과 시에도 motionSecondsByHour와 동일 부분집합을
-        // 집어 총합/그래프 수치 불일치를 방지(현재는 여유 크나 값싼 방어).
-        .order('started_at', ascending: true)
-        .limit(5000);
-    var sec = 0.0;
-    for (final r in rows as List) {
-      sec += ((r as Map<String, dynamic>)['duration_sec'] as num?)
-              ?.toDouble() ??
-          0;
+  /// 활동시간 집계 row를 로드한다. effective view를 우선하고, view 조회가
+  /// PostgrestException으로 실패하면 motion_clips 원본으로 fallback한다. row
+  /// 파싱·개발자 오류까지 삼키지 않도록 catch 범위는 view query 호출만 감싼다.
+  Future<List<Map<String, dynamic>>> _loadActivityRows(
+    String cameraId,
+    DateTime from,
+    DateTime to,
+  ) async {
+    try {
+      return await _activityRowsLoader(
+        table: 'v_clip_effective_activity',
+        columns: 'started_at, effective_activity_sec, raw_duration_sec',
+        cameraId: cameraId,
+        from: from,
+        to: to,
+      );
+    } on PostgrestException {
+      debugPrint('[activity] effective view unavailable; raw fallback used');
+      return _activityRowsLoader(
+        table: 'motion_clips',
+        columns: 'started_at, duration_sec',
+        cameraId: cameraId,
+        from: from,
+        to: to,
+      );
     }
-    return sec.round();
   }
 
-  /// 구간 [from,to)를 1시간 버킷 24개로 나눈 시간대별 움직임 시간(초).
-  /// index 0 = [from]이 속한 시각 ~ +1h. 홈·크레캠 활동 그래프 공용.
+  /// 구간 [from, to)의 추정 활동시간. 시간대 그래프(motionSecondsByHour)와 같은
+  /// 버킷 반올림을 공유하므로 총합 == 그래프 합이 항상 성립한다(끝에서 한 번만
+  /// 반올림하면 서로 다른 시간대의 소수 초가 어긋난다). effective view를 우선하고
+  /// 조회 장애 시 motion_clips 원본 duration 합으로 fail-open한다.
+  Future<int> motionSeconds(String cameraId, DateTime from, DateTime to) async {
+    final hourly = await motionSecondsByHour(cameraId, from, to);
+    return hourly.fold<int>(0, (sum, seconds) => sum + seconds);
+  }
+
+  /// 구간 [from,to)를 1시간 버킷 24개로 나눈 추정 활동시간. 총합(motionSeconds)과
+  /// 같은 effective row 집합을 1시간 버킷으로 나눈다. index 0 = [from]이 속한
+  /// 시각 ~ +1h. 홈·크레캠 활동 그래프 공용.
   Future<List<int>> motionSecondsByHour(
       String cameraId, DateTime from, DateTime to) async {
-    final rows = await _supabase
-        .from('motion_clips')
-        .select('started_at, duration_sec')
-        .eq('camera_id', cameraId)
-        .gte('started_at', from.toUtc().toIso8601String())
-        .lt('started_at', to.toUtc().toIso8601String())
-        .order('started_at', ascending: true)
-        .limit(5000);
+    final rows = await _loadActivityRows(cameraId, from, to);
     final clips = <({DateTime startedAt, double durationSec})>[];
-    for (final r in rows as List) {
-      final m = r as Map<String, dynamic>;
-      final ts = DateTime.tryParse(m['started_at']?.toString() ?? '');
-      if (ts == null) continue;
+    for (final row in rows) {
+      final startedAt = DateTime.tryParse(row['started_at']?.toString() ?? '');
+      if (startedAt == null) continue;
       clips.add((
-        startedAt: ts,
-        durationSec: (m['duration_sec'] as num?)?.toDouble() ?? 0.0,
+        startedAt: startedAt,
+        durationSec: activityDurationSeconds(row),
       ));
     }
     return bucketMotionSecondsByHour(clips, from);

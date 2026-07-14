@@ -87,3 +87,22 @@ List<int> bucketMotionSecondsByHour(
   }
   return buckets.map((s) => s.round()).toList();
 }
+
+/// DB view가 계산한 effective 초를 우선 사용하되, 누락·비정상 값이면 원본
+/// duration으로 fail-open한다. 필터 장애를 0초 활동으로 오인하지 않기 위함이다.
+double activityDurationSeconds(Map<String, dynamic> row) {
+  double? validSeconds(Object? value) {
+    if (value is! num) return null;
+    final seconds = value.toDouble();
+    if (!seconds.isFinite || seconds < 0) return null;
+    return seconds;
+  }
+
+  final seconds = validSeconds(row['effective_activity_sec']) ??
+      validSeconds(row['raw_duration_sec']) ??
+      validSeconds(row['duration_sec']);
+  if (seconds == null) {
+    throw const FormatException('Activity duration is missing or invalid');
+  }
+  return seconds;
+}
