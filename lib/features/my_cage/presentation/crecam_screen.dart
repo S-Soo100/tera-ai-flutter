@@ -6,11 +6,25 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
+import '../domain/camera_presence.dart';
 import '../domain/terra_camera.dart';
 import 'my_cage_providers.dart';
 import 'widgets/wifi_reconfigure_menu.dart';
 
 enum _CrecamView { grid, list }
+
+/// last_seen 상대 시각 ("방금 전"/"N분 전"/...). 기존 time_* 키 재사용.
+String _timeAgo(DateTime t) {
+  final diff = DateTime.now().toUtc().difference(t.toUtc());
+  if (diff.inMinutes < 1) return 'time_just_now'.tr();
+  if (diff.inMinutes < 60) {
+    return 'time_minutes_ago'.tr(namedArgs: {'n': '${diff.inMinutes}'});
+  }
+  if (diff.inHours < 24) {
+    return 'time_hours_ago'.tr(namedArgs: {'n': '${diff.inHours}'});
+  }
+  return 'time_days_ago'.tr(namedArgs: {'n': '${diff.inDays}'});
+}
 
 class CrecamScreen extends ConsumerStatefulWidget {
   const CrecamScreen({super.key});
@@ -19,11 +33,38 @@ class CrecamScreen extends ConsumerStatefulWidget {
   ConsumerState<CrecamScreen> createState() => _CrecamScreenState();
 }
 
-class _CrecamScreenState extends ConsumerState<CrecamScreen> {
+class _CrecamScreenState extends ConsumerState<CrecamScreen>
+    with WidgetsBindingObserver {
   _CrecamView _view = _CrecamView.grid;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // 백그라운드에서 Realtime 소켓이 죽으면 이벤트가 다시 오지 않으므로,
+  // 복귀 시 provider를 재생성(재구독+재조회)해 stale 상태를 끊는다.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(camerasProvider);
+    }
+  }
 
   void _openPairing() {
     context.push('/crecam/cameras/pair');
+  }
+
+  Future<void> _refresh() async {
+    ref.invalidate(camerasProvider);
+    await ref.read(camerasProvider.future);
   }
 
   @override
@@ -67,12 +108,15 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen> {
           if (cameras.isEmpty) {
             return _EmptyBody(onAdd: _openPairing);
           }
-          return _view == _CrecamView.grid
-              ? _CameraGrid(
-                  cameras: cameras,
-                  onAddTap: _openPairing,
-                )
-              : _CameraList(cameras: cameras);
+          return RefreshIndicator(
+            onRefresh: _refresh,
+            child: _view == _CrecamView.grid
+                ? _CameraGrid(
+                    cameras: cameras,
+                    onAddTap: _openPairing,
+                  )
+                : _CameraList(cameras: cameras),
+          );
         },
       ),
     );
@@ -154,6 +198,7 @@ class _CameraGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -219,16 +264,38 @@ class _CameraGridCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          camera.isOnline
-                              ? 'crecam_camera_online'.tr()
-                              : 'crecam_camera_offline'.tr(),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: camera.isOnline
-                                ? const Color(0xFF2E7D32)
-                                : theme.colorScheme.outline,
-                          ),
-                        ),
+                        Builder(builder: (context) {
+                          final scheme = Theme.of(context).colorScheme;
+                          final presence = cameraPresence(
+                            isOnline: camera.isOnline,
+                            lastSeenAt: camera.lastSeenAt,
+                            now: DateTime.now(),
+                          );
+                          final (label, color) = switch (presence) {
+                            CameraPresence.online => (
+                                camera.lastSeenAt == null
+                                    ? 'crecam_camera_online'.tr()
+                                    : '${'crecam_camera_online'.tr()} · '
+                                        '${_timeAgo(camera.lastSeenAt!)}',
+                                scheme.primary,
+                              ),
+                            CameraPresence.stale => (
+                                'crecam_camera_stale'.tr(),
+                                scheme.secondary,
+                              ),
+                            CameraPresence.offline => (
+                                'crecam_camera_offline'.tr(),
+                                scheme.outline,
+                              ),
+                          };
+                          return Text(
+                            label,
+                            style: theme.textTheme.labelSmall
+                                ?.copyWith(color: color),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -433,6 +500,7 @@ class _CameraList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(
         top: AppStyles.spacing8,
         bottom: AppStyles.spacing32 * 3,
@@ -450,7 +518,10 @@ class _CameraList extends StatelessWidget {
           ),
           title: Text(camera.name),
           subtitle: Text(
-            camera.model ?? camera.cameraId,
+            camera.isOnline && camera.lastSeenAt != null
+                ? '${camera.model ?? camera.cameraId} · '
+                    '${_timeAgo(camera.lastSeenAt!)}'
+                : (camera.model ?? camera.cameraId),
             style: Theme.of(context).textTheme.bodySmall,
           ),
           trailing: WifiReconfigureMenu(
