@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
@@ -67,6 +68,11 @@ class WebRtcLiveController
   // ICE gathering 대기 중 srflx 후보 감지용 probe (조기 진행).
   void Function(String raw)? _iceWaitProbe;
 
+  // 연결 단계 계측 (ms 누적): 느린 구간이 앱/펌웨어/NAT 중 어디인지 판별용.
+  final Stopwatch _timing = Stopwatch();
+  int? _msConfig; // config+renderer 준비 완료
+  int? _msAnswer; // offer 전송 → answer 수신 (≒ 펌웨어 응답 시간 포함)
+
   // ── 공개 API ────────────────────────────────────────────────────────────────
 
   /// 수동 재시도 (실패 화면 버튼). 자동 재시도 가드와 config 캐시를 리셋한다.
@@ -104,12 +110,21 @@ class WebRtcLiveController
         await _restart();
         return;
       }
+      debugPrint(
+        '[webrtc-timing] cam=$cameraUuid FAILED(unresponsive) '
+        'config=${_msConfig}ms at=${_timing.elapsedMilliseconds}ms',
+      );
       state = const WebRtcLiveState(
         phase: WebRtcLivePhase.failed,
         errorKey: 'crecam_live_error_unresponsive',
       );
     } catch (_) {
       if (!_active) return;
+      debugPrint(
+        '[webrtc-timing] cam=$cameraUuid FAILED phase=${state.phase} '
+        'config=${_msConfig}ms answer=${_msAnswer}ms '
+        'at=${_timing.elapsedMilliseconds}ms',
+      );
       state = const WebRtcLiveState(
         phase: WebRtcLivePhase.failed,
         errorKey: 'crecam_live_error_failed',
@@ -118,6 +133,9 @@ class WebRtcLiveController
   }
 
   Future<void> _doConnect() async {
+    _timing
+      ..reset()
+      ..start();
     final signalingRepo = ref.read(webrtcSignalingRepositoryProvider);
 
     // 1+2. config(세션 캐시)와 renderer init을 병렬로
@@ -139,6 +157,7 @@ class WebRtcLiveController
       return;
     }
     _renderer = renderer;
+    _msConfig = _timing.elapsedMilliseconds;
 
     // 3. PeerConnection 생성
     final pc = await createPeerConnection({
@@ -181,6 +200,10 @@ class WebRtcLiveController
     pc.onConnectionState = (state) {
       if (!_active) return;
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
+        debugPrint(
+          '[webrtc-timing] cam=$cameraUuid config=${_msConfig}ms '
+          'answer=${_msAnswer}ms connected=${_timing.elapsedMilliseconds}ms',
+        );
         this.state = this.state.copyWith(
               phase: WebRtcLivePhase.streaming,
               clearError: true,
@@ -220,6 +243,7 @@ class WebRtcLiveController
     if (!_active) return;
 
     _sessionId = offerResult.sessionId;
+    _msAnswer = _timing.elapsedMilliseconds;
 
     // 11. setRemoteDescription
     await pc.setRemoteDescription(
