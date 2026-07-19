@@ -210,6 +210,20 @@ class MotionClipRepository {
     return bucketMotionSecondsByHour(clips, from);
   }
 
+  /// 이 카메라의 가장 최근 모션 클립 1건 (크레캠 그리드 포스터용). 없으면 null.
+  /// 포스터에는 썸네일만 필요하므로 behavior_logs 라벨 조인 없이 조회한다.
+  Future<MotionClip?> latestByCamera(String cameraId) async {
+    final rows = await _supabase
+        .from('motion_clips')
+        .select()
+        .eq('camera_id', cameraId)
+        .order('started_at', ascending: false)
+        .limit(1);
+    final list = rows as List;
+    if (list.isEmpty) return null;
+    return MotionClip.fromJson(list.first as Map<String, dynamic>);
+  }
+
   /// 이 카메라의 가장 최근 모션 클립 시각. 모션 이력이 없으면 null.
   /// 홈 대시보드 '대표(활성) 카메라' 선정용 — 최근 녹화가 있는 카메라를 고른다.
   Future<DateTime?> latestMotionAt(String cameraId) async {

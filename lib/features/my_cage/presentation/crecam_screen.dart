@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +8,6 @@ import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/terra_camera.dart';
 import 'my_cage_providers.dart';
-import 'widgets/clip_thumbnail.dart';
 import 'widgets/wifi_reconfigure_menu.dart';
 
 enum _CrecamView { grid, list }
@@ -263,8 +263,8 @@ class _CameraThumbnail extends ConsumerWidget {
     }
 
     // 클립은 cameras.id(UUID)로 연결됨 — camera.cameraId(text) 아님.
-    final latestClip = ref.watch(latestClipProvider(camera.id));
-    return latestClip.when(
+    final latest = ref.watch(latestMotionClipProvider(camera.id));
+    return latest.when(
       loading: () => const SkeletonLoading(
         width: double.infinity,
         height: double.infinity,
@@ -282,15 +282,50 @@ class _CameraThumbnail extends ConsumerWidget {
             online: true,
           );
         }
-        // 온라인 + 최근 클립 → 썸네일을 포스터로, 좌상단 온라인 점.
+        // 온라인 + 최근 모션 클립 → 썸네일을 포스터로, 좌상단 온라인 점.
         return Stack(
           fit: StackFit.expand,
           children: [
-            ClipThumbnail(clip: clip),
+            _MotionClipPoster(clipId: clip.id),
             const Positioned(top: 8, left: 8, child: _OnlineDot()),
           ],
         );
       },
+    );
+  }
+}
+
+/// motion_clips 썸네일 포스터 (terra-api presigned). 없음(404→null)/실패 시
+/// 온라인 톤 placeholder 폴백.
+class _MotionClipPoster extends ConsumerWidget {
+  const _MotionClipPoster({required this.clipId});
+  final String clipId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final thumbAsync = ref.watch(motionThumbnailProvider(clipId));
+    const noPreview = _ThumbnailState(
+      icon: Icons.videocam_rounded,
+      labelKey: 'crecam_thumbnail_no_preview',
+      online: true,
+    );
+    return thumbAsync.when(
+      data: (url) => url != null
+          ? CachedNetworkImage(
+              imageUrl: url,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => const SkeletonLoading(
+                width: double.infinity,
+                height: double.infinity,
+              ),
+              errorWidget: (_, __, ___) => noPreview,
+            )
+          : noPreview,
+      loading: () => const SkeletonLoading(
+        width: double.infinity,
+        height: double.infinity,
+      ),
+      error: (_, __) => noPreview,
     );
   }
 }
