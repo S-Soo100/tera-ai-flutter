@@ -61,15 +61,27 @@ class WebRtcLiveController
   // ICE 후보: sessionId 확보 전 로컬 큐
   final List<RTCIceCandidate> _pendingCandidates = [];
 
+  // 504(카메라 무응답) 자동 재시도 1회 가드. 수동 retry()가 리셋한다.
+  bool _autoRetried = false;
+
+  // ICE gathering 대기 중 srflx 후보 감지용 probe (조기 진행).
+  void Function(String raw)? _iceWaitProbe;
+
   // ── 공개 API ────────────────────────────────────────────────────────────────
 
-  /// 현재 세션 정리 후 처음부터 재시작
+  /// 수동 재시도 (실패 화면 버튼). 자동 재시도 가드와 config 캐시를 리셋한다.
   Future<void> retry() async {
+    _autoRetried = false;
+    ref.invalidate(webrtcConfigProvider);
+    await _restart();
+  }
+
+  Future<void> _restart() async {
     await _cleanup(closeRemote: true);
     _active = true;
     _pendingCandidates.clear();
     state = const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig);
-    _start();
+    await _start();
   }
 
   @override
@@ -86,13 +98,19 @@ class WebRtcLiveController
       await _doConnect();
     } on CameraUnresponsiveException {
       if (!_active) return;
-      state = WebRtcLiveState(
+      if (!_autoRetried) {
+        // 펌웨어가 offer를 놓친 일시 무응답일 수 있어 1회만 자동 재시도.
+        _autoRetried = true;
+        await _restart();
+        return;
+      }
+      state = const WebRtcLiveState(
         phase: WebRtcLivePhase.failed,
         errorKey: 'crecam_live_error_unresponsive',
       );
     } catch (_) {
       if (!_active) return;
-      state = WebRtcLiveState(
+      state = const WebRtcLiveState(
         phase: WebRtcLivePhase.failed,
         errorKey: 'crecam_live_error_failed',
       );
@@ -102,13 +120,24 @@ class WebRtcLiveController
   Future<void> _doConnect() async {
     final signalingRepo = ref.read(webrtcSignalingRepositoryProvider);
 
-    // 1. fetchConfig
-    final cfg = await signalingRepo.fetchConfig();
-    if (!_active) return;
-
-    // 2. renderer 초기화
-    final renderer = RTCVideoRenderer();
-    await renderer.initialize();
+    // 1+2. config(세션 캐시)와 renderer init을 병렬로
+    final rendererFut = () async {
+      final r = RTCVideoRenderer();
+      await r.initialize();
+      return r;
+    }();
+    Map<String, dynamic> cfg;
+    try {
+      cfg = await ref.read(webrtcConfigProvider.future);
+    } catch (_) {
+      await (await rendererFut).dispose(); // 실패 경로 native 누수 방지
+      rethrow;
+    }
+    final renderer = await rendererFut;
+    if (!_active) {
+      await renderer.dispose();
+      return;
+    }
     _renderer = renderer;
 
     // 3. PeerConnection 생성
@@ -137,6 +166,7 @@ class WebRtcLiveController
       // gathering 완료 신호(candidate null/빈 값)는 서버로 보내지 않음 (계약 §4.3)
       final raw = candidate.candidate;
       if (raw == null || raw.isEmpty) return;
+      _iceWaitProbe?.call(raw);
       final sessionId = _sessionId;
       if (sessionId == null) {
         // sessionId 확보 전: 로컬 큐에 적재
@@ -176,8 +206,9 @@ class WebRtcLiveController
     final offerSdp = await pc.createOffer({'offerToReceiveVideo': true});
     await pc.setLocalDescription(offerSdp);
 
-    // 9. ICE gathering complete 대기 (최대 2초) — trickle 불안정 회피
-    await _waitForIceGathering(pc, maxWaitMs: 2000);
+    // 9. ICE gathering 대기 (최대 1초) — srflx 확보 시 조기 진행.
+    //    나머지 후보는 answer 후 trickle(큐 flush + POST /ice)로 전송된다.
+    await _waitForIceGathering(pc, maxWaitMs: 1000);
     if (!_active) return;
 
     // 10. gathered SDP로 offer 전송
@@ -218,15 +249,21 @@ class WebRtcLiveController
       return;
     }
     final completer = Completer<void>();
-    final timer = Timer(Duration(milliseconds: maxWaitMs), () {
+    void finish() {
       if (!completer.isCompleted) completer.complete();
-    });
+    }
+
+    final timer = Timer(Duration(milliseconds: maxWaitMs), finish);
+    // srflx(STUN 반사 주소)가 잡히면 공인망 후보 확보 완료 — TURN 미배포라
+    // relay 후보는 없으므로 더 기다릴 이유가 없다.
+    _iceWaitProbe = (raw) {
+      if (raw.contains(' typ srflx')) finish();
+    };
     pc.onIceGatheringState = (s) {
-      if (s == RTCIceGatheringState.RTCIceGatheringStateComplete) {
-        if (!completer.isCompleted) completer.complete();
-      }
+      if (s == RTCIceGatheringState.RTCIceGatheringStateComplete) finish();
     };
     await completer.future;
+    _iceWaitProbe = null;
     timer.cancel();
   }
 

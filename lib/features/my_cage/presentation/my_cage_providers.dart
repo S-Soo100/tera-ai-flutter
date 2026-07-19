@@ -79,6 +79,13 @@ final webrtcSignalingRepositoryProvider =
   );
 });
 
+/// WebRTC ICE 설정 (terra-server GET /cameras/webrtc/config) — 세션 캐시.
+/// 내용이 사실상 정적(iceServers)이라 라이브 진입마다 왕복하지 않는다.
+/// 실패가 캐시되면 컨트롤러의 수동 retry()가 invalidate 후 재시도한다.
+final webrtcConfigProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  return ref.watch(webrtcSignalingRepositoryProvider).fetchConfig();
+});
+
 // ── 공개 FutureProvider ────────────────────────────────────────────────────────
 
 /// 현재 유저의 카메라 전체 목록 (최신순).
