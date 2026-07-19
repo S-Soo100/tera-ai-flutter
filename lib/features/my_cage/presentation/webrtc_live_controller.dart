@@ -159,6 +159,17 @@ class WebRtcLiveController
     _renderer = renderer;
     _msConfig = _timing.elapsedMilliseconds;
 
+    // 첫 프레임 도착 계측: connected 이후 화면이 실제로 뜨기까지의 간극
+    // (펌웨어 첫 키프레임 대기 여부 판별). RTCVideoView는 connected 시점에
+    // 이미 마운트돼 텍스처가 렌더되므로 콜백이 정상 발화한다.
+    renderer.onFirstFrameRendered = () {
+      if (!_active) return;
+      debugPrint(
+        '[webrtc-timing] cam=$cameraUuid firstFrame='
+        '${_timing.elapsedMilliseconds}ms',
+      );
+    };
+
     // 3. PeerConnection 생성
     final pc = await createPeerConnection({
       'iceServers': cfg['iceServers'] ?? [],
