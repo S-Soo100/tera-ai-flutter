@@ -43,6 +43,12 @@ class Pet extends HiveObject {
   @HiveField(12)
   DateTime updatedAt;
 
+  /// 이 개체가 배정된 사육장 세트(`enclosures.id`). null = 미배정.
+  /// PRD 세트 개념(사육장 1 : 캠 1 : 개체 1)의 개체측 연결점.
+  /// 필드 인덱스 13은 신규 — 기존 레코드는 null로 읽힌다.
+  @HiveField(13)
+  String? enclosureId;
+
   Pet({
     required this.id,
     required this.name,
@@ -55,6 +61,7 @@ class Pet extends HiveObject {
     this.weight,
     this.photoPath,
     this.memo,
+    this.enclosureId,
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : createdAt = createdAt ?? DateTime.now(),
