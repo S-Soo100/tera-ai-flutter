@@ -87,6 +87,25 @@ class PetListNotifier extends StateNotifier<List<Pet>> {
       refresh();
     }
   }
+
+  /// 개체를 사육장에 배정 / 해제([enclosureId] = null).
+  ///
+  /// 서버 RPC 1회로 처리하며, 성공 시 repo가 재동기화까지 끝낸 뒤 목록을
+  /// 갱신한다. 실패는 그대로 던져 화면이 사용자에게 사유를 보여주게 한다 —
+  /// 로컬만 성공한 것처럼 저장하지 않는다.
+  ///
+  /// 사육장·배정은 클라우드 전용이라 미인증 상태에서는 지원하지 않는다.
+  Future<void> assignToEnclosure({
+    required String petId,
+    required String? enclosureId,
+  }) async {
+    if (!_useCloud) {
+      throw StateError('로그인이 필요합니다');
+    }
+    await _supabaseRepo!
+        .assignPetToEnclosure(petId: petId, enclosureId: enclosureId);
+    refresh();
+  }
 }
 
 /// 단일 Pet 조회 (family provider)

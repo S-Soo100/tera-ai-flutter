@@ -543,5 +543,17 @@
   "home_filter_shedding": "탈피",
   "home_timeline_empty": "이 날 기록된 영상이 없어요",
   "home_clip_play_failed": "영상을 재생할 수 없어요",
-  "home_back_to_live": "라이브로 돌아가기"
+  "home_back_to_live": "라이브로 돌아가기",
+  "enclosure_settings_assignment": "개체 배정",
+  "enclosure_settings_no_pet": "배정된 개체 없음",
+  "enclosure_settings_pick_pet": "개체 선택",
+  "enclosure_settings_unassign": "배정 해제",
+  "enclosure_settings_swap_title": "개체를 교체할까요?",
+  "enclosure_settings_swap_body": "{}은(는) 현재 다른 사육장에 배정돼 있어요. 이 사육장으로 옮기면 기존 배정은 해제됩니다.",
+  "enclosure_settings_replace_body": "이 사육장에는 이미 {}이(가) 배정돼 있어요. 계속하면 기존 배정이 해제됩니다.",
+  "enclosure_settings_assign_failed": "배정에 실패했어요. 잠시 후 다시 시도해주세요.",
+  "enclosure_settings_assign_denied": "본인 소유의 사육장·개체만 배정할 수 있어요.",
+  "enclosure_settings_login_required": "로그인이 필요해요.",
+  "enclosure_settings_no_pets": "등록된 개체가 없어요.",
+  "enclosure_settings_already_assigned": "다른 사육장에 배정됨"
 }
