@@ -516,5 +516,9 @@
   "home_subtab_control": "사육장 제어",
   "home_subtab_timeline": "타임라인",
   "module_actuator_unknown": "기기",
-  "home_timer_running": "{} {}분 타이머 가동 중 ({} 남음)"
+  "home_timer_running": "{} {}분 타이머 가동 중 ({} 남음)",
+  "home_env_temp_now": "현재 {}°C",
+  "home_env_humid_now": "현재 {}%",
+  "home_env_temp_range": "오늘 최고 {}°C / 최저 {}°C",
+  "home_env_humid_range": "최고 {}% / 최저 {}%"
 }
