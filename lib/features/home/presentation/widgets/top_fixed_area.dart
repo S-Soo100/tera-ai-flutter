@@ -9,6 +9,7 @@ import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
 import '../../domain/enclosure_set.dart';
 import '../../domain/pet_dday.dart';
 import '../home_set_providers.dart';
+import 'live_clock_overlay.dart';
 import 'pet_profile_card.dart';
 import 'timeline_clip_feed.dart';
 
@@ -141,24 +142,17 @@ class _SetPane extends ConsumerWidget {
           top: AppStyles.spacing8,
           child: _LiveBadge(isOnline: cam.isOnline),
         ),
-        Positioned(
+        const Positioned(
           right: AppStyles.spacing8,
           top: AppStyles.spacing8,
-          child: Text(
-            DateFormat('yyyy.MM.dd HH:mm').format(DateTime.now()),
-            style: const TextStyle(color: Colors.white, fontSize: 12),
-          ),
+          child: LiveClockOverlay(),
         ),
-        if (!cam.isOnline)
-          Container(
-            color: Colors.black54,
-            alignment: Alignment.center,
-            child: Text(
-              'home_cam_disconnected'.tr(),
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
+        // 오프라인 안내 레이어를 여기서 그리지 않는다.
+        // WebRtcLiveView가 연결 단계(config/offering/ice)와 실패(아이콘+문구+
+        // 재시도)를 이미 자체적으로 그린다. 위에 레이어를 덧대면 "연결이
+        // 끊겼습니다"와 "카메라 호출 중..."이 동시에 떠 서로 모순된다.
+        // 상단 배지(LIVE/OFFLINE)는 DB presence, 가운데는 실제 스트림 상태 —
+        // 두 정보의 출처를 분리해 둔다.
       ],
     );
   }
