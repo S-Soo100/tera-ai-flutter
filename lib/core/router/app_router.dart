@@ -34,6 +34,8 @@ import '../../features/auth/presentation/email_verification_screen.dart';
 import '../../features/auth/presentation/auth_providers.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/stats/presentation/stats_screen.dart';
+import '../../features/notification/presentation/notification_center_screen.dart';
+import '../../features/my_cage/presentation/enclosure_settings_screen.dart';
 import 'tab_branches.dart';
 
 /// 인증 상태 변경 시 redirect만 재평가 (GoRouter 재생성 방지)
@@ -311,6 +313,14 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationCenterScreen(),
+      ),
+      GoRoute(
+        path: '/enclosure-settings',
+        builder: (context, state) => const EnclosureSettingsScreen(),
       ),
     ],
   );

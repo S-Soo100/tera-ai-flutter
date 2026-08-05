@@ -499,5 +499,12 @@
   "ble_retry": "다시 시도",
   "ble_permission_required": "BLE 기기를 검색하려면 블루투스 권한이 필요합니다.",
   "ble_permission_denied": "블루투스 권한이 거부되었습니다. 설정에서 직접 허용해주세요.",
-  "ble_open_settings": "설정 열기"
+  "ble_open_settings": "설정 열기",
+  "home_no_set": "사육장을 등록해주세요",
+  "home_notifications": "알림",
+  "home_enclosure_settings": "사육장 설정",
+  "notifications_empty": "새 알림이 없어요",
+  "enclosure_settings_add_device": "새 사육장 제어기 추가",
+  "enclosure_settings_add_camera": "새 카메라 추가",
+  "enclosure_settings_manage": "사육장 관리"
 }
