@@ -531,5 +531,15 @@
   "home_led_brightness": "LED 밝기 {}%",
   "common_confirm": "확인",
   "home_routine_settings": "자동 루틴 & 타이머 설정",
-  "home_routine_empty": "루틴 설정은 준비 중이에요"
+  "home_routine_empty": "루틴 설정은 준비 중이에요",
+  "home_chip_moving": "움직임",
+  "home_chip_resting": "휴식",
+  "home_chip_eating": "식사",
+  "home_chip_drinking": "물마심",
+  "home_date_today": "(오늘)",
+  "home_filter_all": "전체",
+  "home_filter_moving": "움직임",
+  "home_filter_eating": "식사",
+  "home_filter_drinking": "물마심",
+  "home_filter_shedding": "탈피"
 }

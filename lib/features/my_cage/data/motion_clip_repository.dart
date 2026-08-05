@@ -86,6 +86,35 @@ class MotionClipRepository {
     ];
   }
 
+  /// [from](inclusive)~[to](exclusive) 구간의 모션 클립 (최신순).
+  ///
+  /// `listByCamera(day:)`는 로컬 00:00~24:00 기준이라 PRD의 07:00 하루 경계에
+  /// 못 쓴다 — 새벽 활동이 엉뚱한 날짜에 붙는다.
+  Future<List<MotionClip>> listByCameraInWindow(
+    String cameraId, {
+    required DateTime from,
+    required DateTime to,
+    int limit = 200,
+  }) async {
+    final rows = await _supabase
+        .from('motion_clips')
+        .select()
+        .eq('camera_id', cameraId)
+        .gte('started_at', from.toUtc().toIso8601String())
+        .lt('started_at', to.toUtc().toIso8601String())
+        .order('started_at', ascending: false)
+        .limit(limit);
+    final clips = (rows as List)
+        .map((r) => MotionClip.fromJson(r as Map<String, dynamic>))
+        .toList();
+    if (!kClipClassificationEnabled || clips.isEmpty) return clips;
+    final labels = await _fetchLabels(clips.map((c) => c.id).toList());
+    return [
+      for (final c in clips)
+        labels.containsKey(c.id) ? c.copyWith(action: labels[c.id]) : c,
+    ];
+  }
+
   /// clip_id → 대표 행동 라벨(verified/human 우선 > vlm). `behavior_logs` 직결이라
   /// RLS가 열린 뒤에만 유효(kClipClassificationEnabled). 실패/차단 시 빈 맵.
   Future<Map<String, String>> _fetchLabels(List<String> clipIds) async {
