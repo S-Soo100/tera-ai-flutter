@@ -13,21 +13,12 @@ class VideoWatermark extends StatelessWidget {
       child: IgnorePointer(
         child: Opacity(
           opacity: 0.6,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset('assets/images/logo.png', height: 18),
-              const SizedBox(width: 4),
-              const Text(
-                'Tera AI',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 3)],
-                ),
-              ),
-            ],
+          // 가로형 lockup 한 장으로 심볼+워드마크를 대신한다.
+          // 예전엔 정사각 심볼을 18px로 줄이고 옆에 'Tera AI' 텍스트를 붙였는데,
+          // 그 크기에선 심볼이 뭉개져 알아볼 수 없었다.
+          child: Image.asset(
+            'assets/images/logo_wordmark.png',
+            height: 16,
           ),
         ),
       ),

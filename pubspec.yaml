@@ -1,7 +1,7 @@
 name: tera_ai
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.23.0+40
+version: 0.23.1+41
 
 environment:
   sdk: ^3.5.0
@@ -69,13 +69,17 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo.png"
-  adaptive_icon_background: "#1B5E20"
-  adaptive_icon_foreground: "assets/images/logo.png"
+  # iOS 아이콘은 알파를 못 쓴다 → 흰 배경으로 합성한 전용 마스터를 쓴다.
+  image_path: "assets/images/app_icon.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#FFFFFF"
+  # adaptive 안전영역(중앙 66%)을 고려해 심볼을 더 작게 넣은 전용 파일.
+  adaptive_icon_foreground: "assets/images/app_icon_foreground.png"
 
 flutter_native_splash:
-  color: "#1B5E20"
-  image: assets/images/logo.png
+  # 빨간 로고라 기존 진초록(#1B5E20) 배경은 대비가 나빠 흰색으로 바꾼다.
+  color: "#FFFFFF"
+  image: assets/images/logo_stacked.png
   android_12:
-    color: "#1B5E20"
+    color: "#FFFFFF"
     image: assets/images/logo.png

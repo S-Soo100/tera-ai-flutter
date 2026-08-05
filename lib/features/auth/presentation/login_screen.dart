@@ -75,17 +75,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 로고
-                  Image.asset('assets/images/logo.png', width: 80, height: 80),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Tera AI',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  // 로고 (세로형 lockup — 워드마크 포함이라 앱 이름 텍스트 생략)
+                  Center(
+                    child: Image.asset(
+                      'assets/images/logo_stacked.png',
+                      width: 120,
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   Text(
                     'auth_login_subtitle'.tr(),
                     style: theme.textTheme.bodyMedium?.copyWith(

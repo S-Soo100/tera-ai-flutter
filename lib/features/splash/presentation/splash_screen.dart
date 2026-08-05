@@ -33,25 +33,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // 브랜드 레드 로고라 배경은 흰색이어야 대비가 산다.
+    // (기존 primary 초록 배경 위 빨강은 서로 채도가 높아 탁해진다)
     return Scaffold(
-      backgroundColor: theme.colorScheme.primary,
+      backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/images/logo.png', width: 120, height: 120),
-            const SizedBox(height: 24),
-            Text(
-              'Tera AI',
-              style: theme.textTheme.headlineLarge?.copyWith(
-                color: theme.colorScheme.onPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
+            // 세로형 lockup에 이미 "terra ai" 워드마크가 들어 있어
+            // 앱 이름 텍스트를 따로 두지 않는다(중복).
+            Image.asset('assets/images/logo_stacked.png', width: 160),
+            const SizedBox(height: 16),
             Text(
               'app_subtitle'.tr(),
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onPrimary,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
