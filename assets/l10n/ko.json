@@ -506,5 +506,10 @@
   "notifications_empty": "새 알림이 없어요",
   "enclosure_settings_add_device": "새 사육장 제어기 추가",
   "enclosure_settings_add_camera": "새 카메라 추가",
-  "enclosure_settings_manage": "사육장 관리"
+  "enclosure_settings_manage": "사육장 관리",
+  "home_no_pet": "개체를 등록해주세요",
+  "home_last_fed": "최근 급여 {}",
+  "home_weight": "체중 {}g",
+  "home_env_normal": "온습도 정상 🟢",
+  "home_env_warning": "온습도 주의 🟠"
 }
