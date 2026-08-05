@@ -12,6 +12,9 @@ import 'widgets/home_sub_tabs_bar.dart';
 import 'widgets/live_env_card.dart';
 import 'widgets/quick_control_grid.dart';
 import 'widgets/running_timer_chip.dart';
+import 'widgets/timeline_clip_feed.dart';
+import 'widgets/timeline_date_scroller.dart';
+import 'widgets/timeline_summary_chips.dart';
 import 'widgets/top_fixed_area.dart';
 
 /// PRD §2 홈 탭 와이어프레임 조립.
@@ -88,10 +91,19 @@ class _RoutineSettingsButton extends StatelessWidget {
   }
 }
 
-/// 타임라인 서브탭. 내용은 Task 15~16에서 채운다.
+/// PRD §3.5 타임라인 서브탭.
 class _TimelineContainer extends StatelessWidget {
   const _TimelineContainer();
 
   @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
+  Widget build(BuildContext context) {
+    return ListView(
+      children: const [
+        TimelineSummaryChips(),
+        TimelineDateScroller(),
+        TimelineClipFeed(),
+        SizedBox(height: AppStyles.spacing24),
+      ],
+    );
+  }
 }

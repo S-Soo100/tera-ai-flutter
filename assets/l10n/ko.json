@@ -541,5 +541,8 @@
   "home_filter_moving": "움직임",
   "home_filter_eating": "식사",
   "home_filter_drinking": "물마심",
-  "home_filter_shedding": "탈피"
+  "home_filter_shedding": "탈피",
+  "home_timeline_empty": "이 날 기록된 영상이 없어요",
+  "home_clip_play_failed": "영상을 재생할 수 없어요",
+  "home_back_to_live": "라이브로 돌아가기"
 }

@@ -1,13 +1,16 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../my_cage/presentation/my_cage_providers.dart';
 import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
 import '../../domain/enclosure_set.dart';
 import '../../domain/pet_dday.dart';
 import '../home_set_providers.dart';
 import 'pet_profile_card.dart';
+import 'timeline_clip_feed.dart';
 
 /// PRD §3.2 Top Fixed Area.
 ///
@@ -99,13 +102,23 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
   }
 }
 
-class _SetPane extends StatelessWidget {
+class _SetPane extends ConsumerWidget {
   const _SetPane({required this.set});
 
   final EnclosureSet set;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // PRD §3.5: 클립 썸네일 터치 시 이 영역에서 바로 재생한다(화면 이동 아님).
+    final playing = ref.watch(inlinePlayingClipProvider);
+    if (playing != null) {
+      return _InlineClipPlayer(
+        clipId: playing.id,
+        onClose: () =>
+            ref.read(inlinePlayingClipProvider.notifier).state = null,
+      );
+    }
+
     final cam = set.camera;
     if (cam == null) {
       return Container(
@@ -146,6 +159,81 @@ class _SetPane extends StatelessWidget {
               style: const TextStyle(color: Colors.white),
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// 상단 영역 인라인 클립 플레이어.
+///
+/// `initialize()`가 실패하면 catch에서 반드시 dispose 한다 — 안 하면 네이티브
+/// 플레이어 리소스가 샌다.
+class _InlineClipPlayer extends ConsumerStatefulWidget {
+  const _InlineClipPlayer({required this.clipId, required this.onClose});
+
+  final String clipId;
+  final VoidCallback onClose;
+
+  @override
+  ConsumerState<_InlineClipPlayer> createState() => _InlineClipPlayerState();
+}
+
+class _InlineClipPlayerState extends ConsumerState<_InlineClipPlayer> {
+  VideoPlayerController? _controller;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    VideoPlayerController? c;
+    try {
+      final url = await ref.read(motionClipUrlProvider(widget.clipId).future);
+      c = VideoPlayerController.networkUrl(Uri.parse(url));
+      await c.initialize();
+      if (!mounted) {
+        await c.dispose();
+        return;
+      }
+      setState(() => _controller = c);
+      await c.play();
+    } catch (_) {
+      // 실패해도 네이티브 리소스는 반드시 반납한다.
+      await c?.dispose();
+      if (mounted) setState(() => _failed = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _controller;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (_failed)
+          Center(child: Text('home_clip_play_failed'.tr()))
+        else if (c == null)
+          const ColoredBox(color: Colors.black)
+        else
+          VideoPlayer(c),
+        Positioned(
+          right: AppStyles.spacing8,
+          top: AppStyles.spacing8,
+          child: IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            tooltip: 'home_back_to_live'.tr(),
+            onPressed: widget.onClose,
+          ),
+        ),
       ],
     );
   }
