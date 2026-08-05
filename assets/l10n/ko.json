@@ -512,5 +512,7 @@
   "home_weight": "체중 {}g",
   "home_env_normal": "온습도 정상 🟢",
   "home_env_warning": "온습도 주의 🟠",
-  "home_cam_disconnected": "⚠️ 사육장 카메라 연결이 끊겼습니다."
+  "home_cam_disconnected": "⚠️ 사육장 카메라 연결이 끊겼습니다.",
+  "home_subtab_control": "사육장 제어",
+  "home_subtab_timeline": "타임라인"
 }
