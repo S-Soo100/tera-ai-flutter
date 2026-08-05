@@ -33,6 +33,8 @@ import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/auth/presentation/email_verification_screen.dart';
 import '../../features/auth/presentation/auth_providers.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/stats/presentation/stats_screen.dart';
+import 'tab_branches.dart';
 
 /// 인증 상태 변경 시 redirect만 재평가 (GoRouter 재생성 방지)
 class _AuthChangeNotifier extends ChangeNotifier {
@@ -45,36 +47,35 @@ final routerProvider = Provider<GoRouter>((ref) {
     authNotifier.notify();
   });
 
+  return buildAppRouter(
+    isAuthenticated: () => ref.read(isAuthenticatedProvider),
+    refreshListenable: authNotifier,
+  );
+});
+
+/// 라우터 조립. `isAuthenticated`를 주입받아 ProviderContainer 없이도
+/// 테스트에서 구성 가능하게 한다.
+GoRouter buildAppRouter({
+  required bool Function() isAuthenticated,
+  Listenable? refreshListenable,
+}) {
   return GoRouter(
     initialLocation: '/splash',
-    refreshListenable: authNotifier,
+    refreshListenable: refreshListenable,
     redirect: (context, state) {
-      final isAuthenticated = ref.read(isAuthenticatedProvider);
       final path = state.uri.path;
 
       // 스플래시는 앱 시작 시에만 — redirect 간섭 없음
       if (path == '/splash') return null;
 
-      // 인증 필요 없는 공개 경로
-      const publicPaths = [
-        '/splash',
-        '/home',
-        '/wiki',
-        '/community',
-        '/search',
-        '/login',
-        '/signup',
-        '/verify-email',
-        '/error',
-      ];
-      final isPublic = publicPaths.any(
+      final isPublic = kPublicPaths.any(
         (p) => path == p || path.startsWith('$p/'),
       );
 
-      if (!isAuthenticated && !isPublic) {
+      if (!isAuthenticated() && !isPublic) {
         return '/login';
       }
-      if (isAuthenticated &&
+      if (isAuthenticated() &&
           (path == '/login' ||
               path == '/signup' ||
               path == '/verify-email')) {
@@ -101,7 +102,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Tab 2: 마이 크레 (My Pets)
+          // Tab 2: 통계 (Stats)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/stats',
+                builder: (context, state) => const StatsScreen(),
+              ),
+            ],
+          ),
+          // Tab 3: 마이 크레 (My Pets)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -139,78 +149,70 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Tab 3: 크레캠 (CreCam)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/crecam',
-                builder: (context, state) => const CrecamScreen(),
-                routes: [
-                  // 정적 경로 'cameras/pair'를 ':cameraId'보다 먼저 등록 —
-                  // 'pair'가 cameraId로 오인 매칭되는 것을 방지.
-                  GoRoute(
-                    path: 'cameras/pair',
-                    builder: (context, state) => const CameraPairingScreen(),
-                  ),
-                  GoRoute(
-                    path: 'cameras/:cameraId',
-                    builder: (context, state) {
-                      final id = state.pathParameters['cameraId']!;
-                      return CameraDetailScreen(cameraId: id);
-                    },
-                  ),
-                  GoRoute(
-                    path: 'clips/:clipId',
-                    builder: (context, state) {
-                      final id = state.pathParameters['clipId']!;
-                      return ClipPlayerScreen(clipId: id);
-                    },
-                  ),
-                  GoRoute(
-                    path: 'motion-clips/:clipId',
-                    builder: (context, state) {
-                      final id = state.pathParameters['clipId']!;
-                      return MotionClipPlayerScreen(clipId: id);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Tab 4: 사육장 (Smart Cage)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/smart-cage',
-                builder: (context, state) => const SmartCageScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'devices/pair',
-                    builder: (context, state) => const DevicePairingScreen(),
-                  ),
-                  GoRoute(
-                    path: 'enclosures',
-                    builder: (context, state) => const EnclosureListScreen(),
-                    routes: [
-                      GoRoute(
-                        path: ':enclosureId',
-                        builder: (context, state) {
-                          final id = state.pathParameters['enclosureId']!;
-                          return EnclosureDetailScreen(enclosureId: id);
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Tab 5: 커뮤니티 (Community)
+          // Tab 4: 커뮤니티 (Community)
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/community',
                 builder: (context, state) => const CommunityScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
+      // 크레캠 (탭에서 제거 — 홈 탭이 흡수. 화면·딥링크는 보존)
+      GoRoute(
+        path: '/crecam',
+        builder: (context, state) => const CrecamScreen(),
+        routes: [
+          // 정적 경로 'cameras/pair'를 ':cameraId'보다 먼저 등록 —
+          // 'pair'가 cameraId로 오인 매칭되는 것을 방지.
+          GoRoute(
+            path: 'cameras/pair',
+            builder: (context, state) => const CameraPairingScreen(),
+          ),
+          GoRoute(
+            path: 'cameras/:cameraId',
+            builder: (context, state) {
+              final id = state.pathParameters['cameraId']!;
+              return CameraDetailScreen(cameraId: id);
+            },
+          ),
+          GoRoute(
+            path: 'clips/:clipId',
+            builder: (context, state) {
+              final id = state.pathParameters['clipId']!;
+              return ClipPlayerScreen(clipId: id);
+            },
+          ),
+          GoRoute(
+            path: 'motion-clips/:clipId',
+            builder: (context, state) {
+              final id = state.pathParameters['clipId']!;
+              return MotionClipPlayerScreen(clipId: id);
+            },
+          ),
+        ],
+      ),
+      // 사육장 (탭에서 제거 — 홈 탭이 흡수. 화면·딥링크는 보존)
+      GoRoute(
+        path: '/smart-cage',
+        builder: (context, state) => const SmartCageScreen(),
+        routes: [
+          GoRoute(
+            path: 'devices/pair',
+            builder: (context, state) => const DevicePairingScreen(),
+          ),
+          GoRoute(
+            path: 'enclosures',
+            builder: (context, state) => const EnclosureListScreen(),
+            routes: [
+              GoRoute(
+                path: ':enclosureId',
+                builder: (context, state) {
+                  final id = state.pathParameters['enclosureId']!;
+                  return EnclosureDetailScreen(enclosureId: id);
+                },
               ),
             ],
           ),
@@ -312,7 +314,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
-});
+}
 
 
 class _ScaffoldWithBottomNav extends StatelessWidget {
@@ -338,27 +340,22 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
           NavigationDestination(
             icon: const Icon(Icons.home_outlined),
             selectedIcon: const Icon(Icons.home),
-            label: 'tab_home'.tr(),
+            label: kHomeTabLabelKeys[0].tr(),
           ),
           NavigationDestination(
-            icon: const Icon(Icons.image_outlined),
-            selectedIcon: const Icon(Icons.image),
-            label: 'tab_my_pets'.tr(),
+            icon: const Icon(Icons.insights_outlined),
+            selectedIcon: const Icon(Icons.insights),
+            label: kHomeTabLabelKeys[1].tr(),
           ),
           NavigationDestination(
-            icon: const Icon(Icons.videocam_outlined),
-            selectedIcon: const Icon(Icons.videocam),
-            label: 'tab_crecam'.tr(),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.view_in_ar_outlined),
-            selectedIcon: const Icon(Icons.view_in_ar),
-            label: 'tab_smart_cage'.tr(),
+            icon: const Icon(Icons.pets_outlined),
+            selectedIcon: const Icon(Icons.pets),
+            label: kHomeTabLabelKeys[2].tr(),
           ),
           NavigationDestination(
             icon: const Icon(Icons.chat_bubble_outline),
             selectedIcon: const Icon(Icons.chat_bubble),
-            label: 'tab_community'.tr(),
+            label: kHomeTabLabelKeys[3].tr(),
           ),
         ],
       ),

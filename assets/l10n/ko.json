@@ -1,31 +1,29 @@
 {
   "app_name": "Tera AI",
   "app_subtitle": "게코 사육 가이드",
-
   "tab_home": "홈",
   "tab_my_pets": "마이 크레",
   "tab_crecam": "크레캠",
   "tab_smart_cage": "사육장",
   "tab_community": "커뮤니티",
+  "tab_stats": "통계",
+  "stats_empty": "통계는 준비 중이에요",
   "tab_wiki": "사육 위키",
   "search_hint": "종 이름, 학명, 영어명으로 검색",
   "search_no_result": "검색 결과가 없습니다",
   "search_placeholder": "우리 집 도마뱀, 합법일까?",
   "search_featured_badge": "상세 정보",
   "search_legal_badge": "합법",
-
   "category_all": "전체",
   "category_lizard": "도마뱀",
   "category_snake": "뱀",
   "category_turtle": "거북",
   "category_amphibian": "양서류",
-
   "home_my_pets_title": "내 개체",
   "home_my_pets_empty": "개체를 등록하고 맞춤 사육 가이드를 받아보세요",
   "home_my_pets_register": "첫 개체 등록하기",
   "home_guide_title": "사육 가이드",
   "home_search_title": "백색목록 검색",
-
   "home_welcome": "환영합니다!",
   "home_activity_tooltip": "추정 활동시간 통계",
   "home_live_section": "내 개체 (라이브)",
@@ -36,7 +34,6 @@
   "home_activity_section": "활동 분석 요약",
   "home_activity_total_label": "어제 추정 활동시간",
   "home_activity_range": "어제 07:00 ~ 오늘 07:00",
-
   "wiki_title": "사육 위키",
   "wiki_basic_info": "기본 정보",
   "wiki_temperature": "온도·습도",
@@ -52,7 +49,6 @@
   "wiki_difficulty_beginner": "쉬움",
   "wiki_difficulty_intermediate": "보통",
   "wiki_difficulty_advanced": "어려움",
-
   "care_basking": "바스킹 표면",
   "care_hot_zone": "핫존",
   "care_cool_zone": "쿨존",
@@ -70,7 +66,6 @@
   "care_feeding_frequency": "급여 주기",
   "care_feeding_size": "크기 기준",
   "care_water": "급수",
-
   "morph_calc_title": "모프 계산기",
   "morph_father": "아빠 모프",
   "morph_mother": "엄마 모프",
@@ -79,7 +74,6 @@
   "morph_no_data": "이 조합의 데이터를 준비 중입니다",
   "morph_lethal_warning": "치사 조합 — 이 교배는 일부 새끼가 부화 불가합니다",
   "morph_health_warning": "건강 주의",
-
   "my_pets_title": "마이 크레",
   "my_pets_empty": "아직 등록된 개체가 없어요",
   "my_pets_empty_desc": "개체를 등록하고 맞춤 사육 가이드를 받아보세요",
@@ -91,7 +85,6 @@
   "my_pets_edit_info": "정보 수정",
   "my_pets_add_new_title": "새로운 개체 등록하기",
   "my_pets_add_new_subtitle": "이름, 종, 사진 등\n필수/선택 정보를 입력할 수 있어요.",
-
   "pet_name": "이름",
   "pet_species": "종 선택",
   "pet_morph": "모프",
@@ -110,16 +103,13 @@
   "pet_weight_log": "체중 기록",
   "pet_add_weight": "체중 기록 추가",
   "pet_other_species": "기타 (직접입력)",
-
   "compare_title": "3종 비교",
-
   "error_title": "오류가 발생했습니다",
   "error_retry": "다시 시도",
   "offline_title": "인터넷 연결 없음",
   "offline_subtitle": "네트워크 연결을 확인한 뒤 다시 시도해 주세요",
   "offline_retry": "다시 시도",
   "placeholder_preparing": "준비 중입니다",
-
   "chat_title": "AI 채팅",
   "chat_history": "대화 기록",
   "chat_new": "새 대화",
@@ -140,7 +130,6 @@
   "chat_empty_history": "아직 대화 기록이 없어요",
   "chat_delete_confirm": "이 대화를 삭제할까요?",
   "chat_ask_new": "새로 질문하기",
-
   "auth_login": "로그인",
   "auth_login_subtitle": "파충류 사육의 모든 것",
   "auth_signup": "회원가입",
@@ -167,7 +156,6 @@
   "auth_verify_resend": "인증 코드 다시 보내기",
   "auth_verify_resend_cooldown": "{}초 후 재전송 가능",
   "auth_verify_resent": "인증 코드를 다시 보냈습니다",
-
   "profile_title": "프로필",
   "profile_display_name": "닉네임",
   "profile_experience": "사육 경험",
@@ -178,7 +166,6 @@
   "profile_saved": "프로필이 저장되었습니다",
   "profile_avatar_updated": "프로필 사진이 변경되었습니다",
   "profile_app_version": "앱 버전",
-
   "event_timeline": "활동 기록",
   "event_add": "기록 추가",
   "event_empty": "아직 기록이 없어요",
@@ -190,7 +177,6 @@
   "event_weight": "체중",
   "event_health_check": "건강 체크",
   "event_note_type": "메모",
-
   "media_gallery": "사진",
   "media_add_photo": "사진 추가",
   "media_from_camera": "카메라로 촬영",
@@ -198,7 +184,6 @@
   "media_delete_confirm": "이 사진을 삭제할까요?",
   "media_uploading": "업로드 중...",
   "media_empty": "아직 사진이 없어요",
-
   "environment_card_title": "메인 사육장 (임시)",
   "environment_card_target": "목표: 24°C / 70%",
   "environment_demo_badge": "DEMO",
@@ -208,14 +193,12 @@
   "environment_action_water": "물 뿌리기",
   "environment_action_settings": "환경 설정",
   "environment_coming_soon": "준비 중인 기능입니다",
-
   "my_cage_title": "내 사육장·장비",
   "crecam_title": "크레캠",
   "crecam_pet_unlinked": "개체 미연결",
   "crecam_status_good": "연결 상태 양호",
   "crecam_status_bad": "연결 상태 점검 필요",
   "crecam_find_new": "새 카메라 찾기",
-
   "smart_cage_title": "스마트 사육장",
   "smart_cage_main_title": "메인 사육장 (찰떡이)",
   "smart_cage_main_target": "목표: 24°C / 70%",
@@ -229,7 +212,6 @@
   "smart_cage_pair_button": "디바이스 페어링하기",
   "smart_cage_select_device": "디바이스 선택",
   "wifi_reconfigure": "Wi-Fi 재설정",
-
   "telemetry_chart_title": "온습도 추이",
   "telemetry_chart_temp": "온도",
   "telemetry_chart_humidity": "습도",
@@ -252,7 +234,6 @@
   "comfort_card_verdict_range": "{verdict} · 적정 {lo}~{hi}{unit}",
   "comfort_card_range": "적정 {lo}~{hi}{unit}",
   "telemetry_value_none": "—",
-
   "community_title": "커뮤니티",
   "community_placeholder": "커뮤니티 화면 준비 중입니다",
   "community_empty": "게시글이 없어요",
@@ -267,7 +248,6 @@
   "community_wiki_action_search": "백색목록 검색",
   "community_wiki_action_info": "종 정보",
   "community_wiki_action_morph_calc": "모프 계산기",
-
   "time_just_now": "방금 전",
   "time_minutes_ago": "{n}분 전",
   "time_hours_ago": "{n}시간 전",
@@ -275,7 +255,6 @@
   "my_cage_empty_title": "아직 연결된 카메라가 없어요",
   "my_cage_empty_subtitle": "게코 캠을 등록하고 녹화 영상을 확인해보세요",
   "my_cage_add_camera": "카메라 연결하기",
-
   "camera_form_title": "카메라 등록",
   "camera_form_display_name": "카메라 이름",
   "camera_form_display_name_hint": "예: 거실 테라리움",
@@ -288,21 +267,17 @@
   "camera_form_password": "비밀번호",
   "camera_form_pet": "연결할 개체 (선택)",
   "camera_form_pet_none": "연결 안 함",
-
   "camera_test_connection": "연결 테스트",
   "camera_test_running": "연결 중...",
   "camera_test_success": "연결 성공!",
   "camera_test_fail": "연결 실패",
-
   "camera_register": "등록",
   "camera_register_success": "카메라 등록 완료",
   "camera_register_conflict": "이미 등록된 카메라입니다",
-
   "camera_delete": "삭제",
   "camera_delete_confirm": "이 카메라를 삭제하시겠습니까?",
   "camera_delete_confirm_yes": "삭제",
   "camera_delete_confirm_no": "취소",
-
   "camera_detail_info": "연결 정보",
   "camera_detail_last_connected": "마지막 연결",
   "camera_detail_clips": "녹화 영상",
@@ -363,7 +338,6 @@
   "common_cancel": "취소",
   "camera_detail_verify_clip_badge": "검증용",
   "camera_detail_verify_clip_section": "검증용 영상",
-
   "crecam_detail_live_label": "Live",
   "crecam_detail_activity_title": "추정 활동시간",
   "crecam_detail_activity_baseline": "* 카메라 영상으로 추정 · 07:00 ~ 익일 07:00",
@@ -381,7 +355,6 @@
   "crecam_detail_filter_motion": "움직임만",
   "crecam_detail_filter_all": "전체",
   "crecam_detail_behavior_motion": "움직임 감지",
-
   "clip_motion_badge": "움직임",
   "clip_duration_seconds": "{seconds}초",
   "clip_filter_motion_only": "움직임만",
@@ -392,22 +365,17 @@
   "clip_empty_motion_only": "움직임 감지된 클립이 없어요",
   "clip_empty_motion_only_action": "전체 보기로 전환",
   "clip_empty_date": "이 날짜에 녹화 영상이 없어요",
-
   "error_generic": "오류가 발생했어요",
   "retry": "다시 시도",
-
   "pet_detail_cameras_title": "이 개체의 카메라",
   "pet_detail_cameras_empty": "연결된 카메라가 없어요",
   "pet_detail_cameras_add": "카메라 연결하기",
-
   "my_cage_select_hour": "시간 선택",
   "my_cage_no_clips_this_date": "이 날짜에 녹화된 영상이 없습니다",
   "my_cage_select_another_date": "다른 날짜 선택",
   "clip_hour_count_zero": "—",
-
   "clip_label_section_title": "사람이 단 라벨",
   "clip_inference_section_title": "AI 추론",
-
   "behavior_action_eating_paste": "슈푸 냠냠",
   "behavior_action_drinking": "물 마심",
   "behavior_action_moving": "움직임",
@@ -417,32 +385,27 @@
   "behavior_action_shedding": "탈피",
   "behavior_action_basking": "일광욕",
   "behavior_action_unseen": "보이지 않음",
-
   "behavior_lick_target_air": "허공",
   "behavior_lick_target_dish": "그릇",
   "behavior_lick_target_floor": "바닥",
   "behavior_lick_target_wall": "벽",
   "behavior_lick_target_object": "사물",
   "behavior_lick_target_other": "기타",
-
   "live_view_title": "라이브",
   "live_view_connecting": "연결 중...",
   "live_view_error": "스트림 연결 실패",
-
   "crecam_camera_online": "온라인",
   "crecam_camera_offline": "오프라인",
   "crecam_camera_stale": "응답 지연",
   "crecam_thumbnail_offline": "연결 안 됨",
   "crecam_thumbnail_no_preview": "미리보기 없음",
   "crecam_pairing_coming_soon": "카메라 페어링 기능 준비 중",
-
   "crecam_live_phase_config": "설정 수신 중...",
   "crecam_live_phase_offering": "카메라 호출 중...",
   "crecam_live_phase_ice": "영상 연결 중...",
   "crecam_live_error_unresponsive": "카메라가 응답하지 않습니다. 전원과 네트워크 상태를 확인해주세요.",
   "crecam_live_error_failed": "연결에 실패했습니다. 다시 시도해주세요.",
   "live_view_reconnect": "다시 연결",
-
   "module_status_title": "환경 모니터링",
   "module_status_connected": "정상",
   "module_status_disconnected": "연결 끊김",
@@ -479,7 +442,6 @@
   "heater_unlock_confirm_body": "위험 상황이 지속되면 즉시 다시 잠깁니다.",
   "heater_unlock_confirm_yes": "해제",
   "heater_unlocked_toast": "잠금 해제됨. 다시 시도하세요.",
-
   "module_no_device": "연결된 디바이스가 없습니다",
   "module_no_device_subtitle": "BLE로 사육장 모듈을 페어링해주세요",
   "module_cmd_pending": "명령 전송 중…",
@@ -494,7 +456,6 @@
   "module_heater_confirm_body": "히터를 조작하시겠습니까? 온도 변화에 주의하세요.",
   "module_heater_confirm_yes": "확인",
   "module_heater_confirm_cancel": "취소",
-
   "ble_pairing_title": "사육장 WiFi 연결",
   "camera_pairing_title": "카메라 WiFi 연결",
   "ble_scanning_title": "주변 기기 스캔 중",
@@ -502,7 +463,6 @@
   "ble_scanning_subtitle_camera": "카메라 전원을 켜고 기기 가까이 가져다 주세요",
   "ble_rescan": "다시 스캔",
   "ble_unknown_device": "기기 {0}",
-
   "ble_select_network": "WiFi 네트워크 선택",
   "ble_scan_wifi": "{device} 기기가 검색한 네트워크입니다",
   "ble_rescan_wifi": "네트워크 새로고침",
@@ -511,12 +471,10 @@
   "ble_selected_network": "선택한 네트워크: {0}",
   "ble_no_ap_found": "검색된 WiFi 네트워크가 없습니다. 기기를 공유기 가까이 옮기고 다시 스캔해주세요.",
   "ble_scan_fail": "WiFi 스캔에 실패했습니다. 다시 시도해주세요.",
-
   "ble_signal_strong": "신호 강함",
   "ble_signal_good": "신호 양호",
   "ble_signal_fair": "신호 보통",
   "ble_signal_weak": "신호 약함",
-
   "ble_enter_password": "WiFi 비밀번호 입력",
   "ble_form_ssid": "WiFi 이름 (SSID)",
   "ble_form_ssid_hint": "예: MyHomeWifi",
@@ -526,13 +484,11 @@
   "ble_form_password_required": "WiFi 비밀번호를 입력해주세요",
   "ble_connect_wifi": "WiFi 연결",
   "ble_back_to_list": "네트워크 목록으로",
-
   "ble_connecting": "WiFi에 연결하는 중입니다",
   "ble_wifi_connected": "WiFi 연결 완료!",
   "ble_done_subtitle": "사육장 모듈이 WiFi에 연결되었습니다.\n사육장 화면에서 실시간 환경을 확인하세요.",
   "camera_done_subtitle": "카메라가 WiFi에 연결되었습니다.\n크레캠 화면에서 실시간 영상을 확인하세요.",
   "ble_done_button": "확인",
-
   "ble_failed_title": "연결 실패",
   "ble_pairing_failed": "WiFi 연결에 실패했습니다. 다시 시도해주세요.",
   "ble_wifi_fail": "WiFi 연결에 실패했습니다. 비밀번호를 확인해주세요.",
@@ -541,7 +497,6 @@
   "ble_scan_error": "스캔 오류: {0}",
   "ble_adapter_off": "블루투스가 꺼져 있습니다. 블루투스를 켜고 다시 시도해주세요.",
   "ble_retry": "다시 시도",
-
   "ble_permission_required": "BLE 기기를 검색하려면 블루투스 권한이 필요합니다.",
   "ble_permission_denied": "블루투스 권한이 거부되었습니다. 설정에서 직접 허용해주세요.",
   "ble_open_settings": "설정 열기"
