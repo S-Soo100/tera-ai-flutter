@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,6 +57,28 @@ void main() {
     await tester.tap(find.byKey(HomeSubTabsBar.timelineKey));
     await tester.pumpAndSettle();
     expect(c.read(homeSubTabProvider), HomeSubTab.timeline);
+  });
+
+  testWidgets('모드 로딩 중에는 기본 탭을 건드리지 않는다 — 통합 세트가 타임라인으로 열리는 회귀 방지',
+      (tester) async {
+    // 모드가 아직 안 온 상태(loading). 폴백 DeviceMode.none이 두 탭을 다
+    // 비활성으로 만들어 교정이 돌면 control → timeline으로 넘어가버린다.
+    final c = ProviderContainer(overrides: [
+      currentDeviceModeProvider.overrideWith((ref) => Completer<DeviceMode>()
+          .future), // 영원히 pending
+    ]);
+    addTearDown(c.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: c,
+        child: const MaterialApp(home: Scaffold(body: HomeSubTabsBar())),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(c.read(homeSubTabProvider), HomeSubTab.control);
   });
 
   testWidgets('비활성 탭을 눌러도 선택이 안 바뀐다', (tester) async {

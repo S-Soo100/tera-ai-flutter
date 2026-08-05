@@ -38,6 +38,17 @@ class DayWindow {
 
   bool contains(DateTime t) => !t.isBefore(start) && t.isBefore(end);
 
+  /// [now] 기준 이 창에서 **실제로 흘러간 시간**.
+  ///
+  /// 지난 날짜면 24시간 전체, 진행 중인 오늘이면 07:00부터 지금까지다.
+  /// 휴식 시간(= 경과 − 움직임)을 낼 때 24시간을 그대로 쓰면 오전에도
+  /// "휴식 22시간"처럼 아직 오지 않은 시간까지 세어버린다.
+  Duration elapsed(DateTime now) {
+    if (!now.isBefore(end)) return end.difference(start);
+    if (now.isBefore(start)) return Duration.zero;
+    return now.difference(start);
+  }
+
   /// 최근 24시간 실시간 차트 범위: 전날 19:00 ~ [now].
   static ({DateTime start, DateTime end}) chartRange(DateTime now) {
     final yesterday = DateTime(now.year, now.month, now.day)

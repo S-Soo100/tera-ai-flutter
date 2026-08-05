@@ -29,12 +29,17 @@ final timelineClipsProvider =
 });
 
 /// 당일 요약.
+///
+/// 창 길이는 24시간 고정이 아니라 **실제 경과 시간**이다 — 진행 중인 오늘에
+/// 24시간을 쓰면 아직 오지 않은 시간까지 휴식으로 세어버린다(18시에 "휴식
+/// 22시간").
 final timelineSummaryProvider =
     FutureProvider.autoDispose<TimelineSummary>((ref) async {
+  final date = ref.watch(timelineDateProvider);
   final clips = await ref.watch(timelineClipsProvider.future);
   return TimelineSummary.from(
     clips: clips,
-    window: const Duration(hours: 24),
+    window: DayWindow.forDate(date).elapsed(DateTime.now()),
   );
 });
 

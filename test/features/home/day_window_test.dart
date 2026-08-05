@@ -38,6 +38,30 @@ void main() {
     });
   });
 
+  group('DayWindow.elapsed — 실제 경과 시간', () {
+    test('진행 중인 오늘 18:29 → 07:00부터 11시간 29분', () {
+      final w = DayWindow.forDate(DateTime(2026, 8, 5));
+      expect(w.elapsed(DateTime(2026, 8, 5, 18, 29)),
+          const Duration(hours: 11, minutes: 29));
+    });
+
+    test('창이 끝난 지난 날짜 → 24시간 전체', () {
+      final w = DayWindow.forDate(DateTime(2026, 8, 3));
+      expect(w.elapsed(DateTime(2026, 8, 5, 12)), const Duration(hours: 24));
+    });
+
+    test('창 종료 정각도 24시간', () {
+      final w = DayWindow.forDate(DateTime(2026, 8, 5));
+      expect(
+          w.elapsed(DateTime(2026, 8, 6, 7)), const Duration(hours: 24));
+    });
+
+    test('창 시작 전(미래 날짜)이면 0 — 음수로 안 간다', () {
+      final w = DayWindow.forDate(DateTime(2026, 8, 9));
+      expect(w.elapsed(DateTime(2026, 8, 5, 12)), Duration.zero);
+    });
+  });
+
   group('DayWindow.chartRange — 전날 19:00 ~ 현재', () {
     test('시작은 전날 19:00, 끝은 현재', () {
       final now = DateTime(2026, 8, 5, 14, 30);

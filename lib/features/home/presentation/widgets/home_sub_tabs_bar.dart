@@ -18,14 +18,20 @@ class HomeSubTabsBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mode =
-        ref.watch(currentDeviceModeProvider).valueOrNull ?? DeviceMode.none;
+    final modeAsync = ref.watch(currentDeviceModeProvider);
+    final mode = modeAsync.valueOrNull ?? DeviceMode.none;
     final selected = ref.watch(homeSubTabProvider);
 
     // 선택된 탭이 현재 모드에서 비활성이면 기본 탭으로 교정한다.
     // build 중 provider를 쓰면 안 되므로 프레임 뒤로 미룬다.
-    final needsFix = (selected == HomeSubTab.control && !mode.controlEnabled) ||
-        (selected == HomeSubTab.timeline && !mode.timelineEnabled);
+    //
+    // **로딩 중에는 교정하지 않는다.** 모드가 아직 안 왔을 때의 폴백은
+    // DeviceMode.none인데, none은 두 탭이 다 비활성이라 무조건 교정이 돌아
+    // 타임라인으로 넘어간다. 그 뒤 진짜 모드(integrated)가 도착해도 타임라인은
+    // 유효한 탭이라 되돌아오지 않아, 통합 세트가 항상 타임라인으로 열린다.
+    final needsFix = modeAsync.hasValue &&
+        ((selected == HomeSubTab.control && !mode.controlEnabled) ||
+            (selected == HomeSubTab.timeline && !mode.timelineEnabled));
     if (needsFix) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
