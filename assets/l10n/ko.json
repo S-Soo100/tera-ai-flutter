@@ -520,5 +520,8 @@
   "home_env_temp_now": "현재 {}°C",
   "home_env_humid_now": "현재 {}%",
   "home_env_temp_range": "오늘 최고 {}°C / 최저 {}°C",
-  "home_env_humid_range": "최고 {}% / 최저 {}%"
+  "home_env_humid_range": "최고 {}% / 최저 {}%",
+  "home_chart_title": "최근 24시간",
+  "home_chart_no_data": "표시할 데이터가 없어요",
+  "home_chart_goto_stats": "차트 터치 시 통계 탭으로 이동 ›"
 }
