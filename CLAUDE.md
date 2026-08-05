@@ -162,6 +162,20 @@ flutter test             # 테스트 실행
 - 코드 수정 후 `flutter analyze` 에러 0 확인 필수.
 - `flutter build`는 Claude Code 안에서 직접 실행 가능 (리소스 경합 낮음, Unity와 다름).
 
+### 커밋 (2026-08-06 확정) — 묻지 말고 자동
+**작업 단위마다 커밋한다. 사용자에게 커밋 여부를 묻지 않는다.**
+- **단위 기준**: 논리적으로 완결된 변경 하나 = 커밋 하나. 태스크 1개, 버그 1건, 문서 1건, 리팩터링 1건.
+  관심사가 다른 변경을 한 커밋에 섞지 않는다(되돌릴 때 같이 딸려온다).
+- **커밋 전 필수**: `flutter analyze` 에러 0 + 관련 테스트 통과. 깨진 상태를 커밋하지 않는다.
+- **위험한 변경은 단독 커밋**: 전면 교체·구조 변경(예: 화면 전면 재작성, 라우터 재배열)은 그 파일만 따로 커밋해 되돌리기 쉽게 둔다.
+- **version bump**: `lib/` 변경이 포함되면 `pubspec.yaml` 버전을 올린다(fix→patch / feat→minor / breaking→major, build+1). pre-push 훅이 무버전업 push를 차단한다. 상세: 메모리 `project_release_versioning`
+- **push는 자동이 아니다** — 원격은 공유 자산이라 사용자가 요청할 때 한다. 커밋만 쌓아두고 필요 시 제안한다.
+
+### 코드 리뷰 (2026-08-06 확정)
+**코드 리뷰는 내장 `/code-review`만 쓴다.** 예외 없음.
+- Codex·Gemini 등 외부 CLI로 diff 리뷰를 돌리지 않는다. `/검수`는 기획 문서 전용이라 코드에 쓰지 않는다.
+- Claude는 `/code-review`를 대신 실행할 수 없다 — **사용자가 직접 호출**한다. 리뷰가 필요하면 요청하고 기다릴 것.
+
 ## 금지 사항
 - placeholder feature(onboarding, profile, notification)를 기획 확정 전 구현하지 않기 (auth는 Email 인증 구현 완료 — 제외)
 - **CircularProgressIndicator 사용 금지** — 로딩 상태는 항상 `shimmer` 패키지의 스켈레톤 UI를 사용할 것
