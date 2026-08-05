@@ -36,6 +36,7 @@ import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/stats/presentation/stats_screen.dart';
 import '../../features/notification/presentation/notification_center_screen.dart';
 import '../../features/my_cage/presentation/enclosure_settings_screen.dart';
+import '../../features/home/presentation/routine_settings_screen.dart';
 import 'tab_branches.dart';
 
 /// 인증 상태 변경 시 redirect만 재평가 (GoRouter 재생성 방지)
@@ -313,6 +314,11 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      // PRD §3.4 자동 루틴 & 타이머 설정 — 풀스크린(탭 셸 밖) 모달
+      GoRoute(
+        path: '/home/routines',
+        builder: (context, state) => const RoutineSettingsScreen(),
       ),
       GoRoute(
         path: '/notifications',

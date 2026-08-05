@@ -523,5 +523,13 @@
   "home_env_humid_range": "최고 {}% / 최저 {}%",
   "home_chart_title": "최근 24시간",
   "home_chart_no_data": "표시할 데이터가 없어요",
-  "home_chart_goto_stats": "차트 터치 시 통계 탭으로 이동 ›"
+  "home_chart_goto_stats": "차트 터치 시 통계 탭으로 이동 ›",
+  "home_mist_once": "1회 즉시 분사",
+  "home_mist_cooldown": "{}초",
+  "home_mist_sent": "분무가 정상적으로 실행됐습니다",
+  "home_mist_failed": "분무 명령을 보내지 못했어요",
+  "home_led_brightness": "LED 밝기 {}%",
+  "common_confirm": "확인",
+  "home_routine_settings": "자동 루틴 & 타이머 설정",
+  "home_routine_empty": "루틴 설정은 준비 중이에요"
 }
