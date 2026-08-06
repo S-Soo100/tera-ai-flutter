@@ -23,7 +23,13 @@ String formatClipDuration(double seconds) {
   return '${m}m ${s}s';
 }
 
-/// PRD §3.5 비디오 클립 피드 (List View).
+/// PRD §3.5 비디오 클립 피드.
+///
+/// **sliver를 반환한다** — `CustomScrollView`의 slivers에 넣어야 한다.
+/// 예전엔 `shrinkWrap: true` ListView였는데, shrinkWrap은 높이를 재려고
+/// 전체 항목을 즉시 레이아웃한다. 클립이 200건이면 [ClipFeedRow] 200개가
+/// 한꺼번에 만들어지고 각자 presigned 썸네일 URL을 요청해 진입 즉시 수백 건의
+/// 네트워크 호출이 터진다. SliverList는 보이는 만큼만 만든다.
 class TimelineClipFeed extends ConsumerWidget {
   const TimelineClipFeed({super.key});
 
@@ -34,15 +40,15 @@ class TimelineClipFeed extends ConsumerWidget {
     final clips =
         ref.watch(filteredTimelineClipsProvider).valueOrNull ?? const [];
     if (clips.isEmpty) {
-      return Padding(
-        key: emptyKey,
-        padding: AppStyles.pagePadding,
-        child: Center(child: Text('home_timeline_empty'.tr())),
+      return SliverToBoxAdapter(
+        child: Padding(
+          key: emptyKey,
+          padding: AppStyles.pagePadding,
+          child: Center(child: Text('home_timeline_empty'.tr())),
+        ),
       );
     }
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+    return SliverList.builder(
       itemCount: clips.length,
       itemBuilder: (_, i) => ClipFeedRow(clip: clips[i]),
     );

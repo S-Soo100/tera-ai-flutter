@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/domain/device_command.dart';
+import '../../../my_cage/domain/telemetry_reading.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
+import '../../../my_cage/presentation/widgets/heater_lock_dialog.dart';
 import '../../domain/mist_lock.dart';
 import '../home_control_providers.dart';
 
@@ -48,14 +50,15 @@ class QuickControlGrid extends ConsumerWidget {
             value: _stateLabel(t?.fan),
             icon: Icons.mode_fan_off,
             enabled: online,
-            onTap: () => _send(ref, deviceId, CommandAction.fanToggle),
+            onTap: () =>
+                _send(context, ref, deviceId, CommandAction.fanToggle),
           ),
           _Tile(
             label: 'module_actuator_heater'.tr(),
             value: _stateLabel(t?.heaterState),
             icon: Icons.local_fire_department,
             enabled: online,
-            onTap: () => _send(ref, deviceId, CommandAction.heaterToggle),
+            onTap: () => _handleHeaterTap(context, ref, deviceId, t),
           ),
           _Tile(
             label: 'module_actuator_led'.tr(),
@@ -91,9 +94,74 @@ class QuickControlGrid extends ConsumerWidget {
     }
   }
 
+  /// 명령 1건 발행. **실패를 삼키지 않는다.**
+  ///
+  /// onTap은 VoidCallback이라 여기서 던지면 unhandled async error로 콘솔에만
+  /// 남고 사용자는 "눌렀는데 아무 일도 안 일어남"을 기기 고장으로 오해한다.
+  /// 그래서 여기서 잡아 토스트로 알린다.
   Future<void> _send(
-      WidgetRef ref, String deviceId, CommandAction action) async {
-    await ref.read(moduleCommandSenderProvider.notifier).send(deviceId, action);
+    BuildContext context,
+    WidgetRef ref,
+    String deviceId,
+    CommandAction action, {
+    Map<String, dynamic>? payload,
+  }) async {
+    try {
+      await ref
+          .read(moduleCommandSenderProvider.notifier)
+          .send(deviceId, action, payload: payload);
+    } catch (e, st) {
+      debugPrint('[cage-control] $action failed: $e\n$st');
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('module_command_failed'.tr())),
+      );
+    }
+  }
+
+  /// PRD §3.4 히터 제어 — **안전 확인을 거친다.**
+  ///
+  /// 히터는 과열 시 개체 폐사로 이어지는 유일한 액추에이터다. 기존
+  /// `actuator_controls.dart`의 2단 안전 플로우를 그대로 따른다:
+  /// ① 안전잠금(DS18B20 50°C 초과/통신오류)이 걸려 있으면 해제 다이얼로그부터
+  /// ② 아니면 조작 확인 다이얼로그를 받고 나서 전송
+  ///
+  /// 홈이 주 제어면이 된 이상 이 경로에도 같은 장치가 있어야 한다.
+  Future<void> _handleHeaterTap(
+    BuildContext context,
+    WidgetRef ref,
+    String deviceId,
+    TelemetryReading? telemetry,
+  ) async {
+    if (telemetry?.heaterLocked ?? false) {
+      await showHeaterLockDialog(context, ref, deviceId: deviceId);
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('module_heater_confirm_title'.tr()),
+        content: Text('module_heater_confirm_body'.tr()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('module_heater_confirm_cancel'.tr()),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF8F00),
+              foregroundColor: Colors.white,
+            ),
+            child: Text('module_heater_confirm_yes'.tr()),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    await _send(context, ref, deviceId, CommandAction.heaterToggle);
   }
 
   /// 1회 즉시 분사.
@@ -106,12 +174,15 @@ class QuickControlGrid extends ConsumerWidget {
     ref.read(mistLockProvider.notifier).state =
         MistLock.startingAt(DateTime.now());
     try {
-      await _send(ref, deviceId, CommandAction.relayToggle);
+      await ref
+          .read(moduleCommandSenderProvider.notifier)
+          .send(deviceId, CommandAction.relayToggle);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('home_mist_sent'.tr())),
       );
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[cage-control] mist failed: $e\n$st');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('home_mist_failed'.tr())),
@@ -150,13 +221,15 @@ class QuickControlGrid extends ConsumerWidget {
         );
       },
     );
-    if (picked == null) return;
+    if (picked == null || !context.mounted) return;
     ref.read(ledBrightnessProvider.notifier).state = picked;
-    await ref.read(moduleCommandSenderProvider.notifier).send(
-          deviceId,
-          picked == 0 ? CommandAction.ledOff : CommandAction.ledOn,
-          payload: {'brightness': picked},
-        );
+    await _send(
+      context,
+      ref,
+      deviceId,
+      picked == 0 ? CommandAction.ledOff : CommandAction.ledOn,
+      payload: {'brightness': picked},
+    );
   }
 }
 

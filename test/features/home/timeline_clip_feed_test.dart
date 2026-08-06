@@ -26,7 +26,12 @@ Future<ProviderContainer> _pump(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: c,
-      child: const MaterialApp(home: Scaffold(body: TimelineClipFeed())),
+      // TimelineClipFeed는 sliver라 CustomScrollView 안에서만 렌더된다.
+      child: const MaterialApp(
+        home: Scaffold(
+          body: CustomScrollView(slivers: [TimelineClipFeed()]),
+        ),
+      ),
     ),
   );
   await tester.pumpAndSettle();

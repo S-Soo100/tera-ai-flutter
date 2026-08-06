@@ -22,12 +22,27 @@ import 'widgets/top_fixed_area.dart';
 /// Header / TopFixedArea / SubTabsBar 는 고정이고 그 아래 컨테이너만 바뀐다.
 /// **TopFixedArea가 서브탭 컨테이너 밖에 있는 것이 핵심**이다 — 안에 두면
 /// 탭 전환 때 WebRtcLiveView가 dispose되어 재연결(수초)이 걸린다.
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  /// 한 번이라도 연 서브탭. 여기 들어온 뒤에야 IndexedStack에 실물이 올라간다.
+  ///
+  /// IndexedStack은 자식을 **전부** 빌드하므로, 그냥 두면 사육장 제어만 쓰는
+  /// 사용자도 홈에 들어올 때마다 타임라인이 motion_clips를 조회하고 클립마다
+  /// presigned 썸네일 URL을 요청한다. 첫 방문 전까지 빈 자리표시자를 넣어
+  /// 그 비용을 미룬다. 한 번 방문한 뒤에는 계속 살려둬 스크롤·필터 상태를
+  /// 보존한다(원래 IndexedStack을 쓴 이유).
+  late final Set<HomeSubTab> _visited = {ref.read(homeSubTabProvider)};
+
+  @override
+  Widget build(BuildContext context) {
     final tab = ref.watch(homeSubTabProvider);
+    _visited.add(tab);
 
     return Scaffold(
       body: SafeArea(
@@ -37,12 +52,17 @@ class HomeScreen extends ConsumerWidget {
             const TopFixedArea(),
             const HomeSubTabsBar(),
             Expanded(
-              // IndexedStack: 두 컨테이너를 살려둔 채 보이는 것만 바꾼다.
               child: IndexedStack(
                 index: tab == HomeSubTab.control ? 0 : 1,
-                children: const [
-                  _ControlContainer(),
-                  _TimelineContainer(),
+                children: [
+                  if (_visited.contains(HomeSubTab.control))
+                    const _ControlContainer()
+                  else
+                    const SizedBox.shrink(),
+                  if (_visited.contains(HomeSubTab.timeline))
+                    const _TimelineContainer()
+                  else
+                    const SizedBox.shrink(),
                 ],
               ),
             ),
@@ -97,12 +117,14 @@ class _TimelineContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: const [
-        TimelineSummaryChips(),
-        TimelineDateScroller(),
+    // CustomScrollView인 이유: 클립 피드가 sliver라 화면에 보이는 행만 빌드된다.
+    // ListView + shrinkWrap이면 클립 전량이 즉시 만들어져 썸네일 요청이 폭주한다.
+    return const CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(child: TimelineSummaryChips()),
+        SliverToBoxAdapter(child: TimelineDateScroller()),
         TimelineClipFeed(),
-        SizedBox(height: AppStyles.spacing24),
+        SliverToBoxAdapter(child: SizedBox(height: AppStyles.spacing24)),
       ],
     );
   }
