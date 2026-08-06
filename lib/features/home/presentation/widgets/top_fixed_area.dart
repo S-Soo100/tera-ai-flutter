@@ -37,8 +37,15 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
   @override
   void initState() {
     super.initState();
-    _controller =
-        PageController(initialPage: ref.read(selectedSetIndexProvider));
+    // 저장된 인덱스를 그대로 믿지 않는다. selectedSetIndexProvider는
+    // autoDispose가 아니고 계정 전환 시 초기화되지도 않아, 세트가 더 많던
+    // 계정에서 넘어오면 itemCount를 넘는 값이 남아 있을 수 있다. 그대로 쓰면
+    // PageView가 없는 페이지에서 시작해 상단 영역이 빈 화면이 된다.
+    final known = ref.read(enclosureSetsProvider).valueOrNull?.length ?? 0;
+    final saved = ref.read(selectedSetIndexProvider);
+    _controller = PageController(
+      initialPage: known == 0 ? 0 : saved.clamp(0, known - 1),
+    );
   }
 
   @override
@@ -70,6 +77,18 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
         aspectRatio: 16 / 9,
         child: Center(child: Text('home_no_set'.tr())),
       );
+    }
+
+    // 세트 목록이 줄어든 뒤(계정 전환·사육장 삭제) 저장된 인덱스가 범위를
+    // 넘은 채 남으면, 나중에 세트가 다시 늘었을 때 엉뚱한 세트로 튄다.
+    // 화면에 보이는 값(clamp된 것)과 저장된 값을 여기서 일치시킨다.
+    final stored = ref.watch(selectedSetIndexProvider);
+    if (stored > sets.length - 1 || stored < 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        ref.read(selectedSetIndexProvider.notifier).state =
+            stored.clamp(0, sets.length - 1);
+      });
     }
 
     return Column(

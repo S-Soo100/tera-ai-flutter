@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../domain/actuator_marker.dart';
-import '../../domain/day_window.dart';
+import '../../domain/env_chart_series.dart';
 import '../home_control_providers.dart';
 
 /// PRD §3.4 최근 24시간 실시간 차트.
@@ -26,16 +26,11 @@ class EnvMiniChart extends ConsumerWidget {
     final buckets = ref.watch(chartBucketsProvider).valueOrNull ?? const [];
     final markers = ref.watch(actuatorMarkersProvider).valueOrNull ?? const [];
 
-    final temps = [
-      for (final b in buckets)
-        if (b.tAvg != null && b.tAvg! > 0) b.tAvg!,
-    ];
-    final humids = [
-      for (final b in buckets)
-        if (b.hAvg != null && b.hAvg! > 0) b.hAvg!,
-    ];
-
-    final range = DayWindow.chartRange(DateTime.now());
+    // 온·습도를 같은 버킷 집합에서 뽑고, 마커가 쓸 시간 구간도 함께 받는다.
+    // 마커 구간은 차트 요청 구간(전날 19:00~현재)이 아니라 **실제 데이터 구간**
+    // 이어야 선과 같은 자리를 가리킨다 — Sparkline이 가진 데이터를 폭 100%로
+    // 늘려 그리기 때문이다.
+    final series = EnvChartSeries.from(buckets);
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -56,26 +51,24 @@ class EnvMiniChart extends ConsumerWidget {
                 const SizedBox(height: AppStyles.spacing8),
                 SizedBox(
                   height: 64,
-                  child: temps.length < 2 && humids.length < 2
+                  child: !series.hasLine
                       ? Center(child: Text('home_chart_no_data'.tr()))
                       : Stack(
                           children: [
-                            if (temps.length >= 2)
-                              Sparkline(
-                                data: temps,
-                                lineColor: Colors.orange,
-                                lineWidth: 2,
-                              ),
-                            if (humids.length >= 2)
-                              Sparkline(
-                                data: humids,
-                                lineColor: Colors.blue,
-                                lineWidth: 2,
-                              ),
+                            Sparkline(
+                              data: series.temps,
+                              lineColor: Colors.orange,
+                              lineWidth: 2,
+                            ),
+                            Sparkline(
+                              data: series.humids,
+                              lineColor: Colors.blue,
+                              lineWidth: 2,
+                            ),
                             _MarkerRow(
                               markers: markers,
-                              start: range.start,
-                              end: range.end,
+                              start: series.from!,
+                              end: series.to!,
                             ),
                           ],
                         ),

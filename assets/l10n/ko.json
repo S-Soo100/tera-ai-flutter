@@ -524,7 +524,6 @@
   "home_chart_no_data": "표시할 데이터가 없어요",
   "home_chart_goto_stats": "차트 터치 시 통계 탭으로 이동 ›",
   "home_mist_once": "1회 즉시 분사",
-  "home_mist_cooldown": "{}초",
   "home_mist_sent": "분무가 정상적으로 실행됐습니다",
   "home_mist_failed": "분무 명령을 보내지 못했어요",
   "home_led_brightness": "LED 밝기 {}%",
@@ -556,5 +555,6 @@
   "enclosure_settings_login_required": "로그인이 필요해요.",
   "enclosure_settings_no_pets": "등록된 개체가 없어요.",
   "enclosure_settings_already_assigned": "다른 사육장에 배정됨",
-  "module_command_failed": "명령을 보내지 못했어요. 연결 상태를 확인해주세요."
+  "module_command_failed": "명령을 보내지 못했어요. 연결 상태를 확인해주세요.",
+  "home_mist_cooldown_short": "잠시 후"
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,9 +13,11 @@ import '../../../my_cage/presentation/widgets/heater_lock_dialog.dart';
 import '../../domain/mist_lock.dart';
 import '../home_control_providers.dart';
 
-/// 분무 중복 클릭 락.
-final mistLockProvider =
-    StateProvider<MistLock>((ref) => const MistLock(lockedUntil: null));
+/// 분무 중복 클릭 락. **기기별로 분리한다** — 전역이면 A 사육장에서 분무한 뒤
+/// B 사육장으로 스와이프해도 B의 버튼이 잠긴다.
+final mistLockProvider = StateProvider.family<MistLock, String>(
+  (ref, deviceId) => const MistLock(lockedUntil: null),
+);
 
 /// LED 밝기(0~100). BE3 전까지 펌웨어가 payload를 무시할 수 있다.
 final ledBrightnessProvider = StateProvider<int>((ref) => 70);
@@ -31,7 +35,7 @@ class QuickControlGrid extends ConsumerWidget {
 
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
     final online = ref.watch(moduleOnlineProvider(deviceId));
-    final lock = ref.watch(mistLockProvider);
+    final lock = ref.watch(mistLockProvider(deviceId));
     final brightness = ref.watch(ledBrightnessProvider);
     final mistLocked = lock.isLocked(DateTime.now());
 
@@ -70,10 +74,9 @@ class QuickControlGrid extends ConsumerWidget {
           _Tile(
             key: mistKey,
             label: 'home_mist_once'.tr(),
-            value: mistLocked
-                ? 'home_mist_cooldown'
-                    .tr(args: ['${lock.remaining(DateTime.now()).inSeconds}'])
-                : '',
+            // 남은 초를 표시하지 않는다. build 시점 값이라 매초 갱신되지 않아
+            // 멈춘 숫자를 보여주게 된다 — 없는 편이 정직하다.
+            value: mistLocked ? 'home_mist_cooldown_short'.tr() : '',
             icon: Icons.water_drop_outlined,
             enabled: online && !mistLocked,
             onTap: () => _mist(context, ref, deviceId),
@@ -171,8 +174,14 @@ class QuickControlGrid extends ConsumerWidget {
   /// 계속 돈다 — 절대 하지 않는다.
   Future<void> _mist(
       BuildContext context, WidgetRef ref, String deviceId) async {
-    ref.read(mistLockProvider.notifier).state =
-        MistLock.startingAt(DateTime.now());
+    final lockNotifier = ref.read(mistLockProvider(deviceId).notifier);
+    lockNotifier.state = MistLock.startingAt(DateTime.now());
+    // 만료를 깨우는 주체를 명시적으로 둔다. 예전엔 무관한 provider(telemetry
+    // 3초 틱)가 우연히 리빌드해 주기를 기다렸고, 그게 멈추면 버튼이 잠긴 채
+    // 남았다.
+    Timer(MistLock.duration, () {
+      lockNotifier.state = const MistLock(lockedUntil: null);
+    });
     try {
       await ref
           .read(moduleCommandSenderProvider.notifier)

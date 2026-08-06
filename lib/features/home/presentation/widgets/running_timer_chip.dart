@@ -45,8 +45,13 @@ class RunningTimerChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final now = ref.watch(_secondTickProvider).valueOrNull ?? DateTime.now();
+    // 타이머 목록을 **먼저** 본다. 비어 있으면 tick을 구독하지 않고 빠진다 —
+    // 반대로 하면 표시할 타이머가 없어도(현재 device_timers 부재로 항상 없다)
+    // 홈이 떠 있는 내내 매초 리빌드가 돈다.
     final timers = ref.watch(runningTimersProvider).valueOrNull ?? const [];
+    if (timers.isEmpty) return const SizedBox.shrink();
+
+    final now = ref.watch(_secondTickProvider).valueOrNull ?? DateTime.now();
     final active = timers.where((t) => t.isActive(now)).toList();
     if (active.isEmpty) return const SizedBox.shrink();
 
