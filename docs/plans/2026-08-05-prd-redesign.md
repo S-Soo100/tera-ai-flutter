@@ -1,5 +1,11 @@
 # PRD 기준 앱 전면 재설계 Implementation Plan — Part 1: 기반 + 4탭 셸
 
+> ✅ **완료 (2026-08-08 소급 확인).** 구현은 진행됐는데 체크박스만 갱신이 안 된 상태였다.
+> 소급 근거: Task 1~6 산출물 파일 전수 실존(`day_window.dart`·`device_mode.dart`·`enclosure_set.dart`·
+> `enclosure_set_repository.dart`·`home_set_providers.dart`·`tab_branches.dart`·`stats_screen.dart`,
+> `pet.g.dart`에 `enclosureId` 반영) + `flutter test` 200개 전부 통과 + 4탭 라우터 실동작.
+> 단, **개별 스텝의 실행 순서(테스트 먼저 실패 확인 등)까지 소급 검증한 것은 아니다** — 최종 상태만 확인했다.
+
 > **구현 방식 (CAOF):** Critical 트랙. 이 계획을 task 단위로 구현한다. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 신규 PRD(`docs/prd-vivanart-app.md`)를 단일 기준으로, 4탭 IA(홈/통계/마이크레/커뮤니티)와 "사육장 세트" 도메인 위에 홈 탭을 재구성한다. Part 1은 그 토대(도메인·데이터·탭 셸)를 만든다.
@@ -65,7 +71,7 @@ assets/l10n/ko.json                    # 탭 라벨 키                 (Task 6)
 - Create: `lib/features/home/domain/day_window.dart`
 - Test: `test/features/home/day_window_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/day_window_test.dart
@@ -125,7 +131,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/day_window_test.dart
@@ -133,7 +139,7 @@ flutter test test/features/home/day_window_test.dart
 
 Expected: FAIL — `Error: Couldn't resolve the package 'tera_ai' ... day_window.dart` (파일 없음)
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```dart
 // lib/features/home/domain/day_window.dart
@@ -189,7 +195,7 @@ class DayWindow {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/day_window_test.dart
@@ -197,7 +203,7 @@ flutter test test/features/home/day_window_test.dart
 
 Expected: `All tests passed!` (8 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/features/home/domain/day_window.dart test/features/home/day_window_test.dart
@@ -219,7 +225,7 @@ git commit -m "feat(home): DayWindow — PRD 07:00 기준 당일 창 + 차트 �
 - Create: `lib/features/home/domain/device_mode.dart`, `lib/features/home/domain/enclosure_set.dart`
 - Test: `test/features/home/enclosure_set_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/enclosure_set_test.dart
@@ -340,7 +346,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/enclosure_set_test.dart
@@ -348,7 +354,7 @@ flutter test test/features/home/enclosure_set_test.dart
 
 Expected: FAIL — `device_mode.dart` / `enclosure_set.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```dart
 // lib/features/home/domain/device_mode.dart
@@ -436,7 +442,7 @@ class EnclosureSet {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/enclosure_set_test.dart
@@ -444,7 +450,7 @@ flutter test test/features/home/enclosure_set_test.dart
 
 Expected: `All tests passed!` (11 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/features/home/domain/device_mode.dart lib/features/home/domain/enclosure_set.dart test/features/home/enclosure_set_test.dart
@@ -467,7 +473,7 @@ git commit -m "feat(home): EnclosureSet + DeviceMode — PRD 기기연동 모드
 - Regenerate: `lib/features/my_pets/domain/pet.g.dart`
 - Test: `test/features/my_pets/pet_enclosure_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/my_pets/pet_enclosure_test.dart
@@ -503,7 +509,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/my_pets/pet_enclosure_test.dart
@@ -511,7 +517,7 @@ flutter test test/features/my_pets/pet_enclosure_test.dart
 
 Expected: FAIL — `No named parameter with the name 'enclosureId'`
 
-- [ ] **Step 3: Add the field**
+- [x] **Step 3: Add the field**
 
 `lib/features/my_pets/domain/pet.dart` — `@HiveField(12) DateTime updatedAt;` 바로 뒤에 추가:
 
@@ -529,7 +535,7 @@ Expected: FAIL — `No named parameter with the name 'enclosureId'`
     this.enclosureId,
 ```
 
-- [ ] **Step 4: Regenerate the Hive adapter**
+- [x] **Step 4: Regenerate the Hive adapter**
 
 ```bash
 dart run build_runner build --delete-conflicting-outputs
@@ -543,7 +549,7 @@ grep -n "enclosureId" lib/features/my_pets/domain/pet.g.dart
 
 Expected: 2줄 이상 매칭 (read 케이스 `13:` 와 write 케이스)
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 ```bash
 flutter test test/features/my_pets/pet_enclosure_test.dart && flutter analyze
@@ -551,7 +557,7 @@ flutter test test/features/my_pets/pet_enclosure_test.dart && flutter analyze
 
 Expected: `All tests passed!` + `No issues found!`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add lib/features/my_pets/domain/pet.dart lib/features/my_pets/domain/pet.g.dart test/features/my_pets/pet_enclosure_test.dart
@@ -573,7 +579,7 @@ git commit -m "feat(my_pets): Pet.enclosureId — 개체를 사육장 세트에 
 - Create: `lib/features/home/data/enclosure_set_repository.dart`
 - Test: `test/features/home/enclosure_set_repository_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/enclosure_set_repository_test.dart
@@ -715,7 +721,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/enclosure_set_repository_test.dart
@@ -723,7 +729,7 @@ flutter test test/features/home/enclosure_set_repository_test.dart
 
 Expected: FAIL — `enclosure_set_repository.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```dart
 // lib/features/home/data/enclosure_set_repository.dart
@@ -807,7 +813,7 @@ class EnclosureSetRepository {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/enclosure_set_repository_test.dart
@@ -815,7 +821,7 @@ flutter test test/features/home/enclosure_set_repository_test.dart
 
 Expected: `All tests passed!` (8 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/features/home/data/enclosure_set_repository.dart test/features/home/enclosure_set_repository_test.dart
@@ -837,7 +843,7 @@ git commit -m "feat(home): EnclosureSetRepository — 사육장/캠/제어기/�
 - Create: `lib/features/home/presentation/home_set_providers.dart`
 - Test: `test/features/home/home_set_providers_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/home_set_providers_test.dart
@@ -904,7 +910,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/home_set_providers_test.dart
@@ -912,7 +918,7 @@ flutter test test/features/home/home_set_providers_test.dart
 
 Expected: FAIL — `home_set_providers.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```dart
 // lib/features/home/presentation/home_set_providers.dart
@@ -985,7 +991,7 @@ final currentDeviceModeProvider = FutureProvider<DeviceMode>((ref) async {
 });
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/home_set_providers_test.dart && flutter analyze
@@ -993,7 +999,7 @@ flutter test test/features/home/home_set_providers_test.dart && flutter analyze
 
 Expected: `All tests passed!` (6 tests) + `No issues found!`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/features/home/presentation/home_set_providers.dart test/features/home/home_set_providers_test.dart
@@ -1017,7 +1023,7 @@ git commit -m "feat(home): 세트 providers — 계정격리 watch + 인덱스 c
 - Modify: `assets/l10n/ko.json` (`tab_stats` 추가)
 - Test: `test/features/home/router_tabs_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/router_tabs_test.dart
@@ -1063,7 +1069,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/router_tabs_test.dart
@@ -1071,7 +1077,7 @@ flutter test test/features/home/router_tabs_test.dart
 
 Expected: FAIL — `tab_branches.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Extract the tab table**
+- [x] **Step 3: Extract the tab table**
 
 ```dart
 // lib/core/router/tab_branches.dart
@@ -1115,7 +1121,7 @@ const List<String> kPublicPaths = [
 ];
 ```
 
-- [ ] **Step 4: Add the stats screen scaffold**
+- [x] **Step 4: Add the stats screen scaffold**
 
 ```dart
 // lib/features/stats/presentation/stats_screen.dart
@@ -1140,7 +1146,7 @@ class StatsScreen extends StatelessWidget {
 }
 ```
 
-- [ ] **Step 5: Add i18n keys**
+- [x] **Step 5: Add i18n keys**
 
 `assets/l10n/ko.json`의 `"tab_community"` 항목 바로 뒤에 추가:
 
@@ -1149,7 +1155,7 @@ class StatsScreen extends StatelessWidget {
   "stats_empty": "통계는 준비 중이에요",
 ```
 
-- [ ] **Step 6: Rewire the router**
+- [x] **Step 6: Rewire the router**
 
 `lib/core/router/app_router.dart`:
 
@@ -1254,7 +1260,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 ```
 
-- [ ] **Step 7: Run test to verify it passes**
+- [x] **Step 7: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/router_tabs_test.dart && flutter analyze
@@ -1262,7 +1268,7 @@ flutter test test/features/home/router_tabs_test.dart && flutter analyze
 
 Expected: `All tests passed!` (6 tests) + `No issues found!`
 
-- [ ] **Step 8: Verify the app still builds and navigates**
+- [x] **Step 8: Verify the app still builds and navigates**
 
 ```bash
 flutter test && flutter build apk --debug
@@ -1270,7 +1276,7 @@ flutter test && flutter build apk --debug
 
 Expected: 전체 테스트 통과 + `Built build/app/outputs/flutter-apk/app-debug.apk`
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add lib/core/router/tab_branches.dart lib/core/router/app_router.dart lib/features/stats/presentation/stats_screen.dart assets/l10n/ko.json test/features/home/router_tabs_test.dart

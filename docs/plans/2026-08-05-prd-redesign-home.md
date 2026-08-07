@@ -1,5 +1,12 @@
 # PRD 기준 앱 전면 재설계 Implementation Plan — Part 2: 홈 탭 UI
 
+> ✅ **완료 (2026-08-08 소급 확인).** Part 1과 마찬가지로 구현은 됐으나 체크박스가 방치돼 있었다.
+> 소급 근거: Task 7~16 위젯 11종 + 도메인 6종(`running_timer`·`env_extremes`·`env_chart_series`·
+> `actuator_marker`·`mist_lock`·`timeline_summary`·`pet_dday`) 전수 실존 + `flutter test` 200개 통과.
+> 계획서에 없던 산출물도 붙었다: `live_clock_overlay.dart`, `nightly_report_badge.dart`
+> (커밋 `8a348ef` 라이브 오버레이 수정, `cbc61fb` 실기기 검증 수정에서 파생).
+> **개별 스텝 순서까지 소급 검증한 것은 아니고 최종 상태만 확인했다.**
+
 > **구현 방식 (CAOF):** Critical 트랙. 이 계획을 task 단위로 구현한다. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** PRD §3.1~3.5의 홈 탭을 구현한다 — 헤더바, 상단 고정 영역(라이브 뷰어 ↔ 개체 프로필 카드 분기 + 세트 스와이프), 서브탭바, 사육장 제어 4종, 타임라인 4종.
@@ -57,7 +64,7 @@ lib/features/home/domain/
 - Modify: `assets/l10n/ko.json`
 - Test: `test/features/home/home_header_bar_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/home_header_bar_test.dart
@@ -161,7 +168,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/home_header_bar_test.dart
@@ -169,7 +176,7 @@ flutter test test/features/home/home_header_bar_test.dart
 
 Expected: FAIL — `home_header_bar.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write the header widget**
+- [x] **Step 3: Write the header widget**
 
 ```dart
 // lib/features/home/presentation/widgets/home_header_bar.dart
@@ -291,7 +298,7 @@ class HomeHeaderBar extends ConsumerWidget {
 }
 ```
 
-- [ ] **Step 4: Add the two destination scaffolds**
+- [x] **Step 4: Add the two destination scaffolds**
 
 ```dart
 // lib/features/notification/presentation/notification_center_screen.dart
@@ -353,7 +360,7 @@ class EnclosureSettingsScreen extends StatelessWidget {
 }
 ```
 
-- [ ] **Step 5: Register routes and i18n keys**
+- [x] **Step 5: Register routes and i18n keys**
 
 `lib/core/router/app_router.dart` — `/profile` GoRoute 뒤에 추가:
 
@@ -387,7 +394,7 @@ import '../../features/my_cage/presentation/enclosure_settings_screen.dart';
   "enclosure_settings_manage": "사육장 관리",
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/home_header_bar_test.dart && flutter analyze
@@ -395,7 +402,7 @@ flutter test test/features/home/home_header_bar_test.dart && flutter analyze
 
 Expected: `All tests passed!` (7 tests) + `No issues found!`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add lib/features/home/presentation/widgets/home_header_bar.dart lib/features/notification/presentation/notification_center_screen.dart lib/features/my_cage/presentation/enclosure_settings_screen.dart lib/core/router/app_router.dart assets/l10n/ko.json test/features/home/home_header_bar_test.dart
@@ -418,7 +425,7 @@ git commit -m "feat(home): HomeHeaderBar — 개체 드롭다운(단일세트 �
 - Create: `lib/features/home/presentation/widgets/pet_profile_card.dart`
 - Test: `test/features/home/pet_profile_card_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/pet_profile_card_test.dart
@@ -504,7 +511,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/pet_profile_card_test.dart
@@ -512,7 +519,7 @@ flutter test test/features/home/pet_profile_card_test.dart
 
 Expected: FAIL — `pet_dday.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write the domain helpers**
+- [x] **Step 3: Write the domain helpers**
 
 ```dart
 // lib/features/home/domain/pet_dday.dart
@@ -566,7 +573,7 @@ EnvStatus envStatus({
 }
 ```
 
-- [ ] **Step 4: Write the card widget**
+- [x] **Step 4: Write the card widget**
 
 ```dart
 // lib/features/home/presentation/widgets/pet_profile_card.dart
@@ -689,7 +696,7 @@ class _StatusBadge extends StatelessWidget {
 }
 ```
 
-- [ ] **Step 5: Add i18n keys**
+- [x] **Step 5: Add i18n keys**
 
 `assets/l10n/ko.json`에 추가:
 
@@ -701,7 +708,7 @@ class _StatusBadge extends StatelessWidget {
   "home_env_warning": "온습도 주의 🟠",
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/pet_profile_card_test.dart && flutter analyze
@@ -709,7 +716,7 @@ flutter test test/features/home/pet_profile_card_test.dart && flutter analyze
 
 Expected: `All tests passed!` (10 tests) + `No issues found!`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add lib/features/home/domain/pet_dday.dart lib/features/home/presentation/widgets/pet_profile_card.dart assets/l10n/ko.json test/features/home/pet_profile_card_test.dart
@@ -731,7 +738,7 @@ git commit -m "feat(home): PetProfileCard — D-Day 문구 + 종별 안심존 �
 - Create: `lib/features/home/presentation/widgets/top_fixed_area.dart`
 - Test: `test/features/home/top_fixed_area_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/top_fixed_area_test.dart
@@ -833,7 +840,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/top_fixed_area_test.dart
@@ -841,7 +848,7 @@ flutter test test/features/home/top_fixed_area_test.dart
 
 Expected: FAIL — `top_fixed_area.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write the widget**
+- [x] **Step 3: Write the widget**
 
 ```dart
 // lib/features/home/presentation/widgets/top_fixed_area.dart
@@ -1052,7 +1059,7 @@ class _PageDots extends StatelessWidget {
 }
 ```
 
-- [ ] **Step 4: Add i18n key**
+- [x] **Step 4: Add i18n key**
 
 `assets/l10n/ko.json`에 추가:
 
@@ -1060,7 +1067,7 @@ class _PageDots extends StatelessWidget {
   "home_cam_disconnected": "⚠️ 사육장 카메라 연결이 끊겼습니다.",
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/top_fixed_area_test.dart && flutter analyze
@@ -1068,7 +1075,7 @@ flutter test test/features/home/top_fixed_area_test.dart && flutter analyze
 
 Expected: `All tests passed!` (7 tests) + `No issues found!`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add lib/features/home/presentation/widgets/top_fixed_area.dart assets/l10n/ko.json test/features/home/top_fixed_area_test.dart
@@ -1091,7 +1098,7 @@ git commit -m "feat(home): TopFixedArea — 라이브↔프로필 분기 + 세�
 - Rewrite: `lib/features/home/presentation/home_screen.dart`
 - Test: `test/features/home/home_sub_tabs_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/home_sub_tabs_test.dart
@@ -1163,7 +1170,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/home_sub_tabs_test.dart
@@ -1171,7 +1178,7 @@ flutter test test/features/home/home_sub_tabs_test.dart
 
 Expected: FAIL — `home_sub_tabs_bar.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write the sub-tabs bar**
+- [x] **Step 3: Write the sub-tabs bar**
 
 ```dart
 // lib/features/home/presentation/widgets/home_sub_tabs_bar.dart
@@ -1281,7 +1288,7 @@ class _SegmentTab extends StatelessWidget {
 }
 ```
 
-- [ ] **Step 4: Rewrite the home screen**
+- [x] **Step 4: Rewrite the home screen**
 
 ```dart
 // lib/features/home/presentation/home_screen.dart
@@ -1347,7 +1354,7 @@ class _TimelineContainer extends StatelessWidget {
 }
 ```
 
-- [ ] **Step 5: Add i18n keys**
+- [x] **Step 5: Add i18n keys**
 
 `assets/l10n/ko.json`에 추가:
 
@@ -1356,7 +1363,7 @@ class _TimelineContainer extends StatelessWidget {
   "home_subtab_timeline": "타임라인",
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/home_sub_tabs_test.dart && flutter analyze
@@ -1364,7 +1371,7 @@ flutter test test/features/home/home_sub_tabs_test.dart && flutter analyze
 
 Expected: `All tests passed!` (6 tests) + `No issues found!`
 
-- [ ] **Step 7: Verify the whole app still builds**
+- [x] **Step 7: Verify the whole app still builds**
 
 ```bash
 flutter test && flutter build apk --debug
@@ -1372,7 +1379,7 @@ flutter test && flutter build apk --debug
 
 Expected: 전체 테스트 통과 + `Built build/app/outputs/flutter-apk/app-debug.apk`
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add lib/features/home/presentation/widgets/home_sub_tabs_bar.dart lib/features/home/presentation/home_screen.dart assets/l10n/ko.json test/features/home/home_sub_tabs_test.dart
@@ -1395,7 +1402,7 @@ git commit -m "feat(home): 서브탭바 + 홈 조립 — 탭 전환 시 라이�
 - Create: `lib/features/home/presentation/widgets/running_timer_chip.dart`
 - Test: `test/features/home/running_timer_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/running_timer_test.dart
@@ -1480,7 +1487,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/running_timer_test.dart
@@ -1488,7 +1495,7 @@ flutter test test/features/home/running_timer_test.dart
 
 Expected: FAIL — `running_timer.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write the domain**
+- [x] **Step 3: Write the domain**
 
 ```dart
 // lib/features/home/domain/running_timer.dart
@@ -1557,7 +1564,7 @@ String formatRemaining(Duration d) {
 }
 ```
 
-- [ ] **Step 4: Write the chip widget + provider**
+- [x] **Step 4: Write the chip widget + provider**
 
 ```dart
 // lib/features/home/presentation/widgets/running_timer_chip.dart
@@ -1650,7 +1657,7 @@ class RunningTimerChip extends ConsumerWidget {
 }
 ```
 
-- [ ] **Step 5: Add i18n keys**
+- [x] **Step 5: Add i18n keys**
 
 `assets/l10n/ko.json`에 추가:
 
@@ -1659,7 +1666,7 @@ class RunningTimerChip extends ConsumerWidget {
   "home_timer_running": "{} {}분 타이머 가동 중 ({} 남음)",
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/running_timer_test.dart && flutter analyze
@@ -1667,7 +1674,7 @@ flutter test test/features/home/running_timer_test.dart && flutter analyze
 
 Expected: `All tests passed!` (9 tests) + `No issues found!`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add lib/features/home/domain/running_timer.dart lib/features/home/presentation/widgets/running_timer_chip.dart assets/l10n/ko.json test/features/home/running_timer_test.dart
@@ -1691,7 +1698,7 @@ git commit -m "feat(home): 진행 중 타이머 칩 — device_timers 부재 시
 - Create: `lib/features/home/presentation/widgets/live_env_card.dart`
 - Test: `test/features/home/env_extremes_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/env_extremes_test.dart
@@ -1758,7 +1765,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/env_extremes_test.dart
@@ -1766,7 +1773,7 @@ flutter test test/features/home/env_extremes_test.dart
 
 Expected: FAIL — `env_extremes.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write the domain**
+- [x] **Step 3: Write the domain**
 
 ```dart
 // lib/features/home/domain/env_extremes.dart
@@ -1815,7 +1822,7 @@ class EnvExtremes {
 
 > `TelemetryBucket`의 필드명은 `tAvg/tMin/tMax`, `hAvg/hMin/hMax`로 확인됨 (`lib/features/my_cage/domain/telemetry_bucket.dart:13-20`). 위 코드는 그 이름을 그대로 쓴다.
 
-- [ ] **Step 4: Write providers and the card**
+- [x] **Step 4: Write providers and the card**
 
 ```dart
 // lib/features/home/presentation/home_control_providers.dart
@@ -1931,7 +1938,7 @@ class LiveEnvCard extends ConsumerWidget {
 }
 ```
 
-- [ ] **Step 5: Add i18n keys**
+- [x] **Step 5: Add i18n keys**
 
 ```json
   "home_env_temp_now": "현재 {}°C",
@@ -1940,7 +1947,7 @@ class LiveEnvCard extends ConsumerWidget {
   "home_env_humid_range": "최고 {}% / 최저 {}%",
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/env_extremes_test.dart && flutter analyze
@@ -1948,7 +1955,7 @@ flutter test test/features/home/env_extremes_test.dart && flutter analyze
 
 Expected: `All tests passed!` (5 tests) + `No issues found!`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add lib/features/home/domain/env_extremes.dart lib/features/home/presentation/home_control_providers.dart lib/features/home/presentation/widgets/live_env_card.dart assets/l10n/ko.json test/features/home/env_extremes_test.dart
@@ -1972,7 +1979,7 @@ git commit -m "feat(home): 실시간 온습도 카드 — 당일 최고/최저(0
 - Modify: `lib/features/home/presentation/home_control_providers.dart` (차트용 provider 추가)
 - Test: `test/features/home/actuator_marker_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/actuator_marker_test.dart
@@ -2069,7 +2076,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/actuator_marker_test.dart
@@ -2077,7 +2084,7 @@ flutter test test/features/home/actuator_marker_test.dart
 
 Expected: FAIL — `actuator_marker.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write the domain**
+- [x] **Step 3: Write the domain**
 
 ```dart
 // lib/features/home/domain/actuator_marker.dart
@@ -2132,7 +2139,7 @@ class ActuatorMarker {
 }
 ```
 
-- [ ] **Step 4: Add chart providers**
+- [x] **Step 4: Add chart providers**
 
 `lib/features/home/presentation/home_control_providers.dart` 끝에 추가:
 
@@ -2180,7 +2187,7 @@ import '../../../core/supabase/supabase_provider.dart';
 import '../domain/actuator_marker.dart';
 ```
 
-- [ ] **Step 5: Write the chart widget**
+- [x] **Step 5: Write the chart widget**
 
 ```dart
 // lib/features/home/presentation/widgets/env_mini_chart.dart
@@ -2331,7 +2338,7 @@ class _MarkerRow extends StatelessWidget {
 }
 ```
 
-- [ ] **Step 6: Add i18n keys**
+- [x] **Step 6: Add i18n keys**
 
 ```json
   "home_chart_title": "최근 24시간",
@@ -2339,7 +2346,7 @@ class _MarkerRow extends StatelessWidget {
   "home_chart_goto_stats": "차트 터치 시 통계 탭으로 이동 ›",
 ```
 
-- [ ] **Step 7: Run test to verify it passes**
+- [x] **Step 7: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/actuator_marker_test.dart && flutter analyze
@@ -2347,7 +2354,7 @@ flutter test test/features/home/actuator_marker_test.dart && flutter analyze
 
 Expected: `All tests passed!` (8 tests) + `No issues found!`
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add lib/features/home/domain/actuator_marker.dart lib/features/home/presentation/widgets/env_mini_chart.dart lib/features/home/presentation/home_control_providers.dart assets/l10n/ko.json test/features/home/actuator_marker_test.dart
@@ -2370,7 +2377,7 @@ git commit -m "feat(home): 24h 미니 차트 — commands 기반 동작 마커 +
 - Create: `lib/features/home/presentation/widgets/quick_control_grid.dart`
 - Test: `test/features/home/mist_lock_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/mist_lock_test.dart
@@ -2408,7 +2415,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/mist_lock_test.dart
@@ -2416,7 +2423,7 @@ flutter test test/features/home/mist_lock_test.dart
 
 Expected: FAIL — `mist_lock.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write the domain**
+- [x] **Step 3: Write the domain**
 
 ```dart
 // lib/features/home/domain/mist_lock.dart
@@ -2447,7 +2454,7 @@ class MistLock {
 }
 ```
 
-- [ ] **Step 4: Write the control grid**
+- [x] **Step 4: Write the control grid**
 
 ```dart
 // lib/features/home/presentation/widgets/quick_control_grid.dart
@@ -2660,7 +2667,7 @@ class _Tile extends StatelessWidget {
 }
 ```
 
-- [ ] **Step 5: Add i18n keys**
+- [x] **Step 5: Add i18n keys**
 
 ```json
   "home_mist_once": "1회 즉시 분사",
@@ -2671,7 +2678,7 @@ class _Tile extends StatelessWidget {
   "common_confirm": "확인",
 ```
 
-- [ ] **Step 6: Wire the control container**
+- [x] **Step 6: Wire the control container**
 
 `lib/features/home/presentation/home_screen.dart`의 `_ControlContainer`를 교체:
 
@@ -2741,7 +2748,7 @@ import 'widgets/running_timer_chip.dart';
       ),
 ```
 
-- [ ] **Step 7: Add the routine scaffold**
+- [x] **Step 7: Add the routine scaffold**
 
 ```dart
 // lib/features/home/presentation/routine_settings_screen.dart
@@ -2768,7 +2775,7 @@ class RoutineSettingsScreen extends StatelessWidget {
 `assets/l10n/ko.json`에 추가: `"home_routine_empty": "루틴 설정은 준비 중이에요",`
 `app_router.dart` import에 추가: `import '../../features/home/presentation/routine_settings_screen.dart';`
 
-- [ ] **Step 8: Run tests**
+- [x] **Step 8: Run tests**
 
 ```bash
 flutter test test/features/home/mist_lock_test.dart && flutter test && flutter analyze
@@ -2776,7 +2783,7 @@ flutter test test/features/home/mist_lock_test.dart && flutter test && flutter a
 
 Expected: `All tests passed!` (5 tests) + 전체 통과 + `No issues found!`
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add lib/features/home/domain/mist_lock.dart lib/features/home/presentation/widgets/quick_control_grid.dart lib/features/home/presentation/routine_settings_screen.dart lib/features/home/presentation/home_screen.dart lib/core/router/app_router.dart assets/l10n/ko.json test/features/home/mist_lock_test.dart
@@ -2802,7 +2809,7 @@ git commit -m "feat(home): 2x2 퀵 제어 — LED 밝기 슬라이더 + 분무 5
 - Modify: `lib/features/my_cage/data/motion_clip_repository.dart` (창 기반 조회 추가)
 - Test: `test/features/home/timeline_summary_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/timeline_summary_test.dart
@@ -2905,7 +2912,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/timeline_summary_test.dart
@@ -2913,7 +2920,7 @@ flutter test test/features/home/timeline_summary_test.dart
 
 Expected: FAIL — `timeline_summary.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write the domain**
+- [x] **Step 3: Write the domain**
 
 ```dart
 // lib/features/home/domain/timeline_summary.dart
@@ -2977,7 +2984,7 @@ Map<TimelineFilter, int> countByFilter(List<MotionClip> clips) {
 }
 ```
 
-- [ ] **Step 4: Add the window-based query**
+- [x] **Step 4: Add the window-based query**
 
 `lib/features/my_cage/data/motion_clip_repository.dart` — `listByCamera` 바로 뒤에 추가:
 
@@ -3012,7 +3019,7 @@ Map<TimelineFilter, int> countByFilter(List<MotionClip> clips) {
   }
 ```
 
-- [ ] **Step 5: Add timeline providers**
+- [x] **Step 5: Add timeline providers**
 
 ```dart
 // lib/features/home/presentation/home_timeline_providers.dart
@@ -3082,7 +3089,7 @@ final filteredTimelineClipsProvider =
 });
 ```
 
-- [ ] **Step 6: Write the chips and date scroller**
+- [x] **Step 6: Write the chips and date scroller**
 
 ```dart
 // lib/features/home/presentation/widgets/timeline_summary_chips.dart
@@ -3222,7 +3229,7 @@ class TimelineDateScroller extends ConsumerWidget {
 }
 ```
 
-- [ ] **Step 7: Add i18n keys**
+- [x] **Step 7: Add i18n keys**
 
 ```json
   "home_chip_moving": "움직임",
@@ -3237,7 +3244,7 @@ class TimelineDateScroller extends ConsumerWidget {
   "home_filter_shedding": "탈피",
 ```
 
-- [ ] **Step 8: Run test to verify it passes**
+- [x] **Step 8: Run test to verify it passes**
 
 ```bash
 flutter test test/features/home/timeline_summary_test.dart && flutter analyze
@@ -3245,7 +3252,7 @@ flutter test test/features/home/timeline_summary_test.dart && flutter analyze
 
 Expected: `All tests passed!` (10 tests) + `No issues found!`
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add lib/features/home/domain/timeline_summary.dart lib/features/home/presentation/home_timeline_providers.dart lib/features/home/presentation/widgets/timeline_summary_chips.dart lib/features/home/presentation/widgets/timeline_date_scroller.dart lib/features/my_cage/data/motion_clip_repository.dart assets/l10n/ko.json test/features/home/timeline_summary_test.dart
@@ -3269,7 +3276,7 @@ git commit -m "feat(home): 타임라인 요약칩/날짜 스크롤러/필터칩 
 - Modify: `lib/features/home/presentation/home_screen.dart` (`_TimelineContainer` 채우기)
 - Test: `test/features/home/timeline_clip_feed_test.dart`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```dart
 // test/features/home/timeline_clip_feed_test.dart
@@ -3345,7 +3352,7 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 flutter test test/features/home/timeline_clip_feed_test.dart
@@ -3353,7 +3360,7 @@ flutter test test/features/home/timeline_clip_feed_test.dart
 
 Expected: FAIL — `timeline_clip_feed.dart` 미존재로 컴파일 에러
 
-- [ ] **Step 3: Write the feed**
+- [x] **Step 3: Write the feed**
 
 ```dart
 // lib/features/home/presentation/widgets/timeline_clip_feed.dart
@@ -3438,7 +3445,7 @@ class ClipFeedRow extends ConsumerWidget {
 }
 ```
 
-- [ ] **Step 4: Wire inline playback into TopFixedArea**
+- [x] **Step 4: Wire inline playback into TopFixedArea**
 
 `lib/features/home/presentation/widgets/top_fixed_area.dart` — `_SetPane.build`의 `return Stack(key: TopFixedArea.liveKey, ...)` 직전에 인라인 재생 분기를 넣는다. 먼저 `_SetPane`을 `ConsumerWidget`으로 바꾸고:
 
@@ -3552,7 +3559,7 @@ class _InlineClipPlayerState extends ConsumerState<_InlineClipPlayer> {
 
 `top_fixed_area.dart` import에 추가: `import 'package:video_player/video_player.dart';`, `import '../../../my_cage/presentation/my_cage_providers.dart';`
 
-- [ ] **Step 5: Fill the timeline container**
+- [x] **Step 5: Fill the timeline container**
 
 `lib/features/home/presentation/home_screen.dart`의 `_TimelineContainer`를 교체:
 
@@ -3582,7 +3589,7 @@ import 'widgets/timeline_date_scroller.dart';
 import 'widgets/timeline_summary_chips.dart';
 ```
 
-- [ ] **Step 6: Add i18n keys**
+- [x] **Step 6: Add i18n keys**
 
 ```json
   "home_timeline_empty": "이 날 기록된 영상이 없어요",
@@ -3590,7 +3597,7 @@ import 'widgets/timeline_summary_chips.dart';
   "home_back_to_live": "라이브로 돌아가기",
 ```
 
-- [ ] **Step 7: Run all tests and build**
+- [x] **Step 7: Run all tests and build**
 
 ```bash
 flutter test && flutter analyze && flutter build apk --debug
@@ -3598,7 +3605,7 @@ flutter test && flutter analyze && flutter build apk --debug
 
 Expected: 전체 통과 + `No issues found!` + `Built build/app/outputs/flutter-apk/app-debug.apk`
 
-- [ ] **Step 8: Bump version and commit**
+- [x] **Step 8: Bump version and commit**
 
 `pubspec.yaml`의 `version:`을 minor +1, build +1로 올린다 (예: `0.21.0+36` → `0.22.0+37`). 신규 기능 추가이므로 minor.
 
