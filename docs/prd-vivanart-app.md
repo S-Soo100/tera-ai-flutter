@@ -1,7 +1,22 @@
 # 비바나트 앱 (사육장, 캠) — 신규 PRD
 
+## 원본 링크 (SOT)
+
+| 매체 | 링크 | 접근 방법 | 상태 |
+|---|---|---|---|
+| 기획 원문 (Notion) | https://app.notion.com/p/3ab16a5cfa948082864ec59be6b6f532?source=copy_link | Notion MCP (`plugin:Notion:notion`) | ⚠️ 미인증 — `/mcp`로 인증 필요 |
+| 디자인 (Figma) | https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut?node-id=0-1 | **talk-to-figma MCP** (아래 참조) | ⚠️ 미설치 |
+
+**Figma 작업 규칙 (2026-08-08 확정)**
+- 이 프로젝트의 Figma 연동은 **talk-to-figma MCP**를 쓴다. `plugin:design:figma`(읽기 전용 계열)로 대체하지 않는다.
+- 현재 `claude mcp list`에 talk-to-figma 서버가 없다 → **설치·인증이 선행 과제**. 설치 전에는 디자인 대조/전사가 불가능하므로, Figma 기준 UI 판단을 추측으로 메우지 않는다.
+- 노션·피그마 원문과 이 문서가 어긋나면 **원문이 우선**이며, 발견 즉시 이 문서를 갱신한다.
+
+---
+
 > **출처**: Notion 페이지 `비바나트 앱 (사육장, 캠)` (page id `3ab16a5cfa948082864ec59be6b6f532`)
 > **전사일**: 2026-08-05 (노션 최종 편집: 전사 시점 기준 약 30분 전)
+> **원문 재대조 이력**: 2026-08-08 시도 → Notion MCP 미인증·Figma MCP 미설치로 **미수행**. 인증 후 재대조 필요.
 > **전사 방식**: 노션 데스크톱 앱 화면 판독(노션 MCP 미인증 상태). 원문 이미지(FigJam IA 보드, 화면 목업 3종, Furbo 레퍼런스)는 파일로 옮기지 못했으므로, 이미지에서 읽어낸 레이블·수치·배치를 본문에 텍스트로 전사했다. 원본 이미지 확인은 노션 페이지 참조.
 > **지위**: 이 문서는 **원문 전사(轉寫) SOT**다. 해석·설계·판단은 넣지 않는다. 재설계 계획은 `docs/plans/2026-08-05-prd-redesign.md` 참조.
 
