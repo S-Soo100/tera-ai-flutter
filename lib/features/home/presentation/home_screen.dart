@@ -9,6 +9,7 @@ import 'home_set_providers.dart';
 import 'widgets/env_mini_chart.dart';
 import 'widgets/home_header_bar.dart';
 import 'widgets/home_sub_tabs_bar.dart';
+import 'widgets/live_control_bar.dart';
 import 'widgets/live_env_card.dart';
 import 'widgets/quick_control_grid.dart';
 import 'widgets/running_timer_chip.dart';
@@ -50,6 +51,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             const HomeHeaderBar(),
             const TopFixedArea(),
+            // 라이브를 보면서 조작하는 컴팩트 제어 바 (Figma 피드백 F1).
+            // 서브탭 컨테이너 밖에 둬야 타임라인 탭에서도 그대로 보인다 —
+            // "캠을 보면서 조작"이 성립하는 조건이다.
+            const LiveControlBar(),
             const HomeSubTabsBar(),
             Expanded(
               child: IndexedStack(

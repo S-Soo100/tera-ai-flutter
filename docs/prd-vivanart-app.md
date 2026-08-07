@@ -414,4 +414,17 @@ PRD 본문·다이어그램에 물음표/괄호로 남아 있는 것들. 구현 
   `wiki_screen.dart:59`(`/chat`), `wiki_screen.dart:68`·`wiki_detail_screen.dart:44`(`/chat/new?speciesId=`)
 - **문서 처리**: `docs/chat-feature-spec.md`·`llm-chat-integration-report.md`·`knowledge-graph-prd.md`·`graph-visualization-plan.md`는 **지우지 않고 폐기 표시**한다 — 되살릴 때 재작성 비용이 크고, 삭제해도 얻는 게 없다.
 - **되돌리기**: git 이력에 남으므로 복원 가능하나, 제거는 **단독 커밋**으로 분리해 revert 한 방에 되돌아오게 한다.
-- **미결**: 챗이 쓰던 `assets/data/citations.json`(출처 시스템)이 다른 곳에서도 쓰이는지 확인 후 처리.
+- **확인 완료**: `assets/data/citations.json`은 `citation_repository.dart`가 종 상세의 출처 섹션에서 쓰고 있어 **존치**했다.
+
+### D4 — 라이브 아래 컴팩트 제어 바 (Figma 피드백 F1 해소)
+
+- **결정일**: 2026-08-08 (사용자 결정)
+- **문제**: PRD §3.3 서브탭은 `[사육장 제어]`와 `[타임라인]`을 **전환식**으로 두는데, Figma 피드백은 *"캠을 보면서 IoT 기능을 조작할 수 있도록 버튼이 캠 아래 작게"* — 라이브와 제어의 **동시 표시**를 요구한다.
+- **채택**: 서브탭 구조를 **유지**하고, 라이브 바로 아래(`TopFixedArea`와 `HomeSubTabsBar` 사이)에 컴팩트 제어 바를 얹는다.
+- **기각한 대안**:
+  - *서브탭 폐지, 한 화면 세로 연결* — 타임라인이 무한 스크롤(Sliver)이라 제어가 계속 아래로 밀리고, `IndexedStack`의 지연 빌드 최적화(첫 방문 전까지 타임라인 조회·썸네일 요청을 미루는 장치)도 함께 버려야 한다.
+  - *영상 위 반투명 오버레이* — 영상을 가려 "파충류 관찰"이라는 캠의 목적과 충돌한다.
+- **노출 조건**: **통합 세트(`DeviceMode.integrated`)에서만.** 사육장 단품은 위에 라이브가 없어 "보면서 조작"이 성립하지 않고, 캠 단품은 제어할 기기 자체가 없다.
+- **역할 분담**: 바는 **즉시 토글**(팬/히터/LED/분무), 서브탭의 2x2 그리드는 **상세**(LED 밝기 슬라이더, 상태 라벨). 시각적 중복은 감수한다.
+- **⚠️ 안전 요구**: 제어 진입점이 둘이 되었으므로 명령 로직을 `home/presentation/cage_control_actions.dart` 하나로 추출했다. **히터는 과열 시 개체 폐사로 이어지는 유일한 액추에이터**라 두 진입점이 같은 2단 안전 확인(안전잠금 해제 → 조작 확인)을 공유해야 한다. 새 제어 진입점을 만들 때도 **반드시 이 모듈을 경유**할 것 — 위젯에 복붙하면 한쪽만 고쳐지고 다른 쪽이 안전장치 없이 남는다.
+- **구현**: `widgets/live_control_bar.dart`, 테스트 `test/features/home/live_control_bar_test.dart`
