@@ -64,7 +64,7 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 | `/home` (탭1) | home | HomeScreen — 헤더(세트 드롭다운/알림/설정) + 상단 고정영역(라이브↔개체 프로필 분기) + 서브탭 `[사육장 제어\|타임라인]` | 사육장 세트(`EnclosureSet`) = enclosures+cameras+devices+Pet |
 | `/stats` (탭2) | stats | StatsScreen — 24시간 온습도 듀얼축 차트(fl_chart). 주간·분포·행동분석은 **디자인 대기** | `telemetry_30m` (홈 미니 차트와 **같은 구간** 재사용) |
 | `/my-pets` (탭3) | my_pets | MyPetsScreen ([개체목록\|리포트] — 개체 CRUD + 어젯밤 리포트) | Supabase `pets`/`pet_events`/`media` + terra-api 하이라이트 |
-| `/community` (탭4) | community | CommunityScreen (게시판) | Supabase `community` |
+| `/community` (탭4) | community | CommunityScreen (게시판) | ⚠️ **로컬 seed 하드코딩**(`_seedPosts()`). Supabase에 커뮤니티 테이블이 **없다** — 글쓰기하려면 테이블+RLS 선행 |
 | `/crecam` (보조) | my_cage | CrecamScreen + CameraPairingScreen | **terra-server** `cameras`(ESP32-P4) + WebRTC P2P 라이브 + `motion_clips` 비디오(썸네일·즐겨찾기 클라우드·AI분류칩) + BLE 페어링 |
 | `/smart-cage` (보조) | my_cage | SmartCageScreen + DevicePairingScreen | **terra-server** `devices`/`telemetry`/`commands` + BLE |
 | `/wiki` (보조) | wiki | WikiScreen + 종 상세/모프 도감/모프 계산기 | 레퍼런스(로컬/Supabase) |
