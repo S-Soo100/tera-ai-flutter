@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/actuator_marker.dart';
 import '../../domain/chart_time_axis.dart';
 import '../../domain/env_chart_series.dart';
@@ -56,14 +57,16 @@ class EnvMiniChart extends ConsumerWidget {
                       ? Center(child: Text('home_chart_no_data'.tr()))
                       : Stack(
                           children: [
+                            // 색은 테마 토큰(Figma 원본값). 통계 탭 차트와
+                            // 같은 색이어야 "방금 본 그래프"로 읽힌다.
                             Sparkline(
                               data: series.temps,
-                              lineColor: Colors.orange,
+                              lineColor: AppTheme.chartTemperature,
                               lineWidth: 2,
                             ),
                             Sparkline(
                               data: series.humids,
-                              lineColor: Colors.blue,
+                              lineColor: AppTheme.chartHumidity,
                               lineWidth: 2,
                             ),
                             _MarkerRow(

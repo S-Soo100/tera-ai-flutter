@@ -14,6 +14,17 @@ class AppTheme {
 
   static const _pretendard = 'Pretendard';
 
+  // ── 차트 지표 색상 ──
+  // Figma `Final Design` 원본 값(`docs/figma-final-design-transcript.md` §3.1).
+  // 온·습도는 앱 전체에서 **같은 색으로 읽혀야** 해서 테마 토큰으로 고정한다.
+  // 하드코딩 금지 규칙의 대상이기도 하다.
+
+  /// 온도 지표. Figma `#ff3752`.
+  static const chartTemperature = Color(0xFFFF3752);
+
+  /// 습도 지표. Figma `#8abcfc`.
+  static const chartHumidity = Color(0xFF8ABCFC);
+
   static TextTheme _buildTextTheme({required Brightness brightness}) {
     final baseColor = brightness == Brightness.dark
         ? const Color(0xFFE0E0E0)
