@@ -59,9 +59,8 @@ class CareInfoDetail {
   final List<String> commonMistakes;
   final List<String> sources;
 
-  // Knowledge graph linkage (P0.5)
+  // 출처(citation) 연결
   final List<String> citationIds;
-  final String? graphEntityId;
 
   const CareInfoDetail({
     required this.speciesId,
@@ -101,7 +100,6 @@ class CareInfoDetail {
     required this.commonMistakes,
     required this.sources,
     this.citationIds = const [],
-    this.graphEntityId,
   });
 
   factory CareInfoDetail.fromJson(Map<String, dynamic> json) {
@@ -172,7 +170,6 @@ class CareInfoDetail {
               ?.map((e) => e as String)
               .toList() ??
           const [],
-      graphEntityId: json['graph_entity_id'] as String?,
     );
   }
 }

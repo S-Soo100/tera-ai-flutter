@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/citation_card.dart';
-import '../../../shared/widgets/relation_card.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../data/care_info_repository.dart';
 import '../domain/care_info_detail.dart';
-import '../domain/graph_entity.dart';
 import 'wiki_providers.dart';
 
 class WikiDetailScreen extends ConsumerWidget {
@@ -38,13 +35,6 @@ class WikiDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('$_speciesName — $categoryName'),
       ),
-      floatingActionButton: FloatingActionButton.small(
-        heroTag: 'wiki_detail_chat_fab',
-        onPressed: () =>
-            context.push('/chat/new?speciesId=$speciesId'),
-        tooltip: 'AI에게 물어보기',
-        child: const Icon(Icons.chat),
-      ),
       body: careInfoAsync.when(
         loading: () => const SkeletonPageLoading(cardCount: 3),
         error: (e, _) => Center(
@@ -59,8 +49,6 @@ class WikiDetailScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildContent(context, info),
-              const SizedBox(height: 24),
-              _RelatedInfoSection(speciesId: speciesId),
               const SizedBox(height: 24),
               _CitationsSection(speciesId: speciesId),
             ],
@@ -329,52 +317,6 @@ class _BulletItem extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _RelatedInfoSection extends ConsumerWidget {
-  final String speciesId;
-  const _RelatedInfoSection({required this.speciesId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(speciesRelationsProvider(speciesId));
-    return async.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (groups) {
-        if (groups.isEmpty) return const SizedBox.shrink();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _SectionHeader(title: '관련 정보'),
-            ...groups.expand((group) => [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8, bottom: 4),
-                    child: Text(
-                      group.type.label,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ),
-                  ...group.items.map(
-                    (item) => RelationCard(
-                      relation: item.relation,
-                      target: item.target,
-                      onTap: () => _openGraph(context, item.target),
-                    ),
-                  ),
-                ]),
-          ],
-        );
-      },
-    );
-  }
-
-  void _openGraph(BuildContext context, GraphEntity target) {
-    context.push('/wiki/graph/${target.kind.wire}/${target.id}');
   }
 }
 

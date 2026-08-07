@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/storage/safe_hive.dart';
-import 'features/chat/data/chat_repository.dart';
 import 'features/my_cage/data/favorite_clip_repository.dart';
 import 'features/my_cage/data/video_cache_repository.dart';
 import 'features/my_pets/data/pet_repository.dart';
@@ -62,7 +61,6 @@ Future<void> main() async {
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
-  await ChatRepository.init();
   await openUntypedBoxSafely('app_settings');
   await VideoCacheRepository.init();
   await FavoriteClipRepository.init();

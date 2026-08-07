@@ -6,10 +6,8 @@ import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/wiki/presentation/wiki_screen.dart';
 import '../../features/wiki/presentation/wiki_detail_screen.dart';
-import '../../features/wiki/presentation/species_compare_screen.dart';
 import '../../features/wiki/presentation/morph_calc_screen.dart';
 import '../../features/wiki/presentation/morph_guide_screen.dart';
-import '../../features/wiki/presentation/graph_detail_screen.dart';
 import '../../features/my_pets/presentation/my_pets_screen.dart';
 import '../../features/my_pets/presentation/pet_add_screen.dart';
 import '../../features/my_pets/presentation/pet_detail_screen.dart';
@@ -26,8 +24,6 @@ import '../../features/my_cage/presentation/enclosure_detail_screen.dart';
 import '../../features/community/presentation/community_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
-import '../../features/chat/presentation/chat_screen.dart';
-import '../../features/chat/presentation/chat_list_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/auth/presentation/email_verification_screen.dart';
@@ -227,21 +223,6 @@ GoRouter buildAppRouter({
         builder: (context, state) => const WikiScreen(),
         routes: [
           GoRoute(
-            path: 'compare',
-            builder: (context, state) => const SpeciesCompareScreen(),
-          ),
-          GoRoute(
-            path: 'graph/:kind/:entityId',
-            builder: (context, state) {
-              final kind = state.pathParameters['kind'] ?? '';
-              final entityId = state.pathParameters['entityId'] ?? '';
-              return GraphDetailScreen(
-                kind: kind,
-                entityId: entityId,
-              );
-            },
-          ),
-          GoRoute(
             path: ':speciesId/morph-calc',
             builder: (context, state) {
               final speciesId = state.pathParameters['speciesId'] ?? '';
@@ -272,25 +253,6 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/search',
         builder: (context, state) => const SearchScreen(),
-      ),
-      GoRoute(
-        path: '/chat',
-        builder: (context, state) => const ChatListScreen(),
-      ),
-      GoRoute(
-        path: '/chat/new',
-        builder: (context, state) {
-          final petId = state.uri.queryParameters['petId'];
-          final speciesId = state.uri.queryParameters['speciesId'];
-          return ChatScreen(petId: petId, speciesId: speciesId);
-        },
-      ),
-      GoRoute(
-        path: '/chat/:conversationId',
-        builder: (context, state) {
-          final id = state.pathParameters['conversationId'] ?? '';
-          return ChatScreen(conversationId: id);
-        },
       ),
       GoRoute(
         path: '/error',

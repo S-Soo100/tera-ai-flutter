@@ -1,5 +1,9 @@
 # PRD — 지식 그래프 + 증거 기반 인용 레이어 (P0.5)
 
+> ⛔ **폐기됨 (2026-08-08).** 이 기능은 코드에서 제거되었다 — 신규 PRD(`docs/prd-vivanart-app.md`) 범위에 없어
+> 자원을 PRD 4탭에 집중하기로 결정(결정 로그 D3). 되살릴 때 재작성 비용이 커서 문서만 남긴다.
+> **이 문서를 근거로 신규 구현을 시작하지 말 것.** 복원은 D3 커밋을 revert하는 것부터 시작한다.
+
 > 작성일: 2026-04-11
 > 작성자: 메인 Claude (Designer) — master 레포 설계 동기화 후
 > 마스터 SOT: `/Users/baek/tera-ai-product-master/products/app/design/{data-models,architecture,screens,backend}.md` (커밋 `2b341e5`, `c8d3cb1`)

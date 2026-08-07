@@ -21,8 +21,6 @@ class WikiScreen extends ConsumerWidget {
     (id: 'mistakes', label: '초보 실수', icon: Icons.warning_amber_rounded, highlighted: false),
     (id: 'morph-guide', label: '모프 도감', icon: Icons.auto_stories_rounded, highlighted: false),
     (id: 'morph-calc', label: '모프 계산기', icon: Icons.biotech_rounded, highlighted: false),
-    (id: 'compare', label: '종 비교', icon: Icons.compare_arrows_rounded, highlighted: false),
-    (id: 'ai-chat', label: 'AI에게 물어보기', icon: Icons.smart_toy_rounded, highlighted: false),
   ];
 
   String _difficultyLabel(String raw) {
@@ -52,23 +50,6 @@ class WikiScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('사육 위키'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: '대화 기록',
-            onPressed: () => context.push('/chat'),
-          ),
-        ],
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: FloatingActionButton(
-          heroTag: 'wiki_chat_fab',
-          onPressed: () =>
-              context.push('/chat/new?speciesId=$selectedSpecies'),
-          tooltip: 'AI에게 물어보기',
-          child: const Icon(Icons.chat),
-        ),
       ),
       body: Column(
         children: [
@@ -198,15 +179,10 @@ class WikiScreen extends ConsumerWidget {
                     icon: cat.icon,
                     highlighted: cat.highlighted,
                     onTap: () {
-                      if (cat.id == 'compare') {
-                        context.push('/wiki/compare');
-                      } else if (cat.id == 'morph-guide') {
+                      if (cat.id == 'morph-guide') {
                         context.push('/wiki/$selectedSpecies/morph-guide');
                       } else if (cat.id == 'morph-calc') {
                         context.push('/wiki/$selectedSpecies/morph-calc');
-                      } else if (cat.id == 'ai-chat') {
-                        context.push(
-                            '/chat/new?speciesId=$selectedSpecies');
                       } else {
                         context.push('/wiki/$selectedSpecies/${cat.id}');
                       }

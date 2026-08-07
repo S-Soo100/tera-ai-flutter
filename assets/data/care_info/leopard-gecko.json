@@ -8,17 +8,32 @@
   "adult_size": "전장 18~25cm, 체중 45~80g",
   "temperament": "온순하고 핸들링 친화적. 야행성~황혼성. 입문자에게 이상적.",
   "temperature": {
-    "basking_surface": { "min": 34, "max": 36 },
-    "hot_zone": { "min": 32, "max": 33 },
-    "cool_zone": { "min": 21, "max": 25 },
-    "night": { "min": 16, "max": 22 },
+    "basking_surface": {
+      "min": 34,
+      "max": 36
+    },
+    "hot_zone": {
+      "min": 32,
+      "max": 33
+    },
+    "cool_zone": {
+      "min": 21,
+      "max": 25
+    },
+    "night": {
+      "min": 16,
+      "max": 22
+    },
     "unit": "℃",
     "notes": "배면 온도는 온도건(적외선 온도계)으로 측정. 한국 겨울 실내(18~20℃)에서는 야간 히팅 없이 유지 가능한 경우 많음."
   },
   "humidity": {
     "min": 30,
     "max": 40,
-    "humid_hide": { "min": 70, "max": 80 },
+    "humid_hide": {
+      "min": 70,
+      "max": 80
+    },
     "unit": "%",
     "notes": "한국 여름 장마철 과습(70~80%) → 환기 필수. 겨울 난방 시 건조 → 습도 하이드 중요."
   },
@@ -29,7 +44,11 @@
       "슬레이트 타일 — 청소 용이, 입문자 적합",
       "페이퍼타월 — 격리/유아기 전용"
     ],
-    "substrate_avoid": ["모래 단독 (장폐색)", "왈넛 껍데기 (호흡기 자극)", "칼슘 샌드 (과잉 섭취 독성)"],
+    "substrate_avoid": [
+      "모래 단독 (장폐색)",
+      "왈넛 껍데기 (호흡기 자극)",
+      "칼슘 샌드 (과잉 섭취 독성)"
+    ],
     "essentials": [
       "웜 하이드 (핫존)",
       "쿨 하이드 (쿨존)",
@@ -40,8 +59,17 @@
     "lighting": "UVB 권장 (Arcadia ShadeDweller 7% 또는 Zoo Med T5 5.0). 없으면 D3 칼슘으로 보완. 야간 조명 금지."
   },
   "diet": {
-    "main": ["귀뚜라미", "듀비아 바퀴벌레 (추천 주식)", "밀웜 (보조)", "블랙솔져플라이 유충 (칼슘 우수)", "실크웜"],
-    "treat": ["왁스웜 (월 1~2회)", "슈퍼웜 (성체 간식)"],
+    "main": [
+      "귀뚜라미",
+      "듀비아 바퀴벌레 (추천 주식)",
+      "밀웜 (보조)",
+      "블랙솔져플라이 유충 (칼슘 우수)",
+      "실크웜"
+    ],
+    "treat": [
+      "왁스웜 (월 1~2회)",
+      "슈퍼웜 (성체 간식)"
+    ],
     "supplement": [
       "칼슘(D3 미함유) — 매 식사 더스팅 (UVB 사용 시)",
       "칼슘+D3 — UVB 없으면 주 2회",
@@ -76,6 +104,5 @@
     "cit-reptizen-feeding-01",
     "cit-devosjoli-leogecko-01",
     "cit-tera-internal-01"
-  ],
-  "graph_entity_id": "ent-species-leogecko"
+  ]
 }
