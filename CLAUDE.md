@@ -3,11 +3,11 @@
 ## 프로젝트 개요
 파충류 사육자를 위한 올인원 앱. 백색목록 검색, 사육 정보, 모프 유전 계산기 + 게코캠 + 사육장 IoT 제어.
 - **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브) + video_player/gal/share_plus(크레캠 영상 재생·기기저장·공유) + chart_sparkline(홈 미니 차트) + fl_chart(통계 탭 24h 차트)
-- **현재 상태(2026-08-08)**: P2 상당 구현 — Supabase 인증/유저 CRUD + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE) + **크레캠 영상 개편**(motion_clips 썸네일·저장/공유·즐겨찾기 클라우드·AI분류칩·시크) + **어젯밤 리포트**(마이 크레 탭). **PRD 재설계 진행 중(`feat/prd-redesign`)** — 4탭 IA(홈/통계/마이크레/커뮤니티) + 홈 탭 재구성(사육장 세트·서브탭) 구현 완료, `/stats`는 빈 스캐폴드.
+- **현재 상태(2026-08-08)**: P2 상당 구현 — Supabase 인증/유저 CRUD + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE) + **크레캠 영상 개편**(motion_clips 썸네일·저장/공유·즐겨찾기 클라우드·AI분류칩·시크) + **어젯밤 리포트**(마이 크레 탭). **PRD 재설계 진행 중(`feat/prd-redesign`)** — 4탭 IA(홈/통계/마이크레/커뮤니티) + 홈 탭 재구성(사육장 세트·서브탭) + 통계 탭 24h 그래프 구현 완료. 챗·지식그래프·종비교는 폐기(D3).
   - (P0 "로컬 전용/인증 없음/백엔드 없음"은 초기 설계 — 더 이상 유효하지 않음. 신규 작업은 아래 Phase 경계/CAOF 규칙을 따른다.)
 - **기획서 (현행 SOT)**: `docs/prd-vivanart-app.md` — 비바나트 신규 PRD(4탭 IA). `docs/spec.md`는 **구 기획서(5탭 시절)**로 열람용이며 상충 시 PRD가 우선.
 - **기획 원문 (Notion)**: https://app.notion.com/p/3ab16a5cfa948082864ec59be6b6f532?source=copy_link — Notion MCP로 접근(현재 미인증)
-- **디자인 원본 (Figma)**: https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut?node-id=0-1 — **talk-to-figma MCP로만 접근**(현재 미설치, 설치 선행 필요). 다른 Figma MCP로 대체하지 않는다.
+- **디자인 원본 (Figma)**: https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut?node-id=0-1 — **talk-to-figma MCP로만 접근**(설치·등록 완료). 다른 Figma MCP로 대체하지 않는다. 소켓 서버(`bunx cursor-talk-to-figma-socket`)는 **세션마다 수동 기동** 필요. 전사본: `docs/figma-final-design-transcript.md`
 - **자진신고**: ~~2026-06-13 기한~~ — **기한 경과 + 기능 제거됨**(`cbdad94`에서 자진신고 탭 → 내 사육장으로 교체). 코드·ko.json에 잔재 없음. 신규 작업에서 이 기능을 전제하지 말 것.
 
 ### Supabase / 백엔드 관련 문서
@@ -26,7 +26,7 @@
 | P1 | OnboardingScreen, ProfileScreen(내 사육장), 로컬 알림(D-day 리마인더), en 다국어, Pretendard 폰트 | 부분 (알림/en 미완) |
 | P2 | Supabase 도입, 인증(이메일+소셜), 클라우드 동기화, FCM 푸시, 거래 기록 | 상당 구현 (Email 인증·유저 CRUD 완료, 소셜/FCM 후속) |
 | C/D | 게코캠 클라우드 마이그레이션(petcam-lab) + 5탭 UI 개편 + **사육장 IoT(terra-server)** | 진행 중 — `docs/flutter-cloud-migration-plan.md` |
-| PRD 재설계 | 비바나트 신규 PRD 기준 4탭 IA + 홈 탭 전면 재구성 | 진행 중 — `docs/prd-vivanart-app.md`, `docs/plans/2026-08-05-prd-redesign{,-home}.md`. 통계 탭·마이크레 개편·푸시·온보딩은 **스펙 미비로 미착수** |
+| PRD 재설계 | 비바나트 신규 PRD 기준 4탭 IA + 홈 탭 전면 재구성 + 통계 탭 | 진행 중 — `docs/prd-vivanart-app.md`(결정 로그 D1~D5), `docs/plans/2026-08-05-prd-redesign{,-home}.md`. **미착수**: 마이크레 개편·커뮤니티 글쓰기·푸시·온보딩·리브랜딩(D2) |
 
 ## 아키텍처
 
@@ -62,17 +62,19 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 | 탭/라우트 | feature | 화면 | 데이터 소스 |
 |-----------|---------|------|------------|
 | `/home` (탭1) | home | HomeScreen — 헤더(세트 드롭다운/알림/설정) + 상단 고정영역(라이브↔개체 프로필 분기) + 서브탭 `[사육장 제어\|타임라인]` | 사육장 세트(`EnclosureSet`) = enclosures+cameras+devices+Pet |
-| `/stats` (탭2) | stats | StatsScreen — **빈 스캐폴드**(PRD 스펙 부족으로 미구현) | — |
+| `/stats` (탭2) | stats | StatsScreen — 24시간 온습도 듀얼축 차트(fl_chart). 주간·분포·행동분석은 **디자인 대기** | `telemetry_30m` (홈 미니 차트와 **같은 구간** 재사용) |
 | `/my-pets` (탭3) | my_pets | MyPetsScreen ([개체목록\|리포트] — 개체 CRUD + 어젯밤 리포트) | Supabase `pets`/`pet_events`/`media` + terra-api 하이라이트 |
 | `/community` (탭4) | community | CommunityScreen (게시판) | Supabase `community` |
 | `/crecam` (보조) | my_cage | CrecamScreen + CameraPairingScreen | **terra-server** `cameras`(ESP32-P4) + WebRTC P2P 라이브 + `motion_clips` 비디오(썸네일·즐겨찾기 클라우드·AI분류칩) + BLE 페어링 |
 | `/smart-cage` (보조) | my_cage | SmartCageScreen + DevicePairingScreen | **terra-server** `devices`/`telemetry`/`commands` + BLE |
-| `/wiki` (보조) | wiki | WikiScreen + 종 상세/모프 계산기/종 비교/지식그래프 | 레퍼런스(로컬/Supabase) |
+| `/wiki` (보조) | wiki | WikiScreen + 종 상세/모프 도감/모프 계산기 | 레퍼런스(로컬/Supabase) |
 | `/search` (보조) | search | 백색목록 검색 | SpeciesRepository |
 | `/notifications`·`/enclosure-settings`·`/home/routines` (보조) | notification / my_cage / home | 홈 헤더·루틴 진입점 | PRD §3.1 / §3.4 |
 | — | splash/error | SplashScreen / ErrorScreen | — |
 
-> 홈 탭 도메인: `home/domain/{day_window,device_mode,enclosure_set,env_extremes,env_chart_series,actuator_marker,running_timer,mist_lock,timeline_summary,pet_dday}.dart`. 하루 경계는 **07:00~익일 07:00**(`DayWindow`), 차트 범위는 전날 19:00~현재 — 어젯밤 리포트(22~06시)와 별개 개념이니 혼용 금지.
+> 홈 탭 도메인: `home/domain/{day_window,device_mode,enclosure_set,env_extremes,env_chart_series,actuator_marker,chart_time_axis,running_timer,mist_lock,timeline_summary,pet_dday}.dart`. 하루 경계는 **07:00~익일 07:00**(`DayWindow`), 차트 범위는 전날 19:00~현재 — 어젯밤 리포트(22~06시)와 별개 개념이니 혼용 금지.
+> **⚠️ 사육장 제어 명령은 반드시 `home/presentation/cage_control_actions.dart`를 경유한다.** 제어 진입점이 둘(라이브 아래 `LiveControlBar` + 서브탭 `QuickControlGrid`)이라, 히터 2단 안전확인(과열=개체 폐사)을 두 경로가 공유해야 한다. 위젯에 명령 로직을 복붙하면 한쪽만 고쳐지고 다른 쪽이 안전장치 없이 남는다. 상세: PRD 결정 로그 D4.
+> 통계 탭: `stats/domain/{axis_bounds,stats_chart_data}.dart` — 온·습도를 각자 축으로 **0~1 정규화**해 겹쳐 그린다(단위가 달라 같은 Y축 불가). 차트 색은 `AppTheme.chartTemperature/chartHumidity`(Figma 원본 hex) — 홈 미니 차트와 **같은 토큰**을 쓴다. 상세: 결정 로그 D5.
 
 > 사육장 IoT 데이터 계층: `my_cage/data/{ble_pairing_repository,supabase_module_control_repository}.dart`, `my_cage/domain/{device,telemetry_reading,telemetry_bucket,device_command,actuator_state,wifi_access_point,pair_target_kind,species_comfort}.dart`.
 > BLE 페어링(2026-07-02 개편): Wi-Fi 프로비저닝 프로토콜(`SCAN`→`SSID`→`PASS`→`CONNECT`, JWT 흐름 제거). 사육장·카메라 공통 `presentation/widgets/wifi_provisioning_view.dart` + 래퍼 `{device,camera}_pairing_screen.dart`(라우트 `/smart-cage/devices/pair`, `/crecam/cameras/pair`). **앱은 WiFi 연결만 — 토큰/DB등록/owner는 사전 세팅((a) 방식)**. 상세: `docs/ble-provisioning-protocol.md`, 메모리 `project_ble_provisioning_scheme`.
