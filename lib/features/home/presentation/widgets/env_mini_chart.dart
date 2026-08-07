@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../domain/actuator_marker.dart';
+import '../../domain/chart_time_axis.dart';
 import '../../domain/env_chart_series.dart';
 import '../home_control_providers.dart';
 
@@ -73,6 +74,10 @@ class EnvMiniChart extends ConsumerWidget {
                           ],
                         ),
                 ),
+                // 시간 축은 선·마커와 **같은 구간**(실제 데이터 구간)으로 놓는다.
+                // 요청 구간으로 계산하면 Sparkline이 늘려 그린 선과 어긋난다.
+                if (series.hasLine)
+                  _TimeAxisRow(start: series.from!, end: series.to!),
                 const SizedBox(height: AppStyles.spacing4),
                 Align(
                   alignment: Alignment.centerRight,
@@ -87,6 +92,59 @@ class EnvMiniChart extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// X축 6시간 눈금 라벨. Figma 피드백 "시간이 언제인지 표기 필요" 대응.
+class _TimeAxisRow extends StatelessWidget {
+  const _TimeAxisRow({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  static const axisKey = Key('env_mini_chart_time_axis');
+
+  /// 라벨 상자 폭. 눈금을 가운데 두고 좌우로 절반씩 뻗는다.
+  static const double _labelWidth = 52;
+
+  @override
+  Widget build(BuildContext context) {
+    final ticks = chartTimeTicks(from: start, to: end);
+    if (ticks.isEmpty) return const SizedBox(height: 14);
+
+    final style = Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        );
+
+    return SizedBox(
+      key: axisKey,
+      height: 14,
+      child: LayoutBuilder(
+        builder: (context, c) {
+          return Stack(
+            children: [
+              for (final t in ticks)
+                Positioned(
+                  // 눈금 중앙 정렬 후 카드 밖으로 새지 않게 clamp.
+                  left: (t.position * c.maxWidth - _labelWidth / 2)
+                      .clamp(0.0, (c.maxWidth - _labelWidth).clamp(0.0, double.infinity)),
+                  child: SizedBox(
+                    width: _labelWidth,
+                    child: Text(
+                      (t.isAm ? 'home_chart_time_am' : 'home_chart_time_pm')
+                          .tr(namedArgs: {'h': '${t.hour12}'}),
+                      textAlign: TextAlign.center,
+                      style: style,
+                      maxLines: 1,
+                      overflow: TextOverflow.clip,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
