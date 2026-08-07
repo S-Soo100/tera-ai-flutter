@@ -4,13 +4,25 @@
 
 | 매체 | 링크 | 접근 방법 | 상태 |
 |---|---|---|---|
-| 기획 원문 (Notion) | https://app.notion.com/p/3ab16a5cfa948082864ec59be6b6f532?source=copy_link | Notion MCP (`plugin:Notion:notion`) | ⚠️ 미인증 — `/mcp`로 인증 필요 |
-| 디자인 (Figma) | https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut?node-id=0-1 | **talk-to-figma MCP** (아래 참조) | ⚠️ 미설치 |
+| 기획 원문 (Notion) | https://app.notion.com/p/3ab16a5cfa948082864ec59be6b6f532?source=copy_link | Notion MCP (`plugin:Notion:notion`) | ⚠️ 미인증 — 대화형 세션에서 `/mcp`로 인증 필요 |
+| 디자인 (Figma) | https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut?node-id=0-1 | **talk-to-figma MCP** (아래 참조) | ✅ 설치·등록 완료 (2026-08-08) |
 
 **Figma 작업 규칙 (2026-08-08 확정)**
 - 이 프로젝트의 Figma 연동은 **talk-to-figma MCP**를 쓴다. `plugin:design:figma`(읽기 전용 계열)로 대체하지 않는다.
-- 현재 `claude mcp list`에 talk-to-figma 서버가 없다 → **설치·인증이 선행 과제**. 설치 전에는 디자인 대조/전사가 불가능하므로, Figma 기준 UI 판단을 추측으로 메우지 않는다.
 - 노션·피그마 원문과 이 문서가 어긋나면 **원문이 우선**이며, 발견 즉시 이 문서를 갱신한다.
+- Figma 기준 UI 판단을 **추측으로 메우지 않는다.** 소켓이 끊겨 있으면 대조를 미루고 그 사실을 보고한다.
+
+**talk-to-figma 연결 절차** — 요소가 3개고 하나라도 빠지면 안 붙는다.
+
+| # | 요소 | 상태 | 비고 |
+|---|---|---|---|
+| 1 | `bun` 런타임 | ✅ `~/.bun/bin/bun` 1.3.14 | Homebrew는 **CLT가 macOS 26 미지원**이라 실패 → 공식 설치 스크립트로 우회 |
+| 2 | 소켓 서버 (포트 3055) | ⬜ **세션마다 수동 기동** | `bunx cursor-talk-to-figma-socket` — Figma 플러그인이 붙는 대상 |
+| 3 | MCP 서버 등록 | ✅ user scope (`~/.claude.json`) | `talk-to-figma` → `bunx cursor-talk-to-figma-mcp`, `PATH`에 `~/.bun/bin` 주입 |
+
+- **2번은 상주하지 않는다.** Claude Code 안에서 띄우면 자식 프로세스라 세션 종료 시 같이 죽는다 → **사용자 터미널에서 직접** 실행할 것.
+- **MCP 서버는 세션 시작 시 로드된다.** 등록 직후 그 세션에서는 도구가 안 잡히므로 **재시작 필요**.
+- 셔뱅이 `#!/usr/bin/env bun`이라 `PATH`에 `~/.bun/bin`이 없으면 `env: bun: No such file or directory`로 죽는다. npx로는 대체 불가 — `socket.js`가 `Bun.serve`를 직접 쓴다.
 
 ---
 
