@@ -367,3 +367,39 @@ PRD 본문·다이어그램에 물음표/괄호로 남아 있는 것들. 구현 
   - `DayWindow.chartRange` = **전날 19:00 ~ 현재**. §5-1.2의 "최근 24시간 차트" 전용이며 하루 창과 공유하지 않는다. §4-가의 19시가 여기서 살아 있는 셈이다.
   - 어젯밤 리포트의 `lastNightSince/lastNightEnd` = **22:00 ~ 06:00**. 마이크레 탭 전용으로 위 둘과 무관하다.
 - **⚠️ 노션 원문 정정 필요**: 원문 §4-가의 "어제 오후 7시 ~ 오늘 오전 7시"는 여전히 모순 상태다. Notion MCP 인증 후 원문을 고쳐야 이 결정이 SOT에 반영된다.
+
+### D2 — 브랜드명을 **비바나트**로 변경 (Tera AI 폐기)
+
+- **결정일**: 2026-08-08 (사용자 결정)
+- **결정**: 사용자 노출 브랜드명을 `Tera AI` → `비바나트`로 교체한다. PRD·Figma가 신규 SOT이므로 그쪽을 따른다.
+- **영향 범위 (실측)**:
+
+  | 대상 | 위치 | 비고 |
+  |---|---|---|
+  | 앱 표시명 (iOS) | `ios/Runner/Info.plist:8` `CFBundleDisplayName` | 홈 화면 아이콘 라벨 |
+  | 앱 표시명 (Android) | `android/app/src/main/AndroidManifest.xml:13` `android:label` | 〃 |
+  | 앱 이름 문자열 | `assets/l10n/ko.json` `app_name` | |
+  | 영상 저장 앨범명 | `lib/features/my_cage/data/video_export_service.dart:31` `Gal.putVideo(album:)` | **이미 저장된 앨범은 안 바뀐다** — 기존 사용자에게 앨범이 둘로 갈린다 |
+  | 영상 워터마크 | `lib/features/my_cage/presentation/widgets/video_watermark.dart` | 새 로고 에셋 필요 |
+  | 아이콘·스플래시 | 커밋 `c1a3d6a`에서 적용한 terra ai 로고 전량 | **Figma에서 신규 에셋 수급 필요 — MCP 연결 전엔 불가** |
+
+- **명시적 비대상**: Dart 패키지명 `tera_ai`(`pubspec.yaml:1`)는 **바꾸지 않는다**. `package:tera_ai/` import가 31개 파일에 걸려 있는데, 이름만 바꾸려고 전 파일을 건드리는 건 이득 대비 위험이 크다. 패키지명은 사용자에게 보이지 않는다.
+- **선행 조건**: 로고·스플래시 에셋을 Figma에서 받아야 완결된다 → **talk-to-figma MCP 연결이 선행**.
+
+### D3 — `/chat`(LLM 챗)·지식그래프·종 비교 **폐기**
+
+- **결정일**: 2026-08-08 (사용자 결정)
+- **결정**: PRD 범위에 자원을 집중하기 위해 PRD에 없는 세 기능을 제거한다.
+- **제거 대상 (실측)**:
+
+  | 대상 | 규모 | 위치 |
+  |---|---|---|
+  | LLM 챗 | 19파일 2,731줄 | `lib/features/chat/`, 라우트 `/chat`·`/chat/new`·`/chat/:conversationId` |
+  | 지식그래프 | — | `wiki/presentation/graph_detail_screen.dart`, `wiki/data/graph_repository.dart`, `assets/data/graph.json` |
+  | 종 비교 | — | `wiki/presentation/species_compare_screen.dart` |
+
+- **같이 끊어야 할 진입점 3곳** (안 지우면 죽은 버튼이 남는다):
+  `wiki_screen.dart:59`(`/chat`), `wiki_screen.dart:68`·`wiki_detail_screen.dart:44`(`/chat/new?speciesId=`)
+- **문서 처리**: `docs/chat-feature-spec.md`·`llm-chat-integration-report.md`·`knowledge-graph-prd.md`·`graph-visualization-plan.md`는 **지우지 않고 폐기 표시**한다 — 되살릴 때 재작성 비용이 크고, 삭제해도 얻는 게 없다.
+- **되돌리기**: git 이력에 남으므로 복원 가능하나, 제거는 **단독 커밋**으로 분리해 revert 한 방에 되돌아오게 한다.
+- **미결**: 챗이 쓰던 `assets/data/citations.json`(출처 시스템)이 다른 곳에서도 쓰이는지 확인 후 처리.
