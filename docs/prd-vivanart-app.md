@@ -5,7 +5,7 @@
 | 매체 | 링크 | 접근 방법 | 상태 |
 |---|---|---|---|
 | 기획 원문 (Notion) | https://app.notion.com/p/3ab16a5cfa948082864ec59be6b6f532?source=copy_link | Notion MCP (`plugin:Notion:notion`) | ⚠️ 미인증 — 대화형 세션에서 `/mcp`로 인증 필요 |
-| 디자인 (Figma) | https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut?node-id=0-1 | **talk-to-figma MCP** (아래 참조) | ✅ 설치·등록 완료 (2026-08-08) |
+| 디자인 (Figma) | https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut?node-id=0-1 | **talk-to-figma MCP** (아래 참조) | ✅ 연결·전사 완료 (2026-08-08) → **`docs/figma-final-design-transcript.md`** |
 
 **Figma 작업 규칙 (2026-08-08 확정)**
 - 이 프로젝트의 Figma 연동은 **talk-to-figma MCP**를 쓴다. `plugin:design:figma`(읽기 전용 계열)로 대체하지 않는다.
