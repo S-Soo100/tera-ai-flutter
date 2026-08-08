@@ -1,7 +1,7 @@
 # Flutter 앱 기획서 v2
 
 > ⚠️ **이 문서는 현행 SOT가 아니다 (2026-08-08).**
-> 현행 기획 SOT는 **`docs/prd-vivanart-app.md`**(비바나트 신규 PRD, 4탭 IA)이며, 원문은
+> 현행 기획 SOT는 **`docs/prd-vivanart-app.md`**(비바나트 기획안, 2026-08-08 재작성)이며, 원문은
 > [Notion](https://app.notion.com/p/3ab16a5cfa948082864ec59be6b6f532?source=copy_link) ·
 > [Figma](https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut?node-id=0-1)(**talk-to-figma MCP**로 접근)다.
 > 이 파일은 위키/모프계산기/백색목록/자진신고 등 **PRD가 다루지 않는 레거시 기능의 유일한 명세**라서 보존한다.

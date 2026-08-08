@@ -1,5 +1,9 @@
 # PRD 기준 앱 전면 재설계 Implementation Plan — Part 1: 기반 + 4탭 셸
 
+> ⚠️ **2026-08-08 기획 리셋 이전 문서다.** 이 계획서가 만든 구현의 디자인이 기획 의도를 만족하지 못해,
+> 기존 구현을 전제하지 않는 새 기획안(`docs/prd-vivanart-app.md`)이 작성되었다.
+> 이 문서는 **"무엇이 어떻게 만들어졌는지"의 기록**으로만 유효하다. 신규 작업의 근거로 쓰지 말 것.
+
 > ✅ **완료 (2026-08-08 소급 확인).** 구현은 진행됐는데 체크박스만 갱신이 안 된 상태였다.
 > 소급 근거: Task 1~6 산출물 파일 전수 실존(`day_window.dart`·`device_mode.dart`·`enclosure_set.dart`·
 > `enclosure_set_repository.dart`·`home_set_providers.dart`·`tab_branches.dart`·`stats_screen.dart`,

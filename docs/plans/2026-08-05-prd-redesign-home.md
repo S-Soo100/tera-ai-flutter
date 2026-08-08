@@ -1,5 +1,9 @@
 # PRD 기준 앱 전면 재설계 Implementation Plan — Part 2: 홈 탭 UI
 
+> ⚠️ **2026-08-08 기획 리셋 이전 문서다.** 이 계획서가 만든 구현의 디자인이 기획 의도를 만족하지 못해,
+> 기존 구현을 전제하지 않는 새 기획안(`docs/prd-vivanart-app.md`)이 작성되었다.
+> 이 문서는 **"무엇이 어떻게 만들어졌는지"의 기록**으로만 유효하다. 신규 작업의 근거로 쓰지 말 것.
+
 > ✅ **완료 (2026-08-08 소급 확인).** Part 1과 마찬가지로 구현은 됐으나 체크박스가 방치돼 있었다.
 > 소급 근거: Task 7~16 위젯 11종 + 도메인 6종(`running_timer`·`env_extremes`·`env_chart_series`·
 > `actuator_marker`·`mist_lock`·`timeline_summary`·`pet_dday`) 전수 실존 + `flutter test` 200개 통과.
