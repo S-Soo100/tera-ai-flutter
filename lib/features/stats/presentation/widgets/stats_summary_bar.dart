@@ -84,12 +84,23 @@ class _Metric extends StatelessWidget {
           children: [
             Icon(icon, size: 20, color: color),
             const SizedBox(width: AppStyles.spacing4),
-            Text(value, style: AppStyles.subsectionTitle(context)),
+            // 좌우 2분할이라 한 칸이 화면의 절반뿐이다. 큰 글씨 설정이나
+            // 자릿수가 늘면 바로 넘치므로, 잘라내는 대신 비율을 유지해 줄인다
+            // — 숫자는 ellipsis로 자르면 값이 달라 보인다.
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(value, style: AppStyles.subsectionTitle(context)),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 2),
         Text(
           extremes,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),

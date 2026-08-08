@@ -3,6 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../home/domain/day_window.dart';
 import '../../home/presentation/home_control_providers.dart';
 import '../domain/stats_chart_data.dart';
+import '../domain/stats_metric.dart';
+import '../domain/stats_period.dart';
+
+/// 선택된 조회 기간(§4.3.1).
+final statsPeriodProvider =
+    StateProvider<StatsPeriod>((ref) => StatsPeriod.daily);
+
+/// 차트에 겹쳐 그릴 지표(§4.3.2, 다중 선택).
+///
+/// 기본값은 온·습도 둘 다 — 이 둘의 **관계**를 읽는 게 이 화면의 목적이라
+/// 하나만 켜고 시작하면 요점을 놓친다.
+final statsMetricsProvider = StateProvider<Set<StatsMetric>>(
+  (ref) => {StatsMetric.temperature, StatsMetric.humidity},
+);
 
 /// 통계 탭 24시간 차트 데이터.
 ///

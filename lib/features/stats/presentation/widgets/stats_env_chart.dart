@@ -7,6 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../home/domain/chart_time_axis.dart';
 import '../../domain/axis_bounds.dart';
 import '../../domain/stats_chart_data.dart';
+import '../../domain/stats_metric.dart';
 
 /// Figma `온습도 그래프 - 24시` 본체.
 ///
@@ -14,11 +15,22 @@ import '../../domain/stats_chart_data.dart';
 /// 두 지표는 단위가 달라 [StatsChartData]에서 **각자 0~1로 정규화**해 온다.
 /// 그래서 차트의 Y는 항상 0~1이고, 사람이 읽는 눈금은 좌우 라벨 컬럼이 담당한다.
 class StatsEnvChart extends StatelessWidget {
-  const StatsEnvChart({super.key, required this.data});
+  const StatsEnvChart({
+    super.key,
+    required this.data,
+    this.metrics = const {StatsMetric.temperature, StatsMetric.humidity},
+  });
 
   final StatsChartData data;
 
+  /// 그릴 지표(§4.3.2 필터). 꺼진 지표는 **선도 축 라벨도 함께 사라진다** —
+  /// 선만 지우면 읽을 값이 없는 눈금만 남는다.
+  final Set<StatsMetric> metrics;
+
   static const chartKey = Key('stats_env_chart');
+
+  bool get _temp => metrics.contains(StatsMetric.temperature);
+  bool get _humid => metrics.contains(StatsMetric.humidity);
 
   /// 플롯 영역 높이. Figma의 Y축 라벨 컬럼(104px, 6단)에 맞춘 값.
   static const double _plotHeight = 180;
@@ -39,7 +51,7 @@ class StatsEnvChart extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _AxisLabels(
-                axis: data.tempAxis,
+                axis: _temp ? data.tempAxis : null,
                 format: (v) => 'stats_axis_temp'.tr(
                   namedArgs: {'v': v.toStringAsFixed(0)},
                 ),
@@ -47,10 +59,10 @@ class StatsEnvChart extends StatelessWidget {
                 alignment: TextAlign.right,
               ),
               const SizedBox(width: AppStyles.spacing4),
-              Expanded(child: _Plot(data: data)),
+              Expanded(child: _Plot(data: data, metrics: metrics)),
               const SizedBox(width: AppStyles.spacing4),
               _AxisLabels(
-                axis: data.humidAxis,
+                axis: _humid ? data.humidAxis : null,
                 format: (v) => 'stats_axis_humid'.tr(
                   namedArgs: {'v': v.toStringAsFixed(0)},
                 ),
@@ -84,13 +96,17 @@ class _AxisLabels extends StatelessWidget {
   final TextStyle? style;
   final TextAlign alignment;
 
+  /// 라벨 컬럼 폭. **비어 있어도 자리를 지킨다** — 지표를 끌 때 폭이 줄면
+  /// 플롯이 옆으로 밀리고, 고정값을 쓰는 [_TimeAxis]의 눈금이 어긋난다.
+  static const double width = 34;
+
   @override
   Widget build(BuildContext context) {
-    if (axis == null) return const SizedBox.shrink();
+    if (axis == null) return const SizedBox(width: width);
     final ticks = axis!.ticks.reversed.toList(); // 위 → 아래
 
     return SizedBox(
-      width: 34,
+      width: width,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -110,9 +126,23 @@ class _AxisLabels extends StatelessWidget {
 }
 
 class _Plot extends StatelessWidget {
-  const _Plot({required this.data});
+  const _Plot({required this.data, required this.metrics});
 
   final StatsChartData data;
+  final Set<StatsMetric> metrics;
+
+  /// 실제로 그려지는 선들. **툴팁이 barIndex로 되짚어야 하므로 목록을 한 번만
+  /// 만든다** — 조건을 두 곳에 복붙하면 필터를 켤 때마다 툴팁이 엉뚱한 축의
+  /// 값을 읽는다.
+  List<({List<({double x, double y})> pts, AxisBounds? axis, bool isTemp})>
+      get _series => [
+            if (metrics.contains(StatsMetric.temperature) &&
+                data.tempPoints.length > 1)
+              (pts: data.tempPoints, axis: data.tempAxis, isTemp: true),
+            if (metrics.contains(StatsMetric.humidity) &&
+                data.humidPoints.length > 1)
+              (pts: data.humidPoints, axis: data.humidAxis, isTemp: false),
+          ];
 
   @override
   Widget build(BuildContext context) {
@@ -155,10 +185,11 @@ class _Plot extends StatelessWidget {
           ),
         ),
         lineBarsData: [
-          if (data.tempPoints.length > 1)
-            _bar(data.tempPoints, AppTheme.chartTemperature),
-          if (data.humidPoints.length > 1)
-            _bar(data.humidPoints, AppTheme.chartHumidity),
+          for (final s in _series)
+            _bar(
+              s.pts,
+              s.isTemp ? AppTheme.chartTemperature : AppTheme.chartHumidity,
+            ),
         ],
       ),
     );
@@ -167,11 +198,13 @@ class _Plot extends StatelessWidget {
   /// 정규화된 y를 사람이 읽는 값으로 되돌려 보여준다. 툴팁에 0.42가 뜨면
   /// 아무 의미가 없다.
   String _tooltipText(LineBarSpot spot) {
-    final isTemp = spot.barIndex == 0 && data.tempPoints.length > 1;
-    final axis = isTemp ? data.tempAxis : data.humidAxis;
+    final series = _series;
+    if (spot.barIndex < 0 || spot.barIndex >= series.length) return '';
+    final s = series[spot.barIndex];
+    final axis = s.axis;
     if (axis == null) return '';
     final real = axis.min + spot.y * axis.span;
-    return isTemp
+    return s.isTemp
         ? 'stats_axis_temp'.tr(namedArgs: {'v': real.toStringAsFixed(1)})
         : 'stats_axis_humid'.tr(namedArgs: {'v': real.toStringAsFixed(0)});
   }
@@ -202,9 +235,10 @@ class _TimeAxis extends StatelessWidget {
     final ticks = chartTimeTicks(from: data.from, to: data.to);
     if (ticks.isEmpty) return const SizedBox(height: 14);
 
-    // 플롯 영역은 좌우 라벨 컬럼(34 + 여백 4)만큼 안쪽으로 들어가 있다.
-    // 같은 만큼 밀어줘야 눈금이 선과 같은 자리를 가리킨다.
-    const inset = 34 + AppStyles.spacing4;
+    // 플롯 영역은 좌우 라벨 컬럼(폭 + 여백 4)만큼 안쪽으로 들어가 있다.
+    // 같은 만큼 밀어줘야 눈금이 선과 같은 자리를 가리킨다. 컬럼은 지표를 꺼도
+    // 폭을 유지하므로 이 값은 필터와 무관하게 맞는다.
+    const inset = _AxisLabels.width + AppStyles.spacing4;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: inset),
