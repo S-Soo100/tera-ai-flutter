@@ -26,7 +26,7 @@
 | P1 | OnboardingScreen, ProfileScreen(내 사육장), 로컬 알림(D-day 리마인더), en 다국어, Pretendard 폰트 | 부분 (알림/en 미완) |
 | P2 | Supabase 도입, 인증(이메일+소셜), 클라우드 동기화, FCM 푸시, 거래 기록 | 상당 구현 (Email 인증·유저 CRUD 완료, 소셜/FCM 후속) |
 | C/D | 게코캠 클라우드 마이그레이션(petcam-lab) + 5탭 UI 개편 + **사육장 IoT(terra-server)** | 진행 중 — `docs/flutter-cloud-migration-plan.md` |
-| PRD 재설계 | 비바나트 신규 PRD 기준 4탭 IA + 홈 탭 전면 재구성 + 통계 탭 | 진행 중 — `docs/prd-vivanart-app.md`(결정 로그 D1~D5), `docs/plans/2026-08-05-prd-redesign{,-home}.md`. **미착수**: 마이크레 개편·커뮤니티 글쓰기·푸시·온보딩·리브랜딩(D2) |
+| PRD 재설계 | 비바나트 신규 PRD 기준 4탭 IA + 홈 탭 전면 재구성 + 통계 탭 | 진행 중 — `docs/prd-vivanart-app.md`(결정 로그 D1~D6), `docs/plans/2026-08-05-prd-redesign{,-home}.md`. **미착수**: 마이크레 개편·커뮤니티 글쓰기·푸시·온보딩·리브랜딩(D2) |
 
 ## 아키텍처
 
