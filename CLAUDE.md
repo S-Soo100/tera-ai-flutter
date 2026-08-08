@@ -6,7 +6,7 @@
 - **현재 상태(2026-08-08)**: P2 상당 구현 — Supabase 인증/유저 CRUD + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE) + **크레캠 영상 개편**(motion_clips 썸네일·저장/공유·즐겨찾기 클라우드·AI분류칩·시크) + **어젯밤 리포트**(마이 크레 탭). **PRD 재설계 진행 중(`feat/prd-redesign`)** — 4탭 IA(홈/통계/마이크레/커뮤니티) + 홈 탭 재구성(사육장 세트·서브탭) + 통계 탭 24h 그래프 구현 완료. 챗·지식그래프·종비교는 폐기(D3).
   - (P0 "로컬 전용/인증 없음/백엔드 없음"은 초기 설계 — 더 이상 유효하지 않음. 신규 작업은 아래 Phase 경계/CAOF 규칙을 따른다.)
 - **기획서 (현행 SOT)**: `docs/prd-vivanart-app.md` — 비바나트 신규 PRD(4탭 IA). `docs/spec.md`는 **구 기획서(5탭 시절)**로 열람용이며 상충 시 PRD가 우선.
-- **기획 원문 (Notion)**: https://app.notion.com/p/3ab16a5cfa948082864ec59be6b6f532?source=copy_link — Notion MCP로 접근(현재 미인증)
+- **기획 원문 (Notion)**: https://app.notion.com/p/3ab16a5cfa948082864ec59be6b6f532?source=copy_link — **브라우저로 바로 열린다(로그인 불필요).** Notion MCP 인증을 기다릴 필요 없음
 - **디자인 원본 (Figma)**: https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut?node-id=0-1 — **talk-to-figma MCP로만 접근**(설치·등록 완료). 다른 Figma MCP로 대체하지 않는다. 소켓 서버(`bunx cursor-talk-to-figma-socket`)는 **세션마다 수동 기동** 필요. 전사본: `docs/figma-final-design-transcript.md`
 - **자진신고**: ~~2026-06-13 기한~~ — **기한 경과 + 기능 제거됨**(`cbdad94`에서 자진신고 탭 → 내 사육장으로 교체). 코드·ko.json에 잔재 없음. 신규 작업에서 이 기능을 전제하지 말 것.
 
