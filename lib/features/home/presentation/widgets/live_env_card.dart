@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/status_badge.dart';
+import '../../../my_cage/domain/species_comfort.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../home_control_providers.dart';
 
@@ -28,6 +30,9 @@ class LiveEnvCard extends ConsumerWidget {
 
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
     final ex = ref.watch(todayExtremesProvider).valueOrNull;
+    // 안심존은 개체 종의 care_info에서 온다. 없으면 판정을 안 한다 —
+    // 임의 수치로 "안심"이라고 말하면 그게 더 위험하다.
+    final comfort = ref.watch(currentSpeciesComfortProvider).valueOrNull;
 
     return Padding(
       key: cardKey,
@@ -47,6 +52,7 @@ class LiveEnvCard extends ConsumerWidget {
               label: 'home_env_temp_label'.tr(),
               dot: AppTheme.chartTemperature,
               range: _range(ex?.tempMax, ex?.tempMin, 1),
+              tone: _tone(t?.tA, comfort?.tempMin, comfort?.tempMax, 1.5),
             ),
           ),
           Expanded(
@@ -56,11 +62,26 @@ class LiveEnvCard extends ConsumerWidget {
               label: 'home_env_humid_label'.tr(),
               dot: AppTheme.chartHumidity,
               range: _range(ex?.humidMax, ex?.humidMin, 0),
+              tone: _tone(t?.hA, comfort?.humidMin, comfort?.humidMax, 10),
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// 현재값이 개체의 적정 구간 안인가.
+  ///
+  /// **값이나 안심존을 모르면 null** — 배지를 아예 안 그린다. 모르는 상태를
+  /// "안심"으로 칠하면 사용자가 위험을 놓친다. margin은 "조금 벗어남 vs 많이
+  /// 벗어남"을 가르는 UI 여유값(온도 1.5℃ / 습도 10%RH).
+  static StatusTone? _tone(double? v, double? lo, double? hi, double margin) {
+    if (v == null || v <= 0 || lo == null || hi == null) return null;
+    return switch (classifyComfort(v, lo, hi, margin)) {
+      ComfortLevel.good => StatusTone.safe,
+      ComfortLevel.cautionLow || ComfortLevel.cautionHigh => StatusTone.caution,
+      ComfortLevel.dangerLow || ComfortLevel.dangerHigh => StatusTone.danger,
+    };
   }
 
   /// 당일 최고/최저. 둘 중 하나라도 없으면 줄 자체를 내지 않는다 —
@@ -81,6 +102,7 @@ class _Readout extends StatelessWidget {
     required this.label,
     required this.dot,
     required this.range,
+    required this.tone,
   });
 
   /// 현재값. null이면 아직 안 들어온 것 — 0으로 위장하지 않고 `--`로 둔다.
@@ -89,6 +111,16 @@ class _Readout extends StatelessWidget {
   final String label;
   final Color dot;
   final String? range;
+
+  /// 적정 구간 대비 판정. null이면 배지를 그리지 않는다.
+  final StatusTone? tone;
+
+  static String _toneLabel(StatusTone t) => switch (t) {
+        StatusTone.safe => 'home_env_state_safe'.tr(),
+        StatusTone.caution => 'home_env_state_caution'.tr(),
+        StatusTone.danger => 'home_env_state_danger'.tr(),
+        _ => '',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +146,10 @@ class _Readout extends StatelessWidget {
             ),
           ],
         ),
+        if (tone != null) ...[
+          const SizedBox(height: AppStyles.spacing4),
+          StatusBadge(label: _toneLabel(tone!), tone: tone!),
+        ],
         const SizedBox(height: AppStyles.spacing4),
         // 48px는 이 화면에서 가장 큰 글자라 가장 먼저 넘친다. 좁은 기기·큰 글씨
         // 설정에서 잘리는 대신 **비율을 유지한 채 줄어들게** 한다 — 숫자는

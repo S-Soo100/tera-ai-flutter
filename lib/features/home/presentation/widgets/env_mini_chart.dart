@@ -9,6 +9,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../domain/actuator_marker.dart';
 import '../../domain/chart_time_axis.dart';
 import '../../domain/env_chart_series.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../domain/night_band.dart';
 import '../home_control_providers.dart';
 
@@ -63,56 +64,61 @@ class EnvMiniChart extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppStyles.spacing8),
-            SizedBox(
-              height: _plotHeight,
-              child: !series.hasLine
-                  ? Center(
-                      child: Text('home_chart_no_data'.tr(),
-                          style: theme.textTheme.bodySmall))
-                  : Stack(
-                      children: [
-                        // 맨 아래 — 데이터 선을 절대 가리지 않는다.
-                        _NightBands(start: series.from!, end: series.to!),
-                        Sparkline(
-                          data: series.temps,
-                          lineColor: AppTheme.chartTemperature,
-                          lineWidth: 2,
-                        ),
-                        Sparkline(
-                          data: series.humids,
-                          lineColor: AppTheme.chartHumidity,
-                          lineWidth: 2,
-                        ),
-                        _MarkerRow(
-                          markers: markers,
-                          start: series.from!,
-                          end: series.to!,
-                        ),
-                      ],
+            if (!series.hasLine)
+              // 맨 텍스트 한 줄을 132px 한가운데 띄우면 화면이 고장난 것처럼
+              // 보인다(실기기에서 화면 1/4이 빈칸이었다).
+              EmptyState(
+                title: 'home_chart_empty_title'.tr(),
+                description: 'home_chart_empty_desc'.tr(),
+              )
+            else
+              SizedBox(
+                height: _plotHeight,
+                child: Stack(
+                  children: [
+                    // 맨 아래 — 데이터 선을 절대 가리지 않는다.
+                    _NightBands(start: series.from!, end: series.to!),
+                    Sparkline(
+                      data: series.temps,
+                      lineColor: AppTheme.chartTemperature,
+                      lineWidth: 2,
                     ),
-            ),
+                    Sparkline(
+                      data: series.humids,
+                      lineColor: AppTheme.chartHumidity,
+                      lineWidth: 2,
+                    ),
+                    _MarkerRow(
+                      markers: markers,
+                      start: series.from!,
+                      end: series.to!,
+                    ),
+                  ],
+                ),
+              ),
             if (series.hasLine)
               _TimeAxisRow(start: series.from!, end: series.to!),
             const SizedBox(height: AppStyles.spacing4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      'home_chart_goto_stats'.tr(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: theme.colorScheme.primary),
+            if (series.hasLine)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'home_chart_goto_stats'.tr(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall
+                            ?.copyWith(color: theme.colorScheme.primary),
+                      ),
                     ),
-                  ),
-                  Icon(Icons.chevron_right,
-                      size: 16, color: theme.colorScheme.primary),
-                ],
+                    Icon(Icons.chevron_right,
+                        size: 16, color: theme.colorScheme.primary),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),

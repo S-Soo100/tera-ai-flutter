@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/domain/device_command.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
@@ -46,11 +47,16 @@ class LiveControlBar extends ConsumerWidget {
     final mistLocked =
         ref.watch(mistLockProvider(deviceId)).isLocked(DateTime.now());
 
-    return Padding(
+    // 라이브 면과 같은 색을 깔아 **하나의 덩어리**로 읽히게 한다. 밝은 배경에
+    // 아이콘만 띄우면 라이브와 서브탭 사이에 떠 있는 무국적 조각이 된다.
+    return Container(
       key: barKey,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppStyles.spacing16,
-        vertical: AppStyles.spacing8,
+      color: AppTheme.liveSurface,
+      padding: const EdgeInsets.only(
+        left: AppStyles.spacing8,
+        right: AppStyles.spacing8,
+        top: AppStyles.spacing4,
+        bottom: AppStyles.spacing12,
       ),
       // 4개가 폭을 균등 분할한다. 자연 크기로 두면 라벨이 긴 언어·좁은 기기에서
       // Row가 넘친다(실제로 테스트에서 179px 오버플로로 잡혔다).
@@ -113,14 +119,15 @@ class _CompactControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    // 어두운 라이브 면 위에 놓이므로 테마 전경색을 쓰지 않는다.
+    // 켜짐은 흰색으로 또렷하게, 꺼짐은 반투명 흰색, 못 누르면 더 흐리게.
     final Color fg;
     if (!enabled) {
-      fg = Theme.of(context).disabledColor;
+      fg = Colors.white.withValues(alpha: 0.28);
     } else if (active) {
-      fg = scheme.primary;
+      fg = Colors.white;
     } else {
-      fg = scheme.onSurfaceVariant;
+      fg = Colors.white.withValues(alpha: 0.62);
     }
 
     return Expanded(

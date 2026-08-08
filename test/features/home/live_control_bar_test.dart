@@ -106,25 +106,24 @@ void main() {
   });
 
   group('상태 반영', () {
-    testWidgets('팬이 켜져 있으면 primary 색으로 강조된다', (tester) async {
+    testWidgets('팬이 켜져 있으면 흰색으로 또렷하게 — 어두운 라이브 면 기준',
+        (tester) async {
       await _pump(
         tester,
         mode: DeviceMode.integrated,
         telemetry: _reading(fan: ActuatorState.on),
       );
-      final ctx = tester.element(find.byKey(LiveControlBar.barKey));
-      final primary = Theme.of(ctx).colorScheme.primary;
+      // 이 바는 AppTheme.liveSurface(어두운 면) 위에 놓이므로 테마 primary를
+      // 쓰지 않는다 — 남색 위 남색은 보이지 않는다.
       final fan = tester.widget<Icon>(find.byIcon(Icons.mode_fan_off));
-      expect(fan.color, primary);
+      expect(fan.color, Colors.white);
     });
 
     testWidgets('텔레메트리가 없으면 강조하지 않는다 — 모르는 상태를 켜진 것처럼 칠하지 않는다',
         (tester) async {
       await _pump(tester, mode: DeviceMode.integrated, telemetry: null);
-      final ctx = tester.element(find.byKey(LiveControlBar.barKey));
-      final primary = Theme.of(ctx).colorScheme.primary;
       final fan = tester.widget<Icon>(find.byIcon(Icons.mode_fan_off));
-      expect(fan.color, isNot(primary));
+      expect(fan.color, isNot(Colors.white));
     });
 
     testWidgets('LED는 상태 telemetry가 없어 항상 비강조', (tester) async {
@@ -133,10 +132,8 @@ void main() {
         mode: DeviceMode.integrated,
         telemetry: _reading(fan: ActuatorState.on, heater: ActuatorState.on),
       );
-      final ctx = tester.element(find.byKey(LiveControlBar.barKey));
-      final primary = Theme.of(ctx).colorScheme.primary;
       final led = tester.widget<Icon>(find.byIcon(Icons.lightbulb_outline));
-      expect(led.color, isNot(primary));
+      expect(led.color, isNot(Colors.white));
     });
   });
 }

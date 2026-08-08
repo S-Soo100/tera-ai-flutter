@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../my_cage/presentation/my_cage_providers.dart';
 import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
 import '../../domain/enclosure_set.dart';
@@ -73,9 +74,15 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
     });
 
     if (sets.isEmpty) {
-      return AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Center(child: Text('home_no_set'.tr())),
+      return ColoredBox(
+        color: AppTheme.liveSurface,
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Center(
+            child: Text('home_no_set'.tr(),
+                style: const TextStyle(color: Colors.white70)),
+          ),
+        ),
       );
     }
 
@@ -91,33 +98,43 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
       });
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AspectRatio(
-          aspectRatio: 16 / 9,
-          child: PageView.builder(
-            key: TopFixedArea.pageViewKey,
-            controller: _controller,
-            itemCount: sets.length,
-            onPageChanged: (i) {
-              if (ref.read(selectedSetIndexProvider) == i) return;
-              ref.read(selectedSetIndexProvider.notifier).state = i;
-            },
-            itemBuilder: (_, i) => _SetPane(set: sets[i]),
-          ),
-        ),
-        if (sets.length > 1)
-          Padding(
-            key: TopFixedArea.indicatorKey,
-            padding: const EdgeInsets.only(top: AppStyles.spacing8),
-            child: _PageDots(
-              count: sets.length,
-              current:
-                  ref.watch(selectedSetIndexProvider).clamp(0, sets.length - 1),
+    // 라이브 영역은 **어두운 면 위**에 올린다. 밝은 배경에 두면 연결 전·오프라인
+    // 상태가 죽은 공백으로 보인다. 인디케이터도 이 면 안에 넣어 하나의 덩어리로
+    // 읽히게 한다 — 밖으로 빼면 라이브와 제어 바 사이에 떠 있는 조각이 된다.
+    return ColoredBox(
+      color: AppTheme.liveSurface,
+      child: Stack(
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: PageView.builder(
+              key: TopFixedArea.pageViewKey,
+              controller: _controller,
+              itemCount: sets.length,
+              onPageChanged: (i) {
+                if (ref.read(selectedSetIndexProvider) == i) return;
+                ref.read(selectedSetIndexProvider.notifier).state = i;
+              },
+              itemBuilder: (_, i) => _SetPane(set: sets[i]),
             ),
           ),
-      ],
+          if (sets.length > 1)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: AppStyles.spacing8,
+              child: Center(
+                key: TopFixedArea.indicatorKey,
+                child: _PageDots(
+                  count: sets.length,
+                  current: ref
+                      .watch(selectedSetIndexProvider)
+                      .clamp(0, sets.length - 1),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -277,6 +294,7 @@ class _LiveBadge extends StatelessWidget {
   }
 }
 
+/// 어두운 라이브 면 위에 놓이므로 색을 테마가 아니라 직접 정한다.
 class _PageDots extends StatelessWidget {
   const _PageDots({required this.count, required this.current});
 
@@ -295,9 +313,10 @@ class _PageDots extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 3),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
+              // 어두운 라이브 면 위라 테마 색을 쓰면 안 보인다.
               color: i == current
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).disabledColor,
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.35),
             ),
           ),
       ],

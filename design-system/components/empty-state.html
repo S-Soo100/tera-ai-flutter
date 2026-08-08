@@ -43,17 +43,19 @@ h1{font-size:18px;font-weight:600;letter-spacing:-.36px;margin:0 0 4px}
      font-size:11px;color:var(--text-body);line-height:1.7}
 .map code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px}
 </style>
-<h1>Chip</h1>
-<p class="sub">radius 16, 높이 32. <b>구조가 [카운트][라벨] 2요소다</b> — Figma 예시가 <code>3 움직임</code>, <code>0 탈피</code>. Enabled만 SemiBold이고 Default·Disabled는 Medium이다.</p>
-<style>
-.c{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:var(--r-chip);font-size:14px;letter-spacing:-.28px}
-.ce{background:var(--brand-navy);color:#fff;font-weight:600}
-.cd{background:#fff;color:var(--text-body);border:1px solid var(--line);font-weight:500}
-.cx{background:var(--surface-muted);color:#a9b4be;font-weight:500}
-</style>
-<p class="lab">단독</p>
-<div class="row"><span class="c ce">Chip</span><span class="c ce"><b>3</b> Chip</span><span class="c cd"><b>5</b> Chip</span><span class="c cx"><b>0</b> Chip</span></div>
-<p class="lab">묶음 — 타임라인 이벤트 필터</p>
-<div class="row" style="gap:8px"><span class="c ce"><b>3</b> 움직임</span><span class="c cd"><b>8</b> 장난감</span><span class="c cd"><b>5</b> 휴식</span><span class="c cd"><b>1</b> 식사</span><span class="c cx"><b>0</b> 탈피</span></div>
-<div class="map"><b>0건은 숨기지 않는다</b> · 비활성으로 남긴다. 없애면 &quot;지원 안 하는 기능&quot;으로 오해한다(기획안 §4.1.5).<br>
-<b>Flutter</b> · <code>FilterChip</code> + <code>timeline_date_scroller.dart</code>. 카운트 표기는 적용 완료.</div>
+<h1>EmptyState</h1>
+<p class="sub">데이터가 없을 때. <b>빈 화면은 고장으로 읽힌다</b> — 무엇이 없는지, 왜 없는지, 무엇을 할 수 있는지를 말한다.</p>
+<style>.es{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+padding:28px 16px;max-width:361px;border:1px dashed var(--line);border-radius:12px;text-align:center}
+.eh{font-size:14px;font-weight:600;color:var(--text-body)}
+.ed{font-size:12px;color:var(--text-muted);line-height:1.6}
+.ea{margin-top:8px;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;font-family:inherit;color:var(--text-body)}</style>
+<div class="es"><div class="eh">아직 기록된 온습도가 없어요</div>
+<div class="ed">사육장이 연결되면 자동으로 쌓입니다</div></div>
+<p class="lab" style="margin-top:20px">할 수 있는 일이 있으면 버튼을 준다</p>
+<div class="es"><div class="eh">연결된 사육장이 없어요</div>
+<div class="ed">사육장을 등록하면 온습도와 제어를 쓸 수 있어요</div>
+<button class="ea">사육장 추가</button></div>
+<div class="map"><b>지금 앱은 맨 텍스트다</b> · <code>표시할 데이터가 없어요</code> 한 줄이 132px 차트 자리 한가운데 떠 있어 화면 1/4이 빈칸으로 보인다.<br>
+<b>문구 규칙</b> · 시스템이 아니라 사용자 쪽에서 쓴다. <code>표시할 데이터가 없어요</code>(시스템) → <code>아직 기록된 온습도가 없어요</code>(사용자).<br>
+<b>Flutter</b> · 신규 <code>shared/widgets/empty_state.dart</code></div>
