@@ -58,7 +58,12 @@ class TimelineDateScroller extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(right: AppStyles.spacing8),
                   child: FilterChip(
-                    label: Text('home_filter_${f.name}'.tr()),
+                    // Figma Asset의 Chip은 `[카운트] [라벨]` 2요소다
+                    // (`3 움직임`, `0 탈피`). 0건도 숨기지 않는다 — "없다"는
+                    // 사실 자체가 정보이고, PRD §3.5의 비활성 규칙과도 맞는다.
+                    label: Text(
+                      '${counts[f] ?? 0} ${'home_filter_${f.name}'.tr()}',
+                    ),
                     selected: selected == f,
                     // 0건이어도 칩을 없애지 않는다 — 없애면 "지원 안 하는 기능"
                     // 으로 오해한다. 비활성으로 남긴다(PRD §3.5).
