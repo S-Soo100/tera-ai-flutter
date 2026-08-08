@@ -11,7 +11,7 @@ Figma `Asset` 섹션 규격 + 이번 시각 방향에서 나온 패턴을 **HTML
 | 그룹 | 카드 |
 |---|---|
 | Foundations | 컬러 · 타이포그래피 · 밤 띠 규칙 |
-| Components | **ScreenHeader** · **StatusBadge** · **LiveSurface** · **EmptyState** · Button · Chip · Tag · Toast · Tabs |
+| Components | **ScreenHeader** · **AccountAvatar** · **StatusBadge** · **LiveSurface** · **EmptyState** · Button · Chip · Tag · Toast · Tabs |
 | Patterns | Readout · Night Chart · **StatRow** · Control Tile |
 
 각 카드 하단에 대응 Flutter 파일과 **적용 여부(✅)** 를 적는다.

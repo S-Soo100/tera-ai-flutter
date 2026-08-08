@@ -41,22 +41,27 @@ class ScreenHeader extends StatelessWidget {
     final label = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 제목은 Flexible로 감싸지 않는다. 보조와 나란히 Flexible을 두면 둘이
-        // 남는 폭을 나눠 갖느라 **주인공까지 같이 깎인다**(`크랑이` → `크...`).
-        // 폭이 모자라면 보조부터 줄고, 제목은 마지막까지 버틴다.
-        Text(
-          title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.36,
+        // **폭이 모자라면 보조부터 줄고 제목은 마지막까지 버틴다.**
+        // 둘에 같은 flex를 주면 주인공까지 같이 깎이고(`크랑이` → `크...`),
+        // 제목을 아예 안 감싸면 이름이 긴 개체에서 Row가 넘친다. 2:1로 나눠
+        // 제목에 우선권을 준다 — 둘 다 짧으면 각자 실제 폭만 쓴다.
+        Flexible(
+          flex: 2,
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.36,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
         if (subtitle != null) ...[
           const SizedBox(width: AppStyles.spacing4),
           Flexible(
+            flex: 1,
             child: Text(
               subtitle!,
               style: theme.textTheme.bodySmall
@@ -81,22 +86,28 @@ class ScreenHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Flexible(
-            child: onPick == null
-                ? label
-                : InkWell(
-                    onTap: onPick,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppStyles.spacing8,
-                        vertical: AppStyles.spacing4,
+          // `Flexible` + `Spacer`로 두지 않는다. 둘 다 flex라 남은 폭을 반씩
+          // 나눠 갖고, 액션이 하나 늘면 라벨 몫이 부족해져 **보조가 통째로
+          // 사라진다**(아바타를 붙이자 `테스트`가 없어졌다).
+          // Expanded로 라벨이 남은 폭을 전부 갖고, Align이 실제 폭만 쓰게 한다.
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: onPick == null
+                  ? label
+                  : InkWell(
+                      onTap: onPick,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppStyles.spacing8,
+                          vertical: AppStyles.spacing4,
+                        ),
+                        child: label,
                       ),
-                      child: label,
                     ),
-                  ),
+            ),
           ),
-          const Spacer(),
           ...actions,
         ],
       ),

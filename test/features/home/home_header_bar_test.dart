@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tera_ai/features/home/domain/enclosure_set.dart';
 import 'package:tera_ai/features/home/presentation/home_set_providers.dart';
 import 'package:tera_ai/features/home/presentation/widgets/home_header_bar.dart';
 import 'package:tera_ai/features/my_cage/domain/enclosure.dart';
 import 'package:tera_ai/features/my_pets/domain/pet.dart';
+import 'package:tera_ai/features/profile/domain/user_profile.dart';
+import 'package:tera_ai/features/profile/presentation/profile_providers.dart';
+import 'package:tera_ai/shared/widgets/account_avatar.dart';
 
 EnclosureSet _set(String id, String encName, {String? petName}) => EnclosureSet(
       enclosure:
@@ -22,28 +26,67 @@ EnclosureSet _set(String id, String encName, {String? petName}) => EnclosureSet(
             ),
     );
 
-ProviderContainer _makeContainer(List<EnclosureSet> sets, int unread) =>
+ProviderContainer _makeContainer(
+  List<EnclosureSet> sets,
+  int unread,
+  UserProfile? profile,
+) =>
     ProviderContainer(overrides: [
       enclosureSetsProvider.overrideWith((ref) async => sets),
       unreadNotificationCountProvider.overrideWith((ref) => unread),
+      profileNotifierProvider.overrideWith(() => _StubProfile(profile)),
     ]);
+
+class _StubProfile extends ProfileNotifier {
+  _StubProfile(this._profile);
+  final UserProfile? _profile;
+  @override
+  Future<UserProfile?> build() async => _profile;
+}
+
+UserProfile _profile({String? name, String? avatar}) => UserProfile(
+      id: 'u1',
+      displayName: name,
+      avatarUrl: avatar,
+      timezone: 'Asia/Seoul',
+      preferredSpecies: const [],
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+    );
 
 Future<ProviderContainer> _pump(
   WidgetTester tester,
   List<EnclosureSet> sets, {
   int unread = 0,
+  UserProfile? profile,
 }) async {
-  final c = _makeContainer(sets, unread);
+  final c = _makeContainer(sets, unread, profile);
   addTearDown(c.dispose);
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: c,
-      child: const MaterialApp(home: Scaffold(body: HomeHeaderBar())),
+      child: MaterialApp.router(routerConfig: _router()),
     ),
   );
   await tester.pumpAndSettle();
   return c;
 }
+
+/// 아바타 탭이 라우팅이라 GoRouter가 필요하다. 실제 앱과 같은 경로를 쓴다 —
+/// 경로가 어긋나면 여기서 잡힌다.
+GoRouter _router() => GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, __) => const Scaffold(body: HomeHeaderBar()),
+        ),
+        GoRoute(
+          path: '/profile',
+          builder: (_, __) =>
+              const Scaffold(body: Center(child: Text('profile-screen'))),
+        ),
+      ],
+    );
 
 void main() {
   testWidgets('현재 세트 라벨을 보여준다', (tester) async {
@@ -89,5 +132,52 @@ void main() {
   testWidgets('세트가 없으면 빈 라벨로 죽지 않는다', (tester) async {
     await _pump(tester, const []);
     expect(find.byType(HomeHeaderBar), findsOneWidget);
+  });
+
+  group('내 계정 아바타', () {
+    testWidgets('탭하면 프로필 화면으로 간다 — 여기가 계정으로 가는 유일한 문이다',
+        (tester) async {
+      await _pump(tester, [_set('e1', 'A')], profile: _profile(name: '수'));
+      await tester.tap(find.byKey(HomeHeaderBar.accountAvatarKey));
+      await tester.pumpAndSettle();
+      expect(find.text('profile-screen'), findsOneWidget);
+    });
+
+    testWidgets('프로필이 아직 없어도 아바타는 그린다 — 감추면 로그아웃이 잠긴다',
+        (tester) async {
+      await _pump(tester, [_set('e1', 'A')], profile: null);
+      expect(find.byKey(HomeHeaderBar.accountAvatarKey), findsOneWidget);
+      expect(find.byIcon(Icons.person), findsOneWidget);
+    });
+
+    testWidgets('사진이 없으면 표시명 첫 글자로 떨어진다', (tester) async {
+      await _pump(tester, [_set('e1', 'A')], profile: _profile(name: '수정'));
+      expect(find.text('수'), findsOneWidget);
+    });
+
+    testWidgets('알림 점을 달지 않는다 — 옆의 🔔과 경쟁시키지 않는다', (tester) async {
+      await _pump(tester, [_set('e1', 'A')],
+          unread: 3, profile: _profile(name: '수'));
+      // Red Dot은 🔔에만 하나.
+      expect(find.byKey(HomeHeaderBar.redDotKey), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(HomeHeaderBar.accountAvatarKey),
+          matching: find.byKey(HomeHeaderBar.redDotKey),
+        ),
+        findsNothing,
+      );
+    });
+  });
+
+  group('AccountAvatar.initialOf', () {
+    test('한글은 그대로', () => expect(AccountAvatar.initialOf('수정'), '수'));
+    test('영문은 대문자', () => expect(AccountAvatar.initialOf('seung'), 'S'));
+    test('앞뒤 공백을 무시한다',
+        () => expect(AccountAvatar.initialOf('  베  '), '베'));
+    test('비어 있으면 null — 아이콘으로 떨어진다', () {
+      expect(AccountAvatar.initialOf(null), isNull);
+      expect(AccountAvatar.initialOf('   '), isNull);
+    });
   });
 }
