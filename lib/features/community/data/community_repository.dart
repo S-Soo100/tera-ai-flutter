@@ -1,57 +1,16 @@
 import '../domain/community_post.dart';
 
+/// 커뮤니티 게시글 저장소.
+///
+/// **아직 저장소가 없다.** Supabase에 커뮤니티 계열 테이블이 하나도 없어
+/// (2026-08-08 확인) 읽을 곳도 쓸 곳도 없다. 테이블 + RLS 마이그레이션이
+/// 선행돼야 하며, 공유 프로덕션 DB 스키마 변경이라 임의로 만들지 않는다.
+///
+/// ⚠️ **가짜 글을 채워 넣지 말 것.** 예전엔 지어낸 제목·작성자·댓글 수를
+/// 5건 넣어뒀는데(`_seedPosts`), 화면은 그럴듯했지만 **사용자에게는 실재하는
+/// 커뮤니티로 보였다.** 없는 것은 없다고 말하는 편이 낫다 — 화면은
+/// `PendingSection`으로 무엇이 준비 중인지 밝힌다.
 class CommunityRepository {
-  List<CommunityPost> _seedPosts() {
-    final now = DateTime.now();
-    return [
-      CommunityPost(
-        id: 'p1',
-        category: CommunityCategory.qna,
-        title: '베이비 슈푸 거부하는데 팁 있을까요?',
-        authorName: '초보집사',
-        createdAt: now.subtract(const Duration(minutes: 10)),
-        commentCount: 5,
-      ),
-      CommunityPost(
-        id: 'p2',
-        category: CommunityCategory.qna,
-        title: 'MBD 초기 증상인지 봐주세요 ㅠㅠ',
-        authorName: '도리도리',
-        createdAt: now.subtract(const Duration(hours: 1)),
-        commentCount: 12,
-      ),
-      CommunityPost(
-        id: 'p3',
-        category: CommunityCategory.wiki,
-        title: '적정 습도 유지하는 방법 총정리',
-        authorName: '고인물',
-        createdAt: now.subtract(const Duration(hours: 3)),
-        commentCount: 24,
-      ),
-      CommunityPost(
-        id: 'p4',
-        category: CommunityCategory.notice,
-        title: '커뮤니티 이용 규칙 안내',
-        authorName: '운영자',
-        createdAt: now.subtract(const Duration(days: 2)),
-        commentCount: 0,
-      ),
-      CommunityPost(
-        id: 'p5',
-        category: CommunityCategory.free,
-        title: '오늘 크레 처음으로 점프했어요',
-        authorName: '찰떡맘',
-        createdAt: now.subtract(const Duration(hours: 6)),
-        commentCount: 3,
-      ),
-    ];
-  }
-
-  List<CommunityPost> getPosts({CommunityCategory? category}) {
-    final posts = _seedPosts();
-    if (category == null || category == CommunityCategory.all) {
-      return posts;
-    }
-    return posts.where((p) => p.category == category).toList();
-  }
+  /// 테이블이 생기기 전까지 항상 비어 있다.
+  List<CommunityPost> getPosts({CommunityCategory? category}) => const [];
 }

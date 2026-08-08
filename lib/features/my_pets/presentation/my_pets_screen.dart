@@ -3,11 +3,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_styles.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/account_avatar.dart';
+import '../../../shared/widgets/screen_header.dart';
 import '../../my_cage/presentation/nightly_report_view.dart';
+import '../../profile/presentation/profile_providers.dart';
 import '../domain/pet.dart';
 import 'my_pets_providers.dart';
 
@@ -36,38 +39,43 @@ class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
       });
     }
 
+    final profile = ref.watch(profileNotifierProvider).valueOrNull;
+
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        title: Text(
-          'my_pets_title'.tr(),
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 홈·통계와 같은 헤더를 쓴다. 탭마다 제목 스타일이 다르면
+            // 탭을 옮길 때마다 다른 앱처럼 보인다.
+            ScreenHeader(
+              title: 'my_pets_title'.tr(),
+              actions: [
+                HeaderAction(
+                  icon: Icons.add,
+                  tooltip: 'my_pets_add'.tr(),
+                  onPressed: () => context.push('/my-pets/add'),
+                ),
+                AccountAvatar(
+                  tooltip: 'home_account'.tr(),
+                  imageUrl: profile?.avatarUrl,
+                  displayName: profile?.displayName,
+                  onPressed: () => context.push('/profile'),
+                ),
+              ],
+            ),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
+              child: _TabChips(
+                selected: _selected,
+                onChanged: (t) => setState(() => _selected = t),
               ),
+            ),
+            const SizedBox(height: AppStyles.spacing16),
+            Expanded(child: _tabContent(_selected, pets)),
+          ],
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: _CircleAddButton(
-              onTap: () => context.push('/my-pets/add'),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _TabChips(
-              selected: _selected,
-              onChanged: (t) => setState(() => _selected = t),
-            ),
-          ),
-          const SizedBox(height: AppStyles.spacing16),
-          Expanded(child: _tabContent(_selected, pets)),
-        ],
       ),
     );
   }
@@ -82,8 +90,13 @@ class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
   }
 }
 
-// ── 상단 칩 탭 ────────────────────────────────────────────────────────────────
+// ── 상단 뷰 전환 ──────────────────────────────────────────────────────────────
 
+/// `[개체 목록] [리포트]`.
+///
+/// 통계 탭의 기간 선택과 **같은 컨트롤**을 쓴다. 예전엔 초록 알약 칩이었는데,
+/// 그 초록은 폐기된 옛 브랜드색(`AppTheme.success`)이라 이제는 "정상" 의미색과
+/// 충돌했다 — 상태가 아니라 선택을 뜻하는 자리다.
 class _TabChips extends StatelessWidget {
   const _TabChips({required this.selected, required this.onChanged});
 
@@ -92,89 +105,16 @@ class _TabChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      (_MyPetsTab.list, 'my_pets_tab_list'.tr()),
-      (_MyPetsTab.report, 'my_pets_tab_report'.tr()),
-    ];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: items.map((entry) {
-          final (tab, label) = entry;
-          final isSelected = selected == tab;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _Chip(
-              label: label,
-              selected: isSelected,
-              onTap: () => onChanged(tab),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    const greenColor = AppTheme.success;
-    final bg = selected
-        ? greenColor
-        : Theme.of(context).colorScheme.surfaceContainerHigh;
-    final fg = selected
-        ? Colors.white
-        : Theme.of(context).colorScheme.onSurfaceVariant;
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: fg,
-            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CircleAddButton extends StatelessWidget {
-  const _CircleAddButton({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: const SizedBox(
-          width: 40,
-          height: 40,
-          child: Icon(Icons.add, size: 20),
-        ),
-      ),
+    return SegmentedButton<_MyPetsTab>(
+      segments: [
+        ButtonSegment(
+            value: _MyPetsTab.list, label: Text('my_pets_tab_list'.tr())),
+        ButtonSegment(
+            value: _MyPetsTab.report, label: Text('my_pets_tab_report'.tr())),
+      ],
+      selected: {selected},
+      showSelectedIcon: false,
+      onSelectionChanged: (s) => onChanged(s.first),
     );
   }
 }
@@ -362,8 +302,10 @@ class _SexBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     if (sex == 'unknown') return const SizedBox.shrink();
     final isMale = sex == 'male';
-    final color = isMale ? const Color(0xFFE91E63) : const Color(0xFFE91E63);
-    final bg = const Color(0xFFFCE4EC);
+    // 예전엔 `isMale ? 분홍 : 분홍`이라 **암수가 같은 색**이었다 — 배지가
+    // 구분을 못 하고 있었다. 팔레트에 없는 하드코딩 색이기도 했다.
+    final color = isMale ? AppTheme.subBlue : AppTheme.subRed;
+    final bg = isMale ? AppTheme.subBlueBg : AppTheme.subRedBg;
     final label = isMale ? 'pet_sex_male'.tr() : 'pet_sex_female'.tr();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

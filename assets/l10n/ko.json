@@ -223,9 +223,6 @@
   "telemetry_value_none": "—",
   "community_title": "커뮤니티",
   "community_placeholder": "커뮤니티 화면 준비 중입니다",
-  "community_empty": "게시글이 없어요",
-  "community_new_post": "새 글 쓰기",
-  "community_new_post_coming_soon": "글쓰기 기능은 준비 중입니다",
   "community_cat_all": "전체",
   "community_cat_notice": "공지사항",
   "community_cat_wiki": "사육위키",
@@ -588,5 +585,11 @@
   "stats_reason_hw": "기기 제어 개발 후",
   "stats_reason_vision": "영상 행동 분석 연동 후",
   "stats_reason_data": "데이터가 쌓인 후",
-  "stats_no_data_desc": "사육장이 연결되면 자동으로 쌓입니다"
+  "stats_no_data_desc": "사육장이 연결되면 자동으로 쌓입니다",
+  "community_board_title": "게시판",
+  "community_pending_all": "공지·QnA·자유 게시판이 열릴 자리예요",
+  "community_pending_notice": "운영 소식과 안내를 올릴 자리예요",
+  "community_pending_qna": "사육하다 막힌 걸 묻고 답하는 자리예요",
+  "community_pending_free": "우리 애 자랑과 잡담을 나누는 자리예요",
+  "community_pending_reason": "게시판 서버 연동 후"
 }
