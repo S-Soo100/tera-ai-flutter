@@ -48,7 +48,11 @@ Future<ProviderContainer> _pump(
 void main() {
   testWidgets('현재 세트 라벨을 보여준다', (tester) async {
     await _pump(tester, [_set('e1', '1번 사육장', petName: '젤리')]);
-    expect(find.text('젤리 (1번 사육장)'), findsOneWidget);
+    // 개체명과 사육장명을 **한 덩어리로 합치지 않는다** — 뭐가 주인공인지
+    // 읽는 사람이 매번 판단하게 만들지 않기 위함.
+    expect(find.text('젤리'), findsOneWidget);
+    expect(find.text('1번 사육장'), findsOneWidget);
+    expect(find.text('젤리 (1번 사육장)'), findsNothing);
   });
 
   testWidgets('세트가 1개면 드롭다운 화살표 비노출 (PRD §3.1 예외)', (tester) async {
