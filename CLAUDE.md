@@ -3,9 +3,10 @@
 ## 프로젝트 개요
 파충류 사육자를 위한 올인원 앱. 백색목록 검색, 사육 정보, 모프 유전 계산기 + 게코캠 + 사육장 IoT 제어.
 - **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브) + video_player/gal/share_plus(크레캠 영상 재생·기기저장·공유) + chart_sparkline(홈 미니 차트) + fl_chart(통계 탭 24h 차트)
-- **현재 상태(2026-08-08)**: P2 상당 구현 — Supabase 인증/유저 CRUD + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE) + **크레캠 영상 개편**(motion_clips 썸네일·저장/공유·즐겨찾기 클라우드·AI분류칩·시크) + **어젯밤 리포트**(마이 크레 탭). **PRD 재설계 진행 중(`feat/prd-redesign`)** — 4탭 IA(홈/통계/마이크레/커뮤니티) + 홈 탭 재구성(사육장 세트·서브탭) + 통계 탭 24h 그래프 구현 완료. 챗·지식그래프·종비교는 폐기(D3).
+- **현재 상태(2026-08-09)**: P2 상당 구현 — Supabase 인증/유저 CRUD + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE) + **크레캠 영상 개편**(motion_clips 썸네일·저장/공유·즐겨찾기 클라우드·AI분류칩·시크) + **어젯밤 리포트**(마이 크레 탭). **PRD 재설계 진행 중(`feat/prd-redesign`)** — 4탭 IA(홈/통계/마이크레/커뮤니티) + 홈 탭 재구성(사육장 세트·서브탭) + 통계 탭 24h 그래프 구현 완료. 챗·지식그래프·종비교는 폐기(D3).
   - (P0 "로컬 전용/인증 없음/백엔드 없음"은 초기 설계 — 더 이상 유효하지 않음. 신규 작업은 아래 Phase 경계/CAOF 규칙을 따른다.)
 - **기획안 (현행 SOT)**: `docs/prd-vivanart-app.md` — **2026-08-08 전면 재작성.** 기존 구현을 전제하지 않고 노션 기획서·PRD만으로 정리한 기획안이다. **구현이 기획안과 다르면 기획안이 맞다.**
+  - **기획 ↔ 구현 대조표**: `docs/prd-implementation-gap.md` — 어디가 맞고 어디가 비었는지. 기획안 본문은 구현을 안 다루므로(§0.2) 대조는 이 문서가 맡는다
   - 원문 전사본 + 구 결정 로그 D1~D6: `docs/archive-prd-transcript-and-decisions.md` (보관용, **신규 작업의 근거로 쓰지 말 것**)
   - `docs/spec.md`는 구 기획서(5탭 시절) 열람용.
 - **기획 원문 (Notion)**: https://app.notion.com/p/3ab16a5cfa948082864ec59be6b6f532?source=copy_link — **브라우저로 바로 열린다(로그인 불필요).** Notion MCP 인증을 기다릴 필요 없음
@@ -28,7 +29,7 @@
 | P1 | OnboardingScreen, ProfileScreen(내 사육장), 로컬 알림(D-day 리마인더), en 다국어, Pretendard 폰트 | 부분 (알림/en 미완) |
 | P2 | Supabase 도입, 인증(이메일+소셜), 클라우드 동기화, FCM 푸시, 거래 기록 | 상당 구현 (Email 인증·유저 CRUD 완료, 소셜/FCM 후속) |
 | C/D | 게코캠 클라우드 마이그레이션(petcam-lab) + 5탭 UI 개편 + **사육장 IoT(terra-server)** | 진행 중 — `docs/flutter-cloud-migration-plan.md` |
-| PRD 재설계 | 비바나트 4탭 IA — 홈·통계 구현, 컬러 시스템 교체 | ⚠️ **2026-08-08 기획 리셋.** 구현 디자인이 기획 의도를 못 맞춰 기획안을 새로 썼다(`docs/prd-vivanart-app.md`). 기존 구현은 **재검토 대상**이고, 신규 작업은 새 기획안을 따른다. **1:N은 1:1로 확정**(§1.3, 2026-08-08). **활동 집계는 밤 22:00~06:00, 날짜 경계는 07:00**(§3.1). 착수 전 남은 미결: 클립 재생 방식(§6-B), 통계 탭 확정(§6-D) |
+| PRD 재설계 | 비바나트 4탭 IA — 홈·통계 구현, 컬러 시스템 교체 | ⚠️ **2026-08-08 기획 리셋.** 구현 디자인이 기획 의도를 못 맞춰 기획안을 새로 썼다(`docs/prd-vivanart-app.md`). 기존 구현은 **재검토 대상**이고, 신규 작업은 새 기획안을 따른다. **1:N은 1:1로 확정**(§1.3). **활동 집계는 밤 22:00~06:00, 날짜 경계는 07:00**(§3.1). **클립 재생은 전체화면 가로**(§6-B, 2026-08-09). 남은 미결: 통계 탭 확정(§6-D), 캠 보면서 제어 재설계(§6-N), 계정 화면 진입점(§6-O). **큰 공백: §4.2 타이머&일정이 통째로 미구현** — 대조표 `docs/prd-implementation-gap.md` |
 
 ## 아키텍처
 

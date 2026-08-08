@@ -48,8 +48,8 @@ h1{font-size:18px;font-weight:600;letter-spacing:-.36px;margin:0 0 4px}
 <style>.ro{display:flex;gap:0}.rc{flex:1}
 .rl{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-muted);margin-bottom:4px}
 .dot{width:8px;height:8px;border-radius:50%}
-.rv{font-size:48px;font-weight:700;letter-spacing:-1.5px;line-height:1.1;font-variant-numeric:tabular-nums}
-.ru{font-size:20px;font-weight:600;color:var(--text-muted)}
+.rv{font-size:34px;font-weight:700;letter-spacing:-1px;line-height:1.1;font-variant-numeric:tabular-nums}
+.ru{font-size:16px;font-weight:600;color:var(--text-muted)}
 .rr{font-size:12px;color:var(--text-muted);margin-top:2px}</style>
 <div class="ro" style="max-width:361px">
 <div class="rc"><div class="rl"><span class="dot" style="background:var(--chart-temp)"></span>온도</div>
@@ -64,5 +64,6 @@ h1{font-size:18px;font-weight:600;letter-spacing:-.36px;margin:0 0 4px}
 </div>
 <div class="map"><b>지표색은 숫자가 아니라 점에만</b> · 숫자를 칠하면 값에 따라 색이 변하는 것처럼 오해된다. 아래 차트 선 색과 이어지는 연결고리만 있으면 충분하다.<br>
 <b>0을 쓰지 않는 이유</b> · <code>telemetry_30m</code>의 0은 센서 오프라인 센티넬이지 실측이 아니다.<br>
-<b>미해결(스크린샷 검토)</b> · ① <code>26.9 / 22.5</code>가 무슨 숫자인지 라벨이 없다 ② 습도가 화면 중앙에 붙어 좌우 여백이 비대칭이다.<br>
+<b>크기 34px</b> · 화면에서 가장 큰 글자를 유지하되 지배하지는 않는다. 48px까지 키웠더니 두 값이 폭을 다 먹고 아래 차트를 밀어냈다(2026-08-09 축소).<br>
+<b>미해결</b> · 안심존 배지가 안 뜬다 — 컴포넌트·배선은 됐고 <code>currentSpeciesComfortProvider</code>가 null이라 침묵 중. <b>모르면 안 그리는 게 설계</b>지만, 32.2°에 경고가 없는 상태가 이어진다.<br>
 <b>Flutter</b> · <code>live_env_card.dart</code></div>
