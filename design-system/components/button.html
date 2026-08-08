@@ -1,0 +1,64 @@
+<!-- @dsCard group="Components" -->
+<style>
+/* 비바나트 디자인 토큰 — 출처: Figma `Final Design` > Asset 섹션
+   docs/figma-final-design-transcript.md §4.1 / Flutter: lib/core/theme/app_theme.dart */
+:root{
+  --brand-navy:#192553;      /* 메인컬러 */
+  --brand-red:#d61619;       /* 브랜드컬러 — 용도 미정 */
+  --disabled:#9da3ba;        /* Disabled 용 */
+  --cool-gray:#a9b3be;       /* 쿨그레이 */
+  --text-title:#1e1e1e;
+  --text-body:#3c3c3c;
+  --text-muted:#919497;
+  --line:#e1e3e4;
+  --surface-muted:#eaeef0;
+  --white:#ffffff;
+
+  --sub-blue-bg:#e5eeff;   --sub-blue:#0069f1;
+  --sub-green-bg:#dff9ee;  --sub-green:#27c37a;
+  --sub-purple-bg:#f4f0ff; --sub-purple:#996bff;
+  --sub-red-bg:#fff0f0;    --sub-red:#f94245;
+  --sub-gray-bg:#eaeef0;   --sub-gray:#3c3c3c;
+
+  --chart-temp:#ff3752;
+  --chart-humid:#8abcfc;
+  --night-band:rgba(25,37,83,.06);
+
+  --r-btn:8px; --r-pill:22px; --r-chip:16px; --r-tag:12px; --r-card:16px;
+  --s4:4px; --s8:8px; --s12:12px; --s16:16px; --s24:24px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;padding:24px;background:var(--white);color:var(--text-title);
+  font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+h1{font-size:18px;font-weight:600;letter-spacing:-.36px;margin:0 0 4px}
+.sub{font-size:12px;color:var(--text-muted);margin:0 0 20px;line-height:1.5}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.stack{display:flex;flex-direction:column;gap:8px}
+.lab{font-size:11px;color:var(--text-muted);margin-bottom:6px}
+.map{margin-top:20px;padding:12px;background:var(--surface-muted);border-radius:8px;
+     font-size:11px;color:var(--text-body);line-height:1.7}
+.map code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px}
+</style>
+<h1>Button</h1>
+<p class="sub">높이 3종(S 28 / M 32 / L 44), radius 8. <b>L에만 pill(22) 변형이 따로 있다.</b> 아이콘 동반 변형이 사이즈마다 별도로 존재하며 아이콘은 S·M 18px, L 24px.</p>
+<style>
+.b{display:inline-flex;align-items:center;gap:6px;border:0;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:-.28px;border-radius:var(--r-btn)}
+.s{height:28px;padding:0 12px;font-size:14px}.m{height:32px;padding:0 12px;font-size:14px}.l{height:44px;padding:0 16px;font-size:16px;letter-spacing:-.32px}
+.pri{background:var(--brand-navy);color:#fff}.pri[disabled]{background:var(--disabled);color:#fff;cursor:default}
+.out{background:#fff;color:var(--text-body);border:1px solid var(--line)}.out[disabled]{color:var(--cool-gray);cursor:default}
+.pill{border-radius:var(--r-pill)}
+.ico{width:1em;height:1em;border-radius:2px;background:currentColor;opacity:.9}
+</style>
+<p class="lab">Primary — 채움</p>
+<div class="row"><button class="b s pri">버튼S</button><button class="b m pri">버튼M</button><button class="b l pri">버튼L</button><button class="b l pri pill">버튼L</button></div>
+<div class="row"><button class="b s pri"><i class="ico"></i>버튼S</button><button class="b m pri"><i class="ico"></i>버튼M</button><button class="b l pri"><i class="ico"></i>버튼L</button></div>
+<p class="lab">Primary — Disabled</p>
+<div class="row"><button class="b s pri" disabled>버튼S</button><button class="b m pri" disabled>버튼M</button><button class="b l pri" disabled>버튼L</button><button class="b l pri pill" disabled>버튼L</button></div>
+<p class="lab">Outlined</p>
+<div class="row"><button class="b s out">버튼S</button><button class="b m out">버튼M</button><button class="b l out">버튼L</button><button class="b l out pill">버튼L</button></div>
+<div class="row"><button class="b s out" disabled>버튼S</button><button class="b m out" disabled>버튼M</button><button class="b l out" disabled>버튼L</button></div>
+<div class="map"><b>Flutter</b> · Primary=<code>FilledButton</code>(theme의 <code>filledButtonTheme</code>이 이미 brandNavy/disabled 반영), Outlined=<code>OutlinedButton</code>.<br>
+<b>미정</b> · hover·pressed 상태가 Figma에 없다. 모바일이라 우선순위는 낮지만 pressed 피드백은 정해야 한다.</div>
