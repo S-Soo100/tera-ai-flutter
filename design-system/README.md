@@ -11,8 +11,10 @@ Figma `Asset` 섹션 규격 + 이번 시각 방향에서 나온 패턴을 **HTML
 | 그룹 | 카드 |
 |---|---|
 | Foundations | 컬러 · 타이포그래피 · 밤 띠 규칙 |
-| Components | Button · Chip · Tag · Toast · Tabs |
-| Patterns | Readout · Night Chart · Control Tile |
+| Components | **ScreenHeader** · **StatusBadge** · **LiveSurface** · **EmptyState** · Button · Chip · Tag · Toast · Tabs |
+| Patterns | Readout · Night Chart · **StatRow** · Control Tile |
+
+각 카드 하단에 대응 Flutter 파일과 **적용 여부(✅)** 를 적는다.
 
 ## ⚠️ 진실이 둘이라는 것
 
@@ -26,12 +28,26 @@ Figma `Asset` 섹션 규격 + 이번 시각 방향에서 나온 패턴을 **HTML
 ## 갱신 방법
 
 ```bash
-# 1. HTML 수정
-# 2. claude.ai/design에 반영 — DesignSync finalize_plan → write_files
+python3 sync-tokens.py      # 토큰을 전 카드에 주입 (필수)
 ```
 
-`_tokens.css`는 카드마다 인라인으로 복사돼 들어간다(카드가 개별 렌더되므로).
-토큰을 바꾸면 **모든 카드를 다시 써야 한다.**
+그다음 `DesignSync` → `finalize_plan` → `write_files`로 claude.ai/design에 올린다.
+로컬 미리보기는 `python3 -m http.server` 후 `index.html`.
+
+**`_tokens.css`는 카드마다 인라인으로 복사돼 들어간다**(카드가 개별 렌더되므로).
+토큰을 바꾸면 전 카드를 다시 써야 하는데 손으로 하면 반드시 빠뜨린다 —
+실제로 `--warn-bg` 추가가 8장에 누락됐다. 그래서 `sync-tokens.py`가 있다.
+
+## ⚠️ 드리프트가 실제로 일어난다
+
+C안(HTML 우선)의 비용이다. 2026-08-09 최신화에서 발견된 것:
+
+- **StatRow가 균등 분할로 그려져 있었다** — Flutter는 이미 자연 폭 + 가로 스크롤이었다.
+  HTML만 보고 구현했으면 옆 칸 침범 버그를 그대로 재현했을 것이다
+- 4개 카드가 *"지금 앱은 ~다"* 로 **이미 고쳐진 문제**를 현재형으로 서술하고 있었다
+- `night-band-rule.html`이 로컬 `patterns/`, 원격 `foundations/`로 **경로가 갈려 있었다**
+
+**Flutter를 고치면 같은 커밋에서 카드도 고친다.** 미루면 카드가 거짓말을 시작한다.
 
 ## 카드에 적힌 미해결 항목
 

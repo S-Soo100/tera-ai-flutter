@@ -89,6 +89,6 @@ h1{font-size:18px;font-weight:600;letter-spacing:-.36px;margin:0 0 4px}
 <div class="map"><b>개체명과 사육장명의 위계를 나눈다</b> · 지금 앱은 <code>크랑이 (테스트)</code> 한 덩어리라 뭐가 주인공인지 모른다. 개체가 주인공이고 사육장은 어디인지 알려주는 보조다.<br>
 <b>세트가 1개면 선택기가 아니다</b> · 화살표를 숨기는 데 그치지 말고 눌리는 느낌 자체를 없앤다(기획안 §4.1.1 예외).<br>
 <b>⚠️ 시트에 상태를 붙인다</b> · 세트를 고르는 이유는 대개 &quot;어디가 문제인지&quot;다. 이름만 보여주면 열어봐야 안다.<br>
-<b>Red Dot은 시스템 색</b> · 현재 앱은 <code>Colors.red</code> 하드코딩이다. <code>--sub-red</code>를 쓴다.<br>
+<b>Red Dot은 시스템 색</b> · 이전에는 <code>Colors.red</code> 하드코딩이었다. <code>--sub-red</code>를 쓴다.<br><b>⚠️ 제목에 Flexible을 걸지 않는다</b> · 제목과 보조를 나란히 Flexible로 두면 둘이 남는 폭을 나눠 갖느라 <b>주인공까지 깎인다</b>(실기기에서 <code>크랑이</code>가 <code>크...</code>로 잘렸다). 폭이 모자라면 <b>보조부터</b> 줄고 제목은 마지막까지 버틴다.<br>
 <b>통계 탭도 같은 헤더를 요구한다</b>(기획안 §4.3.1) — 홈 전용으로 두지 않는다.<br>
-<b>Flutter</b> · 신규 <code>shared/widgets/screen_header.dart</code> · 현재 <code>home_header_bar.dart</code>가 이걸로 조립된다</div>
+<b>Flutter</b> · <code>shared/widgets/screen_header.dart</code> ✅ 적용됨 · <code>home_header_bar.dart</code>가 조립</div>

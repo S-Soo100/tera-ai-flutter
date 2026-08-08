@@ -64,4 +64,4 @@ h1{font-size:18px;font-weight:600;letter-spacing:-.36px;margin:0 0 4px}
 <div class="map"><b>오버레이 슬롯 3곳 고정</b> · 좌상단=상태 배지, 우상단=시각, 하단중앙=페이지 인디케이터. 화면마다 다른 자리에 두지 않는다.<br>
 <b>인디케이터는 면 안에</b> · 밖으로 빼면 라이브와 제어 바 사이에 떠 있는 조각이 된다.<br>
 <b>오프라인일 때 빈 화면을 두지 않는다</b> · 무엇이 잘못됐고 무엇을 할 수 있는지 말한다(마지막 연결 시각 + 다시 연결).<br>
-<b>Flutter</b> · 신규 <code>shared/widgets/live_surface.dart</code> · <code>AppTheme.liveSurface #0E1424</code></div>
+<b>⚠️ 실패 상태도 어둡다</b> · <code>_FailedView</code>가 테마 surface를 쓰던 탓에 연결 실패 시 면만 밝은 회색으로 돌아가 위아래 어두운 덩어리가 깨졌다(제어 바만 검게 떠 있었다). 연결 중·실패·오프라인 <b>전부</b> 같은 면 위에 그린다.<br><b>Flutter</b> · <code>shared/widgets/live_surface.dart</code>(+ <code>LiveSurfaceNotice</code>) ✅ 적용됨 · <code>AppTheme.liveSurface #0E1424</code></div>

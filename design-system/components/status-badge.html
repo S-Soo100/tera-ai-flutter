@@ -61,6 +61,6 @@ h1{font-size:18px;font-weight:600;letter-spacing:-.36px;margin:0 0 4px}
 <span class="sb" style="background:rgba(255,255,255,.14);color:rgba(255,255,255,.75);margin-left:8px">연결 중</span>
 </div>
 <div class="map"><b>⚠️ 한 번에 하나의 진실만</b> · 지금 앱은 <code>OFFLINE</code> 배지(DB presence)와 &quot;카메라 호출 중&quot;(스트림 상태)을 <b>동시에</b> 띄워 서로 모순된다. 규칙: <b>스트림 상태를 알면 그것만</b>, 모를 때만 DB presence를 쓴다.<br>
-<b>위험은 침묵하지 않는다</b> · 32.2°는 크레스티드 적정(21~29°)을 벗어난 위험 구간인데 현재 화면은 큰 숫자만 보여준다. 기획안 §5 안전 규칙 위반.<br>
+<b>위험은 침묵하지 않는다</b> · 32.2°는 크레스티드 적정(21~29°)을 벗어난 위험 구간이다. 기획안 §5 안전 규칙.<br><b>⚠️ 배선은 끝났으나 아직 안 뜬다</b> · 판정에 쓸 안심존이 <code>null</code>이라 배지가 나오지 않는다(<code>device.enclosureId → enclosure.species → care_info</code> 경로 어딘가가 끊김). <b>모르면 안 그리는 것이 설계</b>다 — 임의 수치로 &quot;안심&quot;이라 하면 위험을 놓친다. 남은 것은 데이터 배선.<br>
 <b>주의색 배경 <code>#fff4e5</code>은 Figma 미정의 — 앱 도출값</b>이다(전경 <code>#ff8f00</code>도 마찬가지).<br>
-<b>Flutter</b> · 신규 <code>shared/widgets/status_badge.dart</code> · 판정은 <code>SpeciesComfort.classifyComfort</code> 재사용</div>
+<b>Flutter</b> · <code>shared/widgets/status_badge.dart</code> ✅ 적용됨 · 판정은 <code>SpeciesComfort.classifyComfort</code> 재사용</div>
