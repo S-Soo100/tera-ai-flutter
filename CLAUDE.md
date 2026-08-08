@@ -75,7 +75,7 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 | — | splash/error | SplashScreen / ErrorScreen | — |
 
 > 홈 탭 도메인: `home/domain/{day_window,device_mode,enclosure_set,env_extremes,env_chart_series,actuator_marker,chart_time_axis,running_timer,mist_lock,timeline_summary,pet_dday}.dart`. 하루 경계는 **07:00~익일 07:00**(`DayWindow`), 차트 범위는 전날 19:00~현재 — 어젯밤 리포트(22~06시)와 별개 개념이니 혼용 금지.
-> **⚠️ 사육장 제어 명령은 반드시 `home/presentation/cage_control_actions.dart`를 경유한다.** 제어 진입점이 둘(라이브 아래 `LiveControlBar` + 서브탭 `QuickControlGrid`)이라, 히터 2단 안전확인(과열=개체 폐사)을 두 경로가 공유해야 한다. 위젯에 명령 로직을 복붙하면 한쪽만 고쳐지고 다른 쪽이 안전장치 없이 남는다. 상세: PRD 결정 로그 D4.
+> **⚠️ 사육장 제어 명령은 반드시 `home/presentation/cage_control_actions.dart`를 경유한다.** 히터 2단 안전확인(과열=개체 폐사)이 거기 있다. 진입점은 서브탭 `QuickControlGrid` **하나뿐**이다 — 라이브 아래 `LiveControlBar`는 버튼이 두 벌 쌓여 2026-08-09 제거(D4 철회). 제어 진입점을 다시 늘린다면 반드시 이 모듈을 경유할 것.
 > 통계 탭: `stats/domain/{axis_bounds,stats_chart_data}.dart` — 온·습도를 각자 축으로 **0~1 정규화**해 겹쳐 그린다(단위가 달라 같은 Y축 불가). 차트 색은 `AppTheme.chartTemperature/chartHumidity`(Figma 원본 hex) — 홈 미니 차트와 **같은 토큰**을 쓴다. 상세: 결정 로그 D5.
 
 > 사육장 IoT 데이터 계층: `my_cage/data/{ble_pairing_repository,supabase_module_control_repository}.dart`, `my_cage/domain/{device,telemetry_reading,telemetry_bucket,device_command,actuator_state,wifi_access_point,pair_target_kind,species_comfort}.dart`.
