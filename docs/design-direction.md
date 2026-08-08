@@ -114,3 +114,17 @@ Figma 팔레트를 바꾸지 않고 **적용 범위만 좁힌다.**
 | 홈 · 상단 고정 영역 | ⬜ **기획 미결(§6-B 클립 재생 방식) 대기** |
 | 통계 탭 | ⬜ **기획 미결(§6-D) 대기.** 밤 띠는 여기에도 깔려야 한다 |
 | 마이크레 · 커뮤니티 | ⬜ 미적용 (기획에 화면 명세 없음) |
+
+---
+
+## 10. 화면 미리보기
+
+`test/features/home/control_tab_golden_test.dart`가 **실제 위젯을 393×820으로 렌더해 PNG로 남긴다**(`test/features/home/preview/`). 목업이 아니라 진짜 화면이라, 방향을 눈으로 검토할 때 이걸 본다.
+
+```bash
+flutter test test/features/home/control_tab_golden_test.dart --update-goldens --plain-name "라이트"
+```
+
+- Pretendard를 직접 로드하고 ko 번역을 초기화한다 — 안 하면 글자가 네모로, 문구가 i18n 키로 찍혀 실제와 전혀 달라진다
+- **Material Icons는 안 실린다.** 아이콘이 네모로 나오는 것은 렌더 한계이며 실제 앱에서는 정상이다
+- ⚠️ 라이트·다크를 **한 번에 돌리면 다크가 백지**로 나온다(원인 미확정). 갱신은 `--plain-name`으로 하나씩
