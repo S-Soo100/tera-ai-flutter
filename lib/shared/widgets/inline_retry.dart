@@ -28,8 +28,10 @@ class InlineRetry extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'retry'.tr(),
-              style:
-                  Theme.of(context).textTheme.bodyMedium?.copyWith(color: color),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: color),
             ),
           ],
         ),

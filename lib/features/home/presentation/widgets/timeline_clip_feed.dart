@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../my_cage/domain/clip_action.dart';
 import '../../../my_cage/domain/motion_clip.dart';
 import '../../../my_cage/presentation/my_cage_providers.dart';
@@ -44,7 +45,10 @@ class TimelineClipFeed extends ConsumerWidget {
         child: Padding(
           key: emptyKey,
           padding: AppStyles.pagePadding,
-          child: Center(child: Text('home_timeline_empty'.tr())),
+          child: EmptyState(
+            title: 'home_timeline_empty_title'.tr(),
+            description: 'home_timeline_empty_desc'.tr(),
+          ),
         ),
       );
     }

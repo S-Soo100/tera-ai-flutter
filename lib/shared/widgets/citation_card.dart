@@ -28,7 +28,8 @@ class CitationCard extends StatelessWidget {
 
     final meta = <String>[
       if (citation.authors.isNotEmpty) citation.authors.join(', '),
-      if (citation.publisher != null && citation.publisher!.isNotEmpty) citation.publisher!,
+      if (citation.publisher != null && citation.publisher!.isNotEmpty)
+        citation.publisher!,
       if (citation.year != null) '${citation.year}',
     ].join(' · ');
 
@@ -59,11 +60,14 @@ class CitationCard extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 citation.title,
-                style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                style:
+                    textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               ),
               if (meta.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(meta, style: textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                Text(meta,
+                    style: textTheme.bodySmall
+                        ?.copyWith(color: scheme.onSurfaceVariant)),
               ],
               if (!enabled) ...[
                 const SizedBox(height: 6),
@@ -88,9 +92,24 @@ class _ConfidenceBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final (label, bg, fg, icon) = switch (confidence) {
-      CitationConfidence.high => ('감수 완료', scheme.primaryContainer, scheme.onPrimaryContainer, Icons.verified),
-      CitationConfidence.medium => ('검증', scheme.secondaryContainer, scheme.onSecondaryContainer, Icons.check_circle_outline),
-      CitationConfidence.unverified => ('미검증', scheme.errorContainer, scheme.onErrorContainer, Icons.warning_amber),
+      CitationConfidence.high => (
+          '감수 완료',
+          scheme.primaryContainer,
+          scheme.onPrimaryContainer,
+          Icons.verified
+        ),
+      CitationConfidence.medium => (
+          '검증',
+          scheme.secondaryContainer,
+          scheme.onSecondaryContainer,
+          Icons.check_circle_outline
+        ),
+      CitationConfidence.unverified => (
+          '미검증',
+          scheme.errorContainer,
+          scheme.onErrorContainer,
+          Icons.warning_amber
+        ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -103,7 +122,9 @@ class _ConfidenceBadge extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: fg),
           const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w600)),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11, color: fg, fontWeight: FontWeight.w600)),
         ],
       ),
     );
