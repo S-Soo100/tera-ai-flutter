@@ -65,6 +65,18 @@ class AppTheme {
   /// 습도 지표. Figma `#8abcfc`.
   static const chartHumidity = Color(0xFF8ABCFC);
 
+  /// **밤 띠** 배경 — 시간축 차트에서 `22:00~06:00`을 깔아주는 색.
+  ///
+  /// 기획안 §3.1 ②의 활동 집계 창을 시각화한 것이다. 야행성 개체를 다루는
+  /// 이 앱에서 밤은 "우리 애가 사는 시간"이고, 활동 수치는 그 창에서만 센다.
+  /// 데이터 선을 가리면 안 되므로 **아주 낮은 대비**로 유지한다.
+  ///
+  /// 라이트에서는 메인컬러(마침 한밤중 하늘색이다)를, 다크에서는 흰색을 얹는다
+  /// — 어두운 배경 위에 남색을 더 깔면 아무것도 보이지 않는다.
+  static Color nightBand(Brightness brightness) => brightness == Brightness.dark
+      ? Colors.white.withValues(alpha: 0.05)
+      : brandNavy.withValues(alpha: 0.06);
+
   // ── 다크 테마 전용 — ⚠️ Figma에 다크 팔레트가 없어 이 앱이 도출한 값 ──
 
   /// 다크에서의 메인컬러.

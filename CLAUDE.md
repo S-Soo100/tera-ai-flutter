@@ -100,7 +100,8 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 - Supabase 테이블/RLS/접속 정보는 `docs/supabase-setup.md` 참조.
 
 ### UI/테마
-- **디자인 시스템**: `docs/design-system.md` — 토큰, 공유 위젯, 사용 규칙 정의
+- **시각 디자인 방향**: `docs/design-direction.md` — 위계·타이포·색 역할·시그니처(밤 띠). **팔레트·컴포넌트 규격 SOT는 Figma**(`docs/figma-final-design-transcript.md` §4)
+- **디자인 시스템(구)**: `docs/design-system.md` — 토큰·공유 위젯 정의
 - **하드코딩 색상 금지**. `AppTheme` 또는 `Theme.of(context)` 사용.
 - **하드코딩 문자열 금지**. `assets/l10n/ko.json`에 키 추가 후 `.tr()` 사용.
 - **Primary: `#192553`**(Figma 메인컬러, `AppTheme.brandNavy`). 구 Green 800은 2026-08-08 폐기 — 결정 로그 D2-1

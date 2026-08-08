@@ -9,98 +9,184 @@ import '../../../../core/theme/app_theme.dart';
 import '../../domain/actuator_marker.dart';
 import '../../domain/chart_time_axis.dart';
 import '../../domain/env_chart_series.dart';
+import '../../domain/night_band.dart';
 import '../home_control_providers.dart';
 
-/// PRD §3.4 최근 24시간 실시간 차트.
+/// 최근 24시간 온·습도 차트.
 ///
-/// 라인은 `telemetry_30m`(BE1의 `telemetry_5m`가 생기면 교체), 마커는
-/// `commands`. **0값은 센서 오프라인 센티넬이라 반드시 필터**한다 — 안 걸면
-/// Y축이 0까지 늘어나 곡선이 납작해진다.
+/// **밤 띠가 이 화면의 시그니처다.** `22:00~06:00`(기획안 §3.1 ②, 활동 집계 창)을
+/// 배경에 깔아, 사용자가 "그래프의 어디가 우리 애가 사는 시간인지"를 읽지 않고
+/// 알아보게 한다. 야행성 개체를 다루는 이 앱에서만 의미를 갖는 표시다.
 ///
-/// 차트 영역 터치 시 통계 탭으로 이동(PRD §3.4 화면 전환 연동).
+/// 카드에 담지 않고 폭 전체를 쓴다 — 온·습도 두 선의 **관계**가 읽혀야 통계 탭으로
+/// 넘어갈 이유가 생기는데, 좁고 낮은 카드 안에서는 형태가 뭉개진다.
+///
+/// 라인은 `telemetry_30m`, 마커는 `commands`. **0값은 센서 오프라인 센티넬이라
+/// 반드시 필터**한다 — 안 걸면 Y축이 0까지 늘어나 곡선이 납작해진다.
 class EnvMiniChart extends ConsumerWidget {
   const EnvMiniChart({super.key});
 
   static const chartKey = Key('env_mini_chart');
+
+  /// 플롯 높이. 64px에서는 두 선이 겹쳐 형태가 안 읽혔다.
+  static const double _plotHeight = 132;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final buckets = ref.watch(chartBucketsProvider).valueOrNull ?? const [];
     final markers = ref.watch(actuatorMarkersProvider).valueOrNull ?? const [];
 
-    // 온·습도를 같은 버킷 집합에서 뽑고, 마커가 쓸 시간 구간도 함께 받는다.
-    // 마커 구간은 차트 요청 구간(전날 19:00~현재)이 아니라 **실제 데이터 구간**
-    // 이어야 선과 같은 자리를 가리킨다 — Sparkline이 가진 데이터를 폭 100%로
-    // 늘려 그리기 때문이다.
+    // 마커·밤 띠·시간축은 차트 요청 구간이 아니라 **실제 데이터 구간**을 써야
+    // 선과 같은 자리를 가리킨다 — Sparkline이 가진 데이터를 폭 100%로 늘려
+    // 그리기 때문이다.
     final series = EnvChartSeries.from(buckets);
+    final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppStyles.spacing16,
-        vertical: AppStyles.spacing8,
-      ),
-      child: InkWell(
-        key: chartKey,
-        onTap: () => context.go('/stats'),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppStyles.spacing12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      key: chartKey,
+      onTap: () => context.go('/stats'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Text('home_chart_title'.tr(),
-                    style: Theme.of(context).textTheme.labelMedium),
-                const SizedBox(height: AppStyles.spacing8),
-                SizedBox(
-                  height: 64,
-                  child: !series.hasLine
-                      ? Center(child: Text('home_chart_no_data'.tr()))
-                      : Stack(
-                          children: [
-                            // 색은 테마 토큰(Figma 원본값). 통계 탭 차트와
-                            // 같은 색이어야 "방금 본 그래프"로 읽힌다.
-                            Sparkline(
-                              data: series.temps,
-                              lineColor: AppTheme.chartTemperature,
-                              lineWidth: 2,
-                            ),
-                            Sparkline(
-                              data: series.humids,
-                              lineColor: AppTheme.chartHumidity,
-                              lineWidth: 2,
-                            ),
-                            _MarkerRow(
-                              markers: markers,
-                              start: series.from!,
-                              end: series.to!,
-                            ),
-                          ],
-                        ),
+                Expanded(
+                  child: Text('home_chart_title'.tr(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
                 ),
-                // 시간 축은 선·마커와 **같은 구간**(실제 데이터 구간)으로 놓는다.
-                // 요청 구간으로 계산하면 Sparkline이 늘려 그린 선과 어긋난다.
-                if (series.hasLine)
-                  _TimeAxisRow(start: series.from!, end: series.to!),
-                const SizedBox(height: AppStyles.spacing4),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    'home_chart_goto_stats'.tr(),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                ),
+                if (series.hasLine) const Flexible(child: _NightLegend()),
               ],
             ),
-          ),
+            const SizedBox(height: AppStyles.spacing8),
+            SizedBox(
+              height: _plotHeight,
+              child: !series.hasLine
+                  ? Center(
+                      child: Text('home_chart_no_data'.tr(),
+                          style: theme.textTheme.bodySmall))
+                  : Stack(
+                      children: [
+                        // 맨 아래 — 데이터 선을 절대 가리지 않는다.
+                        _NightBands(start: series.from!, end: series.to!),
+                        Sparkline(
+                          data: series.temps,
+                          lineColor: AppTheme.chartTemperature,
+                          lineWidth: 2,
+                        ),
+                        Sparkline(
+                          data: series.humids,
+                          lineColor: AppTheme.chartHumidity,
+                          lineWidth: 2,
+                        ),
+                        _MarkerRow(
+                          markers: markers,
+                          start: series.from!,
+                          end: series.to!,
+                        ),
+                      ],
+                    ),
+            ),
+            if (series.hasLine)
+              _TimeAxisRow(start: series.from!, end: series.to!),
+            const SizedBox(height: AppStyles.spacing4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      'home_chart_goto_stats'.tr(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall
+                          ?.copyWith(color: theme.colorScheme.primary),
+                    ),
+                  ),
+                  Icon(Icons.chevron_right,
+                      size: 16, color: theme.colorScheme.primary),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// X축 6시간 눈금 라벨. Figma 피드백 "시간이 언제인지 표기 필요" 대응.
+/// 밤 띠 범례. 띠가 무엇인지 한 번은 말해줘야 한다 — 색만 깔아두면
+/// "왜 저기만 어둡지?"가 된다.
+class _NightLegend extends StatelessWidget {
+  const _NightLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: AppTheme.nightBand(theme.brightness),
+            borderRadius: BorderRadius.circular(2),
+            border: Border.all(color: theme.dividerColor),
+          ),
+        ),
+        const SizedBox(width: AppStyles.spacing4),
+        Flexible(
+          child: Text('home_chart_night'.tr(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        ),
+      ],
+    );
+  }
+}
+
+/// 22:00~06:00 구간 배경.
+class _NightBands extends StatelessWidget {
+  const _NightBands({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  static const bandsKey = Key('env_mini_chart_night_bands');
+
+  @override
+  Widget build(BuildContext context) {
+    final bands = nightBands(from: start, to: end);
+    if (bands.isEmpty) return const SizedBox.shrink();
+    final color = AppTheme.nightBand(Theme.of(context).brightness);
+
+    return LayoutBuilder(
+      key: bandsKey,
+      builder: (context, c) => Stack(
+        children: [
+          for (final b in bands)
+            Positioned(
+              left: b.start * c.maxWidth,
+              width: (b.end - b.start) * c.maxWidth,
+              top: 0,
+              bottom: 0,
+              child: ColoredBox(color: color),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// X축 6시간 눈금 라벨.
 class _TimeAxisRow extends StatelessWidget {
   const _TimeAxisRow({required this.start, required this.end});
 
@@ -109,7 +195,6 @@ class _TimeAxisRow extends StatelessWidget {
 
   static const axisKey = Key('env_mini_chart_time_axis');
 
-  /// 라벨 상자 폭. 눈금을 가운데 두고 좌우로 절반씩 뻗는다.
   static const double _labelWidth = 52;
 
   @override
@@ -130,9 +215,10 @@ class _TimeAxisRow extends StatelessWidget {
             children: [
               for (final t in ticks)
                 Positioned(
-                  // 눈금 중앙 정렬 후 카드 밖으로 새지 않게 clamp.
-                  left: (t.position * c.maxWidth - _labelWidth / 2)
-                      .clamp(0.0, (c.maxWidth - _labelWidth).clamp(0.0, double.infinity)),
+                  left: (t.position * c.maxWidth - _labelWidth / 2).clamp(
+                    0.0,
+                    (c.maxWidth - _labelWidth).clamp(0.0, double.infinity),
+                  ),
                   child: SizedBox(
                     width: _labelWidth,
                     child: Text(
@@ -141,7 +227,6 @@ class _TimeAxisRow extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: style,
                       maxLines: 1,
-                      overflow: TextOverflow.clip,
                     ),
                   ),
                 ),
@@ -171,15 +256,12 @@ class _MarkerRow extends StatelessWidget {
     MarkerKind.led: Icons.lightbulb,
   };
 
-  static const _color = {
-    MarkerKind.mist: Colors.lightBlue,
-    MarkerKind.fan: Colors.blueGrey,
-    MarkerKind.heater: Colors.deepOrange,
-    MarkerKind.led: Colors.amber,
-  };
-
   @override
   Widget build(BuildContext context) {
+    // 마커는 "언제 돌았나"만 알려주면 된다. 기기마다 색을 주면 온·습도 선과
+    // 색이 경쟁해 정작 읽어야 할 곡선이 묻힌다 — 무채색으로 억제한다.
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
+
     return LayoutBuilder(
       builder: (context, c) {
         return Stack(
@@ -189,7 +271,7 @@ class _MarkerRow extends StatelessWidget {
                 Positioned(
                   left: (p * c.maxWidth).clamp(0.0, c.maxWidth - 10),
                   bottom: 0,
-                  child: Icon(_icon[m.kind], size: 10, color: _color[m.kind]),
+                  child: Icon(_icon[m.kind], size: 11, color: color),
                 ),
           ],
         );

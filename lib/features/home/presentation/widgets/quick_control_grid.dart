@@ -34,28 +34,33 @@ class QuickControlGrid extends ConsumerWidget {
         physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: AppStyles.spacing8,
         crossAxisSpacing: AppStyles.spacing8,
-        childAspectRatio: 2.4,
+        childAspectRatio: 3.0,
         children: [
           _Tile(
             label: 'module_actuator_fan'.tr(),
             value: _stateLabel(t?.fan),
             icon: Icons.mode_fan_off,
             enabled: online,
-            onTap: () =>
-                sendCageCommand(context, ref, deviceId, CommandAction.fanToggle),
+            active: t?.fan == ActuatorState.on,
+            onTap: () => sendCageCommand(
+                context, ref, deviceId, CommandAction.fanToggle),
           ),
           _Tile(
             label: 'module_actuator_heater'.tr(),
             value: _stateLabel(t?.heaterState),
             icon: Icons.local_fire_department,
             enabled: online,
+            active: t?.heaterState == ActuatorState.on,
             onTap: () => handleHeaterTap(context, ref, deviceId, t),
           ),
           _Tile(
             label: 'module_actuator_led'.tr(),
             value: '$brightness%',
             icon: Icons.lightbulb_outline,
+            // terra-server 계약에 LED 상태 telemetry가 없다(메모리
+            // project_led_control_gap). 모르는 것을 켜진 것처럼 칠하지 않는다.
             enabled: online,
+            active: false,
             onTap: () => openBrightnessSheet(context, ref, deviceId),
           ),
           _Tile(
@@ -66,6 +71,8 @@ class QuickControlGrid extends ConsumerWidget {
             value: mistLocked ? 'home_mist_cooldown_short'.tr() : '',
             icon: Icons.water_drop_outlined,
             enabled: online && !mistLocked,
+            // 1회성 동작이라 '켜진 상태'가 없다.
+            active: false,
             onTap: () => mistOnce(context, ref, deviceId),
           ),
         ],
@@ -83,9 +90,13 @@ class QuickControlGrid extends ConsumerWidget {
         return '--';
     }
   }
-
 }
 
+/// 제어 타일. Figma Button 규격을 따른다 — 켜짐은 **메인컬러 채움**,
+/// 꺼짐은 흰 바탕 + 라인컬러 테두리(§4.3).
+///
+/// 상태를 텍스트(`ON`/`OFF`)로만 구분하면 훑어볼 때 안 읽힌다. 색으로 먼저
+/// 보이고 글자가 확인해주는 순서여야 한다.
 class _Tile extends StatelessWidget {
   const _Tile({
     super.key,
@@ -93,6 +104,7 @@ class _Tile extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.enabled,
+    required this.active,
     required this.onTap,
   });
 
@@ -100,32 +112,84 @@ class _Tile extends StatelessWidget {
   final String value;
   final IconData icon;
   final bool enabled;
+
+  /// 기기가 켜져 있는가. 채움 여부를 가른다.
+  final bool active;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: enabled ? onTap : null,
+    final scheme = Theme.of(context).colorScheme;
+
+    final Color bg;
+    final Color fg;
+    if (!enabled) {
+      bg = scheme.surfaceContainerLow;
+      fg = Theme.of(context).disabledColor;
+    } else if (active) {
+      bg = scheme.primary;
+      fg = scheme.onPrimary;
+    } else {
+      bg = scheme.surfaceContainerLowest;
+      fg = scheme.onSurface;
+    }
+
+    return Material(
+      color: bg,
       borderRadius: BorderRadius.circular(AppStyles.cardRadius),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppStyles.cardRadius),
-          border: Border.all(color: Theme.of(context).dividerColor),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon,
-                size: 18,
-                color: enabled ? null : Theme.of(context).disabledColor),
-            const SizedBox(height: AppStyles.spacing4),
-            Text(
-              value.isEmpty ? label : '$label $value',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: enabled ? null : Theme.of(context).disabledColor,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(AppStyles.cardRadius),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppStyles.spacing12,
+            vertical: AppStyles.spacing8,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppStyles.cardRadius),
+            border: active && enabled
+                ? null
+                : Border.all(color: Theme.of(context).dividerColor),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: fg),
+              const SizedBox(width: AppStyles.spacing8),
+              Expanded(
+                // 그리드 셀 높이가 고정이라 큰 글씨 설정에서 두 줄이 넘친다.
+                // 잘라내는 대신 비율을 유지한 채 줄인다.
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelLarge
+                            ?.copyWith(color: fg, fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (value.isNotEmpty)
+                        Text(
+                          value,
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: fg.withValues(alpha: 0.7),
+                                  ),
+                          maxLines: 1,
+                        ),
+                    ],
                   ),
-            ),
-          ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
