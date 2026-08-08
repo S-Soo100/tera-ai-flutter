@@ -68,10 +68,10 @@ class _ConnectingView extends StatelessWidget {
           highlightColor: highlightColor,
           child: Container(color: baseColor),
         ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: AppStyles.spacing12,
+        // 하단이 아니라 **가운데**에 둔다. 하단은 페이지 인디케이터 자리라
+        // 겹친다(실기기에서 알약과 점이 포개졌다). 연결 중에는 이 문구가
+        // 화면의 주된 메시지이므로 가운데가 맞기도 하다.
+        Center(
           child: Center(
             child: Container(
               padding: const EdgeInsets.symmetric(

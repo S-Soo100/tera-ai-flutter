@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../shared/widgets/live_surface.dart';
+import '../../../../shared/widgets/status_badge.dart';
+import '../../../my_cage/domain/terra_camera.dart';
+import '../../../my_cage/presentation/webrtc_live_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../my_cage/presentation/my_cage_providers.dart';
 import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
@@ -98,44 +102,68 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
       });
     }
 
-    // 라이브 영역은 **어두운 면 위**에 올린다. 밝은 배경에 두면 연결 전·오프라인
-    // 상태가 죽은 공백으로 보인다. 인디케이터도 이 면 안에 넣어 하나의 덩어리로
-    // 읽히게 한다 — 밖으로 빼면 라이브와 제어 바 사이에 떠 있는 조각이 된다.
-    return ColoredBox(
-      color: AppTheme.liveSurface,
-      child: Stack(
-        children: [
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: PageView.builder(
-              key: TopFixedArea.pageViewKey,
-              controller: _controller,
-              itemCount: sets.length,
-              onPageChanged: (i) {
-                if (ref.read(selectedSetIndexProvider) == i) return;
-                ref.read(selectedSetIndexProvider.notifier).state = i;
-              },
-              itemBuilder: (_, i) => _SetPane(set: sets[i]),
-            ),
-          ),
-          if (sets.length > 1)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: AppStyles.spacing8,
-              child: Center(
-                key: TopFixedArea.indicatorKey,
-                child: _PageDots(
-                  count: sets.length,
-                  current: ref
-                      .watch(selectedSetIndexProvider)
-                      .clamp(0, sets.length - 1),
-                ),
-              ),
-            ),
-        ],
+    final current =
+        sets[ref.watch(selectedSetIndexProvider).clamp(0, sets.length - 1)];
+
+    // 오버레이는 **면이 소유한다**. 페이지는 내용(영상/프로필)만 그린다 —
+    // 슬롯이 페이지마다 흩어지면 위치가 달라지고, 인디케이터가 안내 문구와
+    // 겹치는 일이 생긴다(실기기에서 그랬다).
+    return LiveSurface(
+      status: _ConnectionStatus(camera: current.camera),
+      corner: current.camera == null ? null : const LiveClockOverlay(),
+      footer: sets.length > 1
+          ? _PageDots(
+              key: TopFixedArea.indicatorKey,
+              count: sets.length,
+              current:
+                  ref.watch(selectedSetIndexProvider).clamp(0, sets.length - 1),
+            )
+          : null,
+      child: PageView.builder(
+        key: TopFixedArea.pageViewKey,
+        controller: _controller,
+        itemCount: sets.length,
+        onPageChanged: (i) {
+          if (ref.read(selectedSetIndexProvider) == i) return;
+          ref.read(selectedSetIndexProvider.notifier).state = i;
+        },
+        itemBuilder: (_, i) => _SetPane(set: sets[i]),
       ),
     );
+  }
+}
+
+/// 연결 상태 배지 — **한 번에 하나의 진실만 말한다.**
+///
+/// 이전에는 배지가 DB presence(`cameras.is_online`)를, 가운데 문구가 스트림
+/// 상태를 말해서 `OFFLINE`과 "카메라 호출 중..."이 동시에 떴다. 이제 배지는
+/// **스트림 phase**를 따르고, 연결 중일 때는 아예 배지를 내지 않는다 —
+/// 가운데 문구가 이미 그 말을 하고 있기 때문이다.
+class _ConnectionStatus extends ConsumerWidget {
+  const _ConnectionStatus({required this.camera});
+
+  final TerraCamera? camera;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cam = camera;
+    if (cam == null) return const SizedBox.shrink();
+
+    final phase = ref.watch(webrtcLiveControllerProvider(cam.id)).phase;
+    return switch (phase) {
+      WebRtcLivePhase.streaming => const StatusBadge(
+          label: 'LIVE',
+          tone: StatusTone.live,
+          onDark: true,
+        ),
+      WebRtcLivePhase.failed => StatusBadge(
+          label: 'home_live_offline'.tr(),
+          tone: StatusTone.neutral,
+          onDark: true,
+        ),
+      // 연결 중 — 가운데 문구가 이미 말한다. 배지까지 내면 중복이다.
+      _ => const SizedBox.shrink(),
+    };
   }
 }
 
@@ -168,28 +196,9 @@ class _SetPane extends ConsumerWidget {
         ),
       );
     }
-    return Stack(
+    return KeyedSubtree(
       key: TopFixedArea.liveKey,
-      fit: StackFit.expand,
-      children: [
-        WebRtcLiveView(cameraUuid: cam.id),
-        Positioned(
-          left: AppStyles.spacing8,
-          top: AppStyles.spacing8,
-          child: _LiveBadge(isOnline: cam.isOnline),
-        ),
-        const Positioned(
-          right: AppStyles.spacing8,
-          top: AppStyles.spacing8,
-          child: LiveClockOverlay(),
-        ),
-        // 오프라인 안내 레이어를 여기서 그리지 않는다.
-        // WebRtcLiveView가 연결 단계(config/offering/ice)와 실패(아이콘+문구+
-        // 재시도)를 이미 자체적으로 그린다. 위에 레이어를 덧대면 "연결이
-        // 끊겼습니다"와 "카메라 호출 중..."이 동시에 떠 서로 모순된다.
-        // 상단 배지(LIVE/OFFLINE)는 DB presence, 가운데는 실제 스트림 상태 —
-        // 두 정보의 출처를 분리해 둔다.
-      ],
+      child: WebRtcLiveView(cameraUuid: cam.id),
     );
   }
 }
@@ -269,34 +278,9 @@ class _InlineClipPlayerState extends ConsumerState<_InlineClipPlayer> {
   }
 }
 
-class _LiveBadge extends StatelessWidget {
-  const _LiveBadge({required this.isOnline});
-
-  final bool isOnline;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: isOnline ? Colors.red : Colors.grey,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        isOnline ? 'LIVE' : 'OFFLINE',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-}
-
 /// 어두운 라이브 면 위에 놓이므로 색을 테마가 아니라 직접 정한다.
 class _PageDots extends StatelessWidget {
-  const _PageDots({required this.count, required this.current});
+  const _PageDots({super.key, required this.count, required this.current});
 
   final int count;
   final int current;
