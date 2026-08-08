@@ -6,10 +6,19 @@ import '../../../../core/theme/app_styles.dart';
 import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/domain/device_command.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
+import '../../domain/device_mode.dart';
 import '../cage_control_actions.dart';
 import '../home_control_providers.dart';
+import '../home_set_providers.dart';
 
 /// PRD §3.4 IoT 퀵 제어판 (2x2 Grid).
+///
+/// **캠이 있는 세트에서는 나오지 않는다.** 라이브 바로 아래 [LiveControlBar]가
+/// 같은 4개(팬·히터·LED·분사)를 이미 들고 있어서, 한 화면에 같은 버튼이 두 벌
+/// 쌓인다. 어느 쪽을 눌러야 하는지 매번 판단하게 만드는 게 제일 나쁘다.
+///
+/// 캠이 없는 사육장 단품 세트에는 그 바가 안 뜨므로(위에 볼 라이브가 없다)
+/// 여기가 **유일한 제어 수단**이다 — 그래서 지우지 않고 조건부로 둔다.
 class QuickControlGrid extends ConsumerWidget {
   const QuickControlGrid({super.key});
 
@@ -17,6 +26,9 @@ class QuickControlGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(currentDeviceModeProvider).valueOrNull;
+    if (mode == DeviceMode.integrated) return const SizedBox.shrink();
+
     final deviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
     if (deviceId == null) return const SizedBox.shrink();
 

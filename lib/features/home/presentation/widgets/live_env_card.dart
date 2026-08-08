@@ -151,7 +151,7 @@ class _Readout extends StatelessWidget {
           StatusBadge(label: _toneLabel(tone!), tone: tone!),
         ],
         const SizedBox(height: AppStyles.spacing4),
-        // 48px는 이 화면에서 가장 큰 글자라 가장 먼저 넘친다. 좁은 기기·큰 글씨
+        // 이 화면에서 가장 큰 글자라 가장 먼저 넘친다. 좁은 기기·큰 글씨
         // 설정에서 잘리는 대신 **비율을 유지한 채 줄어들게** 한다 — 숫자는
         // 잘리면 값이 바뀌어 보이므로 ellipsis를 쓸 수 없다.
         FittedBox(
@@ -166,10 +166,12 @@ class _Readout extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: 'Pretendard',
                   // 화면에서 가장 큰 글자. 이 앱이 무엇을 보는 앱인지 말한다.
-                  fontSize: 48,
+                  // 48px까지 키워봤더니 두 값이 화면 폭을 다 먹고 아래 차트를
+                  // 밀어내서, "제일 크되 지배하지는 않는" 34px로 내렸다.
+                  fontSize: 34,
                   fontWeight: FontWeight.w700,
                   height: 1.1,
-                  letterSpacing: -1.5,
+                  letterSpacing: -1.0,
                   color: scheme.onSurface,
                   // 값이 바뀔 때 숫자 폭이 흔들리지 않게 고정폭 숫자를 쓴다.
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -179,7 +181,7 @@ class _Readout extends StatelessWidget {
                 unit,
                 style: TextStyle(
                   fontFamily: 'Pretendard',
-                  fontSize: 20,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: scheme.onSurfaceVariant,
                 ),

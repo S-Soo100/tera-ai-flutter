@@ -51,7 +51,16 @@ class _VideoControlsState extends State<VideoControls> {
     final isPlaying = v.isPlaying;
 
     return Container(
-      color: Colors.black87,
+      // 영상 위에 겹쳐 놓이므로 단색 띠가 아니라 아래로 갈수록 짙어지는 그라디언트다.
+      // 단색이면 영상 하단이 잘려 보인다.
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.transparent, Colors.black87],
+          stops: [0, 0.45],
+        ),
+      ),
       padding: const EdgeInsets.symmetric(
         horizontal: AppStyles.spacing8,
         vertical: AppStyles.spacing4,

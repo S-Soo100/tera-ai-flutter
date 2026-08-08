@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'core/theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -57,6 +58,12 @@ Future<void> main() async {
       ),
     );
   };
+
+  // 앱 전체는 세로 고정. 모든 화면이 세로 폭을 전제로 짜여 있다.
+  // 영상 재생만 예외로 가로를 켰다가 나갈 때 여기로 되돌린다
+  // (`MotionClipPlayerScreen`). 전역을 안 잠그면 가로로 본 뒤 화면을 닫았을 때
+  // 홈이 가로로 남는다.
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   await Hive.initFlutter();
   await PetRepository.init();

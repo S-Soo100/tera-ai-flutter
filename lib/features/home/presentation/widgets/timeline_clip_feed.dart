@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -9,12 +10,6 @@ import '../../../my_cage/domain/clip_action.dart';
 import '../../../my_cage/domain/motion_clip.dart';
 import '../../../my_cage/presentation/my_cage_providers.dart';
 import '../home_timeline_providers.dart';
-
-/// 상단 Top Fixed 영역에서 인라인 재생할 클립. null = 라이브 표시.
-///
-/// PRD §3.5: "썸네일 터치 시 상단 Top Fixed Live 비디오 영역에서 해당 녹화
-/// 클립 즉시 재생" — 새 화면으로 이동하지 않는다.
-final inlinePlayingClipProvider = StateProvider<MotionClip?>((ref) => null);
 
 /// `03m 20s` 형식. PRD §3.5 목업 표기.
 String formatClipDuration(double seconds) {
@@ -73,7 +68,10 @@ class ClipFeedRow extends ConsumerWidget {
         : clipActionKey(clip.action!).tr();
 
     return ListTile(
-      onTap: () => ref.read(inlinePlayingClipProvider.notifier).state = clip,
+      // 상단 라이브 영역에서 인라인 재생하지 않는다. 그 영역은 16:9 한 조각이라
+      // 영상이 손톱만 하게 보이고, 저장·공유·즐겨찾기·시크가 전부 빠진
+      // 반쪽짜리 플레이어를 따로 유지해야 했다. 전체화면 가로 플레이어로 보낸다.
+      onTap: () => context.push('/crecam/motion-clips/${clip.id}'),
       leading: SizedBox(
         width: 64,
         height: 40,
