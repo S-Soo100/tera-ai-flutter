@@ -1,5 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/device_command.dart';
@@ -68,7 +70,7 @@ class _HeaterLockStep1Dialog extends StatelessWidget {
     return AlertDialog(
       title: Row(
         children: [
-          const Icon(Icons.lock_outline, color: Color(0xFFFF8F00)),
+          const Icon(Icons.lock_outline, color: AppTheme.warning),
           const SizedBox(width: 8),
           Text('heater_lock_title'.tr()),
         ],
@@ -82,7 +84,7 @@ class _HeaterLockStep1Dialog extends StatelessWidget {
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFF8F00),
+            backgroundColor: AppTheme.warning,
             foregroundColor: Colors.white,
           ),
           child: Text('heater_lock_unlock'.tr()),

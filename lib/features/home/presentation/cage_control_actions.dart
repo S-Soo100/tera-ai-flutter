@@ -11,6 +11,8 @@ import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_styles.dart';
@@ -83,7 +85,7 @@ Future<void> handleHeaterTap(
         ElevatedButton(
           onPressed: () => Navigator.of(ctx).pop(true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFF8F00),
+            backgroundColor: AppTheme.warning,
             foregroundColor: Colors.white,
           ),
           child: Text('module_heater_confirm_yes'.tr()),

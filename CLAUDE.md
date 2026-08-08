@@ -101,7 +101,9 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 - **디자인 시스템**: `docs/design-system.md` — 토큰, 공유 위젯, 사용 규칙 정의
 - **하드코딩 색상 금지**. `AppTheme` 또는 `Theme.of(context)` 사용.
 - **하드코딩 문자열 금지**. `assets/l10n/ko.json`에 키 추가 후 `.tr()` 사용.
-- Primary: #2E7D32 (Green 800), Secondary: #FF8F00 (Amber 800)
+- **Primary: `#192553`**(Figma 메인컬러, `AppTheme.brandNavy`). 구 Green 800은 2026-08-08 폐기 — 결정 로그 D2-1
+- 의미색: `AppTheme.success`(서브 초록) / `warning`(#FF8F00, **Figma 미정의**) / `danger`(서브 빨강). 브랜드 빨강 `#d61619`는 **용도 미정이라 미배정**
+- 다크 Primary는 `brandNavyDark`(#768ad6) — Figma에 다크 팔레트가 없어 명도만 올린 도출값
 - 폰트: Pretendard (Regular/Medium/SemiBold/Bold)
 - 간격: `AppStyles.spacingN` 토큰 사용, 태그: `AppTag` 위젯, 섹션 제목: `SectionHeader` 위젯
 

@@ -1,6 +1,8 @@
 import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import 'core/theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -22,9 +24,11 @@ Future<void> main() async {
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // 이 화면은 배경이 #121212로 고정이라 어두운 brandNavy를 쓰면
+            // 아이콘이 보이지 않는다. 경고 상황이므로 warning을 쓴다.
             Icon(
               Icons.warning_amber_rounded,
-              color: Color(0xFF4CAF50),
+              color: AppTheme.warning,
               size: 64,
             ),
             SizedBox(height: 16),

@@ -1,5 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../shared/widgets/skeleton_loading.dart';
@@ -18,9 +20,9 @@ class ModuleStatusCard extends ConsumerWidget {
 
   final bool embedded;
 
-  static const _green = Color(0xFF2E7D32);
+  static const _green = AppTheme.success;
   static const _greenBg = Color(0xFFE8F5E9);
-  static const _orange = Color(0xFFFF8F00);
+  static const _orange = AppTheme.warning;
   static const _faultBg = Color(0xFFFFF3E0);
 
   @override
@@ -236,8 +238,8 @@ class _ConnectionBadge extends StatelessWidget {
 
   final bool offline;
 
-  static const _green = Color(0xFF2E7D32);
-  static const _orange = Color(0xFFFF8F00);
+  static const _green = AppTheme.success;
+  static const _orange = AppTheme.warning;
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +309,7 @@ class _DisconnectedLabel extends StatelessWidget {
       '$prefix · $reconnecting',
       style: const TextStyle(
         fontSize: 11,
-        color: Color(0xFFFF8F00),
+        color: AppTheme.warning,
         fontWeight: FontWeight.w500,
       ),
     );
@@ -427,7 +429,7 @@ class _SecondaryRow extends StatelessWidget {
           const Icon(
             Icons.warning_amber_rounded,
             size: 11,
-            color: Color(0xFFFF8F00),
+            color: AppTheme.warning,
           ),
         ],
       ],

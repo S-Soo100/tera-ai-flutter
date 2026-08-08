@@ -545,6 +545,28 @@ PRD 본문·다이어그램에 물음표/괄호로 남아 있는 것들. 구현 
   | 영상 워터마크 | `lib/features/my_cage/presentation/widgets/video_watermark.dart` | 새 로고 에셋 필요 |
   | 아이콘·스플래시 | 커밋 `c1a3d6a`에서 적용한 terra ai 로고 전량 | **Figma에서 신규 에셋 수급 필요 — MCP 연결 전엔 불가** |
 
+#### D2-1 — 컬러 시스템 교체 ✅ **완료 (2026-08-08)**
+
+Figma `Asset` 팔레트를 `AppTheme` 토큰으로 옮기고 라이트/다크 스킴을 교체했다.
+
+| 토큰 | 값 | 출처 |
+|---|---|---|
+| `brandNavy` | `#192553` | Figma "메인컬러" — **Primary** |
+| `brandRed` | `#d61619` | Figma "브랜드컬러" — **용도 미정이라 어디에도 배정하지 않음** |
+| `neutralDisabled` / `neutralCoolGray` | `#9da3ba` / `#a9b3be` | Figma |
+| `textTitle` / `textBody` / `textMuted` | `#1e1e1e` / `#3c3c3c` / `#919497` | Figma |
+| `lineColor` / `surfaceMuted` | `#e1e3e4` / `#eaeef0` | Figma |
+| `sub*` 5쌍 | 파랑·초록·보라·빨강·회색 | Figma "서브컬러" |
+| `success` / `danger` | `subGreen` / `subRed` | Figma 서브컬러 전용(의미는 앱이 부여) |
+| **`warning`** | `#FF8F00` | ⚠️ **Figma에 경고색이 없다.** 서브 빨강은 "위험"에 가깝고 브랜드 빨강은 용도 미정이라 기존 Amber 800을 유지했다. Figma가 정하면 이 토큰 한 줄만 바꾸면 된다 |
+| **`brandNavyDark`** | `#768ad6` | ⚠️ **Figma에 다크 팔레트가 없다.** `brandNavy`의 색상(228°)·채도(54%)는 유지하고 **명도만 21% → 65%로 올린 도출값**. Figma가 다크를 주면 교체 |
+
+- 하드코딩 색상 **27건을 전부 토큰으로 교체**했다(프로젝트 "하드코딩 색상 금지" 규칙 위반이 그만큼 있었다). 성격을 구분해 옮겼다 — 브랜드 초록 → `brandNavy`, 상태 초록 → `success`, 경고 앰버 → `warning`.
+- `AppStyles`의 개체 이벤트 5종(급여·탈피·체중·건강·메모)이 Figma 서브컬러 5종과 **1:1로 맞아떨어져** 그대로 매핑했다. 태그는 6종인데 서브컬러가 5개라 일부가 색을 공유한다 — 팔레트 밖 색을 새로 만들지 않기 위한 선택.
+- 팔레트가 되돌아가지 않도록 `test/core/theme/app_theme_palette_test.dart` 12건으로 계약을 고정했다.
+
+**남은 리브랜딩 작업**: 앱 표시명(iOS/Android/ko.json), 영상 앨범명·워터마크, 아이콘·스플래시(에셋 없음).
+
 - **명시적 비대상**: Dart 패키지명 `tera_ai`(`pubspec.yaml:1`)는 **바꾸지 않는다**. `package:tera_ai/` import가 31개 파일에 걸려 있는데, 이름만 바꾸려고 전 파일을 건드리는 건 이득 대비 위험이 크다. 패키지명은 사용자에게 보이지 않는다.
 - **선행 조건**: 로고·스플래시 에셋을 Figma에서 받아야 완결된다. `Asset` 섹션에는 **로고가 없다**(2026-08-08 확인) — `PPT` 페이지 확인 필요.
 - 🚨 **2026-08-08 추가 확인: 리브랜딩은 이름·로고 교체가 아니라 컬러 시스템 전면 교체다.**

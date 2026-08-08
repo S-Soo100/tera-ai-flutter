@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -92,7 +94,7 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF2E7D32),
+        backgroundColor: AppTheme.success,
         foregroundColor: Colors.white,
         onPressed: _openPairing,
         tooltip: 'my_cage_add_camera'.tr(),
@@ -412,7 +414,7 @@ class _ThumbnailState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final fg = online ? const Color(0xFF2E7D32) : scheme.outline;
+    final fg = online ? AppTheme.success : scheme.outline;
     return Container(
       color: scheme.surfaceContainerHighest,
       child: Column(
@@ -441,7 +443,7 @@ class _OnlineDot extends StatelessWidget {
       width: 10,
       height: 10,
       decoration: BoxDecoration(
-        color: const Color(0xFF2E7D32),
+        color: AppTheme.success,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 1.5),
       ),

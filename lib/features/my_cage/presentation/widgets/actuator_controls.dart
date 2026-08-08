@@ -1,5 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/actuator_state.dart';
@@ -159,7 +161,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
                 icon: Icons.air,
                 state: telemetry.fan,
                 isBusy: hasPending,
-                accentColor: const Color(0xFF2E7D32),
+                accentColor: AppTheme.success,
                 onTap: () => _sendCommand(
                   context,
                   device,
@@ -193,7 +195,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
           icon: Icons.water_drop_outlined,
           state: telemetry.relay,
           isBusy: hasPending,
-          accentColor: const Color(0xFF2E7D32),
+          accentColor: AppTheme.success,
           onTap: () => _sendCommand(
             context,
             device,
@@ -298,7 +300,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF8F00),
+              backgroundColor: AppTheme.warning,
               foregroundColor: Colors.white,
             ),
             child: Text('module_heater_confirm_yes'.tr()),
@@ -365,7 +367,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
 
     if (result == CommandResult.rejectedLocked) {
       message = 'module_cmd_rejected_locked'.tr();
-      bgColor = const Color(0xFFFF8F00);
+      bgColor = AppTheme.warning;
       // 잠금 해제 다이얼로그는 heaterState telemetry로 자동 감지됨
     } else if (result == CommandResult.rejectedTtlExpired ||
         status == CommandStatus.expired) {
@@ -397,7 +399,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     messenger.showSnackBar(
       SnackBar(
         content: Text('module_control_offline_blocked'.tr()),
-        backgroundColor: const Color(0xFFFF8F00),
+        backgroundColor: AppTheme.warning,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -589,7 +591,7 @@ class _HeaterTile extends StatelessWidget {
   final bool isBusy;
   final VoidCallback onTap;
 
-  static const _amber = Color(0xFFFF8F00);
+  static const _amber = AppTheme.warning;
   static const _amberBg = Color(0xFFFFF3E0);
 
   @override
@@ -726,7 +728,7 @@ class _LedTile extends StatelessWidget {
   final VoidCallback onTurnOff;
 
   // LED 강조색: Green 계열 (기존 프라이머리 컬러 유지)
-  static const _ledAccent = Color(0xFF2E7D32);
+  static const _ledAccent = AppTheme.success;
 
   @override
   Widget build(BuildContext context) {

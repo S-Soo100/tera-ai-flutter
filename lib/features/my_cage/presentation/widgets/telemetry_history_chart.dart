@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:chart_sparkline/chart_sparkline.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
@@ -194,7 +196,7 @@ class _SparkCard extends StatelessWidget {
   final TelemetryReading? current;
 
   /// 주의(caution) 색 — 앱 공통 경고색(모듈 상태카드와 동일, 테마 토큰 미정의).
-  static const _amber = Color(0xFFFF8F00);
+  static const _amber = AppTheme.warning;
 
   @override
   Widget build(BuildContext context) {
