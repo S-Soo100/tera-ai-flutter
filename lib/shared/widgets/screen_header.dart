@@ -35,6 +35,15 @@ class ScreenHeader extends StatelessWidget {
 
   final List<Widget> actions;
 
+  /// 모든 탭이 공유하는 헤더 높이.
+  ///
+  /// 액션이 1개인 탭(통계·커뮤니티)과 3개인 탭(홈)의 높이가 달라지지 않게
+  /// 못박는다. [HeaderAction]의 `IconButton`이 48이므로 그보다 커야 한다.
+  static const double height = 56;
+
+  /// 선택기의 누를 자리 여백. 좌우 패딩 계산에서 되돌려야 하므로 상수로 둔다.
+  static const double _pickerInset = AppStyles.spacing8;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -79,37 +88,47 @@ class ScreenHeader extends StatelessWidget {
       ],
     );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppStyles.spacing16,
-        vertical: AppStyles.spacing8,
-      ),
-      child: Row(
-        children: [
-          // `Flexible` + `Spacer`로 두지 않는다. 둘 다 flex라 남은 폭을 반씩
-          // 나눠 갖고, 액션이 하나 늘면 라벨 몫이 부족해져 **보조가 통째로
-          // 사라진다**(아바타를 붙이자 `테스트`가 없어졌다).
-          // Expanded로 라벨이 남은 폭을 전부 갖고, Align이 실제 폭만 쓰게 한다.
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: onPick == null
-                  ? label
-                  : InkWell(
-                      onTap: onPick,
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppStyles.spacing8,
-                          vertical: AppStyles.spacing4,
+    // **높이를 고정한다.** 액션 개수나 선택기 유무로 높이가 달라지면, 탭을
+    // 옮길 때마다 아래 내용이 위아래로 튄다.
+    return SizedBox(
+      height: height,
+      // 선택기는 누를 자리를 넓히려고 [_pickerInset]만큼 안쪽 여백을 갖는다.
+      // 그만큼 왼쪽을 당겨줘야 **제목 글자가 탭마다 같은 x에서 시작한다.**
+      // 안 그러면 선택기가 있는 탭(홈·통계)만 8pt 오른쪽으로 밀린다.
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: onPick == null
+              ? AppStyles.spacing16
+              : AppStyles.spacing16 - _pickerInset,
+          right: AppStyles.spacing16,
+        ),
+        child: Row(
+          children: [
+            // `Flexible` + `Spacer`로 두지 않는다. 둘 다 flex라 남은 폭을 반씩
+            // 나눠 갖고, 액션이 하나 늘면 라벨 몫이 부족해져 **보조가 통째로
+            // 사라진다**(아바타를 붙이자 `테스트`가 없어졌다).
+            // Expanded로 라벨이 남은 폭을 전부 갖고, Align이 실제 폭만 쓰게 한다.
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: onPick == null
+                    ? label
+                    : InkWell(
+                        onTap: onPick,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: _pickerInset,
+                            vertical: AppStyles.spacing4,
+                          ),
+                          child: label,
                         ),
-                        child: label,
                       ),
-                    ),
+              ),
             ),
-          ),
-          ...actions,
-        ],
+            ...actions,
+          ],
+        ),
       ),
     );
   }

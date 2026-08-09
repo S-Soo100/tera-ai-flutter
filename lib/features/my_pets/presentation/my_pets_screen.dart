@@ -128,7 +128,9 @@ class _PetListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      // 헤더와 같은 16pt. 예전엔 20이라 제목보다 4pt 안쪽으로 들어가 있었다.
+      padding: const EdgeInsets.fromLTRB(
+        AppStyles.spacing16, 0, AppStyles.spacing16, AppStyles.spacing24),
       children: [
         ...pets.map((pet) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -333,7 +335,7 @@ class _AddPetCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       onTap: () => context.push('/my-pets/add'),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppStyles.spacing24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(

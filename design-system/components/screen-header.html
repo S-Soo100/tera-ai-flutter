@@ -94,5 +94,6 @@ h1{font-size:18px;font-weight:600;letter-spacing:-.36px;margin:0 0 4px}
 <b>Red Dot은 시스템 색</b> · 이전에는 <code>Colors.red</code> 하드코딩이었다. <code>--sub-red</code>를 쓴다.<br><b>⚠️ 폭 배분 — 제목 2 : 보조 1</b> · 같은 flex를 주면 주인공까지 깎이고(<code>크랑이</code>→<code>크...</code>), 제목을 안 감싸면 이름 긴 개체에서 Row가 넘친다. 2:1로 나눠 <b>보조부터 줄고 제목이 버티게</b> 한다.<br>
 <b>⚠️ Spacer를 쓰지 않는다</b> · 라벨 <code>Flexible</code>과 <code>Spacer</code>는 둘 다 flex라 남은 폭을 반씩 나눠 갖는다. 액션이 2→3개(아바타 추가)가 되자 라벨 몫이 부족해져 <b>보조가 통째로 사라졌다</b>. 라벨을 <code>Expanded</code>로 두고 <code>Align</code>으로 실제 폭만 쓰게 한다.<br>
 <b>액션은 최대 3개</b> · 🔔 알림 · ⚙️ 사육장 설정 · 👤 내 계정. 더 늘리면 제목 폭이 죽는다.<br>
+<b>⚠️ 높이 56 고정 · 제목 x는 항상 16</b> · 선택기는 누를 자리를 넓히려 안쪽 여백(8)을 갖는데, 그만큼 <b>왼쪽 패딩을 되돌려야</b> 글자 시작점이 같다. 안 그러면 선택기가 있는 탭(홈·통계)만 8pt 오른쪽으로 밀리고 헤더도 8pt 높아져, 탭을 옮길 때마다 제목이 미묘하게 움직인다. 눈으로는 못 짚어내서 실기기에서도 한참 뒤에 발견됐다 — 테스트로 못박았다.<br>
 <b>통계 탭도 같은 헤더를 요구한다</b>(기획안 §4.3.1) — 홈 전용으로 두지 않는다.<br>
 <b>Flutter</b> · <code>shared/widgets/screen_header.dart</code> ✅ 적용됨 · <code>home_header_bar.dart</code>가 조립</div>
