@@ -47,7 +47,7 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = _colors;
+    final (bg, fg) = _colors(context);
 
     return Container(
       height: 26,
@@ -82,7 +82,7 @@ class StatusBadge extends StatelessWidget {
     );
   }
 
-  (Color, Color) get _colors {
+  (Color, Color) _colors(BuildContext context) {
     if (onDark) {
       // 어두운 면 위에서는 서브컬러 배경이 안 보인다. 흰색 계열로 올린다.
       return switch (tone) {
@@ -108,13 +108,18 @@ class StatusBadge extends StatelessWidget {
           ),
       };
     }
-    return switch (tone) {
-      StatusTone.safe => (AppTheme.subGreenBg, AppTheme.subGreen),
+    // Figma의 `*Bg`는 **라이트 전용 파스텔**이라 다크 테마에서 그대로 쓰면
+    // 어두운 화면에 흰 알약이 박힌다. 밝기별로 갈라준다.
+    final b = Theme.of(context).brightness;
+    final (base, lightBg) = switch (tone) {
+      StatusTone.safe => (AppTheme.subGreen, AppTheme.subGreenBg),
       // ⚠️ 주의 배경은 Figma 미정의 — 앱 도출값(전경 #ff8f00도 마찬가지).
-      StatusTone.caution => (const Color(0xFFFFF4E5), AppTheme.warning),
-      StatusTone.danger => (AppTheme.subRedBg, AppTheme.subRed),
-      StatusTone.live => (AppTheme.subRedBg, AppTheme.subRed),
-      StatusTone.neutral => (AppTheme.subGrayBg, AppTheme.textMuted),
+      StatusTone.caution => (AppTheme.warning, const Color(0xFFFFF4E5)),
+      StatusTone.danger => (AppTheme.subRed, AppTheme.subRedBg),
+      StatusTone.live => (AppTheme.subRed, AppTheme.subRedBg),
+      StatusTone.neutral => (AppTheme.textMuted, AppTheme.subGrayBg),
     };
+    final t = AppTheme.subBadgeTone(base, lightBg, b);
+    return (t.bg, t.fg);
   }
 }

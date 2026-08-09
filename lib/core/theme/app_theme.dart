@@ -84,6 +84,26 @@ class AppTheme {
       ? Colors.white.withValues(alpha: 0.05)
       : brandNavy.withValues(alpha: 0.06);
 
+  /// 서브컬러 배지의 배경·전경 한 쌍.
+  ///
+  /// **Figma 팔레트의 `*Bg`(연한 파스텔)는 라이트 전용이다.** 다크에서 그대로
+  /// 쓰면 어두운 화면에 흰 알약이 박혀, 주인공이 아닌 배지가 화면에서 제일
+  /// 밝아진다(실기기에서 개체 카드의 `수컷` 배지가 그랬다).
+  ///
+  /// 다크에서는 같은 색을 낮은 투명도로 깔고, 글자는 밝은 쪽으로 올린다 —
+  /// 진한 서브컬러(`#0069F1` 등)를 그대로 두면 어두운 면에 묻힌다.
+  static ({Color bg, Color fg}) subBadgeTone(
+    Color base,
+    Color lightBg,
+    Brightness brightness,
+  ) =>
+      brightness == Brightness.dark
+          ? (
+              bg: base.withValues(alpha: 0.20),
+              fg: Color.lerp(base, Colors.white, 0.35)!,
+            )
+          : (bg: lightBg, fg: base);
+
   // ── 다크 테마 전용 — ⚠️ Figma에 다크 팔레트가 없어 이 앱이 도출한 값 ──
 
   /// 다크에서의 메인컬러.

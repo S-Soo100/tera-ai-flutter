@@ -130,7 +130,7 @@ class _PetListView extends StatelessWidget {
     return ListView(
       // 헤더와 같은 16pt. 예전엔 20이라 제목보다 4pt 안쪽으로 들어가 있었다.
       padding: const EdgeInsets.fromLTRB(
-        AppStyles.spacing16, 0, AppStyles.spacing16, AppStyles.spacing24),
+          AppStyles.spacing16, 0, AppStyles.spacing16, AppStyles.spacing24),
       children: [
         ...pets.map((pet) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -149,93 +149,88 @@ class _PetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(AppStyles.spacing12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => context.push('/my-pets/${pet.id}'),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _PetThumbnail(pet: pet),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              pet.name,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+    // 손으로 만든 흰 카드 + 검은 그림자였다. 다크에서는 `surface`가 배경과
+    // 같은 색이고 그림자도 안 보여서 **카드가 통째로 사라졌다.** 테마의
+    // 카드 규격(라이트=흰색+라인, 다크=한 단 밝은 면)에 맡긴다.
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(AppStyles.spacing12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => context.push('/my-pets/${pet.id}'),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _PetThumbnail(pet: pet),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                pet.name,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(width: 8),
+                            _SexBadge(sex: pet.sex),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _subtitle(pet),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        if (pet.adoptionDate != null)
+                          Text(
+                            'my_pets_adoption_date'.tr(
+                              namedArgs: {
+                                'date': _formatDate(pet.adoptionDate!),
+                              },
+                            ),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.outline,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          _SexBadge(sex: pet.sex),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _subtitle(pet),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (pet.adoptionDate != null)
-                        Text(
-                          'my_pets_adoption_date'.tr(
-                            namedArgs: {
-                              'date': _formatDate(pet.adoptionDate!),
-                            },
-                          ),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.outline,
-                          ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => context.push('/my-pets/${pet.id}/edit'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
-                foregroundColor: theme.colorScheme.onSurface,
+                ],
               ),
-              child: Text('my_pets_edit_info'.tr()),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => context.push('/my-pets/${pet.id}/edit'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: BorderSide(color: theme.colorScheme.outlineVariant),
+                  foregroundColor: theme.colorScheme.onSurface,
+                ),
+                child: Text('my_pets_edit_info'.tr()),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -306,8 +301,16 @@ class _SexBadge extends StatelessWidget {
     final isMale = sex == 'male';
     // 예전엔 `isMale ? 분홍 : 분홍`이라 **암수가 같은 색**이었다 — 배지가
     // 구분을 못 하고 있었다. 팔레트에 없는 하드코딩 색이기도 했다.
-    final color = isMale ? AppTheme.subBlue : AppTheme.subRed;
-    final bg = isMale ? AppTheme.subBlueBg : AppTheme.subRedBg;
+    //
+    // `*Bg`를 직접 쓰지 않는다. 그 파스텔은 라이트 전용이라 다크에서
+    // **배지가 화면에서 제일 밝은 조각**이 된다(실기기 확인).
+    final t = AppTheme.subBadgeTone(
+      isMale ? AppTheme.subBlue : AppTheme.subRed,
+      isMale ? AppTheme.subBlueBg : AppTheme.subRedBg,
+      Theme.of(context).brightness,
+    );
+    final color = t.fg;
+    final bg = t.bg;
     final label = isMale ? 'pet_sex_male'.tr() : 'pet_sex_female'.tr();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
