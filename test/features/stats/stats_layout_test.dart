@@ -45,7 +45,7 @@ Future<ProviderContainer> _pump(WidgetTester tester, {double width = 402}) async
 
   final c = ProviderContainer(overrides: [
     currentDeviceIdProvider.overrideWith((ref) async => 'dev-1'),
-    todayExtremesProvider.overrideWith((ref) async => throw UnimplementedError()),
+    statsExtremesProvider.overrideWith((ref) async => throw UnimplementedError()),
     telemetryStreamProvider('dev-1').overrideWith((ref) => Stream.value(null)),
     statsChartDataProvider.overrideWith((ref) async => _chart()),
   ]);

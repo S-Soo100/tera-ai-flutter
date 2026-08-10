@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
 import '../../home/domain/actuator_marker.dart';
+import '../../home/domain/env_extremes.dart';
 import '../../home/presentation/home_control_providers.dart';
 import '../../my_cage/domain/telemetry_bucket.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
@@ -45,6 +46,17 @@ final statsBucketsProvider =
   return ref
       .watch(supabaseModuleControlRepositoryProvider)
       .telemetryHistory(deviceId, w.start, to: w.now);
+});
+
+/// 차트가 보여주는 구간의 최고/최저.
+///
+/// **차트와 같은 창을 쓴다.** 요약 바의 숫자는 바로 아래 그래프를 설명하는
+/// 값이라, 다른 창을 쓰면 서로 어긋난다 — 홈의 당일(07:00~) 창
+/// ([todayExtremesProvider])을 쓰던 동안, 그래프에는 27~32℃ 곡선이 그려져
+/// 있는데 최고/최저는 `--`로 뜨는 화면이 실기기에서 나왔다.
+final statsExtremesProvider =
+    FutureProvider.autoDispose<EnvExtremes>((ref) async {
+  return EnvExtremes.from(await ref.watch(statsBucketsProvider.future));
 });
 
 /// 표시 창의 기기 동작 마커(Figma §3.1 "동작 마커").

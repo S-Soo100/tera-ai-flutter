@@ -85,6 +85,23 @@ class AppTheme {
           ? Colors.white.withValues(alpha: 0.12)
           : surfaceMuted;
 
+  /// **차트 격자선** — Figma `#e1e3e4`([lineColor]).
+  ///
+  /// `Theme.of(context).dividerColor`를 쓰지 않는다. Material 3에서 그 값은
+  /// `colorScheme.outlineVariant`로 풀려 Figma가 정한 색과 다르다 —
+  /// `dividerTheme`을 지정해도 `dividerColor`는 따라오지 않는다.
+  static Color chartGridLine(Brightness brightness) =>
+      brightness == Brightness.dark
+          ? Colors.white.withValues(alpha: 0.10)
+          : lineColor;
+
+  /// **본문 보조 텍스트** — Figma `#3c3c3c`([textBody]).
+  ///
+  /// 축 눈금([textMuted] `#919497`)보다 한 단계 진하다. 요약 바의 최고/최저처럼
+  /// **읽으라고 둔 값**에 쓴다 — 눈금 색으로 낮추면 배경 정보로 읽힌다.
+  static Color bodySecondary(Brightness brightness) =>
+      brightness == Brightness.dark ? const Color(0xFFC9CDD2) : textBody;
+
   /// **동작 마커 글리프** — 칩 안의 분무·팬 그림.
   ///
   /// Figma는 메인컬러(`#192553`)로 또렷하게 찍었다. 무채색으로 눌러두면

@@ -87,9 +87,10 @@ class StatsChartData {
   static double? _realValue(({double x, double y})? p, AxisBounds? axis) =>
       (p == null || axis == null) ? null : axis.min + p.y * axis.span;
 
-  /// 눈금 간격. Figma 기준 온·습도 모두 5.
-  static const double tempStep = 5;
-  static const double humidStep = 5;
+  /// 칸 크기의 **하한**. 라벨을 정수로 찍으므로 1보다 작으면 같은 숫자가
+  /// 반복된다([AxisBounds.forValues]). 실제 칸 크기는 데이터 폭에 맞춰 정해진다.
+  static const double tempStep = 1;
+  static const double humidStep = 1;
 
   /// 버킷 목록에서 조립한다.
   ///
@@ -112,8 +113,8 @@ class StatsChartData {
       if (h != null && h > 0) humids.add(h);
     }
 
-    final tempAxis = AxisBounds.forValues(temps, step: tempStep);
-    final humidAxis = AxisBounds.forValues(humids, step: humidStep);
+    final tempAxis = AxisBounds.forValues(temps, minStep: tempStep);
+    final humidAxis = AxisBounds.forValues(humids, minStep: humidStep);
 
     List<({double x, double y})> points(
       double? Function(TelemetryBucket) pick,

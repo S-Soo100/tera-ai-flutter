@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../../home/presentation/home_control_providers.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
@@ -13,9 +14,9 @@ import 'stats_env_chart.dart';
 
 /// Figma 24시 화면 상단 요약 바.
 ///
-/// 좌우 2분할로 온도·습도를 대칭 배치하고, 각 아래에 최고/최저를 작게 붙인다.
-/// 최고/최저는 **당일(07:00~) 기준**([todayExtremesProvider])이다 — 차트 구간
-/// (전날 19:00~현재)과 다른 창이니 혼동하지 말 것.
+/// 좌우 2분할로 온도·습도를 대칭 배치하고, 각 아래에 최고/최저를 붙인다.
+/// 최고/최저는 **바로 아래 차트와 같은 구간**([statsExtremesProvider])이다 —
+/// 이 숫자는 그래프를 설명하는 값이라 창이 다르면 서로 어긋난다.
 ///
 /// **스크럽 중에는 이 자리가 그 시점의 값으로 바뀐다**(Figma 변형 B). 두 표시가
 /// 같은 자리를 쓰므로 [Stack]으로 겹쳐 높이를 고정한다 — 손을 댈 때마다 아래
@@ -32,7 +33,7 @@ class StatsSummaryBar extends ConsumerWidget {
     if (deviceId == null) return const SizedBox.shrink();
 
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
-    final ex = ref.watch(todayExtremesProvider).valueOrNull;
+    final ex = ref.watch(statsExtremesProvider).valueOrNull;
     final scrub = ref.watch(statsScrubProvider);
     final data = ref.watch(statsChartDataProvider).valueOrNull;
 
@@ -40,7 +41,8 @@ class StatsSummaryBar extends ConsumerWidget {
 
     return Padding(
       key: barKey,
-      padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
+      padding: const EdgeInsets.symmetric(
+          horizontal: StatsEnvChart.outerPadding),
       child: Stack(
         children: [
           // 스크럽 중에도 자리는 지킨다 — 높이를 정하는 쪽이 이 위젯이다.
@@ -111,7 +113,8 @@ class _ScrubReadout extends StatelessWidget {
   static const double _width = 159;
 
   /// 요약 바 여백과 플롯 시작점의 차이. 이만큼 안으로 들어가야 플롯 x와 맞는다.
-  static const double _delta = StatsEnvChart.plotInset - AppStyles.spacing16;
+  static const double _delta =
+      StatsEnvChart.plotInset - StatsEnvChart.outerPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -201,9 +204,9 @@ class _ScrubValue extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        FigmaIcon.metric(icon),
+        FigmaIcon.metric(icon, size: _iconSize),
         const SizedBox(width: AppStyles.spacing4),
-        Text(text, style: AppStyles.subsectionTitle(context)),
+        Text(text, style: metricValueStyle(context)),
       ],
     );
   }
@@ -229,7 +232,7 @@ class _Metric extends StatelessWidget {
       children: [
         Row(
           children: [
-            FigmaIcon.metric(icon),
+            FigmaIcon.metric(icon, size: _iconSize),
             const SizedBox(width: AppStyles.spacing4),
             // 좌우 2분할이라 한 칸이 화면의 절반뿐이다. 큰 글씨 설정이나
             // 자릿수가 늘면 바로 넘치므로, 잘라내는 대신 비율을 유지해 줄인다
@@ -238,21 +241,36 @@ class _Metric extends StatelessWidget {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
-                child: Text(value, style: AppStyles.subsectionTitle(context)),
+                child: Text(value, style: metricValueStyle(context)),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: AppStyles.spacing4),
         Text(
           extremes,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.bodySecondary(Theme.of(context).brightness),
               ),
         ),
       ],
     );
   }
 }
+
+/// 지표 값 글자(Figma: Pretendard SemiBold 20 `#1e1e1e`).
+///
+/// `AppStyles.subsectionTitle`은 `titleMedium`(16)에 기대는데 Figma는 20이다.
+/// 숫자가 이 화면의 주인공이라 크기를 명시한다.
+TextStyle? metricValueStyle(BuildContext context) =>
+    Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        );
+
+/// Figma 지표 아이콘 크기(24×24).
+const double _iconSize = 24;

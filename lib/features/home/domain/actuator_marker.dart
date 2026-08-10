@@ -27,6 +27,9 @@ class ActuatorMarker {
     'heater_toggle': MarkerKind.heater,
     'led_on': MarkerKind.led,
     'led_off': MarkerKind.led,
+    // 켜고 끄는 동작은 전부 같은 뜻이다. 빠뜨리면 그 시각에 조명이 돈 기록만
+    // 조용히 사라진다(DB에 12건 있었다).
+    'led_toggle': MarkerKind.led,
   };
 
   /// `commands` 행 목록 → 시간순 마커 목록.

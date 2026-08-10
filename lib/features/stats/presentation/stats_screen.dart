@@ -162,7 +162,8 @@ class _MainChartSection extends ConsumerWidget {
         ),
         const SizedBox(height: AppStyles.spacing8),
         const StatsSummaryBar(),
-        const SizedBox(height: AppStyles.spacing12),
+        // Figma: 요약 하단 → 플롯 상단 16
+        const SizedBox(height: AppStyles.spacing16),
         async.when(
           loading: () => const _ChartSkeleton(),
           // **실패는 되돌릴 수 있게** 한다. 맨 문구만 두면 앱을 다시 켜는 것

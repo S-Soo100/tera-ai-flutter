@@ -26,10 +26,14 @@ void main() {
         _b(_from, t: 23.5, h: 58),
         _b(_to, t: 26, h: 72),
       ]);
-      expect(d.tempAxis!.min, 20);
-      expect(d.tempAxis!.max, 30);
-      expect(d.humidAxis!.min, 55);
-      expect(d.humidAxis!.max, 75);
+      // 축은 데이터를 담되 지나치게 넓히지 않는다. 개수(6)는 고정,
+      // 칸 크기는 데이터 폭에 맞춰 정해진다 — `axis_bounds_test` 참조.
+      expect(d.tempAxis!.min, lessThanOrEqualTo(23.5));
+      expect(d.tempAxis!.max, greaterThanOrEqualTo(26));
+      expect(d.tempAxis!.ticks, hasLength(6));
+      expect(d.humidAxis!.min, lessThanOrEqualTo(58));
+      expect(d.humidAxis!.max, greaterThanOrEqualTo(72));
+      expect(d.humidAxis!.ticks, hasLength(6));
     });
 
     test('한쪽 지표만 있으면 다른 축은 null', () {
@@ -102,7 +106,7 @@ void main() {
         _b(DateTime(2026, 8, 4, 22), t: 24),
         _b(_to, t: 26),
       ]);
-      expect(d.tempAxis!.min, 20); // 0까지 늘어나지 않는다
+      expect(d.tempAxis!.min, greaterThan(0)); // 0까지 늘어나지 않는다
     });
   });
 

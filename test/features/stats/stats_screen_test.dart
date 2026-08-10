@@ -45,7 +45,7 @@ Future<void> _pump(
 }) async {
   final c = ProviderContainer(overrides: [
     currentDeviceIdProvider.overrideWith((ref) async => deviceId),
-    todayExtremesProvider.overrideWith((ref) async => throw UnimplementedError()),
+    statsExtremesProvider.overrideWith((ref) async => throw UnimplementedError()),
     if (deviceId != null)
       telemetryStreamProvider(deviceId).overrideWith((ref) => Stream.value(null)),
     statsChartDataProvider.overrideWith((ref) async {
@@ -84,12 +84,15 @@ void main() {
     expect(chart.data.lineBarsData, hasLength(2));
   });
 
-  testWidgets('Y는 항상 0~1 정규화 — 단위 다른 두 지표를 겹쳐 그리기 위함',
-      (tester) async {
+  testWidgets('Y는 0~1 정규화 — 단위 다른 두 지표를 겹쳐 그리기 위함', (tester) async {
     await _pump(tester);
     final chart = tester.widget<LineChart>(find.byType(LineChart));
-    expect(chart.data.minY, 0);
-    expect(chart.data.maxY, 1);
+    // 0~1이 **격자선 구간**에 앉도록 위아래로 여유를 더 잡는다(Figma: 위쪽은
+    // 동작 마커 자리, 아래쪽은 세로선이 더 내려오는 만큼). 정규화 자체는 그대로.
+    expect(chart.data.minY, lessThan(0));
+    expect(chart.data.maxY, greaterThan(1));
+    final span = chart.data.maxY - chart.data.minY;
+    expect(1 / span, closeTo(StatsEnvChart.gridSpan / StatsEnvChart.plotHeight, 1e-6));
   });
 
   testWidgets('데이터가 없으면 차트 대신 안내 — 빈 축만 남기지 않는다', (tester) async {

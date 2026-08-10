@@ -123,7 +123,7 @@ Future<void> _shoot(
 }) async {
   // physicalSize는 **물리 픽셀**이다. 논리 393을 원하면 dpr을 곱해야 한다.
   const dpr = 3.0;
-  tester.view.physicalSize = const Size(393 * dpr, 300 * dpr);
+  tester.view.physicalSize = const Size(393 * dpr, 220 * dpr);
   tester.view.devicePixelRatio = dpr;
 
   final buckets = _buckets();
@@ -131,7 +131,7 @@ Future<void> _shoot(
     currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
     telemetryStreamProvider(_deviceId)
         .overrideWith((ref) => Stream.value(_reading())),
-    todayExtremesProvider.overrideWith((ref) async => EnvExtremes.from(buckets)),
+    statsExtremesProvider.overrideWith((ref) async => EnvExtremes.from(buckets)),
     statsWindowProvider.overrideWith((ref) => _window),
     statsChartDataProvider.overrideWith(
       (ref) async => StatsChartData.from(
@@ -169,7 +169,7 @@ Future<void> _shoot(
                       children: [
                         const SizedBox(height: AppStyles.spacing12),
                         const StatsSummaryBar(),
-                        const SizedBox(height: AppStyles.spacing12),
+                        const SizedBox(height: AppStyles.spacing16),
                         if (data != null)
                           Padding(
                             padding: const EdgeInsets.symmetric(

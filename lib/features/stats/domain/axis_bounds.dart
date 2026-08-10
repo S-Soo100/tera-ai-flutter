@@ -1,8 +1,14 @@
 /// 차트 Y축 경계와 눈금.
 ///
-/// Figma는 온도 `45/40/35/30/25/20`, 습도 `75/70/65/60/55/50`처럼 **5 단위 눈금**
-/// 으로 그렸다(`docs/figma-final-design-transcript.md` §3.1). 그 값 자체는 샘플
-/// 데이터라, 여기서는 **간격(step)만 따르고 경계는 실제 데이터에서 계산**한다.
+/// Figma는 온도 `45/40/35/30/25/20`, 습도 `75/70/65/60/55/50`으로 그렸다
+/// (`docs/figma-final-design-transcript.md` §3.1). 거기서 가져올 불변식은
+/// **라벨이 6개**라는 것이지 "5 단위"가 아니다 — 5는 그 샘플 데이터에 맞는
+/// 칸 크기였을 뿐이다.
+///
+/// 그래서 여기서는 **개수를 고정하고 칸 크기를 데이터에 맞춘다.**
+/// 개수를 데이터에 맡기면 격자선 6줄과 라벨 수가 어긋나 축을 못 읽고(실기기에서
+/// 라벨 3개가 위쪽에 뭉쳤다), 칸 크기를 5로 못박으면 23~26℃ 같은 좁은 구간이
+/// 10~35 축에 그려져 곡선이 납작해진다.
 ///
 /// ⚠️ `telemetry_30m`의 **0은 실측이 아니라 센서 오프라인 센티넬**이다
 /// (DHT22는 0℃/0%를 낼 수 없다. 메모리 `project_telemetry_zero_sentinel`).
@@ -18,33 +24,80 @@ class AxisBounds {
     required this.step,
   });
 
-  /// [values] 전체를 담는 최소 구간을 [step] 배수로 스냅해 만든다.
+  /// 눈금 칸 수. 라벨은 이보다 하나 많다(6개).
+  static const int divisions = 5;
+
+  /// 칸 크기 후보의 가수(假數). 1·2·5의 10의 거듭제곱 배만 쓴다 —
+  /// 3이나 7 단위 눈금은 사람이 암산으로 못 읽는다.
+  static const List<double> _mantissas = [1, 2, 5];
+
+  /// [values] 전체를 담는 구간. 눈금은 **항상 [divisions]+1개**.
+  ///
+  /// [minStep]은 칸 크기의 하한이다. 라벨을 정수로 찍으므로 1보다 작게 두면
+  /// `28° 28° 29°`처럼 같은 숫자가 반복된다.
   ///
   /// 유효한 값(0 초과)이 하나도 없으면 null — 데이터 없이 가짜 축을 그리지 않는다.
-  static AxisBounds? forValues(Iterable<double> values, {required double step}) {
+  static AxisBounds? forValues(
+    Iterable<double> values, {
+    double minStep = 1,
+  }) {
     final valid = values.where((v) => v > 0).toList();
     if (valid.isEmpty) return null;
 
-    var lo = valid.reduce((a, b) => a < b ? a : b);
-    var hi = valid.reduce((a, b) => a > b ? a : b);
+    final lo = valid.reduce((a, b) => a < b ? a : b);
+    final hi = valid.reduce((a, b) => a > b ? a : b);
 
-    var min = (lo / step).floorToDouble() * step;
-    var max = (hi / step).ceilToDouble() * step;
+    final s = _pickStep(lo: lo, hi: hi, minStep: minStep);
+    var min = (lo / s).floorToDouble() * s;
+    var max = (hi / s).ceilToDouble() * s;
 
-    // 값이 하나뿐이거나 전부 같은 경계 위에 있으면 폭이 0이 된다.
-    // 그대로 두면 normalize가 0으로 나누고, 화면에는 납작한 선이 남는다.
-    if (max - min < step) max = min + step;
+    // 모자란 칸은 **여유가 적은 쪽부터** 채운다. 한쪽으로만 넓히면 곡선이
+    // 위나 아래 모서리에 붙어 그려진다.
+    for (var n = ((max - min) / s).round(); n < divisions; n++) {
+      if (lo - min <= max - hi) {
+        min -= s;
+      } else {
+        max += s;
+      }
+    }
 
-    return AxisBounds._(min: min, max: max, step: step);
+    return AxisBounds._(min: min, max: max, step: s);
+  }
+
+  /// 데이터를 [divisions]칸 안에 담는 가장 작은 "읽을 만한" 칸 크기.
+  ///
+  /// 스냅(내림·올림) 뒤에 칸이 하나 더 생길 수 있으므로 **스냅한 결과로**
+  /// 판정한다 — 폭만 보고 고르면 경계에 걸칠 때 칸이 넘친다.
+  static double _pickStep({
+    required double lo,
+    required double hi,
+    required double minStep,
+  }) {
+    var mag = 1.0;
+    // minStep이 1보다 크면 자릿수를 먼저 끌어올린다.
+    while (mag * _mantissas.last < minStep) {
+      mag *= 10;
+    }
+    for (var guard = 0; guard < 32; guard++) {
+      for (final m in _mantissas) {
+        final s = m * mag;
+        if (s < minStep - 1e-9) continue;
+        final n = ((hi / s).ceilToDouble() - (lo / s).floorToDouble()).round();
+        if (n <= divisions) return s;
+      }
+      mag *= 10;
+    }
+    // 여기까지 올 일은 없다(칸이 커지면 반드시 담긴다). 안전값.
+    return minStep;
   }
 
   double get span => max - min;
 
-  /// [min]부터 [max]까지 [step] 간격 눈금 전부.
+  /// [min]부터 [max]까지 [step] 간격 눈금 전부. 항상 [divisions]+1개.
   List<double> get ticks {
     final out = <double>[];
-    for (var v = min; v <= max + 1e-9; v += step) {
-      out.add(v);
+    for (var i = 0; i <= divisions; i++) {
+      out.add(min + step * i);
     }
     return out;
   }
