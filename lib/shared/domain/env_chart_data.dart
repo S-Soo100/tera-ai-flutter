@@ -94,10 +94,13 @@ class EnvChartData {
   static double? _realValue(({double x, double y})? p, AxisBounds? axis) =>
       (p == null || axis == null) ? null : axis.min + p.y * axis.span;
 
-  /// 칸 크기의 **하한**. 라벨을 정수로 찍으므로 1보다 작으면 같은 숫자가
-  /// 반복된다([AxisBounds.forValues]). 실제 칸 크기는 데이터 폭에 맞춰 정해진다.
-  static const double tempStep = 1;
-  static const double humidStep = 1;
+  /// 칸 크기의 **하한**. 실제 칸 크기는 데이터 폭에 맞춰 정해진다.
+  ///
+  /// 1로 두면 축이 최소 5단위 폭이라 좁은 구간(예: 28.0~28.6℃)이 세로 10%만
+  /// 쓰고 직선처럼 눕는다. 0.2까지 내려가면 같은 데이터가 50%를 쓴다.
+  /// 그 아래로는 안 간다 — 라벨 소수점이 두 자리가 되어 축 컬럼을 넘친다.
+  static const double tempStep = 0.2;
+  static const double humidStep = 0.2;
 
   /// 버킷 목록에서 조립한다.
   ///

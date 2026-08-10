@@ -50,6 +50,10 @@ List<TelemetryBucket> buildLabBuckets({
     final at = window.start.add(Duration(minutes: 30 * i));
     final hour = at.hour + at.minute / 60;
     // 새벽 4시 최저, 오후 4시 최고.
+    //
+    // **습도는 온도와 반대 위상으로 둔다.** 공기가 따뜻해지면 상대습도가
+    // 떨어지기 때문이다. 같은 위상으로 두면 두 선이 평행하게 붙어 다녀서,
+    // 정작 확인해야 할 "두 지표의 관계"가 안 보인다.
     final phase = (hour - 4) / 24 * 2 * math.pi;
     final wave = -math.cos(phase);
 
@@ -61,10 +65,10 @@ List<TelemetryBucket> buildLabBuckets({
         h = 61 - 9 * wave;
       case ChartShape.flat:
         t = 28.3 + 0.25 * wave;
-        h = 55.4 + 0.3 * wave;
+        h = 55.4 - 0.3 * wave;
       case ChartShape.wide:
         t = 25 + 20 * wave;
-        h = 55 + 40 * wave;
+        h = 55 - 40 * wave;
       case ChartShape.gap:
         // 전체의 가운데 1/3을 센서 오프라인으로 둔다.
         final inGap = i > steps * 0.35 && i < steps * 0.65;

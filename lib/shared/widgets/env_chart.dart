@@ -86,7 +86,16 @@ class EnvChart extends StatelessWidget {
   static const double humidLabelWidth = 26;
   static const double humidGap = 4;
 
+  /// 소수점이 붙으면(`27.8°`) 라벨이 두 글자 길어진다. 좁은 구간에서만 생기는
+  /// 일이라 컬럼 폭을 항상 늘려두지 않고 **그때만** 넓힌다 — 늘 넓히면 Figma가
+  /// 정한 플롯 폭(300)이 상시로 줄어든다.
+  static const double decimalExtra = 12;
+
   /// 화면 왼쪽 끝에서 플롯이 시작하는 거리(= Figma 43).
+  ///
+  /// **정수 라벨 기준값이다.** 소수점이 붙으면 실제 플롯은 [decimalExtra]만큼
+  /// 안으로 들어간다. 스크럽 표시 위치를 되짚는 쪽([EnvSummaryBar])이 이 상수를
+  /// 쓰는데, 그 오차는 159pt짜리 표시 안에서 눈에 띄지 않는다.
   static const double plotInset = outerPadding + tempLabelWidth + tempGap;
 
   /// 화면 오른쪽 끝에서 플롯이 끝나는 거리.
@@ -125,8 +134,18 @@ class EnvChart extends StatelessWidget {
   bool get _temp => showTemperature;
   bool get _humid => showHumidity;
 
+  /// 이 축이 소수점 라벨을 쓰는가.
+  bool _hasDecimals(AxisBounds? axis) => (axis?.decimals ?? 0) > 0;
+
   @override
   Widget build(BuildContext context) {
+    final tempAxis = _temp ? data.tempAxis : null;
+    final humidAxis = _humid ? data.humidAxis : null;
+    final tempW = tempLabelWidth +
+        (_hasDecimals(tempAxis) ? decimalExtra : 0);
+    final humidW = humidLabelWidth +
+        (_hasDecimals(humidAxis) ? decimalExtra : 0);
+
     final style = Theme.of(context).textTheme.labelSmall?.copyWith(
           fontSize: 12,
           fontWeight: FontWeight.w500,
@@ -143,11 +162,12 @@ class EnvChart extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _AxisLabels(
-                axis: _temp ? data.tempAxis : null,
-                width: tempLabelWidth,
+                axis: tempAxis,
+                width: tempW,
                 alignment: TextAlign.right,
-                format: (v) => 'stats_axis_temp'
-                    .tr(namedArgs: {'v': v.toStringAsFixed(0)}),
+                format: (v) => 'stats_axis_temp'.tr(namedArgs: {
+                  'v': v.toStringAsFixed(tempAxis?.decimals ?? 0),
+                }),
                 style: style,
               ),
               const SizedBox(width: tempGap),
@@ -181,20 +201,22 @@ class EnvChart extends StatelessWidget {
               ),
               const SizedBox(width: humidGap),
               _AxisLabels(
-                axis: _humid ? data.humidAxis : null,
-                width: humidLabelWidth,
+                axis: humidAxis,
+                width: humidW,
                 alignment: TextAlign.left,
-                format: (v) => 'stats_axis_humid'
-                    .tr(namedArgs: {'v': v.toStringAsFixed(0)}),
+                format: (v) => 'stats_axis_humid'.tr(namedArgs: {
+                  'v': v.toStringAsFixed(humidAxis?.decimals ?? 0),
+                }),
                 style: style,
               ),
             ],
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(
-            left: tempLabelWidth + tempGap,
-            right: humidLabelWidth + humidGap,
+          // 시간축은 플롯과 **같은 만큼** 들어가야 눈금이 선을 가리킨다.
+          padding: EdgeInsets.only(
+            left: tempW + tempGap,
+            right: humidW + humidGap,
           ),
           child: _TimeAxis(window: window, style: style),
         ),

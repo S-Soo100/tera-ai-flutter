@@ -46,11 +46,28 @@ void main() {
       }
     });
 
-    test('기본 하한은 1 — 정수 라벨이 반복되면 안 된다', () {
-      final a = AxisBounds.forValues([28.1, 28.4])!;
-      expect(a.step, greaterThanOrEqualTo(1));
-      final labels = a.ticks.map((v) => v.toStringAsFixed(0)).toSet();
-      expect(labels, hasLength(6));
+    test('라벨이 서로 달라야 한다 — 소수 자릿수는 칸 크기가 정한다', () {
+      for (final pair in [
+        [28.1, 28.4],
+        [28.0, 33.0],
+        [10.0, 90.0],
+      ]) {
+        final a = AxisBounds.forValues(pair)!;
+        final labels =
+            a.ticks.map((v) => v.toStringAsFixed(a.decimals)).toSet();
+        expect(labels, hasLength(6), reason: '$pair step=${a.step}');
+      }
+    });
+
+    test('소수점은 한 자리를 넘지 않는다 — 넘으면 축 라벨이 컬럼을 넘친다', () {
+      for (final pair in [
+        [28.10, 28.15],
+        [1.0, 1.05],
+        [28.1, 28.4],
+      ]) {
+        expect(AxisBounds.forValues(pair)!.decimals, lessThanOrEqualTo(1),
+            reason: '$pair');
+      }
     });
 
     test('하한을 올리면 그보다 작은 칸은 안 나온다', () {
@@ -71,16 +88,27 @@ void main() {
   });
 
   group('데이터 배치', () {
-    test('좁은 데이터가 축 한쪽 모서리에 붙지 않는다', () {
-      final a = AxisBounds.forValues([31.0, 32.0])!;
-      expect(a.min, lessThan(31));
-      expect(a.max, greaterThan(32));
+    // 딱 맞아떨어지면 여유가 0일 수 있다(그게 곡선을 가장 크게 그린다).
+    // 지켜야 하는 건 "여유가 있다"가 아니라 **한쪽으로 몰리지 않는다**이다.
+    test('남는 여유는 위아래로 나눠 갖는다 — 한쪽 모서리에 몰리지 않는다', () {
+      const lo = 31.2, hi = 32.1;
+      final a = AxisBounds.forValues([lo, hi])!;
+      final below = lo - a.min;
+      final above = a.max - hi;
+      expect((below - above).abs(), lessThanOrEqualTo(a.step + 1e-9));
     });
 
     test('축이 데이터보다 지나치게 넓어지지 않는다 — 곡선이 납작해진다', () {
       // 23.5~26℃(폭 2.5)가 25도짜리 축에 그려지면 직선처럼 보인다.
       final a = AxisBounds.forValues([23.5, 26.0])!;
       expect(a.span, lessThanOrEqualTo(10));
+    });
+
+    test('좁은 구간도 세로를 충분히 쓴다 — 직선처럼 눕지 않는다', () {
+      // 0.5℃ 변화. 칸 하한이 1이던 때는 5도짜리 축에 그려져 10%만 썼다.
+      final a = AxisBounds.forValues([28.05, 28.55])!;
+      expect(0.5 / a.span, greaterThan(0.3));
+      expect(a.ticks, hasLength(6));
     });
 
     test('normalize는 min→0, max→1', () {

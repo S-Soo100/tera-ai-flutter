@@ -33,13 +33,16 @@ class AxisBounds {
 
   /// [values] 전체를 담는 구간. 눈금은 **항상 [divisions]+1개**.
   ///
-  /// [minStep]은 칸 크기의 하한이다. 라벨을 정수로 찍으므로 1보다 작게 두면
-  /// `28° 28° 29°`처럼 같은 숫자가 반복된다.
+  /// [minStep]은 칸 크기의 하한이다. 1보다 작아지면 라벨에 소수점이 붙는다
+  /// ([decimals]) — 안 붙이면 `28° 28° 29°`처럼 같은 숫자가 반복된다.
+  ///
+  /// 하한을 1로 두면 축이 최소 5단위 폭이 되어, 0.5℃짜리 변화가 세로 10%만
+  /// 쓰고 직선처럼 눕는다. 그래서 0.2까지 내려간다.
   ///
   /// 유효한 값(0 초과)이 하나도 없으면 null — 데이터 없이 가짜 축을 그리지 않는다.
   static AxisBounds? forValues(
     Iterable<double> values, {
-    double minStep = 1,
+    double minStep = 0.2,
   }) {
     final valid = values.where((v) => v > 0).toList();
     if (valid.isEmpty) return null;
@@ -73,8 +76,13 @@ class AxisBounds {
     required double hi,
     required double minStep,
   }) {
+    // 후보는 **[minStep] 바로 위**부터 훑어야 한다. 1에서만 출발하면 하한이
+    // 1보다 작아도 0.2·0.5 같은 칸을 아예 못 만들어, 좁은 구간이 5단위 축에
+    // 그려진 채 그대로 눕는다.
     var mag = 1.0;
-    // minStep이 1보다 크면 자릿수를 먼저 끌어올린다.
+    while (mag > minStep) {
+      mag /= 10;
+    }
     while (mag * _mantissas.last < minStep) {
       mag *= 10;
     }
@@ -92,6 +100,12 @@ class AxisBounds {
   }
 
   double get span => max - min;
+
+  /// 라벨에 필요한 소수 자릿수.
+  ///
+  /// 칸이 1보다 작으면 정수로 찍었을 때 같은 숫자가 반복된다. 하한이 0.2라
+  /// **한 자리를 넘길 일은 없다** — 더 내려가면 라벨이 축 컬럼을 넘친다.
+  int get decimals => step >= 1 ? 0 : 1;
 
   /// [min]부터 [max]까지 [step] 간격 눈금 전부. 항상 [divisions]+1개.
   List<double> get ticks {
