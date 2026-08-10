@@ -269,6 +269,7 @@ class _GridPainter extends CustomPainter {
     required this.night,
     required this.line,
     required this.band,
+    required this.nowLine,
   });
 
   /// 흘러간 비율. 여기서부터 오른쪽 끝까지가 회색 밴드다.
@@ -279,6 +280,9 @@ class _GridPainter extends CustomPainter {
   final Color night;
   final Color line;
   final Color band;
+
+  /// "지금" 경계선 색.
+  final Color nowLine;
 
   /// 배경 띠(밤·미도래)가 덮는 세로 범위. 박스 위 ~ 마지막 격자선.
   static const double _bandBottom = EnvChart.headroom + EnvChart.gridSpan;
@@ -330,6 +334,7 @@ class _GridPainter extends CustomPainter {
       old.line != line ||
       old.band != band ||
       old.night != night ||
+      old.nowLine != nowLine ||
       old.nights.length != nights.length;
 }
 
@@ -385,6 +390,7 @@ class _Plot extends StatelessWidget {
               night: AppTheme.nightBand(theme.brightness),
               line: AppTheme.chartGridLine(theme.brightness),
               band: AppTheme.chartFutureBand(theme.brightness),
+              nowLine: AppTheme.chartNowLine(theme.brightness),
             ),
           ),
         ),

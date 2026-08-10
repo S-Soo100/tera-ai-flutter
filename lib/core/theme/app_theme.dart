@@ -77,6 +77,23 @@ class AppTheme {
           ? Colors.white.withValues(alpha: 0.06)
           : lineColor;
 
+  /// **"지금" 경계선** — 미도래 밴드가 시작하는 자리.
+  ///
+  /// 밴드만으로는 [nightBand]와 구분이 안 된다. 둘 다 옅은 채움 블록이라 눈이
+  /// 같은 범주로 읽는데, 뜻은 정반대다 — 밤 띠는 *데이터가 있는* 구간에 의미를
+  /// 붙인 것이고 미도래 밴드는 *데이터가 없는* 구간이다. 시작점에 선을 그으면
+  /// 오른쪽 블록이 "이 선 이후"로 읽혀 성격이 갈린다.
+  ///
+  /// 겸해서 **현재 시각이 그래프의 어디인지**를 알려준다 — 그전에는 곡선이
+  /// 끊긴 자리로 짐작하는 수밖에 없었고, 데이터가 비면 그마저 안 됐다.
+  ///
+  /// 스크러버 선(거의 검정)보다 확실히 연하게 둔다. 둘이 경쟁하면 손가락이
+  /// 가리키는 자리가 어디인지 헷갈린다.
+  static Color chartNowLine(Brightness brightness) =>
+      brightness == Brightness.dark
+          ? Colors.white.withValues(alpha: 0.28)
+          : neutralCoolGray;
+
   /// **동작 마커 칩** 배경 — 차트 위 분무·팬 아이콘이 앉는 자리.
   ///
   /// Figma §3.1 "동작 마커"(14×14, radius 4, `#eaeef0` = [surfaceMuted]).
