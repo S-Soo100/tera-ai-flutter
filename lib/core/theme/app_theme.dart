@@ -155,8 +155,12 @@ class AppTheme {
   /// 농도만으로는 구분이 안 됐다(실기기에서 왼쪽 밤 띠와 오른쪽 미도래 밴드가
   /// 같은 띠로 보였다). 그래서 밤 띠는 **남색 기가 남을 만큼**만 진하게 잡는다 —
   /// 중성 회색인 미도래 밴드와 색상으로 갈린다. 곡선을 가리지 않는 선은 지킨다.
+  /// 다크도 **흰색이 아니라 남색 계열**로 깐다. 흰색으로 두면 미도래 밴드
+  /// (역시 흰색 반투명)와 같은 회색이 되어, 라이트에서 색상으로 갈라놓은 구분이
+  /// 다크에서만 사라진다(실기기에서 두 띠가 같은 블록으로 보였다).
+  /// 어두운 면 위에서는 [brandNavy]가 묻히므로 밝은 쪽 파생값을 쓴다.
   static Color nightBand(Brightness brightness) => brightness == Brightness.dark
-      ? Colors.white.withValues(alpha: 0.05)
+      ? brandNavyDark.withValues(alpha: 0.18)
       : brandNavy.withValues(alpha: 0.10);
 
   /// 서브컬러 배지의 배경·전경 한 쌍.
