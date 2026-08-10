@@ -1,0 +1,248 @@
+@Tags(['golden'])
+library;
+
+import 'dart:math' as math;
+
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:vivnanaut/core/theme/app_styles.dart';
+import 'package:vivnanaut/core/theme/app_theme.dart';
+import 'package:vivnanaut/features/home/domain/actuator_marker.dart';
+import 'package:vivnanaut/features/home/domain/env_extremes.dart';
+import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
+import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivnanaut/features/my_cage/domain/telemetry_reading.dart';
+import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivnanaut/features/stats/domain/stats_chart_data.dart';
+import 'package:vivnanaut/features/stats/domain/stats_window.dart';
+import 'package:vivnanaut/features/stats/presentation/stats_providers.dart';
+import 'package:vivnanaut/features/stats/presentation/widgets/stats_env_chart.dart';
+import 'package:vivnanaut/features/stats/presentation/widgets/stats_summary_bar.dart';
+
+/// 통계 탭 24시 그래프를 실제 위젯 그대로 렌더해 PNG로 남긴다.
+///
+/// 목적은 회귀 검사가 아니라 **Figma와 눈으로 대조하는 것**이다
+/// (`docs/figma-final-design-transcript.md` §3.1). 레이아웃 안전은
+/// `stats_layout_test`·`stats_overlay_test`가 맡는다.
+///
+/// 갱신은 **하나씩** 돌린다. `dart_test.yaml`이 `golden` 태그를 skip으로
+/// 묶어두어 `--tags golden`만으로는 안 돌고 `--run-skipped`가 필요하다:
+/// ```
+/// flutter test <이 파일> --update-goldens --run-skipped --plain-name "라이트"
+/// flutter test <이 파일> --update-goldens --run-skipped --plain-name "스크럽"
+/// flutter test <이 파일> --update-goldens --run-skipped --plain-name "다크"
+/// ```
+///
+/// ⚠️ **읽을 때 감안할 것 2가지 — 둘 다 하네스 제약이지 앱 상태가 아니다.**
+/// - 아이콘이 빈 네모로 나온다. 골든에 MaterialIcons 폰트가 없어서다
+///   (홈 골든 `control_light.png`도 같다). Pretendard만 직접 로드한다.
+/// - 스크럽 샷에 세로선·점이 없다. fl_chart의 인디케이터는 **진짜 터치**에만
+///   그려지는데, 여기서는 provider에 값을 직접 넣어 상단 표시만 재현한다.
+/// - 라이트·다크를 한 번에 돌리면 두 번째가 백지로 나온다(easy_localization
+///   인스턴스를 두 번 세우는 문제, 홈 골든과 동일).
+const _deviceId = 'dev-1';
+
+/// Figma가 그린 프레임과 같은 시각 — 창은 어제 22:00 ~ 오늘 22:00,
+/// 회색 밴드는 오른쪽 약 22%.
+final _now = DateTime(2026, 8, 10, 16, 40);
+final _window = StatsWindow.of(_now);
+
+TelemetryReading _reading() => TelemetryReading(
+      deviceId: _deviceId,
+      tA: 32,
+      hA: 60,
+      aOk: true,
+      tB: null,
+      hB: null,
+      bOk: false,
+      relay: ActuatorState.off,
+      fan: ActuatorState.on,
+      heaterState: ActuatorState.off,
+      heaterLocked: false,
+      ts: _now,
+    );
+
+/// 창 시작부터 지금까지 30분 간격. 밤에 식고 낮에 오르는 야행성 사육장 곡선.
+List<TelemetryBucket> _buckets() {
+  final out = <TelemetryBucket>[];
+  final steps = _now.difference(_window.start).inMinutes ~/ 30;
+  for (var i = 0; i <= steps; i++) {
+    final at = _window.start.add(Duration(minutes: 30 * i));
+    final hour = at.hour + at.minute / 60;
+    // 새벽 4시에 최저, 오후 2시에 최고.
+    final phase = (hour - 4) / 24 * 2 * math.pi;
+    final t = 31 - 5 * math.cos(phase);
+    final h = 61 + 9 * math.cos(phase);
+    out.add(TelemetryBucket(
+      bucket: at,
+      sampleCount: 6,
+      tAvg: t,
+      tMin: t - 0.5,
+      tMax: t + 0.5,
+      hAvg: h,
+      hMin: h - 2,
+      hMax: h + 2,
+    ));
+  }
+  return out;
+}
+
+/// Figma와 같은 구성: 팬 1 + 분무 2.
+List<ActuatorMarker> _markers() => [
+      ActuatorMarker(
+        kind: MarkerKind.fan,
+        at: _window.start.add(const Duration(hours: 3)),
+      ),
+      ActuatorMarker(
+        kind: MarkerKind.mist,
+        at: _window.start.add(const Duration(hours: 5, minutes: 30)),
+      ),
+      ActuatorMarker(
+        kind: MarkerKind.mist,
+        at: _window.start.add(const Duration(hours: 12)),
+      ),
+    ];
+
+Future<void> _loadPretendard() async {
+  for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+    final loader = FontLoader('Pretendard')
+      ..addFont(rootBundle.load('assets/fonts/Pretendard-$w.otf'));
+    await loader.load();
+  }
+}
+
+Future<void> _shoot(
+  WidgetTester tester, {
+  required Brightness brightness,
+  required String name,
+  double? scrub,
+}) async {
+  // physicalSize는 **물리 픽셀**이다. 논리 393을 원하면 dpr을 곱해야 한다.
+  const dpr = 3.0;
+  tester.view.physicalSize = const Size(393 * dpr, 300 * dpr);
+  tester.view.devicePixelRatio = dpr;
+
+  final buckets = _buckets();
+  final c = ProviderContainer(overrides: [
+    currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
+    telemetryStreamProvider(_deviceId)
+        .overrideWith((ref) => Stream.value(_reading())),
+    todayExtremesProvider.overrideWith((ref) async => EnvExtremes.from(buckets)),
+    statsWindowProvider.overrideWith((ref) => _window),
+    statsChartDataProvider.overrideWith(
+      (ref) async => StatsChartData.from(
+        buckets,
+        from: _window.start,
+        to: _window.end,
+      ),
+    ),
+    statsActuatorMarkersProvider.overrideWith((ref) async => _markers()),
+  ]);
+  addTearDown(c.dispose);
+
+  await tester.pumpWidget(
+    EasyLocalization(
+      supportedLocales: const [Locale('ko')],
+      path: 'assets/l10n',
+      fallbackLocale: const Locale('ko'),
+      startLocale: const Locale('ko'),
+      child: UncontrolledProviderScope(
+        container: c,
+        child: Builder(
+          builder: (context) => MaterialApp(
+            debugShowCheckedModeBanner: false,
+            localizationsDelegates: context.localizationDelegates,
+            supportedLocales: context.supportedLocales,
+            locale: context.locale,
+            theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
+            home: Scaffold(
+              body: SafeArea(
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final data = ref.watch(statsChartDataProvider).valueOrNull;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: AppStyles.spacing12),
+                        const StatsSummaryBar(),
+                        const SizedBox(height: AppStyles.spacing12),
+                        if (data != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: StatsEnvChart.outerPadding),
+                            child: StatsEnvChart(
+                              data: data,
+                              window: _window,
+                              markers: _markers(),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  // easy_localization은 번역 로드가 몇 프레임 늦는다. settle만으로는 i18n 키가
+  // 그대로 찍힌 화면이 캡처된다.
+  for (var i = 0; i < 5; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+  await tester.pumpAndSettle(const Duration(seconds: 2));
+
+  if (scrub != null) {
+    c.read(statsScrubProvider.notifier).state = scrub;
+    await tester.pumpAndSettle();
+  }
+
+  await expectLater(
+    find.byType(MaterialApp),
+    matchesGoldenFile('preview/$name.png'),
+  );
+}
+
+void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    _SharedPreferencesStub.ensure();
+    await EasyLocalization.ensureInitialized();
+    await _loadPretendard();
+  });
+
+  testWidgets('24시 그래프 — 라이트', (tester) async {
+    await _shoot(tester, brightness: Brightness.light, name: 'stats_24h_light');
+  });
+
+  testWidgets('24시 그래프 — 스크럽', (tester) async {
+    await _shoot(
+      tester,
+      brightness: Brightness.light,
+      name: 'stats_24h_scrub',
+      scrub: 0.42,
+    );
+  });
+
+  testWidgets('24시 그래프 — 다크', (tester) async {
+    await _shoot(tester, brightness: Brightness.dark, name: 'stats_24h_dark');
+  });
+}
+
+/// easy_localization이 저장소 플러그인을 찾으므로 채널을 비워둔다.
+class _SharedPreferencesStub {
+  static void ensure() {
+    const channel = MethodChannel('plugins.flutter.io/shared_preferences');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'getAll') return <String, Object>{};
+      return null;
+    });
+  }
+}
