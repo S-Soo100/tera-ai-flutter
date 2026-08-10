@@ -28,6 +28,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/auth/presentation/email_verification_screen.dart';
 import '../../features/auth/presentation/auth_providers.dart';
+import '../../features/dev/presentation/chart_lab_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/stats/presentation/stats_screen.dart';
 import '../../features/notification/presentation/notification_center_screen.dart';
@@ -276,6 +277,12 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      // 온습도 그래프 디자인 검토용. 실데이터로는 볼 수 없는 상태(마커 유무,
+      // 밴드 폭, 좁은/넓은 구간)를 만들어 보는 자리다.
+      GoRoute(
+        path: '/dev/chart-lab',
+        builder: (context, state) => const ChartLabScreen(),
       ),
       // PRD §3.4 자동 루틴 & 타이머 설정 — 풀스크린(탭 셸 밖) 모달
       GoRoute(

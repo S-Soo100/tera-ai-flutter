@@ -186,6 +186,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const Divider(),
                 const SizedBox(height: 8),
 
+                // 디자인 검토용. 실사용 기능이 아니라 로그아웃 위에 조용히 둔다.
+                ListTile(
+                  leading: Icon(Icons.palette_outlined,
+                      color: colorScheme.onSurfaceVariant),
+                  title: Text('dev_chart_lab_title'.tr()),
+                  subtitle: Text('dev_chart_lab_entry_desc'.tr()),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/dev/chart-lab'),
+                ),
+
                 // 로그아웃
                 ListTile(
                   leading: Icon(Icons.logout, color: colorScheme.error),
