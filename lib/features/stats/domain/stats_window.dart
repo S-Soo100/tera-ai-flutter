@@ -1,0 +1,88 @@
+import '../../home/domain/chart_time_axis.dart';
+
+/// 통계 탭 24시 차트의 **표시 창**.
+///
+/// 조회 구간과 다르다 — 데이터는 "지금까지"만 있지만, 화면은 **다음 6시간
+/// 눈금까지** 자리를 미리 잡는다. 그 남는 꼬리가 Figma의 회색 밴드
+/// (`docs/figma-final-design-transcript.md` §3.1 "구간 밴드")이고, 뜻은
+/// **아직 안 지난 시간**이다.
+///
+/// 창은 6시간마다 통째로 6시간 전진한다. 하루 단위로 고정하면 경계를 넘긴
+/// 직후에 화면 대부분이 회색이 되어(선 5분 + 회색 23시간 55분) 차트가 무너진다.
+/// 전진 방식은 **항상 24시간치 데이터가 차 있고 리셋이 없다.**
+///
+/// [DayWindow]와 혼용하지 말 것 — 저 쪽은 하루 경계(07:00)와 어젯밤 리포트를
+/// 위한 개념이고, 이 클래스는 오직 차트 프레임을 위한 것이다.
+class StatsWindow {
+  /// 창 시작 = [end] - 24시간. x = 0.
+  final DateTime start;
+
+  /// 창 끝 = 지금 이후 첫 눈금. x = 1. **미래다.**
+  final DateTime end;
+
+  /// 창을 계산한 시각. 회색 밴드가 여기서 시작한다.
+  final DateTime now;
+
+  const StatsWindow._({
+    required this.start,
+    required this.end,
+    required this.now,
+  });
+
+  /// 눈금 간격(시간). Figma 기준 6시간 4개.
+  static const int stepHours = 6;
+
+  /// 눈금 위상. Figma가 `22 / 04 / 10 / 16`시를 그렸다 —
+  /// 시계 경계(`00/06/12/18`)가 아니라 **6으로 나눈 나머지가 4**인 시각이다.
+  static const int tickPhaseHour = 4;
+
+  /// 창 길이. 항상 24시간.
+  static const Duration span = Duration(hours: 24);
+
+  factory StatsWindow.of(DateTime now) {
+    final end = nextTickAfter(now);
+    return StatsWindow._(start: end.subtract(span), end: end, now: now);
+  }
+
+  /// [now] **이후**의 첫 눈금 시각.
+  ///
+  /// 정각에 딱 걸리면 다음 눈금으로 넘긴다 — 같은 시각을 창 끝으로 삼으면
+  /// 밴드 폭이 0이 되었다가 다음 순간 25%로 튀는 대신, 넘긴 즉시 25%에서
+  /// 줄기 시작한다(= 프레임이 전진했다는 뜻).
+  static DateTime nextTickAfter(DateTime now) {
+    // 정수 나눗셈이 0 쪽으로 잘리므로 새벽(시 < 4)에도 h = 4가 나온다.
+    var h = ((now.hour - tickPhaseHour) ~/ stepHours) * stepHours + tickPhaseHour;
+    // 시(hour) 오버플로는 DateTime 생성자가 달력으로 정규화해준다 —
+    // Duration 덧셈과 달리 서머타임에도 "몇 시 정각"이 유지된다.
+    var t = DateTime(now.year, now.month, now.day, h);
+    while (!t.isAfter(now)) {
+      h += stepHours;
+      t = DateTime(now.year, now.month, now.day, h);
+    }
+    return t;
+  }
+
+  /// 흘러간 비율(0~1). 회색 밴드는 여기서 오른쪽 끝까지다.
+  double get elapsed {
+    final total = end.difference(start).inMicroseconds;
+    if (total <= 0) return 1;
+    return (now.difference(start).inMicroseconds / total).clamp(0.0, 1.0);
+  }
+
+  /// X축 눈금 4개. 창 시작부터 6시간 간격이며 **오른쪽 끝(= [end])은 뺀다** —
+  /// Figma도 왼쪽 끝부터 4개만 그렸고, 끝에 라벨을 붙이면 밴드 위에 겹친다.
+  List<ChartTimeTick> get ticks {
+    final total = end.difference(start).inMicroseconds;
+    if (total <= 0) return const [];
+    return [
+      for (var i = 0; i * stepHours < span.inHours; i++)
+        if (DateTime(start.year, start.month, start.day,
+                start.hour + i * stepHours)
+            case final at)
+          ChartTimeTick(
+            at: at,
+            position: at.difference(start).inMicroseconds / total,
+          ),
+    ];
+  }
+}

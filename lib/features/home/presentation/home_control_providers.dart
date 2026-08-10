@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
 import '../../my_cage/domain/telemetry_bucket.dart';
@@ -44,25 +45,43 @@ final chartBucketsProvider =
       .telemetryHistory(deviceId, r.start, to: r.end);
 });
 
-/// 차트 구간의 기기 동작 마커. `commands` 직결.
+/// `commands`에서 [from]~[to] 구간의 기기 동작 마커를 읽는다.
+///
+/// 홈 미니 차트와 통계 탭이 **서로 다른 구간**을 쓰므로 조회부를 함수로 빼 둔다
+/// — 쿼리를 두 벌로 복사하면 한쪽만 고쳐진 채로 남는다.
+///
 /// 조회 실패는 빈 목록으로 흡수한다 — 마커가 없다고 차트를 못 그릴 이유는 없다.
-final actuatorMarkersProvider =
-    FutureProvider.autoDispose<List<ActuatorMarker>>((ref) async {
-  final deviceId = await ref.watch(currentDeviceIdProvider.future);
-  if (deviceId == null) return const [];
-  final r = DayWindow.chartRange(DateTime.now());
+Future<List<ActuatorMarker>> fetchActuatorMarkers(
+  SupabaseClient client,
+  String deviceId, {
+  required DateTime from,
+  required DateTime to,
+}) async {
   try {
-    final rows = await ref
-        .watch(supabaseClientProvider)
+    final rows = await client
         .from('commands')
         .select('id, action, status, issued_at')
         .eq('device_id', deviceId)
-        .gte('issued_at', r.start.toUtc().toIso8601String())
-        .lte('issued_at', r.end.toUtc().toIso8601String());
+        .gte('issued_at', from.toUtc().toIso8601String())
+        .lte('issued_at', to.toUtc().toIso8601String());
     return ActuatorMarker.fromCommands(
       (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
     );
   } catch (_) {
     return const [];
   }
+}
+
+/// 홈 차트 구간의 기기 동작 마커.
+final actuatorMarkersProvider =
+    FutureProvider.autoDispose<List<ActuatorMarker>>((ref) async {
+  final deviceId = await ref.watch(currentDeviceIdProvider.future);
+  if (deviceId == null) return const [];
+  final r = DayWindow.chartRange(DateTime.now());
+  return fetchActuatorMarkers(
+    ref.watch(supabaseClientProvider),
+    deviceId,
+    from: r.start,
+    to: r.end,
+  );
 });

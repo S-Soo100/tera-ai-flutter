@@ -65,6 +65,26 @@ class AppTheme {
   /// 습도 지표. Figma `#8abcfc`.
   static const chartHumidity = Color(0xFF8ABCFC);
 
+  /// **미도래 구간 밴드** — 시간축 차트에서 `지금 ~ 창 끝`을 덮는 회색.
+  ///
+  /// Figma §3.1 "구간 밴드"(`#e1e3e4` = [lineColor])다. 뜻은 **아직 안 지난
+  /// 시간** — 선이 여기서 끊긴 게 고장이 아니라 아직 오지 않았다는 표시다.
+  ///
+  /// 다크에서 원본 값을 그대로 쓰면 어두운 플롯 위에 밝은 띠가 박혀 정작
+  /// 읽어야 할 곡선보다 밴드가 먼저 보인다 — [nightBand]와 같은 이유로 뒤집는다.
+  static Color chartFutureBand(Brightness brightness) =>
+      brightness == Brightness.dark
+          ? Colors.white.withValues(alpha: 0.06)
+          : lineColor;
+
+  /// **동작 마커 칩** 배경 — 차트 위 분무·팬 아이콘이 앉는 자리.
+  ///
+  /// Figma §3.1 "동작 마커"(14×14, radius 4, `#eaeef0` = [surfaceMuted]).
+  static Color chartMarkerChip(Brightness brightness) =>
+      brightness == Brightness.dark
+          ? Colors.white.withValues(alpha: 0.12)
+          : surfaceMuted;
+
   /// **라이브 영역 면** — 영상이 놓이는 자리.
   ///
   /// 라이트/다크 무관하게 **항상 어둡다.** 영상 뷰포트를 밝은 회색으로 두면

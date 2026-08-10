@@ -189,26 +189,20 @@ class _MainChartSection extends ConsumerWidget {
                 )
               : Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppStyles.spacing12),
-                  child: StatsEnvChart(data: d, metrics: metrics),
+                      horizontal: StatsEnvChart.outerPadding),
+                  child: StatsEnvChart(
+                    data: d,
+                    window: ref.watch(statsWindowProvider),
+                    // 마커 조회 실패는 차트를 막지 않는다 — 곡선이 본체다.
+                    markers: ref
+                            .watch(statsActuatorMarkersProvider)
+                            .valueOrNull ??
+                        const [],
+                    metrics: metrics,
+                  ),
                 ),
         ),
-        // 아직 없는 오버레이는 차트 바로 아래에서 밝힌다 — 차트를 보고
-        // "분무를 언제 했더라"를 떠올리는 자리가 여기다.
-        const SizedBox(height: AppStyles.spacing12),
-        _OverlayPending(),
       ],
-    );
-  }
-}
-
-class _OverlayPending extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return PendingSection(
-      title: 'stats_overlay_title'.tr(),
-      description: 'stats_overlay_desc'.tr(),
-      reason: 'stats_reason_hw'.tr(),
     );
   }
 }

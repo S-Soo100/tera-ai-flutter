@@ -1,0 +1,208 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:vivnanaut/core/theme/app_theme.dart';
+import 'package:vivnanaut/features/home/domain/actuator_marker.dart';
+import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivnanaut/features/stats/domain/stats_chart_data.dart';
+import 'package:vivnanaut/features/stats/domain/stats_window.dart';
+import 'package:vivnanaut/features/stats/presentation/stats_providers.dart';
+import 'package:vivnanaut/features/stats/presentation/widgets/stats_env_chart.dart';
+import 'package:vivnanaut/features/stats/presentation/widgets/stats_summary_bar.dart';
+
+/// 창을 고정해 테스트가 실행 시각에 흔들리지 않게 한다.
+/// 16:40 = Figma가 그린 프레임(어제 22시 ~ 오늘 22시).
+final _window = StatsWindow.of(DateTime(2026, 8, 10, 16, 40));
+
+StatsChartData _chart() => StatsChartData.from(
+      [
+        for (final e in [
+          (_window.start, 23.5, 58.0),
+          (_window.start.add(const Duration(hours: 6)), 25.0, 65.0),
+          (_window.start.add(const Duration(hours: 12)), 26.0, 72.0),
+        ])
+          TelemetryBucket(
+            bucket: e.$1,
+            sampleCount: 1,
+            tAvg: e.$2,
+            tMin: e.$2,
+            tMax: e.$2,
+            hAvg: e.$3,
+            hMin: e.$3,
+            hMax: e.$3,
+          ),
+      ],
+      from: _window.start,
+      to: _window.end,
+    );
+
+Future<ProviderContainer> _pumpChart(
+  WidgetTester tester, {
+  List<ActuatorMarker> markers = const [],
+}) async {
+  tester.view.physicalSize = const Size(402, 1200);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+
+  final c = ProviderContainer();
+  addTearDown(c.dispose);
+
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: c,
+      child: MaterialApp(
+        home: Scaffold(
+          body: StatsEnvChart(
+            data: _chart(),
+            window: _window,
+            markers: markers,
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return c;
+}
+
+/// 요약 바만 띄운다.
+///
+/// **[scrub]은 위젯을 올린 뒤에 넣는다** — [statsScrubProvider]가 autoDispose라
+/// 지켜보는 위젯이 없을 때 넣은 값은 그 자리에서 버려진다.
+Future<ProviderContainer> _pumpSummary(
+  WidgetTester tester, {
+  double? scrub,
+}) async {
+  tester.view.physicalSize = const Size(402, 800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+
+  final c = ProviderContainer(overrides: [
+    currentDeviceIdProvider.overrideWith((ref) async => 'dev-1'),
+    todayExtremesProvider
+        .overrideWith((ref) async => throw UnimplementedError()),
+    telemetryStreamProvider('dev-1').overrideWith((ref) => Stream.value(null)),
+    statsChartDataProvider.overrideWith((ref) async => _chart()),
+    statsWindowProvider.overrideWith((ref) => _window),
+  ]);
+  addTearDown(c.dispose);
+
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: c,
+      child: const MaterialApp(
+        home: Scaffold(body: StatsSummaryBar()),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+
+  if (scrub != null) {
+    c.read(statsScrubProvider.notifier).state = scrub;
+    await tester.pumpAndSettle();
+  }
+  return c;
+}
+
+void main() {
+  group('동작 마커 (Figma §3.1)', () {
+    testWidgets('마커가 없으면 행이 자리를 차지하지 않는다', (tester) async {
+      await _pumpChart(tester);
+      expect(find.byKey(StatsEnvChart.markerRowKey), findsNothing);
+    });
+
+    testWidgets('창 안의 마커는 칩으로 그려진다', (tester) async {
+      await _pumpChart(tester, markers: [
+        ActuatorMarker(
+          kind: MarkerKind.mist,
+          at: _window.start.add(const Duration(hours: 3)),
+        ),
+        ActuatorMarker(
+          kind: MarkerKind.fan,
+          at: _window.start.add(const Duration(hours: 9)),
+        ),
+      ]);
+      expect(find.byKey(StatsEnvChart.markerRowKey), findsOneWidget);
+      expect(find.byIcon(Icons.shower), findsOneWidget);
+      expect(find.byIcon(Icons.mode_fan_off), findsOneWidget);
+    });
+
+    testWidgets('창 밖 마커는 그리지 않는다 — 차트 밖 동작을 안에 찍으면 거짓말이 된다',
+        (tester) async {
+      await _pumpChart(tester, markers: [
+        ActuatorMarker(
+          kind: MarkerKind.mist,
+          at: _window.start.subtract(const Duration(hours: 2)),
+        ),
+      ]);
+      expect(find.byIcon(Icons.shower), findsNothing);
+    });
+  });
+
+  group('미도래 밴드', () {
+    test('아직 안 지난 시간이 남아 있으면 밴드 구간이 생긴다', () {
+      expect(_window.elapsed, lessThan(1));
+    });
+
+    test('밴드 색은 다크에서 뒤집힌다 — 어두운 플롯에 흰 띠가 박히면 안 된다', () {
+      expect(AppTheme.chartFutureBand(Brightness.light), AppTheme.lineColor);
+      expect(AppTheme.chartFutureBand(Brightness.dark),
+          isNot(AppTheme.lineColor));
+    });
+  });
+
+  group('스크러버 ↔ 요약 바 (Figma 변형 B)', () {
+    testWidgets('스크럽 전에는 요약 바가 그대로다', (tester) async {
+      await _pumpSummary(tester);
+      expect(find.byKey(StatsSummaryBar.scrubKey), findsNothing);
+    });
+
+    // 값 자체가 맞는지는 도메인(`stats_chart_data_test`)이 본다. 여기서는
+    // **배선** — 스크럽 위치가 시각·지표로 이어지는지 —만 확인한다.
+    // (테스트에서 `.tr()`은 번역 없이 키를 그대로 돌려준다.)
+    testWidgets('스크럽하면 그 시점 표시로 바뀐다 — 온·습도 둘 다', (tester) async {
+      await _pumpSummary(tester, scrub: 0.25);
+      final readout = find.byKey(StatsSummaryBar.scrubKey);
+      expect(readout, findsOneWidget);
+      expect(
+        find.descendant(of: readout, matching: find.byIcon(Icons.thermostat)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: readout, matching: find.byIcon(Icons.water_drop)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('스크럽 위치에 따라 오전/오후가 갈린다', (tester) async {
+      // 창 시작 = 어제 22:00. +6h = 오전 4시, +18h = 오후 4시.
+      final c = await _pumpSummary(tester, scrub: 0.25);
+      expect(find.text('stats_scrub_time_am'), findsOneWidget);
+
+      c.read(statsScrubProvider.notifier).state = 0.75;
+      await tester.pumpAndSettle();
+      expect(find.text('stats_scrub_time_pm'), findsOneWidget);
+    });
+
+    testWidgets('손을 떼면 원래 요약으로 돌아온다', (tester) async {
+      final c = await _pumpSummary(tester, scrub: 0.25);
+      c.read(statsScrubProvider.notifier).state = null;
+      await tester.pumpAndSettle();
+      expect(find.byKey(StatsSummaryBar.scrubKey), findsNothing);
+    });
+
+    testWidgets('스크럽해도 요약 바 높이가 변하지 않는다 — 차트가 위아래로 튀면 못 읽는다',
+        (tester) async {
+      final c = await _pumpSummary(tester);
+      final before = tester.getSize(find.byKey(StatsSummaryBar.barKey));
+
+      c.read(statsScrubProvider.notifier).state = 0.5;
+      await tester.pumpAndSettle();
+      final after = tester.getSize(find.byKey(StatsSummaryBar.barKey));
+
+      expect(after.height, before.height);
+    });
+  });
+}

@@ -72,8 +72,9 @@ void main() {
     testWidgets('못 만든 섹션은 자리표시자로 남는다 — 빈 화면으로 두지 않는다',
         (tester) async {
       await _pump(tester);
-      // §4.3.3 오버레이 + §4.3.4~8 다섯 칸.
-      expect(find.byType(PendingSection), findsNWidgets(6));
+      // §4.3.4~8 다섯 칸. §4.3.3 오버레이(기기 작동 표시)는 Figma 동작 마커로
+      // 실물이 되어 자리표시자에서 빠졌다.
+      expect(find.byType(PendingSection), findsNWidgets(5));
     });
   });
 

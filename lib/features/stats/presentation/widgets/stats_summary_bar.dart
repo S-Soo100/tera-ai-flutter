@@ -6,16 +6,25 @@ import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../home/presentation/home_control_providers.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
+import '../../domain/stats_chart_data.dart';
+import '../../domain/stats_metric.dart';
+import '../stats_providers.dart';
+import 'stats_env_chart.dart';
 
 /// Figma 24시 화면 상단 요약 바.
 ///
 /// 좌우 2분할로 온도·습도를 대칭 배치하고, 각 아래에 최고/최저를 작게 붙인다.
 /// 최고/최저는 **당일(07:00~) 기준**([todayExtremesProvider])이다 — 차트 구간
 /// (전날 19:00~현재)과 다른 창이니 혼동하지 말 것.
+///
+/// **스크럽 중에는 이 자리가 그 시점의 값으로 바뀐다**(Figma 변형 B). 두 표시가
+/// 같은 자리를 쓰므로 [Stack]으로 겹쳐 높이를 고정한다 — 손을 댈 때마다 아래
+/// 차트가 위아래로 튀면 읽을 수가 없다.
 class StatsSummaryBar extends ConsumerWidget {
   const StatsSummaryBar({super.key});
 
   static const barKey = Key('stats_summary_bar');
+  static const scrubKey = Key('stats_scrub_readout');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,40 +33,186 @@ class StatsSummaryBar extends ConsumerWidget {
 
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
     final ex = ref.watch(todayExtremesProvider).valueOrNull;
+    final scrub = ref.watch(statsScrubProvider);
+    final data = ref.watch(statsChartDataProvider).valueOrNull;
+
+    final showScrub = scrub != null && data != null;
 
     return Padding(
       key: barKey,
       padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
-      child: Row(
+      child: Stack(
         children: [
-          Expanded(
-            child: _Metric(
-              icon: Icons.thermostat,
-              color: AppTheme.chartTemperature,
-              value: 'stats_axis_temp'.tr(
-                namedArgs: {'v': t?.tA?.toStringAsFixed(1) ?? '--'},
-              ),
-              extremes: 'stats_extremes_temp'.tr(namedArgs: {
-                'max': ex?.tempMax?.toStringAsFixed(1) ?? '--',
-                'min': ex?.tempMin?.toStringAsFixed(1) ?? '--',
-              }),
+          // 스크럽 중에도 자리는 지킨다 — 높이를 정하는 쪽이 이 위젯이다.
+          Opacity(
+            opacity: showScrub ? 0 : 1,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _Metric(
+                    icon: Icons.thermostat,
+                    color: AppTheme.chartTemperature,
+                    value: 'stats_axis_temp'.tr(
+                      namedArgs: {'v': t?.tA?.toStringAsFixed(1) ?? '--'},
+                    ),
+                    extremes: 'stats_extremes_temp'.tr(namedArgs: {
+                      'max': ex?.tempMax?.toStringAsFixed(1) ?? '--',
+                      'min': ex?.tempMin?.toStringAsFixed(1) ?? '--',
+                    }),
+                  ),
+                ),
+                Expanded(
+                  child: _Metric(
+                    icon: Icons.water_drop,
+                    color: AppTheme.chartHumidity,
+                    value: 'stats_axis_humid'.tr(
+                      namedArgs: {'v': t?.hA?.toStringAsFixed(0) ?? '--'},
+                    ),
+                    extremes: 'stats_extremes_humid'.tr(namedArgs: {
+                      'max': ex?.humidMax?.toStringAsFixed(0) ?? '--',
+                      'min': ex?.humidMin?.toStringAsFixed(0) ?? '--',
+                    }),
+                  ),
+                ),
+              ],
             ),
           ),
-          Expanded(
-            child: _Metric(
-              icon: Icons.water_drop,
-              color: AppTheme.chartHumidity,
-              value: 'stats_axis_humid'.tr(
-                namedArgs: {'v': t?.hA?.toStringAsFixed(0) ?? '--'},
+          if (showScrub)
+            Positioned.fill(
+              child: _ScrubReadout(
+                key: scrubKey,
+                data: data,
+                x: scrub,
+                metrics: ref.watch(statsMetricsProvider),
               ),
-              extremes: 'stats_extremes_humid'.tr(namedArgs: {
-                'max': ex?.humidMax?.toStringAsFixed(0) ?? '--',
-                'min': ex?.humidMin?.toStringAsFixed(0) ?? '--',
-              }),
             ),
-          ),
         ],
       ),
+    );
+  }
+}
+
+/// 스크러버가 가리키는 시점의 값 (Figma §3.1 "스크러버 툴팁").
+///
+/// **손가락을 따라 좌우로 움직인다** — 화면 가운데 고정해두면 어느 시점을
+/// 읽고 있는지가 끊긴다. 플롯 좌표를 되짚어야 해서 [StatsEnvChart.plotInset]을
+/// 빌려온다.
+class _ScrubReadout extends StatelessWidget {
+  const _ScrubReadout({
+    super.key,
+    required this.data,
+    required this.x,
+    required this.metrics,
+  });
+
+  final StatsChartData data;
+  final double x;
+  final Set<StatsMetric> metrics;
+
+  /// Figma `Frame 10` 폭.
+  static const double _width = 159;
+
+  /// 요약 바 여백과 플롯 시작점의 차이. 이만큼 안으로 들어가야 플롯 x와 맞는다.
+  static const double _delta = StatsEnvChart.plotInset - AppStyles.spacing16;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final at = data.timeAt(x);
+    final isAm = at.hour < 12;
+    final h12 = at.hour % 12 == 0 ? 12 : at.hour % 12;
+
+    final temp =
+        metrics.contains(StatsMetric.temperature) ? data.tempAt(x) : null;
+    final humid =
+        metrics.contains(StatsMetric.humidity) ? data.humidAt(x) : null;
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        final plotWidth = (c.maxWidth - _delta * 2).clamp(0.0, c.maxWidth);
+        final left = (_delta + x * plotWidth - _width / 2)
+            .clamp(0.0, (c.maxWidth - _width).clamp(0.0, double.infinity));
+
+        return Stack(
+          children: [
+            Positioned(
+              left: left,
+              top: 0,
+              bottom: 0,
+              width: _width,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    (isAm ? 'stats_scrub_time_am' : 'stats_scrub_time_pm').tr(
+                      namedArgs: {
+                        'h': '$h12',
+                        'm': at.minute.toString().padLeft(2, '0'),
+                      },
+                    ),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (temp != null)
+                          _ScrubValue(
+                            icon: Icons.thermostat,
+                            color: AppTheme.chartTemperature,
+                            text: 'stats_axis_temp'.tr(
+                              namedArgs: {'v': temp.toStringAsFixed(0)},
+                            ),
+                          ),
+                        if (temp != null && humid != null)
+                          const SizedBox(width: AppStyles.spacing8),
+                        if (humid != null)
+                          _ScrubValue(
+                            icon: Icons.water_drop,
+                            color: AppTheme.chartHumidity,
+                            text: 'stats_axis_humid'.tr(
+                              namedArgs: {'v': humid.toStringAsFixed(0)},
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ScrubValue extends StatelessWidget {
+  const _ScrubValue({
+    required this.icon,
+    required this.color,
+    required this.text,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: AppStyles.spacing4),
+        Text(text, style: AppStyles.subsectionTitle(context)),
+      ],
     );
   }
 }

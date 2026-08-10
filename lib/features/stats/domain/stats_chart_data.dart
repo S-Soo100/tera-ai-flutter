@@ -41,6 +41,52 @@ class StatsChartData {
   /// 그릴 선이 하나라도 있는가. 점 1개짜리 선은 그려도 보이지 않으므로 제외한다.
   bool get hasData => tempPoints.length > 1 || humidPoints.length > 1;
 
+  // ── 스크러버 조회 (Figma §3.1 "스크러버 툴팁") ──
+  //
+  // 손가락이 닿은 **곡선 위의 값**을 읽어준다. 원시 x를 그대로 쓰면 선과 점이
+  // 어긋나 보이므로(버킷이 30분 간격이라 최대 15분어치 벌어진다), 먼저 가장
+  // 가까운 데이터 지점으로 **맞춘 뒤**([snap]) 그 자리의 값을 읽는다.
+
+  /// [x]에 가장 가까운 데이터 지점의 위치. 그릴 점이 없으면 null.
+  double? snap(double x) =>
+      _nearest(tempPoints.isNotEmpty ? tempPoints : humidPoints, x)?.x;
+
+  /// [x] 자리의 온도(실제 단위 ℃). 없으면 null.
+  double? tempAt(double x) => _realValue(_nearest(tempPoints, x), tempAxis);
+
+  /// [x] 자리의 습도(실제 단위 %). 없으면 null.
+  double? humidAt(double x) => _realValue(_nearest(humidPoints, x), humidAxis);
+
+  /// [x] 자리의 시각.
+  DateTime timeAt(double x) {
+    final total = to.difference(from).inMicroseconds;
+    if (total <= 0) return from;
+    return from.add(
+      Duration(microseconds: (total * x.clamp(0.0, 1.0)).round()),
+    );
+  }
+
+  static ({double x, double y})? _nearest(
+    List<({double x, double y})> pts,
+    double x,
+  ) {
+    if (pts.isEmpty) return null;
+    var best = pts.first;
+    var bestGap = (best.x - x).abs();
+    for (final p in pts) {
+      final gap = (p.x - x).abs();
+      if (gap < bestGap) {
+        best = p;
+        bestGap = gap;
+      }
+    }
+    return best;
+  }
+
+  /// 정규화된 y를 사람이 읽는 값으로 되돌린다. 0.42를 보여줘봐야 의미가 없다.
+  static double? _realValue(({double x, double y})? p, AxisBounds? axis) =>
+      (p == null || axis == null) ? null : axis.min + p.y * axis.span;
+
   /// 눈금 간격. Figma 기준 온·습도 모두 5.
   static const double tempStep = 5;
   static const double humidStep = 5;

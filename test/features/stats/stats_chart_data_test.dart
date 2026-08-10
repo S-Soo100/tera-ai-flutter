@@ -124,6 +124,67 @@ void main() {
     });
   });
 
+  group('스크러버 조회', () {
+    // 19:00~07:00 12시간. 22:00 = 0.25, 01:00 = 0.5
+    List<TelemetryBucket> sample() => [
+          _b(_from, t: 24, h: 60),
+          _b(DateTime(2026, 8, 4, 22), t: 26, h: 65),
+          _b(DateTime(2026, 8, 5, 1), t: 28, h: 70),
+          _b(_to, t: 25, h: 55),
+        ];
+
+    test('가장 가까운 데이터 지점으로 맞춘다 — 선과 점이 어긋나면 안 된다', () {
+      final d = _data(sample());
+      expect(d.snap(0.26), closeTo(0.25, 1e-9));
+      expect(d.snap(0.49), closeTo(0.5, 1e-9));
+    });
+
+    test('맞춘 자리의 실제 온·습도를 돌려준다', () {
+      final d = _data(sample());
+      expect(d.tempAt(0.25), closeTo(26, 1e-9));
+      expect(d.humidAt(0.25), closeTo(65, 1e-9));
+    });
+
+    test('정규화 값이 아니라 사람이 읽는 단위다', () {
+      final d = _data(sample());
+      expect(d.tempAt(0.5), closeTo(28, 1e-9));
+      expect(d.humidAt(0.5), closeTo(70, 1e-9));
+    });
+
+    test('한쪽 지표만 있으면 다른 쪽은 null', () {
+      final d = _data([_b(_from, t: 24), _b(_to, t: 26)]);
+      expect(d.tempAt(0), isNotNull);
+      expect(d.humidAt(0), isNull);
+    });
+
+    test('데이터가 없으면 snap도 null — 스크러버를 띄우지 않는다', () {
+      expect(_data(const []).snap(0.5), isNull);
+    });
+
+    test('0 센티넬 자리는 건너뛰고 옆 실측을 집는다', () {
+      final d = _data([
+        _b(_from, t: 24),
+        _b(DateTime(2026, 8, 4, 22), t: 0), // 센서 오프라인
+        _b(_to, t: 26),
+      ]);
+      expect(d.snap(0.25), isNot(closeTo(0.25, 1e-9)));
+      expect(d.tempAt(0.25), isNotNull);
+    });
+
+    test('시각은 구간을 비율로 나눈 값', () {
+      final d = _data(sample());
+      expect(d.timeAt(0), _from);
+      expect(d.timeAt(1), _to);
+      expect(d.timeAt(0.25), DateTime(2026, 8, 4, 22));
+    });
+
+    test('구간 밖 x를 넣어도 시각이 구간을 벗어나지 않는다', () {
+      final d = _data(sample());
+      expect(d.timeAt(-0.5), _from);
+      expect(d.timeAt(1.5), _to);
+    });
+  });
+
   group('폭이 0인 구간', () {
     test('from == to면 점을 만들지 않는다 — 0으로 나누지 않는다', () {
       final d = StatsChartData.from(
