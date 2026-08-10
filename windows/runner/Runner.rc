@@ -89,12 +89,12 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.vivananunt" "\0"
+            VALUE "CompanyName", "com.vivnanaut" "\0"
             VALUE "FileDescription", "비바나트" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "비바나트" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.vivananunt. All rights reserved." "\0"
-            VALUE "OriginalFilename", "vivananunt.exe" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.vivnanaut. All rights reserved." "\0"
+            VALUE "OriginalFilename", "vivnanaut.exe" "\0"
             VALUE "ProductName", "비바나트" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

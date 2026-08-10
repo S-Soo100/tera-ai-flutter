@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/core/theme/app_styles.dart';
-import 'package:vivananunt/shared/widgets/screen_header.dart';
+import 'package:vivnanaut/core/theme/app_styles.dart';
+import 'package:vivnanaut/shared/widgets/screen_header.dart';
 
 Future<void> _pump(
   WidgetTester tester, {

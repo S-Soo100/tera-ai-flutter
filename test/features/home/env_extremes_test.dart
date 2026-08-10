@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/home/domain/env_extremes.dart';
-import 'package:vivananunt/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivnanaut/features/home/domain/env_extremes.dart';
+import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
 
 TelemetryBucket _b({
   required double tMin,

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/home/domain/env_extremes.dart';
-import 'package:vivananunt/features/home/presentation/cage_control_actions.dart';
-import 'package:vivananunt/features/home/presentation/home_control_providers.dart';
-import 'package:vivananunt/features/home/presentation/widgets/env_mini_chart.dart';
-import 'package:vivananunt/features/home/presentation/widgets/live_env_card.dart';
-import 'package:vivananunt/features/home/presentation/widgets/quick_control_grid.dart';
-import 'package:vivananunt/features/my_cage/domain/actuator_state.dart';
-import 'package:vivananunt/features/my_cage/domain/telemetry_bucket.dart';
-import 'package:vivananunt/features/my_cage/domain/telemetry_reading.dart';
-import 'package:vivananunt/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivnanaut/features/home/domain/env_extremes.dart';
+import 'package:vivnanaut/features/home/presentation/cage_control_actions.dart';
+import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivnanaut/features/home/presentation/widgets/env_mini_chart.dart';
+import 'package:vivnanaut/features/home/presentation/widgets/live_env_card.dart';
+import 'package:vivnanaut/features/home/presentation/widgets/quick_control_grid.dart';
+import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
+import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivnanaut/features/my_cage/domain/telemetry_reading.dart';
+import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
 
 const _deviceId = 'dev-1';
 

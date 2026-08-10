@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/my_cage/domain/cage_activity.dart';
+import 'package:vivnanaut/features/my_cage/domain/cage_activity.dart';
 
 void main() {
   group('activityRangeBounds (오전 7시 기준 하루 경계)', () {

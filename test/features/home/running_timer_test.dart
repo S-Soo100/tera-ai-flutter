@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/home/domain/running_timer.dart';
+import 'package:vivnanaut/features/home/domain/running_timer.dart';
 
 RunningTimer _t(DateTime endsAt) => RunningTimer(
       id: 't1',

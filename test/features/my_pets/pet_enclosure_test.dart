@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/my_pets/domain/pet.dart';
+import 'package:vivnanaut/features/my_pets/domain/pet.dart';
 
 Pet _pet({String? enclosureId}) => Pet(
       id: 'pet-1',

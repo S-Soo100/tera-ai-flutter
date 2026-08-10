@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:vivananunt/features/my_cage/data/motion_clip_repository.dart';
+import 'package:vivnanaut/features/my_cage/data/motion_clip_repository.dart';
 
 void main() {
   final from = DateTime.utc(2026, 7, 13, 7);

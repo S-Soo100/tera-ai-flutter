@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/my_cage/domain/motion_clip.dart';
+import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
 
 void main() {
   group('MotionClip.fromJson', () {

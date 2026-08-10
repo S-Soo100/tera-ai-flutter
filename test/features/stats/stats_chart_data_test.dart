@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/my_cage/domain/telemetry_bucket.dart';
-import 'package:vivananunt/features/stats/domain/stats_chart_data.dart';
+import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivnanaut/features/stats/domain/stats_chart_data.dart';
 
 final _from = DateTime(2026, 8, 4, 19);
 final _to = DateTime(2026, 8, 5, 7); // 12시간

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:vivananunt/core/router/tab_branches.dart';
-import 'package:vivananunt/core/router/app_router.dart';
+import 'package:vivnanaut/core/router/tab_branches.dart';
+import 'package:vivnanaut/core/router/app_router.dart';
 
 void main() {
   group('4탭 IA (PRD 목업 바텀 네비)', () {

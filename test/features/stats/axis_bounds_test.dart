@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/stats/domain/axis_bounds.dart';
+import 'package:vivnanaut/features/stats/domain/axis_bounds.dart';
 
 void main() {
   group('AxisBounds.forValues — 눈금 단위로 스냅', () {

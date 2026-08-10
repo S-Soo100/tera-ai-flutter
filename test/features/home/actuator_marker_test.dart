@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/home/domain/actuator_marker.dart';
+import 'package:vivnanaut/features/home/domain/actuator_marker.dart';
 
 Map<String, dynamic> _cmd(String action, String issuedAt,
         {String status = 'acked'}) =>

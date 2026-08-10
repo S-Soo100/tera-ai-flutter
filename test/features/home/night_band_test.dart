@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/home/domain/night_band.dart';
+import 'package:vivnanaut/features/home/domain/night_band.dart';
 
 void main() {
   group('nightBands — 22:00~06:00 구간을 차트 좌표로', () {

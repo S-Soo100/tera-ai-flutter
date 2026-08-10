@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/home/domain/pet_dday.dart';
-import 'package:vivananunt/features/my_cage/domain/species_comfort.dart';
+import 'package:vivnanaut/features/home/domain/pet_dday.dart';
+import 'package:vivnanaut/features/my_cage/domain/species_comfort.dart';
 
 void main() {
   group('dDayLabel — PRD 목업 문구 형식', () {

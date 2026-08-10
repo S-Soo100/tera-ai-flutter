@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/my_cage/domain/nightly_highlight.dart';
-import 'package:vivananunt/features/my_cage/domain/nightly_report.dart';
+import 'package:vivnanaut/features/my_cage/domain/nightly_highlight.dart';
+import 'package:vivnanaut/features/my_cage/domain/nightly_report.dart';
 
 NightlyHighlight h(String a) => NightlyHighlight(
     clipId: a, startedAt: DateTime(2026, 7, 7, 23), vlmAction: a,

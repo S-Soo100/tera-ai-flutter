@@ -1,6 +1,6 @@
 # 기획안 ↔ 구현 대조
 
-**기준**: `docs/prd-vivanart-app.md` (2026-08-08 재작성) vs 코드 (2026-08-09, `feat/prd-redesign`)
+**기준**: `docs/prd-vivnanaut-app.md` (2026-08-08 재작성) vs 코드 (2026-08-09, `feat/prd-redesign`)
 
 기획안 본문에는 구현 이야기를 적지 않는다(기획안 §0.2 "구현 역산 금지"). 대조는 이 문서가 맡는다.
 

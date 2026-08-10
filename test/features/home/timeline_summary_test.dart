@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivananunt/features/home/domain/timeline_summary.dart';
-import 'package:vivananunt/features/my_cage/domain/motion_clip.dart';
+import 'package:vivnanaut/features/home/domain/timeline_summary.dart';
+import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
 
 MotionClip _c({required double sec, String? action}) => MotionClip(
       id: 'c-$sec-$action',
