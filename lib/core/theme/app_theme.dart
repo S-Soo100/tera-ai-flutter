@@ -87,12 +87,16 @@ class AppTheme {
   /// 겸해서 **현재 시각이 그래프의 어디인지**를 알려준다 — 그전에는 곡선이
   /// 끊긴 자리로 짐작하는 수밖에 없었고, 데이터가 비면 그마저 안 됐다.
   ///
-  /// 스크러버 선(거의 검정)보다 확실히 연하게 둔다. 둘이 경쟁하면 손가락이
+  /// 굵기가 아니라 **색**으로 눈에 띄게 한다. 1px을 유지해야 격자선과 같은
+  /// "가는 선" 무리에 남는다 — 두껍게 하면 곡선·스크러버와 무게를 다투고,
+  /// 경계 표시는 무거울 이유가 없다.
+  ///
+  /// 스크러버 선(거의 검정)보다는 확실히 연하다. 둘이 경쟁하면 손가락이
   /// 가리키는 자리가 어디인지 헷갈린다.
   static Color chartNowLine(Brightness brightness) =>
       brightness == Brightness.dark
-          ? Colors.white.withValues(alpha: 0.28)
-          : neutralCoolGray;
+          ? Colors.white.withValues(alpha: 0.38)
+          : textMuted;
 
   /// **동작 마커 칩** 배경 — 차트 위 분무·팬 아이콘이 앉는 자리.
   ///
