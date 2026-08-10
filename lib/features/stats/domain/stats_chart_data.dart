@@ -57,6 +57,13 @@ class StatsChartData {
   /// [x] 자리의 습도(실제 단위 %). 없으면 null.
   double? humidAt(double x) => _realValue(_nearest(humidPoints, x), humidAxis);
 
+  /// [x] 자리의 **정규화 y**(0~1). 스크러버 점을 곡선 위에 얹을 때 쓴다 —
+  /// 값이 아니라 위치가 필요한 자리라 되돌리지 않는다.
+  double? tempNormAt(double x) => _nearest(tempPoints, x)?.y;
+
+  /// [x] 자리의 정규화 y. 습도 쪽.
+  double? humidNormAt(double x) => _nearest(humidPoints, x)?.y;
+
   /// [x] 자리의 시각.
   DateTime timeAt(double x) {
     final total = to.difference(from).inMicroseconds;

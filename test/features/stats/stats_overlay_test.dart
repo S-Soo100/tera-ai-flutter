@@ -215,11 +215,34 @@ void main() {
       expect(find.text('stats_scrub_time_pm'), findsOneWidget);
     });
 
-    testWidgets('손을 떼면 원래 요약으로 돌아온다', (tester) async {
+    // 손을 떼도 값은 남는다(사용자 결정) — 읽고, 비교하고, 스크린샷을 찍을 수
+    // 있어야 하기 때문이다. 대신 **나가는 문**이 반드시 있어야 한다.
+    testWidgets('스크럽 중에는 해제 버튼이 함께 뜬다 — 없으면 최고/최저로 못 돌아간다',
+        (tester) async {
+      final c = await _pumpSummary(tester);
+      expect(find.byKey(StatsSummaryBar.clearKey), findsNothing);
+
+      c.read(statsScrubProvider.notifier).state = 0.25;
+      await tester.pumpAndSettle();
+      expect(find.byKey(StatsSummaryBar.clearKey), findsOneWidget);
+    });
+
+    testWidgets('해제 버튼을 누르면 원래 요약으로 돌아온다', (tester) async {
       final c = await _pumpSummary(tester, scrub: 0.25);
-      c.read(statsScrubProvider.notifier).state = null;
+      await tester.tap(find.byKey(StatsSummaryBar.clearKey));
       await tester.pumpAndSettle();
       expect(find.byKey(StatsSummaryBar.scrubKey), findsNothing);
+      expect(c.read(statsScrubProvider), isNull);
+    });
+
+    testWidgets('오른쪽 끝을 스크럽해도 해제 버튼을 가리지 않는다', (tester) async {
+      await _pumpSummary(tester, scrub: 1.0);
+      final clear = tester.getRect(find.byKey(StatsSummaryBar.clearKey));
+      final readout = tester.getRect(find.byKey(StatsSummaryBar.scrubKey));
+      // readout은 Positioned.fill이라 폭이 같다. 실제 글자 블록으로 판정한다.
+      final text = tester.getRect(find.byType(FittedBox).first);
+      expect(text.right, lessThanOrEqualTo(clear.left + 0.5),
+          reason: 'readout=$readout clear=$clear text=$text');
     });
 
     testWidgets('스크럽해도 요약 바 높이가 변하지 않는다 — 차트가 위아래로 튀면 못 읽는다',

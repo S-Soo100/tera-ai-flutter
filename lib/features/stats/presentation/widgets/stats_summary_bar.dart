@@ -26,6 +26,10 @@ class StatsSummaryBar extends ConsumerWidget {
 
   static const barKey = Key('stats_summary_bar');
   static const scrubKey = Key('stats_scrub_readout');
+  static const clearKey = Key('stats_scrub_clear');
+
+  /// 해제 버튼이 차지하는 폭. 스크럽 표시가 여기까지 밀고 들어오면 겹친다.
+  static const double clearWidth = 32;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -77,7 +81,7 @@ class StatsSummaryBar extends ConsumerWidget {
               ],
             ),
           ),
-          if (showScrub)
+          if (showScrub) ...[
             Positioned.fill(
               child: _ScrubReadout(
                 key: scrubKey,
@@ -86,6 +90,19 @@ class StatsSummaryBar extends ConsumerWidget {
                 metrics: ref.watch(statsMetricsProvider),
               ),
             ),
+            // **나가는 문.** 스크럽 값이 요약 바를 덮으므로, 이 버튼이 없으면
+            // 최고/최저로 돌아갈 방법이 사라진다.
+            Positioned(
+              key: clearKey,
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: _ClearScrubButton(
+                onPressed: () =>
+                    ref.read(statsScrubProvider.notifier).state = null,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -131,8 +148,10 @@ class _ScrubReadout extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, c) {
         final plotWidth = (c.maxWidth - _delta * 2).clamp(0.0, c.maxWidth);
-        final left = (_delta + x * plotWidth - _width / 2)
-            .clamp(0.0, (c.maxWidth - _width).clamp(0.0, double.infinity));
+        // 오른쪽 끝은 해제 버튼 자리를 비워둔다 — 겹치면 버튼을 못 누른다.
+        final limit = (c.maxWidth - _width - StatsSummaryBar.clearWidth)
+            .clamp(0.0, double.infinity);
+        final left = (_delta + x * plotWidth - _width / 2).clamp(0.0, limit);
 
         return Stack(
           children: [
@@ -274,3 +293,35 @@ TextStyle? metricValueStyle(BuildContext context) =>
 
 /// Figma 지표 아이콘 크기(24×24).
 const double _iconSize = 24;
+
+/// 스크럽 해제 버튼.
+///
+/// Figma에는 없다 — 디자인은 스크럽 **중인 한 장면**만 그렸고 거기서 어떻게
+/// 빠져나오는지는 다루지 않았다. 값을 남기기로 한 이상 없으면 갇힌다.
+class _ClearScrubButton extends StatelessWidget {
+  const _ClearScrubButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'stats_scrub_clear'.tr(),
+      child: InkResponse(
+        onTap: onPressed,
+        radius: 20,
+        child: SizedBox(
+          width: StatsSummaryBar.clearWidth,
+          child: Center(
+            child: Icon(
+              Icons.close,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              semanticLabel: 'stats_scrub_clear'.tr(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

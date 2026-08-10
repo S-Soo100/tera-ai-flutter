@@ -340,37 +340,15 @@ class _Plot extends ConsumerWidget {
               titlesData: const FlTitlesData(show: false),
               gridData: const FlGridData(show: false),
               borderData: FlBorderData(show: false),
+              // **표시는 우리가 한다.** 라이브러리 기본 인디케이터는 누르고
+              // 있는 동안만 그려지는데, 스크럽 값은 손을 떼도 남기기로 했다
+              // (사용자 결정). 기본 표시에 맡기면 요약 바에는 값이 남았는데
+              // 차트에는 선이 없는 상태가 된다.
               lineTouchData: LineTouchData(
-                // 기본 말풍선은 끈다 — 값은 상단 요약 바가 Figma 배치대로 보여준다.
-                touchTooltipData: LineTouchTooltipData(
-                  getTooltipColor: (_) => Colors.transparent,
-                  getTooltipItems: (spots) => List.filled(spots.length, null),
-                ),
-                // Figma "스크러버 점": 세로선 + 선 위 흰 점(4×4, 테두리 `#1e1e1e`).
-                getTouchedSpotIndicator: (bar, indexes) => [
-                  for (final _ in indexes)
-                    TouchedSpotIndicatorData(
-                      FlLine(color: scrubLine, strokeWidth: 1),
-                      FlDotData(
-                        getDotPainter: (spot, pct, barData, index) =>
-                            FlDotCirclePainter(
-                          radius: 2,
-                          color: theme.colorScheme.surface,
-                          strokeColor: scrubLine,
-                          strokeWidth: 1,
-                        ),
-                      ),
-                    ),
-                ],
+                handleBuiltInTouches: false,
                 touchCallback: (event, response) {
                   final spots = response?.lineBarSpots;
-                  // 손을 떼면 요약 바를 원래 값으로 되돌린다.
-                  if (!event.isInterestedForInteractions ||
-                      spots == null ||
-                      spots.isEmpty) {
-                    ref.read(statsScrubProvider.notifier).state = null;
-                    return;
-                  }
+                  if (spots == null || spots.isEmpty) return;
                   final x = spots.first.x;
                   ref.read(statsScrubProvider.notifier).state =
                       data.snap(x) ?? x;
@@ -388,6 +366,24 @@ class _Plot extends ConsumerWidget {
             ),
           ),
         ),
+        if (ref.watch(statsScrubProvider) case final x?)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _ScrubPainter(
+                  x: x,
+                  tempY: metrics.contains(StatsMetric.temperature)
+                      ? data.tempNormAt(x)
+                      : null,
+                  humidY: metrics.contains(StatsMetric.humidity)
+                      ? data.humidNormAt(x)
+                      : null,
+                  line: scrubLine,
+                  dotFill: theme.colorScheme.surface,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -402,6 +398,66 @@ class _Plot extends ConsumerWidget {
       dotData: const FlDotData(show: false),
     );
   }
+}
+
+/// 스크러버 (Figma §3.1 "스크러버 점").
+///
+/// 세로선은 **플롯 박스 전체**를 관통하고(Figma `Vector 43`, 길이 113.73),
+/// 점은 각 곡선 위에 4×4로 얹힌다.
+class _ScrubPainter extends CustomPainter {
+  const _ScrubPainter({
+    required this.x,
+    required this.tempY,
+    required this.humidY,
+    required this.line,
+    required this.dotFill,
+  });
+
+  /// 0~1 위치.
+  final double x;
+
+  /// 곡선 위 **정규화 y**(0~1). 꺼진 지표는 null.
+  final double? tempY;
+  final double? humidY;
+
+  final Color line;
+  final Color dotFill;
+
+  /// 정규화 y(0~1)를 픽셀로. 차트가 쓰는 minY/maxY와 **같은 식**이어야 점이
+  /// 곡선에서 뜨지 않는다.
+  static double _dy(double norm, double height) {
+    const span = _Plot._maxY - _Plot._minY;
+    return height * (_Plot._maxY - norm) / span;
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final dx = (x * size.width).clamp(0.0, size.width);
+    canvas.drawLine(
+      Offset(dx, 0),
+      Offset(dx, size.height),
+      Paint()
+        ..color = line
+        ..strokeWidth = 1,
+    );
+
+    final fill = Paint()..color = dotFill;
+    final stroke = Paint()
+      ..color = line
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    for (final norm in [tempY, humidY]) {
+      if (norm == null) continue;
+      final c = Offset(dx, _dy(norm, size.height));
+      canvas.drawCircle(c, 2, fill);
+      canvas.drawCircle(c, 2, stroke);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ScrubPainter old) =>
+      old.x != x || old.tempY != tempY || old.humidY != humidY ||
+      old.line != line || old.dotFill != dotFill;
 }
 
 /// 기기 동작 마커 (Figma §3.1 "동작 마커").

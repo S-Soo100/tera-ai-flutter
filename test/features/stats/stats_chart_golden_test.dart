@@ -37,13 +37,15 @@ import 'package:vivnanaut/features/stats/presentation/widgets/stats_summary_bar.
 /// flutter test <이 파일> --update-goldens --run-skipped --plain-name "다크"
 /// ```
 ///
-/// ⚠️ **읽을 때 감안할 것 2가지 — 둘 다 하네스 제약이지 앱 상태가 아니다.**
-/// - 아이콘이 빈 네모로 나온다. 골든에 MaterialIcons 폰트가 없어서다
-///   (홈 골든 `control_light.png`도 같다). Pretendard만 직접 로드한다.
-/// - 스크럽 샷에 세로선·점이 없다. fl_chart의 인디케이터는 **진짜 터치**에만
-///   그려지는데, 여기서는 provider에 값을 직접 넣어 상단 표시만 재현한다.
+/// ⚠️ **읽을 때 감안할 것 — 하네스 제약이지 앱 상태가 아니다.**
+/// - Material 아이콘(해제 ✕ 등)이 빈 네모로 나온다. 골든에 MaterialIcons
+///   폰트가 없어서다(홈 골든 `control_light.png`도 같다). Figma SVG와
+///   Pretendard만 직접 로드한다.
 /// - 라이트·다크를 한 번에 돌리면 두 번째가 백지로 나온다(easy_localization
 ///   인스턴스를 두 번 세우는 문제, 홈 골든과 동일).
+///
+/// 스크럽 샷은 이제 세로선·점까지 나온다 — 표시를 라이브러리 터치 상태가 아니라
+/// provider 값으로 그리기 때문이다(손을 떼도 남기기로 한 결정의 부수 효과).
 const _deviceId = 'dev-1';
 
 /// Figma가 그린 프레임과 같은 시각 — 창은 어제 22:00 ~ 오늘 22:00,
