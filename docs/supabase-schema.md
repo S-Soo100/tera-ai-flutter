@@ -1,7 +1,7 @@
 # Supabase DB Schema Design v1
 
 ## Overview
-Tera AI Flutter 앱의 전체 데이터를 Supabase로 이관하기 위한 스키마 설계.
+비바나트 Flutter 앱의 전체 데이터를 Supabase로 이관하기 위한 스키마 설계.
 레퍼런스 데이터 + 유저 데이터 모두 포함 (방안 B).
 
 > 아래 **Tables (15개)** 는 메인 앱 소유 테이블이다. 사육장 IoT 제어용 terra-server 테이블(`devices`/`telemetry`/`commands` 등)은 동일 Supabase 프로젝트를 공유하며 별도 섹션 [terra-server IoT 테이블](#terra-server-iot-테이블-사육장-제어--동일-프로젝트-공유)에 정리.

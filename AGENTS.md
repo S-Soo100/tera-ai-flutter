@@ -14,7 +14,7 @@
 - **Codex / ChatGPT (codex CLI)** → [`CLAUDE.md`](CLAUDE.md)를 읽고 그대로 따른다. 특히:
   - 코딩 규칙 (Riverpod만 / Repository 패턴 / 하드코딩 색상·문자열 금지)
   - 금지 사항 섹션 (dio 금지, 새 패키지는 사용자 승인, CircularProgressIndicator 금지 등)
-  - CAOF 트랙 규칙 + 상세 라우팅: [`.claude/rules/tera-ai-caof.md`](.claude/rules/tera-ai-caof.md)
+  - CAOF 트랙 규칙 + 상세 라우팅: [`.claude/rules/vivnanaut-caof.md`](.claude/rules/vivnanaut-caof.md)
   - 검증 기준: `flutter analyze` 에러 0
 - **기타 도구** → CLAUDE.md + `docs/spec.md`.
 

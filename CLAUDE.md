@@ -160,7 +160,7 @@ CAOF 트랙: [Trivial / Standard / Critical]
 | Critical | 새 feature, Phase 전환 (패키지 도입 제외 — 자유 재량) | 풀 GATE (에이전트 분리) |
 
 **판단 기준은 줄 수가 아니라 "실패 시 되돌리기 비용"이다.**
-상세 라우팅 트리: `.claude/rules/tera-ai-caof.md`
+상세 라우팅 트리: `.claude/rules/vivnanaut-caof.md`
 
 ### 에이전트 폭주 방지
 

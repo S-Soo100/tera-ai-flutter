@@ -203,7 +203,7 @@ git commit -m "fix(my_cage): 크레캠 그리드 포스터를 motion_clips 최�
 
 ```dart
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/my_cage/domain/camera_presence.dart';
+import 'package:vivnanaut/features/my_cage/domain/camera_presence.dart';
 
 void main() {
   final now = DateTime.utc(2026, 7, 19, 12, 0);
@@ -249,7 +249,7 @@ void main() {
 - [ ] **Step 2: 실패 확인**
 
 Run: `flutter test test/features/my_cage/camera_presence_test.dart`
-Expected: FAIL — `Error: Couldn't resolve the package 'tera_ai/features/my_cage/domain/camera_presence.dart'` (파일 없음)
+Expected: FAIL — `Error: Couldn't resolve the package 'vivnanaut/features/my_cage/domain/camera_presence.dart'` (파일 없음)
 
 - [ ] **Step 3: 최소 구현** — `lib/features/my_cage/domain/camera_presence.dart`:
 

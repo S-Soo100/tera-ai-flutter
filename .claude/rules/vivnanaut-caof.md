@@ -1,4 +1,4 @@
-## Tera AI CAOF 라우팅
+## 비바나트 CAOF 라우팅
 
 이 프로젝트는 CAOF를 따른다. 원본: `/Users/baek/ideaBank/frameworks/claude-agent-orchestration.md`
 
@@ -8,12 +8,12 @@
 - Standard는 메인이 역할 겸임 (분석서 → 합의 → 직접 구현)
 
 ### 적용 트리거
-Tera AI 프로젝트 내 코드 변경 요청 시 CAOF 트랙을 판단한다.
+비바나트 프로젝트 내 코드 변경 요청 시 CAOF 트랙을 판단한다.
 
 ### 라우팅 트리
 
 ```
-Tera AI 요청 수신
+비바나트 요청 수신
 ├─ 버그/에러/안 돼/크래시 → 메인 Claude 원인 분석 → 직접 수정 (Standard, 진단 먼저)
 ├─ 새 feature 추가 (새 탭, 새 화면) → Critical 트랙 (풀 GATE)
 │   ① 기획서(docs/spec.md) 대조 확인
@@ -38,7 +38,7 @@ Tera AI 요청 수신
 └─ 단순 질문 → 메인 Claude 직접
 ```
 
-### Tera AI 특화 되돌리기 비용 판단
+### 비바나트 특화 되돌리기 비용 판단
 
 | 변경 유형 | 되돌리기 비용 | 최소 트랙 |
 |----------|-------------|----------|
