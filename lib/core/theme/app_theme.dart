@@ -85,6 +85,18 @@ class AppTheme {
           ? Colors.white.withValues(alpha: 0.12)
           : surfaceMuted;
 
+  /// **동작 마커 글리프** — 칩 안의 분무·팬 그림.
+  ///
+  /// Figma는 메인컬러(`#192553`)로 또렷하게 찍었다. 무채색으로 눌러두면
+  /// 장식처럼 보이는데, 이 마커는 **그 시각에 기기가 실제로 돌았다는 기록**이라
+  /// 읽히지 않으면 없는 것과 같다.
+  ///
+  /// 다크에서는 남색이 칩 배경에 묻히므로 밝은 쪽으로 뒤집는다.
+  static Color chartMarkerGlyph(Brightness brightness) =>
+      brightness == Brightness.dark
+          ? Colors.white.withValues(alpha: 0.87)
+          : brandNavy;
+
   /// **라이브 영역 면** — 영상이 놓이는 자리.
   ///
   /// 라이트/다크 무관하게 **항상 어둡다.** 영상 뷰포트를 밝은 회색으로 두면

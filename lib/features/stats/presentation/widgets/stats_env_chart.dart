@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/figma_icon.dart';
 import '../../../home/domain/actuator_marker.dart';
 import '../../domain/axis_bounds.dart';
 import '../../domain/stats_chart_data.dart';
@@ -289,6 +290,12 @@ class _Plot extends ConsumerWidget {
 ///
 /// 14×14 칩에 아이콘을 담아 플롯 **위쪽 바깥**에 얹는다. 플롯 안에 넣으면
 /// 곡선과 겹쳐 둘 다 못 읽는다.
+///
+/// **장식이 아니라 기록이다** — 이 자리에 칩이 있다는 건 그 시각에 환기나
+/// 분무가 *실제로 실행됐다*는 뜻이다(`commands`의 `status='acked'`만 온다).
+/// 그런데 아이콘만 떠 있으면 그 뜻이 읽히지 않으므로, **눌러서 언제 무엇이
+/// 돌았는지 확인할 수 있게** 한다. 화면을 읽어주는 보조기술에도 같은 문장이
+/// 전달된다.
 class _MarkerRow extends StatelessWidget {
   const _MarkerRow({required this.markers, required this.window});
 
@@ -297,19 +304,57 @@ class _MarkerRow extends StatelessWidget {
 
   static const double chipSize = 14;
 
-  static const _icon = {
-    MarkerKind.mist: Icons.shower,
-    MarkerKind.fan: Icons.mode_fan_off,
+  /// Figma가 준 SVG는 분무·팬 둘뿐이다. 히터·LED는 아직 그림이 없어
+  /// Material 아이콘으로 받친다 — 자리를 비우면 동작한 기록이 사라진다.
+  static const _svg = {
+    MarkerKind.mist: FigmaIcons.shower,
+    MarkerKind.fan: FigmaIcons.modeFan,
+  };
+
+  static const _fallbackIcon = {
     MarkerKind.heater: Icons.local_fire_department,
     MarkerKind.led: Icons.lightbulb,
   };
 
+  static const _labelKey = {
+    MarkerKind.mist: 'stats_marker_mist',
+    MarkerKind.fan: 'stats_marker_fan',
+    MarkerKind.heater: 'stats_marker_heater',
+    MarkerKind.led: 'stats_marker_led',
+  };
+
+  /// Figma SVG가 있으면 그것을, 없으면 Material 아이콘을 그린다.
+  /// SVG는 배경 사각형을 떼어낸 글리프뿐이라 칩 크기에 꽉 채운다.
+  Widget _glyph(MarkerKind kind, Color color) {
+    final name = _svg[kind];
+    if (name != null) {
+      return FigmaIcon.tinted(name, color: color, size: chipSize);
+    }
+    return Icon(_fallbackIcon[kind], size: 10, color: color);
+  }
+
+  String _label(ActuatorMarker m) {
+    final isAm = m.at.hour < 12;
+    final h12 = m.at.hour % 12 == 0 ? 12 : m.at.hour % 12;
+    final time = (isAm ? 'stats_scrub_time_am' : 'stats_scrub_time_pm').tr(
+      namedArgs: {
+        'h': '$h12',
+        'm': m.at.minute.toString().padLeft(2, '0'),
+      },
+    );
+    return 'stats_marker_ran'.tr(namedArgs: {
+      'time': time,
+      'what': _labelKey[m.kind]!.tr(),
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // 마커는 "언제 돌았나"만 알려주면 된다. 기기마다 색을 주면 온·습도 선과
-    // 색이 경쟁해 정작 읽어야 할 곡선이 묻힌다 — 무채색으로 억제한다.
-    final fg = theme.colorScheme.onSurfaceVariant;
+    // 기기 종류별로 색을 나누지는 않는다 — 온·습도 선과 색이 경쟁해 정작
+    // 읽어야 할 곡선이 묻힌다. 대신 Figma가 정한 메인컬러 한 가지로 **또렷하게**
+    // 찍는다. 무채색으로 눌러두면 실행 기록이 장식으로 보인다.
+    final fg = AppTheme.chartMarkerGlyph(theme.brightness);
     final bg = AppTheme.chartMarkerChip(theme.brightness);
 
     return SizedBox(
@@ -322,17 +367,22 @@ class _MarkerRow extends StatelessWidget {
                   case final p?)
                 Positioned(
                   // 양 끝에서 칩이 잘리지 않게 안쪽으로 붙인다.
-                  left: (p * c.maxWidth - chipSize / 2)
-                      .clamp(0.0, (c.maxWidth - chipSize).clamp(0.0, double.infinity)),
+                  left: (p * c.maxWidth - chipSize / 2).clamp(
+                      0.0, (c.maxWidth - chipSize).clamp(0.0, double.infinity)),
                   top: 0,
-                  child: Container(
-                    width: chipSize,
-                    height: chipSize,
-                    decoration: BoxDecoration(
-                      color: bg,
-                      borderRadius: BorderRadius.circular(4),
+                  child: Tooltip(
+                    message: _label(m),
+                    triggerMode: TooltipTriggerMode.tap,
+                    child: Container(
+                      width: chipSize,
+                      height: chipSize,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: bg,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: _glyph(m.kind, fg),
                     ),
-                    child: Icon(_icon[m.kind], size: 10, color: fg),
                   ),
                 ),
           ],

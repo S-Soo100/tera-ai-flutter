@@ -11,6 +11,14 @@ import 'package:vivnanaut/features/stats/domain/stats_window.dart';
 import 'package:vivnanaut/features/stats/presentation/stats_providers.dart';
 import 'package:vivnanaut/features/stats/presentation/widgets/stats_env_chart.dart';
 import 'package:vivnanaut/features/stats/presentation/widgets/stats_summary_bar.dart';
+import 'package:vivnanaut/shared/widgets/figma_icon.dart';
+
+/// Figma SVG 아이콘 하나를 집는다. `FigmaIcon`은 종류가 이름으로만 갈리므로
+/// 타입만으로는 분간이 안 된다.
+Finder _svg(String name) => find.byWidgetPredicate(
+      (w) => w is FigmaIcon && w.name == name,
+      description: 'FigmaIcon($name)',
+    );
 
 /// 창을 고정해 테스트가 실행 시각에 흔들리지 않게 한다.
 /// 16:40 = Figma가 그린 프레임(어제 22시 ~ 오늘 22시).
@@ -125,8 +133,8 @@ void main() {
         ),
       ]);
       expect(find.byKey(StatsEnvChart.markerRowKey), findsOneWidget);
-      expect(find.byIcon(Icons.shower), findsOneWidget);
-      expect(find.byIcon(Icons.mode_fan_off), findsOneWidget);
+      expect(_svg(FigmaIcons.shower), findsOneWidget);
+      expect(_svg(FigmaIcons.modeFan), findsOneWidget);
     });
 
     testWidgets('창 밖 마커는 그리지 않는다 — 차트 밖 동작을 안에 찍으면 거짓말이 된다',
@@ -137,7 +145,28 @@ void main() {
           at: _window.start.subtract(const Duration(hours: 2)),
         ),
       ]);
-      expect(find.byIcon(Icons.shower), findsNothing);
+      expect(_svg(FigmaIcons.shower), findsNothing);
+    });
+
+    // 마커는 장식이 아니라 **그 시각에 실제로 돌았다는 기록**이다. 아이콘만
+    // 떠 있으면 그 뜻이 안 읽히므로 눌러서 확인할 수 있어야 한다.
+    testWidgets('눌러보면 언제 무엇이 실행됐는지 알려준다', (tester) async {
+      await _pumpChart(tester, markers: [
+        ActuatorMarker(
+          kind: MarkerKind.fan,
+          at: _window.start.add(const Duration(hours: 6)), // 오전 4시
+        ),
+      ]);
+      final chip = _svg(FigmaIcons.modeFan);
+      expect(
+        find.ancestor(of: chip, matching: find.byType(Tooltip)),
+        findsOneWidget,
+      );
+
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+      // 번역 미초기화라 키가 그대로 나온다. 문구가 아니라 **뜬다는 사실**을 본다.
+      expect(find.text('stats_marker_ran'), findsOneWidget);
     });
   });
 
@@ -167,11 +196,11 @@ void main() {
       final readout = find.byKey(StatsSummaryBar.scrubKey);
       expect(readout, findsOneWidget);
       expect(
-        find.descendant(of: readout, matching: find.byIcon(Icons.thermostat)),
+        find.descendant(of: readout, matching: _svg(FigmaIcons.thermometer)),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: readout, matching: find.byIcon(Icons.water_drop)),
+        find.descendant(of: readout, matching: _svg(FigmaIcons.waterDrop)),
         findsOneWidget,
       );
     });

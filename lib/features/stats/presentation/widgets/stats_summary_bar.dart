@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
-import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/figma_icon.dart';
 import '../../../home/presentation/home_control_providers.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../../domain/stats_chart_data.dart';
@@ -50,8 +50,7 @@ class StatsSummaryBar extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _Metric(
-                    icon: Icons.thermostat,
-                    color: AppTheme.chartTemperature,
+                    icon: FigmaIcons.thermometer,
                     value: 'stats_axis_temp'.tr(
                       namedArgs: {'v': t?.tA?.toStringAsFixed(1) ?? '--'},
                     ),
@@ -63,8 +62,7 @@ class StatsSummaryBar extends ConsumerWidget {
                 ),
                 Expanded(
                   child: _Metric(
-                    icon: Icons.water_drop,
-                    color: AppTheme.chartHumidity,
+                    icon: FigmaIcons.waterDrop,
                     value: 'stats_axis_humid'.tr(
                       namedArgs: {'v': t?.hA?.toStringAsFixed(0) ?? '--'},
                     ),
@@ -164,8 +162,7 @@ class _ScrubReadout extends StatelessWidget {
                       children: [
                         if (temp != null)
                           _ScrubValue(
-                            icon: Icons.thermostat,
-                            color: AppTheme.chartTemperature,
+                            icon: FigmaIcons.thermometer,
                             text: 'stats_axis_temp'.tr(
                               namedArgs: {'v': temp.toStringAsFixed(0)},
                             ),
@@ -174,8 +171,7 @@ class _ScrubReadout extends StatelessWidget {
                           const SizedBox(width: AppStyles.spacing8),
                         if (humid != null)
                           _ScrubValue(
-                            icon: Icons.water_drop,
-                            color: AppTheme.chartHumidity,
+                            icon: FigmaIcons.waterDrop,
                             text: 'stats_axis_humid'.tr(
                               namedArgs: {'v': humid.toStringAsFixed(0)},
                             ),
@@ -194,14 +190,10 @@ class _ScrubReadout extends StatelessWidget {
 }
 
 class _ScrubValue extends StatelessWidget {
-  const _ScrubValue({
-    required this.icon,
-    required this.color,
-    required this.text,
-  });
+  const _ScrubValue({required this.icon, required this.text});
 
-  final IconData icon;
-  final Color color;
+  /// Figma SVG 파일명. 색은 파일이 갖고 있다.
+  final String icon;
   final String text;
 
   @override
@@ -209,7 +201,7 @@ class _ScrubValue extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 20, color: color),
+        FigmaIcon.metric(icon),
         const SizedBox(width: AppStyles.spacing4),
         Text(text, style: AppStyles.subsectionTitle(context)),
       ],
@@ -220,13 +212,13 @@ class _ScrubValue extends StatelessWidget {
 class _Metric extends StatelessWidget {
   const _Metric({
     required this.icon,
-    required this.color,
     required this.value,
     required this.extremes,
   });
 
-  final IconData icon;
-  final Color color;
+  /// Figma SVG 파일명. 온도 `#ff3752`·습도 `#68a7f6`은 **파일이 가진 색**을
+  /// 그대로 쓴다 — 디자인이 지정한 의미색이라 앱이 다시 칠하지 않는다.
+  final String icon;
   final String value;
   final String extremes;
 
@@ -237,7 +229,7 @@ class _Metric extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 20, color: color),
+            FigmaIcon.metric(icon),
             const SizedBox(width: AppStyles.spacing4),
             // 좌우 2분할이라 한 칸이 화면의 절반뿐이다. 큰 글씨 설정이나
             // 자릿수가 늘면 바로 넘치므로, 잘라내는 대신 비율을 유지해 줄인다

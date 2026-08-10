@@ -1,7 +1,7 @@
 name: vivnanaut
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.39.0+66
+version: 0.40.0+67
 
 environment:
   sdk: ^3.5.0
@@ -35,6 +35,7 @@ dependencies:
   connectivity_plus: ^7.2.0
   fl_chart: ^1.2.0
   chart_sparkline: ^1.1.2
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -54,6 +55,7 @@ flutter:
     - assets/data/care_info/
     - assets/data/morphs/
     - assets/images/
+    - assets/icons/
   fonts:
     - family: Pretendard
       fonts:
