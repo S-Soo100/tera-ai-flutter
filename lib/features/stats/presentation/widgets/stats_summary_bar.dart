@@ -7,15 +7,15 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../../home/presentation/home_control_providers.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
-import '../../domain/stats_chart_data.dart';
+import '../../../../shared/domain/env_chart_data.dart';
 import '../../domain/stats_metric.dart';
 import '../stats_providers.dart';
-import 'stats_env_chart.dart';
+import '../../../../shared/widgets/env_chart.dart';
 
 /// Figma 24시 화면 상단 요약 바.
 ///
 /// 좌우 2분할로 온도·습도를 대칭 배치하고, 각 아래에 최고/최저를 붙인다.
-/// 최고/최저는 **바로 아래 차트와 같은 구간**([statsExtremesProvider])이다 —
+/// 최고/최저는 **바로 아래 차트와 같은 구간**([chartExtremesProvider])이다 —
 /// 이 숫자는 그래프를 설명하는 값이라 창이 다르면 서로 어긋난다.
 ///
 /// **스크럽 중에는 이 자리가 그 시점의 값으로 바뀐다**(Figma 변형 B). 두 표시가
@@ -37,16 +37,16 @@ class StatsSummaryBar extends ConsumerWidget {
     if (deviceId == null) return const SizedBox.shrink();
 
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
-    final ex = ref.watch(statsExtremesProvider).valueOrNull;
+    final ex = ref.watch(chartExtremesProvider).valueOrNull;
     final scrub = ref.watch(statsScrubProvider);
-    final data = ref.watch(statsChartDataProvider).valueOrNull;
+    final data = ref.watch(envChartDataProvider).valueOrNull;
 
     final showScrub = scrub != null && data != null;
 
     return Padding(
       key: barKey,
       padding: const EdgeInsets.symmetric(
-          horizontal: StatsEnvChart.outerPadding),
+          horizontal: EnvChart.outerPadding),
       child: Stack(
         children: [
           // 스크럽 중에도 자리는 지킨다 — 높이를 정하는 쪽이 이 위젯이다.
@@ -112,7 +112,7 @@ class StatsSummaryBar extends ConsumerWidget {
 /// 스크러버가 가리키는 시점의 값 (Figma §3.1 "스크러버 툴팁").
 ///
 /// **손가락을 따라 좌우로 움직인다** — 화면 가운데 고정해두면 어느 시점을
-/// 읽고 있는지가 끊긴다. 플롯 좌표를 되짚어야 해서 [StatsEnvChart.plotInset]을
+/// 읽고 있는지가 끊긴다. 플롯 좌표를 되짚어야 해서 [EnvChart.plotInset]을
 /// 빌려온다.
 class _ScrubReadout extends StatelessWidget {
   const _ScrubReadout({
@@ -122,7 +122,7 @@ class _ScrubReadout extends StatelessWidget {
     required this.metrics,
   });
 
-  final StatsChartData data;
+  final EnvChartData data;
   final double x;
   final Set<StatsMetric> metrics;
 
@@ -131,7 +131,7 @@ class _ScrubReadout extends StatelessWidget {
 
   /// 요약 바 여백과 플롯 시작점의 차이. 이만큼 안으로 들어가야 플롯 x와 맞는다.
   static const double _delta =
-      StatsEnvChart.plotInset - StatsEnvChart.outerPadding;
+      EnvChart.plotInset - EnvChart.outerPadding;
 
   @override
   Widget build(BuildContext context) {

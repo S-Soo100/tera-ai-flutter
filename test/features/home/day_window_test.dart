@@ -62,17 +62,4 @@ void main() {
     });
   });
 
-  group('DayWindow.chartRange — 전날 19:00 ~ 현재', () {
-    test('시작은 전날 19:00, 끝은 현재', () {
-      final now = DateTime(2026, 8, 5, 14, 30);
-      final r = DayWindow.chartRange(now);
-      expect(r.start, DateTime(2026, 8, 4, 19));
-      expect(r.end, now);
-    });
-
-    test('새벽 02:00에도 시작은 전날(=8/4) 19:00', () {
-      final r = DayWindow.chartRange(DateTime(2026, 8, 5, 2));
-      expect(r.start, DateTime(2026, 8, 4, 19));
-    });
-  });
 }

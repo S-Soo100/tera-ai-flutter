@@ -16,7 +16,7 @@
 
 ## 프로젝트 개요
 파충류 사육자를 위한 올인원 앱. 백색목록 검색, 사육 정보, 모프 유전 계산기 + 게코캠 + 사육장 IoT 제어.
-- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브) + video_player/gal/share_plus(크레캠 영상 재생·기기저장·공유) + chart_sparkline(홈 미니 차트) + fl_chart(통계 탭 24h 차트)
+- **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브) + video_player/gal/share_plus(크레캠 영상 재생·기기저장·공유) + fl_chart(홈·통계 공용 온습도 차트)
 - **현재 상태(2026-08-09)**: P2 상당 구현 — Supabase 인증/유저 CRUD + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE) + **크레캠 영상 개편**(motion_clips 썸네일·저장/공유·즐겨찾기 클라우드·AI분류칩·시크) + **어젯밤 리포트**(마이 크레 탭). **PRD 재설계 진행 중(`feat/prd-redesign`)** — 4탭 IA(홈/통계/마이크레/커뮤니티) + 홈 탭 재구성(사육장 세트·서브탭) + 통계 탭 24h 그래프 구현 완료. 챗·지식그래프·종비교는 폐기(D3).
   - (P0 "로컬 전용/인증 없음/백엔드 없음"은 초기 설계 — 더 이상 유효하지 않음. 신규 작업은 아래 Phase 경계/CAOF 규칙을 따른다.)
 - **기획안 (현행 SOT)**: `docs/prd-vivnanaut-app.md` — **2026-08-08 전면 재작성.** 기존 구현을 전제하지 않고 노션 기획서·PRD만으로 정리한 기획안이다. **구현이 기획안과 다르면 기획안이 맞다.**
@@ -91,7 +91,8 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 
 > 홈 탭 도메인: `home/domain/{day_window,device_mode,enclosure_set,env_extremes,env_chart_series,actuator_marker,chart_time_axis,running_timer,mist_lock,timeline_summary,pet_dday}.dart`. 하루 경계는 **07:00~익일 07:00**(`DayWindow`), 차트 범위는 전날 19:00~현재 — 어젯밤 리포트(22~06시)와 별개 개념이니 혼용 금지.
 > **⚠️ 사육장 제어 명령은 반드시 `home/presentation/cage_control_actions.dart`를 경유한다.** 히터 2단 안전확인(과열=개체 폐사)이 거기 있다. 진입점은 서브탭 `QuickControlGrid` **하나뿐**이다 — 라이브 아래 `LiveControlBar`는 버튼이 두 벌 쌓여 2026-08-09 제거(D4 철회). 제어 진입점을 다시 늘린다면 반드시 이 모듈을 경유할 것.
-> 통계 탭: `stats/domain/{axis_bounds,stats_chart_data}.dart` — 온·습도를 각자 축으로 **0~1 정규화**해 겹쳐 그린다(단위가 달라 같은 Y축 불가). 차트 색은 `AppTheme.chartTemperature/chartHumidity`(Figma 원본 hex) — 홈 미니 차트와 **같은 토큰**을 쓴다. 상세: 결정 로그 D5.
+> **온습도 차트는 홈·통계 공용이다** — `shared/widgets/env_chart.dart`(`EnvChart`) + `shared/domain/{chart_window,env_chart_data,axis_bounds,actuator_marker,night_band}.dart`. 창(`ChartWindow`)은 **지금 이후 첫 6시간 눈금(04/10/16/22시)에서 24시간 뒤로**, 6시간마다 통째로 전진한다. 남는 꼬리가 미도래 밴드(= 아직 안 지난 시간). 치수는 Figma 393pt 프레임 실측값(`docs/figma-final-design-transcript.md` §3.1 실측 좌표표)이고, 격자는 라이브러리가 아니라 직접 그린다(가로선·세로선·밴드가 서로 다른 세로 범위를 쓴다). Y 눈금은 **항상 6개**, 칸 크기는 데이터에 맞춰 1·2·5 계열로 정해진다.
+> 화면별 차이: 홈은 **밤 띠 on·스크러버 off**(차트 전체가 `/stats` 진입점), 통계는 **밤 띠 off·스크러버 on**(손 떼도 유지, ✕로 해제). 프로바이더는 `home/presentation/home_control_providers.dart`에 모여 있다(`chartWindowProvider`·`envChartDataProvider`·`chartExtremesProvider`·`actuatorMarkersProvider`).
 
 > 사육장 IoT 데이터 계층: `my_cage/data/{ble_pairing_repository,supabase_module_control_repository}.dart`, `my_cage/domain/{device,telemetry_reading,telemetry_bucket,device_command,actuator_state,wifi_access_point,pair_target_kind,species_comfort}.dart`.
 > BLE 페어링(2026-07-02 개편): Wi-Fi 프로비저닝 프로토콜(`SCAN`→`SSID`→`PASS`→`CONNECT`, JWT 흐름 제거). 사육장·카메라 공통 `presentation/widgets/wifi_provisioning_view.dart` + 래퍼 `{device,camera}_pairing_screen.dart`(라우트 `/smart-cage/devices/pair`, `/crecam/cameras/pair`). **앱은 WiFi 연결만 — 토큰/DB등록/owner는 사전 세팅((a) 방식)**. 상세: `docs/ble-provisioning-protocol.md`, 메모리 `project_ble_provisioning_scheme`.

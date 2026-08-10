@@ -1,16 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/figma_icon.dart';
-import '../../../home/domain/actuator_marker.dart';
-import '../../domain/axis_bounds.dart';
-import '../../domain/stats_chart_data.dart';
-import '../../domain/stats_metric.dart';
-import '../../domain/stats_window.dart';
-import '../stats_providers.dart';
+import '../../core/theme/app_theme.dart';
+import '../domain/actuator_marker.dart';
+import '../domain/axis_bounds.dart';
+import '../domain/chart_window.dart';
+import '../domain/env_chart_data.dart';
+import '../domain/night_band.dart';
+import 'figma_icon.dart';
 
 /// Figma `온습도 그래프 - 24시` 본체
 /// (`docs/figma-final-design-transcript.md` §3.1).
@@ -30,28 +28,47 @@ import '../stats_providers.dart';
 ///     ↑ 세로선은 박스 전체 높이를 관통한다
 /// ```
 ///
-/// 좌축 = 온도, 우축 = 습도. 두 지표는 단위가 달라 [StatsChartData]에서 **각자
+/// 좌축 = 온도, 우축 = 습도. 두 지표는 단위가 달라 [EnvChartData]에서 **각자
 /// 0~1로 정규화**해 온다. 사람이 읽는 눈금은 좌우 라벨 컬럼이 담당한다.
-class StatsEnvChart extends ConsumerWidget {
-  const StatsEnvChart({
+class EnvChart extends StatelessWidget {
+  const EnvChart({
     super.key,
     required this.data,
     required this.window,
     this.markers = const [],
-    this.metrics = const {StatsMetric.temperature, StatsMetric.humidity},
+    this.showTemperature = true,
+    this.showHumidity = true,
+    this.nightBand = false,
+    this.scrubX,
+    this.onScrubChanged,
   });
 
-  final StatsChartData data;
+  final EnvChartData data;
 
   /// 표시 창. 눈금 위치와 회색 밴드 시작점이 여기서 나온다.
-  final StatsWindow window;
+  final ChartWindow window;
 
   /// 기기 동작 마커. 그 시각에 실제로 돌았다는 기록이다.
   final List<ActuatorMarker> markers;
 
-  /// 그릴 지표(§4.3.2 필터). 꺼진 지표는 **선도 축 라벨도 함께 사라진다** —
-  /// 선만 지우면 읽을 값이 없는 눈금만 남는다.
-  final Set<StatsMetric> metrics;
+  /// 그릴 지표. 꺼진 지표는 **선도 축 라벨도 함께 사라진다** — 선만 지우면
+  /// 읽을 값이 없는 눈금만 남는다.
+  final bool showTemperature;
+  final bool showHumidity;
+
+  /// 밤 띠(`22:00~06:00`)를 깔지. 홈 차트의 시그니처다
+  /// (`docs/design-direction.md`). Figma 통계 화면에는 없다.
+  final bool nightBand;
+
+  /// 스크러버 위치(0~1). null이면 표시하지 않는다.
+  ///
+  /// 상태는 **화면이 갖는다** — 공용 위젯이 특정 화면의 provider를 읽으면
+  /// 다른 화면에서 못 쓴다.
+  final double? scrubX;
+
+  /// 스크럽 위치가 바뀔 때. **null이면 터치를 받지 않는다** — 홈처럼 차트
+  /// 전체가 다른 곳으로 가는 진입점인 화면에서 탭을 가로채면 안 된다.
+  final ValueChanged<double>? onScrubChanged;
 
   static const chartKey = Key('stats_env_chart');
   static const markerRowKey = Key('stats_marker_row');
@@ -105,11 +122,11 @@ class StatsEnvChart extends ConsumerWidget {
   /// 라벨 컬럼 시작 오프셋 — 라벨 **중앙**이 격자선에 오게 맞춘다.
   static const double labelColumnTop = headroom - labelHeight / 2;
 
-  bool get _temp => metrics.contains(StatsMetric.temperature);
-  bool get _humid => metrics.contains(StatsMetric.humidity);
+  bool get _temp => showTemperature;
+  bool get _humid => showHumidity;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme.labelSmall?.copyWith(
           fontSize: 12,
           fontWeight: FontWeight.w500,
@@ -139,7 +156,14 @@ class StatsEnvChart extends ConsumerWidget {
                   children: [
                     Positioned.fill(
                       child: _Plot(
-                          data: data, window: window, metrics: metrics),
+                        data: data,
+                        window: window,
+                        showTemperature: showTemperature,
+                        showHumidity: showHumidity,
+                        nightBand: nightBand,
+                        scrubX: scrubX,
+                        onScrubChanged: onScrubChanged,
+                      ),
                     ),
                     // 마커는 격자선 위 여백에 앉는다 — 플롯 안에 넣으면 곡선과
                     // 겹쳐 둘 다 못 읽는다.
@@ -210,13 +234,13 @@ class _AxisLabels extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: StatsEnvChart.labelColumnTop),
+          const SizedBox(height: EnvChart.labelColumnTop),
           for (var i = 0; i < ticks.length; i++) ...[
             if (i > 0)
               const SizedBox(
-                  height: StatsEnvChart.rowStep - StatsEnvChart.labelHeight),
+                  height: EnvChart.rowStep - EnvChart.labelHeight),
             SizedBox(
-              height: StatsEnvChart.labelHeight,
+              height: EnvChart.labelHeight,
               child: Text(
                 format(ticks[i]),
                 textAlign: alignment,
@@ -241,25 +265,46 @@ class _AxisLabels extends StatelessWidget {
 class _GridPainter extends CustomPainter {
   const _GridPainter({
     required this.elapsed,
+    required this.nights,
+    required this.night,
     required this.line,
     required this.band,
   });
 
   /// 흘러간 비율. 여기서부터 오른쪽 끝까지가 회색 밴드다.
   final double elapsed;
+
+  /// 밤(`22:00~06:00`) 토막들. 비어 있으면 안 그린다.
+  final List<NightBand> nights;
+  final Color night;
   final Color line;
   final Color band;
 
+  /// 배경 띠(밤·미도래)가 덮는 세로 범위. 박스 위 ~ 마지막 격자선.
+  static const double _bandBottom = EnvChart.headroom + EnvChart.gridSpan;
+
   @override
   void paint(Canvas canvas, Size size) {
+    // 밤 띠가 맨 아래 — 격자선도 곡선도 가리지 않는다.
+    if (nights.isNotEmpty) {
+      final p = Paint()..color = night;
+      for (final n in nights) {
+        canvas.drawRect(
+          Rect.fromLTRB(
+              size.width * n.start, 0, size.width * n.end, _bandBottom),
+          p,
+        );
+      }
+    }
+
     final stroke = Paint()
       ..color = line
       ..strokeWidth = 1
       ..isAntiAlias = false;
 
     // 가로: Y축 눈금마다 한 줄.
-    for (var i = 0; i < StatsEnvChart.rowCount; i++) {
-      final y = StatsEnvChart.headroom + i * StatsEnvChart.rowStep;
+    for (var i = 0; i < EnvChart.rowCount; i++) {
+      final y = EnvChart.headroom + i * EnvChart.rowStep;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), stroke);
     }
 
@@ -273,12 +318,7 @@ class _GridPainter extends CustomPainter {
     // "데이터가 있는데 흐린 것"처럼 보인다.
     if (elapsed < 1) {
       canvas.drawRect(
-        Rect.fromLTRB(
-          size.width * elapsed,
-          0,
-          size.width,
-          StatsEnvChart.headroom + StatsEnvChart.gridSpan,
-        ),
+        Rect.fromLTRB(size.width * elapsed, 0, size.width, _bandBottom),
         Paint()..color = band,
       );
     }
@@ -286,35 +326,49 @@ class _GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_GridPainter old) =>
-      old.elapsed != elapsed || old.line != line || old.band != band;
+      old.elapsed != elapsed ||
+      old.line != line ||
+      old.band != band ||
+      old.night != night ||
+      old.nights.length != nights.length;
 }
 
-class _Plot extends ConsumerWidget {
-  const _Plot({required this.data, required this.window, required this.metrics});
+class _Plot extends StatelessWidget {
+  const _Plot({
+    required this.data,
+    required this.window,
+    required this.showTemperature,
+    required this.showHumidity,
+    required this.nightBand,
+    required this.scrubX,
+    required this.onScrubChanged,
+  });
 
-  final StatsChartData data;
-  final StatsWindow window;
-  final Set<StatsMetric> metrics;
+  final EnvChartData data;
+  final ChartWindow window;
+  final bool showTemperature;
+  final bool showHumidity;
+  final bool nightBand;
+  final double? scrubX;
+  final ValueChanged<double>? onScrubChanged;
 
   /// 정규화 0~1을 격자선 구간에 앉히기 위한 여유. 위로는 마커 자리만큼,
   /// 아래로는 footroom만큼 데이터 범위를 넓혀 잡는다.
-  static const double _minY = -StatsEnvChart.footroom / StatsEnvChart.gridSpan;
-  static const double _maxY = 1 + StatsEnvChart.headroom / StatsEnvChart.gridSpan;
+  static const double _minY = -EnvChart.footroom / EnvChart.gridSpan;
+  static const double _maxY = 1 + EnvChart.headroom / EnvChart.gridSpan;
 
   /// 실제로 그려지는 선들. **툴팁이 barIndex로 되짚어야 하므로 목록을 한 번만
   /// 만든다** — 조건을 두 곳에 복붙하면 필터를 켤 때마다 엉뚱한 축을 읽는다.
   List<({List<({double x, double y})> pts, AxisBounds? axis, bool isTemp})>
       get _series => [
-            if (metrics.contains(StatsMetric.temperature) &&
-                data.tempPoints.length > 1)
+            if (showTemperature && data.tempPoints.length > 1)
               (pts: data.tempPoints, axis: data.tempAxis, isTemp: true),
-            if (metrics.contains(StatsMetric.humidity) &&
-                data.humidPoints.length > 1)
+            if (showHumidity && data.humidPoints.length > 1)
               (pts: data.humidPoints, axis: data.humidAxis, isTemp: false),
           ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scrubLine = theme.colorScheme.onSurface;
 
@@ -324,6 +378,11 @@ class _Plot extends ConsumerWidget {
           child: CustomPaint(
             painter: _GridPainter(
               elapsed: window.elapsed,
+              // 밤 띠는 격자선 **아래**에 깔린다 — 데이터도 격자도 가리지 않는다.
+              nights: nightBand
+                  ? nightBands(from: window.start, to: window.end)
+                  : const [],
+              night: AppTheme.nightBand(theme.brightness),
               line: AppTheme.chartGridLine(theme.brightness),
               band: AppTheme.chartFutureBand(theme.brightness),
             ),
@@ -345,13 +404,15 @@ class _Plot extends ConsumerWidget {
               // (사용자 결정). 기본 표시에 맡기면 요약 바에는 값이 남았는데
               // 차트에는 선이 없는 상태가 된다.
               lineTouchData: LineTouchData(
+                enabled: onScrubChanged != null,
                 handleBuiltInTouches: false,
                 touchCallback: (event, response) {
+                  final onScrub = onScrubChanged;
+                  if (onScrub == null) return;
                   final spots = response?.lineBarSpots;
                   if (spots == null || spots.isEmpty) return;
                   final x = spots.first.x;
-                  ref.read(statsScrubProvider.notifier).state =
-                      data.snap(x) ?? x;
+                  onScrub(data.snap(x) ?? x);
                 },
               ),
               lineBarsData: [
@@ -366,18 +427,14 @@ class _Plot extends ConsumerWidget {
             ),
           ),
         ),
-        if (ref.watch(statsScrubProvider) case final x?)
+        if (scrubX case final x?)
           Positioned.fill(
             child: IgnorePointer(
               child: CustomPaint(
                 painter: _ScrubPainter(
                   x: x,
-                  tempY: metrics.contains(StatsMetric.temperature)
-                      ? data.tempNormAt(x)
-                      : null,
-                  humidY: metrics.contains(StatsMetric.humidity)
-                      ? data.humidNormAt(x)
-                      : null,
+                  tempY: showTemperature ? data.tempNormAt(x) : null,
+                  humidY: showHumidity ? data.humidNormAt(x) : null,
                   line: scrubLine,
                   dotFill: theme.colorScheme.surface,
                 ),
@@ -470,7 +527,7 @@ class _MarkerRow extends StatelessWidget {
   const _MarkerRow({required this.markers, required this.window});
 
   final List<ActuatorMarker> markers;
-  final StatsWindow window;
+  final ChartWindow window;
 
   /// Figma가 준 SVG는 분무·팬 둘뿐이다. 히터·LED는 아직 그림이 없어 Material
   /// 아이콘으로 받친다 — 자리를 비우면 동작한 기록이 사라진다.
@@ -495,7 +552,7 @@ class _MarkerRow extends StatelessWidget {
     final name = _svg[kind];
     if (name != null) {
       return FigmaIcon.tinted(name,
-          color: color, size: StatsEnvChart.markerChip);
+          color: color, size: EnvChart.markerChip);
     }
     return Icon(_fallbackIcon[kind], size: 10, color: color);
   }
@@ -520,7 +577,7 @@ class _MarkerRow extends StatelessWidget {
     // 읽어야 할 곡선이 묻힌다. 대신 Figma가 정한 메인컬러 한 가지로 또렷하게.
     final fg = AppTheme.chartMarkerGlyph(theme.brightness);
     final bg = AppTheme.chartMarkerChip(theme.brightness);
-    const size = StatsEnvChart.markerChip;
+    const size = EnvChart.markerChip;
 
     return LayoutBuilder(
       builder: (context, c) => Stack(
@@ -554,14 +611,14 @@ class _MarkerRow extends StatelessWidget {
   }
 }
 
-/// X축 시각 라벨. 눈금은 [StatsWindow]가 정한다 — 창 시작부터 6시간 간격 4개.
+/// X축 시각 라벨. 눈금은 [ChartWindow]가 정한다 — 창 시작부터 6시간 간격 4개.
 ///
 /// Figma는 라벨을 눈금에 **왼쪽 맞춤**했다. 가운데 맞추면 첫 라벨이 플롯 밖으로
 /// 나가고 마지막 라벨이 밴드 위로 올라탄다.
 class _TimeAxis extends StatelessWidget {
   const _TimeAxis({required this.window, required this.style});
 
-  final StatsWindow window;
+  final ChartWindow window;
   final TextStyle? style;
 
   /// `오후 10시`가 잘리지 않는 폭.
@@ -570,10 +627,10 @@ class _TimeAxis extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ticks = window.ticks;
-    if (ticks.isEmpty) return const SizedBox(height: StatsEnvChart.labelHeight);
+    if (ticks.isEmpty) return const SizedBox(height: EnvChart.labelHeight);
 
     return SizedBox(
-      height: StatsEnvChart.labelHeight,
+      height: EnvChart.labelHeight,
       child: LayoutBuilder(
         builder: (context, c) => Stack(
           clipBehavior: Clip.none,

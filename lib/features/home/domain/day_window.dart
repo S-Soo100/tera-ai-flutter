@@ -30,9 +30,6 @@ class DayWindow {
   /// 하루의 시작 시각(시). PRD 고정값.
   static const int dayStartHour = 7;
 
-  /// 차트 X축 시작 시각(시). PRD §5-1.2 "전날 19:00부터".
-  static const int chartStartHour = 19;
-
   /// 창을 대표하는 날짜(= 시작한 날). 날짜 라벨에 쓴다.
   DateTime get labelDate => DateTime(start.year, start.month, start.day);
 
@@ -47,16 +44,5 @@ class DayWindow {
     if (!now.isBefore(end)) return end.difference(start);
     if (now.isBefore(start)) return Duration.zero;
     return now.difference(start);
-  }
-
-  /// 최근 24시간 실시간 차트 범위: 전날 19:00 ~ [now].
-  static ({DateTime start, DateTime end}) chartRange(DateTime now) {
-    final yesterday = DateTime(now.year, now.month, now.day)
-        .subtract(const Duration(days: 1));
-    return (
-      start: DateTime(
-          yesterday.year, yesterday.month, yesterday.day, chartStartHour),
-      end: now,
-    );
   }
 }

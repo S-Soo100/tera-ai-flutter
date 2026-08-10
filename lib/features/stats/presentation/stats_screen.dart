@@ -13,7 +13,8 @@ import '../../home/presentation/home_control_providers.dart';
 import '../../home/presentation/home_set_providers.dart';
 import '../../profile/presentation/profile_providers.dart';
 import 'stats_providers.dart';
-import 'widgets/stats_env_chart.dart';
+import '../../../shared/widgets/env_chart.dart';
+import '../domain/stats_metric.dart';
 import 'widgets/stats_period_bar.dart';
 import 'widgets/stats_summary_bar.dart';
 
@@ -148,7 +149,7 @@ class _MainChartSection extends ConsumerWidget {
       );
     }
 
-    final async = ref.watch(statsChartDataProvider);
+    final async = ref.watch(envChartDataProvider);
     final metrics = ref.watch(statsMetricsProvider);
 
     return Column(
@@ -174,7 +175,7 @@ class _MainChartSection extends ConsumerWidget {
             child: EmptyState(
               title: 'stats_load_failed'.tr(),
               actionLabel: 'error_retry'.tr(),
-              onAction: () => ref.invalidate(statsChartDataProvider),
+              onAction: () => ref.invalidate(envChartDataProvider),
             ),
           ),
           // 데이터가 없는 것과 기능이 없는 것은 **다르게 보여야 한다** —
@@ -190,16 +191,20 @@ class _MainChartSection extends ConsumerWidget {
                 )
               : Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: StatsEnvChart.outerPadding),
-                  child: StatsEnvChart(
+                      horizontal: EnvChart.outerPadding),
+                  child: EnvChart(
                     data: d,
-                    window: ref.watch(statsWindowProvider),
+                    window: ref.watch(chartWindowProvider),
                     // 마커 조회 실패는 차트를 막지 않는다 — 곡선이 본체다.
-                    markers: ref
-                            .watch(statsActuatorMarkersProvider)
-                            .valueOrNull ??
-                        const [],
-                    metrics: metrics,
+                    markers:
+                        ref.watch(actuatorMarkersProvider).valueOrNull ??
+                            const [],
+                    showTemperature:
+                        metrics.contains(StatsMetric.temperature),
+                    showHumidity: metrics.contains(StatsMetric.humidity),
+                    scrubX: ref.watch(statsScrubProvider),
+                    onScrubChanged: (x) =>
+                        ref.read(statsScrubProvider.notifier).state = x,
                   ),
                 ),
         ),

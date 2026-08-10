@@ -10,17 +10,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/core/theme/app_styles.dart';
 import 'package:vivnanaut/core/theme/app_theme.dart';
-import 'package:vivnanaut/features/home/domain/actuator_marker.dart';
+import 'package:vivnanaut/shared/domain/actuator_marker.dart';
 import 'package:vivnanaut/features/home/domain/env_extremes.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_reading.dart';
 import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
-import 'package:vivnanaut/features/stats/domain/stats_chart_data.dart';
-import 'package:vivnanaut/features/stats/domain/stats_window.dart';
+import 'package:vivnanaut/shared/domain/env_chart_data.dart';
+import 'package:vivnanaut/shared/domain/chart_window.dart';
 import 'package:vivnanaut/features/stats/presentation/stats_providers.dart';
-import 'package:vivnanaut/features/stats/presentation/widgets/stats_env_chart.dart';
+import 'package:vivnanaut/shared/widgets/env_chart.dart';
 import 'package:vivnanaut/features/stats/presentation/widgets/stats_summary_bar.dart';
 
 /// 통계 탭 24시 그래프를 실제 위젯 그대로 렌더해 PNG로 남긴다.
@@ -51,7 +51,7 @@ const _deviceId = 'dev-1';
 /// Figma가 그린 프레임과 같은 시각 — 창은 어제 22:00 ~ 오늘 22:00,
 /// 회색 밴드는 오른쪽 약 22%.
 final _now = DateTime(2026, 8, 10, 16, 40);
-final _window = StatsWindow.of(_now);
+final _window = ChartWindow.of(_now);
 
 TelemetryReading _reading() => TelemetryReading(
       deviceId: _deviceId,
@@ -133,16 +133,16 @@ Future<void> _shoot(
     currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
     telemetryStreamProvider(_deviceId)
         .overrideWith((ref) => Stream.value(_reading())),
-    statsExtremesProvider.overrideWith((ref) async => EnvExtremes.from(buckets)),
-    statsWindowProvider.overrideWith((ref) => _window),
-    statsChartDataProvider.overrideWith(
-      (ref) async => StatsChartData.from(
+    chartExtremesProvider.overrideWith((ref) async => EnvExtremes.from(buckets)),
+    chartWindowProvider.overrideWith((ref) => _window),
+    envChartDataProvider.overrideWith(
+      (ref) async => EnvChartData.from(
         buckets,
         from: _window.start,
         to: _window.end,
       ),
     ),
-    statsActuatorMarkersProvider.overrideWith((ref) async => _markers()),
+    actuatorMarkersProvider.overrideWith((ref) async => _markers()),
   ]);
   addTearDown(c.dispose);
 
@@ -165,7 +165,7 @@ Future<void> _shoot(
               body: SafeArea(
                 child: Consumer(
                   builder: (context, ref, _) {
-                    final data = ref.watch(statsChartDataProvider).valueOrNull;
+                    final data = ref.watch(envChartDataProvider).valueOrNull;
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -175,8 +175,8 @@ Future<void> _shoot(
                         if (data != null)
                           Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: StatsEnvChart.outerPadding),
-                            child: StatsEnvChart(
+                                horizontal: EnvChart.outerPadding),
+                            child: EnvChart(
                               data: data,
                               window: _window,
                               markers: _markers(),

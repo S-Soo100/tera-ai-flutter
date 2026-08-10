@@ -1,5 +1,3 @@
-import '../../home/domain/chart_time_axis.dart';
-
 /// 통계 탭 24시 차트의 **표시 창**.
 ///
 /// 조회 구간과 다르다 — 데이터는 "지금까지"만 있지만, 화면은 **다음 6시간
@@ -13,7 +11,25 @@ import '../../home/domain/chart_time_axis.dart';
 ///
 /// [DayWindow]와 혼용하지 말 것 — 저 쪽은 하루 경계(07:00)와 어젯밤 리포트를
 /// 위한 개념이고, 이 클래스는 오직 차트 프레임을 위한 것이다.
-class StatsWindow {
+/// X축 눈금 하나.
+class ChartTimeTick {
+  /// 눈금이 가리키는 시각 (항상 [stepHours]의 배수 정각).
+  final DateTime at;
+
+  /// 차트 구간 내 위치. 0 = 왼쪽 끝, 1 = 오른쪽 끝.
+  final double position;
+
+  const ChartTimeTick({required this.at, required this.position});
+
+  /// 오전이면 true. 12시간 표기의 오전/오후 판정.
+  bool get isAm => at.hour < 12;
+
+  /// 12시간 표기 시각. 0시·12시는 모두 **12**로 읽는다
+  /// (자정 = 오전 12시, 정오 = 오후 12시).
+  int get hour12 => at.hour % 12 == 0 ? 12 : at.hour % 12;
+}
+
+class ChartWindow {
   /// 창 시작 = [end] - 24시간. x = 0.
   final DateTime start;
 
@@ -23,7 +39,7 @@ class StatsWindow {
   /// 창을 계산한 시각. 회색 밴드가 여기서 시작한다.
   final DateTime now;
 
-  const StatsWindow._({
+  const ChartWindow._({
     required this.start,
     required this.end,
     required this.now,
@@ -39,9 +55,9 @@ class StatsWindow {
   /// 창 길이. 항상 24시간.
   static const Duration span = Duration(hours: 24);
 
-  factory StatsWindow.of(DateTime now) {
+  factory ChartWindow.of(DateTime now) {
     final end = nextTickAfter(now);
-    return StatsWindow._(start: end.subtract(span), end: end, now: now);
+    return ChartWindow._(start: end.subtract(span), end: end, now: now);
   }
 
   /// [now] **이후**의 첫 눈금 시각.

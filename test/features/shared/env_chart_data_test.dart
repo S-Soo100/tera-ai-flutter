@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
-import 'package:vivnanaut/features/stats/domain/stats_chart_data.dart';
+import 'package:vivnanaut/shared/domain/env_chart_data.dart';
 
 final _from = DateTime(2026, 8, 4, 19);
 final _to = DateTime(2026, 8, 5, 7); // 12시간
@@ -16,8 +16,8 @@ TelemetryBucket _b(DateTime at, {double? t, double? h}) => TelemetryBucket(
       hMax: h,
     );
 
-StatsChartData _data(List<TelemetryBucket> buckets) =>
-    StatsChartData.from(buckets, from: _from, to: _to);
+EnvChartData _data(List<TelemetryBucket> buckets) =>
+    EnvChartData.from(buckets, from: _from, to: _to);
 
 void main() {
   group('축 산출', () {
@@ -191,7 +191,7 @@ void main() {
 
   group('폭이 0인 구간', () {
     test('from == to면 점을 만들지 않는다 — 0으로 나누지 않는다', () {
-      final d = StatsChartData.from(
+      final d = EnvChartData.from(
         [_b(_from, t: 24)],
         from: _from,
         to: _from,

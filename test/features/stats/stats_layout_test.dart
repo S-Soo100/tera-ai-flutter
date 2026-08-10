@@ -4,19 +4,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
 import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
-import 'package:vivnanaut/features/stats/domain/stats_chart_data.dart';
+import 'package:vivnanaut/shared/domain/env_chart_data.dart';
 import 'package:vivnanaut/features/stats/domain/stats_metric.dart';
 import 'package:vivnanaut/features/stats/domain/stats_period.dart';
 import 'package:vivnanaut/features/stats/presentation/stats_providers.dart';
 import 'package:vivnanaut/features/stats/presentation/stats_screen.dart';
-import 'package:vivnanaut/features/stats/presentation/widgets/stats_env_chart.dart';
+import 'package:vivnanaut/shared/widgets/env_chart.dart';
 import 'package:vivnanaut/features/stats/presentation/widgets/stats_period_bar.dart';
 import 'package:vivnanaut/shared/widgets/pending_section.dart';
 
 final _from = DateTime(2026, 8, 4, 19);
 final _to = DateTime(2026, 8, 5, 7);
 
-StatsChartData _chart() => StatsChartData.from(
+EnvChartData _chart() => EnvChartData.from(
       [
         for (final e in [
           (_from, 23.5, 58.0),
@@ -45,9 +45,9 @@ Future<ProviderContainer> _pump(WidgetTester tester, {double width = 402}) async
 
   final c = ProviderContainer(overrides: [
     currentDeviceIdProvider.overrideWith((ref) async => 'dev-1'),
-    statsExtremesProvider.overrideWith((ref) async => throw UnimplementedError()),
+    chartExtremesProvider.overrideWith((ref) async => throw UnimplementedError()),
     telemetryStreamProvider('dev-1').overrideWith((ref) => Stream.value(null)),
-    statsChartDataProvider.overrideWith((ref) async => _chart()),
+    envChartDataProvider.overrideWith((ref) async => _chart()),
   ]);
   addTearDown(c.dispose);
 
@@ -82,7 +82,7 @@ void main() {
     testWidgets('기본은 일간 — 실제 차트가 뜬다', (tester) async {
       final c = await _pump(tester);
       expect(c.read(statsPeriodProvider), StatsPeriod.daily);
-      expect(find.byKey(StatsEnvChart.chartKey), findsOneWidget);
+      expect(find.byKey(EnvChart.chartKey), findsOneWidget);
     });
 
     testWidgets('주간을 고르면 차트 자리가 자리표시자로 바뀐다 — 사라지지 않는다',
@@ -91,7 +91,7 @@ void main() {
       c.read(statsPeriodProvider.notifier).state = StatsPeriod.weekly;
       await tester.pumpAndSettle();
 
-      expect(find.byKey(StatsEnvChart.chartKey), findsNothing);
+      expect(find.byKey(EnvChart.chartKey), findsNothing);
       expect(
         find.descendant(
           of: find.byKey(StatsScreen.mainChartKey),
@@ -114,7 +114,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(c.read(statsMetricsProvider), {StatsMetric.temperature});
-      expect(find.byKey(StatsEnvChart.chartKey), findsOneWidget);
+      expect(find.byKey(EnvChart.chartKey), findsOneWidget);
     });
 
     testWidgets('활동량은 눌러도 안 켜진다 — 아직 데이터 경로가 없다', (tester) async {

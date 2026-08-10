@@ -129,9 +129,14 @@ class AppTheme {
   ///
   /// 라이트에서는 메인컬러(마침 한밤중 하늘색이다)를, 다크에서는 흰색을 얹는다
   /// — 어두운 배경 위에 남색을 더 깔면 아무것도 보이지 않는다.
+  ///
+  /// **[chartFutureBand]와 같은 차트에 함께 깔린다.** 둘 다 옅은 회색 블록이라
+  /// 농도만으로는 구분이 안 됐다(실기기에서 왼쪽 밤 띠와 오른쪽 미도래 밴드가
+  /// 같은 띠로 보였다). 그래서 밤 띠는 **남색 기가 남을 만큼**만 진하게 잡는다 —
+  /// 중성 회색인 미도래 밴드와 색상으로 갈린다. 곡선을 가리지 않는 선은 지킨다.
   static Color nightBand(Brightness brightness) => brightness == Brightness.dark
       ? Colors.white.withValues(alpha: 0.05)
-      : brandNavy.withValues(alpha: 0.06);
+      : brandNavy.withValues(alpha: 0.10);
 
   /// 서브컬러 배지의 배경·전경 한 쌍.
   ///

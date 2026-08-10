@@ -5,6 +5,8 @@ import 'package:vivnanaut/features/home/domain/env_extremes.dart';
 import 'package:vivnanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/env_mini_chart.dart';
+import 'package:vivnanaut/shared/domain/chart_window.dart';
+import 'package:vivnanaut/shared/widgets/env_chart.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/live_env_card.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/quick_control_grid.dart';
 import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
@@ -63,6 +65,10 @@ Future<void> _pumpControlTab(WidgetTester tester, Size size) async {
     todayExtremesProvider.overrideWith(
       (ref) async => EnvExtremes.from(_buckets()),
     ),
+    // 창을 고정하지 않으면 실제 `now` 기준 구간이 잡혀 고정 시각 버킷이
+    // 전부 구간 밖으로 밀린다 → 차트 대신 빈 상태가 뜬다.
+    chartWindowProvider
+        .overrideWith((ref) => ChartWindow.of(DateTime(2026, 8, 8, 13))),
     chartBucketsProvider.overrideWith((ref) async => _buckets()),
     actuatorMarkersProvider.overrideWith((ref) async => const []),
     ledBrightnessProvider.overrideWith((ref) => 70),
@@ -147,11 +153,23 @@ void main() {
     });
   });
 
-  group('밤 띠', () {
-    testWidgets('데이터가 있으면 22~06 구간이 깔린다', (tester) async {
+  group('홈 차트', () {
+    // 밤 띠는 이제 공용 차트가 그린다. 위젯 트리에 별도 노드가 남지 않으므로
+    // **켜져 있는지**를 본다 — 통계 화면은 꺼야 하는 값이라 확인할 값어치가 있다.
+    testWidgets('밤 띠를 켠다 — 야행성 개체를 다루는 이 앱의 시그니처다',
+        (tester) async {
       await _pumpControlTab(tester, const Size(393, 852));
-      expect(find.byKey(const Key('env_mini_chart_night_bands')),
-          findsOneWidget);
+      final chart = tester.widget<EnvChart>(find.byType(EnvChart));
+      expect(chart.nightBand, isTrue);
+    });
+
+    // 홈 차트 전체가 `/stats` 진입점이다. 스크럽이 탭을 가져가면 그 동선이 막힌다.
+    testWidgets('스크러버를 켜지 않는다 — 탭은 통계 탭으로 가는 길이다',
+        (tester) async {
+      await _pumpControlTab(tester, const Size(393, 852));
+      final chart = tester.widget<EnvChart>(find.byType(EnvChart));
+      expect(chart.onScrubChanged, isNull);
+      expect(chart.scrubX, isNull);
     });
   });
 }

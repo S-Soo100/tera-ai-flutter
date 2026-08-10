@@ -5,10 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
 import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
-import 'package:vivnanaut/features/stats/domain/stats_chart_data.dart';
-import 'package:vivnanaut/features/stats/presentation/stats_providers.dart';
+import 'package:vivnanaut/shared/domain/env_chart_data.dart';
 import 'package:vivnanaut/features/stats/presentation/stats_screen.dart';
-import 'package:vivnanaut/features/stats/presentation/widgets/stats_env_chart.dart';
+import 'package:vivnanaut/shared/widgets/env_chart.dart';
 import 'package:vivnanaut/features/stats/presentation/widgets/stats_summary_bar.dart';
 
 final _from = DateTime(2026, 8, 4, 19);
@@ -25,7 +24,7 @@ TelemetryBucket _b(DateTime at, double t, double h) => TelemetryBucket(
       hMax: h,
     );
 
-StatsChartData _chart({bool withData = true}) => StatsChartData.from(
+EnvChartData _chart({bool withData = true}) => EnvChartData.from(
       withData
           ? [
               _b(_from, 23.5, 58),
@@ -40,15 +39,15 @@ StatsChartData _chart({bool withData = true}) => StatsChartData.from(
 Future<void> _pump(
   WidgetTester tester, {
   String? deviceId = 'dev-1',
-  StatsChartData? chart,
+  EnvChartData? chart,
   Object? error,
 }) async {
   final c = ProviderContainer(overrides: [
     currentDeviceIdProvider.overrideWith((ref) async => deviceId),
-    statsExtremesProvider.overrideWith((ref) async => throw UnimplementedError()),
+    chartExtremesProvider.overrideWith((ref) async => throw UnimplementedError()),
     if (deviceId != null)
       telemetryStreamProvider(deviceId).overrideWith((ref) => Stream.value(null)),
-    statsChartDataProvider.overrideWith((ref) async {
+    envChartDataProvider.overrideWith((ref) async {
       if (error != null) throw error;
       return chart ?? _chart();
     }),
@@ -67,13 +66,13 @@ Future<void> _pump(
 void main() {
   testWidgets('제어기가 없으면 안내만 — 빈 차트를 그리지 않는다', (tester) async {
     await _pump(tester, deviceId: null);
-    expect(find.byKey(StatsEnvChart.chartKey), findsNothing);
+    expect(find.byKey(EnvChart.chartKey), findsNothing);
     expect(find.byKey(StatsSummaryBar.barKey), findsNothing);
   });
 
   testWidgets('데이터가 있으면 차트와 요약 바가 뜬다', (tester) async {
     await _pump(tester);
-    expect(find.byKey(StatsEnvChart.chartKey), findsOneWidget);
+    expect(find.byKey(EnvChart.chartKey), findsOneWidget);
     expect(find.byKey(StatsSummaryBar.barKey), findsOneWidget);
     expect(find.byType(LineChart), findsOneWidget);
   });
@@ -92,18 +91,18 @@ void main() {
     expect(chart.data.minY, lessThan(0));
     expect(chart.data.maxY, greaterThan(1));
     final span = chart.data.maxY - chart.data.minY;
-    expect(1 / span, closeTo(StatsEnvChart.gridSpan / StatsEnvChart.plotHeight, 1e-6));
+    expect(1 / span, closeTo(EnvChart.gridSpan / EnvChart.plotHeight, 1e-6));
   });
 
   testWidgets('데이터가 없으면 차트 대신 안내 — 빈 축만 남기지 않는다', (tester) async {
     await _pump(tester, chart: _chart(withData: false));
-    expect(find.byKey(StatsEnvChart.chartKey), findsNothing);
+    expect(find.byKey(EnvChart.chartKey), findsNothing);
     expect(find.byType(LineChart), findsNothing);
   });
 
   testWidgets('조회 실패를 빈 화면으로 위장하지 않는다', (tester) async {
     await _pump(tester, error: StateError('down'));
-    expect(find.byKey(StatsEnvChart.chartKey), findsNothing);
+    expect(find.byKey(EnvChart.chartKey), findsNothing);
     expect(find.text('stats_load_failed'), findsOneWidget);
   });
 

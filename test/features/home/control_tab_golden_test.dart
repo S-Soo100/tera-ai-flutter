@@ -18,6 +18,7 @@ import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_reading.dart';
 import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivnanaut/shared/domain/chart_window.dart';
 
 /// 사육장 제어 서브탭을 실제 위젯 그대로 렌더해 PNG로 남긴다.
 ///
@@ -105,6 +106,10 @@ Future<void> _shoot(
         .overrideWith((ref) => Stream.value(_reading())),
     moduleOnlineProvider(_deviceId).overrideWithValue(true),
     todayExtremesProvider.overrideWith((ref) async => EnvExtremes.from(_buckets())),
+    // 창을 고정하지 않으면 실제 `now` 기준이라 고정 시각 버킷이 구간 밖으로
+    // 밀려 빈 차트가 찍힌다.
+    chartWindowProvider
+        .overrideWith((ref) => ChartWindow.of(DateTime(2026, 8, 8, 13))),
     chartBucketsProvider.overrideWith((ref) async => _buckets()),
     actuatorMarkersProvider.overrideWith((ref) async => const []),
     ledBrightnessProvider.overrideWith((ref) => 70),

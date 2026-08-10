@@ -1,4 +1,4 @@
-import '../../my_cage/domain/telemetry_bucket.dart';
+import '../../features/my_cage/domain/telemetry_bucket.dart';
 import 'axis_bounds.dart';
 
 /// 통계 탭 24시간 차트에 바로 그릴 수 있게 정리된 데이터.
@@ -10,7 +10,7 @@ import 'axis_bounds.dart';
 /// **0~1로 정규화해 그리고**, 축 라벨만 각 지표의 실제 눈금을 보여준다.
 /// (Figma도 Y축 라벨을 6개 텍스트를 균등 배치한 컬럼으로 그렸다 — 눈금 개수가
 /// 좌우로 달라도 각자 자기 범위를 선형으로 나눠 갖기 때문에 올바르다.)
-class StatsChartData {
+class EnvChartData {
   /// 구간 시작 (x = 0).
   final DateTime from;
 
@@ -29,7 +29,7 @@ class StatsChartData {
   /// 습도 점. x·y 모두 0~1 정규화.
   final List<({double x, double y})> humidPoints;
 
-  const StatsChartData({
+  const EnvChartData({
     required this.from,
     required this.to,
     required this.tempAxis,
@@ -104,7 +104,7 @@ class StatsChartData {
   /// **0 이하 값은 [AxisBounds]와 같은 이유로 버린다** — `telemetry_30m`의 0은
   /// 센서 오프라인 센티넬이지 실측이 아니다. 축뿐 아니라 **점에서도** 빼야
   /// 곡선이 바닥까지 내리꽂히지 않는다.
-  factory StatsChartData.from(
+  factory EnvChartData.from(
     List<TelemetryBucket> buckets, {
     required DateTime from,
     required DateTime to,
@@ -140,7 +140,7 @@ class StatsChartData {
       return out;
     }
 
-    return StatsChartData(
+    return EnvChartData(
       from: from,
       to: to,
       tempAxis: tempAxis,

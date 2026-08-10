@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/stats/domain/axis_bounds.dart';
+import 'package:vivnanaut/shared/domain/axis_bounds.dart';
 
 void main() {
   group('눈금 개수는 고정 — 격자선 6줄과 맞아야 한다', () {

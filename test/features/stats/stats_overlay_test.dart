@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/core/theme/app_theme.dart';
-import 'package:vivnanaut/features/home/domain/actuator_marker.dart';
+import 'package:vivnanaut/shared/domain/actuator_marker.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
 import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
-import 'package:vivnanaut/features/stats/domain/stats_chart_data.dart';
-import 'package:vivnanaut/features/stats/domain/stats_window.dart';
+import 'package:vivnanaut/shared/domain/env_chart_data.dart';
+import 'package:vivnanaut/shared/domain/chart_window.dart';
 import 'package:vivnanaut/features/stats/presentation/stats_providers.dart';
-import 'package:vivnanaut/features/stats/presentation/widgets/stats_env_chart.dart';
+import 'package:vivnanaut/shared/widgets/env_chart.dart';
 import 'package:vivnanaut/features/stats/presentation/widgets/stats_summary_bar.dart';
 import 'package:vivnanaut/shared/widgets/figma_icon.dart';
 
@@ -22,9 +22,9 @@ Finder _svg(String name) => find.byWidgetPredicate(
 
 /// 창을 고정해 테스트가 실행 시각에 흔들리지 않게 한다.
 /// 16:40 = Figma가 그린 프레임(어제 22시 ~ 오늘 22시).
-final _window = StatsWindow.of(DateTime(2026, 8, 10, 16, 40));
+final _window = ChartWindow.of(DateTime(2026, 8, 10, 16, 40));
 
-StatsChartData _chart() => StatsChartData.from(
+EnvChartData _chart() => EnvChartData.from(
       [
         for (final e in [
           (_window.start, 23.5, 58.0),
@@ -62,7 +62,7 @@ Future<ProviderContainer> _pumpChart(
       container: c,
       child: MaterialApp(
         home: Scaffold(
-          body: StatsEnvChart(
+          body: EnvChart(
             data: _chart(),
             window: _window,
             markers: markers,
@@ -89,11 +89,11 @@ Future<ProviderContainer> _pumpSummary(
 
   final c = ProviderContainer(overrides: [
     currentDeviceIdProvider.overrideWith((ref) async => 'dev-1'),
-    statsExtremesProvider
+    chartExtremesProvider
         .overrideWith((ref) async => throw UnimplementedError()),
     telemetryStreamProvider('dev-1').overrideWith((ref) => Stream.value(null)),
-    statsChartDataProvider.overrideWith((ref) async => _chart()),
-    statsWindowProvider.overrideWith((ref) => _window),
+    envChartDataProvider.overrideWith((ref) async => _chart()),
+    chartWindowProvider.overrideWith((ref) => _window),
   ]);
   addTearDown(c.dispose);
 
@@ -118,7 +118,7 @@ void main() {
   group('동작 마커 (Figma §3.1)', () {
     testWidgets('마커가 없으면 행이 자리를 차지하지 않는다', (tester) async {
       await _pumpChart(tester);
-      expect(find.byKey(StatsEnvChart.markerRowKey), findsNothing);
+      expect(find.byKey(EnvChart.markerRowKey), findsNothing);
     });
 
     testWidgets('창 안의 마커는 칩으로 그려진다', (tester) async {
@@ -132,7 +132,7 @@ void main() {
           at: _window.start.add(const Duration(hours: 9)),
         ),
       ]);
-      expect(find.byKey(StatsEnvChart.markerRowKey), findsOneWidget);
+      expect(find.byKey(EnvChart.markerRowKey), findsOneWidget);
       expect(_svg(FigmaIcons.shower), findsOneWidget);
       expect(_svg(FigmaIcons.modeFan), findsOneWidget);
     });
