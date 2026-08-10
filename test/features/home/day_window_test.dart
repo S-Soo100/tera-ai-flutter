@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/home/domain/day_window.dart';
+import 'package:vivananunt/features/home/domain/day_window.dart';
 
 void main() {
   group('DayWindow.of — 07:00 경계', () {

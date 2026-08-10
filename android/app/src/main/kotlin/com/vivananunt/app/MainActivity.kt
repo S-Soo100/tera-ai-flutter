@@ -1,4 +1,4 @@
-package com.teraai.tera_ai
+package com.vivananunt.app
 
 import io.flutter.embedding.android.FlutterActivity
 

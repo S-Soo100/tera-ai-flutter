@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/home/domain/chart_time_axis.dart';
+import 'package:vivananunt/features/home/domain/chart_time_axis.dart';
 
 void main() {
   group('chartTimeTicks — 6시간 경계 눈금', () {

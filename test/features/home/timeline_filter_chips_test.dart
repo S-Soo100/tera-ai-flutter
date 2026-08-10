@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/home/domain/timeline_summary.dart';
-import 'package:tera_ai/features/home/presentation/home_timeline_providers.dart';
-import 'package:tera_ai/features/home/presentation/widgets/timeline_date_scroller.dart';
+import 'package:vivananunt/features/home/domain/timeline_summary.dart';
+import 'package:vivananunt/features/home/presentation/home_timeline_providers.dart';
+import 'package:vivananunt/features/home/presentation/widgets/timeline_date_scroller.dart';
 
 Future<ProviderContainer> _pump(
   WidgetTester tester,

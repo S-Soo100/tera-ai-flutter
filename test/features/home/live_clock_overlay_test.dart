@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/home/presentation/widgets/live_clock_overlay.dart';
-import 'package:tera_ai/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivananunt/features/home/presentation/widgets/live_clock_overlay.dart';
+import 'package:vivananunt/features/my_cage/presentation/supabase_module_providers.dart';
 
 Future<void> _pump(WidgetTester tester, Stream<DateTime> ticks) async {
   await tester.pumpWidget(

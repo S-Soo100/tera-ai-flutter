@@ -1,4 +1,4 @@
-# tera_ai
+# 비바나트 (vivananunt)
 
 A new Flutter project.
 

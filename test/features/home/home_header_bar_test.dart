@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tera_ai/features/home/domain/enclosure_set.dart';
-import 'package:tera_ai/features/home/presentation/home_set_providers.dart';
-import 'package:tera_ai/features/home/presentation/widgets/home_header_bar.dart';
-import 'package:tera_ai/features/my_cage/domain/enclosure.dart';
-import 'package:tera_ai/features/my_pets/domain/pet.dart';
-import 'package:tera_ai/features/profile/domain/user_profile.dart';
-import 'package:tera_ai/features/profile/presentation/profile_providers.dart';
-import 'package:tera_ai/shared/widgets/account_avatar.dart';
+import 'package:vivananunt/features/home/domain/enclosure_set.dart';
+import 'package:vivananunt/features/home/presentation/home_set_providers.dart';
+import 'package:vivananunt/features/home/presentation/widgets/home_header_bar.dart';
+import 'package:vivananunt/features/my_cage/domain/enclosure.dart';
+import 'package:vivananunt/features/my_pets/domain/pet.dart';
+import 'package:vivananunt/features/profile/domain/user_profile.dart';
+import 'package:vivananunt/features/profile/presentation/profile_providers.dart';
+import 'package:vivananunt/shared/widgets/account_avatar.dart';
 
 EnclosureSet _set(String id, String encName, {String? petName}) => EnclosureSet(
       enclosure:

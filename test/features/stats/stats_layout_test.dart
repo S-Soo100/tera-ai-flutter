@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/home/presentation/home_control_providers.dart';
-import 'package:tera_ai/features/my_cage/domain/telemetry_bucket.dart';
-import 'package:tera_ai/features/my_cage/presentation/supabase_module_providers.dart';
-import 'package:tera_ai/features/stats/domain/stats_chart_data.dart';
-import 'package:tera_ai/features/stats/domain/stats_metric.dart';
-import 'package:tera_ai/features/stats/domain/stats_period.dart';
-import 'package:tera_ai/features/stats/presentation/stats_providers.dart';
-import 'package:tera_ai/features/stats/presentation/stats_screen.dart';
-import 'package:tera_ai/features/stats/presentation/widgets/stats_env_chart.dart';
-import 'package:tera_ai/features/stats/presentation/widgets/stats_period_bar.dart';
-import 'package:tera_ai/shared/widgets/pending_section.dart';
+import 'package:vivananunt/features/home/presentation/home_control_providers.dart';
+import 'package:vivananunt/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivananunt/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivananunt/features/stats/domain/stats_chart_data.dart';
+import 'package:vivananunt/features/stats/domain/stats_metric.dart';
+import 'package:vivananunt/features/stats/domain/stats_period.dart';
+import 'package:vivananunt/features/stats/presentation/stats_providers.dart';
+import 'package:vivananunt/features/stats/presentation/stats_screen.dart';
+import 'package:vivananunt/features/stats/presentation/widgets/stats_env_chart.dart';
+import 'package:vivananunt/features/stats/presentation/widgets/stats_period_bar.dart';
+import 'package:vivananunt/shared/widgets/pending_section.dart';
 
 final _from = DateTime(2026, 8, 4, 19);
 final _to = DateTime(2026, 8, 5, 7);

@@ -7,17 +7,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/core/theme/app_theme.dart';
-import 'package:tera_ai/features/home/domain/env_extremes.dart';
-import 'package:tera_ai/features/home/presentation/cage_control_actions.dart';
-import 'package:tera_ai/features/home/presentation/home_control_providers.dart';
-import 'package:tera_ai/features/home/presentation/widgets/env_mini_chart.dart';
-import 'package:tera_ai/features/home/presentation/widgets/live_env_card.dart';
-import 'package:tera_ai/features/home/presentation/widgets/quick_control_grid.dart';
-import 'package:tera_ai/features/my_cage/domain/actuator_state.dart';
-import 'package:tera_ai/features/my_cage/domain/telemetry_bucket.dart';
-import 'package:tera_ai/features/my_cage/domain/telemetry_reading.dart';
-import 'package:tera_ai/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivananunt/core/theme/app_theme.dart';
+import 'package:vivananunt/features/home/domain/env_extremes.dart';
+import 'package:vivananunt/features/home/presentation/cage_control_actions.dart';
+import 'package:vivananunt/features/home/presentation/home_control_providers.dart';
+import 'package:vivananunt/features/home/presentation/widgets/env_mini_chart.dart';
+import 'package:vivananunt/features/home/presentation/widgets/live_env_card.dart';
+import 'package:vivananunt/features/home/presentation/widgets/quick_control_grid.dart';
+import 'package:vivananunt/features/my_cage/domain/actuator_state.dart';
+import 'package:vivananunt/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivananunt/features/my_cage/domain/telemetry_reading.dart';
+import 'package:vivananunt/features/my_cage/presentation/supabase_module_providers.dart';
 
 /// 사육장 제어 서브탭을 실제 위젯 그대로 렌더해 PNG로 남긴다.
 ///

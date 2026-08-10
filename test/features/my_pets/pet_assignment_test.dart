@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/my_cage/presentation/enclosure_settings_screen.dart';
-import 'package:tera_ai/features/my_pets/data/pet_assignment_service.dart';
-import 'package:tera_ai/features/my_pets/data/supabase_pet_repository.dart';
+import 'package:vivananunt/features/my_cage/presentation/enclosure_settings_screen.dart';
+import 'package:vivananunt/features/my_pets/data/pet_assignment_service.dart';
+import 'package:vivananunt/features/my_pets/data/supabase_pet_repository.dart';
 
 Map<String, dynamic> _row({
   Object? enclosureId = _absent,

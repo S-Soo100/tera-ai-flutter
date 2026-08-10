@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/my_cage/domain/actuator_state.dart';
-import 'package:tera_ai/features/my_cage/domain/device.dart';
-import 'package:tera_ai/features/my_cage/domain/telemetry_reading.dart';
-import 'package:tera_ai/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivananunt/features/my_cage/domain/actuator_state.dart';
+import 'package:vivananunt/features/my_cage/domain/device.dart';
+import 'package:vivananunt/features/my_cage/domain/telemetry_reading.dart';
+import 'package:vivananunt/features/my_cage/presentation/supabase_module_providers.dart';
 
 /// 연결 끊김 판정(`moduleOnlineProvider`) 회귀 테스트.
 ///

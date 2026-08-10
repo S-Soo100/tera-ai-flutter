@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/home/domain/mist_lock.dart';
+import 'package:vivananunt/features/home/domain/mist_lock.dart';
 
 void main() {
   group('MistLock', () {

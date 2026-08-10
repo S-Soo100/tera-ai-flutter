@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/core/theme/app_styles.dart';
-import 'package:tera_ai/core/theme/app_theme.dart';
+import 'package:vivananunt/core/theme/app_styles.dart';
+import 'package:vivananunt/core/theme/app_theme.dart';
 
 /// Figma `Asset` 섹션 팔레트가 코드와 어긋나지 않게 고정한다.
 /// 값 출처: `docs/figma-final-design-transcript.md` §4.1

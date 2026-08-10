@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/home/data/enclosure_set_repository.dart';
-import 'package:tera_ai/features/home/domain/device_mode.dart';
-import 'package:tera_ai/features/my_cage/domain/device.dart';
-import 'package:tera_ai/features/my_cage/domain/enclosure.dart';
-import 'package:tera_ai/features/my_cage/domain/terra_camera.dart';
-import 'package:tera_ai/features/my_pets/domain/pet.dart';
+import 'package:vivananunt/features/home/data/enclosure_set_repository.dart';
+import 'package:vivananunt/features/home/domain/device_mode.dart';
+import 'package:vivananunt/features/my_cage/domain/device.dart';
+import 'package:vivananunt/features/my_cage/domain/enclosure.dart';
+import 'package:vivananunt/features/my_cage/domain/terra_camera.dart';
+import 'package:vivananunt/features/my_pets/domain/pet.dart';
 
 Enclosure _enc(String id, String name) =>
     Enclosure(id: id, name: name, createdAt: DateTime(2026, 1, 1));

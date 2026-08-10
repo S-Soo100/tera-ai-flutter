@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivananunt/features/my_cage/domain/telemetry_bucket.dart';
 
 /// 특정 시각·sample_count의 최소 버킷 생성. 온습도 값은 이 테스트에 무관.
 TelemetryBucket _bucketAt(DateTime t, {int sampleCount = 600}) {

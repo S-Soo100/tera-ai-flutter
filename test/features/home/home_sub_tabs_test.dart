@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/home/domain/device_mode.dart';
-import 'package:tera_ai/features/home/presentation/home_set_providers.dart';
-import 'package:tera_ai/features/home/presentation/widgets/home_sub_tabs_bar.dart';
+import 'package:vivananunt/features/home/domain/device_mode.dart';
+import 'package:vivananunt/features/home/presentation/home_set_providers.dart';
+import 'package:vivananunt/features/home/presentation/widgets/home_sub_tabs_bar.dart';
 
 Future<ProviderContainer> _pump(WidgetTester tester, DeviceMode mode) async {
   final c = ProviderContainer(overrides: [

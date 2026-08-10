@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/my_cage/domain/species_comfort.dart';
+import 'package:vivananunt/features/my_cage/domain/species_comfort.dart';
 
 void main() {
   group('speciesIdFromText', () {

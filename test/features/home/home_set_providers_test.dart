@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tera_ai/features/home/domain/device_mode.dart';
-import 'package:tera_ai/features/home/domain/enclosure_set.dart';
-import 'package:tera_ai/features/home/presentation/home_set_providers.dart';
-import 'package:tera_ai/features/my_cage/domain/enclosure.dart';
+import 'package:vivananunt/features/home/domain/device_mode.dart';
+import 'package:vivananunt/features/home/domain/enclosure_set.dart';
+import 'package:vivananunt/features/home/presentation/home_set_providers.dart';
+import 'package:vivananunt/features/my_cage/domain/enclosure.dart';
 
 EnclosureSet _set(String id) => EnclosureSet(
       enclosure: Enclosure(id: id, name: id, createdAt: DateTime(2026, 1, 1)),
