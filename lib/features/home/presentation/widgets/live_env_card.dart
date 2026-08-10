@@ -1,23 +1,21 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_styles.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/status_badge.dart';
-import '../../../my_cage/domain/species_comfort.dart';
+import '../../../../shared/widgets/env_summary_bar.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../home_control_providers.dart';
 
-/// 현재 온·습도 리드아웃.
+/// 현재 온·습도 리드아웃 (홈).
 ///
-/// **이 앱은 숫자를 확인하러 켜는 앱이다.** 게코는 반응을 주지 않으므로 온습도가
-/// 사용자와 개체 사이의 거의 유일한 대화 수단이다. 그래서 현재값을 카드에 담아
-/// 정리하지 않고 화면에 직접, 크게 놓는다 — 어두운 방에서 멀리서도 읽혀야 한다.
+/// **통계 탭과 같은 표시**([EnvSummaryBar])를 쓴다. 예전에는 홈만 다른 모양이라
+/// (라벨 앞 점 + 큰 숫자 + 위험/주의 배지), 바로 아래 차트나 통계 탭과 생김새가
+/// 이어지지 않았다.
 ///
-/// 지표 색(온도 빨강 / 습도 파랑)은 **숫자가 아니라 라벨 앞 점**에만 쓴다.
-/// 숫자를 칠하면 값에 따라 색이 변하는 것처럼 오해되고, 아래 차트의 선 색과
-/// 이어지는 연결고리만 있으면 충분하다.
+/// 최고/최저는 **바로 아래 차트와 같은 구간**([chartExtremesProvider])이다 —
+/// 당일(07:00~) 창을 쓰면 그래프에는 곡선이 있는데 최고/최저는 `--`로 뜬다.
+///
+/// 스크러버는 넘기지 않는다. 홈 차트는 훑고 통계로 넘어가는 진입점이라
+/// 스크럽을 쓰지 않는다.
 class LiveEnvCard extends ConsumerWidget {
   const LiveEnvCard({super.key});
 
@@ -29,172 +27,16 @@ class LiveEnvCard extends ConsumerWidget {
     if (deviceId == null) return const SizedBox.shrink();
 
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
-    final ex = ref.watch(todayExtremesProvider).valueOrNull;
-    // 안심존은 개체 종의 care_info에서 온다. 없으면 판정을 안 한다 —
-    // 임의 수치로 "안심"이라고 말하면 그게 더 위험하다.
-    final comfort = ref.watch(currentSpeciesComfortProvider).valueOrNull;
+    final ex = ref.watch(chartExtremesProvider).valueOrNull;
 
     return Padding(
       key: cardKey,
-      padding: const EdgeInsets.fromLTRB(
-        AppStyles.spacing16,
-        AppStyles.spacing8,
-        AppStyles.spacing16,
-        AppStyles.spacing16,
+      padding: const EdgeInsets.only(top: 8, bottom: 16),
+      child: EnvSummaryBar(
+        temperature: t?.tA,
+        humidity: t?.hA,
+        extremes: ex,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: _Readout(
-              value: t?.tA?.toStringAsFixed(1),
-              unit: '°',
-              label: 'home_env_temp_label'.tr(),
-              dot: AppTheme.chartTemperature,
-              range: _range(ex?.tempMax, ex?.tempMin, 1),
-              tone: _tone(t?.tA, comfort?.tempMin, comfort?.tempMax, 1.5),
-            ),
-          ),
-          Expanded(
-            child: _Readout(
-              value: t?.hA?.toStringAsFixed(0),
-              unit: '%',
-              label: 'home_env_humid_label'.tr(),
-              dot: AppTheme.chartHumidity,
-              range: _range(ex?.humidMax, ex?.humidMin, 0),
-              tone: _tone(t?.hA, comfort?.humidMin, comfort?.humidMax, 10),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 현재값이 개체의 적정 구간 안인가.
-  ///
-  /// **값이나 안심존을 모르면 null** — 배지를 아예 안 그린다. 모르는 상태를
-  /// "안심"으로 칠하면 사용자가 위험을 놓친다. margin은 "조금 벗어남 vs 많이
-  /// 벗어남"을 가르는 UI 여유값(온도 1.5℃ / 습도 10%RH).
-  static StatusTone? _tone(double? v, double? lo, double? hi, double margin) {
-    if (v == null || v <= 0 || lo == null || hi == null) return null;
-    return switch (classifyComfort(v, lo, hi, margin)) {
-      ComfortLevel.good => StatusTone.safe,
-      ComfortLevel.cautionLow || ComfortLevel.cautionHigh => StatusTone.caution,
-      ComfortLevel.dangerLow || ComfortLevel.dangerHigh => StatusTone.danger,
-    };
-  }
-
-  /// 당일 최고/최저. 둘 중 하나라도 없으면 줄 자체를 내지 않는다 —
-  /// `-- / 23.5` 같은 반쪽짜리는 읽는 사람을 헷갈리게 한다.
-  static String? _range(double? max, double? min, int digits) {
-    if (max == null || min == null) return null;
-    return 'home_env_range_short'.tr(namedArgs: {
-      'max': max.toStringAsFixed(digits),
-      'min': min.toStringAsFixed(digits),
-    });
-  }
-}
-
-class _Readout extends StatelessWidget {
-  const _Readout({
-    required this.value,
-    required this.unit,
-    required this.label,
-    required this.dot,
-    required this.range,
-    required this.tone,
-  });
-
-  /// 현재값. null이면 아직 안 들어온 것 — 0으로 위장하지 않고 `--`로 둔다.
-  final String? value;
-  final String unit;
-  final String label;
-  final Color dot;
-  final String? range;
-
-  /// 적정 구간 대비 판정. null이면 배지를 그리지 않는다.
-  final StatusTone? tone;
-
-  static String _toneLabel(StatusTone t) => switch (t) {
-        StatusTone.safe => 'home_env_state_safe'.tr(),
-        StatusTone.caution => 'home_env_state_caution'.tr(),
-        StatusTone.danger => 'home_env_state_danger'.tr(),
-        _ => '',
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final muted = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: scheme.onSurfaceVariant,
-        );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: AppStyles.spacing4),
-            Flexible(
-              child: Text(label,
-                  style: muted, maxLines: 1, overflow: TextOverflow.ellipsis),
-            ),
-          ],
-        ),
-        if (tone != null) ...[
-          const SizedBox(height: AppStyles.spacing4),
-          StatusBadge(label: _toneLabel(tone!), tone: tone!),
-        ],
-        const SizedBox(height: AppStyles.spacing4),
-        // 이 화면에서 가장 큰 글자라 가장 먼저 넘친다. 좁은 기기·큰 글씨
-        // 설정에서 잘리는 대신 **비율을 유지한 채 줄어들게** 한다 — 숫자는
-        // 잘리면 값이 바뀌어 보이므로 ellipsis를 쓸 수 없다.
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                value ?? '--',
-                style: TextStyle(
-                  fontFamily: 'Pretendard',
-                  // 화면에서 가장 큰 글자. 이 앱이 무엇을 보는 앱인지 말한다.
-                  // 48px까지 키워봤더니 두 값이 화면 폭을 다 먹고 아래 차트를
-                  // 밀어내서, "제일 크되 지배하지는 않는" 34px로 내렸다.
-                  fontSize: 34,
-                  fontWeight: FontWeight.w700,
-                  height: 1.1,
-                  letterSpacing: -1.0,
-                  color: scheme.onSurface,
-                  // 값이 바뀔 때 숫자 폭이 흔들리지 않게 고정폭 숫자를 쓴다.
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              Text(
-                unit,
-                style: TextStyle(
-                  fontFamily: 'Pretendard',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (range != null) ...[
-          const SizedBox(height: 2),
-          Text(range!,
-              style: muted, maxLines: 1, overflow: TextOverflow.ellipsis),
-        ],
-      ],
     );
   }
 }

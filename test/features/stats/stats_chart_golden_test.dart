@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/core/theme/app_styles.dart';
 import 'package:vivnanaut/core/theme/app_theme.dart';
 import 'package:vivnanaut/shared/domain/actuator_marker.dart';
-import 'package:vivnanaut/features/home/domain/env_extremes.dart';
+import 'package:vivnanaut/shared/domain/env_extremes.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';

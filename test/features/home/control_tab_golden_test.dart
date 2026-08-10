@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/core/theme/app_theme.dart';
-import 'package:vivnanaut/features/home/domain/env_extremes.dart';
+import 'package:vivnanaut/shared/domain/env_extremes.dart';
 import 'package:vivnanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/env_mini_chart.dart';
@@ -105,7 +105,7 @@ Future<void> _shoot(
     telemetryStreamProvider(_deviceId)
         .overrideWith((ref) => Stream.value(_reading())),
     moduleOnlineProvider(_deviceId).overrideWithValue(true),
-    todayExtremesProvider.overrideWith((ref) async => EnvExtremes.from(_buckets())),
+    chartExtremesProvider.overrideWith((ref) async => EnvExtremes.from(_buckets())),
     // 창을 고정하지 않으면 실제 `now` 기준이라 고정 시각 버킷이 구간 밖으로
     // 밀려 빈 차트가 찍힌다.
     chartWindowProvider

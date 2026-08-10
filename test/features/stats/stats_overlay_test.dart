@@ -11,6 +11,7 @@ import 'package:vivnanaut/shared/domain/chart_window.dart';
 import 'package:vivnanaut/features/stats/presentation/stats_providers.dart';
 import 'package:vivnanaut/shared/widgets/env_chart.dart';
 import 'package:vivnanaut/features/stats/presentation/widgets/stats_summary_bar.dart';
+import 'package:vivnanaut/shared/widgets/env_summary_bar.dart';
 import 'package:vivnanaut/shared/widgets/figma_icon.dart';
 
 /// Figma SVG 아이콘 하나를 집는다. `FigmaIcon`은 종류가 이름으로만 갈리므로
@@ -185,7 +186,7 @@ void main() {
   group('스크러버 ↔ 요약 바 (Figma 변형 B)', () {
     testWidgets('스크럽 전에는 요약 바가 그대로다', (tester) async {
       await _pumpSummary(tester);
-      expect(find.byKey(StatsSummaryBar.scrubKey), findsNothing);
+      expect(find.byKey(EnvSummaryBar.scrubKey), findsNothing);
     });
 
     // 값 자체가 맞는지는 도메인(`stats_chart_data_test`)이 본다. 여기서는
@@ -193,7 +194,7 @@ void main() {
     // (테스트에서 `.tr()`은 번역 없이 키를 그대로 돌려준다.)
     testWidgets('스크럽하면 그 시점 표시로 바뀐다 — 온·습도 둘 다', (tester) async {
       await _pumpSummary(tester, scrub: 0.25);
-      final readout = find.byKey(StatsSummaryBar.scrubKey);
+      final readout = find.byKey(EnvSummaryBar.scrubKey);
       expect(readout, findsOneWidget);
       expect(
         find.descendant(of: readout, matching: _svg(FigmaIcons.thermometer)),
@@ -220,25 +221,25 @@ void main() {
     testWidgets('스크럽 중에는 해제 버튼이 함께 뜬다 — 없으면 최고/최저로 못 돌아간다',
         (tester) async {
       final c = await _pumpSummary(tester);
-      expect(find.byKey(StatsSummaryBar.clearKey), findsNothing);
+      expect(find.byKey(EnvSummaryBar.clearKey), findsNothing);
 
       c.read(statsScrubProvider.notifier).state = 0.25;
       await tester.pumpAndSettle();
-      expect(find.byKey(StatsSummaryBar.clearKey), findsOneWidget);
+      expect(find.byKey(EnvSummaryBar.clearKey), findsOneWidget);
     });
 
     testWidgets('해제 버튼을 누르면 원래 요약으로 돌아온다', (tester) async {
       final c = await _pumpSummary(tester, scrub: 0.25);
-      await tester.tap(find.byKey(StatsSummaryBar.clearKey));
+      await tester.tap(find.byKey(EnvSummaryBar.clearKey));
       await tester.pumpAndSettle();
-      expect(find.byKey(StatsSummaryBar.scrubKey), findsNothing);
+      expect(find.byKey(EnvSummaryBar.scrubKey), findsNothing);
       expect(c.read(statsScrubProvider), isNull);
     });
 
     testWidgets('오른쪽 끝을 스크럽해도 해제 버튼을 가리지 않는다', (tester) async {
       await _pumpSummary(tester, scrub: 1.0);
-      final clear = tester.getRect(find.byKey(StatsSummaryBar.clearKey));
-      final readout = tester.getRect(find.byKey(StatsSummaryBar.scrubKey));
+      final clear = tester.getRect(find.byKey(EnvSummaryBar.clearKey));
+      final readout = tester.getRect(find.byKey(EnvSummaryBar.scrubKey));
       // readout은 Positioned.fill이라 폭이 같다. 실제 글자 블록으로 판정한다.
       final text = tester.getRect(find.byType(FittedBox).first);
       expect(text.right, lessThanOrEqualTo(clear.left + 0.5),
@@ -248,11 +249,11 @@ void main() {
     testWidgets('스크럽해도 요약 바 높이가 변하지 않는다 — 차트가 위아래로 튀면 못 읽는다',
         (tester) async {
       final c = await _pumpSummary(tester);
-      final before = tester.getSize(find.byKey(StatsSummaryBar.barKey));
+      final before = tester.getSize(find.byKey(EnvSummaryBar.barKey));
 
       c.read(statsScrubProvider.notifier).state = 0.5;
       await tester.pumpAndSettle();
-      final after = tester.getSize(find.byKey(StatsSummaryBar.barKey));
+      final after = tester.getSize(find.byKey(EnvSummaryBar.barKey));
 
       expect(after.height, before.height);
     });

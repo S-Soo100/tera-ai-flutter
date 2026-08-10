@@ -8,7 +8,7 @@ import 'package:vivnanaut/features/my_cage/presentation/supabase_module_provider
 import 'package:vivnanaut/shared/domain/env_chart_data.dart';
 import 'package:vivnanaut/features/stats/presentation/stats_screen.dart';
 import 'package:vivnanaut/shared/widgets/env_chart.dart';
-import 'package:vivnanaut/features/stats/presentation/widgets/stats_summary_bar.dart';
+import 'package:vivnanaut/shared/widgets/env_summary_bar.dart';
 
 final _from = DateTime(2026, 8, 4, 19);
 final _to = DateTime(2026, 8, 5, 7);
@@ -67,13 +67,13 @@ void main() {
   testWidgets('제어기가 없으면 안내만 — 빈 차트를 그리지 않는다', (tester) async {
     await _pump(tester, deviceId: null);
     expect(find.byKey(EnvChart.chartKey), findsNothing);
-    expect(find.byKey(StatsSummaryBar.barKey), findsNothing);
+    expect(find.byKey(EnvSummaryBar.barKey), findsNothing);
   });
 
   testWidgets('데이터가 있으면 차트와 요약 바가 뜬다', (tester) async {
     await _pump(tester);
     expect(find.byKey(EnvChart.chartKey), findsOneWidget);
-    expect(find.byKey(StatsSummaryBar.barKey), findsOneWidget);
+    expect(find.byKey(EnvSummaryBar.barKey), findsOneWidget);
     expect(find.byType(LineChart), findsOneWidget);
   });
 

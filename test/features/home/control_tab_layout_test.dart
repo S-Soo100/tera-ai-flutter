@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/env_extremes.dart';
+import 'package:vivnanaut/shared/domain/env_extremes.dart';
 import 'package:vivnanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/env_mini_chart.dart';
 import 'package:vivnanaut/shared/domain/chart_window.dart';
 import 'package:vivnanaut/shared/widgets/env_chart.dart';
+import 'package:vivnanaut/shared/widgets/env_summary_bar.dart';
+import 'package:vivnanaut/shared/widgets/status_badge.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/live_env_card.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/quick_control_grid.dart';
 import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
@@ -62,7 +64,7 @@ Future<void> _pumpControlTab(WidgetTester tester, Size size) async {
     telemetryStreamProvider(_deviceId)
         .overrideWith((ref) => Stream.value(_reading())),
     moduleOnlineProvider(_deviceId).overrideWithValue(true),
-    todayExtremesProvider.overrideWith(
+    chartExtremesProvider.overrideWith(
       (ref) async => EnvExtremes.from(_buckets()),
     ),
     // 창을 고정하지 않으면 실제 `now` 기준 구간이 잡혀 고정 시각 버킷이
@@ -119,19 +121,33 @@ void main() {
     });
   });
 
+  // 표시 문구는 l10n 템플릿(`{v}°`)을 타므로 테스트에서는 키만 남는다.
+  // 그래서 **값이 요약 바까지 제대로 전달되는지**를 본다. 렌더 모양은 골든이 맡는다.
   group('리드아웃', () {
-    testWidgets('현재값이 크게 뜬다', (tester) async {
+    testWidgets('현재값과 최고/최저가 요약 바로 전달된다', (tester) async {
       await _pumpControlTab(tester, const Size(393, 852));
-      expect(find.text('24.5'), findsOneWidget);
-      expect(find.text('68'), findsOneWidget);
+      final bar = tester.widget<EnvSummaryBar>(find.byType(EnvSummaryBar));
+      expect(bar.temperature, 24.5);
+      expect(bar.humidity, 68);
+      expect(bar.extremes, isNotNull);
+      expect(bar.extremes!.tempMax, isNotNull);
     });
 
-    testWidgets('값이 없으면 0이 아니라 -- 로 둔다', (tester) async {
+    // 홈은 훑고 넘어가는 자리라 스크럽을 쓰지 않는다.
+    testWidgets('스크럽 표시를 쓰지 않는다', (tester) async {
+      await _pumpControlTab(tester, const Size(393, 852));
+      final bar = tester.widget<EnvSummaryBar>(find.byType(EnvSummaryBar));
+      expect(bar.scrubX, isNull);
+      expect(bar.onClearScrub, isNull);
+      expect(find.byKey(EnvSummaryBar.clearKey), findsNothing);
+    });
+
+    testWidgets('값이 없으면 0으로 위장하지 않는다', (tester) async {
       final c = ProviderContainer(overrides: [
         currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
         telemetryStreamProvider(_deviceId)
             .overrideWith((ref) => Stream.value(null)),
-        todayExtremesProvider.overrideWith((ref) async => EnvExtremes.from([])),
+        chartExtremesProvider.overrideWith((ref) async => EnvExtremes.from([])),
       ]);
       addTearDown(c.dispose);
       await tester.pumpWidget(
@@ -141,7 +157,16 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('--'), findsNWidgets(2));
+      final bar = tester.widget<EnvSummaryBar>(find.byType(EnvSummaryBar));
+      expect(bar.temperature, isNull);
+      expect(bar.humidity, isNull);
+      expect(bar.extremes!.tempMax, isNull);
+    });
+
+    // 위험/주의 배지는 뺐다(사용자 결정) — 통계 탭과 같은 표시로 통일했다.
+    testWidgets('상태 배지를 그리지 않는다', (tester) async {
+      await _pumpControlTab(tester, const Size(393, 852));
+      expect(find.byType(StatusBadge), findsNothing);
     });
   });
 
