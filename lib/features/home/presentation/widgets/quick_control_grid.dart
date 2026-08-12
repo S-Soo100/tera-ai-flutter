@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../my_cage/domain/actuator_state.dart';
-import '../../../my_cage/domain/device_command.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../cage_control_actions.dart';
 import '../home_control_providers.dart';
@@ -27,7 +26,6 @@ class QuickControlGrid extends ConsumerWidget {
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
     final online = ref.watch(moduleOnlineProvider(deviceId));
     final lock = ref.watch(mistLockProvider(deviceId));
-    final brightness = ref.watch(ledBrightnessProvider);
     final mistDuration = ref.watch(mistDurationProvider);
     final mistLocked = lock.isLocked(DateTime.now());
 
@@ -47,8 +45,7 @@ class QuickControlGrid extends ConsumerWidget {
             icon: Icons.mode_fan_off,
             enabled: online,
             active: t?.fan == ActuatorState.on,
-            onTap: () => sendCageCommand(
-                context, ref, deviceId, CommandAction.fanToggle),
+            onTap: () => handleFanTap(context, ref, deviceId, t),
           ),
           _Tile(
             label: 'module_actuator_heater'.tr(),
@@ -60,13 +57,16 @@ class QuickControlGrid extends ConsumerWidget {
           ),
           _Tile(
             label: 'module_actuator_led'.tr(),
-            value: '$brightness%',
+            // 밝기 %를 띄우던 자리다. 현 보드의 LED는 PWM이 아니라 on/off
+            // 릴레이라 그 숫자가 기기에 반영된 적이 없다(백엔드 회신
+            // 2026-08-12). 아무 효과 없는 숫자보다 비워두는 게 정직하다.
+            value: '',
             icon: Icons.lightbulb_outline,
             // terra-server 계약에 LED 상태 telemetry가 없다(메모리
             // project_led_control_gap). 모르는 것을 켜진 것처럼 칠하지 않는다.
             enabled: online,
             active: false,
-            onTap: () => openBrightnessSheet(context, ref, deviceId),
+            onTap: () => openLedSheet(context, ref, deviceId),
           ),
           _Tile(
             key: mistKey,

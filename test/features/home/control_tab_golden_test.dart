@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/core/theme/app_theme.dart';
 import 'package:vivnanaut/shared/domain/env_extremes.dart';
-import 'package:vivnanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/env_mini_chart.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/live_env_card.dart';
@@ -112,7 +111,6 @@ Future<void> _shoot(
         .overrideWith((ref) => ChartWindow.of(DateTime(2026, 8, 8, 13))),
     chartBucketsProvider.overrideWith((ref) async => _buckets()),
     actuatorMarkersProvider.overrideWith((ref) async => const []),
-    ledBrightnessProvider.overrideWith((ref) => 70),
   ]);
   addTearDown(c.dispose);
 

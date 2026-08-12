@@ -48,6 +48,29 @@ void main() {
           [MarkerKind.mist, MarkerKind.mist]);
     });
 
+    test('켜기·끄기·뒤집기가 전부 같은 종류다 — 마커는 방향이 아니라 "돌았다"는 뜻',
+        () {
+      // 절대 명령(fan_on/heater_off/…)은 펌웨어에 처음부터 있었는데 계약
+      // 문서에 빠져 있었다(백엔드 회신 2026-08-12). 수동 제어를 이쪽으로
+      // 옮기면서 매핑을 안 늘리면 그 시각 동작이 차트에서 통째로 사라진다.
+      final m = ActuatorMarker.fromCommands([
+        _cmd('fan_on', '2026-08-12T01:00:00Z'),
+        _cmd('fan_off', '2026-08-12T02:00:00Z'),
+        _cmd('heater_on', '2026-08-12T03:00:00Z'),
+        _cmd('heater_off', '2026-08-12T04:00:00Z'),
+        _cmd('relay_on', '2026-08-12T05:00:00Z'),
+        _cmd('relay_off', '2026-08-12T06:00:00Z'),
+      ]);
+      expect(m.map((e) => e.kind).toList(), [
+        MarkerKind.fan,
+        MarkerKind.fan,
+        MarkerKind.heater,
+        MarkerKind.heater,
+        MarkerKind.mist,
+        MarkerKind.mist,
+      ]);
+    });
+
     test('알 수 없는 action은 버린다', () {
       final m = ActuatorMarker.fromCommands(
           [_cmd('token_rotate', '2026-08-05T10:00:00Z')]);

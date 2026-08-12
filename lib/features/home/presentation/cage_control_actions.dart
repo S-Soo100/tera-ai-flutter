@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_styles.dart';
 import '../../my_cage/domain/device_command.dart';
+import '../../my_cage/domain/actuator_state.dart';
 import '../../my_cage/domain/telemetry_reading.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../../my_cage/presentation/widgets/heater_lock_dialog.dart';
@@ -31,13 +32,6 @@ import '../domain/mist_lock.dart';
 final mistLockProvider = StateProvider.family<MistLock, String>(
   (ref, deviceId) => const MistLock(lockedUntil: null),
 );
-
-/// LED 밝기(0~100). BE3 전까지 펌웨어가 payload를 무시할 수 있다.
-///
-/// ⚠️ 실DB의 `led_*` 236건이 **전부 `payload = null`**이다 — 밝기 값이 기기에
-/// 닿은 적이 없어 펌웨어가 이걸 읽는지 미검증이다
-/// (`docs/backend-handoff-timer-mist.md` 요청 4).
-final ledBrightnessProvider = StateProvider<int>((ref) => 70);
 
 /// 마지막으로 고른 분무 시간. 기기별로 나눌 이유가 없다(사용자 취향).
 final mistDurationProvider =
@@ -73,6 +67,10 @@ Future<void> sendCageCommand(
 /// 2단 안전 플로우:
 /// ① 안전잠금(DS18B20 50°C 초과/통신오류)이 걸려 있으면 해제 다이얼로그부터
 /// ② 아니면 조작 확인 다이얼로그를 받고 나서 전송
+///
+/// **보내는 건 toggle이 아니라 절대 명령이다.** 뒤집기는 기기의 현재 상태를
+/// 전제하는데, 그 전제가 어긋나면 끄려던 조작이 켠다 — 히터에서는 과열로
+/// 이어진다. 켜져 있으면 `heater_off`, 아니면 `heater_on`을 보낸다.
 Future<void> handleHeaterTap(
   BuildContext context,
   WidgetRef ref,
@@ -84,11 +82,18 @@ Future<void> handleHeaterTap(
     return;
   }
 
+  final isOn = telemetry?.heaterState == ActuatorState.on;
+
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text('module_heater_confirm_title'.tr()),
-      content: Text('module_heater_confirm_body'.tr()),
+      // 무엇을 하려는지 문구로 못박는다. "조작하시겠습니까"만으로는 켜는 건지
+      // 끄는 건지 몰라, 과열 상황에서 끄려던 사람이 확인을 망설인다.
+      content: Text((isOn
+              ? 'module_heater_confirm_body_off'
+              : 'module_heater_confirm_body_on')
+          .tr()),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(false),
@@ -107,7 +112,28 @@ Future<void> handleHeaterTap(
   );
   if (confirmed != true || !context.mounted) return;
 
-  await sendCageCommand(context, ref, deviceId, CommandAction.heaterToggle);
+  await sendCageCommand(
+    context,
+    ref,
+    deviceId,
+    isOn ? CommandAction.heaterOff : CommandAction.heaterOn,
+  );
+}
+
+/// 팬 제어. 히터와 달리 안전 확인은 없지만 **명령은 똑같이 절대 상태**로 보낸다.
+Future<void> handleFanTap(
+  BuildContext context,
+  WidgetRef ref,
+  String deviceId,
+  TelemetryReading? telemetry,
+) async {
+  final isOn = telemetry?.fan == ActuatorState.on;
+  await sendCageCommand(
+    context,
+    ref,
+    deviceId,
+    isOn ? CommandAction.fanOff : CommandAction.fanOn,
+  );
 }
 
 /// 1회 즉시 분사.
@@ -200,48 +226,63 @@ Future<void> openMistSheet(
   await mistOnce(context, ref, deviceId, picked);
 }
 
-/// LED 밝기 선택 시트를 열고 결과를 전송한다.
-Future<void> openBrightnessSheet(
+/// LED 켜기/끄기 시트.
+///
+/// **밝기 조절은 없다.** 현 보드의 LED는 PWM이 아니라 단순 on/off 릴레이라
+/// `brightness`가 물리적으로 반영되지 않는다(백엔드 회신 2026-08-12). 실제로
+/// 실DB의 `led_*` 236건이 전부 `payload = null`이었고, 그동안 앱 슬라이더는
+/// 아무 효과 없이 떠 있었다. PRD §4.2.2의 0~100%는 하드웨어 PWM이 생기면
+/// 되살린다.
+///
+/// 토글이 아니라 **켜기/끄기를 따로 고르게** 한다. 기기가 LED 상태를 telemetry로
+/// 올려주지 않아 앱이 지금 켜져 있는지 모르는데, 모르는 상태를 뒤집는 버튼은
+/// 어느 쪽으로 갈지 사용자도 모른다.
+Future<void> openLedSheet(
   BuildContext context,
   WidgetRef ref,
   String deviceId,
 ) async {
-  final picked = await showModalBottomSheet<int>(
+  final on = await showModalBottomSheet<bool>(
     context: context,
-    builder: (ctx) {
-      var v = ref.read(ledBrightnessProvider).toDouble();
-      return StatefulBuilder(
-        builder: (ctx, setLocal) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppStyles.spacing16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppStyles.spacing16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('home_led_pick_title'.tr(),
+                style: AppStyles.subsectionTitle(ctx)),
+            const SizedBox(height: AppStyles.spacing12),
+            Row(
               children: [
-                Text('home_led_brightness'.tr(args: ['${v.round()}'])),
-                Slider(
-                  value: v,
-                  max: 100,
-                  divisions: 20,
-                  onChanged: (n) => setLocal(() => v = n),
+                Expanded(
+                  child: OutlinedButton(
+                    key: const Key('led_on'),
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: Text('home_led_turn_on'.tr()),
+                  ),
                 ),
-                FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(v.round()),
-                  child: Text('common_confirm'.tr()),
+                const SizedBox(width: AppStyles.spacing8),
+                Expanded(
+                  child: OutlinedButton(
+                    key: const Key('led_off'),
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: Text('home_led_turn_off'.tr()),
+                  ),
                 ),
               ],
             ),
-          ),
+          ],
         ),
-      );
-    },
+      ),
+    ),
   );
-  if (picked == null || !context.mounted) return;
-  ref.read(ledBrightnessProvider.notifier).state = picked;
+  if (on == null || !context.mounted) return;
   await sendCageCommand(
     context,
     ref,
     deviceId,
-    picked == 0 ? CommandAction.ledOff : CommandAction.ledOn,
-    payload: {'brightness': picked},
+    on ? CommandAction.ledOn : CommandAction.ledOff,
   );
 }

@@ -85,6 +85,21 @@ void main() {
       expect(CommandAction.mist.toWire(), 'mist');
     });
 
+    test('절대 상태 명령을 안다 — 예약·구간 제어의 재료다', () {
+      const pairs = {
+        'fan_on': CommandAction.fanOn,
+        'fan_off': CommandAction.fanOff,
+        'heater_on': CommandAction.heaterOn,
+        'heater_off': CommandAction.heaterOff,
+        'relay_on': CommandAction.relayOn,
+        'relay_off': CommandAction.relayOff,
+      };
+      pairs.forEach((wire, action) {
+        expect(CommandActionWire.fromWire(wire), action, reason: wire);
+        expect(action.toWire(), wire);
+      });
+    });
+
     test('기존 액션은 그대로다', () {
       expect(CommandActionWire.fromWire('relay_toggle'),
           CommandAction.relayToggle);

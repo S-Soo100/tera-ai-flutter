@@ -21,17 +21,30 @@ class ActuatorMarker {
     return at.difference(start).inMilliseconds / span;
   }
 
+  /// **켜기·끄기·뒤집기를 전부 같은 종류로 본다.** 마커는 "그 시각에 이 기기가
+  /// 움직였다"는 뜻이지 방향이 아니다.
+  ///
+  /// ⚠️ 새 명령을 추가할 때 여기를 같이 고치지 않으면 **그 동작만 차트에서
+  /// 조용히 사라진다.** 에러도 안 난다. `led_toggle`을 빠뜨려 12건이 안 보였고,
+  /// `mist` 전환 때도 같은 함정을 밟을 뻔했다.
   static const _kindByAction = {
+    // 분무: `mist`(정량) · `relay_*`(수동 토글). 2026-08-12 이전 이력 144건이
+    // 전부 `relay_toggle`이라 새 것만 매핑하면 과거가 통째로 증발한다.
     'mist': MarkerKind.mist,
-    // 2026-08-12 `mist` 계약이 생기기 전까지 분무는 전부 이걸로 나갔다
-    // (실DB 144건). 새 것만 매핑하면 그 이력이 차트에서 조용히 사라진다.
     'relay_toggle': MarkerKind.mist,
+    'relay_on': MarkerKind.mist,
+    'relay_off': MarkerKind.mist,
+
     'fan_toggle': MarkerKind.fan,
+    'fan_on': MarkerKind.fan,
+    'fan_off': MarkerKind.fan,
+
     'heater_toggle': MarkerKind.heater,
+    'heater_on': MarkerKind.heater,
+    'heater_off': MarkerKind.heater,
+
     'led_on': MarkerKind.led,
     'led_off': MarkerKind.led,
-    // 켜고 끄는 동작은 전부 같은 뜻이다. 빠뜨리면 그 시각에 조명이 돈 기록만
-    // 조용히 사라진다(DB에 12건 있었다).
     'led_toggle': MarkerKind.led,
   };
 

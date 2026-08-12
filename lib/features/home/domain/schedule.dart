@@ -39,6 +39,20 @@ enum ScheduleAction {
   /// 서버가 받긴 하지만 앱에선 안 쓴다 — 분무는 [mist]가 정공법이다.
   relayToggle('relay_toggle'),
 
+  // ── 절대 상태 명령 ────────────────────────────────────────────────────────
+  // 구간 예약("20시 켜고 23시 끄기")의 재료다. 펌웨어에는 이미 있지만
+  // **`schedules` 화이트리스트에 아직 없어** 지금 만들면 400이 온다
+  // (백엔드 회신 2026-08-12 · 즉시 가능 항목). 그때까지 [selectable]에서 빼둔다.
+  //
+  // 그래도 값을 정의해 두는 건, 웹 콘솔 등 다른 경로로 만들어진 예약이 목록에
+  // 섞였을 때 `unknown`으로 뭉개지지 않게 하기 위해서다.
+  fanOn('fan_on'),
+  fanOff('fan_off'),
+  heaterOn('heater_on'),
+  heaterOff('heater_off'),
+  relayOn('relay_on'),
+  relayOff('relay_off'),
+
   /// 목록에 처음 보는 값이 섞였을 때. 한 건 때문에 화면이 통째로 비지 않도록.
   unknown('unknown');
 
@@ -61,11 +75,21 @@ enum ScheduleAction {
     switch (this) {
       case ScheduleAction.mist:
       case ScheduleAction.relayToggle:
+      case ScheduleAction.relayOn:
+      case ScheduleAction.relayOff:
         return 'routine_action_mist';
       case ScheduleAction.ledOn:
         return 'routine_action_led_on';
       case ScheduleAction.ledOff:
         return 'routine_action_led_off';
+      case ScheduleAction.fanOn:
+        return 'routine_action_fan_on';
+      case ScheduleAction.fanOff:
+        return 'routine_action_fan_off';
+      case ScheduleAction.heaterOn:
+        return 'routine_action_heater_on';
+      case ScheduleAction.heaterOff:
+        return 'routine_action_heater_off';
       default:
         return labelKey;
     }
@@ -76,10 +100,16 @@ enum ScheduleAction {
     switch (this) {
       case ScheduleAction.mist:
       case ScheduleAction.relayToggle:
+      case ScheduleAction.relayOn:
+      case ScheduleAction.relayOff:
         return 'module_actuator_relay';
       case ScheduleAction.fanToggle:
+      case ScheduleAction.fanOn:
+      case ScheduleAction.fanOff:
         return 'module_actuator_fan';
       case ScheduleAction.heaterToggle:
+      case ScheduleAction.heaterOn:
+      case ScheduleAction.heaterOff:
         return 'module_actuator_heater';
       case ScheduleAction.ledOn:
       case ScheduleAction.ledOff:

@@ -144,6 +144,23 @@ void main() {
       expect(ScheduleAction.selectable, isNot(contains(ScheduleAction.unknown)));
     });
 
+    test('절대 명령은 아직 못 고른다 — schedules 화이트리스트에 없어 400이 온다', () {
+      // 펌웨어에는 있지만 백엔드 화이트리스트 추가 대기 중이다.
+      // 그때 selectable에 넣으면서 이 테스트를 뒤집는다.
+      for (final a in [
+        ScheduleAction.fanOn,
+        ScheduleAction.heaterOn,
+        ScheduleAction.heaterOff,
+      ]) {
+        expect(ScheduleAction.selectable, isNot(contains(a)), reason: '${a.wire}');
+      }
+    });
+
+    test('절대 명령이 섞여 와도 unknown으로 뭉개지 않는다 — 웹 콘솔에서 만들 수 있다', () {
+      expect(ScheduleAction.fromWire('heater_off'), ScheduleAction.heaterOff);
+      expect(ScheduleAction.fromWire('fan_on'), ScheduleAction.fanOn);
+    });
+
     test('mist만 payload가 필수다', () {
       expect(ScheduleAction.mist.requiresDuration, isTrue);
       expect(ScheduleAction.fanToggle.requiresDuration, isFalse);

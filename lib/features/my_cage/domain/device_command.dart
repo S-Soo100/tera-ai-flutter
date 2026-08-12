@@ -6,6 +6,21 @@ enum CommandAction {
   /// 물분무. `payload.duration_ms`(1000/2000/3000)만큼 켜고 **펌웨어가 자동으로
   /// 끈다** — OFF 명령을 따로 보내면 안 된다(`APP_TIMER_MIST.md` §1).
   mist,
+
+  // ── 절대 상태 명령 ────────────────────────────────────────────────────────
+  // 펌웨어에 **처음부터 있었다.** `APP_INTEGRATION.md §3.2` 액션 표에 toggle
+  // 계열만 적혀 있어 없는 줄 알았을 뿐이다(백엔드 회신 2026-08-12).
+  //
+  // 예약·구간 제어에는 toggle이 아니라 이쪽을 쓴다. toggle은 현재 상태를
+  // 뒤집으므로, 기기 상태가 한 번 어긋나면 끄려던 명령이 오히려 켠다 —
+  // 히터에서는 과열로 이어진다. 절대 명령은 멱등이라 그 위험이 없다.
+  fanOn,
+  fanOff,
+  heaterOn,
+  heaterOff,
+  relayOn,
+  relayOff,
+
   relayToggle,
   fanToggle,
   heaterToggle,
@@ -21,6 +36,18 @@ extension CommandActionWire on CommandAction {
     switch (this) {
       case CommandAction.mist:
         return 'mist';
+      case CommandAction.fanOn:
+        return 'fan_on';
+      case CommandAction.fanOff:
+        return 'fan_off';
+      case CommandAction.heaterOn:
+        return 'heater_on';
+      case CommandAction.heaterOff:
+        return 'heater_off';
+      case CommandAction.relayOn:
+        return 'relay_on';
+      case CommandAction.relayOff:
+        return 'relay_off';
       case CommandAction.relayToggle:
         return 'relay_toggle';
       case CommandAction.fanToggle:
@@ -44,6 +71,18 @@ extension CommandActionWire on CommandAction {
     switch (v) {
       case 'mist':
         return CommandAction.mist;
+      case 'fan_on':
+        return CommandAction.fanOn;
+      case 'fan_off':
+        return CommandAction.fanOff;
+      case 'heater_on':
+        return CommandAction.heaterOn;
+      case 'heater_off':
+        return CommandAction.heaterOff;
+      case 'relay_on':
+        return CommandAction.relayOn;
+      case 'relay_off':
+        return CommandAction.relayOff;
       case 'relay_toggle':
         return CommandAction.relayToggle;
       case 'fan_toggle':
