@@ -149,9 +149,14 @@ extension CommandResultWire on CommandResult {
         return CommandResult.unknownAction;
       case 'locked':
         return CommandResult.locked;
+      // 접두사만 떼서는 안 모인다 — 두 펌웨어가 **어휘 자체를 다르게** 쓴다.
+      // nano: `expired`/`duplicate`, 카메라: `rejected_ttl_expired`/
+      // `rejected_duplicate_msg_id` (백엔드 회신 2026-08-12).
       case 'ttl_expired':
+      case 'expired':
         return CommandResult.ttlExpired;
       case 'duplicate_msg_id':
+      case 'duplicate':
         return CommandResult.duplicateMsgId;
       case 'error':
         return CommandResult.error;

@@ -14,10 +14,16 @@ const _observedInDb = {
   'locked': CommandResult.locked,
 };
 
-/// `APP_TIMER_MIST.md` §1.3이 정의했지만 아직 DB에 안 나타난 값.
+/// 펌웨어(`command_dispatch.c`) 어휘 8종 중 아직 DB에 안 나타난 것들.
+/// 백엔드 회신(2026-08-12)이 밝힌 전체 목록 기준.
 const _documentedOnly = {
   'busy': CommandResult.busy,
   'bad_request': CommandResult.badRequest,
+  // ⚠️ nano는 `expired`/`duplicate`로 보낸다. 카메라 펌웨어의
+  // `rejected_ttl_expired`/`rejected_duplicate_msg_id`와 어휘가 다르다 —
+  // 접두사만 떼는 것으로는 안 모인다.
+  'expired': CommandResult.ttlExpired,
+  'duplicate': CommandResult.duplicateMsgId,
 };
 
 void main() {
@@ -53,6 +59,13 @@ void main() {
           reason: k,
         );
       }
+    });
+
+    test('짧은 어휘와 긴 어휘가 같은 뜻이다 — nano는 expired, 카메라는 rejected_ttl_expired', () {
+      expect(CommandResultWire.fromWire('expired'),
+          CommandResultWire.fromWire('rejected_ttl_expired'));
+      expect(CommandResultWire.fromWire('duplicate'),
+          CommandResultWire.fromWire('rejected_duplicate_msg_id'));
     });
 
     test('결과 없음(null)은 unknown이 아니라 null이다', () {
