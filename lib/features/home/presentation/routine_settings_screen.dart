@@ -150,9 +150,20 @@ class RoutineSettingsScreen extends ConsumerWidget {
   }
 }
 
-/// PRD §4.2.1 타이머 자리. 백엔드가 없다는 걸 숨기지 않는다.
+/// PRD §4.2가 요구하지만 계약이 없어 못 만든 것들.
+///
+/// **한 자리에 모아 이유까지 밝힌다.** 기획서와 대조하는 사람이 화면만 보고
+/// "빠뜨렸나"를 판단하게 두면 안 된다 — 안 만든 게 아니라 못 만든 것이고,
+/// 셋 다 백엔드 회신을 기다리는 중이다(`docs/backend-handoff-timer-mist.md`).
 class _TimerPendingCard extends StatelessWidget {
   const _TimerPendingCard();
+
+  /// (제목 키, 사유 키). PRD 순서대로.
+  static const _items = [
+    ('routine_timer_section', 'routine_timer_pending'),
+    ('routine_pending_span_title', 'routine_pending_span_body'),
+    ('routine_pending_guard_title', 'routine_pending_guard_body'),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -167,14 +178,20 @@ class _TimerPendingCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('routine_timer_section'.tr(),
+          Text('routine_pending_header'.tr(),
               style: AppStyles.subsectionTitle(context)),
-          const SizedBox(height: AppStyles.spacing4),
-          Text(
-            'routine_timer_pending'.tr(),
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
+          const SizedBox(height: AppStyles.spacing12),
+          for (final (title, body) in _items) ...[
+            Text(title.tr(), style: theme.textTheme.labelLarge),
+            const SizedBox(height: 2),
+            Text(
+              body.tr(),
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            if (title != _items.last.$1)
+              const SizedBox(height: AppStyles.spacing12),
+          ],
         ],
       ),
     );

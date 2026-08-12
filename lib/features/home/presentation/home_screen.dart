@@ -10,6 +10,7 @@ import 'widgets/env_mini_chart.dart';
 import 'widgets/home_header_bar.dart';
 import 'widgets/home_sub_tabs_bar.dart';
 import 'widgets/live_env_card.dart';
+import 'widgets/device_offline_notice.dart';
 import 'widgets/quick_control_grid.dart';
 import 'widgets/running_timer_chip.dart';
 import 'widgets/timeline_clip_feed.dart';
@@ -82,6 +83,9 @@ class _ControlContainer extends StatelessWidget {
     return ListView(
       children: const [
         RunningTimerChip(),
+        // 제어 타일이 왜 안 눌리는지 밝힌다. 맨 위에 둬야 회색 버튼을
+        // 먼저 만나지 않는다.
+        DeviceOfflineNotice(),
         LiveEnvCard(),
         EnvMiniChart(),
         QuickControlGrid(),
