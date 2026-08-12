@@ -448,7 +448,6 @@
   "module_cmd_bad_request": "명령을 보내지 못했습니다 — 앱을 업데이트해주세요",
   "module_cmd_error": "기기에서 실행에 실패했습니다",
   "module_heater_confirm_title": "히터 제어",
-  "module_heater_confirm_body": "히터를 조작하시겠습니까? 온도 변화에 주의하세요.",
   "module_heater_confirm_body_on": "히터를 켜시겠습니까? 과열은 개체에 위험하니 온도 변화를 지켜봐주세요.",
   "module_heater_confirm_body_off": "히터를 끄시겠습니까?",
   "module_heater_confirm_yes": "확인",

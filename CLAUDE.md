@@ -90,8 +90,16 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 | `/dev/chart-lab` (보조) | dev | ChartLabScreen — 온습도 그래프 디자인 검토(더미 데이터) | 없음(하드코딩 픽스처) |
 | — | splash/error | SplashScreen / ErrorScreen | — |
 
-> 홈 탭 도메인: `home/domain/{day_window,device_mode,enclosure_set,env_extremes,env_chart_series,actuator_marker,chart_time_axis,running_timer,mist_lock,timeline_summary,pet_dday}.dart`. 하루 경계는 **07:00~익일 07:00**(`DayWindow`), 차트 범위는 전날 19:00~현재 — 어젯밤 리포트(22~06시)와 별개 개념이니 혼용 금지.
+> 홈 탭 도메인: `home/domain/{day_window,device_mode,enclosure_set,env_extremes,env_chart_series,actuator_marker,chart_time_axis,running_timer,mist_lock,mist_duration,schedule,timeline_summary,pet_dday}.dart`. 하루 경계는 **07:00~익일 07:00**(`DayWindow`), 차트 범위는 전날 19:00~현재 — 어젯밤 리포트(22~06시)와 별개 개념이니 혼용 금지.
 > **⚠️ 사육장 제어 명령은 반드시 `home/presentation/cage_control_actions.dart`를 경유한다.** 히터 2단 안전확인(과열=개체 폐사)이 거기 있다. 진입점은 서브탭 `QuickControlGrid` **하나뿐**이다 — 라이브 아래 `LiveControlBar`는 버튼이 두 벌 쌓여 2026-08-09 제거(D4 철회). 제어 진입점을 다시 늘린다면 반드시 이 모듈을 경유할 것.
+>
+> **⚠️ 제어는 toggle이 아니라 절대 상태 명령을 쓴다** (2026-08-12). `fan_on/off`·`heater_on/off`·`relay_on/off`가 펌웨어에 **처음부터 있었다** — `APP_INTEGRATION.md §3.2` 표에 toggle만 적혀 있어 없는 줄 알았을 뿐이다. 뒤집기는 기기의 현재 상태를 전제하는데 그 전제가 어긋나면 끄려던 조작이 켜고, 히터에서는 과열=폐사다. 홈 `QuickControlGrid`·사육장 탭 `actuator_controls` 둘 다 전환 완료.
+> **⚠️ 새 명령을 추가하면 `shared/domain/actuator_marker.dart`의 `_kindByAction`을 같이 고칠 것.** 안 하면 그 동작만 차트에서 **조용히** 사라진다(에러 없음). `led_toggle` 누락으로 12건을 놓쳤고, `mist` 전환 때도 밟을 뻔했다.
+> **분무**: `mist` + `payload.duration_ms`(1000/2000/3000). 앱은 지속시간만 보내고 **OFF는 보내지 않는다** — 펌웨어가 스스로 끈다. 과거 `relay_toggle` 144건도 계속 분무로 해석한다(`MistDuration`, `home_mist_*`).
+> **LED 밝기는 없다**: 현 보드 LED는 PWM이 아니라 on/off 릴레이다(백엔드 회신 2026-08-12). 슬라이더를 걷어내고 켜기/끄기 시트로 바꿨다. PRD §4.2.2의 0~100%는 하드웨어 PWM이 생기면 되살린다.
+> **예약(일정)**: `home/data/schedule_repository.dart`(REST 전용) + `home/presentation/schedule_providers.dart` + `RoutineSettingsScreen`. **쓰기는 반드시 REST** — RLS가 있어 직결 INSERT도 통과하지만 서버가 `next_run_at`을 계산하므로 직접 넣으면 예약이 영영 안 돈다. `next_run_at`은 UTC로 오니 `.toLocal()` 한 번(문서 예제의 `+9h`는 이중 변환 버그).
+> **미구현은 화면에서 이유를 밝힌다**: 일회성 타이머·구간 예약·스마트 조건은 계약 대기라 `RoutineSettingsScreen` 상단 카드에 사유를 적어 뒀다. 기기 오프라인도 `DeviceOfflineNotice`로 밝힌다 — 회색 버튼만 두면 고장으로 읽힌다.
+> 백엔드 계약 대기 목록·결정 로그: `docs/backend-handoff-timer-mist.md` §10.
 > **온습도 차트는 홈·통계 공용이다** — `shared/widgets/env_chart.dart`(`EnvChart`) + `shared/domain/{chart_window,env_chart_data,axis_bounds,actuator_marker,night_band}.dart`. 창(`ChartWindow`)은 **지금 이후 첫 6시간 눈금(04/10/16/22시)에서 24시간 뒤로**, 6시간마다 통째로 전진한다. 남는 꼬리가 미도래 밴드(= 아직 안 지난 시간). 치수는 Figma 393pt 프레임 실측값(`docs/figma-final-design-transcript.md` §3.1 실측 좌표표)이고, 격자는 라이브러리가 아니라 직접 그린다(가로선·세로선·밴드가 서로 다른 세로 범위를 쓴다). Y 눈금은 **항상 6개**, 칸 크기는 데이터에 맞춰 1·2·5 계열로 정해진다.
 > 요약(현재값 + 최고/최저)도 공용이다 — `shared/widgets/env_summary_bar.dart`(`EnvSummaryBar`). **두 위젯 다 provider를 읽지 않고 값만 받는다**(순환 참조 방지). 화면별 얇은 래퍼가 배선한다: 홈 `LiveEnvCard`, 통계 `StatsSummaryBar`.
 > 화면별 차이: 홈은 **밤 띠 on·스크러버 off**(차트 전체가 `/stats` 진입점), 통계는 **밤 띠 off·스크러버 on**(손 떼도 유지, ✕로 해제). 그 외 표시는 완전히 같다 — 홈의 위험/주의 배지는 2026-08-10 제거(사용자 결정). 안심존 판정(`classifyComfort`)은 사육장 탭 추이 차트에 남아 있다.

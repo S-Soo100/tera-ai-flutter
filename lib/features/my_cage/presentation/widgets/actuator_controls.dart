@@ -162,10 +162,15 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
                 state: telemetry.fan,
                 isBusy: hasPending,
                 accentColor: AppTheme.success,
+                // 뒤집기가 아니라 절대 상태로 보낸다 — 홈 퀵 제어와 같은
+                // 규칙이다(백엔드 회신 2026-08-12). telemetry가 어긋나 있어도
+                // 사용자가 의도한 방향으로 간다.
                 onTap: () => _sendCommand(
                   context,
                   device,
-                  CommandAction.fanToggle,
+                  telemetry.fan == ActuatorState.on
+                      ? CommandAction.fanOff
+                      : CommandAction.fanOn,
                 ),
               ),
             ),
@@ -199,7 +204,9 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
           onTap: () => _sendCommand(
             context,
             device,
-            CommandAction.relayToggle,
+            telemetry.relay == ActuatorState.on
+                ? CommandAction.relayOff
+                : CommandAction.relayOn,
           ),
         ),
       ],
@@ -286,12 +293,16 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
       return;
     }
 
-    // 히터 토글은 위험 액션 — 확인 다이얼로그
+    // 히터 조작은 위험 액션 — 확인 다이얼로그
+    final isOn = telemetry.heater == ActuatorState.on;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('module_heater_confirm_title'.tr()),
-        content: Text('module_heater_confirm_body'.tr()),
+        content: Text((isOn
+                ? 'module_heater_confirm_body_off'
+                : 'module_heater_confirm_body_on')
+            .tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -311,8 +322,11 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     if (confirmed != true) return;
     if (!mounted) return;
 
+    // 절대 상태 명령. 뒤집기는 기기 상태를 전제하는데, 그 전제가 어긋나면
+    // 끄려던 조작이 켠다 — 히터에서는 과열이다.
     // ignore: use_build_context_synchronously
-    await _sendCommand(context, device, CommandAction.heaterToggle);
+    await _sendCommand(context, device,
+        isOn ? CommandAction.heaterOff : CommandAction.heaterOn);
     // 명령 결과는 commandUpdatesProvider listen에서 처리됨.
     // rejected_locked 응답 시 _handleCommandResult → 잠금 다이얼로그.
   }

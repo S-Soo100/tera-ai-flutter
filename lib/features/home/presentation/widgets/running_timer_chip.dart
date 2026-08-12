@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/supabase/supabase_provider.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../domain/running_timer.dart';
 import '../home_set_providers.dart';
@@ -15,26 +14,22 @@ final _secondTickProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
 
 /// 현재 세트 제어기의 진행 중 타이머.
 ///
-/// `device_timers`(BE4)가 없으면 조회가 실패한다 — 빈 목록으로 흡수해서
-/// 칩만 안 뜨게 한다. 여기서 throw하면 제어 탭 전체가 에러 화면이 된다.
+/// **아직 배선할 곳이 없다.** 한때 `device_timers` 테이블(B안)을 조회했으나,
+/// 2026-08-12 일회성 타이머를 **A안(`fan_on` + `duration_ms`, 펌웨어 자동 OFF)**
+/// 으로 정하면서 그 테이블은 만들어지지 않는다. 없는 테이블을 매번 조회해
+/// 실패를 삼키던 코드라 걷어냈다.
+///
+/// A안이 열리면 여기를 이렇게 채운다 — `commands`에서 `duration_ms`가 붙은
+/// 최근 `*_on`(status='acked')을 찾아 `issued_at + duration_ms`로 종료 시각을
+/// 계산한다. 서버에 상태를 따로 두지 않아도 다기기에서 같은 값이 나온다.
+/// 확인 대기 항목은 `docs/backend-handoff-timer-mist.md` §10.5.
+///
+/// 그때까지 빈 목록을 돌려 칩만 안 뜨게 한다. throw하면 제어 탭 전체가
+/// 에러 화면이 된다.
 final runningTimersProvider =
     FutureProvider.autoDispose<List<RunningTimer>>((ref) async {
-  final set = await ref.watch(currentSetProvider.future);
-  final deviceId = set?.device?.id;
-  if (deviceId == null) return const [];
-  try {
-    final rows = await ref
-        .watch(supabaseClientProvider)
-        .from('device_timers')
-        .select()
-        .eq('device_id', deviceId)
-        .order('ends_at', ascending: true);
-    return (rows as List)
-        .map((r) => RunningTimer.fromJson(r as Map<String, dynamic>))
-        .toList();
-  } catch (_) {
-    return const [];
-  }
+  await ref.watch(currentSetProvider.future);
+  return const [];
 });
 
 /// PRD §3.4 진행 중 타이머 칩. 가동 중 타이머가 있을 때만 노출.

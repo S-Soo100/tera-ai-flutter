@@ -1,7 +1,12 @@
-/// PRD §3.4 진행 중 타이머 칩의 데이터 모델.
+/// PRD §4.2.1 진행 중 타이머 칩의 데이터 모델.
 ///
-/// 백엔드 `device_timers` 테이블(BE4)이 아직 없다 — 그 전까지 조회는 항상 빈
-/// 목록이고 칩은 뜨지 않는다. 포맷·만료 로직은 그와 무관하게 여기서 검증된다.
+/// **아직 이걸 채울 데이터가 없다.** 2026-08-12 일회성 타이머를 A안
+/// (`fan_on` + `duration_ms`, 펌웨어가 스스로 OFF)으로 정하면서, 한때 가정했던
+/// `device_timers` 테이블은 만들어지지 않는다. A안이 열리면 `commands` 이력에서
+/// `issued_at + duration_ms`로 [endsAt]을 계산해 채운다.
+///
+/// [fromJson]은 그 시절 스키마를 그대로 두었다 — A안 배선 때 어느 쪽이든
+/// 맞춰 쓰면 되고, 포맷·만료 로직은 데이터 출처와 무관하게 여기서 검증된다.
 class RunningTimer {
   final String id;
   final String deviceId;
