@@ -1,18 +1,294 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// PRD §3.4 자동 루틴 & 타이머 설정 (풀스크린 모달).
+import '../../../core/theme/app_styles.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
+import '../domain/mist_duration.dart';
+import '../domain/schedule.dart';
+import 'schedule_providers.dart';
+import 'widgets/schedule_editor_sheet.dart';
+
+/// PRD §4.2 타이머 & 일정 설정 (풀스크린 모달).
 ///
-/// 내용은 PRD가 "논의 필요"(Q2)로 남긴 구간이라 스펙 확정 후 별도 계획에서
-/// 채운다. 지금은 버튼의 목적지가 존재한다는 것까지만 보장한다.
-class RoutineSettingsScreen extends StatelessWidget {
+/// **지금은 §4.2.2 "일정"의 시점 예약까지만이다.** 계약에 없는 것은 만들지
+/// 않고 왜 없는지 화면에 밝힌다 — 빈 화면은 고장으로 읽힌다.
+///
+/// | PRD | 상태 |
+/// |---|---|
+/// | §4.2.1 타이머(즉시·일회성) | ❌ 백엔드 없음 (핸드오프 요청 3) |
+/// | §4.2.2 일정 — 시점 예약 | ✅ 여기 |
+/// | §4.2.2 시작~종료 구간 | ❌ toggle뿐이라 위험 (요청 1) |
+/// | §4.2.2 스마트 조건 | ❌ 스키마에 필드 없음 (요청 2) |
+///
+/// 상세: `docs/backend-handoff-timer-mist.md`
+class RoutineSettingsScreen extends ConsumerWidget {
   const RoutineSettingsScreen({super.key});
+
+  static const listKey = Key('routine_schedule_list');
+  static const addKey = Key('routine_add_schedule');
+  static const pendingTimerKey = Key('routine_timer_pending');
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final schedules = ref.watch(schedulesProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: Text('home_routine_settings'.tr())),
+      floatingActionButton: FloatingActionButton.extended(
+        key: addKey,
+        onPressed: () => _add(context, ref),
+        icon: const Icon(Icons.add),
+        label: Text('routine_add'.tr()),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+            AppStyles.spacing16, AppStyles.spacing16, AppStyles.spacing16, 96),
+        children: [
+          const _TimerPendingCard(),
+          const SizedBox(height: AppStyles.spacing24),
+          Text('routine_schedule_section'.tr(),
+              style: AppStyles.subsectionTitle(context)),
+          const SizedBox(height: AppStyles.spacing8),
+          schedules.when(
+            loading: () => const SkeletonListLoading(itemCount: 3),
+            error: (e, _) => _ErrorNote(message: '$e'),
+            data: (list) => list.isEmpty
+                ? _EmptyNote()
+                : Column(
+                    key: listKey,
+                    children: [
+                      for (final s in list)
+                        _ScheduleTile(
+                          schedule: s,
+                          onToggle: (v) => _guard(
+                              context, () => ref
+                                  .read(schedulesProvider.notifier)
+                                  .setEnabled(s, v)),
+                          onDelete: () => _confirmDelete(context, ref, s),
+                          onEdit: () => _edit(context, ref, s),
+                        ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _add(BuildContext context, WidgetRef ref) async {
+    final result = await showScheduleEditor(context);
+    if (result == null || !context.mounted) return;
+    await _guard(
+      context,
+      () => ref.read(schedulesProvider.notifier).add(
+            action: result.action,
+            kind: result.kind,
+            hour: result.hour,
+            minute: result.minute,
+            daysOfWeek: result.daysOfWeek,
+            payload: result.payload,
+          ),
+    );
+  }
+
+  Future<void> _edit(
+      BuildContext context, WidgetRef ref, Schedule s) async {
+    // `action`은 서버가 수정을 안 받는다. 편집기는 타이밍만 바꾸게 하고,
+    // 동작을 바꾸려면 지우고 새로 만들어야 한다.
+    final result = await showScheduleEditor(context, initial: s);
+    if (result == null || !context.mounted) return;
+    await _guard(
+      context,
+      () => ref.read(schedulesProvider.notifier).updateTiming(
+            s,
+            kind: result.kind,
+            hour: result.hour,
+            minute: result.minute,
+            daysOfWeek: result.daysOfWeek,
+            payload: result.payload,
+          ),
+    );
+  }
+
+  Future<void> _confirmDelete(
+      BuildContext context, WidgetRef ref, Schedule s) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('routine_delete_title'.tr()),
+        content: Text('routine_delete_body'.tr()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('common_cancel'.tr()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('routine_delete_confirm'.tr()),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    await _guard(
+        context, () => ref.read(schedulesProvider.notifier).remove(s));
+  }
+
+  /// 실패를 삼키지 않는다. 예약은 "됐겠지"로 넘길 수 있는 동작이 아니다 —
+  /// 사용자는 기기가 알아서 돌 거라 믿고 신경을 끈다.
+  static Future<void> _guard(
+      BuildContext context, Future<void> Function() run) async {
+    try {
+      await run();
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('routine_action_failed'.tr(args: ['$e']))),
+      );
+    }
+  }
+}
+
+/// PRD §4.2.1 타이머 자리. 백엔드가 없다는 걸 숨기지 않는다.
+class _TimerPendingCard extends StatelessWidget {
+  const _TimerPendingCard();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('home_routine_settings'.tr())),
-      body: Center(child: Text('home_routine_empty'.tr())),
+    final theme = Theme.of(context);
+    return Container(
+      key: RoutineSettingsScreen.pendingTimerKey,
+      padding: const EdgeInsets.all(AppStyles.spacing16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppStyles.cardRadius),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('routine_timer_section'.tr(),
+              style: AppStyles.subsectionTitle(context)),
+          const SizedBox(height: AppStyles.spacing4),
+          Text(
+            'routine_timer_pending'.tr(),
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScheduleTile extends StatelessWidget {
+  const _ScheduleTile({
+    required this.schedule,
+    required this.onToggle,
+    required this.onDelete,
+    required this.onEdit,
+  });
+
+  final Schedule schedule;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      key: Key('schedule_${schedule.id}'),
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        '${schedule.hhmm}  ${schedule.action.labelKey.tr()}'
+        '${_durationSuffix()}',
+        style: theme.textTheme.titleSmall,
+      ),
+      subtitle: Text(
+        [
+          _repeatLabel(),
+          if (schedule.nextRunAt != null && schedule.enabled)
+            'routine_next_run'.tr(args: [_formatNext(schedule.nextRunAt!)]),
+        ].join(' · '),
+        style: theme.textTheme.bodySmall
+            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      onTap: onEdit,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Switch(
+            key: Key('schedule_toggle_${schedule.id}'),
+            value: schedule.enabled,
+            onChanged: onToggle,
+          ),
+          IconButton(
+            key: Key('schedule_delete_${schedule.id}'),
+            icon: const Icon(Icons.delete_outline),
+            onPressed: onDelete,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _durationSuffix() {
+    final ms = schedule.payload?['duration_ms'];
+    if (ms is! num) return '';
+    return ' ${MistDuration.fromMilliseconds(ms.toInt()).seconds}'
+        '${'routine_seconds_suffix'.tr()}';
+  }
+
+  String _repeatLabel() {
+    if (schedule.kind == ScheduleKind.daily) return 'routine_daily'.tr();
+    return schedule.daysOfWeek.map((d) => _dayName(d)).join('·');
+  }
+
+  static String _dayName(int d) => 'routine_day_$d'.tr();
+
+  /// 이미 로컬로 바꿔 보관한 값이라 여기서 시차를 더하지 않는다.
+  static String _formatNext(DateTime at) {
+    final now = DateTime.now();
+    final sameDay =
+        at.year == now.year && at.month == now.month && at.day == now.day;
+    final hhmm = '${at.hour.toString().padLeft(2, '0')}:'
+        '${at.minute.toString().padLeft(2, '0')}';
+    if (sameDay) return 'routine_today_at'.tr(args: [hhmm]);
+    return '${at.month}/${at.day} $hhmm';
+  }
+}
+
+class _EmptyNote extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppStyles.spacing16),
+      child: Text(
+        'routine_schedule_empty'.tr(),
+        style: theme.textTheme.bodyMedium
+            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+    );
+  }
+}
+
+class _ErrorNote extends StatelessWidget {
+  const _ErrorNote({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppStyles.spacing16),
+      child: Text(
+        'routine_load_failed'.tr(args: [message]),
+        style: theme.textTheme.bodySmall
+            ?.copyWith(color: theme.colorScheme.error),
+      ),
     );
   }
 }
