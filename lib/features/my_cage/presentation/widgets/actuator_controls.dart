@@ -358,25 +358,34 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
 
     // led_off 거부 시 낙관적 업데이트 롤백
     if (cmd.action == CommandAction.ledOff &&
-        result == CommandResult.rejectedUnknownAction) {
+        result == CommandResult.unknownAction) {
       setState(() => _ledOn = true);
     }
 
     String message;
     Color? bgColor;
 
-    if (result == CommandResult.rejectedLocked) {
+    if (result == CommandResult.locked) {
       message = 'module_cmd_rejected_locked'.tr();
       bgColor = AppTheme.warning;
       // 잠금 해제 다이얼로그는 heaterState telemetry로 자동 감지됨
-    } else if (result == CommandResult.rejectedTtlExpired ||
+    } else if (result == CommandResult.busy) {
+      // 실패가 아니라 "이미 도는 중"이다. 빨강으로 칠하면 고장으로 읽힌다.
+      message = 'module_cmd_busy'.tr();
+    } else if (result == CommandResult.ttlExpired ||
         status == CommandStatus.expired) {
       message = 'module_cmd_rejected_ttl'.tr();
       bgColor = Colors.red;
-    } else if (result == CommandResult.rejectedUnknownAction) {
+    } else if (result == CommandResult.unknownAction) {
       message = 'module_cmd_rejected_unknown'.tr();
       bgColor = Colors.red;
-    } else if (result == CommandResult.rejectedDuplicateMsgId) {
+    } else if (result == CommandResult.badRequest) {
+      message = 'module_cmd_bad_request'.tr();
+      bgColor = Colors.red;
+    } else if (result == CommandResult.error) {
+      message = 'module_cmd_error'.tr();
+      bgColor = Colors.red;
+    } else if (result == CommandResult.duplicateMsgId) {
       message = 'module_cmd_rejected_duplicate'.tr();
     } else if (status == CommandStatus.rejected) {
       message = 'module_cmd_rejected_generic'.tr();
