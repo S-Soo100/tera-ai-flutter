@@ -652,6 +652,16 @@ class _TimeAxis extends StatelessWidget {
   /// `오후 10시`가 잘리지 않는 폭.
   static const double _labelWidth = 56;
 
+  /// 24시간 창은 시각, 주간 창은 날짜로 읽는다. 주간에 시각을 붙이면 눈금이
+  /// 전부 `오전 7시`가 되어 어느 날인지 알 수 없다.
+  String _label(ChartTimeTick t) => switch (window.format) {
+        ChartTickFormat.hour =>
+          (t.isAm ? 'home_chart_time_am' : 'home_chart_time_pm')
+              .tr(namedArgs: {'h': '${t.hour12}'}),
+        ChartTickFormat.date => 'home_chart_date'
+            .tr(namedArgs: {'m': '${t.at.month}', 'd': '${t.at.day}'}),
+      };
+
   @override
   Widget build(BuildContext context) {
     final ticks = window.ticks;
@@ -672,8 +682,7 @@ class _TimeAxis extends StatelessWidget {
                 child: SizedBox(
                   width: _labelWidth,
                   child: Text(
-                    (t.isAm ? 'home_chart_time_am' : 'home_chart_time_pm')
-                        .tr(namedArgs: {'h': '${t.hour12}'}),
+                    _label(t),
                     style: style,
                     maxLines: 1,
                     softWrap: false,

@@ -92,4 +92,59 @@ void main() {
       }
     });
   });
+
+
+  group('주간 창 — 하루 경계(07:00) 7칸', () {
+    test('창 끝은 지금 이후 첫 07시, 시작은 그 7일 전', () {
+      // 07시 이후면 창 끝은 내일 07시. 오늘 몫이 미도래 밴드가 된다.
+      final w = ChartWindow.weekly(DateTime(2026, 8, 12, 15, 43));
+      expect(w.end, DateTime(2026, 8, 13, 7));
+      expect(w.start, DateTime(2026, 8, 6, 7));
+    });
+
+    test('07시 이전이면 오늘 07시가 창 끝 — 하루가 아직 안 시작했다', () {
+      final w = ChartWindow.weekly(DateTime(2026, 8, 12, 3, 10));
+      expect(w.end, DateTime(2026, 8, 12, 7));
+      expect(w.start, DateTime(2026, 8, 5, 7));
+    });
+
+    test('07시 정각은 다음 날로 넘긴다 — 폭 0인 밴드를 만들지 않는다', () {
+      final w = ChartWindow.weekly(DateTime(2026, 8, 12, 7));
+      expect(w.end, DateTime(2026, 8, 13, 7));
+    });
+
+    test('일간과 같은 07:00 경계를 쓴다 — 두 화면이 다른 하루를 말하면 안 된다', () {
+      final w = ChartWindow.weekly(DateTime(2026, 8, 12, 15));
+      for (final t in w.ticks) {
+        expect(t.at.hour, 7, reason: '${t.at}');
+      }
+    });
+
+    test('눈금 7개, 오른쪽 끝은 뺀다', () {
+      final w = ChartWindow.weekly(DateTime(2026, 8, 12, 15));
+      expect(w.ticks, hasLength(7));
+      expect(w.ticks.first.at, DateTime(2026, 8, 6, 7));
+      expect(w.ticks.last.at, DateTime(2026, 8, 12, 7));
+      expect(w.ticks.map((t) => t.at), isNot(contains(w.end)));
+    });
+
+    test('눈금 위치는 0에서 시작해 고르게 벌어진다', () {
+      final w = ChartWindow.weekly(DateTime(2026, 8, 12, 15));
+      expect(w.ticks.first.position, closeTo(0, 0.0001));
+      expect(w.ticks[1].position, closeTo(1 / 7, 0.0001));
+    });
+
+    test('날짜로 읽는다 — 주간에 오전/오후 시각 라벨은 뜻이 없다', () {
+      expect(ChartWindow.weekly(DateTime(2026, 8, 12, 15)).format,
+          ChartTickFormat.date);
+      expect(ChartWindow.of(DateTime(2026, 8, 12, 15)).format,
+          ChartTickFormat.hour);
+    });
+
+    test('미도래 밴드는 오늘 지나온 만큼만 남긴다', () {
+      // 8/12 15시 → 창은 8/6 07시~8/13 07시(7일). 지난 건 6일 8시간.
+      final w = ChartWindow.weekly(DateTime(2026, 8, 12, 15));
+      expect(w.elapsed, closeTo((6 * 24 + 8) / (7 * 24), 0.001));
+    });
+  });
 }

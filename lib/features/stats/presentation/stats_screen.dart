@@ -13,8 +13,10 @@ import '../../home/presentation/home_control_providers.dart';
 import '../../home/presentation/home_set_providers.dart';
 import '../../profile/presentation/profile_providers.dart';
 import 'stats_providers.dart';
+import 'weekly_providers.dart';
 import '../../../shared/widgets/env_chart.dart';
 import '../domain/stats_metric.dart';
+import '../domain/stats_period.dart';
 import 'widgets/stats_period_bar.dart';
 import 'widgets/stats_summary_bar.dart';
 
@@ -149,7 +151,14 @@ class _MainChartSection extends ConsumerWidget {
       );
     }
 
-    final async = ref.watch(envChartDataProvider);
+    // 주간은 창·데이터·마커가 전부 다르다. 위젯은 하나로 두고 **물리는 것만**
+    // 갈아끼운다 — 화면을 복사하면 한쪽만 고쳐진 채 남는다.
+    final weekly = period == StatsPeriod.weekly;
+    final async = weekly
+        ? ref.watch(weeklyChartDataProvider)
+        : ref.watch(envChartDataProvider);
+    final window =
+        weekly ? ref.watch(weeklyWindowProvider) : ref.watch(chartWindowProvider);
     final metrics = ref.watch(statsMetricsProvider);
 
     return Column(
@@ -158,7 +167,7 @@ class _MainChartSection extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
-          child: Text('stats_daily_title'.tr(),
+          child: Text(period.chartTitleKey.tr(),
               style: AppStyles.subsectionTitle(context)),
         ),
         const SizedBox(height: AppStyles.spacing8),
@@ -175,7 +184,8 @@ class _MainChartSection extends ConsumerWidget {
             child: EmptyState(
               title: 'stats_load_failed'.tr(),
               actionLabel: 'error_retry'.tr(),
-              onAction: () => ref.invalidate(envChartDataProvider),
+              onAction: () => ref.invalidate(
+                  weekly ? weeklyChartDataProvider : envChartDataProvider),
             ),
           ),
           // 데이터가 없는 것과 기능이 없는 것은 **다르게 보여야 한다** —
@@ -194,10 +204,14 @@ class _MainChartSection extends ConsumerWidget {
                       horizontal: EnvChart.outerPadding),
                   child: EnvChart(
                     data: d,
-                    window: ref.watch(chartWindowProvider),
+                    window: window,
                     // 마커 조회 실패는 차트를 막지 않는다 — 곡선이 본체다.
-                    markers:
-                        ref.watch(actuatorMarkersProvider).valueOrNull ??
+                    //
+                    // 주간에는 아예 그리지 않는다. 7일치면 수백 개가 14pt
+                    // 칩으로 겹쳐 쌓여, 언제 무엇이 돌았는지 되레 못 읽는다.
+                    markers: weekly
+                        ? const []
+                        : ref.watch(actuatorMarkersProvider).valueOrNull ??
                             const [],
                     showTemperature:
                         metrics.contains(StatsMetric.temperature),

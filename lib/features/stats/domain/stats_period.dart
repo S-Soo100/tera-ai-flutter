@@ -21,8 +21,18 @@ enum StatsPeriod {
 
   /// 이 기간의 차트가 그려지는가.
   ///
-  /// 주간·월간은 **디자인이 없다.** Figma에 제목만 있고, 피드백에도
-  /// *"7일, 30일은 어떻게 봐야할지 감이 안 옴"*이라 적혀 있다. 임의로 그리지
-  /// 않고 자리만 잡아둔다(기획안 §6 D).
-  bool get isReady => this == StatsPeriod.daily;
+  /// 주간은 2026-08-12에 열었다. Figma에 제목만 있어 오래 비워뒀지만
+  /// (*"7일, 30일은 어떻게 봐야할지 감이 안 옴"*), 24시간 차트가 자리를 잡은 뒤
+  /// **그걸 레퍼런스로** 같은 규칙(하루 경계 07:00 · 미도래 밴드 · 스크러버)을
+  /// 7일로 늘렸다.
+  ///
+  /// 월간은 아직이다. 30칸을 한 화면에 그리면 일별 점이 뭉개져, 주간처럼
+  /// 늘리는 것만으로는 안 된다 — 별도 설계가 필요하다.
+  bool get isReady => this != StatsPeriod.monthly;
+
+  /// 차트 제목 키.
+  String get chartTitleKey => switch (this) {
+        StatsPeriod.weekly => 'stats_weekly_title',
+        _ => 'stats_daily_title',
+      };
 }

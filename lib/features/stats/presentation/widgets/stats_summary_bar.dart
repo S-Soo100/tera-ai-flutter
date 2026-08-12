@@ -5,7 +5,9 @@ import '../../../../shared/widgets/env_summary_bar.dart';
 import '../../../home/presentation/home_control_providers.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../../domain/stats_metric.dart';
+import '../../domain/stats_period.dart';
 import '../stats_providers.dart';
+import '../weekly_providers.dart';
 
 /// 통계 탭 요약 바 — 공용 [EnvSummaryBar]에 이 화면의 상태를 물린다.
 ///
@@ -19,10 +21,20 @@ class StatsSummaryBar extends ConsumerWidget {
     final deviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
     if (deviceId == null) return const SizedBox.shrink();
 
+    // 최고/최저는 **바로 아래 그래프가 보여주는 구간**의 값이어야 한다.
+    // 기간을 바꿨는데 숫자가 그대로면 둘이 다른 이야기를 하게 된다.
+    final weekly = ref.watch(statsPeriodProvider) == StatsPeriod.weekly;
+
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
-    final ex = ref.watch(chartExtremesProvider).valueOrNull;
+    final ex = (weekly
+            ? ref.watch(weeklyExtremesProvider)
+            : ref.watch(chartExtremesProvider))
+        .valueOrNull;
     final scrub = ref.watch(statsScrubProvider);
-    final data = ref.watch(envChartDataProvider).valueOrNull;
+    final data = (weekly
+            ? ref.watch(weeklyChartDataProvider)
+            : ref.watch(envChartDataProvider))
+        .valueOrNull;
     final metrics = ref.watch(statsMetricsProvider);
 
     // 데이터가 없으면 스크럽 값을 만들 수 없다 — 시각만 띄우면 거짓말이 된다.

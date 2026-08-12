@@ -9,6 +9,7 @@ import 'package:vivnanaut/features/stats/domain/stats_metric.dart';
 import 'package:vivnanaut/features/stats/domain/stats_period.dart';
 import 'package:vivnanaut/features/stats/presentation/stats_providers.dart';
 import 'package:vivnanaut/features/stats/presentation/stats_screen.dart';
+import 'package:vivnanaut/features/stats/presentation/weekly_providers.dart';
 import 'package:vivnanaut/shared/widgets/env_chart.dart';
 import 'package:vivnanaut/features/stats/presentation/widgets/stats_period_bar.dart';
 import 'package:vivnanaut/shared/widgets/pending_section.dart';
@@ -48,6 +49,11 @@ Future<ProviderContainer> _pump(WidgetTester tester, {double width = 402}) async
     chartExtremesProvider.overrideWith((ref) async => throw UnimplementedError()),
     telemetryStreamProvider('dev-1').overrideWith((ref) => Stream.value(null)),
     envChartDataProvider.overrideWith((ref) async => _chart()),
+    // 주간도 같은 픽스처를 쓴다 — 이 테스트가 보는 건 "어떤 창을 물렸나"가
+    // 아니라 "차트가 그려지는가"다.
+    weeklyChartDataProvider.overrideWith((ref) async => _chart()),
+    weeklyExtremesProvider
+        .overrideWith((ref) async => throw UnimplementedError()),
   ]);
   addTearDown(c.dispose);
 
@@ -85,10 +91,20 @@ void main() {
       expect(find.byKey(EnvChart.chartKey), findsOneWidget);
     });
 
-    testWidgets('주간을 고르면 차트 자리가 자리표시자로 바뀐다 — 사라지지 않는다',
+    testWidgets('주간도 같은 차트를 그린다 — 24시간 차트를 7일로 늘린 것이다',
         (tester) async {
       final c = await _pump(tester);
       c.read(statsPeriodProvider.notifier).state = StatsPeriod.weekly;
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(EnvChart.chartKey), findsOneWidget);
+    });
+
+    testWidgets('월간을 고르면 차트 자리가 자리표시자로 바뀐다 — 사라지지 않는다',
+        (tester) async {
+      // 30칸은 주간처럼 늘리는 것만으로 안 된다. 자리는 지키고 사유를 밝힌다.
+      final c = await _pump(tester);
+      c.read(statsPeriodProvider.notifier).state = StatsPeriod.monthly;
       await tester.pumpAndSettle();
 
       expect(find.byKey(EnvChart.chartKey), findsNothing);

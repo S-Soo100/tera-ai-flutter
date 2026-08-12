@@ -11,6 +11,12 @@
 ///
 /// [DayWindow]와 혼용하지 말 것 — 저 쪽은 하루 경계(07:00)와 어젯밤 리포트를
 /// 위한 개념이고, 이 클래스는 오직 차트 프레임을 위한 것이다.
+/// X축 눈금을 무엇으로 읽는가.
+///
+/// 24시간 창은 시각(`오후 10시`), 주간 창은 날짜(`8/6`)다. 주간에 오전/오후를
+/// 붙이면 눈금이 전부 `오전 7시`가 되어 아무것도 구분하지 못한다.
+enum ChartTickFormat { hour, date }
+
 /// X축 눈금 하나.
 class ChartTimeTick {
   /// 눈금이 가리키는 시각 (항상 [stepHours]의 배수 정각).
@@ -39,10 +45,18 @@ class ChartWindow {
   /// 창을 계산한 시각. 회색 밴드가 여기서 시작한다.
   final DateTime now;
 
+  /// 눈금을 시각으로 읽을지 날짜로 읽을지.
+  final ChartTickFormat format;
+
+  /// 눈금 개수. 오른쪽 끝은 세지 않는다.
+  final int tickCount;
+
   const ChartWindow._({
     required this.start,
     required this.end,
     required this.now,
+    required this.format,
+    required this.tickCount,
   });
 
   /// 눈금 간격(시간). Figma 기준 6시간 4개.
@@ -52,12 +66,50 @@ class ChartWindow {
   /// 시계 경계(`00/06/12/18`)가 아니라 **6으로 나눈 나머지가 4**인 시각이다.
   static const int tickPhaseHour = 4;
 
-  /// 창 길이. 항상 24시간.
+  /// 24시간 창 길이.
   static const Duration span = Duration(hours: 24);
+
+  /// 하루 경계. 기획안 §3.1 — 야행성이라 자정이 아니라 07:00이다.
+  static const int dayBoundaryHour = 7;
+
+  /// 주간 창 길이(일).
+  static const int weeklyDays = 7;
 
   factory ChartWindow.of(DateTime now) {
     final end = nextTickAfter(now);
-    return ChartWindow._(start: end.subtract(span), end: end, now: now);
+    return ChartWindow._(
+      start: end.subtract(span),
+      end: end,
+      now: now,
+      format: ChartTickFormat.hour,
+      tickCount: span.inHours ~/ stepHours,
+    );
+  }
+
+  /// 최근 7일 창 (기획안 §4.3.1 주간).
+  ///
+  /// **눈금이 하루 경계(07:00)에 선다.** 자정으로 끊으면 밤 활동이 두 칸으로
+  /// 쪼개져, 같은 밤을 일간 화면과 주간 화면이 서로 다른 날로 말하게 된다.
+  ///
+  /// 24시간 창과 같은 규칙으로 **오늘 몫을 미리 비워둔다** — 오른쪽 끝은 다음
+  /// 07:00이고, 아직 안 지난 만큼이 회색 밴드가 된다.
+  factory ChartWindow.weekly(DateTime now) {
+    final end = nextDayBoundaryAfter(now);
+    return ChartWindow._(
+      // 달력으로 빼야 서머타임에도 "07시 정각"이 유지된다.
+      start: DateTime(end.year, end.month, end.day - weeklyDays, end.hour),
+      end: end,
+      now: now,
+      format: ChartTickFormat.date,
+      tickCount: weeklyDays,
+    );
+  }
+
+  /// [now] **이후**의 첫 하루 경계(07:00).
+  static DateTime nextDayBoundaryAfter(DateTime now) {
+    final today = DateTime(now.year, now.month, now.day, dayBoundaryHour);
+    if (today.isAfter(now)) return today;
+    return DateTime(now.year, now.month, now.day + 1, dayBoundaryHour);
   }
 
   /// [now] **이후**의 첫 눈금 시각.
@@ -85,20 +137,28 @@ class ChartWindow {
     return (now.difference(start).inMicroseconds / total).clamp(0.0, 1.0);
   }
 
-  /// X축 눈금 4개. 창 시작부터 6시간 간격이며 **오른쪽 끝(= [end])은 뺀다** —
-  /// Figma도 왼쪽 끝부터 4개만 그렸고, 끝에 라벨을 붙이면 밴드 위에 겹친다.
+  /// X축 눈금. 창 시작부터 고른 간격이며 **오른쪽 끝(= [end])은 뺀다** —
+  /// Figma도 왼쪽 끝부터만 그렸고, 끝에 라벨을 붙이면 밴드 위에 겹친다.
+  ///
+  /// 간격을 Duration 덧셈이 아니라 **달력 필드**로 넘긴다. 서머타임이 끼면
+  /// `+6시간`은 5시나 7시로 밀리지만, `hour + 6`은 언제나 정각을 지킨다.
   List<ChartTimeTick> get ticks {
     final total = end.difference(start).inMicroseconds;
     if (total <= 0) return const [];
     return [
-      for (var i = 0; i * stepHours < span.inHours; i++)
-        if (DateTime(start.year, start.month, start.day,
-                start.hour + i * stepHours)
-            case final at)
+      for (var i = 0; i < tickCount; i++)
+        if (_tickAt(i) case final at)
           ChartTimeTick(
             at: at,
             position: at.difference(start).inMicroseconds / total,
           ),
     ];
   }
+
+  DateTime _tickAt(int i) => switch (format) {
+        ChartTickFormat.hour => DateTime(start.year, start.month, start.day,
+            start.hour + i * stepHours),
+        ChartTickFormat.date =>
+          DateTime(start.year, start.month, start.day + i, start.hour),
+      };
 }
