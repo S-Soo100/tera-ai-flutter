@@ -22,6 +22,9 @@ class ActuatorMarker {
   }
 
   static const _kindByAction = {
+    'mist': MarkerKind.mist,
+    // 2026-08-12 `mist` 계약이 생기기 전까지 분무는 전부 이걸로 나갔다
+    // (실DB 144건). 새 것만 매핑하면 그 이력이 차트에서 조용히 사라진다.
     'relay_toggle': MarkerKind.mist,
     'fan_toggle': MarkerKind.fan,
     'heater_toggle': MarkerKind.heater,

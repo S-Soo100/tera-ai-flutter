@@ -23,6 +23,7 @@ import '../../my_cage/domain/device_command.dart';
 import '../../my_cage/domain/telemetry_reading.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../../my_cage/presentation/widgets/heater_lock_dialog.dart';
+import '../domain/mist_duration.dart';
 import '../domain/mist_lock.dart';
 
 /// 분무 중복 클릭 락. **기기별로 분리한다** — 전역이면 A 사육장에서 분무한 뒤
@@ -32,7 +33,15 @@ final mistLockProvider = StateProvider.family<MistLock, String>(
 );
 
 /// LED 밝기(0~100). BE3 전까지 펌웨어가 payload를 무시할 수 있다.
+///
+/// ⚠️ 실DB의 `led_*` 236건이 **전부 `payload = null`**이다 — 밝기 값이 기기에
+/// 닿은 적이 없어 펌웨어가 이걸 읽는지 미검증이다
+/// (`docs/backend-handoff-timer-mist.md` 요청 4).
 final ledBrightnessProvider = StateProvider<int>((ref) => 70);
+
+/// 마지막으로 고른 분무 시간. 기기별로 나눌 이유가 없다(사용자 취향).
+final mistDurationProvider =
+    StateProvider<MistDuration>((ref) => MistDuration.defaultValue);
 
 /// 명령 1건 발행. **실패를 삼키지 않는다.**
 ///
@@ -103,13 +112,17 @@ Future<void> handleHeaterTap(
 
 /// 1회 즉시 분사.
 ///
-/// BE2(`relay_pulse`)가 없으므로 `relay_toggle`을 **1회만** 보낸다.
-/// 앱에서 ON→지연 OFF로 펄스를 흉내내면 앱이 백그라운드로 가는 순간 펌프가
-/// 계속 돈다 — 절대 하지 않는다.
+/// `duration_ms`만 보내고 **OFF는 보내지 않는다** — 펌웨어가 내부 타이머로
+/// 자동으로 끈다. 앱에서 ON→지연 OFF로 펄스를 흉내내면 앱이 백그라운드로 가는
+/// 순간 펌프가 계속 돈다.
+///
+/// 2026-08-12 이전에는 `relay_pulse` 계약이 없어 `relay_toggle`을 1회만 보내는
+/// 우회를 썼다(실DB 144건). `mist`가 그 정공법이다.
 Future<void> mistOnce(
   BuildContext context,
   WidgetRef ref,
   String deviceId,
+  MistDuration duration,
 ) async {
   final lockNotifier = ref.read(mistLockProvider(deviceId).notifier);
   lockNotifier.state = MistLock.startingAt(DateTime.now());
@@ -120,12 +133,14 @@ Future<void> mistOnce(
     lockNotifier.state = const MistLock(lockedUntil: null);
   });
   try {
-    await ref
-        .read(moduleCommandSenderProvider.notifier)
-        .send(deviceId, CommandAction.relayToggle);
+    await ref.read(moduleCommandSenderProvider.notifier).send(
+          deviceId,
+          CommandAction.mist,
+          payload: duration.payload,
+        );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('home_mist_sent'.tr())),
+      SnackBar(content: Text('home_mist_sent'.tr(args: ['${duration.seconds}']))),
     );
   } catch (e, st) {
     debugPrint('[cage-control] mist failed: $e\n$st');
@@ -134,6 +149,55 @@ Future<void> mistOnce(
       SnackBar(content: Text('home_mist_failed'.tr())),
     );
   }
+}
+
+/// 분무 지속시간 선택 시트. 고른 즉시 분사한다.
+///
+/// 시트를 한 겹 두는 대신 **고르는 행위가 곧 실행**이다. "고르고 → 확인" 2탭을
+/// 요구하면 하루에도 몇 번씩 누르는 동작이 무거워진다.
+Future<void> openMistSheet(
+  BuildContext context,
+  WidgetRef ref,
+  String deviceId,
+) async {
+  final picked = await showModalBottomSheet<MistDuration>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppStyles.spacing16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'home_mist_pick_title'.tr(),
+              style: AppStyles.subsectionTitle(ctx),
+            ),
+            const SizedBox(height: AppStyles.spacing12),
+            Row(
+              children: [
+                for (final d in MistDuration.values) ...[
+                  Expanded(
+                    child: OutlinedButton(
+                      key: Key('mist_duration_${d.seconds}'),
+                      onPressed: () => Navigator.of(ctx).pop(d),
+                      child: Text('home_mist_seconds'
+                          .tr(args: ['${d.seconds}'])),
+                    ),
+                  ),
+                  if (d != MistDuration.values.last)
+                    const SizedBox(width: AppStyles.spacing8),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (picked == null || !context.mounted) return;
+  ref.read(mistDurationProvider.notifier).state = picked;
+  await mistOnce(context, ref, deviceId, picked);
 }
 
 /// LED 밝기 선택 시트를 열고 결과를 전송한다.

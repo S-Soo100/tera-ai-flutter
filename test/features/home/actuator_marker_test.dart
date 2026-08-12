@@ -37,6 +37,17 @@ void main() {
       ]);
     });
 
+    test('mist와 relay_toggle 둘 다 분무다 — 전환 전 이력이 사라지면 안 된다', () {
+      // 2026-08-12 이전 분무는 전부 relay_toggle(실DB 144건)로 나갔다.
+      // 새 계약(mist)만 매핑하면 그 144건이 차트에서 조용히 증발한다.
+      final m = ActuatorMarker.fromCommands([
+        _cmd('relay_toggle', '2026-08-05T09:00:00Z'),
+        _cmd('mist', '2026-08-11T07:41:16Z'),
+      ]);
+      expect(m.map((e) => e.kind).toList(),
+          [MarkerKind.mist, MarkerKind.mist]);
+    });
+
     test('알 수 없는 action은 버린다', () {
       final m = ActuatorMarker.fromCommands(
           [_cmd('token_rotate', '2026-08-05T10:00:00Z')]);

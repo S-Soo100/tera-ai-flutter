@@ -28,6 +28,7 @@ class QuickControlGrid extends ConsumerWidget {
     final online = ref.watch(moduleOnlineProvider(deviceId));
     final lock = ref.watch(mistLockProvider(deviceId));
     final brightness = ref.watch(ledBrightnessProvider);
+    final mistDuration = ref.watch(mistDurationProvider);
     final mistLocked = lock.isLocked(DateTime.now());
 
     return Padding(
@@ -72,12 +73,15 @@ class QuickControlGrid extends ConsumerWidget {
             label: 'home_mist_once'.tr(),
             // 남은 초를 표시하지 않는다. build 시점 값이라 매초 갱신되지 않아
             // 멈춘 숫자를 보여주게 된다 — 없는 편이 정직하다.
-            value: mistLocked ? 'home_mist_cooldown_short'.tr() : '',
+            // 쿨다운이 아닐 때는 마지막에 고른 분사 시간을 띄운다.
+            value: mistLocked
+                ? 'home_mist_cooldown_short'.tr()
+                : 'home_mist_seconds'.tr(args: ['${mistDuration.seconds}']),
             icon: Icons.water_drop_outlined,
             enabled: online && !mistLocked,
             // 1회성 동작이라 '켜진 상태'가 없다.
             active: false,
-            onTap: () => mistOnce(context, ref, deviceId),
+            onTap: () => openMistSheet(context, ref, deviceId),
           ),
         ],
       ),
