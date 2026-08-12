@@ -201,7 +201,7 @@ class _ScheduleTile extends StatelessWidget {
       key: Key('schedule_${schedule.id}'),
       contentPadding: EdgeInsets.zero,
       title: Text(
-        '${schedule.hhmm}  ${schedule.action.labelKey.tr()}'
+        '${schedule.hhmm}  ${schedule.action.displayKey.tr()}'
         '${_durationSuffix()}',
         style: theme.textTheme.titleSmall,
       ),

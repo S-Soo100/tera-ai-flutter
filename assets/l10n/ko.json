@@ -554,6 +554,7 @@
   "routine_field_repeat": "반복",
   "routine_field_time": "시각",
   "routine_action_locked": "동작은 바꿀 수 없어요. 바꾸려면 지우고 새로 만들어주세요.",
+  "routine_action_mist": "분무",
   "routine_action_led_on": "조명 켜기",
   "routine_action_led_off": "조명 끄기",
   "routine_daily": "매일",

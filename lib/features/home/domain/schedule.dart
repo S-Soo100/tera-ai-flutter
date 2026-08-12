@@ -52,6 +52,25 @@ enum ScheduleAction {
   /// `mist`는 `duration_ms`가 없으면 서버가 400을 준다.
   bool get requiresDuration => this == ScheduleAction.mist;
 
+  /// 예약 화면에 쓰는 표시명 i18n 키.
+  ///
+  /// [labelKey](하드웨어 이름)와 다르다. 예약은 **동작**을 고르는 자리라
+  /// `워터펌프`·`LED`처럼 부품 이름을 늘어놓으면 `조명 켜기` 옆에서 층위가
+  /// 어긋난다. 켜기/끄기가 갈리는 LED도 여기서만 둘로 나뉜다.
+  String get displayKey {
+    switch (this) {
+      case ScheduleAction.mist:
+      case ScheduleAction.relayToggle:
+        return 'routine_action_mist';
+      case ScheduleAction.ledOn:
+        return 'routine_action_led_on';
+      case ScheduleAction.ledOff:
+        return 'routine_action_led_off';
+      default:
+        return labelKey;
+    }
+  }
+
   /// 액추에이터 라벨 i18n 키. 기존 `module_actuator_*`를 그대로 쓴다.
   String get labelKey {
     switch (this) {

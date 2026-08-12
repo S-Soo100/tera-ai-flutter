@@ -103,7 +103,7 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                 for (final a in ScheduleAction.selectable)
                   ChoiceChip(
                     key: Key('routine_action_${a.wire}'),
-                    label: Text(_actionLabel(a)),
+                    label: Text(a.displayKey.tr()),
                     selected: _action == a,
                     // 수정 중엔 잠근다 — 서버가 안 받는 변경을 눌러보게 하면
                     // 실패 토스트로만 알게 된다.
@@ -235,15 +235,4 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
     ));
   }
 
-  /// 칩에는 액추에이터 이름만으로 부족하다 — LED는 켜기/끄기가 따로 있다.
-  static String _actionLabel(ScheduleAction a) {
-    switch (a) {
-      case ScheduleAction.ledOn:
-        return 'routine_action_led_on'.tr();
-      case ScheduleAction.ledOff:
-        return 'routine_action_led_off'.tr();
-      default:
-        return a.labelKey.tr();
-    }
-  }
 }
