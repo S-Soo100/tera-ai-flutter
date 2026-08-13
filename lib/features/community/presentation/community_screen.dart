@@ -4,9 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_styles.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/account_avatar.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/glass_chip.dart';
+import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/pending_section.dart';
-import '../../../shared/widgets/screen_header.dart';
+import '../../../shared/widgets/wallpaper_background.dart';
 import '../../profile/presentation/profile_providers.dart';
 import '../domain/community_post.dart';
 import 'community_providers.dart';
@@ -28,30 +32,43 @@ class CommunityScreen extends ConsumerWidget {
     final posts = ref.watch(communityPostsProvider);
     final profile = ref.watch(profileNotifierProvider).valueOrNull;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    // A안 표면 규칙은 홈([HomeScreen])과 같다 — 월페이퍼 바닥 + AppTheme.dark
+    // 래핑 + SafeArea(bottom: false). 카테고리·seed 로직은 불변.
+    return Theme(
+      data: AppTheme.dark,
+      child: Scaffold(
+        backgroundColor: AppTheme.glassWallpaperTop,
+        body: Stack(
           children: [
-            ScreenHeader(
-              title: 'community_title'.tr(),
-              actions: [
-                AccountAvatar(
-                  tooltip: 'home_account'.tr(),
-                  imageUrl: profile?.avatarUrl,
-                  displayName: profile?.displayName,
-                  onPressed: () => context.push('/profile'),
-                ),
-              ],
+            const Positioned.fill(child: WallpaperBackground()),
+            SafeArea(
+              bottom: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GlassTabHeader(
+                    title: 'community_title'.tr(),
+                    actions: [
+                      AccountAvatar(
+                        tooltip: 'home_account'.tr(),
+                        imageUrl: profile?.avatarUrl,
+                        displayName: profile?.displayName,
+                        onPressed: () => context.push('/profile'),
+                      ),
+                    ],
+                  ),
+                  _CategoryChips(
+                    selected: selected,
+                    onChanged: (cat) => ref
+                        .read(selectedCommunityCategoryProvider.notifier)
+                        .state = cat,
+                  ),
+                  const SizedBox(height: AppStyles.spacing12),
+                  Expanded(
+                      child: _CategoryBody(selected: selected, posts: posts)),
+                ],
+              ),
             ),
-            _CategoryChips(
-              selected: selected,
-              onChanged: (cat) =>
-                  ref.read(selectedCommunityCategoryProvider.notifier).state =
-                      cat,
-            ),
-            const SizedBox(height: AppStyles.spacing12),
-            Expanded(child: _CategoryBody(selected: selected, posts: posts)),
           ],
         ),
       ),
@@ -84,7 +101,10 @@ class _CategoryBody extends StatelessWidget {
         selected == CommunityCategory.all;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, AppStyles.spacing24),
+      // 하단은 플로팅 독 높이(MediaQuery.padding.bottom)를 직접 소비한다 —
+      // padding을 명시한 ListView는 자동 인셋이 꺼진다.
+      padding: EdgeInsets.fromLTRB(0, 0, 0,
+          AppStyles.spacing24 + MediaQuery.paddingOf(context).bottom),
       children: [
         if (showWiki) ...[
           Padding(
@@ -171,26 +191,19 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 하드코딩 검정(#222222)이었다. 선택 상태는 브랜드 메인컬러가 맡는다 —
-    // 검정은 팔레트에 없는 색이라 다크 테마에서 배경과 붙어버렸다.
-    final scheme = Theme.of(context).colorScheme;
-    final bg = selected ? scheme.primary : scheme.surfaceContainerHigh;
-    final fg = selected ? scheme.onPrimary : scheme.onSurfaceVariant;
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
+    // A안 유리 캡슐 — 선택은 불투명 흰 알약(통계 메트릭 필터와 같은 문법).
+    return GlassChip(
+      overlay: selected ? AppTheme.glassActiveTile : AppTheme.glassOverlay,
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: fg,
-            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-          ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Text(
+        label,
+        style: AppTheme.glassTileTitle.copyWith(
+          fontSize: 13,
+          color: selected
+              ? AppTheme.glassTextOnActive
+              : AppTheme.glassTextSecondary,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
         ),
       ),
     );
@@ -233,19 +246,9 @@ class _PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
+    // A안 유리 카드 — 예전 흰 카드+그림자는 어두운 월페이퍼 위에서 사라진다.
+    return GlassCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -280,8 +283,9 @@ class _PostCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   '${post.authorName} · ${_relativeTime(post.createdAt)}',
+                  // 다크 outline(#444)은 유리 위에서 안 읽힌다.
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.outline,
+                    color: AppTheme.glassTextSecondary,
                   ),
                 ),
               ],
@@ -291,16 +295,16 @@ class _PostCard extends StatelessWidget {
             padding: const EdgeInsets.only(left: 12, top: 28),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.chat_bubble_outline,
                   size: 16,
-                  color: theme.colorScheme.outline,
+                  color: AppTheme.glassTextSecondary,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${post.commentCount}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.outline,
+                    color: AppTheme.glassTextSecondary,
                   ),
                 ),
               ],
@@ -318,19 +322,17 @@ class _WikiShortcutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
+    // 위키는 이 화면의 유일한 실물이다 — 살짝 진한 유리로 세운다.
+    return GlassCard(
+      overlay: AppTheme.glassOverlayStrong,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.menu_book_rounded,
-                  color: theme.colorScheme.primary, size: 20),
+              const Icon(Icons.menu_book_rounded,
+                  color: AppTheme.glassTextPrimary, size: 20),
               const SizedBox(width: 8),
               Text(
                 'community_wiki_shortcut_title'.tr(),
@@ -382,28 +384,22 @@ class _ShortcutChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
+    // A안 유리 캡슐 — 이동 로직 불변.
+    return GlassChip(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: theme.colorScheme.primary),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
