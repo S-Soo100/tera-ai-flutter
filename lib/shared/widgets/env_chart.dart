@@ -99,7 +99,8 @@ class EnvChart extends StatelessWidget {
   static const double plotInset = outerPadding + tempLabelWidth + tempGap;
 
   /// 화면 오른쪽 끝에서 플롯이 끝나는 거리.
-  static const double plotInsetRight = outerPadding + humidLabelWidth + humidGap;
+  static const double plotInsetRight =
+      outerPadding + humidLabelWidth + humidGap;
 
   // ── 세로 ──
 
@@ -141,10 +142,9 @@ class EnvChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final tempAxis = _temp ? data.tempAxis : null;
     final humidAxis = _humid ? data.humidAxis : null;
-    final tempW = tempLabelWidth +
-        (_hasDecimals(tempAxis) ? decimalExtra : 0);
-    final humidW = humidLabelWidth +
-        (_hasDecimals(humidAxis) ? decimalExtra : 0);
+    final tempW = tempLabelWidth + (_hasDecimals(tempAxis) ? decimalExtra : 0);
+    final humidW =
+        humidLabelWidth + (_hasDecimals(humidAxis) ? decimalExtra : 0);
 
     final style = Theme.of(context).textTheme.labelSmall?.copyWith(
           fontSize: 12,
@@ -259,8 +259,7 @@ class _AxisLabels extends StatelessWidget {
           const SizedBox(height: EnvChart.labelColumnTop),
           for (var i = 0; i < ticks.length; i++) ...[
             if (i > 0)
-              const SizedBox(
-                  height: EnvChart.rowStep - EnvChart.labelHeight),
+              const SizedBox(height: EnvChart.rowStep - EnvChart.labelHeight),
             SizedBox(
               height: EnvChart.labelHeight,
               child: Text(
@@ -287,6 +286,7 @@ class _AxisLabels extends StatelessWidget {
 class _GridPainter extends CustomPainter {
   const _GridPainter({
     required this.elapsed,
+    required this.columns,
     required this.nights,
     required this.night,
     required this.line,
@@ -296,6 +296,10 @@ class _GridPainter extends CustomPainter {
 
   /// 흘러간 비율. 여기서부터 오른쪽 끝까지가 회색 밴드다.
   final double elapsed;
+
+  /// 세로 칸 수(= [ChartWindow.tickCount]). 일간 4칸·주간 7칸 — X축 라벨과
+  /// 같은 출처를 써야 격자선이 눈금 위에 선다.
+  final int columns;
 
   /// 밤(`22:00~06:00`) 토막들. 비어 있으면 안 그린다.
   final List<NightBand> nights;
@@ -334,9 +338,9 @@ class _GridPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), stroke);
     }
 
-    // 세로: 6시간 눈금 4개 + 오른쪽 끝. 박스 전체를 관통한다.
-    for (var i = 0; i <= 4; i++) {
-      final x = (size.width * i / 4).clamp(0.0, size.width - 0.5);
+    // 세로: 눈금마다 한 줄 + 오른쪽 끝. 박스 전체를 관통한다.
+    for (var i = 0; i <= columns; i++) {
+      final x = (size.width * i / columns).clamp(0.0, size.width - 0.5);
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), stroke);
     }
 
@@ -353,6 +357,7 @@ class _GridPainter extends CustomPainter {
   @override
   bool shouldRepaint(_GridPainter old) =>
       old.elapsed != elapsed ||
+      old.columns != columns ||
       old.line != line ||
       old.band != band ||
       old.night != night ||
@@ -405,6 +410,7 @@ class _Plot extends StatelessWidget {
           child: CustomPaint(
             painter: _GridPainter(
               elapsed: window.elapsed,
+              columns: window.tickCount,
               // 밤 띠는 격자선 **아래**에 깔린다 — 데이터도 격자도 가리지 않는다.
               nights: nightBand
                   ? nightBands(from: window.start, to: window.end)
@@ -541,8 +547,11 @@ class _ScrubPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ScrubPainter old) =>
-      old.x != x || old.tempY != tempY || old.humidY != humidY ||
-      old.line != line || old.dotFill != dotFill;
+      old.x != x ||
+      old.tempY != tempY ||
+      old.humidY != humidY ||
+      old.line != line ||
+      old.dotFill != dotFill;
 }
 
 /// 기기 동작 마커 (Figma §3.1 "동작 마커").
@@ -579,8 +588,7 @@ class _MarkerRow extends StatelessWidget {
   Widget _glyph(MarkerKind kind, Color color) {
     final name = _svg[kind];
     if (name != null) {
-      return FigmaIcon.tinted(name,
-          color: color, size: EnvChart.markerChip);
+      return FigmaIcon.tinted(name, color: color, size: EnvChart.markerChip);
     }
     return Icon(_fallbackIcon[kind], size: 10, color: color);
   }
@@ -615,8 +623,8 @@ class _MarkerRow extends StatelessWidget {
                 case final p?)
               Positioned(
                 // 양 끝에서 칩이 잘리지 않게 안쪽으로 붙인다.
-                left: (p * c.maxWidth - size / 2)
-                    .clamp(0.0, (c.maxWidth - size).clamp(0.0, double.infinity)),
+                left: (p * c.maxWidth - size / 2).clamp(
+                    0.0, (c.maxWidth - size).clamp(0.0, double.infinity)),
                 top: 0,
                 child: Tooltip(
                   message: _label(m),

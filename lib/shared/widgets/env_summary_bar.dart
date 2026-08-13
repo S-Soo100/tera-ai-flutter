@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/app_theme.dart';
+import '../domain/chart_window.dart';
 import '../domain/env_extremes.dart';
 import 'env_chart.dart';
 import 'figma_icon.dart';
@@ -29,6 +30,7 @@ class EnvSummaryBar extends StatelessWidget {
     this.scrubAt,
     this.scrubTemperature,
     this.scrubHumidity,
+    this.scrubFormat = ChartTickFormat.hour,
     this.onClearScrub,
   });
 
@@ -49,6 +51,11 @@ class EnvSummaryBar extends StatelessWidget {
   final double? scrubTemperature;
   final double? scrubHumidity;
 
+  /// 스크럽 시각을 어떻게 읽을지. 차트 X축([ChartWindow.format])과 **같은
+  /// 값**을 물린다 — 주간(포인트 = 1일)에서 시:분을 띄우면 전부 "오전 7:00"
+  /// 이라 어느 날인지 알 수 없다. 날짜(`8/6`)로 읽어야 한다.
+  final ChartTickFormat scrubFormat;
+
   /// 스크럽 해제. null이면 해제 버튼을 안 그린다.
   final VoidCallback? onClearScrub;
 
@@ -65,8 +72,7 @@ class EnvSummaryBar extends StatelessWidget {
 
     return Padding(
       key: barKey,
-      padding:
-          const EdgeInsets.symmetric(horizontal: EnvChart.outerPadding),
+      padding: const EdgeInsets.symmetric(horizontal: EnvChart.outerPadding),
       child: Stack(
         children: [
           // 스크럽 중에도 자리는 지킨다 — 높이를 정하는 쪽이 이 위젯이다.
@@ -110,6 +116,7 @@ class EnvSummaryBar extends StatelessWidget {
                 at: scrubAt!,
                 temperature: scrubTemperature,
                 humidity: scrubHumidity,
+                format: scrubFormat,
                 reserveRight: onClearScrub == null ? 0 : clearWidth,
               ),
             ),
@@ -141,6 +148,7 @@ class _ScrubReadout extends StatelessWidget {
     required this.at,
     required this.temperature,
     required this.humidity,
+    required this.format,
     required this.reserveRight,
   });
 
@@ -148,6 +156,9 @@ class _ScrubReadout extends StatelessWidget {
   final DateTime at;
   final double? temperature;
   final double? humidity;
+
+  /// 시각([ChartTickFormat.hour]) 또는 날짜([ChartTickFormat.date])로 읽는다.
+  final ChartTickFormat format;
 
   /// 오른쪽에 비워둘 폭(해제 버튼 자리).
   final double reserveRight;
@@ -158,17 +169,33 @@ class _ScrubReadout extends StatelessWidget {
   /// 요약 여백과 플롯 시작점의 차이. 이만큼 안으로 들어가야 플롯 x와 맞는다.
   static const double _delta = EnvChart.plotInset - EnvChart.outerPadding;
 
+  /// 스크럽 시각 문구. 주간은 날짜, 일간은 오전/오후 시:분.
+  String get _timeLabel {
+    switch (format) {
+      case ChartTickFormat.date:
+        return 'stats_scrub_date'
+            .tr(namedArgs: {'m': '${at.month}', 'd': '${at.day}'});
+      case ChartTickFormat.hour:
+        final isAm = at.hour < 12;
+        final h12 = at.hour % 12 == 0 ? 12 : at.hour % 12;
+        return (isAm ? 'stats_scrub_time_am' : 'stats_scrub_time_pm').tr(
+          namedArgs: {
+            'h': '$h12',
+            'm': at.minute.toString().padLeft(2, '0'),
+          },
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isAm = at.hour < 12;
-    final h12 = at.hour % 12 == 0 ? 12 : at.hour % 12;
 
     return LayoutBuilder(
       builder: (context, c) {
         final plotWidth = (c.maxWidth - _delta * 2).clamp(0.0, c.maxWidth);
-        final limit = (c.maxWidth - _width - reserveRight)
-            .clamp(0.0, double.infinity);
+        final limit =
+            (c.maxWidth - _width - reserveRight).clamp(0.0, double.infinity);
         final left = (_delta + x * plotWidth - _width / 2).clamp(0.0, limit);
 
         return Stack(
@@ -182,12 +209,7 @@ class _ScrubReadout extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    (isAm ? 'stats_scrub_time_am' : 'stats_scrub_time_pm').tr(
-                      namedArgs: {
-                        'h': '$h12',
-                        'm': at.minute.toString().padLeft(2, '0'),
-                      },
-                    ),
+                    _timeLabel,
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: theme.colorScheme.onSurfaceVariant,

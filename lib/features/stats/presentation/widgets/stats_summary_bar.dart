@@ -36,6 +36,11 @@ class StatsSummaryBar extends ConsumerWidget {
             : ref.watch(envChartDataProvider))
         .valueOrNull;
     final metrics = ref.watch(statsMetricsProvider);
+    // 스크럽 시각 표기는 차트 X축과 같은 형식을 따른다 — 주간은 날짜(8/6),
+    // 일간은 시:분. 창(window)이 형식의 단일 출처다.
+    final window = weekly
+        ? ref.watch(weeklyWindowProvider)
+        : ref.watch(chartWindowProvider);
 
     // 데이터가 없으면 스크럽 값을 만들 수 없다 — 시각만 띄우면 거짓말이 된다.
     final showScrub = scrub != null && data != null;
@@ -53,6 +58,7 @@ class StatsSummaryBar extends ConsumerWidget {
       scrubHumidity: showScrub && metrics.contains(StatsMetric.humidity)
           ? data.humidAt(scrub)
           : null,
+      scrubFormat: window.format,
       onClearScrub: () => ref.read(statsScrubProvider.notifier).state = null,
     );
   }

@@ -35,8 +35,12 @@ class StatsPeriodBar extends ConsumerWidget {
             GlassSegment(value: p, label: p.labelKey.tr()),
         ],
         selected: selected,
-        onChanged: (p) =>
-            ref.read(statsPeriodProvider.notifier).state = p,
+        onChanged: (p) {
+          ref.read(statsPeriodProvider.notifier).state = p;
+          // 스크럽 위치(0~1)는 **창에 상대적**이다 — 기간을 바꾸면 같은 x가
+          // 전혀 다른 시각을 가리키므로 남겨두면 거짓 값을 보여준다.
+          ref.read(statsScrubProvider.notifier).state = null;
+        },
       ),
     );
   }
@@ -66,8 +70,7 @@ class StatsMetricFilter extends ConsumerWidget {
       height: 40,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding:
-            const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
+        padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
         children: [
           for (final m in StatsMetric.values) ...[
             _MetricChip(

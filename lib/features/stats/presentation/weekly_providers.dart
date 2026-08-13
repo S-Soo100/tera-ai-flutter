@@ -10,8 +10,8 @@ import '../domain/daily_rollup.dart';
 
 /// 주간 창(최근 7일). 화면이 살아 있는 동안 고정한다 — 일간 창과 같은 이유로,
 /// 매 초 다시 잡으면 눈금과 회색 밴드가 미세하게 떨린다.
-final weeklyWindowProvider =
-    Provider.autoDispose<ChartWindow>((ref) => ChartWindow.weekly(DateTime.now()));
+final weeklyWindowProvider = Provider.autoDispose<ChartWindow>(
+    (ref) => ChartWindow.weekly(DateTime.now()));
 
 /// 주간 창의 30분 버킷 원본. 7일 × 48 = 최대 336행.
 final _weeklyRawBucketsProvider =
@@ -19,9 +19,11 @@ final _weeklyRawBucketsProvider =
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) return const [];
   final w = ref.watch(weeklyWindowProvider);
+  // 창 끝(직전 07:00)까지다 — now까지 당기면 진행 중인 오늘 몫이 딸려와
+  // 창 밖 데이터를 rollup이 도로 버리는 낭비만 생긴다.
   return ref
       .watch(supabaseModuleControlRepositoryProvider)
-      .telemetryHistory(deviceId, w.start, to: w.now);
+      .telemetryHistory(deviceId, w.start, to: w.end);
 });
 
 /// 하루 단위로 접은 7칸. 주간 차트와 분포 바가 **같은 값**을 쓴다 —

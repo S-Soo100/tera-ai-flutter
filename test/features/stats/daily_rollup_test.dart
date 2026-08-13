@@ -72,10 +72,11 @@ void main() {
     });
 
     test('창의 7일이 빠짐없이 나온다 — 빈 날도 자리를 지킨다', () {
+      // 주간 창은 완결된 7일: 8/12 15시 기준 8/5 07시 ~ 8/12 07시.
       final out = rollupByDay(const [], window: _window);
       expect(out, hasLength(7));
-      expect(out.first.bucket, DateTime(2026, 8, 6, 7));
-      expect(out.last.bucket, DateTime(2026, 8, 12, 7));
+      expect(out.first.bucket, DateTime(2026, 8, 5, 7));
+      expect(out.last.bucket, DateTime(2026, 8, 11, 7));
     });
 
     test('창 밖 데이터는 무시한다', () {

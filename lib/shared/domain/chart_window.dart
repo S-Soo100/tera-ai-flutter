@@ -86,15 +86,17 @@ class ChartWindow {
     );
   }
 
-  /// 최근 7일 창 (기획안 §4.3.1 주간).
+  /// 최근 **완결된** 7일 창 (기획안 §4.3.1 주간).
   ///
   /// **눈금이 하루 경계(07:00)에 선다.** 자정으로 끊으면 밤 활동이 두 칸으로
   /// 쪼개져, 같은 밤을 일간 화면과 주간 화면이 서로 다른 날로 말하게 된다.
   ///
-  /// 24시간 창과 같은 규칙으로 **오늘 몫을 미리 비워둔다** — 오른쪽 끝은 다음
-  /// 07:00이고, 아직 안 지난 만큼이 회색 밴드가 된다.
+  /// 오른쪽 끝은 **직전 07:00 경계**다 — 진행 중인 오늘을 넣으면 샘플 한둘의
+  /// 부분일 평균이 진짜 일 평균처럼 그려져 끝에서 절벽이 생긴다(2026-08-14).
+  /// 일간 집계라 "몇 시간 늦은 값"이어도 잘못된 값보다 낫다.
+  /// 창이 전부 과거이므로 미도래 회색 밴드는 없다(elapsed = 1).
   factory ChartWindow.weekly(DateTime now) {
-    final end = nextDayBoundaryAfter(now);
+    final end = lastDayBoundaryOnOrBefore(now);
     return ChartWindow._(
       // 달력으로 빼야 서머타임에도 "07시 정각"이 유지된다.
       start: DateTime(end.year, end.month, end.day - weeklyDays, end.hour),
@@ -105,11 +107,13 @@ class ChartWindow {
     );
   }
 
-  /// [now] **이후**의 첫 하루 경계(07:00).
-  static DateTime nextDayBoundaryAfter(DateTime now) {
+  /// [now] **이전**(정각이면 그 시각)의 마지막 하루 경계(07:00).
+  static DateTime lastDayBoundaryOnOrBefore(DateTime now) {
     final today = DateTime(now.year, now.month, now.day, dayBoundaryHour);
-    if (today.isAfter(now)) return today;
-    return DateTime(now.year, now.month, now.day + 1, dayBoundaryHour);
+    if (today.isAfter(now)) {
+      return DateTime(now.year, now.month, now.day - 1, dayBoundaryHour);
+    }
+    return today;
   }
 
   /// [now] **이후**의 첫 눈금 시각.
@@ -119,7 +123,8 @@ class ChartWindow {
   /// 줄기 시작한다(= 프레임이 전진했다는 뜻).
   static DateTime nextTickAfter(DateTime now) {
     // 정수 나눗셈이 0 쪽으로 잘리므로 새벽(시 < 4)에도 h = 4가 나온다.
-    var h = ((now.hour - tickPhaseHour) ~/ stepHours) * stepHours + tickPhaseHour;
+    var h =
+        ((now.hour - tickPhaseHour) ~/ stepHours) * stepHours + tickPhaseHour;
     // 시(hour) 오버플로는 DateTime 생성자가 달력으로 정규화해준다 —
     // Duration 덧셈과 달리 서머타임에도 "몇 시 정각"이 유지된다.
     var t = DateTime(now.year, now.month, now.day, h);
@@ -156,8 +161,8 @@ class ChartWindow {
   }
 
   DateTime _tickAt(int i) => switch (format) {
-        ChartTickFormat.hour => DateTime(start.year, start.month, start.day,
-            start.hour + i * stepHours),
+        ChartTickFormat.hour => DateTime(
+            start.year, start.month, start.day, start.hour + i * stepHours),
         ChartTickFormat.date =>
           DateTime(start.year, start.month, start.day + i, start.hour),
       };

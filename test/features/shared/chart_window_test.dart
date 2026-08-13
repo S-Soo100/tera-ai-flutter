@@ -70,47 +70,50 @@ void main() {
 
     test('Figma 라벨과 같은 순서로 나온다', () {
       final w = ChartWindow.of(DateTime(2026, 8, 10, 16, 40));
-      final labels = w.ticks
-          .map((t) => '${t.isAm ? "오전" : "오후"} ${t.hour12}시')
-          .toList();
+      final labels =
+          w.ticks.map((t) => '${t.isAm ? "오전" : "오후"} ${t.hour12}시').toList();
       expect(labels, ['오후 10시', '오전 4시', '오전 10시', '오후 4시']);
     });
 
     test('위치는 0 / 0.25 / 0.5 / 0.75', () {
       final w = ChartWindow.of(DateTime(2026, 8, 10, 16, 40));
-      expect(w.ticks.map((t) => t.position).toList(),
-          [closeTo(0, 1e-9), closeTo(.25, 1e-9), closeTo(.5, 1e-9), closeTo(.75, 1e-9)]);
+      expect(w.ticks.map((t) => t.position).toList(), [
+        closeTo(0, 1e-9),
+        closeTo(.25, 1e-9),
+        closeTo(.5, 1e-9),
+        closeTo(.75, 1e-9)
+      ]);
     });
 
     test('눈금은 언제나 6시간 간격을 지킨다', () {
       for (var h = 0; h < 24; h++) {
         final ticks = ChartWindow.of(DateTime(2026, 8, 10, h, 41)).ticks;
         for (var i = 1; i < ticks.length; i++) {
-          expect(ticks[i].at.difference(ticks[i - 1].at),
-              const Duration(hours: 6), reason: '$h시');
+          expect(
+              ticks[i].at.difference(ticks[i - 1].at), const Duration(hours: 6),
+              reason: '$h시');
         }
       }
     });
   });
 
-
-  group('주간 창 — 하루 경계(07:00) 7칸', () {
-    test('창 끝은 지금 이후 첫 07시, 시작은 그 7일 전', () {
-      // 07시 이후면 창 끝은 내일 07시. 오늘 몫이 미도래 밴드가 된다.
+  group('주간 창 — 하루 경계(07:00) 완결 7일', () {
+    test('창 끝은 직전 07시, 시작은 그 7일 전 — 진행 중인 오늘은 뺀다', () {
+      // 부분일 평균(샘플 1~2개)이 일 평균처럼 그려지는 절벽을 막는다.
       final w = ChartWindow.weekly(DateTime(2026, 8, 12, 15, 43));
-      expect(w.end, DateTime(2026, 8, 13, 7));
-      expect(w.start, DateTime(2026, 8, 6, 7));
-    });
-
-    test('07시 이전이면 오늘 07시가 창 끝 — 하루가 아직 안 시작했다', () {
-      final w = ChartWindow.weekly(DateTime(2026, 8, 12, 3, 10));
       expect(w.end, DateTime(2026, 8, 12, 7));
       expect(w.start, DateTime(2026, 8, 5, 7));
     });
 
-    test('07시 정각은 다음 날로 넘긴다 — 폭 0인 밴드를 만들지 않는다', () {
+    test('07시 이전이면 어제 07시가 창 끝 — 오늘 하루가 아직 안 시작했다', () {
+      final w = ChartWindow.weekly(DateTime(2026, 8, 12, 3, 10));
+      expect(w.end, DateTime(2026, 8, 11, 7));
+      expect(w.start, DateTime(2026, 8, 4, 7));
+    });
+
+    test('07시 정각이면 방금 완결된 날까지 포함한다', () {
       final w = ChartWindow.weekly(DateTime(2026, 8, 12, 7));
-      expect(w.end, DateTime(2026, 8, 13, 7));
+      expect(w.end, DateTime(2026, 8, 12, 7));
     });
 
     test('일간과 같은 07:00 경계를 쓴다 — 두 화면이 다른 하루를 말하면 안 된다', () {
@@ -123,8 +126,8 @@ void main() {
     test('눈금 7개, 오른쪽 끝은 뺀다', () {
       final w = ChartWindow.weekly(DateTime(2026, 8, 12, 15));
       expect(w.ticks, hasLength(7));
-      expect(w.ticks.first.at, DateTime(2026, 8, 6, 7));
-      expect(w.ticks.last.at, DateTime(2026, 8, 12, 7));
+      expect(w.ticks.first.at, DateTime(2026, 8, 5, 7));
+      expect(w.ticks.last.at, DateTime(2026, 8, 11, 7));
       expect(w.ticks.map((t) => t.at), isNot(contains(w.end)));
     });
 
@@ -141,10 +144,9 @@ void main() {
           ChartTickFormat.hour);
     });
 
-    test('미도래 밴드는 오늘 지나온 만큼만 남긴다', () {
-      // 8/12 15시 → 창은 8/6 07시~8/13 07시(7일). 지난 건 6일 8시간.
+    test('미도래 밴드가 없다 — 창이 전부 과거다', () {
       final w = ChartWindow.weekly(DateTime(2026, 8, 12, 15));
-      expect(w.elapsed, closeTo((6 * 24 + 8) / (7 * 24), 0.001));
+      expect(w.elapsed, 1.0);
     });
   });
 }

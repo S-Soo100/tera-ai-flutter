@@ -15,6 +15,7 @@
   "stats_extremes_humid": "최고 {max}% 최저 {min}%",
   "stats_scrub_time_am": "오전 {h}:{m}",
   "stats_scrub_time_pm": "오후 {h}:{m}",
+  "stats_scrub_date": "{m}/{d}",
   "stats_scrub_clear": "현재값 보기",
   "stats_marker_ran": "{time} {what} 실행",
   "stats_marker_mist": "분무",

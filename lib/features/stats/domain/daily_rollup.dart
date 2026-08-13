@@ -38,6 +38,10 @@ List<TelemetryBucket> rollupByDay(
       if (acc[d]! case final a)
         TelemetryBucket(
           bucket: d,
+          // ⚠️ 여기서는 "그 날 유효했던 30분 버킷 수"(온·습 각각 합산)다 —
+          // 원본 TelemetryBucket의 sampleCount(3초 원시 행 수, isPartial의
+          // 300 임계 기준)와 **단위가 다르다**. 일간 버킷에 isPartial을
+          // 물으면 항상 true가 나오니 판정에 쓰지 말 것.
           sampleCount: a.temp.count + a.humid.count,
           tAvg: a.temp.mean,
           tMin: a.temp.min,
@@ -54,8 +58,8 @@ DateTime? _dayOf(DateTime at, List<DateTime> days) {
   for (var i = days.length - 1; i >= 0; i--) {
     if (!at.isBefore(days[i])) {
       // 마지막 날 다음 경계를 넘어선 값(= 창 밖 미래)은 버린다.
-      final nextEnd = DateTime(
-          days[i].year, days[i].month, days[i].day + 1, days[i].hour);
+      final nextEnd =
+          DateTime(days[i].year, days[i].month, days[i].day + 1, days[i].hour);
       return at.isBefore(nextEnd) ? days[i] : null;
     }
   }
