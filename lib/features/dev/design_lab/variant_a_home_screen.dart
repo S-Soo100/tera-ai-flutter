@@ -135,7 +135,9 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: VariantATokens.tileGap,
       crossAxisSpacing: VariantATokens.tileGap,
-      childAspectRatio: 1.9,
+      // 1.9는 작은 화면에서 타일 내부 Column이 3~5px 넘친다(내용 고정 높이
+      // ≈ 아이콘24+제목+상태+패딩28). 1.72로 세로 여유 확보.
+      childAspectRatio: 1.72,
       children: [
         for (final d in kLabDevices)
           _AccessoryTile(

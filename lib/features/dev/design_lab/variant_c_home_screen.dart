@@ -63,7 +63,8 @@ class _VariantCHomeScreenState extends State<VariantCHomeScreen> {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: VariantCTokens.cardGap,
       crossAxisSpacing: VariantCTokens.cardGap,
-      childAspectRatio: 1.65,
+      // 1.65는 카드 내부 고정 높이(아이콘 원+제목+가동시간)가 0.5px 넘친다.
+      childAspectRatio: 1.55,
       children: [
         for (final d in kLabDevices)
           _CategoryCard(
