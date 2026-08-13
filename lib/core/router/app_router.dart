@@ -29,6 +29,10 @@ import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/auth/presentation/email_verification_screen.dart';
 import '../../features/auth/presentation/auth_providers.dart';
 import '../../features/dev/presentation/chart_lab_screen.dart';
+import '../../features/dev/design_lab/design_lab_screen.dart';
+import '../../features/dev/design_lab/variant_a_home_screen.dart';
+import '../../features/dev/design_lab/variant_b_home_screen.dart';
+import '../../features/dev/design_lab/variant_c_home_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/stats/presentation/stats_screen.dart';
 import '../../features/notification/presentation/notification_center_screen.dart';
@@ -283,6 +287,25 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/dev/chart-lab',
         builder: (context, state) => const ChartLabScreen(),
+      ),
+      // UIUX 벤치마크 체험 랩 — 스펙: docs/design-lab-benchmark-specs.md
+      GoRoute(
+        path: '/dev/design-lab',
+        builder: (context, state) => const DesignLabScreen(),
+        routes: [
+          GoRoute(
+            path: 'a',
+            builder: (context, state) => const VariantAHomeScreen(),
+          ),
+          GoRoute(
+            path: 'b',
+            builder: (context, state) => const VariantBHomeScreen(),
+          ),
+          GoRoute(
+            path: 'c',
+            builder: (context, state) => const VariantCHomeScreen(),
+          ),
+        ],
       ),
       // PRD §3.4 자동 루틴 & 타이머 설정 — 풀스크린(탭 셸 밖) 모달
       GoRoute(
