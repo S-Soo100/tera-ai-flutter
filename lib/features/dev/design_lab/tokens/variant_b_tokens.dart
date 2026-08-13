@@ -66,4 +66,14 @@ abstract final class VariantBTokens {
   // ── 스페이싱 ──
   static const double screenHPad = 16;
   static const double cardGap = 12;
+
+  // ── 하단 탭바 (다크 미니멀 전광판 톤) ──
+  static const tabBar = Color(0xFF0E1322);
+  static const tabActive = amber;
+  static const tabInactive = textTertiary;
+  static const tabLabel = TextStyle(
+    fontSize: 10,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.6,
+  );
 }
