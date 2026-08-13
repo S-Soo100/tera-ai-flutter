@@ -68,6 +68,9 @@ class GlassDock extends StatelessWidget {
     return GlassCard(
       radius: 100,
       overlay: AppTheme.glassOverlayStrong,
+      // 독만 진짜 blur를 쓴다 — extendBody라 콘텐츠가 뒤로 지나가는
+      // 유일한 표면이고, 화면에 하나뿐이라 비용도 카드 한 장 값이다.
+      blur: true,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       child: Row(
         mainAxisSize: MainAxisSize.min,

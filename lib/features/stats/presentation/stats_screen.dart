@@ -60,8 +60,7 @@ class StatsScreen extends ConsumerWidget {
                     children: [
                       const _StatsHeader(),
                       Expanded(
-                          child:
-                              Center(child: Text('stats_no_device'.tr()))),
+                          child: Center(child: Text('stats_no_device'.tr()))),
                     ],
                   )
                 : Builder(
@@ -186,8 +185,9 @@ class _MainChartSection extends ConsumerWidget {
     final async = weekly
         ? ref.watch(weeklyChartDataProvider)
         : ref.watch(envChartDataProvider);
-    final window =
-        weekly ? ref.watch(weeklyWindowProvider) : ref.watch(chartWindowProvider);
+    final window = weekly
+        ? ref.watch(weeklyWindowProvider)
+        : ref.watch(chartWindowProvider);
     final metrics = ref.watch(statsMetricsProvider);
 
     return Column(
@@ -216,8 +216,8 @@ class _MainChartSection extends ConsumerWidget {
           // **실패는 되돌릴 수 있게** 한다. 맨 문구만 두면 앱을 다시 켜는 것
           // 말고는 할 수 있는 게 없다.
           error: (e, _) => Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppStyles.spacing16),
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
             child: EmptyState(
               title: 'stats_load_failed'.tr(),
               actionLabel: 'error_retry'.tr(),
@@ -247,23 +247,28 @@ class _MainChartSection extends ConsumerWidget {
                       horizontal: EnvChart.outerPadding,
                       vertical: AppStyles.spacing16,
                     ),
-                    child: EnvChart(
-                      data: d,
-                      window: window,
-                      // 마커 조회 실패는 차트를 막지 않는다 — 곡선이 본체다.
-                      //
-                      // 주간에는 아예 그리지 않는다. 7일치면 수백 개가 14pt
-                      // 칩으로 겹쳐 쌓여, 언제 무엇이 돌았는지 되레 못 읽는다.
-                      markers: weekly
-                          ? const []
-                          : ref.watch(actuatorMarkersProvider).valueOrNull ??
-                              const [],
-                      showTemperature:
-                          metrics.contains(StatsMetric.temperature),
-                      showHumidity: metrics.contains(StatsMetric.humidity),
-                      scrubX: ref.watch(statsScrubProvider),
-                      onScrubChanged: (x) =>
-                          ref.read(statsScrubProvider.notifier).state = x,
+                    // 스크럽 watch는 이 Consumer 안에만 둔다 — 부모 build에
+                    // 두면 손가락을 끄는 매 프레임 섹션 전체(카드 2장)가
+                    // 리빌드된다. 여기서는 차트 한 장만 다시 그린다.
+                    child: Consumer(
+                      builder: (context, ref, _) => EnvChart(
+                        data: d,
+                        window: window,
+                        // 마커 조회 실패는 차트를 막지 않는다 — 곡선이 본체다.
+                        //
+                        // 주간에는 아예 그리지 않는다. 7일치면 수백 개가 14pt
+                        // 칩으로 겹쳐 쌓여, 언제 무엇이 돌았는지 되레 못 읽는다.
+                        markers: weekly
+                            ? const []
+                            : ref.watch(actuatorMarkersProvider).valueOrNull ??
+                                const [],
+                        showTemperature:
+                            metrics.contains(StatsMetric.temperature),
+                        showHumidity: metrics.contains(StatsMetric.humidity),
+                        scrubX: ref.watch(statsScrubProvider),
+                        onScrubChanged: (x) =>
+                            ref.read(statsScrubProvider.notifier).state = x,
+                      ),
                     ),
                   ),
                 ),

@@ -6,8 +6,9 @@ import '../../core/theme/app_theme.dart';
 
 /// 유리 카드. 디자인 시스템 `Components / GlassCard` (A안 Liquid Glass).
 ///
-/// blur + 흰 오버레이 + 얇은 테두리. **[WallpaperBackground] 같은 어두운 바닥
-/// 위에 올린다** — 밝은 면 위에서는 흰 오버레이가 묻혀 유리로 안 읽힌다.
+/// 흰 오버레이 + 얇은 테두리(+선택적 blur). **[WallpaperBackground] 같은
+/// 어두운 바닥 위에 올린다** — 밝은 면 위에서는 흰 오버레이가 묻혀 유리로
+/// 안 읽힌다.
 ///
 /// 색은 전부 `AppTheme` 글래스 토큰이다. 화면별로 색을 새로 만들지 말 것.
 class GlassCard extends StatelessWidget {
@@ -19,6 +20,7 @@ class GlassCard extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     this.onTap,
     this.onLongPress,
+    this.blur = false,
   });
 
   final Widget child;
@@ -35,6 +37,12 @@ class GlassCard extends StatelessWidget {
   /// 주면 InkWell로 감싼다 — 카드 전체가 탭 대상이 된다.
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+
+  /// BackdropFilter blur를 깔지. **기본 false** — 배경이 정적 그라데이션이라
+  /// 반투명 플랫 필과 시각 차이가 미미한데, BackdropFilter는 카드 수만큼
+  /// saveLayer를 쌓아 스크롤 프레임을 잡아먹는다. 뒤로 실제 콘텐츠가
+  /// 지나가는 표면(독)만 true를 준다.
+  final bool blur;
 
   @override
   Widget build(BuildContext context) {
@@ -75,13 +83,15 @@ class GlassCard extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: borderRadius,
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: AppTheme.glassBlurSigma,
-          sigmaY: AppTheme.glassBlurSigma,
-        ),
-        child: body,
-      ),
+      child: blur
+          ? BackdropFilter(
+              filter: ui.ImageFilter.blur(
+                sigmaX: AppTheme.glassBlurSigma,
+                sigmaY: AppTheme.glassBlurSigma,
+              ),
+              child: body,
+            )
+          : body,
     );
   }
 }
