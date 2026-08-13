@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/glass_chip.dart';
+import '../../../../shared/widgets/glass_segmented_control.dart';
 import '../../domain/stats_metric.dart';
 import '../../domain/stats_period.dart';
 import '../stats_providers.dart';
@@ -12,6 +15,8 @@ import '../stats_providers.dart';
 /// **아직 못 그리는 기간도 고를 수 있게 둔다.** 비활성으로 막으면 "이 앱은
 /// 주간을 안 보여준다"로 읽히는데, 실제로는 디자인 대기일 뿐이다. 고르면
 /// 그 자리에 무엇이 들어올지 설명하는 자리표시자가 나온다.
+///
+/// 표면은 홈 서브탭과 같은 [GlassSegmentedControl] — 선택 로직은 불변.
 class StatsPeriodBar extends ConsumerWidget {
   const StatsPeriodBar({super.key});
 
@@ -24,15 +29,14 @@ class StatsPeriodBar extends ConsumerWidget {
     return Padding(
       key: barKey,
       padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
-      child: SegmentedButton<StatsPeriod>(
+      child: GlassSegmentedControl<StatsPeriod>(
         segments: [
           for (final p in StatsPeriod.values)
-            ButtonSegment(value: p, label: Text(p.labelKey.tr())),
+            GlassSegment(value: p, label: p.labelKey.tr()),
         ],
-        selected: {selected},
-        showSelectedIcon: false,
-        onSelectionChanged: (s) =>
-            ref.read(statsPeriodProvider.notifier).state = s.first,
+        selected: selected,
+        onChanged: (p) =>
+            ref.read(statsPeriodProvider.notifier).state = p,
       ),
     );
   }
@@ -42,6 +46,9 @@ class StatsPeriodBar extends ConsumerWidget {
 ///
 /// 켠 지표만 차트에 그려진다. **동작하지 않는 필터를 두지 않는다** — 눌러도
 /// 아무 일이 없으면 사용자는 화면이 고장 났다고 판단한다.
+///
+/// 표면은 유리 캡슐([GlassChip]) — 켠 지표는 불투명 흰 알약(A안 활성 문법),
+/// 끈 지표는 유리, 준비 안 된 지표는 흐린 유리 + 툴팁. 토글 로직은 불변.
 class StatsMetricFilter extends ConsumerWidget {
   const StatsMetricFilter({super.key});
 
@@ -63,21 +70,67 @@ class StatsMetricFilter extends ConsumerWidget {
             const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
         children: [
           for (final m in StatsMetric.values) ...[
-            FilterChip(
+            _MetricChip(
               key: metricKey(m),
-              label: Text(m.labelKey.tr()),
+              metric: m,
               selected: metrics.contains(m),
               // 비활성 지표는 눌리지 않되 **목록에는 남는다**(기획안 §4.3.2).
-              onSelected: m.isReady
-                  ? (_) => ref.read(statsMetricsProvider.notifier).state =
+              onTap: m.isReady
+                  ? () => ref.read(statsMetricsProvider.notifier).state =
                       toggleMetric(metrics, m)
                   : null,
-              tooltip: m.isReady ? null : 'stats_metric_not_ready'.tr(),
             ),
             const SizedBox(width: AppStyles.spacing8),
           ],
         ],
       ),
     );
+  }
+}
+
+class _MetricChip extends StatelessWidget {
+  const _MetricChip({
+    super.key,
+    required this.metric,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final StatsMetric metric;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = metric.isReady;
+    final on = selected && ready;
+
+    final Color fg;
+    if (!ready) {
+      fg = AppTheme.glassTextTertiary;
+    } else if (on) {
+      fg = AppTheme.glassTextOnActive;
+    } else {
+      fg = AppTheme.glassTextSecondary;
+    }
+
+    final chip = GlassChip(
+      overlay: !ready
+          ? AppTheme.glassOverlayFaint
+          : (on ? AppTheme.glassActiveTile : AppTheme.glassOverlay),
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: Text(
+        metric.labelKey.tr(),
+        style: AppTheme.glassTileTitle.copyWith(
+          fontSize: 13,
+          color: fg,
+          fontWeight: on ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+    );
+
+    if (ready) return chip;
+    return Tooltip(message: 'stats_metric_not_ready'.tr(), child: chip);
   }
 }

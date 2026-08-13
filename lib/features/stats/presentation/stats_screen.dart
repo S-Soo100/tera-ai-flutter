@@ -5,10 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../core/theme/app_styles.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/account_avatar.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/pending_section.dart';
-import '../../../shared/widgets/screen_header.dart';
+import '../../../shared/widgets/wallpaper_background.dart';
 import '../../home/presentation/home_control_providers.dart';
 import '../../home/presentation/home_set_providers.dart';
 import '../../profile/presentation/profile_providers.dart';
@@ -29,6 +32,12 @@ import 'widgets/stats_summary_bar.dart';
 ///
 /// 지금 실물이 있는 것은 **일간 온습도 차트** 하나다(Figma가 그려준 유일한
 /// 통계 화면). 나머지는 [PendingSection].
+///
+/// A안 표면 규칙은 홈([HomeScreen])과 같다 — 바닥은 [WallpaperBackground],
+/// 트리 전체를 [AppTheme.dark]로 감싸 테마색을 읽는 기존 위젯(차트 스켈레톤·
+/// PendingSection·EmptyState)이 어두운 바닥에서 읽히게 한다.
+/// `SafeArea(bottom: false)` + ListView가 `MediaQuery.padding.bottom`(플로팅
+/// 독 높이)을 직접 소비한다 — padding을 명시한 ListView는 자동 인셋이 꺼진다.
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
 
@@ -39,28 +48,45 @@ class StatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final deviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
 
-    return Scaffold(
-      body: SafeArea(
-        child: deviceId == null
-            ? Column(
-                children: [
-                  const _StatsHeader(),
-                  Expanded(child: Center(child: Text('stats_no_device'.tr()))),
-                ],
-              )
-            : ListView(
-                padding: const EdgeInsets.only(bottom: AppStyles.spacing24),
-                children: const [
-                  _StatsHeader(),
-                  StatsPeriodBar(),
-                  SizedBox(height: AppStyles.spacing8),
-                  StatsMetricFilter(),
-                  SizedBox(height: AppStyles.spacing8),
-                  _MainChartSection(),
-                  SizedBox(height: AppStyles.spacing24),
-                  _PendingSections(key: StatsScreen.pendingKey),
-                ],
-              ),
+    return Theme(
+      data: AppTheme.dark,
+      child: Scaffold(
+        backgroundColor: AppTheme.glassWallpaperTop,
+        body: Stack(
+          children: [
+            const Positioned.fill(child: WallpaperBackground()),
+            SafeArea(
+              bottom: false,
+              child: deviceId == null
+                  ? Column(
+                      children: [
+                        const _StatsHeader(),
+                        Expanded(
+                            child:
+                                Center(child: Text('stats_no_device'.tr()))),
+                      ],
+                    )
+                  : Builder(
+                      builder: (context) => ListView(
+                        padding: EdgeInsets.only(
+                          bottom: AppStyles.spacing24 +
+                              MediaQuery.paddingOf(context).bottom,
+                        ),
+                        children: const [
+                          _StatsHeader(),
+                          StatsPeriodBar(),
+                          SizedBox(height: AppStyles.spacing8),
+                          StatsMetricFilter(),
+                          SizedBox(height: AppStyles.spacing8),
+                          _MainChartSection(),
+                          SizedBox(height: AppStyles.spacing24),
+                          _PendingSections(key: StatsScreen.pendingKey),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -70,6 +96,9 @@ class StatsScreen extends ConsumerWidget {
 ///
 /// 개체를 바꾸는 경로가 홈에만 있으면, 통계를 보다가 다른 개체가 궁금할 때
 /// 홈으로 돌아갔다 와야 한다.
+///
+/// 표면은 홈 `HomeHeaderBar`와 같은 [GlassTabHeader] 문법 — 개체가 대형
+/// 타이틀, 사육장은 유리 캡슐이 세트 드롭다운을 겸한다.
 class _StatsHeader extends ConsumerWidget {
   const _StatsHeader();
 
@@ -80,14 +109,20 @@ class _StatsHeader extends ConsumerWidget {
     final sets = ref.watch(enclosureSetsProvider).valueOrNull ?? const [];
     final current = ref.watch(currentSetProvider).valueOrNull;
     final profile = ref.watch(profileNotifierProvider).valueOrNull;
+    final multi = sets.length > 1;
 
-    return ScreenHeader(
+    // 홈과 같은 캡슐 조건: 개체가 주인공이라 사육장이 보조로 필요하거나,
+    // 세트가 여럿이라 선택기가 필요할 때.
+    final showCapsule = current != null && (current.pet != null || multi);
+
+    return GlassTabHeader(
       title: current == null
           ? 'tab_stats'.tr()
           : (current.pet?.name ?? current.enclosure.name),
-      subtitle: current == null ? null : 'tab_stats'.tr(),
-      onPick: sets.length > 1 ? () => _openPicker(context, ref, sets.length) : null,
-      pickerArrowKey: pickerArrowKey,
+      capsuleLabel: showCapsule ? current.enclosure.name : null,
+      onPickCapsule:
+          multi ? () => _openPicker(context, ref, sets.length) : null,
+      capsuleArrowKey: pickerArrowKey,
       actions: [
         AccountAvatar(
           tooltip: 'home_account'.tr(),
@@ -168,10 +203,18 @@ class _MainChartSection extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
           child: Text(period.chartTitleKey.tr(),
-              style: AppStyles.subsectionTitle(context)),
+              style: AppTheme.glassSectionLabel),
         ),
         const SizedBox(height: AppStyles.spacing8),
-        const StatsSummaryBar(),
+        // 요약은 홈 LiveEnvCard와 같은 유리 카드 — 안의 [StatsSummaryBar]
+        // (스크러버 배선 포함)는 무변경, 감싸는 표면만 A안.
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
+          child: GlassCard(
+            padding: EdgeInsets.symmetric(vertical: AppStyles.spacing12),
+            child: StatsSummaryBar(),
+          ),
+        ),
         // Figma: 요약 하단 → 플롯 상단 16
         const SizedBox(height: AppStyles.spacing16),
         async.when(
@@ -199,26 +242,35 @@ class _MainChartSection extends ConsumerWidget {
                     description: 'stats_no_data_desc'.tr(),
                   ),
                 )
+              // 유리 카드는 겉면만이다 — 차트 내부(격자·창·눈금·스크러버
+              // 동작: 밤 띠 off·손 떼도 유지·✕ 해제)는 홈과 같은 [EnvChart]
+              // 그대로. 홈 EnvMiniChart와 같은 카드 문법이다.
               : Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: EnvChart.outerPadding),
-                  child: EnvChart(
-                    data: d,
-                    window: window,
-                    // 마커 조회 실패는 차트를 막지 않는다 — 곡선이 본체다.
-                    //
-                    // 주간에는 아예 그리지 않는다. 7일치면 수백 개가 14pt
-                    // 칩으로 겹쳐 쌓여, 언제 무엇이 돌았는지 되레 못 읽는다.
-                    markers: weekly
-                        ? const []
-                        : ref.watch(actuatorMarkersProvider).valueOrNull ??
-                            const [],
-                    showTemperature:
-                        metrics.contains(StatsMetric.temperature),
-                    showHumidity: metrics.contains(StatsMetric.humidity),
-                    scrubX: ref.watch(statsScrubProvider),
-                    onScrubChanged: (x) =>
-                        ref.read(statsScrubProvider.notifier).state = x,
+                      horizontal: AppStyles.spacing16),
+                  child: GlassCard(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: EnvChart.outerPadding,
+                      vertical: AppStyles.spacing16,
+                    ),
+                    child: EnvChart(
+                      data: d,
+                      window: window,
+                      // 마커 조회 실패는 차트를 막지 않는다 — 곡선이 본체다.
+                      //
+                      // 주간에는 아예 그리지 않는다. 7일치면 수백 개가 14pt
+                      // 칩으로 겹쳐 쌓여, 언제 무엇이 돌았는지 되레 못 읽는다.
+                      markers: weekly
+                          ? const []
+                          : ref.watch(actuatorMarkersProvider).valueOrNull ??
+                              const [],
+                      showTemperature:
+                          metrics.contains(StatsMetric.temperature),
+                      showHumidity: metrics.contains(StatsMetric.humidity),
+                      scrubX: ref.watch(statsScrubProvider),
+                      onScrubChanged: (x) =>
+                          ref.read(statsScrubProvider.notifier).state = x,
+                    ),
                   ),
                 ),
         ),
