@@ -79,7 +79,9 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
         child: Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        // backgroundColor 미지정 — GlassPageShell의 투명 appBarTheme을 받아
+        // 월페이퍼가 비친다. 셸 위 컨텍스트의 scaffoldBackgroundColor를 넣으면
+        // 유리 효과가 죽는다.
         title: Text(
           'crecam_title'.tr(),
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(

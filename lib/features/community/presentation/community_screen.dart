@@ -32,45 +32,43 @@ class CommunityScreen extends ConsumerWidget {
     final posts = ref.watch(communityPostsProvider);
     final profile = ref.watch(profileNotifierProvider).valueOrNull;
 
-    // A안 표면 규칙은 홈([HomeScreen])과 같다 — 월페이퍼 바닥 + AppTheme.dark
-    // 래핑 + SafeArea(bottom: false). 카테고리·seed 로직은 불변.
-    return Theme(
-      data: AppTheme.dark,
-      child: Scaffold(
-        backgroundColor: AppTheme.glassWallpaperTop,
-        body: Stack(
-          children: [
-            const Positioned.fill(child: WallpaperBackground()),
-            SafeArea(
-              bottom: false,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GlassTabHeader(
-                    title: 'community_title'.tr(),
-                    actions: [
-                      AccountAvatar(
-                        tooltip: 'home_account'.tr(),
-                        imageUrl: profile?.avatarUrl,
-                        displayName: profile?.displayName,
-                        onPressed: () => context.push('/profile'),
-                      ),
-                    ],
-                  ),
-                  _CategoryChips(
-                    selected: selected,
-                    onChanged: (cat) => ref
-                        .read(selectedCommunityCategoryProvider.notifier)
-                        .state = cat,
-                  ),
-                  const SizedBox(height: AppStyles.spacing12),
-                  Expanded(
-                      child: _CategoryBody(selected: selected, posts: posts)),
-                ],
-              ),
+    // A안 표면 규칙은 홈([HomeScreen])과 같다 — 월페이퍼 바닥 +
+    // SafeArea(bottom: false). 다크 팔레트는 앱 전역이 보장한다(`app.dart`).
+    // 카테고리·seed 로직은 불변.
+    return Scaffold(
+      backgroundColor: AppTheme.glassWallpaperTop,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: WallpaperBackground()),
+          SafeArea(
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GlassTabHeader(
+                  title: 'community_title'.tr(),
+                  actions: [
+                    AccountAvatar(
+                      tooltip: 'home_account'.tr(),
+                      imageUrl: profile?.avatarUrl,
+                      displayName: profile?.displayName,
+                      onPressed: () => context.push('/profile'),
+                    ),
+                  ],
+                ),
+                _CategoryChips(
+                  selected: selected,
+                  onChanged: (cat) => ref
+                      .read(selectedCommunityCategoryProvider.notifier)
+                      .state = cat,
+                ),
+                const SizedBox(height: AppStyles.spacing12),
+                Expanded(
+                    child: _CategoryBody(selected: selected, posts: posts)),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

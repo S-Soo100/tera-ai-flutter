@@ -170,6 +170,7 @@ class _TimerPendingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 전역 다크 고정(app.dart) 전제 — 셸 안팎 어디서 읽어도 같은 팔레트다.
     final theme = Theme.of(context);
     return Container(
       key: RoutineSettingsScreen.pendingTimerKey,

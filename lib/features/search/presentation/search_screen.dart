@@ -29,6 +29,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final query = ref.watch(_searchQueryProvider);
     final repo = ref.watch(speciesRepositoryProvider);
     final results = query.isEmpty ? <dynamic>[] : repo.search(query);
+    // GlassPageShell **위** 컨텍스트 캡처지만, 전역이 다크 고정이라(app.dart)
+    // 셸 안팎의 팔레트가 같다 — 셸이 바꾸는 건 배경 투명뿐이다.
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 

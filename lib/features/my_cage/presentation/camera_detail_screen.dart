@@ -113,8 +113,8 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
   Widget build(BuildContext context) {
     final cameraAsync = ref.watch(cameraProvider(widget.cameraId));
 
+    // 배경은 테마가 정한다(전역 다크) — 하드코딩 라이트 색은 규칙 위반이었다.
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,

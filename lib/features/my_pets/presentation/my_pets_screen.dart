@@ -45,53 +45,51 @@ class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
 
     final profile = ref.watch(profileNotifierProvider).valueOrNull;
 
-    // A안 표면 규칙은 홈([HomeScreen])과 같다 — 월페이퍼 바닥 + AppTheme.dark
-    // 래핑 + SafeArea(bottom: false). 탭 전환·CRUD 로직은 불변.
-    return Theme(
-      data: AppTheme.dark,
-      child: Scaffold(
-        backgroundColor: AppTheme.glassWallpaperTop,
-        body: Stack(
-          children: [
-            const Positioned.fill(child: WallpaperBackground()),
-            SafeArea(
-              bottom: false,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 홈·통계와 같은 헤더 문법. 탭마다 제목 스타일이 다르면
-                  // 탭을 옮길 때마다 다른 앱처럼 보인다.
-                  GlassTabHeader(
-                    title: 'my_pets_title'.tr(),
-                    actions: [
-                      HeaderAction(
-                        icon: Icons.add,
-                        tooltip: 'my_pets_add'.tr(),
-                        onPressed: () => context.push('/my-pets/add'),
-                      ),
-                      AccountAvatar(
-                        tooltip: 'home_account'.tr(),
-                        imageUrl: profile?.avatarUrl,
-                        displayName: profile?.displayName,
-                        onPressed: () => context.push('/profile'),
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppStyles.spacing16),
-                    child: _TabChips(
-                      selected: _selected,
-                      onChanged: (t) => setState(() => _selected = t),
+    // A안 표면 규칙은 홈([HomeScreen])과 같다 — 월페이퍼 바닥 +
+    // SafeArea(bottom: false). 다크 팔레트는 앱 전역이 보장한다(`app.dart`).
+    // 탭 전환·CRUD 로직은 불변.
+    return Scaffold(
+      backgroundColor: AppTheme.glassWallpaperTop,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: WallpaperBackground()),
+          SafeArea(
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 홈·통계와 같은 헤더 문법. 탭마다 제목 스타일이 다르면
+                // 탭을 옮길 때마다 다른 앱처럼 보인다.
+                GlassTabHeader(
+                  title: 'my_pets_title'.tr(),
+                  actions: [
+                    HeaderAction(
+                      icon: Icons.add,
+                      tooltip: 'my_pets_add'.tr(),
+                      onPressed: () => context.push('/my-pets/add'),
                     ),
+                    AccountAvatar(
+                      tooltip: 'home_account'.tr(),
+                      imageUrl: profile?.avatarUrl,
+                      displayName: profile?.displayName,
+                      onPressed: () => context.push('/profile'),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppStyles.spacing16),
+                  child: _TabChips(
+                    selected: _selected,
+                    onChanged: (t) => setState(() => _selected = t),
                   ),
-                  const SizedBox(height: AppStyles.spacing16),
-                  Expanded(child: _tabContent(_selected, pets)),
-                ],
-              ),
+                ),
+                const SizedBox(height: AppStyles.spacing16),
+                Expanded(child: _tabContent(_selected, pets)),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

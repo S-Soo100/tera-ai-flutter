@@ -16,9 +16,12 @@ class App extends ConsumerWidget {
     return MaterialApp.router(
       title: 'app_name'.tr(),
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
+      // A안 Liquid Glass는 **단일 룩**이다 — 모든 화면이 어두운 월페이퍼 위
+      // 유리 표면이라, 시스템 라이트/다크를 따르면 절반의 위젯이 안 읽힌다.
+      // 화면마다 Theme(data: AppTheme.dark)로 감싸던 것을 여기로 올렸다(2026-08-14).
+      theme: AppTheme.dark,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
       builder: (context, child) {
         final mq = MediaQuery.of(context);

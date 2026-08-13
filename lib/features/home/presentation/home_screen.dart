@@ -28,10 +28,8 @@ import 'widgets/top_fixed_area.dart';
 ///
 /// A안 표면 규칙(2026-08-13):
 /// - 바닥은 [WallpaperBackground](월페이퍼), UI는 그 위 유리 레이어.
-/// - **트리 전체를 [AppTheme.dark]로 감싼다.** 어두운 월페이퍼 위라 테마색을
-///   읽는 기존 위젯(EnvSummaryBar·타임라인·오프라인 배너 등)이 다크 팔레트로
-///   그려져야 읽힌다 — 위젯 내부는 건드리지 않고 주변 테마만 바꾼 것이다.
-///   이 화면에서 띄우는 시트·다이얼로그도 같은 테마를 이어받는다(의도).
+/// - 다크 팔레트는 **앱 전역**이 보장한다(`app.dart`의 `themeMode: dark`,
+///   2026-08-14) — 화면별 Theme 래핑은 걷어냈다.
 /// - `SafeArea(bottom: false)` — 콘텐츠가 플로팅 독 뒤로 스크롤되고,
 ///   스크롤 뷰가 `MediaQuery.padding.bottom`(독 높이)을 소비한다.
 class HomeScreen extends ConsumerStatefulWidget {
@@ -56,51 +54,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final tab = ref.watch(homeSubTabProvider);
     _visited.add(tab);
 
-    return Theme(
-      data: AppTheme.dark,
-      child: Scaffold(
-        backgroundColor: AppTheme.glassWallpaperTop,
-        body: Stack(
-          children: [
-            const Positioned.fill(child: WallpaperBackground()),
-            SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  const HomeHeaderBar(),
-                  // 라이브/프로필 면을 유리 카드 모양으로 — 내부(LiveSurface·
-                  // 오버레이 슬롯)는 무변경, 감싸는 모서리·여백만 A안.
-                  const Padding(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: AppStyles.spacing16),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.all(
-                          Radius.circular(AppTheme.glassTileRadius)),
-                      child: TopFixedArea(),
-                    ),
+    return Scaffold(
+      backgroundColor: AppTheme.glassWallpaperTop,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: WallpaperBackground()),
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                const HomeHeaderBar(),
+                // 라이브/프로필 면을 유리 카드 모양으로 — 내부(LiveSurface·
+                // 오버레이 슬롯)는 무변경, 감싸는 모서리·여백만 A안.
+                const Padding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: AppStyles.spacing16),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.all(
+                        Radius.circular(AppTheme.glassTileRadius)),
+                    child: TopFixedArea(),
                   ),
-                  const SizedBox(height: AppStyles.spacing12),
-                  const HomeSubTabsBar(),
-                  Expanded(
-                    child: IndexedStack(
-                      index: tab == HomeSubTab.control ? 0 : 1,
-                      children: [
-                        if (_visited.contains(HomeSubTab.control))
-                          const _ControlContainer()
-                        else
-                          const SizedBox.shrink(),
-                        if (_visited.contains(HomeSubTab.timeline))
-                          const _TimelineContainer()
-                        else
-                          const SizedBox.shrink(),
-                      ],
-                    ),
+                ),
+                const SizedBox(height: AppStyles.spacing12),
+                const HomeSubTabsBar(),
+                Expanded(
+                  child: IndexedStack(
+                    index: tab == HomeSubTab.control ? 0 : 1,
+                    children: [
+                      if (_visited.contains(HomeSubTab.control))
+                        const _ControlContainer()
+                      else
+                        const SizedBox.shrink(),
+                      if (_visited.contains(HomeSubTab.timeline))
+                        const _TimelineContainer()
+                      else
+                        const SizedBox.shrink(),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
