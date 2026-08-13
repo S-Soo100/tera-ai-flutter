@@ -28,18 +28,33 @@ final currentDeviceIdProvider =
 final chartWindowProvider =
     Provider.autoDispose<ChartWindow>((ref) => ChartWindow.of(DateTime.now()));
 
+/// [window] 구간의 30분 버킷을 조회한다. **일간·주간이 같은 조회를 쓴다** —
+/// 쿼리를 두 벌로 복사하면 한쪽만 고쳐진 채로 남는다(마커 조회부와 같은 이유).
+///
+/// [to]는 창마다 의미가 달라 **호출자가 명시한다**:
+/// - 일간(`ChartWindow.of`)은 `w.now` — 창 끝이 미래라, 없는 시간을 물어볼
+///   이유가 없다.
+/// - 주간(`ChartWindow.weekly`)은 `w.end` — 창 전체가 과거(직전 07:00까지)라
+///   `now`까지 당기면 진행 중인 오늘 몫이 딸려와 rollup이 도로 버린다.
+Future<List<TelemetryBucket>> fetchChartBuckets(
+  Ref ref,
+  ChartWindow window, {
+  required DateTime to,
+}) async {
+  final deviceId = await ref.watch(currentDeviceIdProvider.future);
+  if (deviceId == null) return const [];
+  return ref
+      .watch(supabaseModuleControlRepositoryProvider)
+      .telemetryHistory(deviceId, window.start, to: to);
+}
+
 /// 차트 창에 해당하는 온습도 버킷.
 ///
 /// 당일 창([todayBucketsProvider])과 **다른 구간**이니 혼용하지 말 것.
-/// 조회 끝은 창 끝(미래)이 아니라 **지금**이다 — 없는 시간을 물어볼 이유가 없다.
 final chartBucketsProvider =
-    FutureProvider.autoDispose<List<TelemetryBucket>>((ref) async {
-  final deviceId = await ref.watch(currentDeviceIdProvider.future);
-  if (deviceId == null) return const [];
+    FutureProvider.autoDispose<List<TelemetryBucket>>((ref) {
   final w = ref.watch(chartWindowProvider);
-  return ref
-      .watch(supabaseModuleControlRepositoryProvider)
-      .telemetryHistory(deviceId, w.start, to: w.now);
+  return fetchChartBuckets(ref, w, to: w.now);
 });
 
 /// 차트에 바로 그릴 수 있게 정리된 데이터.

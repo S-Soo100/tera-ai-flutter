@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../home/presentation/home_control_providers.dart';
 import '../../my_cage/domain/telemetry_bucket.dart';
-import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../../../shared/domain/chart_window.dart';
 import '../../../shared/domain/env_chart_data.dart';
 import '../../../shared/domain/env_extremes.dart';
@@ -14,16 +13,14 @@ final weeklyWindowProvider = Provider.autoDispose<ChartWindow>(
     (ref) => ChartWindow.weekly(DateTime.now()));
 
 /// 주간 창의 30분 버킷 원본. 7일 × 48 = 최대 336행.
+///
+/// 조회는 일간과 같은 [fetchChartBuckets] 한 벌이다 — 여기는 창 공급과
+/// 하루 접기([rollupByDay])만 맡는다. 끝은 창 끝(직전 07:00)이다: now까지
+/// 당기면 진행 중인 오늘 몫이 딸려와 창 밖 데이터를 rollup이 도로 버린다.
 final _weeklyRawBucketsProvider =
-    FutureProvider.autoDispose<List<TelemetryBucket>>((ref) async {
-  final deviceId = await ref.watch(currentDeviceIdProvider.future);
-  if (deviceId == null) return const [];
+    FutureProvider.autoDispose<List<TelemetryBucket>>((ref) {
   final w = ref.watch(weeklyWindowProvider);
-  // 창 끝(직전 07:00)까지다 — now까지 당기면 진행 중인 오늘 몫이 딸려와
-  // 창 밖 데이터를 rollup이 도로 버리는 낭비만 생긴다.
-  return ref
-      .watch(supabaseModuleControlRepositoryProvider)
-      .telemetryHistory(deviceId, w.start, to: w.end);
+  return fetchChartBuckets(ref, w, to: w.end);
 });
 
 /// 하루 단위로 접은 7칸. 주간 차트와 분포 바가 **같은 값**을 쓴다 —
