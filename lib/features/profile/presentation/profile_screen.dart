@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../auth/data/auth_repository.dart';
 import '../domain/user_profile.dart';
@@ -101,7 +102,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
+    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 프로필/로그아웃 로직 불변.
+    return GlassPageShell(
+        child: Scaffold(
       appBar: AppBar(title: Text('profile_title'.tr())),
       body: profileAsync.when(
         loading: () => const SkeletonPageLoading(cardCount: 3),
@@ -220,6 +223,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
         },
       ),
-    );
+    ));
   }
 }

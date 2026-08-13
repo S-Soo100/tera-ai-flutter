@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_styles.dart';
+import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import 'wiki_providers.dart';
 
@@ -47,7 +48,9 @@ class WikiScreen extends ConsumerWidget {
     final selectedSpecies = ref.watch(selectedWikiSpeciesProvider);
     final careInfoAsync = ref.watch(careInfoProvider(selectedSpecies));
 
-    return Scaffold(
+    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 위키 데이터 로직 불변.
+    return GlassPageShell(
+        child: Scaffold(
       appBar: AppBar(
         title: const Text('사육 위키'),
       ),
@@ -194,7 +197,7 @@ class WikiScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }
 

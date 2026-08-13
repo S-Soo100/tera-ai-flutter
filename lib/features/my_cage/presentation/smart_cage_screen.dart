@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../../shared/widgets/glass_page_shell.dart';
 import '../domain/device.dart';
 import 'supabase_module_providers.dart';
 import 'widgets/actuator_controls.dart';
@@ -18,7 +19,9 @@ class SmartCageScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final deviceListAsync = ref.watch(deviceListProvider);
 
-    return Scaffold(
+    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 제어/페어링 로직 불변.
+    return GlassPageShell(
+        child: Scaffold(
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -56,7 +59,7 @@ class SmartCageScreen extends ConsumerWidget {
           return _DeviceBody(devices: devices);
         },
       ),
-    );
+    ));
   }
 }
 
@@ -267,7 +270,9 @@ class _SkeletonCard extends StatelessWidget {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white,
+        // 하드코딩 흰색이었다 — 어두운 월페이퍼 위에서 스켈레톤이 화면에서
+        // 제일 밝은 조각이 된다. 테마 표면색에 맡긴다.
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(20),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/app_tag.dart';
+import '../../../shared/widgets/glass_page_shell.dart';
 import '../../home/presentation/home_providers.dart';
 import '../../wiki/presentation/wiki_providers.dart';
 
@@ -31,7 +32,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
+    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 검색 로직 불변.
+    return GlassPageShell(
+        child: Scaffold(
       appBar: AppBar(
         title: TextField(
           controller: _controller,
@@ -95,6 +98,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     );
                   },
                 ),
-    );
+    ));
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_styles.dart';
+import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../home/domain/enclosure_set.dart';
 import '../../home/presentation/home_set_providers.dart';
@@ -23,35 +24,38 @@ class EnclosureSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('home_enclosure_settings'.tr())),
-      body: ListView(
-        children: [
-          if (kPetEnclosureAssignmentEnabled) ...[
-            const Padding(
-              padding: EdgeInsets.fromLTRB(AppStyles.spacing16,
-                  AppStyles.spacing16, AppStyles.spacing16, 0),
-              child: _AssignmentHeader(),
+    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 배정/페어링 로직 불변.
+    return GlassPageShell(
+      child: Scaffold(
+        appBar: AppBar(title: Text('home_enclosure_settings'.tr())),
+        body: ListView(
+          children: [
+            if (kPetEnclosureAssignmentEnabled) ...[
+              const Padding(
+                padding: EdgeInsets.fromLTRB(AppStyles.spacing16,
+                    AppStyles.spacing16, AppStyles.spacing16, 0),
+                child: _AssignmentHeader(),
+              ),
+              const PetAssignmentSection(),
+              const Divider(height: AppStyles.spacing32),
+            ],
+            ListTile(
+              leading: const Icon(Icons.add_circle_outline),
+              title: Text('enclosure_settings_add_device'.tr()),
+              onTap: () => context.push('/smart-cage/devices/pair'),
             ),
-            const PetAssignmentSection(),
-            const Divider(height: AppStyles.spacing32),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined),
+              title: Text('enclosure_settings_add_camera'.tr()),
+              onTap: () => context.push('/crecam/cameras/pair'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.view_in_ar_outlined),
+              title: Text('enclosure_settings_manage'.tr()),
+              onTap: () => context.push('/smart-cage/enclosures'),
+            ),
           ],
-          ListTile(
-            leading: const Icon(Icons.add_circle_outline),
-            title: Text('enclosure_settings_add_device'.tr()),
-            onTap: () => context.push('/smart-cage/devices/pair'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.videocam_outlined),
-            title: Text('enclosure_settings_add_camera'.tr()),
-            onTap: () => context.push('/crecam/cameras/pair'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.view_in_ar_outlined),
-            title: Text('enclosure_settings_manage'.tr()),
-            onTap: () => context.push('/smart-cage/enclosures'),
-          ),
-        ],
+        ),
       ),
     );
   }

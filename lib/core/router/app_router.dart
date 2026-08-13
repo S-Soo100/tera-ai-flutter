@@ -342,12 +342,8 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 유리 전경색은 **바닥**을 따라간다. 홈 탭은 항상 어두운 월페이퍼이고,
-    // 아직 전환 전인 나머지 탭은 테마 밝기를 따른다. 전 탭이 월페이퍼로
-    // 넘어오면 이 분기는 `true` 고정이 된다.
-    final onDark = navigationShell.currentIndex == 0 ||
-        Theme.of(context).brightness == Brightness.dark;
-
+    // 유리 전경색은 **바닥**을 따라간다. 4탭 전부가 월페이퍼(항상 어두움)로
+    // 넘어왔으므로(2026-08-13) 분기 없이 항상 밝은 전경이다.
     return Scaffold(
       extendBody: true,
       body: navigationShell,
@@ -359,7 +355,6 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GlassDock(
-                onDark: onDark,
                 currentIndex: navigationShell.currentIndex,
                 onSelected: (index) {
                   navigationShell.goBranch(
