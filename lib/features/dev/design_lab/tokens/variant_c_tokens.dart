@@ -87,4 +87,15 @@ abstract final class VariantCTokens {
   // ── 스페이싱 ──
   static const double screenHPad = 16;
   static const double cardGap = 12;
+
+  // ── 하단 탭바 (라이트 라운드 파스텔) ──
+  static const tabBar = Colors.white;
+  static const tabActiveBg = Color(0xFFEDEBFF); // 라벤더 파스텔
+  static const tabActive = Color(0xFF8B5CF6);
+  static const tabInactive = Color(0xFFB6B6BC);
+  static const double tabBarRadius = 26;
+  static const tabLabel = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+  );
 }
