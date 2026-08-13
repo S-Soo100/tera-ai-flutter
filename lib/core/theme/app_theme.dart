@@ -183,6 +183,92 @@ class AppTheme {
             )
           : (bg: lightBg, fg: base);
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // Liquid Glass 디자인 시스템 (A안 — Apple Home iOS 26, 2026-08-13 확정)
+  // 출처: `lib/features/dev/design_lab/tokens/variant_a_tokens.dart` +
+  //       `docs/design-lab-benchmark-specs.md` A안.
+  // 문법: **월페이퍼(그라데이션)가 바닥**이고 UI는 그 위에 뜬 반투명 유리 레이어.
+  // 라이트/다크 공통 단일 룩 — 월페이퍼 기반이라 테마 분기가 없다.
+  // 기존 brandNavy 등 구 토큰은 아직 다른 화면이 참조하므로 유지한다(단계 이전).
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── 월페이퍼 (딥 그라데이션: 네이비→틸, 비바나트 브랜드 도출) ──
+  static const glassWallpaperTop = Color(0xFF141E45); // brandNavy 근방
+  static const glassWallpaperMid = Color(0xFF1B3A5C);
+  static const glassWallpaperBottom = Color(0xFF0F5E5A); // 틸
+
+  // ── 유리 표면 ──
+  static const double glassBlurSigma = 24;
+  static const glassOverlay = Color(0x24FFFFFF); // 흰색 ~14%
+  static const glassOverlayStrong = Color(0x2EFFFFFF); // ~18%
+  static const glassBorder = Color(0x33FFFFFF);
+  static const double glassTileRadius = 26;
+
+  /// 활성 타일 — 유리가 아니라 **불투명 흰색**으로 전환된다(Apple Home 문법).
+  static const glassActiveTile = Color(0xFFF7F7FA);
+
+  // ── 기기 틴트 (활성 타일 아이콘·센서 칩) ──
+  static const deviceHeaterTint = Color(0xFFFF8F45); // 히터 주황
+  static const deviceMistTint = Color(0xFF4AA8FF); // 분무 파랑
+  static const deviceLedTint = Color(0xFFFFC93C); // LED 노랑
+  static const deviceFanTint = Color(0xFF4FD8C4); // 팬 민트
+
+  // ── 유리 위 텍스트 위계 ──
+  static const glassTextPrimary = Colors.white;
+  static const glassTextSecondary = Color(0x99FFFFFF); // 60%
+  static const glassTextTertiary = Color(0x4DFFFFFF); // 30% — 비활성
+  static const glassTextOnActive = Color(0xFF1C1C1E); // 불투명 흰 타일 위
+  static const glassTextOnActiveSecondary = Color(0x991C1C1E);
+
+  /// LIVE 배지 빨강 (iOS 시스템 레드 계열).
+  static const glassLiveRed = Color(0xFFFF453A);
+
+  // ── 유리 위 타이포 (Pretendard 명시 — 유리 위젯은 테마 밖에서도 쓰인다) ──
+  static const glassHeaderTitle = TextStyle(
+    fontFamily: _pretendard,
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    color: glassTextPrimary,
+    height: 1.15,
+  );
+  static const glassTileTitle = TextStyle(
+    fontFamily: _pretendard,
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    color: glassTextPrimary,
+  );
+  static const glassTileTitleActive = TextStyle(
+    fontFamily: _pretendard,
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    color: glassTextOnActive,
+  );
+  static const glassTileStatus = TextStyle(
+    fontFamily: _pretendard,
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: glassTextSecondary,
+  );
+  static const glassTileStatusActive = TextStyle(
+    fontFamily: _pretendard,
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: glassTextOnActiveSecondary,
+  );
+  static const glassSectionLabel = TextStyle(
+    fontFamily: _pretendard,
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: glassTextSecondary,
+  );
+  static const glassChipValue = TextStyle(
+    fontFamily: _pretendard,
+    fontSize: 17,
+    fontWeight: FontWeight.w600,
+    color: glassTextPrimary,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
   // ── 다크 테마 전용 — ⚠️ Figma에 다크 팔레트가 없어 이 앱이 도출한 값 ──
 
   /// 다크에서의 메인컬러.
