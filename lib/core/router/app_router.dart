@@ -38,6 +38,7 @@ import '../../features/stats/presentation/stats_screen.dart';
 import '../../features/notification/presentation/notification_center_screen.dart';
 import '../../features/my_cage/presentation/enclosure_settings_screen.dart';
 import '../../features/home/presentation/routine_settings_screen.dart';
+import '../../shared/widgets/glass_dock.dart';
 import 'tab_branches.dart';
 
 /// 인증 상태 변경 시 redirect만 재평가 (GoRouter 재생성 방지)
@@ -325,6 +326,15 @@ GoRouter buildAppRouter({
 }
 
 
+/// 4탭 셸 — A안(Liquid Glass) 플로팅 유리 독.
+///
+/// `extendBody: true`라 탭 콘텐츠가 독 **뒤로** 스크롤되어 blur에 비친다.
+/// 대신 Scaffold가 body의 `MediaQuery.padding.bottom`에 독 높이를 더해주므로,
+/// 각 탭 스크롤 뷰는 그 패딩을 소비해야 마지막 항목이 독에 가려지지 않는다
+/// (padding을 안 준 ListView는 자동, CustomScrollView는 직접).
+///
+/// 네비게이션 로직(goBranch·initialLocation)은 NavigationBar 시절 그대로다 —
+/// 표면만 [GlassDock]으로 바뀌었다. 스크롤 축소 모션은 후속.
 class _ScaffoldWithBottomNav extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -332,40 +342,57 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 유리 전경색은 **바닥**을 따라간다. 홈 탭은 항상 어두운 월페이퍼이고,
+    // 아직 전환 전인 나머지 탭은 테마 밝기를 따른다. 전 탭이 월페이퍼로
+    // 넘어오면 이 분기는 `true` 고정이 된다.
+    final onDark = navigationShell.currentIndex == 0 ||
+        Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      extendBody: true,
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        height: 65,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
-        },
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home),
-            label: kHomeTabLabelKeys[0].tr(),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              GlassDock(
+                onDark: onDark,
+                currentIndex: navigationShell.currentIndex,
+                onSelected: (index) {
+                  navigationShell.goBranch(
+                    index,
+                    initialLocation: index == navigationShell.currentIndex,
+                  );
+                },
+                items: [
+                  GlassDockItem(
+                    icon: Icons.home_outlined,
+                    selectedIcon: Icons.home,
+                    label: kHomeTabLabelKeys[0].tr(),
+                  ),
+                  GlassDockItem(
+                    icon: Icons.insights_outlined,
+                    selectedIcon: Icons.insights,
+                    label: kHomeTabLabelKeys[1].tr(),
+                  ),
+                  GlassDockItem(
+                    icon: Icons.pets_outlined,
+                    selectedIcon: Icons.pets,
+                    label: kHomeTabLabelKeys[2].tr(),
+                  ),
+                  GlassDockItem(
+                    icon: Icons.chat_bubble_outline,
+                    selectedIcon: Icons.chat_bubble,
+                    label: kHomeTabLabelKeys[3].tr(),
+                  ),
+                ],
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.insights_outlined),
-            selectedIcon: const Icon(Icons.insights),
-            label: kHomeTabLabelKeys[1].tr(),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.pets_outlined),
-            selectedIcon: const Icon(Icons.pets),
-            label: kHomeTabLabelKeys[2].tr(),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.chat_bubble_outline),
-            selectedIcon: const Icon(Icons.chat_bubble),
-            label: kHomeTabLabelKeys[3].tr(),
-          ),
-        ],
+        ),
       ),
     );
   }
