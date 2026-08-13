@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/inline_retry.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/nightly_highlight.dart';
@@ -28,10 +29,10 @@ class NightlyReportView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(nightlyReportProvider);
-    // 하단은 플로팅 독 높이(MediaQuery.padding.bottom)를 직접 소비한다 —
+    // 하단은 플로팅 독 높이를 [glassDockListPadding]이 직접 소비한다 —
     // padding을 명시한 ListView는 자동 인셋이 꺼져 마지막 카드가 독에 가려진다.
-    final padding = AppStyles.pagePadding
-        .add(EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom));
+    final padding =
+        glassDockListPadding(context, base: AppStyles.pagePadding);
     return async.when(
       loading: () => ListView(
         padding: padding,

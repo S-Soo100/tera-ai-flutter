@@ -49,7 +49,9 @@ class GlassCard extends StatelessWidget {
           borderRadius: borderRadius,
           border: Border.all(color: AppTheme.glassBorder, width: 0.5),
         ),
-        child: child,
+        // 안에 InkWell을 두는 카드(독·서브탭·세그먼트)의 리플이 앉을 면.
+        // 이게 없으면 잉크가 카드 뒤 불투명 월페이퍼에 그려져 안 보인다.
+        child: Material(type: MaterialType.transparency, child: child),
       );
     } else {
       body = Material(

@@ -9,6 +9,7 @@ import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/account_avatar.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_segmented_control.dart';
 import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/screen_header.dart';
@@ -140,13 +141,9 @@ class _PetListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       // 헤더와 같은 16pt. 예전엔 20이라 제목보다 4pt 안쪽으로 들어가 있었다.
-      // 하단은 플로팅 독 높이(MediaQuery.padding.bottom)를 직접 소비한다 —
-      // padding을 명시한 ListView는 자동 인셋이 꺼진다.
-      padding: EdgeInsets.fromLTRB(
-          AppStyles.spacing16,
-          0,
-          AppStyles.spacing16,
-          AppStyles.spacing24 + MediaQuery.paddingOf(context).bottom),
+      // 하단은 플로팅 독 높이를 [glassDockListPadding]이 직접 소비한다.
+      padding: glassDockListPadding(context,
+          base: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16)),
       children: [
         ...pets.map((pet) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -352,42 +349,47 @@ class _AddPetCard extends StatelessWidget {
     final theme = Theme.of(context);
     // 채운 유리 카드가 아니라 **빈 틀**이다 — 개체 카드와 같은 모양이면
     // "내용이 있는데 비었다"로 읽힌다. 테두리만 유리 토큰으로 맞춘다.
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () => context.push('/my-pets/add'),
-      child: Container(
-        padding: const EdgeInsets.all(AppStyles.spacing24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppTheme.glassBorder,
-            style: BorderStyle.solid,
-            width: 1.5,
+    // Material(transparency)은 리플이 앉을 면 — 없으면 잉크가 불투명
+    // 월페이퍼 뒤에 그려져 눌러도 반응이 안 보인다.
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => context.push('/my-pets/add'),
+        child: Container(
+          padding: const EdgeInsets.all(AppStyles.spacing24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppTheme.glassBorder,
+              style: BorderStyle.solid,
+              width: 1.5,
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.add,
-              size: 32,
-              color: AppTheme.glassTextSecondary,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'my_pets_add_new_title'.tr(),
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'my_pets_add_new_subtitle'.tr(),
-              style: theme.textTheme.bodySmall?.copyWith(
+          child: Column(
+            children: [
+              const Icon(
+                Icons.add,
+                size: 32,
                 color: AppTheme.glassTextSecondary,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                'my_pets_add_new_title'.tr(),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'my_pets_add_new_subtitle'.tr(),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppTheme.glassTextSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );

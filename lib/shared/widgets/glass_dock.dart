@@ -1,7 +1,22 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_styles.dart';
 import '../../core/theme/app_theme.dart';
 import 'glass_card.dart';
+
+/// 플로팅 독 아래로 스크롤되는 리스트의 padding.
+///
+/// `extendBody: true`라 Scaffold가 body의 `MediaQuery.padding.bottom`에 독
+/// 높이를 더해준다 — padding을 **명시한** 스크롤 뷰는 그 자동 인셋이 꺼지므로,
+/// 마지막 항목(저장 버튼·카드)이 독에 가려지지 않게 이 헬퍼로 직접 소비한다.
+/// 화면마다 수기로 더하면 한 곳만 빠뜨려도 조용히 가려진다.
+EdgeInsets glassDockListPadding(BuildContext context,
+    {EdgeInsets base = EdgeInsets.zero}) {
+  return base +
+      EdgeInsets.only(
+        bottom: AppStyles.spacing24 + MediaQuery.paddingOf(context).bottom,
+      );
+}
 
 /// 독 항목 하나. 아이콘 쌍(기본/선택) + 라벨.
 class GlassDockItem {
@@ -46,8 +61,9 @@ class GlassDock extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedColor =
         onDark ? AppTheme.glassTextPrimary : AppTheme.glassTextOnActive;
-    final unselectedColor =
-        onDark ? AppTheme.glassTextSecondary : AppTheme.glassTextOnActiveSecondary;
+    final unselectedColor = onDark
+        ? AppTheme.glassTextSecondary
+        : AppTheme.glassTextOnActiveSecondary;
 
     return GlassCard(
       radius: 100,
@@ -88,29 +104,42 @@ class _DockButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = selected ? selectedColor : unselectedColor;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(100),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(selected ? item.selectedIcon : item.icon,
-                size: 22, color: color),
-            const SizedBox(height: 2),
-            Text(
-              item.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 10,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                color: color,
-              ),
+    // 라벨은 Semantics가 말한다 — 안의 아이콘·텍스트까지 읽히면 겹말이 된다.
+    return Semantics(
+      button: true,
+      selected: selected,
+      inMutuallyExclusiveGroup: true,
+      label: item.label,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(100),
+        // 접근성 히트 타깃 48dp 보장 — 콘텐츠만으로는 ~46dp라 살짝 모자란다.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(selected ? item.selectedIcon : item.icon,
+                    size: 22, color: color),
+                const SizedBox(height: 2),
+                Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 10,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: color,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

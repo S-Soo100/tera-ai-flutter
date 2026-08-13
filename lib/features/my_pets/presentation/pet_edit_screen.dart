@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../../wiki/presentation/wiki_providers.dart';
@@ -166,7 +167,8 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
       }
       final ext = _selectedPhoto!.path.split('.').last;
       final fileName = '${const Uuid().v4()}.$ext';
-      final savedFile = await _selectedPhoto!.copy('${petPhotosDir.path}/$fileName');
+      final savedFile =
+          await _selectedPhoto!.copy('${petPhotosDir.path}/$fileName');
       original.photoPath = savedFile.path;
     }
 
@@ -200,7 +202,9 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          // 하단은 플로팅 독 높이까지 비운다 — 안 그러면 저장 버튼이 독에 가려진다.
+          padding: glassDockListPadding(context,
+              base: const EdgeInsets.fromLTRB(16, 16, 16, 0)),
           children: [
             // 사진
             PhotoPickerButton(

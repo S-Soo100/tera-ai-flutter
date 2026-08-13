@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/wallpaper_background.dart';
 import '../domain/device_mode.dart';
 import 'home_set_providers.dart';
@@ -158,9 +159,7 @@ class _TimelineContainer extends StatelessWidget {
         // CustomScrollView는 ListView와 달리 MediaQuery 패딩을 자동 소비하지
         // 않는다 — 플로팅 독 높이만큼 직접 비워야 마지막 클립이 안 가려진다.
         SliverToBoxAdapter(
-          child: SizedBox(
-            height: AppStyles.spacing24 + MediaQuery.paddingOf(context).bottom,
-          ),
+          child: SizedBox(height: glassDockListPadding(context).bottom),
         ),
       ],
     );

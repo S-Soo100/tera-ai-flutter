@@ -11,6 +11,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/pending_section.dart';
+import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/wallpaper_background.dart';
 import '../../home/presentation/home_control_providers.dart';
 import '../../home/presentation/home_set_providers.dart';
@@ -65,10 +66,7 @@ class StatsScreen extends ConsumerWidget {
                   )
                 : Builder(
                     builder: (context) => ListView(
-                      padding: EdgeInsets.only(
-                        bottom: AppStyles.spacing24 +
-                            MediaQuery.paddingOf(context).bottom,
-                      ),
+                      padding: glassDockListPadding(context),
                       children: const [
                         _StatsHeader(),
                         StatsPeriodBar(),

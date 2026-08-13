@@ -10,6 +10,7 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_chip.dart';
 import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/pending_section.dart';
+import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/wallpaper_background.dart';
 import '../../profile/presentation/profile_providers.dart';
 import '../domain/community_post.dart';
@@ -99,10 +100,9 @@ class _CategoryBody extends StatelessWidget {
         selected == CommunityCategory.all;
 
     return ListView(
-      // 하단은 플로팅 독 높이(MediaQuery.padding.bottom)를 직접 소비한다 —
+      // 하단은 플로팅 독 높이를 [glassDockListPadding]이 직접 소비한다 —
       // padding을 명시한 ListView는 자동 인셋이 꺼진다.
-      padding: EdgeInsets.fromLTRB(0, 0, 0,
-          AppStyles.spacing24 + MediaQuery.paddingOf(context).bottom),
+      padding: glassDockListPadding(context),
       children: [
         if (showWiki) ...[
           Padding(
