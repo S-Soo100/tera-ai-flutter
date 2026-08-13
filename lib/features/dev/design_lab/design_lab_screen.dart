@@ -31,8 +31,8 @@ class DesignLabScreen extends StatelessWidget {
           _VariantCard(
             label: 'A안',
             title: 'Apple Home — Liquid Glass',
-            summary: '딥 월페이퍼 위 유리 타일. 반투명 레이어, '
-                '2×2 액세서리 그리드, 스프링 스케일 탭.',
+            summary: '실앱에 적용된 현행 디자인(홈 미리보기). '
+                '딥 월페이퍼 위 유리 타일, 2×2 그리드, 스프링 스케일 탭.',
             colors: const [
               VariantATokens.wallpaperTop,
               VariantATokens.wallpaperBottom,
@@ -45,8 +45,8 @@ class DesignLabScreen extends StatelessWidget {
           _VariantCard(
             label: 'B안',
             title: 'Flighty — 공항 전광판',
-            summary: '다크 고정 라이브 대시보드. 전광판 위계, '
-                '밤 활동 진행 바, 수직 스텝 타임라인, 카운트업.',
+            summary: '4탭 풀 체험(홈·통계·마이크레·커뮤니티). '
+                '다크 전광판 위계, FIDS 보드, 보딩패스 개체 카드.',
             colors: const [
               VariantBTokens.background,
               VariantBTokens.card,
@@ -59,8 +59,8 @@ class DesignLabScreen extends StatelessWidget {
           _VariantCard(
             label: 'C안',
             title: 'Copilot Money — 데이터 시각화',
-            summary: '웜 화이트 + 그라데이션 차트 + 초대형 수치. '
-                '파스텔 카테고리 카드, 차트 reveal 애니메이션.',
+            summary: '4탭 풀 체험(홈·통계·마이크레·커뮤니티). '
+                '웜 화이트 + 그라데이션 차트 + 파스텔 카드/도넛.',
             colors: const [
               VariantCTokens.background,
               VariantCTokens.tempGradStart,
