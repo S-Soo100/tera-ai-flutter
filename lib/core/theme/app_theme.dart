@@ -201,6 +201,7 @@ class AppTheme {
   static const double glassBlurSigma = 24;
   static const glassOverlay = Color(0x24FFFFFF); // 흰색 ~14%
   static const glassOverlayStrong = Color(0x2EFFFFFF); // ~18%
+  static const glassOverlayFaint = Color(0x14FFFFFF); // ~8% — 비활성 표면
   static const glassBorder = Color(0x33FFFFFF);
   static const double glassTileRadius = 26;
 

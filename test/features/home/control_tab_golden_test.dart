@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/core/theme/app_theme.dart';
 import 'package:vivnanaut/shared/domain/env_extremes.dart';
+import 'package:vivnanaut/shared/widgets/wallpaper_background.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/env_mini_chart.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/live_env_card.dart';
@@ -131,20 +132,32 @@ Future<void> _shoot(
             theme: brightness == Brightness.dark
                 ? AppTheme.dark
                 : AppTheme.light,
-            home: const Scaffold(
-              body: SafeArea(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(height: 12),
-                      LiveEnvCard(),
-                      EnvMiniChart(),
-                      SizedBox(height: 16),
-                      QuickControlGrid(),
-                      SizedBox(height: 24),
-                    ],
-                  ),
+            // A안(Liquid Glass) 이후 홈은 라이트/다크 모두 **월페이퍼 + 다크
+            // 테마 래핑** 단일 룩이다(HomeScreen과 같은 조건). 맨 Scaffold에
+            // 찍으면 유리가 받칠 바닥이 없어 실제 화면과 전혀 달라진다.
+            home: Theme(
+              data: AppTheme.dark,
+              child: const Scaffold(
+                backgroundColor: AppTheme.glassWallpaperTop,
+                body: Stack(
+                  children: [
+                    Positioned.fill(child: WallpaperBackground()),
+                    SafeArea(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SizedBox(height: 12),
+                            LiveEnvCard(),
+                            EnvMiniChart(),
+                            SizedBox(height: 16),
+                            QuickControlGrid(),
+                            SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

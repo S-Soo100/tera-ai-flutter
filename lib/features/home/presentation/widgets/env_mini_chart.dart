@@ -7,6 +7,7 @@ import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/env_chart.dart';
+import '../../../../shared/widgets/glass_card.dart';
 import '../home_control_providers.dart';
 
 /// 최근 24시간 온·습도 차트 (홈).
@@ -34,12 +35,20 @@ class EnvMiniChart extends ConsumerWidget {
     final theme = Theme.of(context);
     final hasData = data != null && data.hasData;
 
-    return InkWell(
+    // 유리 카드는 겉면만이다 — 차트 내부(격자·창·눈금)는 통계 탭과 같은
+    // [EnvChart] 그대로. 카드 전체가 `/stats` 진입점(탭 대상)인 것도 그대로다.
+    return Padding(
       key: chartKey,
-      onTap: () => context.go('/stats'),
-      child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: EnvChart.outerPadding),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppStyles.spacing16,
+        vertical: AppStyles.spacing8,
+      ),
+      child: GlassCard(
+        onTap: () => context.go('/stats'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: EnvChart.outerPadding,
+          vertical: AppStyles.spacing16,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

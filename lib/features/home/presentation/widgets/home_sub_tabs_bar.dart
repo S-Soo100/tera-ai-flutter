@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/glass_card.dart';
 import '../../domain/device_mode.dart';
 import '../home_set_providers.dart';
 
@@ -10,6 +12,9 @@ import '../home_set_providers.dart';
 ///
 /// 모드에 따라 한쪽이 비활성화되고, 세트가 바뀌면 그 모드의 기본 탭으로
 /// 되돌아간다(비활성 탭이 선택된 채 남으면 빈 화면이 보인다).
+///
+/// 표면은 A안 유리 세그먼트 — 유리 트랙 안에서 선택 탭만 불투명 흰 알약
+/// ([AppTheme.glassActiveTile])으로 뜬다. 선택/비활성 로직은 불변.
 class HomeSubTabsBar extends ConsumerWidget {
   const HomeSubTabsBar({super.key});
 
@@ -39,29 +44,39 @@ class HomeSubTabsBar extends ConsumerWidget {
       });
     }
 
-    return Row(
-      children: [
-        Expanded(
-          child: _SegmentTab(
-            key: controlKey,
-            label: 'home_subtab_control'.tr(),
-            enabled: mode.controlEnabled,
-            selected: selected == HomeSubTab.control,
-            onTap: () => ref.read(homeSubTabProvider.notifier).state =
-                HomeSubTab.control,
-          ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppStyles.spacing16,
+        vertical: AppStyles.spacing8,
+      ),
+      child: GlassCard(
+        radius: 100,
+        padding: const EdgeInsets.all(AppStyles.spacing4),
+        child: Row(
+          children: [
+            Expanded(
+              child: _SegmentTab(
+                key: controlKey,
+                label: 'home_subtab_control'.tr(),
+                enabled: mode.controlEnabled,
+                selected: selected == HomeSubTab.control,
+                onTap: () => ref.read(homeSubTabProvider.notifier).state =
+                    HomeSubTab.control,
+              ),
+            ),
+            Expanded(
+              child: _SegmentTab(
+                key: timelineKey,
+                label: 'home_subtab_timeline'.tr(),
+                enabled: mode.timelineEnabled,
+                selected: selected == HomeSubTab.timeline,
+                onTap: () => ref.read(homeSubTabProvider.notifier).state =
+                    HomeSubTab.timeline,
+              ),
+            ),
+          ],
         ),
-        Expanded(
-          child: _SegmentTab(
-            key: timelineKey,
-            label: 'home_subtab_timeline'.tr(),
-            enabled: mode.timelineEnabled,
-            selected: selected == HomeSubTab.timeline,
-            onTap: () => ref.read(homeSubTabProvider.notifier).state =
-                HomeSubTab.timeline,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -82,27 +97,38 @@ class _SegmentTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final isOn = selected && enabled;
+    final Color fg;
+    if (!enabled) {
+      fg = AppTheme.glassTextTertiary;
+    } else if (isOn) {
+      fg = AppTheme.glassTextOnActive;
+    } else {
+      fg = AppTheme.glassTextSecondary;
+    }
+
     return InkWell(
       onTap: enabled ? onTap : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppStyles.spacing12),
+      borderRadius: BorderRadius.circular(100),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(vertical: AppStyles.spacing8),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              width: 2,
-              color: selected && enabled ? scheme.primary : Colors.transparent,
-            ),
-          ),
+          // 선택 = 불투명 흰 알약. 밑줄 대신 면으로 말한다(A안).
+          color: isOn ? AppTheme.glassActiveTile : Colors.transparent,
+          borderRadius: BorderRadius.circular(100),
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: enabled
-                    ? (selected ? scheme.primary : null)
-                    : Theme.of(context).disabledColor,
-              ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTheme.glassTileTitle.copyWith(
+            fontSize: 14,
+            color: fg,
+            fontWeight: isOn ? FontWeight.w600 : FontWeight.w500,
+          ),
         ),
       ),
     );
