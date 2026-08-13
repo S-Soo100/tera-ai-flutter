@@ -26,12 +26,15 @@ import 'package:vivnanaut/shared/domain/chart_window.dart';
 /// `control_tab_layout_test.dart`가 맡고, 여기서는 "이 디자인이 어떻게 보이나"를
 /// 확인한다. 그래서 실패 판정을 하지 않고 항상 갱신한다(`--update-goldens`).
 ///
-/// ⚠️ **알려진 제약: 라이트·다크를 한 번에 돌리면 두 번째(다크)가 백지로 나온다.**
-/// easy_localization 인스턴스를 두 번 세우는 것과 관련돼 보이나 원인 미확정이다.
-/// 추가 pump·tearDown 제거로는 해결되지 않았다. 갱신할 때는 하나씩 돌릴 것:
+/// **케이스는 하나뿐이다.** 전역 다크 고정(`app.dart`의 `themeMode: dark`) +
+/// 홈의 월페이퍼·다크 래핑 때문에 라이트/다크 케이스가 바이트 동일 PNG를
+/// 만들어, 라이트 케이스를 지웠다.
+///
+/// 갱신 (`--tags golden`만으로는 dart_test.yaml의 tag skip에 걸려 돌지 않는다
+/// — `--run-skipped`가 필수, `--plain-name`은 skip 때문에 매치되지 않는다):
 /// ```
-/// flutter test <이 파일> --update-goldens --plain-name "라이트"
-/// flutter test <이 파일> --update-goldens --plain-name "다크"
+/// flutter test --tags golden --run-skipped \
+///   test/features/home/control_tab_golden_test.dart --update-goldens
 /// ```
 ///
 /// Pretendard를 직접 로드하고 ko 번역을 초기화한다. 안 하면 글자가 네모로
@@ -87,18 +90,12 @@ Future<void> _loadPretendard() async {
   }
 }
 
-Future<void> _shoot(
-  WidgetTester tester, {
-  required Brightness brightness,
-  required String name,
-}) async {
+Future<void> _shoot(WidgetTester tester, {required String name}) async {
   // physicalSize는 **물리 픽셀**이다. 논리 393x820을 원하면 dpr을 곱해야 한다 —
   // 안 곱하면 논리 폭이 131px이 되어 화면이 전부 잘린다.
   const dpr = 3.0;
   tester.view.physicalSize = const Size(393 * dpr, 820 * dpr);
   tester.view.devicePixelRatio = dpr;
-  // view를 tearDown에서 되돌리지 않는다 — 되돌리면 다음 골든이 잘못된 크기로
-  // 시작해 빈 이미지가 나온다(실제로 다크 샷이 백지로 나왔다).
 
   final c = ProviderContainer(overrides: [
     currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
@@ -129,12 +126,10 @@ Future<void> _shoot(
             localizationsDelegates: context.localizationDelegates,
             supportedLocales: context.supportedLocales,
             locale: context.locale,
-            theme: brightness == Brightness.dark
-                ? AppTheme.dark
-                : AppTheme.light,
-            // A안(Liquid Glass) 이후 홈은 라이트/다크 모두 **월페이퍼 + 다크
-            // 테마 래핑** 단일 룩이다(HomeScreen과 같은 조건). 맨 Scaffold에
-            // 찍으면 유리가 받칠 바닥이 없어 실제 화면과 전혀 달라진다.
+            theme: AppTheme.dark,
+            // A안(Liquid Glass) 이후 홈은 **월페이퍼 + 다크 테마 래핑** 단일
+            // 룩이다(HomeScreen과 같은 조건). 맨 Scaffold에 찍으면 유리가
+            // 받칠 바닥이 없어 실제 화면과 전혀 달라진다.
             home: Theme(
               data: AppTheme.dark,
               child: const Scaffold(
@@ -166,8 +161,8 @@ Future<void> _shoot(
       ),
     ),
   );
-  // easy_localization은 두 번째 인스턴스에서 번역 로드가 한 프레임 늦는다.
-  // settle만으로는 빈 트리 상태에서 캡처돼 백지 골든이 나온다.
+  // easy_localization 번역 로드가 늦을 수 있다 — settle만으로는 빈 트리
+  // 상태에서 캡처돼 백지 골든이 나온 적이 있어 여유 pump를 둔다.
   for (var i = 0; i < 5; i++) {
     await tester.pump(const Duration(milliseconds: 100));
   }
@@ -187,12 +182,8 @@ void main() {
     await _loadPretendard();
   });
 
-  testWidgets('제어 서브탭 — 라이트', (tester) async {
-    await _shoot(tester, brightness: Brightness.light, name: 'control_light');
-  });
-
-  testWidgets('제어 서브탭 — 다크', (tester) async {
-    await _shoot(tester, brightness: Brightness.dark, name: 'control_dark');
+  testWidgets('제어 서브탭', (tester) async {
+    await _shoot(tester, name: 'control_dark');
   });
 }
 

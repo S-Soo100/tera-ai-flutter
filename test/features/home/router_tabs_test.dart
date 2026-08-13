@@ -15,6 +15,10 @@ void main() {
           ['tab_home', 'tab_stats', 'tab_my_pets', 'tab_community']);
     });
 
+    test('탭 아이콘 쌍이 경로와 1:1 — 라우터가 이 테이블로 독을 만든다', () {
+      expect(kHomeTabIcons, hasLength(kHomeTabPaths.length));
+    });
+
     test('크레캠·사육장은 더 이상 탭이 아니다', () {
       expect(kHomeTabPaths, isNot(contains('/crecam')));
       expect(kHomeTabPaths, isNot(contains('/smart-cage')));

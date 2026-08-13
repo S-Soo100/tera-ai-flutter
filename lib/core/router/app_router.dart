@@ -362,27 +362,15 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
                     initialLocation: index == navigationShell.currentIndex,
                   );
                 },
+                // 독 항목은 탭 테이블(tab_branches.dart)에서 파생한다 —
+                // 여기 인라인으로 나열하면 경로·라벨과 3중 병렬이 된다.
                 items: [
-                  GlassDockItem(
-                    icon: Icons.home_outlined,
-                    selectedIcon: Icons.home,
-                    label: kHomeTabLabelKeys[0].tr(),
-                  ),
-                  GlassDockItem(
-                    icon: Icons.insights_outlined,
-                    selectedIcon: Icons.insights,
-                    label: kHomeTabLabelKeys[1].tr(),
-                  ),
-                  GlassDockItem(
-                    icon: Icons.pets_outlined,
-                    selectedIcon: Icons.pets,
-                    label: kHomeTabLabelKeys[2].tr(),
-                  ),
-                  GlassDockItem(
-                    icon: Icons.chat_bubble_outline,
-                    selectedIcon: Icons.chat_bubble,
-                    label: kHomeTabLabelKeys[3].tr(),
-                  ),
+                  for (var i = 0; i < kHomeTabPaths.length; i++)
+                    GlassDockItem(
+                      icon: kHomeTabIcons[i].icon,
+                      selectedIcon: kHomeTabIcons[i].selectedIcon,
+                      label: kHomeTabLabelKeys[i].tr(),
+                    ),
                 ],
               ),
             ],

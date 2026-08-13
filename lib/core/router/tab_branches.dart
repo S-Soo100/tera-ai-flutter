@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart' show IconData, Icons;
+
 /// 바텀 네비 탭 경로. PRD 목업 바텀 네비 = 홈/통계/마이크레/커뮤니티 4탭.
 ///
 /// 순서가 곧 탭 인덱스이고 `StatefulShellRoute`의 브랜치 순서와 일치해야 한다.
@@ -15,6 +17,17 @@ const List<String> kHomeTabLabelKeys = [
   'tab_stats',
   'tab_my_pets',
   'tab_community',
+];
+
+/// [kHomeTabPaths]와 같은 순서의 아이콘 쌍(기본, 선택).
+///
+/// 라우터가 독 항목을 여기서 **파생**한다 — 경로·라벨·아이콘이 세 곳에
+/// 병렬로 흩어지면 탭 하나를 고칠 때 한 곳이 조용히 어긋난다.
+const List<({IconData icon, IconData selectedIcon})> kHomeTabIcons = [
+  (icon: Icons.home_outlined, selectedIcon: Icons.home),
+  (icon: Icons.insights_outlined, selectedIcon: Icons.insights),
+  (icon: Icons.pets_outlined, selectedIcon: Icons.pets),
+  (icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble),
 ];
 
 /// 탭에서 내렸지만 화면·딥링크는 유지하는 경로.
