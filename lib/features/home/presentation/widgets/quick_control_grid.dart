@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/glass_card.dart';
 import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../cage_control_actions.dart';
@@ -204,31 +203,37 @@ class _TileState extends State<_Tile> {
     );
 
     // 탭 스프링 스케일(0.96→1.0) + 켜짐 시 불투명 흰 타일 전환 (A안 모션).
+    //
+    // **표면은 단일 AnimatedContainer 하나로 지속시킨다.** 예전처럼
+    // `on ? AnimatedContainer : GlassCard`로 타입을 갈아끼우면 토글마다
+    // element가 재생성돼, 새 위젯에는 출발색이 없어 200ms 전환 없이 팝만
+    // 됐다. 삼항은 위젯이 아니라 decoration **안**에 둔다(서브탭 방식).
+    // 켜짐/꺼짐 면은 GlassCard와 같은 토큰(blur 없는 플랫 유리 + 테두리)이다.
     return GestureDetector(
       onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
-      onTapCancel: () => setState(() => _pressed = false),
-      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel:
+          widget.enabled ? () => setState(() => _pressed = false) : null,
+      onTapUp: widget.enabled ? (_) => setState(() => _pressed = false) : null,
       onTap: widget.enabled ? widget.onTap : null,
       child: AnimatedScale(
         scale: _pressed ? 0.96 : 1.0,
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutBack,
-        child: on
-            ? AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: AppTheme.glassActiveTile,
-                  borderRadius:
-                      BorderRadius.circular(AppTheme.glassTileRadius),
-                ),
-                child: content,
-              )
-            : GlassCard(
-                overlay: widget.enabled
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            color: on
+                ? AppTheme.glassActiveTile
+                : (widget.enabled
                     ? AppTheme.glassOverlay
-                    : AppTheme.glassOverlayFaint,
-                child: content,
-              ),
+                    : AppTheme.glassOverlayFaint),
+            borderRadius: BorderRadius.circular(AppTheme.glassTileRadius),
+            border: Border.all(color: AppTheme.glassBorder, width: 0.5),
+          ),
+          // 안쪽 잉크가 앉을 면 — GlassCard가 하던 Material transparency 유지.
+          child: Material(type: MaterialType.transparency, child: content),
+        ),
       ),
     );
   }
