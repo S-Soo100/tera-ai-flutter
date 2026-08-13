@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import '../../../shared/widgets/glass_page_shell.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../../wiki/presentation/wiki_providers.dart';
 import '../domain/pet.dart';
@@ -127,7 +128,9 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 폼 로직 불변.
+    return GlassPageShell(
+        child: Scaffold(
       appBar: AppBar(
         title: const Text('개체 등록'),
       ),
@@ -350,6 +353,6 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

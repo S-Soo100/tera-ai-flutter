@@ -8,7 +8,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/account_avatar.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/glass_segmented_control.dart';
+import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/screen_header.dart';
+import '../../../shared/widgets/wallpaper_background.dart';
 import '../../my_cage/presentation/nightly_report_view.dart';
 import '../../profile/presentation/profile_providers.dart';
 import '../domain/pet.dart';
@@ -41,39 +45,51 @@ class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
 
     final profile = ref.watch(profileNotifierProvider).valueOrNull;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    // A안 표면 규칙은 홈([HomeScreen])과 같다 — 월페이퍼 바닥 + AppTheme.dark
+    // 래핑 + SafeArea(bottom: false). 탭 전환·CRUD 로직은 불변.
+    return Theme(
+      data: AppTheme.dark,
+      child: Scaffold(
+        backgroundColor: AppTheme.glassWallpaperTop,
+        body: Stack(
           children: [
-            // 홈·통계와 같은 헤더를 쓴다. 탭마다 제목 스타일이 다르면
-            // 탭을 옮길 때마다 다른 앱처럼 보인다.
-            ScreenHeader(
-              title: 'my_pets_title'.tr(),
-              actions: [
-                HeaderAction(
-                  icon: Icons.add,
-                  tooltip: 'my_pets_add'.tr(),
-                  onPressed: () => context.push('/my-pets/add'),
-                ),
-                AccountAvatar(
-                  tooltip: 'home_account'.tr(),
-                  imageUrl: profile?.avatarUrl,
-                  displayName: profile?.displayName,
-                  onPressed: () => context.push('/profile'),
-                ),
-              ],
-            ),
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
-              child: _TabChips(
-                selected: _selected,
-                onChanged: (t) => setState(() => _selected = t),
+            const Positioned.fill(child: WallpaperBackground()),
+            SafeArea(
+              bottom: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 홈·통계와 같은 헤더 문법. 탭마다 제목 스타일이 다르면
+                  // 탭을 옮길 때마다 다른 앱처럼 보인다.
+                  GlassTabHeader(
+                    title: 'my_pets_title'.tr(),
+                    actions: [
+                      HeaderAction(
+                        icon: Icons.add,
+                        tooltip: 'my_pets_add'.tr(),
+                        onPressed: () => context.push('/my-pets/add'),
+                      ),
+                      AccountAvatar(
+                        tooltip: 'home_account'.tr(),
+                        imageUrl: profile?.avatarUrl,
+                        displayName: profile?.displayName,
+                        onPressed: () => context.push('/profile'),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppStyles.spacing16),
+                    child: _TabChips(
+                      selected: _selected,
+                      onChanged: (t) => setState(() => _selected = t),
+                    ),
+                  ),
+                  const SizedBox(height: AppStyles.spacing16),
+                  Expanded(child: _tabContent(_selected, pets)),
+                ],
               ),
             ),
-            const SizedBox(height: AppStyles.spacing16),
-            Expanded(child: _tabContent(_selected, pets)),
           ],
         ),
       ),
@@ -94,9 +110,8 @@ class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
 
 /// `[개체 목록] [리포트]`.
 ///
-/// 통계 탭의 기간 선택과 **같은 컨트롤**을 쓴다. 예전엔 초록 알약 칩이었는데,
-/// 그 초록은 폐기된 옛 브랜드색(`AppTheme.success`)이라 이제는 "정상" 의미색과
-/// 충돌했다 — 상태가 아니라 선택을 뜻하는 자리다.
+/// 통계 탭의 기간 선택·홈 서브탭과 **같은 유리 세그먼트**를 쓴다 — 유리
+/// 트랙 안에서 선택 탭만 불투명 흰 알약(A안 문법). 선택 로직은 불변.
 class _TabChips extends StatelessWidget {
   const _TabChips({required this.selected, required this.onChanged});
 
@@ -105,16 +120,14 @@ class _TabChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<_MyPetsTab>(
+    return GlassSegmentedControl<_MyPetsTab>(
       segments: [
-        ButtonSegment(
-            value: _MyPetsTab.list, label: Text('my_pets_tab_list'.tr())),
-        ButtonSegment(
-            value: _MyPetsTab.report, label: Text('my_pets_tab_report'.tr())),
+        GlassSegment(value: _MyPetsTab.list, label: 'my_pets_tab_list'.tr()),
+        GlassSegment(
+            value: _MyPetsTab.report, label: 'my_pets_tab_report'.tr()),
       ],
-      selected: {selected},
-      showSelectedIcon: false,
-      onSelectionChanged: (s) => onChanged(s.first),
+      selected: selected,
+      onChanged: onChanged,
     );
   }
 }
@@ -129,8 +142,13 @@ class _PetListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       // 헤더와 같은 16pt. 예전엔 20이라 제목보다 4pt 안쪽으로 들어가 있었다.
-      padding: const EdgeInsets.fromLTRB(
-          AppStyles.spacing16, 0, AppStyles.spacing16, AppStyles.spacing24),
+      // 하단은 플로팅 독 높이(MediaQuery.padding.bottom)를 직접 소비한다 —
+      // padding을 명시한 ListView는 자동 인셋이 꺼진다.
+      padding: EdgeInsets.fromLTRB(
+          AppStyles.spacing16,
+          0,
+          AppStyles.spacing16,
+          AppStyles.spacing24 + MediaQuery.paddingOf(context).bottom),
       children: [
         ...pets.map((pet) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -149,11 +167,9 @@ class _PetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // 손으로 만든 흰 카드 + 검은 그림자였다. 다크에서는 `surface`가 배경과
-    // 같은 색이고 그림자도 안 보여서 **카드가 통째로 사라졌다.** 테마의
-    // 카드 규격(라이트=흰색+라인, 다크=한 단 밝은 면)에 맡긴다.
-    return Card(
-      margin: EdgeInsets.zero,
+    // A안 유리 카드. 안의 구성(썸네일·이름·성별 배지·수정 버튼)은 불변 —
+    // 감싸는 표면만 유리다.
+    return GlassCard(
       child: Padding(
         padding: const EdgeInsets.all(AppStyles.spacing12),
         child: Column(
@@ -223,8 +239,10 @@ class _PetCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  side: BorderSide(color: theme.colorScheme.outlineVariant),
-                  foregroundColor: theme.colorScheme.onSurface,
+                  // 유리 위라 테마 다크 outline(#333)은 묻힌다 — 유리 테두리
+                  // 토큰으로 맞춘다.
+                  side: const BorderSide(color: AppTheme.glassBorder),
+                  foregroundColor: AppTheme.glassTextPrimary,
                 ),
                 child: Text('my_pets_edit_info'.tr()),
               ),
@@ -334,6 +352,8 @@ class _AddPetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // 채운 유리 카드가 아니라 **빈 틀**이다 — 개체 카드와 같은 모양이면
+    // "내용이 있는데 비었다"로 읽힌다. 테두리만 유리 토큰으로 맞춘다.
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () => context.push('/my-pets/add'),
@@ -342,17 +362,17 @@ class _AddPetCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: theme.colorScheme.outlineVariant,
+            color: AppTheme.glassBorder,
             style: BorderStyle.solid,
             width: 1.5,
           ),
         ),
         child: Column(
           children: [
-            Icon(
+            const Icon(
               Icons.add,
               size: 32,
-              color: theme.colorScheme.onSurfaceVariant,
+              color: AppTheme.glassTextSecondary,
             ),
             const SizedBox(height: 8),
             Text(
@@ -365,7 +385,7 @@ class _AddPetCard extends StatelessWidget {
             Text(
               'my_pets_add_new_subtitle'.tr(),
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.outline,
+                color: AppTheme.glassTextSecondary,
               ),
               textAlign: TextAlign.center,
             ),

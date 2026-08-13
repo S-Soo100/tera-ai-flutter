@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import '../../../shared/widgets/glass_page_shell.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../../wiki/presentation/wiki_providers.dart';
 import '../domain/pet.dart';
@@ -180,15 +181,19 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
     final pet = ref.watch(petDetailProvider(widget.petId));
 
     if (pet == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('개체 수정')),
-        body: const Center(child: Text('개체를 찾을 수 없습니다')),
+      return GlassPageShell(
+        child: Scaffold(
+          appBar: AppBar(title: const Text('개체 수정')),
+          body: const Center(child: Text('개체를 찾을 수 없습니다')),
+        ),
       );
     }
 
     _initFromPet(pet);
 
-    return Scaffold(
+    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 폼 로직 불변.
+    return GlassPageShell(
+        child: Scaffold(
       appBar: AppBar(
         title: const Text('개체 수정'),
       ),
@@ -423,6 +428,6 @@ class _PetEditScreenState extends ConsumerState<PetEditScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

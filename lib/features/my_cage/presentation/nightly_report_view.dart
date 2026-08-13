@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_styles.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/inline_retry.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/nightly_highlight.dart';
@@ -26,9 +28,13 @@ class NightlyReportView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(nightlyReportProvider);
+    // 하단은 플로팅 독 높이(MediaQuery.padding.bottom)를 직접 소비한다 —
+    // padding을 명시한 ListView는 자동 인셋이 꺼져 마지막 카드가 독에 가려진다.
+    final padding = AppStyles.pagePadding
+        .add(EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom));
     return async.when(
       loading: () => ListView(
-        padding: AppStyles.pagePadding,
+        padding: padding,
         children: const [
           SkeletonCard(lineCount: 2, height: 90),
           SizedBox(height: 12),
@@ -40,7 +46,7 @@ class NightlyReportView extends ConsumerWidget {
             onRetry: () => ref.invalidate(nightlyReportProvider)),
       ),
       data: (report) => ListView(
-        padding: AppStyles.pagePadding,
+        padding: padding,
         children: [
           _SummaryCard(report: report),
           const SizedBox(height: 16),
@@ -79,18 +85,10 @@ class _SummaryCard extends StatelessWidget {
         ('🐍', 'nightly_count_shed'.tr(),
             'nightly_count_unit'.tr(namedArgs: {'n': '${report.shedCount}'})),
     ];
-    return Container(
+    // A안 유리 카드 — 예전 흰 카드+그림자는 어두운 월페이퍼 위에서 카드가
+    // 통째로 사라지거나 화면에서 제일 밝은 조각이 됐다.
+    return GlassCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 2)),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -109,8 +107,9 @@ class _SummaryCard extends StatelessWidget {
                           Text(s.$2,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall
-                                  ?.copyWith(color: cs.outline)),
+                              // 다크 outline(#444)은 유리 위에서 안 읽힌다.
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.glassTextSecondary)),
                           const SizedBox(height: 2),
                           FittedBox(
                             fit: BoxFit.scaleDown,
@@ -155,11 +154,11 @@ class _HighlightCard extends ConsumerWidget {
     final careColor =
         highlight.careLevel == 'enrichment' ? cs.secondary : cs.primary;
     final thumb = ref.watch(motionThumbnailProvider(highlight.clipId));
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push('/my-pets/clips/${highlight.clipId}'),
-        child: Column(
+    // A안 유리 카드. onTap을 주면 GlassCard가 InkWell로 감싼다 —
+    // 재생 이동·즐겨찾기 로직은 불변.
+    return GlassCard(
+      onTap: () => context.push('/my-pets/clips/${highlight.clipId}'),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AspectRatio(
@@ -202,8 +201,10 @@ class _HighlightCard extends ConsumerWidget {
                   Text(
                     DateFormat('MM.dd HH:mm')
                         .format(highlight.startedAt.toLocal()),
-                    style:
-                        theme.textTheme.bodySmall?.copyWith(color: cs.outline),
+                    // 다크 outline(#444)은 유리 위에서 안 읽힌다 — 유리 텍스트
+                    // 위계 토큰을 쓴다.
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: AppTheme.glassTextSecondary),
                   ),
                   const Spacer(),
                   FavoriteToggleButton(clipId: highlight.clipId),
@@ -211,7 +212,6 @@ class _HighlightCard extends ConsumerWidget {
               ),
             ),
           ],
-        ),
       ),
     );
   }

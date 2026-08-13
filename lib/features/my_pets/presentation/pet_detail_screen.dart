@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/glass_page_shell.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../../wiki/presentation/wiki_providers.dart';
 import '../domain/pet.dart';
@@ -26,13 +27,17 @@ class PetDetailScreen extends ConsumerWidget {
     ref.watch(petListProvider);
 
     if (pet == null) {
-      return Scaffold(
-        appBar: AppBar(),
-        body: const Center(child: Text('개체를 찾을 수 없습니다')),
+      return GlassPageShell(
+        child: Scaffold(
+          appBar: AppBar(),
+          body: const Center(child: Text('개체를 찾을 수 없습니다')),
+        ),
       );
     }
 
-    return Scaffold(
+    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 상세/삭제 로직 불변.
+    return GlassPageShell(
+        child: Scaffold(
       appBar: AppBar(
         title: Text(pet.name),
         actions: [
@@ -93,7 +98,7 @@ class PetDetailScreen extends ConsumerWidget {
           const SizedBox(height: 16),
         ],
       ),
-    );
+    ));
   }
 
   Future<void> _confirmDelete(
