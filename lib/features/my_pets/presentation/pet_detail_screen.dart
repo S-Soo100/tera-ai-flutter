@@ -54,23 +54,8 @@ class PetDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      // 플로팅 독 위로 들어올린다. Scaffold의 FAB 배치는 viewPadding(기기
-      // 홈 인디케이터)만 알지, 셸이 padding에 더해준 독 높이는 모른다 —
-      // 그 차이만큼 직접 올린다.
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(
-          bottom: (MediaQuery.paddingOf(context).bottom -
-                  MediaQuery.viewPaddingOf(context).bottom)
-              .clamp(0.0, double.infinity),
-        ),
-        child: FloatingActionButton.small(
-          heroTag: 'pet_detail_chat_fab',
-          onPressed: () => context
-              .push('/chat/new?petId=${pet.id}&speciesId=${pet.speciesId}'),
-          tooltip: 'AI에게 물어보기',
-          child: const Icon(Icons.chat),
-        ),
-      ),
+      // 챗 FAB는 제거했다 — /chat 라우트가 없고(챗 기능은 PRD D3 폐기),
+      // 누르면 라우터 에러로 떨어지는 죽은 문이었다.
       body: ListView(
         // 하단은 플로팅 독 높이까지 비운다 — 마지막 카드가 독에 가려지지 않게.
         padding: glassDockListPadding(context,

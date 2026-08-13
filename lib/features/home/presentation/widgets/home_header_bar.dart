@@ -38,9 +38,14 @@ class HomeHeaderBar extends ConsumerWidget {
     final profile = ref.watch(profileNotifierProvider).valueOrNull;
 
     // 개체가 주인공, 사육장은 어디인지 알려주는 보조(캡슐).
+    //
+    // 개체가 없는 멀티 세트에서는 제목을 사육장명으로 폴백하지 않는다 —
+    // 캡슐(드롭다운 어포던스)도 사육장명이라 같은 문자열이 두 번 서게 된다.
+    // 온보딩 직후가 정확히 이 상태다.
     final title = current == null
         ? 'home_no_set'.tr()
-        : (current.pet?.name ?? current.enclosure.name);
+        : current.pet?.name ??
+            (multi ? 'home_title_default'.tr() : current.enclosure.name);
     // 캡슐이 서는 조건: 사육장 이름이 보조로 필요하거나(개체가 주인공일 때),
     // 세트가 여럿이라 선택기가 필요할 때. 개체 없는 단일 세트에서는 큰 제목이
     // 이미 사육장 이름이라 캡슐이 같은 말을 반복하게 된다 — 안 세운다.

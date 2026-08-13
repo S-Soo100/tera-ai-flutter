@@ -108,10 +108,13 @@ class _StatsHeader extends ConsumerWidget {
     // 세트가 여럿이라 선택기가 필요할 때.
     final showCapsule = current != null && (current.pet != null || multi);
 
+    // 개체 없는 멀티 세트는 제목을 사육장명으로 폴백하지 않는다 — 캡슐과
+    // 같은 문자열이 두 번 선다(홈 헤더와 같은 규칙).
     return GlassTabHeader(
       title: current == null
           ? 'tab_stats'.tr()
-          : (current.pet?.name ?? current.enclosure.name),
+          : current.pet?.name ??
+              (multi ? 'home_title_default'.tr() : current.enclosure.name),
       capsuleLabel: showCapsule ? current.enclosure.name : null,
       onPickCapsule:
           multi ? () => _openPicker(context, ref, sets.length) : null,

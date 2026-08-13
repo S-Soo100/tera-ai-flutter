@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_styles.dart';
+import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/mist_duration.dart';
@@ -38,15 +39,27 @@ class RoutineSettingsScreen extends ConsumerWidget {
     return GlassPageShell(
         child: Scaffold(
       appBar: AppBar(title: Text('home_routine_settings'.tr())),
-      floatingActionButton: FloatingActionButton.extended(
-        key: addKey,
-        onPressed: () => _add(context, ref),
-        icon: const Icon(Icons.add),
-        label: Text('routine_add'.tr()),
+      // 플로팅 독 위로 들어올린다. `/home/routines`는 셸 안이라 독이 떠
+      // 있는데, Scaffold의 FAB 배치는 viewPadding(기기 홈 인디케이터)만 알지
+      // 셸이 padding에 더해준 독 높이는 모른다 — 그 차이만큼 직접 올린다.
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+          bottom: (MediaQuery.paddingOf(context).bottom -
+                  MediaQuery.viewPaddingOf(context).bottom)
+              .clamp(0.0, double.infinity),
+        ),
+        child: FloatingActionButton.extended(
+          key: addKey,
+          onPressed: () => _add(context, ref),
+          icon: const Icon(Icons.add),
+          label: Text('routine_add'.tr()),
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-            AppStyles.spacing16, AppStyles.spacing16, AppStyles.spacing16, 96),
+        // 하단은 독 높이까지 비운다 — 마지막 예약 줄이 독·FAB에 가려지지 않게.
+        padding: glassDockListPadding(context,
+            base: const EdgeInsets.fromLTRB(AppStyles.spacing16,
+                AppStyles.spacing16, AppStyles.spacing16, 0)),
         children: [
           const _TimerPendingCard(),
           const SizedBox(height: AppStyles.spacing24),

@@ -499,6 +499,7 @@
   "ble_permission_denied": "블루투스 권한이 거부되었습니다. 설정에서 직접 허용해주세요.",
   "ble_open_settings": "설정 열기",
   "home_no_set": "사육장을 등록해주세요",
+  "home_title_default": "내 사육장",
   "home_set_current": "보는 중",
   "home_notifications": "알림",
   "home_enclosure_settings": "사육장 설정",
