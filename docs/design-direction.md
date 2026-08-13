@@ -1,8 +1,27 @@
 # 비바나트 — 시각 디자인 방향
 
-> **작성일**: 2026-08-08
+> **작성일**: 2026-08-08 · **갱신**: 2026-08-13 (Liquid Glass 전면 적용)
 > **범위**: 시각 언어(위계·타이포·색 역할·시그니처). 화면 구조는 기획안(`docs/prd-vivnanaut-app.md`)이 정한다.
-> **팔레트·컴포넌트 규격**: Figma `Asset` 섹션이 SOT — `docs/figma-final-design-transcript.md` §4. **이 문서는 그 값을 바꾸지 않고, 어디에 어떻게 쓸지만 정한다.**
+
+---
+
+## 0. 현행 — Liquid Glass (A안, 2026-08-13 확정)
+
+**A안(Apple Home iOS 26 문법)을 전면 적용했다.** 디자인 랩 3안 비교(`/dev/design-lab`, `lib/features/dev/design_lab/` — **비교 페이지로 존치**)에서 사용자가 A안을 골랐고, 4탭 전부 + 보조 라우트가 이 시스템으로 넘어왔다.
+
+새 시스템의 문법 (토큰 SOT: `lib/core/theme/app_theme.dart`의 "Liquid Glass" 섹션):
+
+- **월페이퍼가 바닥** — 딥 그라데이션(`glassWallpaperTop→Mid→Bottom`, 네이비→틸) + 은은한 glow. 구현 `shared/widgets/wallpaper_background.dart`
+- **UI는 유리 표면** — blur 24 + 흰 오버레이(~14%) + 얇은 테두리. `GlassCard`/`GlassChip`/`GlassDock`/`GlassSegmentedControl`/`GlassTabHeader`/`GlassPageShell`
+- **활성은 유리가 아니라 불투명 흰색**(`glassActiveTile`) — 켜짐/선택을 면으로 말한다
+- **기기 틴트 4종**(히터 주황·분무 파랑·LED 노랑·팬 민트)은 활성 타일 아이콘·센서 칩에만
+- **타이포 위계는 유리 전용 스타일**(`glassHeaderTitle` 28 ~ `glassTileStatus` 13, Pretendard)
+- **라이트/다크 분기가 없다** — 월페이퍼가 항상 어두워 단일 룩. 화면 트리는 `Theme(data: AppTheme.dark)`로 감싸 테마색을 읽는 기존 위젯을 다크 팔레트로 그린다
+- 탭바는 **플로팅 유리 독**(`GlassDock`, `extendBody: true`) — 스크롤 뷰가 `MediaQuery.padding.bottom`을 소비해야 마지막 항목이 안 가려진다
+
+**Figma 팔레트 SOT 갱신은 후속 과제다** — 아래 §6 등 구 팔레트 서술과 Figma `Asset` 섹션(`docs/figma-final-design-transcript.md` §4)은 아직 구 시스템 기준이며, Figma 반영은 사용자 작업이 필요하다.
+
+아래 §1~§8은 2026-08-08 작성 원문이다. **§2(야간 관측소)·§3(밤 띠)·§5(숫자 주인공)·§7(문구)·§8(품질)은 여전히 유효**하고, §4(카드를 줄인다)·§6(구 팔레트 적용 범위)은 **구 시스템 서술**로 남긴다 — 유리 문법에서는 "카드 없음" 대신 "유리 카드 vs 불투명 활성면"으로 위계를 가른다.
 
 ---
 
@@ -105,15 +124,17 @@ Figma 팔레트를 바꾸지 않고 **적용 범위만 좁힌다.**
 
 ---
 
-## 9. 적용 현황
+## 9. 적용 현황 (2026-08-13, Liquid Glass 기준)
 
 | 화면 | 상태 |
 |---|---|
-| 홈 · 사육장 제어 서브탭 | ✅ 적용 (리드아웃·밤 띠 차트·제어 타일) |
-| 홈 · 타임라인 서브탭 | ⬜ 미적용 |
-| 홈 · 상단 고정 영역 | ⬜ **기획 미결(§6-B 클립 재생 방식) 대기** |
-| 통계 탭 | ⬜ **기획 미결(§6-D) 대기.** 밤 띠는 여기에도 깔려야 한다 |
-| 마이크레 · 커뮤니티 | ⬜ 미적용 (기획에 화면 명세 없음) |
+| 홈 탭 (헤더·서브탭·제어·타임라인) | ✅ 풀 전환 (1단계, `7aa22fc`~`dd7a535`) |
+| 통계 탭 | ✅ 풀 전환 (유리 카드 차트·유리 세그먼트. 스크러버 동작 불변) |
+| 마이크레 탭 (목록·리포트) | ✅ 풀 전환. CRUD 3화면은 경량(GlassPageShell) |
+| 커뮤니티 탭 | ✅ 풀 전환 (로컬 seed 로직 불변) |
+| 보조 라우트 (/wiki /search /crecam /smart-cage /notifications /enclosure-settings /home/routines /profile) | ✅ 경량 전환 (배경+표면 톤만) |
+| 페어링 플로우·위키 하위·클립 플레이어 등 내부 단계 화면 | ⬜ 스킵 (시간 대비 효과 낮음 — 후속) |
+| 디자인 랩 (`/dev/design-lab`) | 존치 (3안 비교 페이지, 전환 대상 아님) |
 
 ---
 

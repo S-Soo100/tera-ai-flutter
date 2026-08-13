@@ -127,6 +127,7 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 - Supabase 테이블/RLS/접속 정보는 `docs/supabase-setup.md` 참조.
 
 ### UI/테마
+- **현행은 Liquid Glass 시스템(A안, 2026-08-13 전면 적용)** — 월페이퍼 바닥 + 유리 표면(`GlassCard`류) + 기기 틴트 + 유리 타이포 위계. 상세·적용 현황은 `docs/design-direction.md` §0. **Figma 팔레트 SOT 갱신은 후속 과제(사용자 작업 필요)** — Figma `Asset`은 아직 구 팔레트다
 - **시각 디자인 방향**: `docs/design-direction.md` — 위계·타이포·색 역할·시그니처(밤 띠). **팔레트·컴포넌트 규격 SOT는 Figma**(`docs/figma-final-design-transcript.md` §4)
 - **디자인 시스템(구)**: `docs/design-system.md` — 토큰·공유 위젯 정의
 - **하드코딩 색상 금지**. `AppTheme` 또는 `Theme.of(context)` 사용.
