@@ -6,13 +6,14 @@ import 'glass_chip.dart';
 
 /// 탭 상단 유리 헤더. 디자인 시스템 `Components / GlassTabHeader` (A안).
 ///
-/// 홈 `HomeHeaderBar`가 세운 문법을 나머지 탭이 공유한다 — **대형 타이틀이
-/// 주인공**, 보조 정보는 유리 캡슐([GlassChip]), 액션 아이콘은 항상 밝다
-/// (표면이 테마와 무관하게 어두운 월페이퍼라 테마 기본색에 맡기지 않는다).
+/// 홈 `HomeHeaderBar`가 세운 문법을 **홈 포함 모든 탭**이 공유한다 —
+/// **대형 타이틀이 주인공**, 보조 정보는 유리 캡슐([GlassChip]), 액션
+/// 아이콘은 항상 밝다(표면이 테마와 무관하게 어두운 월페이퍼라 테마
+/// 기본색에 맡기지 않는다).
 ///
-/// 홈은 세트 분기·알림 점 등 자기 로직이 붙어 있어 자체 헤더를 유지한다 —
-/// 이 위젯은 그 표면 문법만 떼어낸 것이다. 구 [ScreenHeader](56pt 고정)는
-/// 전환 전 화면·테스트가 참조하므로 남겨 둔다.
+/// 홈도 렌더링은 여기에 위임한다 — 세트 분기·알림 점 같은 로직만
+/// `HomeHeaderBar`에 남는다. 구 `ScreenHeader`(56pt 고정)는 참조가 0이 되어
+/// 삭제했다(`screen_header.dart`에는 [HeaderAction]만 남았다).
 class GlassTabHeader extends StatelessWidget {
   const GlassTabHeader({
     super.key,
