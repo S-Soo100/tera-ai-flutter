@@ -657,8 +657,13 @@ class _TimeAxis extends StatelessWidget {
   final ChartWindow window;
   final TextStyle? style;
 
-  /// `오후 10시`가 잘리지 않는 폭.
-  static const double _labelWidth = 56;
+  /// 라벨 상자 폭 — 우측 끝 클램프 기준이기도 하다. 시각(`오후 10시`) 56,
+  /// 날짜(`8/13`) 40. 시각 폭을 날짜에도 쓰면 주간 마지막 라벨이 필요 이상
+  /// 왼쪽으로 클램프돼 8/12 위로 겹친다(2026-08-14 실기기 확인).
+  double get _labelWidth => switch (window.format) {
+        ChartTickFormat.hour => 56,
+        ChartTickFormat.date => 40,
+      };
 
   /// 24시간 창은 시각, 주간 창은 날짜로 읽는다. 주간에 시각을 붙이면 눈금이
   /// 전부 `오전 7시`가 되어 어느 날인지 알 수 없다.
