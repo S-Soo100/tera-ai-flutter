@@ -9,7 +9,8 @@
 ## 0. 공통 규칙
 
 - 3개 변형 모두 **같은 더미 데이터**(fixtures)를 쓴다 — 비교 공정성 확보. 실 provider 미연결.
-- 체험 화면 = 홈 탭 1장 풀스크린: 헤더 → 라이브 카드 → 온습도 요약 → 제어 그리드 → 미니 차트 → 타임라인.
+- 체험 화면 = **4탭(홈/통계/마이크레/커뮤니티) 풀 셸** (2026-08-14 `/design-test` 공개와 함께 확장 —
+  처음엔 홈 1장이었으나 B·C 4탭 셸에 A안도 맞췄다). 홈 구성: 헤더 → 라이브(루프 영상) → 온습도 요약 → 제어 그리드 → 미니 차트 → 타임라인.
 - 각 변형은 자기 토큰 세트만 쓴다. `AppTheme`/`AppStyles` 참조 금지 (랩 격리 — 기존 앱 무영향).
 - 폰트는 Pretendard 유지(웨이트·스케일만 벤치마크를 따름). 숫자 강조 구간은 `FontFeature.tabularFigures()`.
 - 로딩은 shimmer 스켈레톤 (CircularProgressIndicator 금지 — 프로젝트 규칙).
@@ -83,13 +84,18 @@
 
 ```
 lib/features/dev/design_lab/
-├── design_lab_screen.dart        # 선택 화면: A/B/C 카드(미니 프리뷰 썸네일+요약) → push
-├── design_lab_fixtures.dart      # 공용 더미 데이터(온습도 24h, 기기 4종 상태, 타임라인 8건, 활동량)
-├── variant_a_home_screen.dart    # Apple Home 스타일
-├── variant_b_home_screen.dart    # Flighty 스타일
-├── variant_c_home_screen.dart    # Copilot 스타일
+├── design_lab_screen.dart          # 선택 화면: A/B/C 카드 → push
+├── design_lab_fixtures.dart        # 공용 더미(온습도 24h·주간 7일, 기기 4종, 개체 3, 리포트, 게시글)
+├── mock_live_player.dart           # 공용 mock 라이브 루프 플레이어(LIVE 배지+폴백, A·B 홈)
+├── variant_a_shell.dart            # A안 4탭 셸(IndexedStack, 유리 독+축소 모션)
+├── variant_a_{home,stats,pets,community}_screen.dart
+├── variant_a_widgets.dart          # A 공용 조각(AWallpaper/AGlass/AScreenScaffold 등)
+├── variant_b_shell.dart            # B안 4탭 셸(Flighty 전광판 탭바)
+├── variant_b_{home,stats,pets,community}_screen.dart
+├── variant_c_shell.dart            # C안 4탭 셸(Copilot 필 탭바)
+├── variant_c_{home,stats,pets,community}_screen.dart
 └── tokens/
-    ├── variant_a_tokens.dart     # 안별 색·타이포·radius·spacing 상수 (AppTheme 미참조)
+    ├── variant_a_tokens.dart       # 안별 색·타이포·radius·spacing 상수 (AppTheme 미참조)
     ├── variant_b_tokens.dart
     └── variant_c_tokens.dart
 ```

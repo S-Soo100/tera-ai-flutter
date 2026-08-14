@@ -1,5 +1,10 @@
 # 비바나트 디자인 시스템
 
+> ⚠️ **레거시 문서 (2026-08-13 Liquid Glass 전환 미반영)**. 색·테마 절은 구 시스템 기준이다
+> (구 Green/Navy 팔레트, ThemeMode.system — 현행은 전역 다크 + Liquid Glass). 시각 시스템
+> 현행 SOT는 `docs/design-direction.md` §0 + 토큰 원본 `lib/core/theme/app_theme.dart`.
+> 공유 위젯 절(`AppTag`/`SectionHeader`/`Skeleton*`)은 여전히 유효 — 그 부분만 참고할 것.
+
 ## 개요
 
 앱 전체에서 일관된 UI를 유지하기 위한 디자인 토큰과 공유 위젯 정의.
