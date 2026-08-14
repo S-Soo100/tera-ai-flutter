@@ -27,6 +27,13 @@ enum CommandAction {
   heaterClear,
   ledOn,
   ledOff,
+
+  /// LCD 커스텀 텍스트(서버가 렌더한 비트맵 전송) / 기본값 복귀.
+  /// 앱이 직접 INSERT하지 않는다 — REST(`/devices/{id}/lcd`)가 만들고,
+  /// `commands` 목록·Realtime에 섞여 내려올 때 해석만 한다.
+  lcdBitmap,
+  lcdClear,
+
   tokenRotate,
   unknown,
 }
@@ -60,6 +67,10 @@ extension CommandActionWire on CommandAction {
         return 'led_on';
       case CommandAction.ledOff:
         return 'led_off';
+      case CommandAction.lcdBitmap:
+        return 'lcd_bitmap';
+      case CommandAction.lcdClear:
+        return 'lcd_clear';
       case CommandAction.tokenRotate:
         return 'token_rotate';
       case CommandAction.unknown:
@@ -95,6 +106,10 @@ extension CommandActionWire on CommandAction {
         return CommandAction.ledOn;
       case 'led_off':
         return CommandAction.ledOff;
+      case 'lcd_bitmap':
+        return CommandAction.lcdBitmap;
+      case 'lcd_clear':
+        return CommandAction.lcdClear;
       case 'token_rotate':
         return CommandAction.tokenRotate;
       default:
