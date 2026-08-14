@@ -65,8 +65,12 @@ class _VariantCShellState extends State<VariantCShell> {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
             children: [
+              // 활성 탭은 라벨이 펼쳐져 균등 4분할(~86pt)보다 넓어진다
+              // ("커뮤니티" 캡슐 ≈ 108pt → 12px 오버플로). 활성 칸에 flex를
+              // 더 줘서 펼침 공간을 확보한다.
               for (var i = 0; i < _tabs.length; i++)
                 Expanded(
+                  flex: _index == i ? 2 : 1,
                   child: _TabItem(
                     icon: _index == i ? _tabs[i].activeIcon : _tabs[i].icon,
                     label: _tabs[i].label,
@@ -118,9 +122,13 @@ class _TabItem extends StatelessWidget {
               // 활성 탭만 라벨을 펼친다 — 파스텔 캡슐 문법.
               if (active) ...[
                 const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: VariantCTokens.tabLabel.copyWith(color: color),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: VariantCTokens.tabLabel.copyWith(color: color),
+                  ),
                 ),
               ],
             ],
