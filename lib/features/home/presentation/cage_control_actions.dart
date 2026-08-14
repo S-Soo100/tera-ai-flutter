@@ -139,7 +139,8 @@ Future<void> handleFanTap(
   if (isOn) {
     await sendCageCommand(context, ref, deviceId, CommandAction.fanOff);
     // 타이머 가동 중이었다면 취소된 것 — 칩을 깨워 내린다.
-    ref.invalidate(runningTimersProvider);
+    // await 뒤라 mounted 재확인 — 전송 중 화면을 떠났으면 ref는 죽어 있다.
+    if (context.mounted) ref.invalidate(runningTimersProvider);
     return;
   }
 
@@ -193,7 +194,10 @@ Future<void> handleFanTap(
     CommandAction.fanOn,
     payload: duration?.payload,
   );
-  if (duration != null) ref.invalidate(runningTimersProvider);
+  // '계속 켜기'(duration 없음)도 invalidate한다 — duration 없는 fan_on은
+  // 진행 중이던 타이머를 대체(소멸)시키므로, 안 깨우면 옛 칩이 만료 시각까지
+  // 가짜 카운트다운을 돈다. await 뒤라 mounted 재확인.
+  if (context.mounted) ref.invalidate(runningTimersProvider);
 }
 
 /// 1회 즉시 분사.

@@ -75,8 +75,10 @@ class TerraRestClient {
     try {
       return jsonDecode(resp.body);
     } catch (_) {
-      // 2xx인데 JSON이 아니면(빈 200 등) 본문 없음으로 취급한다.
-      return null;
+      // 2xx인데 본문이 JSON이 아니다 — 캡티브 포털/프록시가 낀 응답이다.
+      // null로 삼키면 예약 목록이 "예약 없음" 같은 **거짓 정상 화면**이 되므로
+      // 에러로 올린다(추출 전 ScheduleRepository도 여기서 던졌다).
+      throw TerraRestException(resp.statusCode, 'non-JSON response body');
     }
   }
 
