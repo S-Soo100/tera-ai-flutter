@@ -15,6 +15,16 @@
 
 > **주의**: 이 키들은 클라이언트용(anon/publishable)이므로 코드에 포함 가능. `service_role` 키는 절대 클라이언트에 노출하지 않는다.
 
+### 테스트 계정 (2026-08-14 박제)
+
+| 항목 | 값 |
+|------|-----|
+| ID (email) | `leegawnhun@gmail.com` |
+| PW | `123456` |
+
+> 개발·시뮬레이터 검증용 테스트 계정. 이 계정에 실 카메라 클립(`motion_clips`)·사육장 데이터가 물려 있다(메모리 `project_petcam_clip_verify` 참조).
+> **테스트 전용** — 실사용자 데이터 계정으로 승격하지 말 것. 저장소에 평문 기록되어 있으므로 이 비밀번호를 다른 서비스에서 재사용하지 않는다.
+
 ## 테이블 구조 (메인 앱 15개 + terra-server IoT)
 
 스키마 원본: [`docs/supabase-schema.md`](./supabase-schema.md)
