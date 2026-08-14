@@ -40,9 +40,12 @@ class _FakeRepo implements ScheduleRepository {
       required int hour,
       required int minute,
       required List<int> daysOfWeek,
-      Map<String, dynamic>? payload}) async {
-    calls.add('create');
-    return _schedule(id: 'new');
+      Map<String, dynamic>? payload,
+      ScheduleGuard? guard}) async {
+    calls.add('create:${action.wire}:'
+        '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}'
+        '${guard == null ? '' : ':guard=${guard.type.wire}>${guard.value}'}');
+    return _schedule(id: 'new-${calls.length}');
   }
 }
 

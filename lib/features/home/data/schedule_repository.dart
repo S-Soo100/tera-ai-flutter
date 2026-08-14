@@ -59,6 +59,7 @@ class ScheduleRepository {
     required int minute,
     required List<int> daysOfWeek,
     Map<String, dynamic>? payload,
+    ScheduleGuard? guard,
   }) async {
     final body = Schedule.createBody(
       action: action,
@@ -67,6 +68,7 @@ class ScheduleRepository {
       minute: minute,
       daysOfWeek: daysOfWeek,
       payload: payload,
+      guard: guard,
     );
     final resp = await _send(() async => http.post(
           Uri.parse('$_baseUrl/devices/$deviceId/schedules'),
