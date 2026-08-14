@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import 'design_lab_fixtures.dart';
@@ -14,7 +12,10 @@ import 'variant_a_widgets.dart';
 /// 미니 차트 → 타임라인. 모션: 타일 스프링 스케일.
 /// 탭바(유리 독)는 [VariantAShell]이 그린다 — 화면 내 장식 독은 제거됨.
 class VariantAHomeScreen extends StatefulWidget {
-  const VariantAHomeScreen({super.key});
+  const VariantAHomeScreen({super.key, this.visible = true});
+
+  /// 이 탭이 지금 보이는가 — 셸이 내려보낸다. mock 라이브 pause/play용.
+  final bool visible;
 
   @override
   State<VariantAHomeScreen> createState() => _VariantAHomeScreenState();
@@ -43,7 +44,7 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
                     horizontal: VariantATokens.screenHPad),
                 sliver: SliverList.list(
                   children: [
-                    const _CameraCard(),
+                    _CameraCard(visible: widget.visible),
                     const SizedBox(height: VariantATokens.tileGap),
                     const _SensorChipRow(),
                     const SizedBox(height: 20),
@@ -79,16 +80,18 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       foregroundColor: VariantATokens.textPrimary,
-      flexibleSpace: ClipRect(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: FlexibleSpaceBar(
-            expandedTitleScale: 1.8,
-            titlePadding: const EdgeInsetsDirectional.only(
-                start: 52, bottom: 14, end: 16),
-            title: const Text('내 사육장',
-                style: VariantATokens.headerTitleCollapsed),
-          ),
+      // 핀 헤더의 BackdropFilter는 **스크롤 프레임마다** 재실행된다 —
+      // 가림막은 플랫 반투명(월페이퍼 톤)으로 충분하다.
+      flexibleSpace: DecoratedBox(
+        decoration: BoxDecoration(
+          color: VariantATokens.wallpaperTop.withValues(alpha: 0.85),
+        ),
+        child: FlexibleSpaceBar(
+          expandedTitleScale: 1.8,
+          titlePadding:
+              const EdgeInsetsDirectional.only(start: 52, bottom: 14, end: 16),
+          title:
+              const Text('내 사육장', style: VariantATokens.headerTitleCollapsed),
         ),
       ),
       actions: [
@@ -147,17 +150,21 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CameraCard extends StatelessWidget {
-  const _CameraCard();
+  const _CameraCard({required this.visible});
+
+  /// 홈 탭이 보일 때만 재생 — 셸 → 화면 → 여기로 내려온다.
+  final bool visible;
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(VariantATokens.tileRadius),
-      child: const AspectRatio(
+      child: AspectRatio(
         aspectRatio: 16 / 9,
         // 번들 루프 영상 mock 라이브. LIVE 배지·타임스탬프는 플레이어가 그린다.
         child: MockLivePlayer(
-          fallback: Stack(
+          visible: visible,
+          fallback: const Stack(
             fit: StackFit.expand,
             children: [
               // 라이브 스틸 플레이스홀더 — 로딩/실패 시 바닥.

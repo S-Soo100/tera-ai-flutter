@@ -37,11 +37,13 @@ class _VariantBShellState extends State<VariantBShell> {
       backgroundColor: VariantBTokens.background,
       body: IndexedStack(
         index: _index,
-        children: const [
-          VariantBHomeScreen(),
-          VariantBStatsScreen(),
-          VariantBPetsScreen(),
-          VariantBCommunityScreen(),
+        children: [
+          // IndexedStack은 다른 탭도 살려 두므로 visible을 내려보내지 않으면
+          // mock 라이브가 안 보이는 탭 뒤에서 계속 돈다.
+          VariantBHomeScreen(visible: _index == 0),
+          const VariantBStatsScreen(),
+          const VariantBPetsScreen(),
+          const VariantBCommunityScreen(),
         ],
       ),
       bottomNavigationBar: Container(

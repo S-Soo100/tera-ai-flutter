@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -17,6 +15,7 @@ class MockLivePlayer extends StatefulWidget {
     super.key,
     required this.fallback,
     this.showBadge = true,
+    this.visible = true,
   });
 
   /// 영상이 준비되기 전/실패 시 보여줄 바닥 레이어.
@@ -27,17 +26,30 @@ class MockLivePlayer extends StatefulWidget {
   /// B안처럼 화면이 자기 오버레이를 갖고 있으면 끈다.
   final bool showBadge;
 
+  /// 지금 화면에 실제로 보이는가. IndexedStack 셸은 탭 이탈 시 false를
+  /// 내려보낸다 — 안 보이는 탭 뒤에서도 디코딩이 계속 돌면 랩 전체가
+  /// 무거워진다. false면 pause, 복귀하면 play.
+  final bool visible;
+
   @override
   State<MockLivePlayer> createState() => _MockLivePlayerState();
 }
 
-class _MockLivePlayerState extends State<MockLivePlayer> {
+class _MockLivePlayerState extends State<MockLivePlayer>
+    with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   bool _ready = false;
+
+  /// 앱이 전면(resumed)인가 — [MockLivePlayer.visible]과 AND로 재생을 정한다.
+  /// 백그라운드(inactive/paused)에서도 디코딩을 돌릴 이유가 없다.
+  bool _appResumed = true;
+
+  bool get _shouldPlay => widget.visible && _appResumed;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // 컨트롤러를 먼저 필드에 올려 둔다(hoist) — initialize 도중 위젯이
     // dispose되어도 State.dispose가 정리할 수 있게.
     final controller =
@@ -47,10 +59,13 @@ class _MockLivePlayerState extends State<MockLivePlayer> {
       if (!mounted) return; // dispose()가 컨트롤러를 정리한다.
       await controller.setLooping(true);
       await controller.setVolume(0);
-      await controller.play();
+      if (_shouldPlay) await controller.play();
       if (mounted) setState(() => _ready = true);
-    }).catchError((Object _) {
-      // 실패 시 폴백 유지. mounted면 여기서 native 리소스를 즉시 정리하고,
+    }).catchError((Object e) {
+      // 실패 시 폴백 유지 — 단, 이유는 남긴다. 조용한 폴백만 있으면
+      // 에셋 누락을 디자인 문제로 오인한 채 지나간다.
+      debugPrint('[mock-live] init failed: $e');
+      // mounted면 여기서 native 리소스를 즉시 정리하고,
       // 아니면 이미 State.dispose가 정리했으니 이중 dispose를 피한다.
       if (!mounted) return;
       _controller?.dispose();
@@ -59,7 +74,32 @@ class _MockLivePlayerState extends State<MockLivePlayer> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appResumed = state == AppLifecycleState.resumed;
+    _syncPlayback();
+  }
+
+  @override
+  void didUpdateWidget(covariant MockLivePlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.visible != widget.visible) _syncPlayback();
+  }
+
+  /// 재생 상태를 [_shouldPlay]에 맞춘다. 준비 전이면 initialize 후속(play
+  /// 직전의 [_shouldPlay] 확인)이 알아서 처리한다.
+  void _syncPlayback() {
+    final controller = _controller;
+    if (controller == null || !_ready) return;
+    if (_shouldPlay) {
+      controller.play();
+    } else {
+      controller.pause();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     super.dispose();
   }
@@ -124,7 +164,10 @@ class _MockLivePlayerState extends State<MockLivePlayer> {
   }
 }
 
-/// A안 카메라 카드의 유리 배지 문법(blur + 흰 오버레이 + 얇은 테두리).
+/// A안 카메라 카드의 배지 — 플랫 반투명 + 얇은 테두리.
+///
+/// blur를 쓰지 않는다: 비디오 위 BackdropFilter는 **프레임마다** 재실행돼
+/// 배지 두 개 값이 아니다. 판독성은 진한 오버레이가 대신 진다.
 class _BadgeGlass extends StatelessWidget {
   const _BadgeGlass({required this.child});
 
@@ -132,23 +175,14 @@ class _BadgeGlass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: VariantATokens.blurSigma,
-          sigmaY: VariantATokens.blurSigma,
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: VariantATokens.glassOverlay,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: VariantATokens.glassBorder, width: 0.5),
-          ),
-          child: child,
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: VariantATokens.glassOverlayStrong,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VariantATokens.glassBorder, width: 0.5),
       ),
+      child: child,
     );
   }
 }

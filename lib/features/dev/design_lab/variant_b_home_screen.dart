@@ -10,7 +10,10 @@ import 'tokens/variant_b_tokens.dart';
 /// 리스트. 밤 활동(22:00~06:00)을 비행 진행 바 문법으로 보여준다.
 /// 모션: 수치 카운트업, 진행 바 채움, 카드 순차 페이드+슬라이드.
 class VariantBHomeScreen extends StatefulWidget {
-  const VariantBHomeScreen({super.key});
+  const VariantBHomeScreen({super.key, this.visible = true});
+
+  /// 이 탭이 지금 보이는가 — 셸이 내려보낸다. mock 라이브 pause/play용.
+  final bool visible;
 
   @override
   State<VariantBHomeScreen> createState() => _VariantBHomeScreenState();
@@ -56,7 +59,7 @@ class _VariantBHomeScreenState extends State<VariantBHomeScreen>
       backgroundColor: VariantBTokens.background,
       body: CustomScrollView(
         slivers: [
-          const SliverToBoxAdapter(child: _LiveHeader()),
+          SliverToBoxAdapter(child: _LiveHeader(visible: widget.visible)),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
               VariantBTokens.screenHPad,
@@ -94,7 +97,10 @@ class _VariantBHomeScreenState extends State<VariantBHomeScreen>
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _LiveHeader extends StatelessWidget {
-  const _LiveHeader();
+  const _LiveHeader({required this.visible});
+
+  /// 홈 탭이 보일 때만 재생 — 셸 → 화면 → 여기로 내려온다.
+  final bool visible;
 
   @override
   Widget build(BuildContext context) {
@@ -107,9 +113,10 @@ class _LiveHeader extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // 번들 루프 영상 mock 라이브 — 배지는 B가 자기 오버레이로 그린다.
-          const MockLivePlayer(
+          MockLivePlayer(
             showBadge: false,
-            fallback: Stack(
+            visible: visible,
+            fallback: const Stack(
               fit: StackFit.expand,
               children: [
                 // 라이브 스틸 플레이스홀더 (그라데이션+아이콘) — 로딩/실패 시.

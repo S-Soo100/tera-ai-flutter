@@ -56,11 +56,13 @@ class _VariantAShellState extends State<VariantAShell> {
             onNotification: _onScroll,
             child: IndexedStack(
               index: _index,
-              children: const [
-                VariantAHomeScreen(),
-                VariantAStatsScreen(),
-                VariantAPetsScreen(),
-                VariantACommunityScreen(),
+              children: [
+                // IndexedStack은 다른 탭도 살려 두므로 visible을 내려보내지
+                // 않으면 mock 라이브가 안 보이는 탭 뒤에서 계속 돈다.
+                VariantAHomeScreen(visible: _index == 0),
+                const VariantAStatsScreen(),
+                const VariantAPetsScreen(),
+                const VariantACommunityScreen(),
               ],
             ),
           ),
@@ -107,25 +109,33 @@ class _GlassTabDock extends StatelessWidget {
         scale: shrunk ? 0.82 : 1.0,
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
-        child: AnimatedOpacity(
-          opacity: shrunk ? 0.6 : 1.0,
+        // 축소 시 흐림은 Opacity 레이어가 아니라 **decoration 알파**로 낸다 —
+        // AnimatedOpacity는 blur(BackdropFilter)의 saveLayer 위에 opacity
+        // saveLayer를 하나 더 쌓는다(quick_control_grid의 단일 표면 전례).
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(end: shrunk ? 0.55 : 1.0),
           duration: const Duration(milliseconds: 260),
-          child: AGlass(
+          curve: Curves.easeOutCubic,
+          builder: (context, t, child) => AGlass(
             radius: 100,
-            overlay: VariantATokens.glassOverlayStrong,
+            overlay: VariantATokens.glassOverlayStrong
+                .withValues(alpha: VariantATokens.glassOverlayStrong.a * t),
+            // 독은 콘텐츠가 뒤로 지나가는 유일한 표면 — 여기만 진짜 blur.
+            blur: true,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var i = 0; i < tabs.length; i++)
-                  _DockButton(
-                    icon: i == index ? tabs[i].selectedIcon : tabs[i].icon,
-                    label: tabs[i].label,
-                    selected: i == index,
-                    onTap: () => onSelected(i),
-                  ),
-              ],
-            ),
+            child: child!,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                _DockButton(
+                  icon: i == index ? tabs[i].selectedIcon : tabs[i].icon,
+                  label: tabs[i].label,
+                  selected: i == index,
+                  onTap: () => onSelected(i),
+                ),
+            ],
           ),
         ),
       ),

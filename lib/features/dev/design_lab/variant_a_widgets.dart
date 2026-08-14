@@ -58,7 +58,7 @@ class _GlowPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// 유리 타일 공통 — blur + 흰 오버레이 + 얇은 테두리.
+/// 유리 타일 공통 — 흰 오버레이 + 얇은 테두리(+선택적 blur).
 class AGlass extends StatelessWidget {
   const AGlass({
     super.key,
@@ -66,6 +66,7 @@ class AGlass extends StatelessWidget {
     this.radius = VariantATokens.tileRadius,
     this.overlay = VariantATokens.glassOverlay,
     this.padding = EdgeInsets.zero,
+    this.blur = false,
   });
 
   final Widget child;
@@ -73,25 +74,35 @@ class AGlass extends StatelessWidget {
   final Color overlay;
   final EdgeInsetsGeometry padding;
 
+  /// BackdropFilter blur를 깔지. **기본 false** — 배경이 정적 그라데이션이라
+  /// 반투명 플랫 필과 시각 차이가 미미한데, BackdropFilter는 조각 수만큼
+  /// saveLayer를 쌓아 스크롤 프레임을 잡아먹는다(프로덕션 GlassCard와 같은
+  /// 결론). 뒤로 실제 콘텐츠가 지나가는 표면(셸의 독)만 true를 준다.
+  final bool blur;
+
   @override
   Widget build(BuildContext context) {
+    final body = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: overlay,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: VariantATokens.glassBorder, width: 0.5),
+      ),
+      child: child,
+    );
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: VariantATokens.blurSigma,
-          sigmaY: VariantATokens.blurSigma,
-        ),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: overlay,
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: VariantATokens.glassBorder, width: 0.5),
-          ),
-          child: child,
-        ),
-      ),
+      child: blur
+          ? BackdropFilter(
+              filter: ui.ImageFilter.blur(
+                sigmaX: VariantATokens.blurSigma,
+                sigmaY: VariantATokens.blurSigma,
+              ),
+              child: body,
+            )
+          : body,
     );
   }
 }
