@@ -290,8 +290,10 @@ GoRouter buildAppRouter({
         builder: (context, state) => const ChartLabScreen(),
       ),
       // UIUX 벤치마크 체험 랩 — 스펙: docs/design-lab-benchmark-specs.md
+      // 테스트 유저 공개(비로그인, kPublicPaths): docs/design-test-rollout-plan.md
+      // 구 경로 /dev/design-lab을 이 공개 경로로 교체(2026-08-14).
       GoRoute(
-        path: '/dev/design-lab',
+        path: '/design-test',
         builder: (context, state) => const DesignLabScreen(),
         routes: [
           GoRoute(

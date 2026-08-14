@@ -88,6 +88,7 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 | `/search` (보조) | search | 백색목록 검색 | SpeciesRepository |
 | `/notifications`·`/enclosure-settings`·`/home/routines` (보조) | notification / my_cage / home | 홈 헤더·루틴 진입점 | PRD §3.1 / §3.4 |
 | `/dev/chart-lab` (보조) | dev | ChartLabScreen — 온습도 그래프 디자인 검토(더미 데이터) | 없음(하드코딩 픽스처) |
+| `/design-test` (보조, **공개**) | dev/design_lab | 디자인 테스트 선택 + A/B/C 4탭 mock 셸(구 `/dev/design-lab` 교체, 비로그인 공개 — `kPublicPaths`). 롤백: `docs/design-test-rollout-plan.md` §2.4 | 없음(랩 fixtures + 번들 루프 영상) |
 | — | splash/error | SplashScreen / ErrorScreen | — |
 
 > 홈 탭 도메인: `home/domain/{day_window,device_mode,enclosure_set,env_extremes,env_chart_series,actuator_marker,chart_time_axis,running_timer,mist_lock,mist_duration,schedule,timeline_summary,pet_dday}.dart`. 하루 경계는 **07:00~익일 07:00**(`DayWindow`), 차트 범위는 전날 19:00~현재 — 어젯밤 리포트(22~06시)와 별개 개념이니 혼용 금지.

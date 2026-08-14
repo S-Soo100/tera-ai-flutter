@@ -50,6 +50,15 @@ A안을 제대로 볼 수 없다. **B·C와 같은 방식의 A안 4탭 mock 셸*
 랩 자체는 개발 자산으로 존치. 이 두 줄 위치를 본 문서에 기록해 두는 것으로 충분
 — 별도 feature flag는 과잉.
 
+**실제 위치 (2026-08-14 구현):**
+- 진입점: `lib/features/auth/presentation/login_screen.dart:169~180`
+  — "디자인 미리보기" `TextButton` 블록(주석 포함) 제거
+- 공개 경로: `lib/core/router/tab_branches.dart:46~49`
+  — `kPublicPaths`의 `'/design-test'` 항목(주석 포함) 제거
+- ko.json 키 `login_design_preview`는 남겨 둬도 무해(참조만 사라짐)
+- 라우트 자체(`app_router.dart:295~`의 `/design-test`)는 존치 —
+  위 두 줄이 빠지면 비로그인 접근이 `/login`으로 redirect되어 숨는다
+
 ## 3. 하지 않는 것
 - 실 서버 연동(명령·텔레메트리·Realtime) — 체험은 전부 로컬 mock
 - 인앱 투표/설문 — 수집 안 함 결정

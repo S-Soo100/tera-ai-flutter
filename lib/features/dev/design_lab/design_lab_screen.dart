@@ -5,9 +5,10 @@ import 'tokens/variant_a_tokens.dart';
 import 'tokens/variant_b_tokens.dart';
 import 'tokens/variant_c_tokens.dart';
 
-/// 디자인 랩 선택 화면 — 벤치마크 3안 카드.
+/// 디자인 테스트 선택 화면 — 테스트 유저용 A/B/C 시안 카드.
 ///
-/// 스펙: `docs/design-lab-benchmark-specs.md`. 하드코딩 색·문자열은
+/// 스펙: `docs/design-lab-benchmark-specs.md`, 공개 계획:
+/// `docs/design-test-rollout-plan.md`. 하드코딩 색·문자열은
 /// 랩 한정 허용(chart-lab 전례) — 전면 적용 단계에서 승격한다.
 class DesignLabScreen extends StatelessWidget {
   const DesignLabScreen({super.key});
@@ -16,22 +17,30 @@ class DesignLabScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       key: DesignLabScreen.screenKey,
-      appBar: AppBar(title: const Text('디자인 랩 — 벤치마크 3안')),
+      appBar: AppBar(title: const Text('디자인 미리보기')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            '같은 더미 데이터로 세 가지 디자인 언어를 체험한다. '
-            '구조·위계·모션은 벤치마크를 따르고, 그래픽은 비바나트 자산으로 치환.',
-            style: Theme.of(context).textTheme.bodySmall,
+            '비바나트가 검토 중인 세 가지 디자인을 직접 체험해 보세요. '
+            '모든 데이터는 데모입니다 — 실제 사육장·계정과 연결되지 않아요.',
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '느낀 점은 운영자에게 알려주세요.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
           ),
           const SizedBox(height: 16),
           _VariantCard(
             label: 'A안',
             title: 'Apple Home — Liquid Glass',
-            summary: '실앱에 적용된 현행 디자인(홈 미리보기). '
+            summary: '4탭 풀 체험(홈·통계·마이크레·커뮤니티). '
                 '딥 월페이퍼 위 유리 타일, 2×2 그리드, 스프링 스케일 탭.',
             colors: const [
               VariantATokens.wallpaperTop,
@@ -39,7 +48,7 @@ class DesignLabScreen extends StatelessWidget {
               VariantATokens.heaterTint,
               VariantATokens.mistTint,
             ],
-            onTap: () => context.push('/dev/design-lab/a'),
+            onTap: () => context.push('/design-test/a'),
           ),
           const SizedBox(height: 12),
           _VariantCard(
@@ -53,7 +62,7 @@ class DesignLabScreen extends StatelessWidget {
               VariantBTokens.amber,
               VariantBTokens.green,
             ],
-            onTap: () => context.push('/dev/design-lab/b'),
+            onTap: () => context.push('/design-test/b'),
           ),
           const SizedBox(height: 12),
           _VariantCard(
@@ -67,7 +76,7 @@ class DesignLabScreen extends StatelessWidget {
               VariantCTokens.tempGradEnd,
               VariantCTokens.humidGradStart,
             ],
-            onTap: () => context.push('/dev/design-lab/c'),
+            onTap: () => context.push('/design-test/c'),
           ),
         ],
       ),

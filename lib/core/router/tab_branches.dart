@@ -43,6 +43,10 @@ const List<String> kPublicPaths = [
   '/wiki',
   '/community',
   '/search',
+  // 디자인 테스트 공개(전부 mock, 하위 a/b/c 포함 — redirect가 startsWith로
+  // 처리). 테스트 종료 시 이 줄 + 로그인 화면 진입점 1줄만 지우면 숨는다:
+  // docs/design-test-rollout-plan.md §2.4
+  '/design-test',
   '/login',
   '/signup',
   '/verify-email',

@@ -1,7 +1,8 @@
 # 디자인 랩 — 벤치마크 3안 스펙 (2026-08-13)
 
 > UIUX 전면 개선 프로젝트 1단계 산출물. 벤치마크 3앱(사용자 확정 2026-08-13)의
-> 디자인 언어를 비바나트 홈 탭에 이식하는 체험 페이지(`/dev/design-lab`) 스펙.
+> 디자인 언어를 비바나트 홈 탭에 이식하는 체험 페이지(`/design-test` —
+> 구 `/dev/design-lab`, 2026-08-14 비로그인 공개로 교체: `design-test-rollout-plan.md`) 스펙.
 > 원칙: **구조·위계·인터랙션·모션은 픽셀 수준 모방, 아이콘·일러스트·브랜드 그래픽은 비바나트 자산으로 치환**
 > (트레이드 드레스 회피). 최종 선정안은 앱 전체에 적용하고 Figma/design-direction.md SOT를 갱신한다.
 
@@ -78,7 +79,7 @@
 5. **타임라인**: 거래 내역 리스트 문법 — 좌측 파스텔 아이콘 원, 우측 시각, 날짜 섹션 헤더.
 6. **모션**: 차트 그리기 애니메이션(좌→우 reveal), 스프링 전환, 숫자 롤링.
 
-## `/dev/design-lab` 설계
+## `/design-test` 설계 (구 `/dev/design-lab`)
 
 ```
 lib/features/dev/design_lab/
@@ -93,7 +94,7 @@ lib/features/dev/design_lab/
     └── variant_c_tokens.dart
 ```
 
-- 라우트: `/dev/design-lab`(선택 화면) + `/dev/design-lab/a|b|c`. `app_router.dart` 보조 최상위 등록(`/dev/chart-lab` 옆).
+- 라우트: `/design-test`(선택 화면) + `/design-test/a|b|c`. `app_router.dart` 보조 최상위 등록(`/dev/chart-lab` 옆). 2026-08-14부터 비로그인 공개(`kPublicPaths`) — 진입점·롤백은 `design-test-rollout-plan.md` §2.4.
 - 상태 관리 없음(StatelessWidget + 로컬 인터랙션만). Riverpod provider 미도입 — 더미라 불필요.
 - 하드코딩 색상·문자열: **랩 한정 허용**(chart-lab 전례 — 픽스처·검토용 화면은 예외). 전면 적용 단계에서 토큰은 AppTheme으로, 문자열은 ko.json으로 승격.
 - 진입: 개발 중에는 URL 직접 진입. 필요 시 설정 화면에 임시 진입점(후속 판단).

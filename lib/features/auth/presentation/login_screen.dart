@@ -167,6 +167,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                   ),
+
+                  // 디자인 미리보기 — 테스트 유저용 A/B/C 체험(비로그인 공개).
+                  // 테스트 종료 시 이 버튼 + kPublicPaths '/design-test' 제거:
+                  // docs/design-test-rollout-plan.md §2.4
+                  TextButton(
+                    onPressed: () => context.push('/design-test'),
+                    child: Text(
+                      'login_design_preview'.tr(),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
+                    ),
+                  ),
                 ],
               ),
             ),
