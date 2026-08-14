@@ -1,18 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../core/config/env_config.dart';
+import '../../../core/network/terra_rest_client.dart';
 import '../data/schedule_repository.dart';
 import '../domain/schedule.dart';
 import 'home_control_providers.dart';
 
 final scheduleRepositoryProvider = Provider<ScheduleRepository>((ref) {
-  return ScheduleRepository(
-    baseUrl: EnvConfig.terraServerUrl,
-    tokenProvider: () async =>
-        Supabase.instance.client.auth.currentSession?.accessToken,
-    supabase: Supabase.instance.client,
-  );
+  return ScheduleRepository(ref.watch(terraRestClientProvider));
 });
 
 /// 현재 사육장의 예약 목록.
