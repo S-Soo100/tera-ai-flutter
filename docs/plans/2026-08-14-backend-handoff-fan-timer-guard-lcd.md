@@ -1,6 +1,11 @@
 # 백엔드 핸드오프(2026-08-14) 반영 구현 계획
 
 > **구현 방식 (CAOF):** 이 계획을 task 단위로 구현한다. Part 1·3은 Standard(메인 직접), Part 2는 Critical(사용자 승인 → flutter-dev 투입 가능, 메인 직접도 허용). Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **진행 현황 (2026-08-14):**
+> - Part 0 ✅ `a892c74` · Part 1 ✅ v0.57.0 (`0438f52`~`3a645bb`) · Part 2 ✅ v0.58.0 (`94c39a1`~`234531b`, 사용자 승인 후 메인 직접) · Part 3 ✅ v0.59.0
+> - 서버 검증: `schedules.guard`(jsonb)·`commands.source/source_id/reason` 컬럼 존재 확인(읽기 전용 SQL, 2026-08-14)
+> - **남은 것:** ① 실서버 스모크(guard 왕복·구간 생성 — 실기기에서) ② 펌웨어 플래시 후 팬타이머·LCD 실동작 확인 ③ guard 해제 PATCH `null` 수용 여부 실서버 확인(Task 2-2 Must know)
 
 **Goal:** 백엔드 핸드오프 요약(`docs/backend-handoff-2026-08-14-summary.md`)으로 풀린 계약 4건을 앱에 반영한다 — ① 팬 일회성 타이머, ② 예약 스마트 가드 + 구간 예약, ③ LCD 커스텀 텍스트.
 
