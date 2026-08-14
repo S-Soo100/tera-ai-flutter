@@ -51,29 +51,73 @@ void main() {
     });
   });
 
-  group('RunningTimer.fromJson', () {
-    test('테이블 컬럼 매핑', () {
-      final t = RunningTimer.fromJson({
-        'id': 't1',
-        'device_id': 'd1',
-        'actuator': 'fan',
-        'duration_minutes': 30,
-        'ends_at': '2026-08-05T12:18:20Z',
-      });
-      expect(t.deviceId, 'd1');
+  group('RunningTimer.fanTimerFrom — commands 이력에서 계산 (A안)', () {
+    Map<String, dynamic> cmd(String action, String status, String issuedAt,
+            {int? durationMs}) =>
+        {
+          'id': 'c-$action-$issuedAt',
+          'device_id': 'dev-1',
+          'action': action,
+          'status': status,
+          'payload': durationMs == null ? null : {'duration_ms': durationMs},
+          'issued_at': issuedAt,
+        };
+
+    final now = DateTime.parse('2026-08-14T12:00:00Z');
+
+    test('duration 붙은 최신 fan_on → 진행 중 타이머', () {
+      final t = RunningTimer.fanTimerFrom(
+        [cmd('fan_on', 'acked', '2026-08-14T11:50:00Z', durationMs: 1800000)],
+        now,
+      );
+      expect(t, isNotNull);
+      expect(t!.durationMinutes, 30);
       expect(t.actuatorLabelKey, 'module_actuator_fan');
-      expect(t.durationMinutes, 30);
+      expect(t.remaining(now), const Duration(minutes: 20));
     });
 
-    test('알 수 없는 actuator도 죽지 않는다', () {
-      final t = RunningTimer.fromJson({
-        'id': 't1',
-        'device_id': 'd1',
-        'actuator': 'mystery',
-        'duration_minutes': 5,
-        'ends_at': '2026-08-05T12:00:00Z',
-      });
-      expect(t.actuatorLabelKey, 'module_actuator_unknown');
+    test('더 최신 fan_off가 있으면 취소된 것 → null', () {
+      final t = RunningTimer.fanTimerFrom([
+        cmd('fan_off', 'acked', '2026-08-14T11:55:00Z'),
+        cmd('fan_on', 'acked', '2026-08-14T11:50:00Z', durationMs: 1800000),
+      ], now);
+      expect(t, isNull);
+    });
+
+    test('rejected 명령은 없는 셈 — 그 아래 fan_on 타이머가 살아있다', () {
+      final t = RunningTimer.fanTimerFrom([
+        cmd('fan_off', 'rejected', '2026-08-14T11:55:00Z'),
+        cmd('fan_on', 'acked', '2026-08-14T11:50:00Z', durationMs: 1800000),
+      ], now);
+      expect(t, isNotNull);
+    });
+
+    test('발행 직후(pending)도 타이머로 본다 — 칩이 바로 떠야 한다', () {
+      final t = RunningTimer.fanTimerFrom(
+        [cmd('fan_on', 'pending', '2026-08-14T11:59:00Z', durationMs: 600000)],
+        now,
+      );
+      expect(t, isNotNull);
+    });
+
+    test('duration 없는 fan_on(그냥 켜기) → null', () {
+      final t = RunningTimer.fanTimerFrom(
+        [cmd('fan_on', 'acked', '2026-08-14T11:50:00Z')],
+        now,
+      );
+      expect(t, isNull);
+    });
+
+    test('만료된 타이머 → null', () {
+      final t = RunningTimer.fanTimerFrom(
+        [cmd('fan_on', 'acked', '2026-08-14T10:00:00Z', durationMs: 600000)],
+        now,
+      );
+      expect(t, isNull);
+    });
+
+    test('빈 목록 → null', () {
+      expect(RunningTimer.fanTimerFrom(const [], now), isNull);
     });
   });
 }

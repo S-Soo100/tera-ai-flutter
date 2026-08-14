@@ -1,12 +1,9 @@
 /// PRD §4.2.1 진행 중 타이머 칩의 데이터 모델.
 ///
-/// **아직 이걸 채울 데이터가 없다.** 2026-08-12 일회성 타이머를 A안
-/// (`fan_on` + `duration_ms`, 펌웨어가 스스로 OFF)으로 정하면서, 한때 가정했던
-/// `device_timers` 테이블은 만들어지지 않는다. A안이 열리면 `commands` 이력에서
-/// `issued_at + duration_ms`로 [endsAt]을 계산해 채운다.
-///
-/// [fromJson]은 그 시절 스키마를 그대로 두었다 — A안 배선 때 어느 쪽이든
-/// 맞춰 쓰면 되고, 포맷·만료 로직은 데이터 출처와 무관하게 여기서 검증된다.
+/// 서버에 타이머 상태 테이블은 **없다**(A안 확정, 2026-08-14 핸드오프 §1.3).
+/// `fan_on` + `duration_ms`를 보내면 펌웨어가 스스로 끄고, 진행 중 여부는
+/// `commands` 이력에서 `issued_at + duration_ms`로 계산한다 — 그래서
+/// 다기기에서도 같은 값이 나온다. 배선은 [fanTimerFrom].
 class RunningTimer {
   final String id;
   final String deviceId;
@@ -35,24 +32,36 @@ class RunningTimer {
 
   bool isActive(DateTime now) => remaining(now) > Duration.zero;
 
-  factory RunningTimer.fromJson(Map<String, dynamic> j) {
-    return RunningTimer(
-      id: j['id'] as String? ?? '',
-      deviceId: j['device_id'] as String? ?? '',
-      actuatorLabelKey: _labelKey(j['actuator'] as String?),
-      durationMinutes: (j['duration_minutes'] as num?)?.toInt() ?? 0,
-      endsAt: j['ends_at'] != null
-          ? DateTime.tryParse(j['ends_at'].toString())?.toLocal() ??
-              DateTime.now()
-          : DateTime.now(),
-    );
-  }
-
-  static String _labelKey(String? actuator) {
-    const known = {'fan', 'heater', 'led', 'relay'};
-    return known.contains(actuator)
-        ? 'module_actuator_$actuator'
-        : 'module_actuator_unknown';
+  /// `commands` 이력 → 진행 중 팬 타이머 (A안: `issued_at + duration_ms`).
+  ///
+  /// [rows]는 fan 계열(`fan_on`/`fan_off`/`fan_toggle`) 명령을 **`issued_at`
+  /// 내림차순**으로 담는다. 최신 유효 명령이 duration 붙은 `fan_on`이고 아직 안
+  /// 끝났을 때만 타이머다 — 그 뒤에 off/toggle이 왔으면 취소된 것이고,
+  /// `rejected`/`expired`는 기기에 닿지 않았으니 없는 셈 친다. `pending`/`sent`는
+  /// 타이머로 본다 — 발행 직후 칩이 바로 떠야 사용자가 "걸렸다"를 확인한다.
+  static RunningTimer? fanTimerFrom(
+    List<Map<String, dynamic>> rows,
+    DateTime now,
+  ) {
+    for (final r in rows) {
+      final status = r['status'] as String?;
+      if (status == 'rejected' || status == 'expired') continue;
+      if (r['action'] != 'fan_on') return null;
+      final payload = r['payload'];
+      final ms = payload is Map ? (payload['duration_ms'] as num?) : null;
+      if (ms == null) return null;
+      final issuedAt = DateTime.tryParse('${r['issued_at']}')?.toLocal();
+      if (issuedAt == null) return null;
+      final t = RunningTimer(
+        id: '${r['id']}',
+        deviceId: '${r['device_id']}',
+        actuatorLabelKey: 'module_actuator_fan',
+        durationMinutes: ms.toInt() ~/ 60000,
+        endsAt: issuedAt.add(Duration(milliseconds: ms.toInt())),
+      );
+      return t.isActive(now) ? t : null;
+    }
+    return null;
   }
 }
 
