@@ -31,6 +31,7 @@
 - **DB 스키마 (DDL 원본)**: `docs/supabase-schema.md` (메인 15개 + terra-server IoT 테이블)
 - **연동 현황 (접속 정보/RLS/시드/Flutter 코드 예시)**: `docs/supabase-setup.md`
 - **사육장 IoT 통합 (단일 진실 소스)**: `~/Downloads/APP_INTEGRATION.md` (terra-server) — 디바이스 제어/텔레메트리/BLE 페어링 계약
+- **백엔드 핸드오프 2026-08-14 (신규 계약 요약)**: `docs/backend-handoff-2026-08-14-summary.md` — 팬 타이머·예약 guard·구간 on/off·LCD·commands 출처 컬럼. 앱 반영 계획: `docs/plans/2026-08-14-backend-handoff-fan-timer-guard-lcd.md`
 - **BLE Wi-Fi 프로비저닝 (사육장·카메라 단일 진실 소스)**: `docs/ble-provisioning-protocol.md` — `terra-iot`/`FB2_P4_CAM` 공통 GATT·명령·응답 + 페어링 결정((a): 앱은 WiFi만, 토큰/DB 사전 세팅)
 - **클라우드 마이그레이션/UI 개편 (Phase C/D)**: `docs/flutter-cloud-migration-plan.md`
 - **Storage 파일 복사 우회 (MCP·service_role 제약)**: 메모리 `project_supabase_storage_edge_workaround` — edge function으로 `storage.copy`, 경로 `pet-media/{user_id}/pets/{pet_id}.png`
