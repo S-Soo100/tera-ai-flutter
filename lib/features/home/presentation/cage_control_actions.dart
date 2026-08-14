@@ -24,8 +24,10 @@ import '../../my_cage/domain/actuator_state.dart';
 import '../../my_cage/domain/telemetry_reading.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../../my_cage/presentation/widgets/heater_lock_dialog.dart';
+import '../domain/fan_timer_duration.dart';
 import '../domain/mist_duration.dart';
 import '../domain/mist_lock.dart';
+import 'widgets/running_timer_chip.dart';
 
 /// 분무 중복 클릭 락. **기기별로 분리한다** — 전역이면 A 사육장에서 분무한 뒤
 /// B 사육장으로 스와이프해도 B의 버튼이 잠긴다.
@@ -120,7 +122,13 @@ Future<void> handleHeaterTap(
   );
 }
 
-/// 팬 제어. 히터와 달리 안전 확인은 없지만 **명령은 똑같이 절대 상태**로 보낸다.
+/// 팬 제어 — 꺼져 있으면 시트(계속 켜기/일회성 타이머), 켜져 있으면 바로 끈다.
+///
+/// 끄기에 시트를 안 두는 이유: 끄기는 망설일 게 없고, **타이머 취소도
+/// `fan_off`다**(2026-08-14 핸드오프 §1.3). 타이머는 `fan_on` +
+/// `payload.duration_ms`로 걸고 **펌웨어가 스스로 끈다** — 분무와 같은 이유로
+/// 앱이 지연 OFF를 흉내내지 않는다. 히터와 달리 안전 확인은 없지만 명령은
+/// 똑같이 절대 상태로 보낸다.
 Future<void> handleFanTap(
   BuildContext context,
   WidgetRef ref,
@@ -128,12 +136,64 @@ Future<void> handleFanTap(
   TelemetryReading? telemetry,
 ) async {
   final isOn = telemetry?.fan == ActuatorState.on;
+  if (isOn) {
+    await sendCageCommand(context, ref, deviceId, CommandAction.fanOff);
+    // 타이머 가동 중이었다면 취소된 것 — 칩을 깨워 내린다.
+    ref.invalidate(runningTimersProvider);
+    return;
+  }
+
+  // (FanTimerDuration?,) — null이면 '계속 켜기', 값이 있으면 일회성 타이머.
+  // 시트 닫힘(null 반환)과 '계속 켜기'를 구분하려고 레코드로 감싼다.
+  final picked = await showModalBottomSheet<(FanTimerDuration?,)>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppStyles.spacing16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('home_fan_pick_title'.tr(),
+                style: AppStyles.subsectionTitle(ctx)),
+            const SizedBox(height: AppStyles.spacing12),
+            OutlinedButton(
+              key: const Key('fan_steady_on'),
+              onPressed: () => Navigator.of(ctx).pop((null,)),
+              child: Text('home_fan_steady_on'.tr()),
+            ),
+            const SizedBox(height: AppStyles.spacing8),
+            Row(
+              children: [
+                for (final d in FanTimerDuration.values) ...[
+                  Expanded(
+                    child: OutlinedButton(
+                      key: Key('fan_timer_${d.minutes}'),
+                      onPressed: () => Navigator.of(ctx).pop((d,)),
+                      child: Text(d.labelKey.tr()),
+                    ),
+                  ),
+                  if (d != FanTimerDuration.values.last)
+                    const SizedBox(width: AppStyles.spacing8),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (picked == null || !context.mounted) return;
+
+  final duration = picked.$1;
   await sendCageCommand(
     context,
     ref,
     deviceId,
-    isOn ? CommandAction.fanOff : CommandAction.fanOn,
+    CommandAction.fanOn,
+    payload: duration?.payload,
   );
+  if (duration != null) ref.invalidate(runningTimersProvider);
 }
 
 /// 1회 즉시 분사.

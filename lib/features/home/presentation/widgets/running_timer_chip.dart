@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/supabase/supabase_provider.dart';
 import '../../domain/running_timer.dart';
-import '../home_set_providers.dart';
+import '../home_control_providers.dart';
 
 /// 1초 tick. autoDispose라 홈을 떠나면 타이머가 멈춘다.
 final _secondTickProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
@@ -12,24 +13,36 @@ final _secondTickProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
   yield* Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
 });
 
-/// 현재 세트 제어기의 진행 중 타이머.
+/// 현재 세트 제어기의 진행 중 팬 타이머 (A안 — `commands`에서 계산).
 ///
-/// **아직 배선할 곳이 없다.** 한때 `device_timers` 테이블(B안)을 조회했으나,
-/// 2026-08-12 일회성 타이머를 **A안(`fan_on` + `duration_ms`, 펌웨어 자동 OFF)**
-/// 으로 정하면서 그 테이블은 만들어지지 않는다. 없는 테이블을 매번 조회해
-/// 실패를 삼키던 코드라 걷어냈다.
+/// `issued_at + duration_ms`로 종료 시각을 만든다(2026-08-14 핸드오프 §1.3).
+/// 서버에 타이머 상태를 따로 두지 않아 다기기에서 같은 값이 나온다.
+/// 타이머 발행·취소 직후에는 발행부(`cage_control_actions.dart`)가 이 provider를
+/// invalidate해 칩을 깨운다.
 ///
-/// A안이 열리면 여기를 이렇게 채운다 — `commands`에서 `duration_ms`가 붙은
-/// 최근 `*_on`(status='acked')을 찾아 `issued_at + duration_ms`로 종료 시각을
-/// 계산한다. 서버에 상태를 따로 두지 않아도 다기기에서 같은 값이 나온다.
-/// 확인 대기 항목은 `docs/backend-handoff-timer-mist.md` §10.5.
-///
-/// 그때까지 빈 목록을 돌려 칩만 안 뜨게 한다. throw하면 제어 탭 전체가
-/// 에러 화면이 된다.
+/// 조회 실패는 빈 목록으로 흡수한다 — 칩 하나 때문에 제어 탭 전체를 에러
+/// 화면으로 만들지 않는다.
 final runningTimersProvider =
     FutureProvider.autoDispose<List<RunningTimer>>((ref) async {
-  await ref.watch(currentSetProvider.future);
-  return const [];
+  final client = ref.watch(supabaseClientProvider);
+  final deviceId = await ref.watch(currentDeviceIdProvider.future);
+  if (deviceId == null) return const [];
+  try {
+    final rows = await client
+        .from('commands')
+        .select('id, device_id, action, status, payload, issued_at')
+        .eq('device_id', deviceId)
+        .inFilter('action', ['fan_on', 'fan_off', 'fan_toggle'])
+        .order('issued_at', ascending: false)
+        .limit(10);
+    final t = RunningTimer.fanTimerFrom(
+      (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
+      DateTime.now(),
+    );
+    return t == null ? const [] : [t];
+  } catch (_) {
+    return const [];
+  }
 });
 
 /// PRD §3.4 진행 중 타이머 칩. 가동 중 타이머가 있을 때만 노출.

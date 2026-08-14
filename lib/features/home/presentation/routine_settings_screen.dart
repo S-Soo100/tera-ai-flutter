@@ -17,12 +17,13 @@ import 'widgets/schedule_editor_sheet.dart';
 ///
 /// | PRD | 상태 |
 /// |---|---|
-/// | §4.2.1 타이머(즉시·일회성) | ❌ 백엔드 없음 (핸드오프 요청 3) |
+/// | §4.2.1 타이머(즉시·일회성) | ✅ 팬 — 제어 그리드의 팬 시트에서 건다 (히터는 보드 미탑재) |
 /// | §4.2.2 일정 — 시점 예약 | ✅ 여기 |
-/// | §4.2.2 시작~종료 구간 | ❌ toggle뿐이라 위험 (요청 1) |
-/// | §4.2.2 스마트 조건 | ❌ 스키마에 필드 없음 (요청 2) |
+/// | §4.2.2 시작~종료 구간 | ⏳ 계약 열림(2026-08-14) — 구현 계획 Part 2 |
+/// | §4.2.2 스마트 조건 | ⏳ 계약 열림(2026-08-14) — 구현 계획 Part 2 |
 ///
-/// 상세: `docs/backend-handoff-timer-mist.md`
+/// 상세: `docs/backend-handoff-2026-08-14-summary.md` ·
+/// `docs/plans/2026-08-14-backend-handoff-fan-timer-guard-lcd.md`
 class RoutineSettingsScreen extends ConsumerWidget {
   const RoutineSettingsScreen({super.key});
 
@@ -167,8 +168,11 @@ class _TimerPendingCard extends StatelessWidget {
   const _TimerPendingCard();
 
   /// (제목 키, 사유 키). PRD 순서대로.
+  ///
+  /// 타이머(§4.2.1)는 2026-08-14 계약이 열려 **팬 시트로 구현돼 여기서 빠졌다**.
+  /// 남은 두 줄도 계약은 열렸고 앱 구현 대기다(구현 계획 Part 2) — 구현되면
+  /// 이 카드를 통째로 걷고 "정지형 가드·히터 타이머 펌웨어 후속" 각주만 남긴다.
   static const _items = [
-    ('routine_timer_section', 'routine_timer_pending'),
     ('routine_pending_span_title', 'routine_pending_span_body'),
     ('routine_pending_guard_title', 'routine_pending_guard_body'),
   ];
