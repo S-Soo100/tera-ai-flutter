@@ -152,11 +152,14 @@ class _DockButton extends StatelessWidget {
         ? VariantATokens.textPrimary
         : VariantATokens.textSecondary;
 
+    // excludeSemantics가 자식 InkWell의 tap 액션까지 지우므로 onTap을 직접 단다
+    // (실앱 GlassDock과 동일).
     return Semantics(
       button: true,
       selected: selected,
       inMutuallyExclusiveGroup: true,
       label: label,
+      onTap: onTap,
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,

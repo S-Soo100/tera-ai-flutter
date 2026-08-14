@@ -108,11 +108,14 @@ class _DockButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = selected ? selectedColor : unselectedColor;
     // 라벨은 Semantics가 말한다 — 안의 아이콘·텍스트까지 읽히면 겹말이 된다.
+    // excludeSemantics는 자식 InkWell의 **tap 액션까지** 지우므로, 스크린리더가
+    // 활성화할 수 있게 onTap을 이 노드에 직접 단다.
     return Semantics(
       button: true,
       selected: selected,
       inMutuallyExclusiveGroup: true,
       label: item.label,
+      onTap: onTap,
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
