@@ -7,7 +7,7 @@
 
 ## 0. 현행 — Liquid Glass (A안, 2026-08-13 확정)
 
-**A안(Apple Home iOS 26 문법)을 전면 적용했다.** 디자인 랩 3안 비교(`/dev/design-lab`, `lib/features/dev/design_lab/` — **비교 페이지로 존치**)에서 사용자가 A안을 골랐고, 4탭 전부 + 보조 라우트가 이 시스템으로 넘어왔다.
+**A안(Apple Home iOS 26 문법)을 전면 적용했다.** 디자인 랩 3안 비교(`/design-test`, `lib/features/dev/design_lab/` — **비교 페이지로 존치**)에서 사용자가 A안을 골랐고, 4탭 전부 + 보조 라우트가 이 시스템으로 넘어왔다.
 
 새 시스템의 문법 (토큰 SOT: `lib/core/theme/app_theme.dart`의 "Liquid Glass" 섹션):
 
@@ -16,7 +16,7 @@
 - **활성은 유리가 아니라 불투명 흰색**(`glassActiveTile`) — 켜짐/선택을 면으로 말한다
 - **기기 틴트 4종**(히터 주황·분무 파랑·LED 노랑·팬 민트)은 활성 타일 아이콘·센서 칩에만
 - **타이포 위계는 유리 전용 스타일**(`glassHeaderTitle` 28 ~ `glassTileStatus` 13, Pretendard)
-- **라이트/다크 분기가 없다** — 월페이퍼가 항상 어두워 단일 룩. 화면 트리는 `Theme(data: AppTheme.dark)`로 감싸 테마색을 읽는 기존 위젯을 다크 팔레트로 그린다
+- **라이트/다크 분기가 없다** — 월페이퍼가 항상 어두워 단일 룩. 앱 전역이 다크 고정이다(`app.dart`의 `darkTheme`+`themeMode: dark`, 2026-08-14 — 화면별 `Theme(data:)` 래핑은 걷어냈고 `AppTheme.light`도 삭제됐다). 4탭 루트 프레임은 `GlassTabShell` 한 곳이 맡는다
 - 탭바는 **플로팅 유리 독**(`GlassDock`, `extendBody: true`) — 스크롤 뷰가 `MediaQuery.padding.bottom`을 소비해야 마지막 항목이 안 가려진다
 
 **Figma 팔레트 SOT 갱신은 후속 과제다** — 아래 §6 등 구 팔레트 서술과 Figma `Asset` 섹션(`docs/figma-final-design-transcript.md` §4)은 아직 구 시스템 기준이며, Figma 반영은 사용자 작업이 필요하다.
@@ -134,7 +134,7 @@ Figma 팔레트를 바꾸지 않고 **적용 범위만 좁힌다.**
 | 커뮤니티 탭 | ✅ 풀 전환 (로컬 seed 로직 불변) |
 | 보조 라우트 (/wiki /search /crecam /smart-cage /notifications /enclosure-settings /home/routines /profile) | ✅ 경량 전환 (배경+표면 톤만) |
 | 페어링 플로우·위키 하위·클립 플레이어 등 내부 단계 화면 | ⬜ 스킵 (시간 대비 효과 낮음 — 후속) |
-| 디자인 랩 (`/dev/design-lab`) | 존치 (3안 비교 페이지, 전환 대상 아님) |
+| 디자인 랩 (`/design-test`) | 존치 (3안 비교 페이지, 전환 대상 아님) |
 
 ---
 
@@ -143,9 +143,10 @@ Figma 팔레트를 바꾸지 않고 **적용 범위만 좁힌다.**
 `test/features/home/control_tab_golden_test.dart`가 **실제 위젯을 393×820으로 렌더해 PNG로 남긴다**(`test/features/home/preview/`). 목업이 아니라 진짜 화면이라, 방향을 눈으로 검토할 때 이걸 본다.
 
 ```bash
-flutter test test/features/home/control_tab_golden_test.dart --update-goldens --plain-name "라이트"
+# dart_test.yaml이 golden 태그를 skip으로 묶어 --run-skipped가 필수다
+flutter test test/features/home/control_tab_golden_test.dart --update-goldens --tags golden --run-skipped
 ```
 
 - Pretendard를 직접 로드하고 ko 번역을 초기화한다 — 안 하면 글자가 네모로, 문구가 i18n 키로 찍혀 실제와 전혀 달라진다
 - **Material Icons는 안 실린다.** 아이콘이 네모로 나오는 것은 렌더 한계이며 실제 앱에서는 정상이다
-- ⚠️ 라이트·다크를 **한 번에 돌리면 다크가 백지**로 나온다(원인 미확정). 갱신은 `--plain-name`으로 하나씩
+- 홈 골든은 **단일 케이스**(`control_dark.png`)다 — 전역 다크 고정으로 라이트 케이스가 바이트 동일 PNG를 만들어 삭제했다(`7c416d2`). 통계 골든(`test/features/stats/stats_chart_golden_test.dart`)처럼 한 파일에 케이스가 여럿이면 **한 번에 돌릴 때 두 번째가 백지**로 나온다(easy_localization 이중 초기화) — `--plain-name`으로 하나씩 갱신할 것

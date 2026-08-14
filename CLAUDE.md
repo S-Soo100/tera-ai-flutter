@@ -53,7 +53,7 @@ lib/
 ├── app.dart                     # MaterialApp.router, 테마, GoRouter
 ├── core/
 │   ├── constants/               # AppConstants (색상, 문자열, D-day 날짜)
-│   ├── theme/                   # AppTheme (라이트/다크, Material 3)
+│   ├── theme/                   # AppTheme (전역 다크 고정, Material 3)
 │   ├── router/                  # GoRouter 설정, 리다이렉트
 │   └── error/                   # AppException 계층
 ├── features/

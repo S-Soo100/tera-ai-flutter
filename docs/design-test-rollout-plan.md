@@ -50,14 +50,18 @@ A안을 제대로 볼 수 없다. **B·C와 같은 방식의 A안 4탭 mock 셸*
 랩 자체는 개발 자산으로 존치. 이 두 줄 위치를 본 문서에 기록해 두는 것으로 충분
 — 별도 feature flag는 과잉.
 
-**실제 위치 (2026-08-14 구현):**
-- 진입점: `lib/features/auth/presentation/login_screen.dart:169~180`
-  — "디자인 미리보기" `TextButton` 블록(주석 포함) 제거
-- 공개 경로: `lib/core/router/tab_branches.dart:46~49`
+**실제 위치 (2026-08-14 구현):** 두 파일 다 코드에 `docs/design-test-rollout-plan.md §2.4`
+주석 앵커가 붙어 있다 — 라인 번호가 아니라 **그 주석으로 grep**해서 찾을 것.
+- 진입점: `lib/features/auth/presentation/login_screen.dart`
+  — "디자인 미리보기 — 테스트 유저용" 주석이 달린 `TextButton` 블록(주석 포함) 제거
+- 공개 경로: `lib/core/router/tab_branches.dart`
   — `kPublicPaths`의 `'/design-test'` 항목(주석 포함) 제거
+- **순서: 로그인 진입점 먼저 제거.** 공개 경로만 먼저 지우면 로그인 화면에
+  누르는 즉시 `/login`으로 되튕기는 **죽은 버튼**이 남는다 — 반대 순서(진입점
+  먼저)면 어느 시점에도 깨진 문이 노출되지 않는다.
 - ko.json 키 `login_design_preview`는 남겨 둬도 무해(참조만 사라짐)
-- 라우트 자체(`app_router.dart:295~`의 `/design-test`)는 존치 —
-  위 두 줄이 빠지면 비로그인 접근이 `/login`으로 redirect되어 숨는다
+- 라우트 자체(`app_router.dart`의 `/design-test`)는 존치 —
+  위 둘이 빠지면 비로그인 접근이 `/login`으로 redirect되어 숨는다
 
 ## 3. 하지 않는 것
 - 실 서버 연동(명령·텔레메트리·Realtime) — 체험은 전부 로컬 mock
@@ -75,4 +79,4 @@ A안을 제대로 볼 수 없다. **B·C와 같은 방식의 A안 4탭 mock 셸*
 - 영상 에셋 용량(수 MB) — 짧은 클립 1개로 제한
 - 공개 라우트에서 실 provider 접근이 없어야 함 — 랩 격리 규칙이 이미 보장,
   리뷰에서 grep 재확인
-- `/dev/design-lab` 경로 교체로 갱신할 문서: CLAUDE.md 라우트 표, design-lab-benchmark-specs.md
+- `/dev/design-lab` 경로 교체로 갱신할 문서: CLAUDE.md 라우트 표, design-lab-benchmark-specs.md, design-direction.md(§0·§9 — 2026-08-14 갱신 완료)
