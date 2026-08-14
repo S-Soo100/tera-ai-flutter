@@ -37,72 +37,54 @@ class _VariantAStatsScreenState extends State<VariantAStatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: VariantATokens.wallpaperTop,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: AWallpaper()),
-          SafeArea(
-            bottom: false,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                VariantATokens.screenHPad,
-                12,
-                VariantATokens.screenHPad,
-                120,
-              ),
-              children: [
-                const Text('통계', style: VariantATokens.headerTitle),
-                const SizedBox(height: 16),
-                AGlassSegment(
-                  labels: const ['일간', '주간', '월간'],
-                  selected: _period,
-                  onSelected: (i) => setState(() => _period = i),
-                  disabledFrom: 2,
-                  disabledHint: '준비 중',
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _MetricChip(
-                      label: '온도',
-                      tint: VariantATokens.heaterTint,
-                      active: _showTemp,
-                      onTap: () => _toggleMetric(true),
-                    ),
-                    const SizedBox(width: 8),
-                    _MetricChip(
-                      label: '습도',
-                      tint: VariantATokens.mistTint,
-                      active: _showHumid,
-                      onTap: () => _toggleMetric(false),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: VariantATokens.tileGap),
-                _ChartCard(
-                  isDaily: _period == 0,
-                  showTemp: _showTemp,
-                  showHumid: _showHumid,
-                ),
-                const SizedBox(height: 20),
-                const ASectionLabel('더 깊은 분석'),
-                const _PendingCard(
-                  icon: Icons.auto_awesome,
-                  title: 'AI 주간 요약',
-                  reason: '데이터 수집 중 — 준비되면 열린다',
-                ),
-                const SizedBox(height: VariantATokens.tileGap),
-                const _PendingCard(
-                  icon: Icons.pets,
-                  title: '행동 분석',
-                  reason: '비전 모델 학습 중 — 준비되면 열린다',
-                ),
-              ],
+    return AScreenScaffold(
+      title: '통계',
+      children: [
+        AGlassSegment(
+          labels: const ['일간', '주간', '월간'],
+          selected: _period,
+          onSelected: (i) => setState(() => _period = i),
+          disabledFrom: 2,
+          disabledHint: '준비 중',
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _MetricChip(
+              label: '온도',
+              tint: VariantATokens.heaterTint,
+              active: _showTemp,
+              onTap: () => _toggleMetric(true),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(width: 8),
+            _MetricChip(
+              label: '습도',
+              tint: VariantATokens.mistTint,
+              active: _showHumid,
+              onTap: () => _toggleMetric(false),
+            ),
+          ],
+        ),
+        const SizedBox(height: VariantATokens.tileGap),
+        _ChartCard(
+          isDaily: _period == 0,
+          showTemp: _showTemp,
+          showHumid: _showHumid,
+        ),
+        const SizedBox(height: 20),
+        const ASectionLabel('더 깊은 분석'),
+        const _PendingCard(
+          icon: Icons.auto_awesome,
+          title: 'AI 주간 요약',
+          reason: '데이터 수집 중 — 준비되면 열린다',
+        ),
+        const SizedBox(height: VariantATokens.tileGap),
+        const _PendingCard(
+          icon: Icons.pets,
+          title: '행동 분석',
+          reason: '비전 모델 학습 중 — 준비되면 열린다',
+        ),
+      ],
     );
   }
 }
@@ -169,11 +151,6 @@ class _ChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final weekTempMax =
-        kLabWeekEnv.map((d) => d.tempMax).reduce((a, b) => a > b ? a : b);
-    final weekTempMin =
-        kLabWeekEnv.map((d) => d.tempMin).reduce((a, b) => a < b ? a : b);
-
     return AGlass(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -189,8 +166,8 @@ class _ChartCard extends StatelessWidget {
                   isDaily
                       ? '최고 ${kLabTempMax.toStringAsFixed(1)}℃ · '
                           '최저 ${kLabTempMin.toStringAsFixed(1)}℃'
-                      : '최고 ${weekTempMax.toStringAsFixed(1)}℃ · '
-                          '최저 ${weekTempMin.toStringAsFixed(1)}℃',
+                      : '최고 ${kLabWeekTempMax.toStringAsFixed(1)}℃ · '
+                          '최저 ${kLabWeekTempMin.toStringAsFixed(1)}℃',
                   style: VariantATokens.tileStatus,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -204,8 +181,7 @@ class _ChartCard extends StatelessWidget {
             child: CustomPaint(
               size: Size.infinite,
               painter: isDaily
-                  ? _DailyChartPainter(
-                      showTemp: showTemp, showHumid: showHumid)
+                  ? _DailyChartPainter(showTemp: showTemp, showHumid: showHumid)
                   : _WeeklyChartPainter(
                       showTemp: showTemp, showHumid: showHumid),
             ),
@@ -228,8 +204,7 @@ class _ChartCard extends StatelessWidget {
                     child: Text(
                       kLabWeekdayKo[d.day.weekday - 1],
                       textAlign: TextAlign.center,
-                      style:
-                          VariantATokens.tileStatus.copyWith(fontSize: 10),
+                      style: VariantATokens.tileStatus.copyWith(fontSize: 10),
                     ),
                   ),
               ],
@@ -292,47 +267,27 @@ class _DailyChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _grid(canvas, size);
+    // 격자·폴리라인은 공용 헬퍼 한 벌([aChartGrid]/[aPolylinePath]) —
+    // 홈 미니 차트와 같은 수식. inset 6%는 곡선이 카드 모서리에 닿지 않게.
+    aChartGrid(canvas, size);
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
     if (showTemp) {
-      _line(canvas, size, kLabEnvSeries.map((p) => p.temp).toList(),
-          VariantATokens.heaterTint);
+      canvas.drawPath(
+        aPolylinePath(size, kLabEnvSeries.map((p) => p.temp).toList(),
+            inset: 0.06),
+        stroke..color = VariantATokens.heaterTint,
+      );
     }
     if (showHumid) {
-      _line(canvas, size, kLabEnvSeries.map((p) => p.humid).toList(),
-          VariantATokens.mistTint);
+      canvas.drawPath(
+        aPolylinePath(size, kLabEnvSeries.map((p) => p.humid).toList(),
+            inset: 0.06),
+        stroke..color = VariantATokens.mistTint,
+      );
     }
-  }
-
-  void _grid(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = VariantATokens.glassBorder
-      ..strokeWidth = 0.5;
-    for (var i = 0; i <= 3; i++) {
-      final y = size.height * i / 3;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  void _line(Canvas canvas, Size size, List<double> vs, Color color) {
-    final min = vs.reduce((a, b) => a < b ? a : b);
-    final max = vs.reduce((a, b) => a > b ? a : b);
-    final span = (max - min) == 0 ? 1 : max - min;
-
-    final path = Path();
-    for (var i = 0; i < vs.length; i++) {
-      final x = size.width * i / (vs.length - 1);
-      // 위아래 6% 여백 — 곡선이 카드 모서리에 닿지 않게.
-      final y = size.height * (0.06 + 0.88 * (1 - (vs[i] - min) / span));
-      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5
-        ..strokeCap = StrokeCap.round
-        ..color = color,
-    );
   }
 
   @override
@@ -359,14 +314,8 @@ class _WeeklyChartPainter extends CustomPainter {
     final days = kLabWeekEnv;
     final slot = size.width / days.length;
 
-    // 가로 격자.
-    final grid = Paint()
-      ..color = VariantATokens.glassBorder
-      ..strokeWidth = 0.5;
-    for (var i = 0; i <= 3; i++) {
-      final y = size.height * i / 3;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
-    }
+    // 가로 격자 — 공용 [aChartGrid].
+    aChartGrid(canvas, size);
 
     double tempY(double v) =>
         size.height * (1 - (v - _tFloor) / (_tCeil - _tFloor));

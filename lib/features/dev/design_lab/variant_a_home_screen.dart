@@ -48,21 +48,18 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
                     const SizedBox(height: VariantATokens.tileGap),
                     const _SensorChipRow(),
                     const SizedBox(height: 20),
-                    const Text('액세서리', style: VariantATokens.sectionLabel),
-                    const SizedBox(height: 10),
+                    const ASectionLabel('액세서리'),
                     _accessoryGrid(),
                     const SizedBox(height: 20),
-                    const Text('온습도', style: VariantATokens.sectionLabel),
-                    const SizedBox(height: 10),
+                    const ASectionLabel('온습도'),
                     const _MiniChartCard(),
                     const SizedBox(height: 20),
-                    const Text('타임라인', style: VariantATokens.sectionLabel),
-                    const SizedBox(height: 10),
+                    const ASectionLabel('타임라인'),
                     for (final e in kLabTimeline) ...[
                       _TimelineTile(event: e),
                       const SizedBox(height: 8),
                     ],
-                    const SizedBox(height: 120),
+                    const SizedBox(height: aDockClearance),
                   ],
                 ),
               ),
@@ -294,8 +291,7 @@ class _AccessoryTileState extends State<_AccessoryTile> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(_icons[widget.device.kind],
-              size: 24,
-              color: on ? tint : VariantATokens.textSecondary),
+              size: 24, color: on ? tint : VariantATokens.textSecondary),
           const Spacer(),
           Text(widget.device.name,
               style: on
@@ -442,38 +438,18 @@ class _MiniChartCard extends StatelessWidget {
 class _MiniChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    _drawLine(
-      canvas,
-      size,
-      kLabEnvSeries.map((p) => p.temp).toList(),
-      VariantATokens.heaterTint,
-    );
-    _drawLine(
-      canvas,
-      size,
-      kLabEnvSeries.map((p) => p.humid).toList(),
-      VariantATokens.mistTint,
-    );
-  }
-
-  void _drawLine(Canvas canvas, Size size, List<double> vs, Color color) {
-    final min = vs.reduce((a, b) => a < b ? a : b);
-    final max = vs.reduce((a, b) => a > b ? a : b);
-    final span = (max - min) == 0 ? 1 : max - min;
-
-    final path = Path();
-    for (var i = 0; i < vs.length; i++) {
-      final x = size.width * i / (vs.length - 1);
-      final y = size.height * (1 - (vs[i] - min) / span);
-      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
-    }
+    // 정규화 폴리라인은 공용 [aPolylinePath] 한 벌 — 통계 일간 차트와 같은 수식.
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
     canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..strokeCap = StrokeCap.round
-        ..color = color,
+      aPolylinePath(size, kLabEnvSeries.map((p) => p.temp).toList()),
+      stroke..color = VariantATokens.heaterTint,
+    );
+    canvas.drawPath(
+      aPolylinePath(size, kLabEnvSeries.map((p) => p.humid).toList()),
+      stroke..color = VariantATokens.mistTint,
     );
   }
 

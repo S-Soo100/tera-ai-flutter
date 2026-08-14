@@ -25,63 +25,38 @@ class _VariantACommunityScreenState extends State<VariantACommunityScreen> {
         ? kLabPosts
         : kLabPosts.where((p) => p.category == _filter).toList();
 
-    return Scaffold(
-      backgroundColor: VariantATokens.wallpaperTop,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: AWallpaper()),
-          SafeArea(
-            bottom: false,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                VariantATokens.screenHPad,
-                12,
-                VariantATokens.screenHPad,
-                120,
+    return AScreenScaffold(
+      title: '커뮤니티',
+      children: [
+        // 카테고리 칩 행 — 가로 스크롤(작은 화면 오버플로 방지).
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _CategoryChip(
+                label: '전체',
+                active: _filter == null,
+                onTap: () => setState(() => _filter = null),
               ),
-              children: [
-                const Text('커뮤니티', style: VariantATokens.headerTitle),
-                const SizedBox(height: 16),
-                // 카테고리 칩 행 — 가로 스크롤(작은 화면 오버플로 방지).
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _CategoryChip(
-                        label: '전체',
-                        active: _filter == null,
-                        onTap: () => setState(() => _filter = null),
-                      ),
-                      for (final c in LabPostCategory.values) ...[
-                        const SizedBox(width: 8),
-                        _CategoryChip(
-                          label: _categoryLabel(c),
-                          active: _filter == c,
-                          onTap: () => setState(() => _filter = c),
-                        ),
-                      ],
-                    ],
-                  ),
+              for (final c in LabPostCategory.values) ...[
+                const SizedBox(width: 8),
+                _CategoryChip(
+                  label: c.label,
+                  active: _filter == c,
+                  onTap: () => setState(() => _filter = c),
                 ),
-                const SizedBox(height: VariantATokens.tileGap),
-                for (final p in posts) ...[
-                  _PostCard(post: p),
-                  const SizedBox(height: 10),
-                ],
               ],
-            ),
+            ],
           ),
+        ),
+        const SizedBox(height: VariantATokens.tileGap),
+        for (final p in posts) ...[
+          _PostCard(post: p),
+          const SizedBox(height: 10),
         ],
-      ),
+      ],
     );
   }
-
-  static String _categoryLabel(LabPostCategory c) => switch (c) {
-        LabPostCategory.notice => '공지',
-        LabPostCategory.qna => '질문답변',
-        LabPostCategory.free => '자유',
-        LabPostCategory.wiki => '사육위키',
-      };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -105,8 +80,7 @@ class _CategoryChip extends StatelessWidget {
       onTap: onTap,
       child: active
           ? Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
                 color: VariantATokens.activeTile,
                 borderRadius: BorderRadius.circular(100),

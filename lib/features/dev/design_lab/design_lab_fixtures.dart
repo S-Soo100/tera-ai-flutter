@@ -16,7 +16,8 @@ final DateTime kLabNow = DateTime(2026, 8, 13, 1, 20);
 // ─────────────────────────────────────────────────────────────────────────────
 
 class LabEnvPoint {
-  const LabEnvPoint({required this.at, required this.temp, required this.humid});
+  const LabEnvPoint(
+      {required this.at, required this.temp, required this.humid});
 
   final DateTime at;
   final double temp;
@@ -47,14 +48,12 @@ final List<LabEnvPoint> kLabEnvSeries = List.unmodifiable(() {
 /// 현재값(시계열 마지막 점).
 final LabEnvPoint kLabCurrent = kLabEnvSeries.last;
 
-double get kLabTempMax =>
-    kLabEnvSeries.map((p) => p.temp).reduce(math.max);
-double get kLabTempMin =>
-    kLabEnvSeries.map((p) => p.temp).reduce(math.min);
-double get kLabHumidMax =>
-    kLabEnvSeries.map((p) => p.humid).reduce(math.max);
-double get kLabHumidMin =>
-    kLabEnvSeries.map((p) => p.humid).reduce(math.min);
+// 시계열이 고정이라 극값도 고정이다 — getter로 두면 읽을 때마다 리스트를
+// 다시 접는다(late final 상수는 첫 접근 때 한 번만).
+final double kLabTempMax = kLabEnvSeries.map((p) => p.temp).reduce(math.max);
+final double kLabTempMin = kLabEnvSeries.map((p) => p.temp).reduce(math.min);
+final double kLabHumidMax = kLabEnvSeries.map((p) => p.humid).reduce(math.max);
+final double kLabHumidMin = kLabEnvSeries.map((p) => p.humid).reduce(math.min);
 
 /// 전일 대비 증감(더미). 히어로 배지용.
 const double kLabTempDelta = 0.8;
@@ -203,6 +202,8 @@ class LabNightActivity {
     required this.maxTemp,
     required this.firstDetectedAt,
     required this.peakAt,
+    required this.activeMinutes,
+    required this.restMinutes,
   });
 
   final DateTime start;
@@ -213,6 +214,17 @@ class LabNightActivity {
   final DateTime firstDetectedAt;
   final DateTime peakAt;
 
+  /// 활동/휴식 분(리포트 카드용) — 같은 밤의 다른 요약이라 별도 클래스로
+  /// 두지 않는다(값이 두 벌이면 서로 어긋난 채 남는다).
+  final int activeMinutes;
+  final int restMinutes;
+
+  int get totalMinutes => activeMinutes + restMinutes;
+
+  /// 활동 비율(0~1) — 진행 바·링 재사용.
+  double get activeRatio =>
+      totalMinutes == 0 ? 0 : activeMinutes / totalMinutes;
+
   /// 밤 진행률(0~1). [kLabNow] 기준.
   double get progress {
     final total = end.difference(start).inMinutes;
@@ -221,6 +233,8 @@ class LabNightActivity {
   }
 }
 
+/// 어젯밤(8/12 22:00 ~ 8/13 06:00) 활동 — 홈 진행 바와 마이크레 리포트가
+/// **같은 밤**의 같은 값을 쓴다.
 final LabNightActivity kLabNightActivity = LabNightActivity(
   start: DateTime(2026, 8, 12, 22),
   end: DateTime(2026, 8, 13, 6),
@@ -229,6 +243,8 @@ final LabNightActivity kLabNightActivity = LabNightActivity(
   maxTemp: 27.8,
   firstDetectedAt: DateTime(2026, 8, 12, 22, 41),
   peakAt: DateTime(2026, 8, 13, 0, 40),
+  activeMinutes: 142,
+  restMinutes: 338,
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -259,33 +275,59 @@ class LabDayEnv {
 final List<LabDayEnv> kLabWeekEnv = List.unmodifiable([
   LabDayEnv(
       day: DateTime(2026, 8, 7),
-      tempAvg: 26.1, tempMax: 27.9, tempMin: 24.2, humidAvg: 63),
+      tempAvg: 26.1,
+      tempMax: 27.9,
+      tempMin: 24.2,
+      humidAvg: 63),
   LabDayEnv(
       day: DateTime(2026, 8, 8),
-      tempAvg: 26.4, tempMax: 28.2, tempMin: 24.5, humidAvg: 61),
+      tempAvg: 26.4,
+      tempMax: 28.2,
+      tempMin: 24.5,
+      humidAvg: 61),
   LabDayEnv(
       day: DateTime(2026, 8, 9),
-      tempAvg: 25.8, tempMax: 27.5, tempMin: 23.9, humidAvg: 66),
+      tempAvg: 25.8,
+      tempMax: 27.5,
+      tempMin: 23.9,
+      humidAvg: 66),
   LabDayEnv(
       day: DateTime(2026, 8, 10),
-      tempAvg: 27.0, tempMax: 28.9, tempMin: 25.1, humidAvg: 58),
+      tempAvg: 27.0,
+      tempMax: 28.9,
+      tempMin: 25.1,
+      humidAvg: 58),
   LabDayEnv(
       day: DateTime(2026, 8, 11),
-      tempAvg: 26.6, tempMax: 28.1, tempMin: 24.8, humidAvg: 60),
+      tempAvg: 26.6,
+      tempMax: 28.1,
+      tempMin: 24.8,
+      humidAvg: 60),
   LabDayEnv(
       day: DateTime(2026, 8, 12),
-      tempAvg: 26.2, tempMax: 27.8, tempMin: 24.4, humidAvg: 64),
+      tempAvg: 26.2,
+      tempMax: 27.8,
+      tempMin: 24.4,
+      humidAvg: 64),
   LabDayEnv(
       day: DateTime(2026, 8, 13),
-      tempAvg: 26.5, tempMax: 28.0, tempMin: 24.6, humidAvg: 62),
+      tempAvg: 26.5,
+      tempMax: 28.0,
+      tempMin: 24.6,
+      humidAvg: 62),
 ]);
 
-double get kLabWeekTempAvg =>
+// 주간 집계도 극값과 같은 이유로 final 상수(위 kLabTempMax 주석 참조).
+final double kLabWeekTempAvg =
     kLabWeekEnv.map((d) => d.tempAvg).reduce((a, b) => a + b) /
-    kLabWeekEnv.length;
-double get kLabWeekHumidAvg =>
+        kLabWeekEnv.length;
+final double kLabWeekHumidAvg =
     kLabWeekEnv.map((d) => d.humidAvg).reduce((a, b) => a + b) /
-    kLabWeekEnv.length;
+        kLabWeekEnv.length;
+final double kLabWeekTempMax =
+    kLabWeekEnv.map((d) => d.tempMax).reduce(math.max);
+final double kLabWeekTempMin =
+    kLabWeekEnv.map((d) => d.tempMin).reduce(math.min);
 
 const List<String> kLabWeekdayKo = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -349,42 +391,20 @@ final List<LabPet> kLabPets = List.unmodifiable([
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 어젯밤 리포트 수치 (마이크레 탭용)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class LabNightReport {
-  const LabNightReport({
-    required this.activeMinutes,
-    required this.restMinutes,
-    required this.mistCount,
-    required this.peakAt,
-  });
-
-  final int activeMinutes;
-  final int restMinutes;
-  final int mistCount;
-  final DateTime peakAt;
-
-  int get totalMinutes => activeMinutes + restMinutes;
-
-  /// 활동 비율(0~1) — 진행 바·링 재사용.
-  double get activeRatio =>
-      totalMinutes == 0 ? 0 : activeMinutes / totalMinutes;
-}
-
-/// 어젯밤(8/12 22:00 ~ 8/13 06:00) 리포트 — [kLabNightActivity]와 같은 밤.
-final LabNightReport kLabNightReport = LabNightReport(
-  activeMinutes: 142,
-  restMinutes: 338,
-  mistCount: 3,
-  peakAt: DateTime(2026, 8, 13, 0, 40),
-);
-
-// ─────────────────────────────────────────────────────────────────────────────
 // 게시글 6건 (커뮤니티 탭용)
 // ─────────────────────────────────────────────────────────────────────────────
 
 enum LabPostCategory { notice, qna, free, wiki }
+
+/// 카테고리 표시명 — 칩과 게시글 카드가 같은 문자열을 쓴다.
+extension LabPostCategoryLabel on LabPostCategory {
+  String get label => switch (this) {
+        LabPostCategory.notice => '공지',
+        LabPostCategory.qna => '질문답변',
+        LabPostCategory.free => '자유',
+        LabPostCategory.wiki => '사육위키',
+      };
+}
 
 class LabPost {
   const LabPost({
@@ -401,12 +421,7 @@ class LabPost {
   final int commentCount;
   final DateTime at;
 
-  String get categoryLabel => switch (category) {
-        LabPostCategory.notice => '공지',
-        LabPostCategory.qna => '질문답변',
-        LabPostCategory.free => '자유',
-        LabPostCategory.wiki => '사육위키',
-      };
+  String get categoryLabel => category.label;
 }
 
 /// 게시글 6건 — 최신이 먼저. 오늘(8/13) 2건 + 어제(8/12) 4건.

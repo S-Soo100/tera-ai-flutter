@@ -3,6 +3,7 @@ import 'package:video_player/video_player.dart';
 
 import 'design_lab_fixtures.dart';
 import 'tokens/variant_a_tokens.dart';
+import 'variant_a_widgets.dart';
 
 /// 랩 공용 mock 라이브 플레이어 — 번들 클립을 무한 루프로 돌려 "라이브"처럼
 /// 보여준다(무음·컨트롤 없음). 실 WebRTC·서버는 건드리지 않는다(랩 격리).
@@ -121,11 +122,14 @@ class _MockLivePlayerState extends State<MockLivePlayer>
               child: VideoPlayer(controller),
             ),
           ),
+        // 배지는 공용 [AGlass](blur 기본 false) — 비디오 위 BackdropFilter는
+        // **프레임마다** 재실행돼 배지 두 개 값이 아니다. 판독성은 진한
+        // 오버레이(overlayStrong)가 대신 진다.
         if (widget.showBadge) ...[
           Positioned(
             left: 12,
             bottom: 12,
-            child: _BadgeGlass(
+            child: _badgeGlass(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -154,7 +158,7 @@ class _MockLivePlayerState extends State<MockLivePlayer>
           Positioned(
             right: 12,
             bottom: 12,
-            child: _BadgeGlass(
+            child: _badgeGlass(
               child: Text(labHm(kLabNow), style: VariantATokens.tileStatus),
             ),
           ),
@@ -162,27 +166,12 @@ class _MockLivePlayerState extends State<MockLivePlayer>
       ],
     );
   }
-}
 
-/// A안 카메라 카드의 배지 — 플랫 반투명 + 얇은 테두리.
-///
-/// blur를 쓰지 않는다: 비디오 위 BackdropFilter는 **프레임마다** 재실행돼
-/// 배지 두 개 값이 아니다. 판독성은 진한 오버레이가 대신 진다.
-class _BadgeGlass extends StatelessWidget {
-  const _BadgeGlass({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: VariantATokens.glassOverlayStrong,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: VariantATokens.glassBorder, width: 0.5),
-      ),
-      child: child,
-    );
-  }
+  /// 배지 공통 마감 — 공용 [AGlass]에 배지 규격(radius 8·강한 오버레이)만 입힌다.
+  Widget _badgeGlass({required Widget child}) => AGlass(
+        radius: 8,
+        overlay: VariantATokens.glassOverlayStrong,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: child,
+      );
 }

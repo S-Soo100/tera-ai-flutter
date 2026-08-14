@@ -21,42 +21,24 @@ class _VariantAPetsScreenState extends State<VariantAPetsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: VariantATokens.wallpaperTop,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: AWallpaper()),
-          SafeArea(
-            bottom: false,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                VariantATokens.screenHPad,
-                12,
-                VariantATokens.screenHPad,
-                120,
-              ),
-              children: [
-                const Text('마이 크레', style: VariantATokens.headerTitle),
-                const SizedBox(height: 16),
-                AGlassSegment(
-                  labels: const ['개체 목록', '리포트'],
-                  selected: _tab,
-                  onSelected: (i) => setState(() => _tab = i),
-                ),
-                const SizedBox(height: VariantATokens.tileGap),
-                if (_tab == 0)
-                  for (final p in kLabPets) ...[
-                    _PetCard(pet: p),
-                    const SizedBox(height: VariantATokens.tileGap),
-                  ]
-                else ...[
-                  const _NightReportCard(),
-                ],
-              ],
-            ),
-          ),
+    return AScreenScaffold(
+      title: '마이 크레',
+      children: [
+        AGlassSegment(
+          labels: const ['개체 목록', '리포트'],
+          selected: _tab,
+          onSelected: (i) => setState(() => _tab = i),
+        ),
+        const SizedBox(height: VariantATokens.tileGap),
+        if (_tab == 0)
+          for (final p in kLabPets) ...[
+            _PetCard(pet: p),
+            const SizedBox(height: VariantATokens.tileGap),
+          ]
+        else ...[
+          const _NightReportCard(),
         ],
-      ),
+      ],
     );
   }
 }
@@ -126,7 +108,9 @@ class _NightReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final report = kLabNightReport;
+    // 리포트 수치는 [kLabNightActivity]에 통합됐다 — 같은 밤 값이 두 벌이면
+    // 서로 어긋난 채 남는다.
+    final report = kLabNightActivity;
     final night = kLabNightActivity;
 
     return AGlass(
@@ -154,14 +138,12 @@ class _NightReportCard extends StatelessWidget {
                 children: [
                   Expanded(
                     flex: (report.activeRatio * 1000).round().clamp(1, 999),
-                    child:
-                        const ColoredBox(color: VariantATokens.heaterTint),
+                    child: const ColoredBox(color: VariantATokens.heaterTint),
                   ),
                   Expanded(
                     flex: (1000 - (report.activeRatio * 1000).round())
                         .clamp(1, 999),
-                    child:
-                        const ColoredBox(color: VariantATokens.glassOverlay),
+                    child: const ColoredBox(color: VariantATokens.glassOverlay),
                   ),
                 ],
               ),
@@ -171,16 +153,15 @@ class _NightReportCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _ReportStat(
-                    label: '활동', value: '${report.activeMinutes}분'),
+                child:
+                    _ReportStat(label: '활동', value: '${report.activeMinutes}분'),
               ),
               Expanded(
                 child:
                     _ReportStat(label: '휴식', value: '${report.restMinutes}분'),
               ),
               Expanded(
-                child:
-                    _ReportStat(label: '분무', value: '${report.mistCount}회'),
+                child: _ReportStat(label: '분무', value: '${report.mistCount}회'),
               ),
               Expanded(
                 child: _ReportStat(label: '피크', value: labHm(report.peakAt)),

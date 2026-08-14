@@ -46,24 +46,17 @@ class GlassDock extends StatelessWidget {
     required this.items,
     required this.currentIndex,
     required this.onSelected,
-    this.onDark = true,
   });
 
   final List<GlassDockItem> items;
   final int currentIndex;
   final ValueChanged<int> onSelected;
 
-  /// 뒤에 깔린 콘텐츠가 어두운가. 어두우면 흰 전경, 밝으면 잉크 전경 —
-  /// 유리는 반투명이라 전경색이 **바닥**을 따라가야 읽힌다.
-  final bool onDark;
-
   @override
   Widget build(BuildContext context) {
-    final selectedColor =
-        onDark ? AppTheme.glassTextPrimary : AppTheme.glassTextOnActive;
-    final unselectedColor = onDark
-        ? AppTheme.glassTextSecondary
-        : AppTheme.glassTextOnActiveSecondary;
+    // 전역 다크 고정 — 바닥(월페이퍼)이 항상 어두우니 전경은 흰 계열 하나다.
+    const selectedColor = AppTheme.glassTextPrimary;
+    const unselectedColor = AppTheme.glassTextSecondary;
 
     return GlassCard(
       radius: 100,

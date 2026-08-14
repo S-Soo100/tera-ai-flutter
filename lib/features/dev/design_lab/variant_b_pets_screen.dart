@@ -235,7 +235,7 @@ class _NightReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final report = kLabNightReport;
+    final report = kLabNightActivity;
 
     return Container(
       padding: const EdgeInsets.all(16),
