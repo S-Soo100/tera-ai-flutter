@@ -149,4 +149,27 @@ void main() {
       expect(w.elapsed, 1.0);
     });
   });
+
+  group('queryEnd — 조회 끝은 창이 스스로 안다', () {
+    test('진행 중인 창(일간)은 now — 없는 시간을 물어보지 않는다', () {
+      final now = DateTime(2026, 8, 12, 15);
+      final w = ChartWindow.of(now);
+      expect(w.end.isAfter(now), isTrue, reason: '일간 창 끝은 미래여야 전제가 선다');
+      expect(w.queryEnd, now);
+    });
+
+    test('완결된 창(주간)은 창 끝 — 진행 중인 오늘 몫을 딸려오지 않는다', () {
+      final now = DateTime(2026, 8, 12, 15);
+      final w = ChartWindow.weekly(now);
+      expect(w.queryEnd, w.end);
+      expect(w.queryEnd, DateTime(2026, 8, 12, 7));
+    });
+
+    test('창 끝이 now와 정확히 같아도(07시 정각) now를 넘지 않는다', () {
+      final now = DateTime(2026, 8, 12, 7);
+      final w = ChartWindow.weekly(now);
+      expect(w.end, now);
+      expect(w.queryEnd, now);
+    });
+  });
 }

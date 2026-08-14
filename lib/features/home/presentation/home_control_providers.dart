@@ -31,22 +31,19 @@ final chartWindowProvider =
 /// [window] 구간의 30분 버킷을 조회한다. **일간·주간이 같은 조회를 쓴다** —
 /// 쿼리를 두 벌로 복사하면 한쪽만 고쳐진 채로 남는다(마커 조회부와 같은 이유).
 ///
-/// [to]는 창마다 의미가 달라 **호출자가 명시한다**:
-/// - 일간(`ChartWindow.of`)은 `w.now` — 창 끝이 미래라, 없는 시간을 물어볼
-///   이유가 없다.
-/// - 주간(`ChartWindow.weekly`)은 `w.end` — 창 전체가 과거(직전 07:00까지)라
-///   `now`까지 당기면 진행 중인 오늘 몫이 딸려와 rollup이 도로 버린다.
+/// 조회 끝은 창이 스스로 안다([ChartWindow.queryEnd]) — 과거 완결 창은
+/// `end`, 진행 중 창은 `now`. 호출자가 고르게 두면 한쪽만 고쳐진 채 남는다.
 Future<List<TelemetryBucket>> fetchChartBuckets(
   Ref ref,
-  ChartWindow window, {
-  required DateTime to,
-}) async {
+  ChartWindow window,
+) async {
   // watch는 반드시 await **앞에서** 한다(home_set_providers.dart 규칙) —
   // await 뒤의 watch는 dispose 후 continuation이 죽은 element에 걸린다.
   final repository = ref.watch(supabaseModuleControlRepositoryProvider);
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) return const [];
-  return repository.telemetryHistory(deviceId, window.start, to: to);
+  return repository.telemetryHistory(deviceId, window.start,
+      to: window.queryEnd);
 }
 
 /// 차트 창에 해당하는 온습도 버킷.
@@ -55,7 +52,7 @@ Future<List<TelemetryBucket>> fetchChartBuckets(
 final chartBucketsProvider =
     FutureProvider.autoDispose<List<TelemetryBucket>>((ref) {
   final w = ref.watch(chartWindowProvider);
-  return fetchChartBuckets(ref, w, to: w.now);
+  return fetchChartBuckets(ref, w);
 });
 
 /// 차트에 바로 그릴 수 있게 정리된 데이터.
@@ -110,13 +107,10 @@ Future<List<ActuatorMarker>> fetchActuatorMarkers(
 /// 차트 창의 기기 동작 마커.
 final actuatorMarkersProvider =
     FutureProvider.autoDispose<List<ActuatorMarker>>((ref) async {
+  // watch를 await 앞으로 — fetchChartBuckets와 같은 이유.
+  final w = ref.watch(chartWindowProvider);
+  final client = ref.watch(supabaseClientProvider);
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) return const [];
-  final w = ref.watch(chartWindowProvider);
-  return fetchActuatorMarkers(
-    ref.watch(supabaseClientProvider),
-    deviceId,
-    from: w.start,
-    to: w.now,
-  );
+  return fetchActuatorMarkers(client, deviceId, from: w.start, to: w.now);
 });

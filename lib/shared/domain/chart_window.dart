@@ -135,6 +135,15 @@ class ChartWindow {
     return t;
   }
 
+  /// 데이터 **조회**의 끝. 표시 창의 끝([end])과 다르다:
+  /// - 진행 중인 창(일간): [end]가 미래라 없는 시간을 물어볼 이유가 없다 → [now]
+  /// - 완결된 창(주간): [now]까지 당기면 진행 중인 오늘 몫이 딸려와
+  ///   rollup이 도로 버린다 → [end]
+  ///
+  /// 조회부([fetchChartBuckets])가 이 값을 쓰므로 호출자가 창마다 끝을
+  /// 고를 필요가 없다 — 고르게 두면 한쪽만 고쳐진 채 남는다.
+  DateTime get queryEnd => end.isBefore(now) ? end : now;
+
   /// 흘러간 비율(0~1). 회색 밴드는 여기서 오른쪽 끝까지다.
   double get elapsed {
     final total = end.difference(start).inMicroseconds;

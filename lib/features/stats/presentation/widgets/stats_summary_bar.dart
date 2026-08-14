@@ -7,7 +7,6 @@ import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../../domain/stats_metric.dart';
 import '../../domain/stats_period.dart';
 import '../stats_providers.dart';
-import '../weekly_providers.dart';
 
 /// 통계 탭 요약 바 — 공용 [EnvSummaryBar]에 이 화면의 상태를 물린다.
 ///
@@ -26,21 +25,14 @@ class StatsSummaryBar extends ConsumerWidget {
     final weekly = ref.watch(statsPeriodProvider) == StatsPeriod.weekly;
 
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
-    final ex = (weekly
-            ? ref.watch(weeklyExtremesProvider)
-            : ref.watch(chartExtremesProvider))
-        .valueOrNull;
+    // 기간 → 소스 매핑은 stats_providers의 파생 3종이 맡는다.
+    final ex = ref.watch(statsExtremesProvider).valueOrNull;
     final scrub = ref.watch(statsScrubProvider);
-    final data = (weekly
-            ? ref.watch(weeklyChartDataProvider)
-            : ref.watch(envChartDataProvider))
-        .valueOrNull;
+    final data = ref.watch(statsChartDataProvider).valueOrNull;
     final metrics = ref.watch(statsMetricsProvider);
     // 스크럽 시각 표기는 차트 X축과 같은 형식을 따른다 — 주간은 날짜(8/6),
     // 일간은 시:분. 창(window)이 형식의 단일 출처다.
-    final window = weekly
-        ? ref.watch(weeklyWindowProvider)
-        : ref.watch(chartWindowProvider);
+    final window = ref.watch(statsWindowProvider);
 
     // 데이터가 없으면 스크럽 값을 만들 수 없다 — 시각만 띄우면 거짓말이 된다.
     final showScrub = scrub != null && data != null;

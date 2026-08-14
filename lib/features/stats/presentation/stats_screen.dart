@@ -17,7 +17,6 @@ import '../../home/presentation/home_control_providers.dart';
 import '../../home/presentation/home_set_providers.dart';
 import '../../profile/presentation/profile_providers.dart';
 import 'stats_providers.dart';
-import 'weekly_providers.dart';
 import '../../../shared/widgets/env_chart.dart';
 import '../domain/stats_metric.dart';
 import '../domain/stats_period.dart';
@@ -183,14 +182,10 @@ class _MainChartSection extends ConsumerWidget {
     }
 
     // 주간은 창·데이터·마커가 전부 다르다. 위젯은 하나로 두고 **물리는 것만**
-    // 갈아끼운다 — 화면을 복사하면 한쪽만 고쳐진 채 남는다.
+    // 갈아끼운다 — 기간 → 소스 매핑은 stats_providers의 파생 3종 한 곳이다.
     final weekly = period == StatsPeriod.weekly;
-    final async = weekly
-        ? ref.watch(weeklyChartDataProvider)
-        : ref.watch(envChartDataProvider);
-    final window = weekly
-        ? ref.watch(weeklyWindowProvider)
-        : ref.watch(chartWindowProvider);
+    final async = ref.watch(statsChartDataProvider);
+    final window = ref.watch(statsWindowProvider);
     final metrics = ref.watch(statsMetricsProvider);
 
     return Column(
@@ -224,8 +219,7 @@ class _MainChartSection extends ConsumerWidget {
             child: EmptyState(
               title: 'stats_load_failed'.tr(),
               actionLabel: 'error_retry'.tr(),
-              onAction: () => ref.invalidate(
-                  weekly ? weeklyChartDataProvider : envChartDataProvider),
+              onAction: () => invalidateStatsChartData(ref),
             ),
           ),
           // 데이터가 없는 것과 기능이 없는 것은 **다르게 보여야 한다** —

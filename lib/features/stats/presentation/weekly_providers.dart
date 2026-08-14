@@ -15,12 +15,12 @@ final weeklyWindowProvider = Provider.autoDispose<ChartWindow>(
 /// 주간 창의 30분 버킷 원본. 7일 × 48 = 최대 336행.
 ///
 /// 조회는 일간과 같은 [fetchChartBuckets] 한 벌이다 — 여기는 창 공급과
-/// 하루 접기([rollupByDay])만 맡는다. 끝은 창 끝(직전 07:00)이다: now까지
-/// 당기면 진행 중인 오늘 몫이 딸려와 창 밖 데이터를 rollup이 도로 버린다.
+/// 하루 접기([rollupByDay])만 맡는다. 조회 끝은 창이 스스로 안다
+/// ([ChartWindow.queryEnd] — 완결 창이라 창 끝 = 직전 07:00).
 final _weeklyRawBucketsProvider =
     FutureProvider.autoDispose<List<TelemetryBucket>>((ref) {
   final w = ref.watch(weeklyWindowProvider);
-  return fetchChartBuckets(ref, w, to: w.end);
+  return fetchChartBuckets(ref, w);
 });
 
 /// 하루 단위로 접은 7칸. 주간 차트와 분포 바가 **같은 값**을 쓴다 —
