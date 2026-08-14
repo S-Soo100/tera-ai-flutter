@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/theme/app_theme.dart';
 import '../data/auth_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -75,14 +76,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 로고 (세로형 lockup — 워드마크 포함이라 앱 이름 텍스트 생략)
+                  // 심볼 단독 + 현행 브랜드명 텍스트 (구 logo_stacked에는
+                  // "terra ai" 워드마크가 박혀 있어 교체 — 2026-08-14 리브랜딩)
                   Center(
                     child: Image.asset(
-                      'assets/images/logo_stacked.png',
-                      width: 120,
+                      'assets/images/logo.png',
+                      width: 104,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
+                  Text(
+                    'app_name'.tr(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.brandRed,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     'auth_login_subtitle'.tr(),
                     style: theme.textTheme.bodyMedium?.copyWith(

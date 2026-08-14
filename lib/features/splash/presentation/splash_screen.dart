@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -41,10 +43,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 세로형 lockup에 이미 "terra ai" 워드마크가 들어 있어
-            // 앱 이름 텍스트를 따로 두지 않는다(중복).
-            Image.asset('assets/images/logo_stacked.png', width: 160),
-            const SizedBox(height: 16),
+            // 구 lockup(logo_stacked)에는 "terra ai" 워드마크가 박혀 있어
+            // 심볼 단독 + 현행 브랜드명 텍스트로 조합한다 (2026-08-14 리브랜딩).
+            Image.asset('assets/images/logo.png', width: 140),
+            const SizedBox(height: 12),
+            Text(
+              'app_name'.tr(),
+              style: const TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.brandRed,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 12),
             Text(
               'app_subtitle'.tr(),
               style: theme.textTheme.bodyMedium?.copyWith(
