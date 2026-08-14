@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../../wiki/data/care_info_repository.dart';
@@ -59,7 +60,8 @@ class PetDetailScreen extends ConsumerWidget {
       body: ListView(
         // 하단은 플로팅 독 높이까지 비운다 — 마지막 카드가 독에 가려지지 않게.
         padding: glassDockListPadding(context,
-            base: const EdgeInsets.fromLTRB(16, 16, 16, 0)),
+            base: const EdgeInsets.fromLTRB(AppStyles.spacing16,
+                AppStyles.spacing16, AppStyles.spacing16, 0)),
         children: [
           // 프로필 섹션
           _ProfileSection(pet: pet),

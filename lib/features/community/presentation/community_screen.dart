@@ -11,7 +11,7 @@ import '../../../shared/widgets/glass_chip.dart';
 import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/pending_section.dart';
 import '../../../shared/widgets/glass_dock.dart';
-import '../../../shared/widgets/wallpaper_background.dart';
+import '../../../shared/widgets/glass_tab_shell.dart';
 import '../../profile/presentation/profile_providers.dart';
 import '../domain/community_post.dart';
 import 'community_providers.dart';
@@ -33,42 +33,30 @@ class CommunityScreen extends ConsumerWidget {
     final posts = ref.watch(communityPostsProvider);
     final profile = ref.watch(profileNotifierProvider).valueOrNull;
 
-    // A안 표면 규칙은 홈([HomeScreen])과 같다 — 월페이퍼 바닥 +
-    // SafeArea(bottom: false). 다크 팔레트는 앱 전역이 보장한다(`app.dart`).
-    // 카테고리·seed 로직은 불변.
-    return Scaffold(
-      backgroundColor: AppTheme.glassWallpaperTop,
-      body: Stack(
+    // A안 표면 규칙은 [GlassTabShell] 한 곳이 맡는다. 카테고리·seed 로직은 불변.
+    return GlassTabShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Positioned.fill(child: WallpaperBackground()),
-          SafeArea(
-            bottom: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GlassTabHeader(
-                  title: 'community_title'.tr(),
-                  actions: [
-                    AccountAvatar(
-                      tooltip: 'home_account'.tr(),
-                      imageUrl: profile?.avatarUrl,
-                      displayName: profile?.displayName,
-                      onPressed: () => context.push('/profile'),
-                    ),
-                  ],
-                ),
-                _CategoryChips(
-                  selected: selected,
-                  onChanged: (cat) => ref
-                      .read(selectedCommunityCategoryProvider.notifier)
-                      .state = cat,
-                ),
-                const SizedBox(height: AppStyles.spacing12),
-                Expanded(
-                    child: _CategoryBody(selected: selected, posts: posts)),
-              ],
-            ),
+          GlassTabHeader(
+            title: 'community_title'.tr(),
+            actions: [
+              AccountAvatar(
+                tooltip: 'home_account'.tr(),
+                imageUrl: profile?.avatarUrl,
+                displayName: profile?.displayName,
+                onPressed: () => context.push('/profile'),
+              ),
+            ],
           ),
+          _CategoryChips(
+            selected: selected,
+            onChanged: (cat) => ref
+                .read(selectedCommunityCategoryProvider.notifier)
+                .state = cat,
+          ),
+          const SizedBox(height: AppStyles.spacing12),
+          Expanded(child: _CategoryBody(selected: selected, posts: posts)),
         ],
       ),
     );
@@ -96,8 +84,8 @@ class _CategoryBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 위키는 별도 탭이 아니라 커뮤니티 하위다(기획안 §4.5). 전체에서도 보인다.
-    final showWiki = selected == CommunityCategory.wiki ||
-        selected == CommunityCategory.all;
+    final showWiki =
+        selected == CommunityCategory.wiki || selected == CommunityCategory.all;
 
     return ListView(
       // 하단은 플로팅 독 높이를 [glassDockListPadding]이 직접 소비한다 —
@@ -255,8 +243,8 @@ class _PostCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(6),

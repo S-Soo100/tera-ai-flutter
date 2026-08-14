@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../../wiki/data/care_info_repository.dart';
@@ -141,7 +142,8 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
         child: ListView(
           // 하단은 플로팅 독 높이까지 비운다 — 안 그러면 저장 버튼이 독에 가려진다.
           padding: glassDockListPadding(context,
-              base: const EdgeInsets.fromLTRB(16, 16, 16, 0)),
+              base: const EdgeInsets.fromLTRB(AppStyles.spacing16,
+                  AppStyles.spacing16, AppStyles.spacing16, 0)),
           children: [
             // 사진
             PhotoPickerButton(

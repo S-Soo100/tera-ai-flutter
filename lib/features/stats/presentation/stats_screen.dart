@@ -12,7 +12,7 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/pending_section.dart';
 import '../../../shared/widgets/glass_dock.dart';
-import '../../../shared/widgets/wallpaper_background.dart';
+import '../../../shared/widgets/glass_tab_shell.dart';
 import '../../home/presentation/home_control_providers.dart';
 import '../../home/presentation/home_set_providers.dart';
 import '../../profile/presentation/profile_providers.dart';
@@ -33,10 +33,9 @@ import 'widgets/stats_summary_bar.dart';
 /// 지금 실물이 있는 것은 **일간 온습도 차트** 하나다(Figma가 그려준 유일한
 /// 통계 화면). 나머지는 [PendingSection].
 ///
-/// A안 표면 규칙은 홈([HomeScreen])과 같다 — 바닥은 [WallpaperBackground],
-/// 다크 팔레트는 앱 전역이 보장한다(`app.dart`의 `themeMode: dark`).
-/// `SafeArea(bottom: false)` + ListView가 `MediaQuery.padding.bottom`(플로팅
-/// 독 높이)을 직접 소비한다 — padding을 명시한 ListView는 자동 인셋이 꺼진다.
+/// A안 표면 규칙(월페이퍼·전역 다크·SafeArea)은 [GlassTabShell]이 맡는다 —
+/// ListView가 `MediaQuery.padding.bottom`(플로팅 독 높이)을 직접 소비한다
+/// (padding을 명시한 ListView는 자동 인셋이 꺼진다).
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
 
@@ -47,39 +46,29 @@ class StatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final deviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
 
-    return Scaffold(
-      backgroundColor: AppTheme.glassWallpaperTop,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: WallpaperBackground()),
-          SafeArea(
-            bottom: false,
-            child: deviceId == null
-                ? Column(
-                    children: [
-                      const _StatsHeader(),
-                      Expanded(
-                          child: Center(child: Text('stats_no_device'.tr()))),
-                    ],
-                  )
-                : Builder(
-                    builder: (context) => ListView(
-                      padding: glassDockListPadding(context),
-                      children: const [
-                        _StatsHeader(),
-                        StatsPeriodBar(),
-                        SizedBox(height: AppStyles.spacing8),
-                        StatsMetricFilter(),
-                        SizedBox(height: AppStyles.spacing8),
-                        _MainChartSection(),
-                        SizedBox(height: AppStyles.spacing24),
-                        _PendingSections(key: StatsScreen.pendingKey),
-                      ],
-                    ),
-                  ),
-          ),
-        ],
-      ),
+    return GlassTabShell(
+      child: deviceId == null
+          ? Column(
+              children: [
+                const _StatsHeader(),
+                Expanded(child: Center(child: Text('stats_no_device'.tr()))),
+              ],
+            )
+          : Builder(
+              builder: (context) => ListView(
+                padding: glassDockListPadding(context),
+                children: const [
+                  _StatsHeader(),
+                  StatsPeriodBar(),
+                  SizedBox(height: AppStyles.spacing8),
+                  StatsMetricFilter(),
+                  SizedBox(height: AppStyles.spacing8),
+                  _MainChartSection(),
+                  SizedBox(height: AppStyles.spacing24),
+                  _PendingSections(key: StatsScreen.pendingKey),
+                ],
+              ),
+            ),
     );
   }
 }

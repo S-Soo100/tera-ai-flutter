@@ -13,7 +13,7 @@ import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_segmented_control.dart';
 import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/screen_header.dart';
-import '../../../shared/widgets/wallpaper_background.dart';
+import '../../../shared/widgets/glass_tab_shell.dart';
 import '../../my_cage/presentation/nightly_report_view.dart';
 import '../../profile/presentation/profile_providers.dart';
 import '../domain/pet.dart';
@@ -46,50 +46,39 @@ class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
 
     final profile = ref.watch(profileNotifierProvider).valueOrNull;
 
-    // A안 표면 규칙은 홈([HomeScreen])과 같다 — 월페이퍼 바닥 +
-    // SafeArea(bottom: false). 다크 팔레트는 앱 전역이 보장한다(`app.dart`).
-    // 탭 전환·CRUD 로직은 불변.
-    return Scaffold(
-      backgroundColor: AppTheme.glassWallpaperTop,
-      body: Stack(
+    // A안 표면 규칙은 [GlassTabShell] 한 곳이 맡는다. 탭 전환·CRUD 로직은 불변.
+    return GlassTabShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Positioned.fill(child: WallpaperBackground()),
-          SafeArea(
-            bottom: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 홈·통계와 같은 헤더 문법. 탭마다 제목 스타일이 다르면
-                // 탭을 옮길 때마다 다른 앱처럼 보인다.
-                GlassTabHeader(
-                  title: 'my_pets_title'.tr(),
-                  actions: [
-                    HeaderAction(
-                      icon: Icons.add,
-                      tooltip: 'my_pets_add'.tr(),
-                      onPressed: () => context.push('/my-pets/add'),
-                    ),
-                    AccountAvatar(
-                      tooltip: 'home_account'.tr(),
-                      imageUrl: profile?.avatarUrl,
-                      displayName: profile?.displayName,
-                      onPressed: () => context.push('/profile'),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppStyles.spacing16),
-                  child: _TabChips(
-                    selected: _selected,
-                    onChanged: (t) => setState(() => _selected = t),
-                  ),
-                ),
-                const SizedBox(height: AppStyles.spacing16),
-                Expanded(child: _tabContent(_selected, pets)),
-              ],
+          // 홈·통계와 같은 헤더 문법. 탭마다 제목 스타일이 다르면
+          // 탭을 옮길 때마다 다른 앱처럼 보인다.
+          GlassTabHeader(
+            title: 'my_pets_title'.tr(),
+            actions: [
+              HeaderAction(
+                icon: Icons.add,
+                tooltip: 'my_pets_add'.tr(),
+                onPressed: () => context.push('/my-pets/add'),
+              ),
+              AccountAvatar(
+                tooltip: 'home_account'.tr(),
+                imageUrl: profile?.avatarUrl,
+                displayName: profile?.displayName,
+                onPressed: () => context.push('/profile'),
+              ),
+            ],
+          ),
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
+            child: _TabChips(
+              selected: _selected,
+              onChanged: (t) => setState(() => _selected = t),
             ),
           ),
+          const SizedBox(height: AppStyles.spacing16),
+          Expanded(child: _tabContent(_selected, pets)),
         ],
       ),
     );
@@ -317,7 +306,8 @@ class _SexBadge extends StatelessWidget {
     //
     // `*Bg`를 직접 쓰지 않는다. 그 파스텔은 라이트 전용이라 다크에서
     // **배지가 화면에서 제일 밝은 조각**이 된다(실기기 확인).
-    final t = AppTheme.subBadgeTone(isMale ? AppTheme.subBlue : AppTheme.subRed);
+    final t =
+        AppTheme.subBadgeTone(isMale ? AppTheme.subBlue : AppTheme.subRed);
     final color = t.fg;
     final bg = t.bg;
     final label = isMale ? 'pet_sex_male'.tr() : 'pet_sex_female'.tr();
