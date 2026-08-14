@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../data/supabase_module_control_repository.dart';
 import '../domain/device.dart';
@@ -26,6 +27,10 @@ final supabaseModuleControlRepositoryProvider =
 
 final deviceListProvider =
     FutureProvider.autoDispose<List<Device>>((ref) async {
+  // 계정 전환·로그인 시 재조회 (project_auth_provider_stale_pattern).
+  // 없으면 게스트 상태에서 RLS가 무에러로 돌려준 빈 목록이 캐시돼, 로그인
+  // 후에도 통계·제어가 "기기 없음"으로 남는다(2026-08-14 실기기 확인).
+  ref.watch(currentUserProvider.select((u) => u?.id));
   return ref.watch(supabaseModuleControlRepositoryProvider).listDevices();
 });
 
