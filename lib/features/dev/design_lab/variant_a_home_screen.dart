@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 
 import 'design_lab_fixtures.dart';
+import 'mock_live_player.dart';
 import 'tokens/variant_a_tokens.dart';
 
 /// A안 — Apple Home (iOS 26, Liquid Glass) 스타일 홈 체험.
@@ -280,66 +281,29 @@ class _CameraCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(VariantATokens.tileRadius),
-      child: AspectRatio(
+      child: const AspectRatio(
         aspectRatio: 16 / 9,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // 라이브 스틸 플레이스홀더 — 실제 이미지 대신 그라데이션+아이콘.
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF25402F), Color(0xFF122019)],
+        // 번들 루프 영상 mock 라이브. LIVE 배지·타임스탬프는 플레이어가 그린다.
+        child: MockLivePlayer(
+          fallback: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 라이브 스틸 플레이스홀더 — 로딩/실패 시 바닥.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF25402F), Color(0xFF122019)],
+                  ),
                 ),
               ),
-            ),
-            const Center(
-              child: Icon(Icons.videocam_outlined,
-                  size: 44, color: Color(0x66FFFFFF)),
-            ),
-            Positioned(
-              left: 12,
-              bottom: 12,
-              child: _Glass(
-                radius: 8,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: VariantATokens.liveRed,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    const Text('LIVE',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: VariantATokens.textPrimary,
-                          letterSpacing: 0.5,
-                        )),
-                  ],
-                ),
+              Center(
+                child: Icon(Icons.videocam_outlined,
+                    size: 44, color: Color(0x66FFFFFF)),
               ),
-            ),
-            Positioned(
-              right: 12,
-              bottom: 12,
-              child: _Glass(
-                radius: 8,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Text(labHm(kLabNow), style: VariantATokens.tileStatus),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

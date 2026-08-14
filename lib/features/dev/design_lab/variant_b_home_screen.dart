@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'design_lab_fixtures.dart';
+import 'mock_live_player.dart';
 import 'tokens/variant_b_tokens.dart';
 
 /// B안 — Flighty (공항 전광판 데이터 밀도) 스타일 홈 체험.
@@ -105,19 +106,28 @@ class _LiveHeader extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // 라이브 스틸 플레이스홀더 (그라데이션+아이콘).
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF1D3324), Color(0xFF0E1A13)],
-              ),
+          // 번들 루프 영상 mock 라이브 — 배지는 B가 자기 오버레이로 그린다.
+          const MockLivePlayer(
+            showBadge: false,
+            fallback: Stack(
+              fit: StackFit.expand,
+              children: [
+                // 라이브 스틸 플레이스홀더 (그라데이션+아이콘) — 로딩/실패 시.
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFF1D3324), Color(0xFF0E1A13)],
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Icon(Icons.videocam_outlined,
+                      size: 52, color: Color(0x40FFFFFF)),
+                ),
+              ],
             ),
-          ),
-          const Center(
-            child: Icon(Icons.videocam_outlined,
-                size: 52, color: Color(0x40FFFFFF)),
           ),
           // 하단으로 갈수록 배경색에 잠기는 그라데이션.
           const DecoratedBox(
