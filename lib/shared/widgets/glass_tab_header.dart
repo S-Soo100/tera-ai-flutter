@@ -38,70 +38,96 @@ class GlassTabHeader extends StatelessWidget {
 
   final List<Widget> actions;
 
+  /// 제목 줄 슬롯 — [AppTheme.glassHeaderTitle] 실높이(28 × 1.15).
+  static const double _titleSlot = 28 * 1.15;
+
+  /// 캡슐 줄 슬롯 — 캡슐(글자 13 + 세로 패딩 5×2 + 테두리)이 앉는 높이.
+  /// **캡슐이 없어도 이 줄을 예약한다** — 탭마다 캡슐 유무가 달라서, 내용에
+  /// 맡기면 4탭을 오갈 때 제목 베이스라인이 위아래로 튄다.
+  static const double _capsuleSlot = 30;
+
+  /// 헤더 전체 높이. 캡슐 유무·액션 개수와 무관하게 항상 이 값이다.
+  static const double height = AppStyles.spacing8 +
+      _titleSlot +
+      AppStyles.spacing4 +
+      _capsuleSlot +
+      AppStyles.spacing12;
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppStyles.spacing16,
-        AppStyles.spacing8,
-        AppStyles.spacing8,
-        AppStyles.spacing12,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: AppTheme.glassHeaderTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (capsuleLabel != null) ...[
-                  const SizedBox(height: AppStyles.spacing4),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: GlassChip(
-                      onTap: onPickCapsule,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              capsuleLabel!,
-                              style: AppTheme.glassTileStatus,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (onPickCapsule != null) ...[
-                            const SizedBox(width: AppStyles.spacing4),
-                            Icon(
-                              Icons.expand_more,
-                              key: capsuleArrowKey,
-                              size: 16,
-                              color: AppTheme.glassTextSecondary,
-                            ),
-                          ],
-                        ],
+    return SizedBox(
+      height: height,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppStyles.spacing16,
+          AppStyles.spacing8,
+          AppStyles.spacing8,
+          AppStyles.spacing12,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: _titleSlot,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        title,
+                        style: AppTheme.glassHeaderTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
+                  const SizedBox(height: AppStyles.spacing4),
+                  SizedBox(
+                    height: _capsuleSlot,
+                    child: capsuleLabel == null
+                        ? null
+                        : Align(
+                            alignment: Alignment.centerLeft,
+                            child: GlassChip(
+                              onTap: onPickCapsule,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      capsuleLabel!,
+                                      style: AppTheme.glassTileStatus,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (onPickCapsule != null) ...[
+                                    const SizedBox(width: AppStyles.spacing4),
+                                    Icon(
+                                      Icons.expand_more,
+                                      key: capsuleArrowKey,
+                                      size: 16,
+                                      color: AppTheme.glassTextSecondary,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                  ),
                 ],
-              ],
+              ),
             ),
-          ),
-          IconTheme.merge(
-            data: const IconThemeData(color: AppTheme.glassTextPrimary),
-            child: Row(mainAxisSize: MainAxisSize.min, children: actions),
-          ),
-        ],
+            IconTheme.merge(
+              data: const IconThemeData(color: AppTheme.glassTextPrimary),
+              child: Row(mainAxisSize: MainAxisSize.min, children: actions),
+            ),
+          ],
+        ),
       ),
     );
   }
