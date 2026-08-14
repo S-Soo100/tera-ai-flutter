@@ -132,11 +132,10 @@ void main() {
   });
 
   group('ScheduleAction', () {
-    test('서버 화이트리스트와 1:1이다', () {
-      // 그 외 값은 400. 앱이 못 보내게 목록 자체를 좁혀둔다.
+    test('고를 수 있는 것 — mist + 절대 상태 명령 (2026-08-14 화이트리스트 확장)', () {
       expect(
         ScheduleAction.selectable.map((a) => a.wire).toList(),
-        ['mist', 'fan_toggle', 'heater_toggle', 'led_on', 'led_off'],
+        ['mist', 'fan_on', 'fan_off', 'heater_on', 'heater_off', 'led_on', 'led_off'],
       );
     });
 
@@ -144,26 +143,93 @@ void main() {
       expect(ScheduleAction.selectable, isNot(contains(ScheduleAction.unknown)));
     });
 
-    test('절대 명령은 아직 못 고른다 — schedules 화이트리스트에 없어 400이 온다', () {
-      // 펌웨어에는 있지만 백엔드 화이트리스트 추가 대기 중이다.
-      // 그때 selectable에 넣으면서 이 테스트를 뒤집는다.
+    test('toggle 계열은 못 고른다 — 무인 실행에서 상태가 어긋나면 반대로 동작한다', () {
       for (final a in [
-        ScheduleAction.fanOn,
-        ScheduleAction.heaterOn,
-        ScheduleAction.heaterOff,
+        ScheduleAction.fanToggle,
+        ScheduleAction.heaterToggle,
+        ScheduleAction.relayToggle,
       ]) {
-        expect(ScheduleAction.selectable, isNot(contains(a)), reason: '${a.wire}');
+        expect(ScheduleAction.selectable, isNot(contains(a)), reason: a.wire);
       }
     });
 
-    test('절대 명령이 섞여 와도 unknown으로 뭉개지 않는다 — 웹 콘솔에서 만들 수 있다', () {
+    test('toggle 예약이 섞여 와도 unknown으로 뭉개지 않는다 — 기존 데이터·웹 콘솔', () {
+      expect(ScheduleAction.fromWire('fan_toggle'), ScheduleAction.fanToggle);
       expect(ScheduleAction.fromWire('heater_off'), ScheduleAction.heaterOff);
-      expect(ScheduleAction.fromWire('fan_on'), ScheduleAction.fanOn);
     });
 
     test('mist만 payload가 필수다', () {
       expect(ScheduleAction.mist.requiresDuration, isTrue);
-      expect(ScheduleAction.fanToggle.requiresDuration, isFalse);
+      expect(ScheduleAction.fanOn.requiresDuration, isFalse);
+    });
+  });
+
+  group('ScheduleGuard', () {
+    test('fromJson/toJson 왕복', () {
+      final g = ScheduleGuard.fromJson(
+          {'type': 'skip_when_humidity_above', 'value': 70, 'enabled': true});
+      expect(g, isNotNull);
+      expect(g!.type, GuardType.humidityAbove);
+      expect(g.value, 70.0);
+      expect(g.toJson(),
+          {'type': 'skip_when_humidity_above', 'value': 70.0, 'enabled': true});
+    });
+
+    test('모르는 type은 null — 한 예약의 가드 때문에 목록이 통째로 비지 않게', () {
+      expect(
+          ScheduleGuard.fromJson({'type': 'stop_when_temp_above', 'value': 30}),
+          isNull);
+      expect(ScheduleGuard.fromJson('garbage'), isNull);
+      expect(ScheduleGuard.fromJson(null), isNull);
+    });
+
+    test('enabled 기본값은 true', () {
+      final g = ScheduleGuard.fromJson(
+          {'type': 'skip_when_temp_below', 'value': 20});
+      expect(g!.enabled, isTrue);
+    });
+
+    test('습도/온도 구분 — 편집기 단위 표기가 갈린다', () {
+      expect(GuardType.humidityAbove.isHumidity, isTrue);
+      expect(GuardType.humidityBelow.isHumidity, isTrue);
+      expect(GuardType.tempAbove.isHumidity, isFalse);
+      expect(GuardType.tempBelow.isHumidity, isFalse);
+    });
+
+    test('Schedule.fromJson이 guard를 읽는다', () {
+      final s = Schedule.fromJson({
+        ..._daily(),
+        'guard': {'type': 'skip_when_humidity_above', 'value': 70, 'enabled': true},
+      });
+      expect(s.guard, isNotNull);
+      expect(s.guard!.type, GuardType.humidityAbove);
+    });
+
+    test('guard가 없으면 null — 기존 예약이 그대로 읽힌다', () {
+      expect(Schedule.fromJson(_daily()).guard, isNull);
+    });
+
+    test('createBody는 guard가 있을 때만 키를 싣는다', () {
+      final without = Schedule.createBody(
+        action: ScheduleAction.mist,
+        kind: ScheduleKind.daily,
+        hour: 8,
+        minute: 0,
+        daysOfWeek: const [],
+      );
+      expect(without.containsKey('guard'), isFalse);
+
+      final withGuard = Schedule.createBody(
+        action: ScheduleAction.mist,
+        kind: ScheduleKind.daily,
+        hour: 8,
+        minute: 0,
+        daysOfWeek: const [],
+        guard: const ScheduleGuard(
+            type: GuardType.humidityAbove, value: 70, enabled: true),
+      );
+      expect(withGuard['guard'],
+          {'type': 'skip_when_humidity_above', 'value': 70.0, 'enabled': true});
     });
   });
 }

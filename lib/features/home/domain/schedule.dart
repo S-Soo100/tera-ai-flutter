@@ -8,9 +8,9 @@
 /// INSERT도 통과하지만, 그러면 서버가 계산하는 `next_run_at`이 비어 예약이
 /// 영영 안 돈다.
 ///
-/// ⚠️ **PRD §4.2.2를 다 덮지 못한다.** 시작~종료 구간·스마트 조건이 계약에
-/// 없어 지금은 "시점 예약"까지만이다. `docs/backend-handoff-timer-mist.md`
-/// 요청 1·2 회신 대기 중.
+/// 시작~종료 구간은 on/off 예약 **2건**으로 구성하고(서버에 "쌍" 개념은 없다),
+/// 스마트 조건은 [ScheduleGuard](스킵형 4종)로 건다 — 2026-08-14 핸드오프로
+/// 계약이 열렸다(`docs/backend-handoff-2026-08-14-summary.md` §2).
 library;
 
 enum ScheduleKind {
@@ -40,12 +40,8 @@ enum ScheduleAction {
   relayToggle('relay_toggle'),
 
   // ── 절대 상태 명령 ────────────────────────────────────────────────────────
-  // 구간 예약("20시 켜고 23시 끄기")의 재료다. 펌웨어에는 이미 있지만
-  // **`schedules` 화이트리스트에 아직 없어** 지금 만들면 400이 온다
-  // (백엔드 회신 2026-08-12 · 즉시 가능 항목). 그때까지 [selectable]에서 빼둔다.
-  //
-  // 그래도 값을 정의해 두는 건, 웹 콘솔 등 다른 경로로 만들어진 예약이 목록에
-  // 섞였을 때 `unknown`으로 뭉개지지 않게 하기 위해서다.
+  // 구간 예약("20시 켜고 23시 끄기")의 재료다. 2026-08-14 핸드오프로
+  // `schedules` 화이트리스트에 들어와 [selectable]에도 올랐다(§2.1).
   fanOn('fan_on'),
   fanOff('fan_off'),
   heaterOn('heater_on'),
@@ -60,8 +56,18 @@ enum ScheduleAction {
 
   final String wire;
 
-  /// 사용자가 고를 수 있는 것만. [relayToggle]·[unknown]은 뺀다.
-  static const selectable = [mist, fanToggle, heaterToggle, ledOn, ledOff];
+  /// 사용자가 고를 수 있는 것만. toggle 계열은 뺀다 — 예약은 무인 실행이라
+  /// 기기 상태가 한 번 어긋나면 뒤집기가 반대로 동작한다(히터면 과열이다).
+  /// [relayOn]/[relayOff]도 뺀다 — 분무는 [mist]가 정공법.
+  static const selectable = [
+    mist,
+    fanOn,
+    fanOff,
+    heaterOn,
+    heaterOff,
+    ledOn,
+    ledOff,
+  ];
 
   /// `mist`는 `duration_ms`가 없으면 서버가 400을 준다.
   bool get requiresDuration => this == ScheduleAction.mist;
@@ -127,6 +133,64 @@ enum ScheduleAction {
   }
 }
 
+/// 스마트 가드 조건 종류 — 서버가 예약 발행 직전 평가해 **스킵**한다
+/// (`docs/backend-handoff-2026-08-14-summary.md` §2.3).
+///
+/// 정지형(가동 중 정지, 예: 히터 목표온도 도달 시 OFF)은 펌웨어 담당
+/// 미구현이라 여기 없다. 값이 추가되면 [ScheduleGuard.fromJson]의 null 반환
+/// 경로도 같이 보라.
+enum GuardType {
+  humidityAbove('skip_when_humidity_above'),
+  humidityBelow('skip_when_humidity_below'),
+  tempAbove('skip_when_temp_above'),
+  tempBelow('skip_when_temp_below');
+
+  const GuardType(this.wire);
+
+  final String wire;
+
+  /// 편집기 단위 표기(%·°C)와 입력 범위가 갈린다.
+  bool get isHumidity =>
+      this == GuardType.humidityAbove || this == GuardType.humidityBelow;
+
+  static GuardType? fromWire(String? v) {
+    for (final t in GuardType.values) {
+      if (t.wire == v) return t;
+    }
+    return null;
+  }
+}
+
+/// 예약의 스마트 조건. 서버 JSON `{type, value, enabled}` 그대로.
+class ScheduleGuard {
+  final GuardType type;
+  final double value;
+  final bool enabled;
+
+  const ScheduleGuard({
+    required this.type,
+    required this.value,
+    required this.enabled,
+  });
+
+  Map<String, dynamic> toJson() =>
+      {'type': type.wire, 'value': value, 'enabled': enabled};
+
+  /// 모르는 type이면 null — 한 예약의 가드 때문에 목록이 통째로 비지 않게.
+  /// (수정 시 guard 키를 생략하면 서버 값이 유지되므로 유실은 없다.)
+  static ScheduleGuard? fromJson(Object? j) {
+    if (j is! Map) return null;
+    final type = GuardType.fromWire(j['type'] as String?);
+    final value = (j['value'] as num?)?.toDouble();
+    if (type == null || value == null) return null;
+    return ScheduleGuard(
+      type: type,
+      value: value,
+      enabled: j['enabled'] as bool? ?? true,
+    );
+  }
+}
+
 class Schedule {
   final String id;
   final String deviceId;
@@ -145,6 +209,9 @@ class Schedule {
 
   final bool enabled;
 
+  /// 스마트 조건. 없거나 서버가 모르는 형태면 null.
+  final ScheduleGuard? guard;
+
   /// 다음 실행 시각. **서버는 UTC로 주고 여기서 로컬로 바꿔 보관한다.**
   final DateTime? nextRunAt;
   final DateTime? lastRunAt;
@@ -161,6 +228,7 @@ class Schedule {
     required this.enabled,
     required this.nextRunAt,
     required this.lastRunAt,
+    this.guard,
   });
 
   String get hhmm =>
@@ -184,6 +252,7 @@ class Schedule {
       minute: m,
       daysOfWeek: days ?? const [],
       enabled: j['enabled'] as bool? ?? true,
+      guard: ScheduleGuard.fromJson(j['guard']),
       nextRunAt: _parseLocal(j['next_run_at']),
       lastRunAt: _parseLocal(j['last_run_at']),
     );
@@ -200,6 +269,7 @@ class Schedule {
     required int minute,
     required List<int> daysOfWeek,
     Map<String, dynamic>? payload,
+    ScheduleGuard? guard,
   }) {
     final sorted = [...daysOfWeek]..sort();
     return {
@@ -209,6 +279,7 @@ class Schedule {
           '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
       if (kind == ScheduleKind.weekly) 'days_of_week': sorted,
       if (payload != null) 'payload': payload,
+      if (guard != null) 'guard': guard.toJson(),
     };
   }
 
@@ -229,6 +300,7 @@ class Schedule {
         minute: minute,
         daysOfWeek: daysOfWeek,
         enabled: enabled ?? this.enabled,
+        guard: guard,
         nextRunAt: nextRunAt,
         lastRunAt: lastRunAt,
       );
