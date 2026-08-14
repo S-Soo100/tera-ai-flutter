@@ -44,6 +44,7 @@ class _FakeRepo implements ScheduleRepository {
       ScheduleGuard? guard}) async {
     calls.add('create:${action.wire}:'
         '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}'
+        ':d=${daysOfWeek.join(',')}'
         '${guard == null ? '' : ':guard=${guard.type.wire}>${guard.value}'}');
     return _schedule(id: 'new-${calls.length}');
   }
@@ -55,6 +56,7 @@ Schedule _schedule({
   ScheduleAction action = ScheduleAction.mist,
   ScheduleKind kind = ScheduleKind.daily,
   List<int> days = const [],
+  ScheduleGuard? guard,
 }) =>
     Schedule(
       id: id,
@@ -66,6 +68,7 @@ Schedule _schedule({
       minute: 0,
       daysOfWeek: days,
       enabled: enabled,
+      guard: guard,
       nextRunAt: null,
       lastRunAt: null,
     );
@@ -181,6 +184,161 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('routine_mode_span'.tr()), findsNothing);
+  });
+
+  test('addSpan: weekly + 자정 넘김이면 off 요일이 하루 밀린다', () async {
+    final repo = _FakeRepo();
+    final container = ProviderContainer(overrides: [
+      scheduleRepositoryProvider.overrideWithValue(repo),
+      currentDeviceIdProvider.overrideWith((ref) async => 'd1'),
+    ]);
+    addTearDown(container.dispose);
+    final sub = container.listen(schedulesProvider, (_, __) {});
+    addTearDown(sub.close);
+    await container.read(schedulesProvider.future);
+
+    await container.read(schedulesProvider.notifier).addSpan(
+          onAction: ScheduleAction.heaterOn,
+          offAction: ScheduleAction.heaterOff,
+          kind: ScheduleKind.weekly,
+          startHour: 22,
+          startMinute: 0,
+          endHour: 6,
+          endMinute: 0,
+          daysOfWeek: const [1, 7],
+        );
+
+    final creates = repo.calls.where((c) => c.startsWith('create:')).toList();
+    expect(creates, hasLength(2));
+    expect(creates[0], contains('heater_on:22:00:d=1,7'));
+    // off는 다음날 새벽 — 월→화, 일→월.
+    expect(creates[1], contains('heater_off:06:00:d=1,2'));
+  });
+
+  test('addSpan: 자정을 안 넘으면 off 요일 그대로', () async {
+    final repo = _FakeRepo();
+    final container = ProviderContainer(overrides: [
+      scheduleRepositoryProvider.overrideWithValue(repo),
+      currentDeviceIdProvider.overrideWith((ref) async => 'd1'),
+    ]);
+    addTearDown(container.dispose);
+    final sub = container.listen(schedulesProvider, (_, __) {});
+    addTearDown(sub.close);
+    await container.read(schedulesProvider.future);
+
+    await container.read(schedulesProvider.notifier).addSpan(
+          onAction: ScheduleAction.fanOn,
+          offAction: ScheduleAction.fanOff,
+          kind: ScheduleKind.weekly,
+          startHour: 8,
+          startMinute: 0,
+          endHour: 20,
+          endMinute: 0,
+          daysOfWeek: const [3],
+        );
+
+    final creates = repo.calls.where((c) => c.startsWith('create:')).toList();
+    expect(creates[1], contains('fan_off:20:00:d=3'));
+  });
+
+  testWidgets('끄기 예약 삭제 시 켜기 짝이 남으면 경고를 바꾼다', (tester) async {
+    final repo = _FakeRepo(items: [
+      _schedule(id: 'on1', action: ScheduleAction.heaterOn),
+      _schedule(id: 'off1', action: ScheduleAction.heaterOff),
+    ]);
+    await _pump(tester, repo);
+
+    await tester.tap(find.byKey(const Key('schedule_delete_off1')));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('routine_delete_off_warning')), findsOneWidget);
+  });
+
+  testWidgets('켜기 예약 삭제는 평범한 확인 문구다', (tester) async {
+    final repo = _FakeRepo(items: [
+      _schedule(id: 'on1', action: ScheduleAction.heaterOn),
+    ]);
+    await _pump(tester, repo);
+
+    await tester.tap(find.byKey(const Key('schedule_delete_on1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('routine_delete_off_warning')), findsNothing);
+    expect(find.text('routine_delete_body'.tr()), findsOneWidget);
+  });
+
+  testWidgets('끄기 예약 수정에는 가드 섹션이 없다 — off는 무조건 꺼져야 안전',
+      (tester) async {
+    final repo = _FakeRepo(items: [
+      _schedule(id: 'off1', action: ScheduleAction.heaterOff),
+    ]);
+    await _pump(tester, repo);
+
+    await tester.tap(find.byKey(const Key('schedule_off1')));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.byKey(const Key('routine_guard_not_for_off')), findsOneWidget);
+    expect(find.byKey(const Key('routine_guard_off')), findsNothing);
+  });
+
+  testWidgets('가드를 안 건드린 수정은 PATCH에 guard를 싣지 않는다 — enabled:false 보존',
+      (tester) async {
+    final repo = _FakeRepo(items: [
+      _schedule(
+        id: 'a',
+        guard: const ScheduleGuard(
+            type: GuardType.humidityAbove, value: 70, enabled: false),
+      ),
+    ]);
+    await _pump(tester, repo);
+
+    await tester.tap(find.byKey(const Key('schedule_a')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('routine_save')));
+    await tester.tap(find.byKey(const Key('routine_save')));
+    await tester.pumpAndSettle();
+
+    final patch = repo.calls.firstWhere((c) => c.startsWith('patch:a'));
+    expect(patch.contains('guard'), isFalse,
+        reason: '안 건드렸으면 키 생략 — 서버의 enabled:false가 유지돼야 한다: $patch');
+  });
+
+  testWidgets('가드 단위를 바꾸면 기준값이 새 기본값으로 리셋된다 — 70%가 70°C로 남지 않게',
+      (tester) async {
+    await _pump(tester, _FakeRepo());
+
+    await tester.tap(find.byKey(RoutineSettingsScreen.addKey));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(
+        find.byKey(const Key('routine_guard_skip_when_humidity_above')));
+    await tester.tap(
+        find.byKey(const Key('routine_guard_skip_when_humidity_above')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+        find.byKey(const Key('routine_guard_skip_when_temp_above')));
+    await tester.pumpAndSettle();
+
+    final field =
+        tester.widget<TextField>(find.byKey(const Key('routine_guard_value')));
+    expect(field.controller!.text, '30');
+  });
+
+  testWidgets('레거시 toggle 예약도 수정 시트에 잠긴 칩으로 보인다', (tester) async {
+    final repo = _FakeRepo(items: [
+      _schedule(id: 'a', action: ScheduleAction.fanToggle),
+    ]);
+    await _pump(tester, repo);
+
+    await tester.tap(find.byKey(const Key('schedule_a')));
+    await tester.pumpAndSettle();
+
+    final chip = tester.widget<ChoiceChip>(
+        find.byKey(const Key('routine_action_fan_toggle')));
+    expect(chip.selected, isTrue);
+    expect(chip.onSelected, isNull, reason: '수정 중엔 잠긴다');
   });
 
   testWidgets('토글은 서버에 반영한다', (tester) async {

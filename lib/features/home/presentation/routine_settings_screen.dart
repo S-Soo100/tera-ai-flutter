@@ -143,11 +143,24 @@ class RoutineSettingsScreen extends ConsumerWidget {
 
   Future<void> _confirmDelete(
       BuildContext context, WidgetRef ref, Schedule s) async {
+    // 끄기 예약을 지우는데 짝이 될 켜기 예약이 살아 있으면 경고를 바꾼다 —
+    // 서버에 쌍 개념이 없어(구간 예약 = 낱개 2건) 이 목록 검사로만 잡을 수
+    // 있다. 켜기만 남으면 기기가 켜진 채 방치된다(히터면 과열).
+    final others = ref.read(schedulesProvider).valueOrNull ?? const [];
+    final leavesOrphanOn = s.action.isOffAction &&
+        others.any((e) =>
+            e.id != s.id && e.enabled && e.action == s.action.onCounterpart);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('routine_delete_title'.tr()),
-        content: Text('routine_delete_body'.tr()),
+        content: Text(
+          (leavesOrphanOn ? 'routine_delete_off_warning' : 'routine_delete_body')
+              .tr(),
+          key: leavesOrphanOn
+              ? const Key('routine_delete_off_warning')
+              : null,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),

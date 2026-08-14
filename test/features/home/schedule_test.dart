@@ -162,6 +162,59 @@ void main() {
       expect(ScheduleAction.mist.requiresDuration, isTrue);
       expect(ScheduleAction.fanOn.requiresDuration, isFalse);
     });
+
+    test('끄기 계열 판별 + 켜기 짝', () {
+      expect(ScheduleAction.heaterOff.isOffAction, isTrue);
+      expect(ScheduleAction.heaterOff.onCounterpart, ScheduleAction.heaterOn);
+      expect(ScheduleAction.heaterOn.isOffAction, isFalse);
+      expect(ScheduleAction.heaterOn.onCounterpart, isNull);
+      expect(ScheduleAction.mist.isOffAction, isFalse);
+    });
+  });
+
+  group('구간 예약 자정 넘김', () {
+    test('종료가 시작보다 이르거나 같으면 자정 넘김', () {
+      expect(
+          Schedule.spanCrossesMidnight(
+              startHour: 22, startMinute: 0, endHour: 6, endMinute: 0),
+          isTrue);
+      expect(
+          Schedule.spanCrossesMidnight(
+              startHour: 8, startMinute: 0, endHour: 22, endMinute: 0),
+          isFalse);
+      // 같은 시각 = 24시간 구간으로 해석(다음날 종료).
+      expect(
+          Schedule.spanCrossesMidnight(
+              startHour: 8, startMinute: 0, endHour: 8, endMinute: 0),
+          isTrue);
+    });
+
+    test('weekly + 자정 넘김이면 off 요일을 하루 민다 — 일요일은 월요일로', () {
+      expect(
+        Schedule.offLegDays(
+            kind: ScheduleKind.weekly,
+            daysOfWeek: const [1, 3, 7],
+            crossesMidnight: true),
+        [1, 2, 4], // 월→화, 수→목, 일→월(정렬됨)
+      );
+    });
+
+    test('daily거나 자정을 안 넘으면 그대로', () {
+      expect(
+        Schedule.offLegDays(
+            kind: ScheduleKind.daily,
+            daysOfWeek: const [],
+            crossesMidnight: true),
+        isEmpty,
+      );
+      expect(
+        Schedule.offLegDays(
+            kind: ScheduleKind.weekly,
+            daysOfWeek: const [1, 3],
+            crossesMidnight: false),
+        [1, 3],
+      );
+    });
   });
 
   group('ScheduleGuard', () {

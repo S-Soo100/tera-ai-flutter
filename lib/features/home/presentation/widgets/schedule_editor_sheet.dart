@@ -103,7 +103,20 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
   GuardType? _guardType;
   late final TextEditingController _guardValue;
 
+  /// 사용자가 가드 섹션을 실제로 건드렸는가.
+  ///
+  /// 수정에서 안 건드렸으면 PATCH에 guard 키를 **아예 싣지 않아** 서버 값이
+  /// 그대로 남는다 — 여기서 `enabled:true`로 다시 만들어 보내면, 꺼져 있던
+  /// 가드(enabled:false, 웹 콘솔 등에서 설정)가 시간만 고쳐도 재무장된다.
+  bool _guardTouched = false;
+
   bool get _isEdit => widget.initial != null;
+
+  /// 이 예약에 가드를 걸 수 있는가. **끄기 계열이면 금지** — 조건 때문에
+  /// 끄기가 스킵되면 기기가 켜진 채 남는다(addSpan이 off쪽에 가드를 안 거는
+  /// 것과 같은 불변식을 편집 경로에도 적용). 구간 모드는 가드가 켜기쪽에만
+  /// 붙으므로 항상 허용.
+  bool get _allowsGuard => (!_isEdit && _isSpan) || !_action.isOffAction;
 
   @override
   void initState() {
@@ -134,6 +147,9 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
   double? get _parsedGuardValue => double.tryParse(_guardValue.text.trim());
 
   bool get _guardValid {
+    // 가드를 못 거는 예약(끄기 계열)은 가드 값이 저장에 실리지 않으니
+    // 검증도 걸지 않는다 — 섹션이 숨어 있어 사용자가 고칠 방법이 없다.
+    if (!_allowsGuard) return true;
     if (_guardType == null) return true;
     final v = _parsedGuardValue;
     if (v == null) return false;
@@ -210,7 +226,15 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
               Wrap(
                 spacing: AppStyles.spacing8,
                 children: [
-                  for (final a in ScheduleAction.selectable)
+                  // 수정 대상이 selectable 밖의 동작(기존 toggle 예약 등)이면
+                  // 그 칩을 함께 그린다 — 안 그리면 어떤 동작의 예약인지 시트가
+                  // 보여주지 못한다(잠긴 칩이 선택된 채 보이는 게 원래 약속).
+                  for (final a in [
+                    ...ScheduleAction.selectable,
+                    if (_isEdit &&
+                        !ScheduleAction.selectable.contains(_action))
+                      _action,
+                  ])
                     ChoiceChip(
                       key: Key('routine_action_${a.wire}'),
                       label: Text(a.displayKey.tr()),
@@ -332,47 +356,67 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
             Text('routine_guard_section'.tr(),
                 style: Theme.of(context).textTheme.labelMedium),
             const SizedBox(height: AppStyles.spacing8),
-            Wrap(
-              spacing: AppStyles.spacing8,
-              children: [
-                ChoiceChip(
-                  key: const Key('routine_guard_off'),
-                  label: Text('routine_guard_off'.tr()),
-                  selected: _guardType == null,
-                  onSelected: (_) => setState(() => _guardType = null),
-                ),
-                for (final t in GuardType.values)
+            if (!_allowsGuard)
+              Text(
+                'routine_guard_not_for_off'.tr(),
+                key: const Key('routine_guard_not_for_off'),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+              )
+            else ...[
+              Wrap(
+                spacing: AppStyles.spacing8,
+                children: [
                   ChoiceChip(
-                    key: Key('routine_guard_${t.wire}'),
-                    label: Text(_guardPickKey(t).tr()),
-                    selected: _guardType == t,
+                    key: const Key('routine_guard_off'),
+                    label: Text('routine_guard_off'.tr()),
+                    selected: _guardType == null,
                     onSelected: (_) => setState(() {
-                      _guardType = t;
-                      if (_guardValue.text.trim().isEmpty) {
-                        // 종별 상식값이 아니라 "일단 유효한 값"이다 — 사용자가
-                        // 자기 사육장 기준으로 고치는 출발점.
-                        _guardValue.text = t.isHumidity ? '70' : '30';
-                      }
+                      _guardType = null;
+                      _guardTouched = true;
                     }),
                   ),
-              ],
-            ),
-            if (_guardType != null) ...[
-              const SizedBox(height: AppStyles.spacing8),
-              TextField(
-                key: const Key('routine_guard_value'),
-                controller: _guardValue,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: (_guardType!.isHumidity
-                          ? 'routine_guard_value_humidity'
-                          : 'routine_guard_value_temp')
-                      .tr(),
-                  isDense: true,
-                ),
-                onChanged: (_) => setState(() {}),
+                  for (final t in GuardType.values)
+                    ChoiceChip(
+                      key: Key('routine_guard_${t.wire}'),
+                      label: Text(_guardPickKey(t).tr()),
+                      selected: _guardType == t,
+                      onSelected: (_) => setState(() {
+                        // 단위가 바뀌면(습도%↔온도°C) 값을 새 기본값으로 리셋 —
+                        // 70%를 70°C로 그대로 들고 가면 절대 발화하지 않는
+                        // 무력 가드가 조용히 만들어진다.
+                        final prevUnit =
+                            (_guardType ?? widget.initial?.guard?.type)
+                                ?.isHumidity;
+                        _guardType = t;
+                        _guardTouched = true;
+                        if (_guardValue.text.trim().isEmpty ||
+                            (prevUnit != null && prevUnit != t.isHumidity)) {
+                          // 종별 상식값이 아니라 "일단 유효한 값"이다 — 사용자가
+                          // 자기 사육장 기준으로 고치는 출발점.
+                          _guardValue.text = t.isHumidity ? '70' : '30';
+                        }
+                      }),
+                    ),
+                ],
               ),
+              if (_guardType != null) ...[
+                const SizedBox(height: AppStyles.spacing8),
+                TextField(
+                  key: const Key('routine_guard_value'),
+                  controller: _guardValue,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: (_guardType!.isHumidity
+                            ? 'routine_guard_value_humidity'
+                            : 'routine_guard_value_temp')
+                        .tr(),
+                    isDense: true,
+                  ),
+                  onChanged: (_) => setState(() => _guardTouched = true),
+                ),
+              ],
             ],
 
             const SizedBox(height: AppStyles.spacing16),
@@ -386,7 +430,12 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
             if (!_valid) ...[
               const SizedBox(height: AppStyles.spacing4),
               Text(
-                'routine_need_days'.tr(),
+                // 막힌 이유를 그대로 말한다 — daily에서 가드 값이 틀렸는데
+                // "요일을 골라라"가 뜨면 사용자는 풀 방법을 찾을 수 없다.
+                (!Schedule.validate(kind: _kind, daysOfWeek: _days.toList())
+                        ? 'routine_need_days'
+                        : 'routine_guard_value_invalid')
+                    .tr(),
                 style: Theme.of(context)
                     .textTheme
                     .labelSmall
@@ -412,6 +461,9 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
 
   void _save() {
     final span = !_isEdit && _isSpan;
+    // 수정에서 가드를 안 건드렸으면 null(키 생략) — 서버 값이 enabled까지
+    // 그대로 남는다. 끄기 계열이면 어떤 경로로도 가드를 싣지 않는다.
+    final emitsGuard = _allowsGuard && (!_isEdit || _guardTouched);
     Navigator.of(context).pop(ScheduleDraft(
       action: span ? _spanActuator.onAction : _action,
       offAction: span ? _spanActuator.offAction : null,
@@ -422,9 +474,12 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
       endMinute: span ? _endTime.minute : null,
       daysOfWeek: _days.toList()..sort(),
       payload: !span && _action.requiresDuration ? _duration.payload : null,
-      guard: _guard,
-      // 수정에서 원래 가드가 있었는데 '사용 안 함'으로 껐다 → 명시적 해제.
-      clearGuard: _isEdit && widget.initial?.guard != null && _guardType == null,
+      guard: emitsGuard ? _guard : null,
+      // 수정에서 원래 가드가 있었는데 직접 '사용 안 함'으로 껐다 → 명시적 해제.
+      clearGuard: _isEdit &&
+          _guardTouched &&
+          widget.initial?.guard != null &&
+          _guardType == null,
     ));
   }
 }

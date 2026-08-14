@@ -72,6 +72,30 @@ enum ScheduleAction {
   /// `mist`는 `duration_ms`가 없으면 서버가 400을 준다.
   bool get requiresDuration => this == ScheduleAction.mist;
 
+  /// 끄기 계열인가. **끄기 예약에는 가드를 걸 수 없다** — 조건 때문에 끄기가
+  /// 건너뛰어지면 기기가 켜진 채 남는다(히터면 과열). 편집기·삭제 경고가 쓴다.
+  bool get isOffAction =>
+      this == ScheduleAction.fanOff ||
+      this == ScheduleAction.heaterOff ||
+      this == ScheduleAction.ledOff ||
+      this == ScheduleAction.relayOff;
+
+  /// 끄기 동작의 짝이 되는 켜기 동작. 끄기 계열이 아니면 null.
+  ScheduleAction? get onCounterpart {
+    switch (this) {
+      case ScheduleAction.fanOff:
+        return ScheduleAction.fanOn;
+      case ScheduleAction.heaterOff:
+        return ScheduleAction.heaterOn;
+      case ScheduleAction.ledOff:
+        return ScheduleAction.ledOn;
+      case ScheduleAction.relayOff:
+        return ScheduleAction.relayOn;
+      default:
+        return null;
+    }
+  }
+
   /// 예약 화면에 쓰는 표시명 i18n 키.
   ///
   /// [labelKey](하드웨어 이름)와 다르다. 예약은 **동작**을 고르는 자리라
@@ -289,6 +313,31 @@ class Schedule {
     required List<int> daysOfWeek,
   }) =>
       kind == ScheduleKind.daily || daysOfWeek.isNotEmpty;
+
+  /// 구간이 자정을 넘는가 — 종료가 시작과 같거나 이르면 **다음날 종료**로 해석한다.
+  static bool spanCrossesMidnight({
+    required int startHour,
+    required int startMinute,
+    required int endHour,
+    required int endMinute,
+  }) =>
+      endHour < startHour ||
+      (endHour == startHour && endMinute <= startMinute);
+
+  /// 구간 예약 off쪽의 요일.
+  ///
+  /// **weekly + 자정 넘김이면 하루씩 민다**(월→화 … 일→월). 안 밀면 off가
+  /// 같은 요일 새벽에 걸려 **그 주의 on보다 먼저** 발화하고, 밤에 켜진 기기는
+  /// 다음 주까지 꺼지지 않는다 — 히터면 ~6일 무인 가동이다. daily는 매일
+  /// 돌아서 그대로 자연스럽다.
+  static List<int> offLegDays({
+    required ScheduleKind kind,
+    required List<int> daysOfWeek,
+    required bool crossesMidnight,
+  }) {
+    if (kind != ScheduleKind.weekly || !crossesMidnight) return daysOfWeek;
+    return (daysOfWeek.map((d) => d % 7 + 1).toList())..sort();
+  }
 
   Schedule copyWith({bool? enabled}) => Schedule(
         id: id,

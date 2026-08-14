@@ -66,8 +66,10 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
   /// 가드는 **on쪽에만** 건다 — "습도가 높으면 켜지 마라"가 자연스러운 뜻이고,
   /// off는 조건 없이 꺼져야 안전하다.
   ///
-  /// 시작>종료 검증은 하지 않는다 — daily 예약 2건이라 "22:00 켜고 06:00
-  /// 끄기"처럼 자정을 넘는 구간이 자연스럽게 동작한다.
+  /// 시작>종료 검증은 하지 않는다 — 자정을 넘는 구간("22:00 켜고 06:00 끄기")은
+  /// 정상 사용이다. 대신 **weekly + 자정 넘김이면 off쪽 요일을 하루 민다**
+  /// ([Schedule.offLegDays]) — 안 밀면 off가 그 주의 on보다 먼저 발화해
+  /// 켜진 기기가 다음 주까지 안 꺼진다.
   Future<void> addSpan({
     required ScheduleAction onAction,
     required ScheduleAction offAction,
@@ -91,6 +93,16 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
       daysOfWeek: daysOfWeek,
       guard: guard,
     );
+    final offDays = Schedule.offLegDays(
+      kind: kind,
+      daysOfWeek: daysOfWeek,
+      crossesMidnight: Schedule.spanCrossesMidnight(
+        startHour: startHour,
+        startMinute: startMinute,
+        endHour: endHour,
+        endMinute: endMinute,
+      ),
+    );
     final Schedule off;
     try {
       off = await repo.create(
@@ -99,7 +111,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
         kind: kind,
         hour: endHour,
         minute: endMinute,
-        daysOfWeek: daysOfWeek,
+        daysOfWeek: offDays,
       );
     } catch (e) {
       try {
