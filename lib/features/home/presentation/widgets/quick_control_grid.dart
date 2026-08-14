@@ -211,9 +211,12 @@ class _TileState extends State<_Tile> {
     // 켜짐/꺼짐 면은 GlassCard와 같은 토큰(blur 없는 플랫 유리 + 테두리)이다.
     return GestureDetector(
       onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
-      onTapCancel:
-          widget.enabled ? () => setState(() => _pressed = false) : null,
-      onTapUp: widget.enabled ? (_) => setState(() => _pressed = false) : null,
+      // 리셋은 enabled와 무관하게 **무조건** 한다. 눌림 도중 enabled가 플립돼
+      // 콜백이 전부 null로 갈리면 GestureDetector가 recognizer를 dispose하며
+      // build 중 cancel을 쏴서 debug 에러 로그 + 한 프레임 리빌드가 늘어난다.
+      // 핸들러를 살려 두면 dispose 자체가 일어나지 않는다.
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
       onTap: widget.enabled ? widget.onTap : null,
       child: AnimatedScale(
         scale: _pressed ? 0.96 : 1.0,

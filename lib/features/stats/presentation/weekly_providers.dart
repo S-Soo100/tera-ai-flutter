@@ -27,15 +27,20 @@ final _weeklyRawBucketsProvider =
 /// 두 번 집계하면 같은 날의 최고 온도가 화면마다 달라진다.
 final weeklyDailyBucketsProvider =
     FutureProvider.autoDispose<List<TelemetryBucket>>((ref) async {
+  // watch는 반드시 await **앞에서** 한다(home_set_providers.dart 규칙) —
+  // await 뒤의 watch는 dispose 후 continuation이 죽은 element에 걸려
+  // 창 전진이 반영되지 않는다.
+  final w = ref.watch(weeklyWindowProvider);
   final raw = await ref.watch(_weeklyRawBucketsProvider.future);
-  return rollupByDay(raw, window: ref.watch(weeklyWindowProvider));
+  return rollupByDay(raw, window: w);
 });
 
 /// 주간 차트용 데이터. 선은 **일 평균**이고, 그 날의 변동폭은 분포(§4.3.6)가 맡는다.
 final weeklyChartDataProvider =
     FutureProvider.autoDispose<EnvChartData>((ref) async {
-  final days = await ref.watch(weeklyDailyBucketsProvider.future);
+  // watch를 await 앞으로 — 위 provider와 같은 이유.
   final w = ref.watch(weeklyWindowProvider);
+  final days = await ref.watch(weeklyDailyBucketsProvider.future);
   return EnvChartData.from(days, from: w.start, to: w.end);
 });
 

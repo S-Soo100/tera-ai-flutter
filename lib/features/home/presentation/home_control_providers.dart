@@ -41,11 +41,12 @@ Future<List<TelemetryBucket>> fetchChartBuckets(
   ChartWindow window, {
   required DateTime to,
 }) async {
+  // watch는 반드시 await **앞에서** 한다(home_set_providers.dart 규칙) —
+  // await 뒤의 watch는 dispose 후 continuation이 죽은 element에 걸린다.
+  final repository = ref.watch(supabaseModuleControlRepositoryProvider);
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) return const [];
-  return ref
-      .watch(supabaseModuleControlRepositoryProvider)
-      .telemetryHistory(deviceId, window.start, to: to);
+  return repository.telemetryHistory(deviceId, window.start, to: to);
 }
 
 /// 차트 창에 해당하는 온습도 버킷.
@@ -63,8 +64,9 @@ final chartBucketsProvider =
 /// 선이 오른쪽 벽에 붙어 미도래 밴드가 들어갈 자리가 없어진다.
 final envChartDataProvider =
     FutureProvider.autoDispose<EnvChartData>((ref) async {
-  final buckets = await ref.watch(chartBucketsProvider.future);
+  // watch를 await 앞으로 — fetchChartBuckets와 같은 이유.
   final w = ref.watch(chartWindowProvider);
+  final buckets = await ref.watch(chartBucketsProvider.future);
   return EnvChartData.from(buckets, from: w.start, to: w.end);
 });
 
