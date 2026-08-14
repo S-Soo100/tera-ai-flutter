@@ -30,7 +30,7 @@ import '../../features/auth/presentation/email_verification_screen.dart';
 import '../../features/auth/presentation/auth_providers.dart';
 import '../../features/dev/presentation/chart_lab_screen.dart';
 import '../../features/dev/design_lab/design_lab_screen.dart';
-import '../../features/dev/design_lab/variant_a_home_screen.dart';
+import '../../features/dev/design_lab/variant_a_shell.dart';
 import '../../features/dev/design_lab/variant_b_shell.dart';
 import '../../features/dev/design_lab/variant_c_shell.dart';
 import '../../features/profile/presentation/profile_screen.dart';
@@ -296,7 +296,7 @@ GoRouter buildAppRouter({
         routes: [
           GoRoute(
             path: 'a',
-            builder: (context, state) => const VariantAHomeScreen(),
+            builder: (context, state) => const VariantAShell(),
           ),
           GoRoute(
             path: 'b',

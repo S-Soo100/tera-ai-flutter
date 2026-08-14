@@ -1,17 +1,18 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show ScrollDirection;
 
 import 'design_lab_fixtures.dart';
 import 'mock_live_player.dart';
 import 'tokens/variant_a_tokens.dart';
+import 'variant_a_widgets.dart';
 
 /// A안 — Apple Home (iOS 26, Liquid Glass) 스타일 홈 체험.
 ///
 /// 핵심 문법: 배경(월페이퍼)이 바닥, UI는 그 위에 뜬 반투명 유리 레이어.
 /// 구성: 대형 타이틀 헤더 → 카메라 카드 → 센서 칩 행 → 2×2 액세서리 타일 →
-/// 미니 차트 → 타임라인. 모션: 타일 스프링 스케일, 스크롤 시 탭바 축소.
+/// 미니 차트 → 타임라인. 모션: 타일 스프링 스케일.
+/// 탭바(유리 독)는 [VariantAShell]이 그린다 — 화면 내 장식 독은 제거됨.
 class VariantAHomeScreen extends StatefulWidget {
   const VariantAHomeScreen({super.key});
 
@@ -25,18 +26,6 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
     for (final d in kLabDevices) d.kind: d.isOn,
   };
 
-  /// 스크롤 방향에 따라 하단 유리 독을 축소/복원 (iOS 26 문법).
-  bool _dockShrunk = false;
-
-  bool _onScroll(UserScrollNotification n) {
-    final shrink = n.direction == ScrollDirection.reverse;
-    if (shrink != _dockShrunk &&
-        n.direction != ScrollDirection.idle) {
-      setState(() => _dockShrunk = shrink);
-    }
-    return false;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,46 +34,38 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
       extendBody: true,
       body: Stack(
         children: [
-          const Positioned.fill(child: _Wallpaper()),
-          NotificationListener<UserScrollNotification>(
-            onNotification: _onScroll,
-            child: CustomScrollView(
-              slivers: [
-                _header(context),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: VariantATokens.screenHPad),
-                  sliver: SliverList.list(
-                    children: [
-                      const _CameraCard(),
-                      const SizedBox(height: VariantATokens.tileGap),
-                      const _SensorChipRow(),
-                      const SizedBox(height: 20),
-                      const Text('액세서리', style: VariantATokens.sectionLabel),
-                      const SizedBox(height: 10),
-                      _accessoryGrid(),
-                      const SizedBox(height: 20),
-                      const Text('온습도', style: VariantATokens.sectionLabel),
-                      const SizedBox(height: 10),
-                      const _MiniChartCard(),
-                      const SizedBox(height: 20),
-                      const Text('타임라인', style: VariantATokens.sectionLabel),
-                      const SizedBox(height: 10),
-                      for (final e in kLabTimeline) ...[
-                        _TimelineTile(event: e),
-                        const SizedBox(height: 8),
-                      ],
-                      const SizedBox(height: 96),
+          const Positioned.fill(child: AWallpaper()),
+          CustomScrollView(
+            slivers: [
+              _header(context),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: VariantATokens.screenHPad),
+                sliver: SliverList.list(
+                  children: [
+                    const _CameraCard(),
+                    const SizedBox(height: VariantATokens.tileGap),
+                    const _SensorChipRow(),
+                    const SizedBox(height: 20),
+                    const Text('액세서리', style: VariantATokens.sectionLabel),
+                    const SizedBox(height: 10),
+                    _accessoryGrid(),
+                    const SizedBox(height: 20),
+                    const Text('온습도', style: VariantATokens.sectionLabel),
+                    const SizedBox(height: 10),
+                    const _MiniChartCard(),
+                    const SizedBox(height: 20),
+                    const Text('타임라인', style: VariantATokens.sectionLabel),
+                    const SizedBox(height: 10),
+                    for (final e in kLabTimeline) ...[
+                      _TimelineTile(event: e),
+                      const SizedBox(height: 8),
                     ],
-                  ),
+                    const SizedBox(height: 120),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          // 하단 유리 독 (가짜 탭바) — 스크롤 내리면 축소.
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: _GlassDock(shrunk: _dockShrunk),
+              ),
+            ],
           ),
         ],
       ),
@@ -113,7 +94,7 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: VariantATokens.screenHPad),
-          child: _GlassCapsule(
+          child: AGlassCapsule(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: const [
@@ -157,115 +138,6 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => _DetailSheet(device: d, isOn: _on[d.kind] ?? false),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 배경 월페이퍼
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _Wallpaper extends StatelessWidget {
-  const _Wallpaper();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            VariantATokens.wallpaperTop,
-            VariantATokens.wallpaperMid,
-            VariantATokens.wallpaperBottom,
-          ],
-        ),
-      ),
-      // 은은한 빛 번짐 — 유리가 "받쳐 보일" 바닥 콘텐츠.
-      child: CustomPaint(painter: _GlowPainter()),
-    );
-  }
-}
-
-class _GlowPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final glow = Paint()
-      ..shader = ui.Gradient.radial(
-        Offset(size.width * 0.8, size.height * 0.25),
-        size.width * 0.7,
-        [const Color(0x2E4FD8C4), const Color(0x004FD8C4)],
-      );
-    canvas.drawCircle(Offset(size.width * 0.8, size.height * 0.25),
-        size.width * 0.7, glow);
-
-    final glow2 = Paint()
-      ..shader = ui.Gradient.radial(
-        Offset(size.width * 0.1, size.height * 0.7),
-        size.width * 0.6,
-        [const Color(0x244AA8FF), const Color(0x004AA8FF)],
-      );
-    canvas.drawCircle(Offset(size.width * 0.1, size.height * 0.7),
-        size.width * 0.6, glow2);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 유리 조각들
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// 유리 타일 공통 — blur + 흰 오버레이 + 얇은 테두리.
-class _Glass extends StatelessWidget {
-  const _Glass({
-    required this.child,
-    this.radius = VariantATokens.tileRadius,
-    this.overlay = VariantATokens.glassOverlay,
-    this.padding = EdgeInsets.zero,
-  });
-
-  final Widget child;
-  final double radius;
-  final Color overlay;
-  final EdgeInsetsGeometry padding;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: VariantATokens.blurSigma,
-          sigmaY: VariantATokens.blurSigma,
-        ),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: overlay,
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: VariantATokens.glassBorder, width: 0.5),
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassCapsule extends StatelessWidget {
-  const _GlassCapsule({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return _Glass(
-      radius: 100,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      child: child,
     );
   }
 }
@@ -348,7 +220,7 @@ class _SensorChipRow extends StatelessWidget {
     required String value,
     required String label,
   }) {
-    return _Glass(
+    return AGlass(
       radius: 100,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
@@ -452,7 +324,7 @@ class _AccessoryTileState extends State<_AccessoryTile> {
                 ),
                 child: content,
               )
-            : _Glass(child: content),
+            : AGlass(child: content),
       ),
     );
   }
@@ -479,7 +351,7 @@ class _DetailSheetState extends State<_DetailSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(VariantATokens.screenHPad),
-      child: _Glass(
+      child: AGlass(
         overlay: VariantATokens.glassOverlayStrong,
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -527,7 +399,7 @@ class _MiniChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Glass(
+    return AGlass(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -619,7 +491,7 @@ class _TimelineTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Glass(
+    return AGlass(
       radius: 18,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
@@ -640,54 +512,6 @@ class _TimelineTile extends StatelessWidget {
           const SizedBox(width: 8),
           Text(labHm(event.at), style: VariantATokens.tileStatus),
         ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 하단 유리 독 (가짜 탭바 — 스크롤 축소/복원 모션 확인용)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _GlassDock extends StatelessWidget {
-  const _GlassDock({required this.shrunk});
-
-  final bool shrunk;
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset + 12),
-      child: AnimatedScale(
-        scale: shrunk ? 0.82 : 1.0,
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOutCubic,
-        child: AnimatedOpacity(
-          opacity: shrunk ? 0.6 : 1.0,
-          duration: const Duration(milliseconds: 260),
-          child: _Glass(
-            radius: 100,
-            overlay: VariantATokens.glassOverlayStrong,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.home_filled,
-                    size: 22, color: VariantATokens.textPrimary),
-                SizedBox(width: 26),
-                Icon(Icons.bar_chart,
-                    size: 22, color: VariantATokens.textSecondary),
-                SizedBox(width: 26),
-                Icon(Icons.pets, size: 22, color: VariantATokens.textSecondary),
-                SizedBox(width: 26),
-                Icon(Icons.forum_outlined,
-                    size: 22, color: VariantATokens.textSecondary),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
