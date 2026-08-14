@@ -319,7 +319,7 @@ class _Metric extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.bodySecondary(Theme.of(context).brightness),
+                color: AppTheme.bodySecondary,
               ),
         ),
       ],

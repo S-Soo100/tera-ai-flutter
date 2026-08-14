@@ -176,10 +176,8 @@ void main() {
       expect(_window.elapsed, lessThan(1));
     });
 
-    test('밴드 색은 다크에서 뒤집힌다 — 어두운 플롯에 흰 띠가 박히면 안 된다', () {
-      expect(AppTheme.chartFutureBand(Brightness.light), AppTheme.lineColor);
-      expect(AppTheme.chartFutureBand(Brightness.dark),
-          isNot(AppTheme.lineColor));
+    test('밴드 색은 다크용 뒤집힌 값 — 어두운 플롯에 흰 띠가 박히면 안 된다', () {
+      expect(AppTheme.chartFutureBand, isNot(AppTheme.lineColor));
     });
   });
 

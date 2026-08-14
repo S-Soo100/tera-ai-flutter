@@ -65,17 +65,17 @@ class AppTheme {
   /// 습도 지표. Figma `#8abcfc`.
   static const chartHumidity = Color(0xFF8ABCFC);
 
+  // ⚠️ 아래 차트 토큰들은 원래 Brightness 파라미터로 라이트/다크를 갈랐다.
+  // 앱이 전역 다크 고정(app.dart, 2026-08-14)이 되면서 라이트 갈래는 죽은
+  // 코드가 됐고, 다크 값 상수로 축약했다. Figma 라이트 원본값은 git 이력 참조.
+
   /// **미도래 구간 밴드** — 시간축 차트에서 `지금 ~ 창 끝`을 덮는 회색.
   ///
-  /// Figma §3.1 "구간 밴드"(`#e1e3e4` = [lineColor])다. 뜻은 **아직 안 지난
-  /// 시간** — 선이 여기서 끊긴 게 고장이 아니라 아직 오지 않았다는 표시다.
-  ///
-  /// 다크에서 원본 값을 그대로 쓰면 어두운 플롯 위에 밝은 띠가 박혀 정작
-  /// 읽어야 할 곡선보다 밴드가 먼저 보인다 — [nightBand]와 같은 이유로 뒤집는다.
-  static Color chartFutureBand(Brightness brightness) =>
-      brightness == Brightness.dark
-          ? Colors.white.withValues(alpha: 0.06)
-          : lineColor;
+  /// Figma §3.1 "구간 밴드". 뜻은 **아직 안 지난 시간** — 선이 여기서 끊긴 게
+  /// 고장이 아니라 아직 오지 않았다는 표시다. Figma 원본(`#e1e3e4` =
+  /// [lineColor])은 라이트 전용이라, 어두운 플롯 위에서는 밝은 띠가 곡선보다
+  /// 먼저 보인다 — [nightBand]와 같은 이유로 뒤집은 값을 쓴다.
+  static final Color chartFutureBand = Colors.white.withValues(alpha: 0.06);
 
   /// **"지금" 경계선** — 미도래 밴드가 시작하는 자리.
   ///
@@ -93,35 +93,25 @@ class AppTheme {
   ///
   /// 스크러버 선(거의 검정)보다는 확실히 연하다. 둘이 경쟁하면 손가락이
   /// 가리키는 자리가 어디인지 헷갈린다.
-  static Color chartNowLine(Brightness brightness) =>
-      brightness == Brightness.dark
-          ? Colors.white.withValues(alpha: 0.38)
-          : textMuted;
+  static final Color chartNowLine = Colors.white.withValues(alpha: 0.38);
 
   /// **동작 마커 칩** 배경 — 차트 위 분무·팬 아이콘이 앉는 자리.
   ///
-  /// Figma §3.1 "동작 마커"(14×14, radius 4, `#eaeef0` = [surfaceMuted]).
-  static Color chartMarkerChip(Brightness brightness) =>
-      brightness == Brightness.dark
-          ? Colors.white.withValues(alpha: 0.12)
-          : surfaceMuted;
+  /// Figma §3.1 "동작 마커"(14×14, radius 4, 라이트 원본 `#eaeef0` = [surfaceMuted]).
+  static final Color chartMarkerChip = Colors.white.withValues(alpha: 0.12);
 
-  /// **차트 격자선** — Figma `#e1e3e4`([lineColor]).
+  /// **차트 격자선** — Figma 라이트 원본 `#e1e3e4`([lineColor])의 다크 대응값.
   ///
   /// `Theme.of(context).dividerColor`를 쓰지 않는다. Material 3에서 그 값은
   /// `colorScheme.outlineVariant`로 풀려 Figma가 정한 색과 다르다 —
   /// `dividerTheme`을 지정해도 `dividerColor`는 따라오지 않는다.
-  static Color chartGridLine(Brightness brightness) =>
-      brightness == Brightness.dark
-          ? Colors.white.withValues(alpha: 0.10)
-          : lineColor;
+  static final Color chartGridLine = Colors.white.withValues(alpha: 0.10);
 
-  /// **본문 보조 텍스트** — Figma `#3c3c3c`([textBody]).
+  /// **본문 보조 텍스트** — Figma 라이트 원본 `#3c3c3c`([textBody])의 다크 대응값.
   ///
   /// 축 눈금([textMuted] `#919497`)보다 한 단계 진하다. 요약 바의 최고/최저처럼
   /// **읽으라고 둔 값**에 쓴다 — 눈금 색으로 낮추면 배경 정보로 읽힌다.
-  static Color bodySecondary(Brightness brightness) =>
-      brightness == Brightness.dark ? const Color(0xFFC9CDD2) : textBody;
+  static const Color bodySecondary = Color(0xFFC9CDD2);
 
   /// **동작 마커 글리프** — 칩 안의 분무·팬 그림.
   ///
@@ -129,11 +119,8 @@ class AppTheme {
   /// 장식처럼 보이는데, 이 마커는 **그 시각에 기기가 실제로 돌았다는 기록**이라
   /// 읽히지 않으면 없는 것과 같다.
   ///
-  /// 다크에서는 남색이 칩 배경에 묻히므로 밝은 쪽으로 뒤집는다.
-  static Color chartMarkerGlyph(Brightness brightness) =>
-      brightness == Brightness.dark
-          ? Colors.white.withValues(alpha: 0.87)
-          : brandNavy;
+  /// 다크에서는 남색이 칩 배경에 묻히므로 밝은 쪽으로 뒤집은 값을 쓴다.
+  static final Color chartMarkerGlyph = Colors.white.withValues(alpha: 0.87);
 
   /// **라이브 영역 면** — 영상이 놓이는 자리.
   ///
@@ -148,40 +135,26 @@ class AppTheme {
   /// 이 앱에서 밤은 "우리 애가 사는 시간"이고, 활동 수치는 그 창에서만 센다.
   /// 데이터 선을 가리면 안 되므로 **아주 낮은 대비**로 유지한다.
   ///
-  /// 라이트에서는 메인컬러(마침 한밤중 하늘색이다)를, 다크에서는 흰색을 얹는다
-  /// — 어두운 배경 위에 남색을 더 깔면 아무것도 보이지 않는다.
-  ///
-  /// **[chartFutureBand]와 같은 차트에 함께 깔린다.** 둘 다 옅은 회색 블록이라
+  /// **[chartFutureBand]와 같은 차트에 함께 깔린다.** 둘 다 옅은 블록이라
   /// 농도만으로는 구분이 안 됐다(실기기에서 왼쪽 밤 띠와 오른쪽 미도래 밴드가
   /// 같은 띠로 보였다). 그래서 밤 띠는 **남색 기가 남을 만큼**만 진하게 잡는다 —
-  /// 중성 회색인 미도래 밴드와 색상으로 갈린다. 곡선을 가리지 않는 선은 지킨다.
-  /// 다크도 **흰색이 아니라 남색 계열**로 깐다. 흰색으로 두면 미도래 밴드
-  /// (역시 흰색 반투명)와 같은 회색이 되어, 라이트에서 색상으로 갈라놓은 구분이
-  /// 다크에서만 사라진다(실기기에서 두 띠가 같은 블록으로 보였다).
-  /// 어두운 면 위에서는 [brandNavy]가 묻히므로 밝은 쪽 파생값을 쓴다.
-  static Color nightBand(Brightness brightness) => brightness == Brightness.dark
-      ? brandNavyDark.withValues(alpha: 0.18)
-      : brandNavy.withValues(alpha: 0.10);
+  /// 중성 회색(흰색 반투명)인 미도래 밴드와 색상으로 갈린다. 곡선을 가리지
+  /// 않는 선은 지킨다. 어두운 면 위에서는 [brandNavy]가 묻히므로 밝은 쪽
+  /// 파생값([brandNavyDark])을 쓴다.
+  static final Color nightBand = brandNavyDark.withValues(alpha: 0.18);
 
   /// 서브컬러 배지의 배경·전경 한 쌍.
   ///
-  /// **Figma 팔레트의 `*Bg`(연한 파스텔)는 라이트 전용이다.** 다크에서 그대로
-  /// 쓰면 어두운 화면에 흰 알약이 박혀, 주인공이 아닌 배지가 화면에서 제일
-  /// 밝아진다(실기기에서 개체 카드의 `수컷` 배지가 그랬다).
+  /// **Figma 팔레트의 `*Bg`(연한 파스텔)는 라이트 전용이라 쓰지 않는다.**
+  /// 어두운 화면에 그대로 깔면 흰 알약이 박혀, 주인공이 아닌 배지가 화면에서
+  /// 제일 밝아진다(실기기에서 개체 카드의 `수컷` 배지가 그랬다).
   ///
-  /// 다크에서는 같은 색을 낮은 투명도로 깔고, 글자는 밝은 쪽으로 올린다 —
+  /// 대신 같은 색을 낮은 투명도로 깔고, 글자는 밝은 쪽으로 올린다 —
   /// 진한 서브컬러(`#0069F1` 등)를 그대로 두면 어두운 면에 묻힌다.
-  static ({Color bg, Color fg}) subBadgeTone(
-    Color base,
-    Color lightBg,
-    Brightness brightness,
-  ) =>
-      brightness == Brightness.dark
-          ? (
-              bg: base.withValues(alpha: 0.20),
-              fg: Color.lerp(base, Colors.white, 0.35)!,
-            )
-          : (bg: lightBg, fg: base);
+  static ({Color bg, Color fg}) subBadgeTone(Color base) => (
+        bg: base.withValues(alpha: 0.20),
+        fg: Color.lerp(base, Colors.white, 0.35)!,
+      );
 
   // ══════════════════════════════════════════════════════════════════════════
   // Liquid Glass 디자인 시스템 (A안 — Apple Home iOS 26, 2026-08-13 확정)
@@ -285,11 +258,9 @@ class AppTheme {
 
   static const _pretendard = 'Pretendard';
 
-  static TextTheme _buildTextTheme({required Brightness brightness}) {
-    final baseColor = brightness == Brightness.dark
-        ? const Color(0xFFE0E0E0)
-        : const Color(0xFF1A1A1A);
-    return TextTheme(
+  static TextTheme _buildTextTheme() {
+    const baseColor = Color(0xFFE0E0E0);
+    return const TextTheme(
       displayLarge: TextStyle(fontFamily: _pretendard, color: baseColor),
       displayMedium: TextStyle(fontFamily: _pretendard, color: baseColor),
       displaySmall: TextStyle(fontFamily: _pretendard, color: baseColor),
@@ -312,100 +283,8 @@ class AppTheme {
     );
   }
 
-  static ThemeData get light {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: brandNavy,
-      brightness: Brightness.light,
-    ).copyWith(
-      primary: brandNavy,
-      onPrimary: Colors.white,
-      // secondary는 Figma에 정의가 없다 → seed(brandNavy)에서 파생된 값을 그대로 쓴다.
-      surface: const Color(0xFFFAFAFA),
-      onSurface: textTitle,
-      surfaceContainerLowest: Colors.white,
-      surfaceContainerLow: const Color(0xFFF5F5F5),
-      surfaceContainer: const Color(0xFFEEEEEE),
-      surfaceContainerHigh: const Color(0xFFE0E0E0),
-      surfaceContainerHighest: const Color(0xFFD6D6D6),
-      outline: lineColor,
-      outlineVariant: lineColor,
-      onSurfaceVariant: textMuted,
-    );
-
-    final textTheme = _buildTextTheme(brightness: Brightness.light);
-
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: colorScheme,
-      disabledColor: neutralDisabled,
-      scaffoldBackgroundColor: const Color(0xFFFAFAFA),
-      textTheme: textTheme,
-      appBarTheme: AppBarTheme(
-        backgroundColor: const Color(0xFFFAFAFA),
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        titleTextStyle: textTheme.titleLarge,
-        iconTheme: const IconThemeData(color: textTitle),
-      ),
-      cardTheme: CardThemeData(
-        color: Colors.white,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: lineColor),
-        ),
-      ),
-      chipTheme: ChipThemeData(
-        backgroundColor: surfaceMuted,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: const Color(0xFFFAFAFA),
-        surfaceTintColor: Colors.transparent,
-        indicatorColor: brandNavy.withValues(alpha: 0.15),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          backgroundColor: brandNavy,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: neutralDisabled,
-          disabledForegroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: const Color(0xFFEEEEEE),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: lineColor),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: lineColor),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: brandNavy, width: 2),
-        ),
-      ),
-      tabBarTheme: const TabBarThemeData(
-        indicatorColor: brandNavy,
-        labelColor: brandNavy,
-        unselectedLabelColor: textMuted,
-      ),
-      expansionTileTheme: const ExpansionTileThemeData(
-        collapsedIconColor: textMuted,
-        iconColor: textTitle,
-      ),
-      dividerTheme: const DividerThemeData(color: lineColor),
-    );
-  }
-
+  // `light` 테마는 전역 다크 고정(app.dart, 2026-08-14)과 함께 삭제했다.
+  // 라이트 스킴 원본값이 필요하면 git 이력에서 복원할 것.
   static ThemeData get dark {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: brandNavy,
@@ -430,7 +309,7 @@ class AppTheme {
       onSurfaceVariant: const Color(0xFF9E9E9E),
     );
 
-    final textTheme = _buildTextTheme(brightness: Brightness.dark);
+    final textTheme = _buildTextTheme();
 
     return ThemeData(
       useMaterial3: true,

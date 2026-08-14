@@ -73,7 +73,7 @@ class _NightCaption extends StatelessWidget {
           width: 10,
           height: 10,
           decoration: BoxDecoration(
-            color: AppTheme.nightBand(theme.brightness),
+            color: AppTheme.nightBand,
             borderRadius: BorderRadius.circular(2),
             border: Border.all(color: theme.dividerColor),
           ),

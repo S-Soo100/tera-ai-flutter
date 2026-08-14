@@ -415,10 +415,10 @@ class _Plot extends StatelessWidget {
               nights: nightBand
                   ? nightBands(from: window.start, to: window.end)
                   : const [],
-              night: AppTheme.nightBand(theme.brightness),
-              line: AppTheme.chartGridLine(theme.brightness),
-              band: AppTheme.chartFutureBand(theme.brightness),
-              nowLine: AppTheme.chartNowLine(theme.brightness),
+              night: AppTheme.nightBand,
+              line: AppTheme.chartGridLine,
+              band: AppTheme.chartFutureBand,
+              nowLine: AppTheme.chartNowLine,
             ),
           ),
         ),
@@ -608,11 +608,10 @@ class _MarkerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     // 기기 종류별로 색을 나누지는 않는다 — 온·습도 선과 색이 경쟁해 정작
     // 읽어야 할 곡선이 묻힌다. 대신 Figma가 정한 메인컬러 한 가지로 또렷하게.
-    final fg = AppTheme.chartMarkerGlyph(theme.brightness);
-    final bg = AppTheme.chartMarkerChip(theme.brightness);
+    final fg = AppTheme.chartMarkerGlyph;
+    final bg = AppTheme.chartMarkerChip;
     const size = EnvChart.markerChip;
 
     return LayoutBuilder(

@@ -42,23 +42,7 @@ void main() {
     });
   });
 
-  group('라이트 스킴', () {
-    test('primary = 메인컬러', () {
-      expect(AppTheme.light.colorScheme.primary, AppTheme.brandNavy);
-    });
-
-    test('outline·onSurfaceVariant가 Figma 토큰을 쓴다', () {
-      final s = AppTheme.light.colorScheme;
-      expect(s.outline, AppTheme.lineColor);
-      expect(s.onSurfaceVariant, AppTheme.textMuted);
-      expect(s.onSurface, AppTheme.textTitle);
-    });
-
-    test('disabledColor = Figma Disabled 용', () {
-      expect(AppTheme.light.disabledColor, AppTheme.neutralDisabled);
-    });
-  });
-
+  // 라이트 스킴 검증은 전역 다크 고정(app.dart, 2026-08-14)과 함께 삭제했다.
   group('다크 스킴 — Figma 미제공, 도출값', () {
     test('primary는 brandNavy가 아니라 밝힌 변형이다', () {
       final p = AppTheme.dark.colorScheme.primary;
@@ -72,6 +56,10 @@ void main() {
         AppTheme.brandNavyDark.computeLuminance(),
         greaterThan(AppTheme.brandNavy.computeLuminance() * 3),
       );
+    });
+
+    test('disabledColor = Figma Disabled 용', () {
+      expect(AppTheme.dark.disabledColor, AppTheme.neutralDisabled);
     });
   });
 

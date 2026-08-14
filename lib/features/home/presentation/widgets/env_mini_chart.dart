@@ -124,7 +124,7 @@ class _NightLegend extends StatelessWidget {
           width: 12,
           height: 12,
           decoration: BoxDecoration(
-            color: AppTheme.nightBand(theme.brightness),
+            color: AppTheme.nightBand,
             borderRadius: BorderRadius.circular(2),
           ),
         ),

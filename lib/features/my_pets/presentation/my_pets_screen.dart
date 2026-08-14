@@ -317,11 +317,7 @@ class _SexBadge extends StatelessWidget {
     //
     // `*Bg`를 직접 쓰지 않는다. 그 파스텔은 라이트 전용이라 다크에서
     // **배지가 화면에서 제일 밝은 조각**이 된다(실기기 확인).
-    final t = AppTheme.subBadgeTone(
-      isMale ? AppTheme.subBlue : AppTheme.subRed,
-      isMale ? AppTheme.subBlueBg : AppTheme.subRedBg,
-      Theme.of(context).brightness,
-    );
+    final t = AppTheme.subBadgeTone(isMale ? AppTheme.subBlue : AppTheme.subRed);
     final color = t.fg;
     final bg = t.bg;
     final label = isMale ? 'pet_sex_male'.tr() : 'pet_sex_female'.tr();

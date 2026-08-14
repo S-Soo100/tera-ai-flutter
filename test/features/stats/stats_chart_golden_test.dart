@@ -30,19 +30,21 @@ import 'package:vivnanaut/features/stats/presentation/widgets/stats_summary_bar.
 /// `stats_layout_test`·`stats_overlay_test`가 맡는다.
 ///
 /// 갱신은 **하나씩** 돌린다. `dart_test.yaml`이 `golden` 태그를 skip으로
-/// 묶어두어 `--tags golden`만으로는 안 돌고 `--run-skipped`가 필요하다:
+/// 묶어두어 `--tags golden`에 `--run-skipped`까지 붙여야 돌고, 두 케이스를
+/// 한 번에 돌리면 두 번째가 백지 PNG로 나온다(easy_localization 인스턴스를
+/// 두 번 세우는 문제, 홈 골든과 동일 — 2026-08-14 실측 3KB 백지):
 /// ```
-/// flutter test <이 파일> --update-goldens --run-skipped --plain-name "라이트"
-/// flutter test <이 파일> --update-goldens --run-skipped --plain-name "스크럽"
-/// flutter test <이 파일> --update-goldens --run-skipped --plain-name "다크"
+/// flutter test <이 파일> --update-goldens --tags golden --run-skipped --plain-name "스크럽"
+/// flutter test <이 파일> --update-goldens --tags golden --run-skipped --plain-name "다크"
 /// ```
+///
+/// 케이스는 다크 둘(기본·스크럽)뿐이다 — 전역 다크 고정(app.dart)으로
+/// 라이트 골든은 삭제했다(홈 골든 `control_light.png` 삭제와 같은 전례).
 ///
 /// ⚠️ **읽을 때 감안할 것 — 하네스 제약이지 앱 상태가 아니다.**
 /// - Material 아이콘(해제 ✕ 등)이 빈 네모로 나온다. 골든에 MaterialIcons
-///   폰트가 없어서다(홈 골든 `control_light.png`도 같다). Figma SVG와
+///   폰트가 없어서다(홈 골든 `control_dark.png`도 같다). Figma SVG와
 ///   Pretendard만 직접 로드한다.
-/// - 라이트·다크를 한 번에 돌리면 두 번째가 백지로 나온다(easy_localization
-///   인스턴스를 두 번 세우는 문제, 홈 골든과 동일).
 ///
 /// 스크럽 샷은 이제 세로선·점까지 나온다 — 표시를 라이브러리 터치 상태가 아니라
 /// provider 값으로 그리기 때문이다(손을 떼도 남기기로 한 결정의 부수 효과).
@@ -119,7 +121,6 @@ Future<void> _loadPretendard() async {
 
 Future<void> _shoot(
   WidgetTester tester, {
-  required Brightness brightness,
   required String name,
   double? scrub,
 }) async {
@@ -160,7 +161,7 @@ Future<void> _shoot(
             localizationsDelegates: context.localizationDelegates,
             supportedLocales: context.supportedLocales,
             locale: context.locale,
-            theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
+            theme: AppTheme.dark,
             home: Scaffold(
               body: SafeArea(
                 child: Consumer(
@@ -219,21 +220,12 @@ void main() {
     await _loadPretendard();
   });
 
-  testWidgets('24시 그래프 — 라이트', (tester) async {
-    await _shoot(tester, brightness: Brightness.light, name: 'stats_24h_light');
-  });
-
   testWidgets('24시 그래프 — 스크럽', (tester) async {
-    await _shoot(
-      tester,
-      brightness: Brightness.light,
-      name: 'stats_24h_scrub',
-      scrub: 0.42,
-    );
+    await _shoot(tester, name: 'stats_24h_scrub', scrub: 0.42);
   });
 
   testWidgets('24시 그래프 — 다크', (tester) async {
-    await _shoot(tester, brightness: Brightness.dark, name: 'stats_24h_dark');
+    await _shoot(tester, name: 'stats_24h_dark');
   });
 }
 

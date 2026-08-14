@@ -3,7 +3,7 @@ import 'package:shimmer/shimmer.dart';
 
 /// Shimmer 기반 스켈레톤 위젯 공통 라이브러리.
 ///
-/// 다크모드 대응: brightness 체크 후 색상 분기.
+/// 전역 다크 고정(app.dart)이라 색상은 다크 값 하나만 쓴다.
 /// 용도:
 ///   - [SkeletonLoading] : 임의 크기 회색 박스
 ///   - [SkeletonCard]    : 카드 형태 (여러 줄 placeholder)
@@ -23,9 +23,9 @@ class SkeletonLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    // 전역 다크 고정(app.dart) — 다크 값만 남긴다.
+    final baseColor = Colors.grey[800]!;
+    final highlightColor = Colors.grey[700]!;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -56,9 +56,9 @@ class SkeletonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    // 전역 다크 고정(app.dart) — 다크 값만 남긴다.
+    final baseColor = Colors.grey[800]!;
+    final highlightColor = Colors.grey[700]!;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -113,9 +113,9 @@ class SkeletonListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    // 전역 다크 고정(app.dart) — 다크 값만 남긴다.
+    final baseColor = Colors.grey[800]!;
+    final highlightColor = Colors.grey[700]!;
 
     return Shimmer.fromColors(
       baseColor: baseColor,

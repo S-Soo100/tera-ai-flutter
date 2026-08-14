@@ -108,18 +108,17 @@ class StatusBadge extends StatelessWidget {
           ),
       };
     }
-    // Figma의 `*Bg`는 **라이트 전용 파스텔**이라 다크 테마에서 그대로 쓰면
-    // 어두운 화면에 흰 알약이 박힌다. 밝기별로 갈라준다.
-    final b = Theme.of(context).brightness;
-    final (base, lightBg) = switch (tone) {
-      StatusTone.safe => (AppTheme.subGreen, AppTheme.subGreenBg),
-      // ⚠️ 주의 배경은 Figma 미정의 — 앱 도출값(전경 #ff8f00도 마찬가지).
-      StatusTone.caution => (AppTheme.warning, const Color(0xFFFFF4E5)),
-      StatusTone.danger => (AppTheme.subRed, AppTheme.subRedBg),
-      StatusTone.live => (AppTheme.subRed, AppTheme.subRedBg),
-      StatusTone.neutral => (AppTheme.textMuted, AppTheme.subGrayBg),
+    // Figma의 `*Bg`(라이트 전용 파스텔)는 쓰지 않는다 — 어두운 화면에 그대로
+    // 깔면 흰 알약이 박힌다. subBadgeTone이 다크용 쌍을 만든다.
+    final base = switch (tone) {
+      StatusTone.safe => AppTheme.subGreen,
+      // ⚠️ 주의색은 Figma 미정의 — 앱 도출값(#ff8f00).
+      StatusTone.caution => AppTheme.warning,
+      StatusTone.danger => AppTheme.subRed,
+      StatusTone.live => AppTheme.subRed,
+      StatusTone.neutral => AppTheme.textMuted,
     };
-    final t = AppTheme.subBadgeTone(base, lightBg, b);
+    final t = AppTheme.subBadgeTone(base);
     return (t.bg, t.fg);
   }
 }

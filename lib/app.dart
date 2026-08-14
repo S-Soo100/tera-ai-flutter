@@ -19,7 +19,8 @@ class App extends ConsumerWidget {
       // A안 Liquid Glass는 **단일 룩**이다 — 모든 화면이 어두운 월페이퍼 위
       // 유리 표면이라, 시스템 라이트/다크를 따르면 절반의 위젯이 안 읽힌다.
       // 화면마다 Theme(data: AppTheme.dark)로 감싸던 것을 여기로 올렸다(2026-08-14).
-      theme: AppTheme.dark,
+      // darkTheme + themeMode.dark 조합 하나면 충분하다 — `theme:`(라이트 슬롯)은
+      // themeMode가 dark로 고정된 이상 절대 선택되지 않아 두지 않는다.
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.dark,
       routerConfig: router,
