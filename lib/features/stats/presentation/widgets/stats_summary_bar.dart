@@ -60,6 +60,12 @@ class StatsSummaryBar extends ConsumerWidget {
           : null,
       scrubFormat: window.format,
       onClearScrub: () => ref.read(statsScrubProvider.notifier).state = null,
+      // 주간은 극값 라벨에 기간을 명시한다 — 현재값(실시간) 옆에 "최고 33°"만
+      // 있으면 그것도 지금 이야기처럼 읽힌다.
+      extremesTempKey:
+          weekly ? 'stats_extremes_temp_weekly' : 'stats_extremes_temp',
+      extremesHumidKey:
+          weekly ? 'stats_extremes_humid_weekly' : 'stats_extremes_humid',
     );
   }
 }

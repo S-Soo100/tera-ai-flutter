@@ -32,6 +32,8 @@ class EnvSummaryBar extends StatelessWidget {
     this.scrubHumidity,
     this.scrubFormat = ChartTickFormat.hour,
     this.onClearScrub,
+    this.extremesTempKey = 'stats_extremes_temp',
+    this.extremesHumidKey = 'stats_extremes_humid',
   });
 
   /// 현재값. null이면 `--`.
@@ -58,6 +60,12 @@ class EnvSummaryBar extends StatelessWidget {
 
   /// 스크럽 해제. null이면 해제 버튼을 안 그린다.
   final VoidCallback? onClearScrub;
+
+  /// 최고/최저 라벨의 l10n 키({max}/{min} 자리). 기본은 기간 표기가 없는
+  /// 일간용이다 — 주간 화면은 "7일 최고…"처럼 **기간을 명시한 키**를 물린다.
+  /// 현재값 옆에 "7일"이 붙으면 극값은 기간 값, 큰 숫자는 실시간임이 갈린다.
+  final String extremesTempKey;
+  final String extremesHumidKey;
 
   static const barKey = Key('env_summary_bar');
   static const scrubKey = Key('env_summary_scrub');
@@ -87,7 +95,7 @@ class EnvSummaryBar extends StatelessWidget {
                     value: 'stats_axis_temp'.tr(
                       namedArgs: {'v': temperature?.toStringAsFixed(1) ?? '--'},
                     ),
-                    extremes: 'stats_extremes_temp'.tr(namedArgs: {
+                    extremes: extremesTempKey.tr(namedArgs: {
                       'max': extremes?.tempMax?.toStringAsFixed(1) ?? '--',
                       'min': extremes?.tempMin?.toStringAsFixed(1) ?? '--',
                     }),
@@ -99,7 +107,7 @@ class EnvSummaryBar extends StatelessWidget {
                     value: 'stats_axis_humid'.tr(
                       namedArgs: {'v': humidity?.toStringAsFixed(0) ?? '--'},
                     ),
-                    extremes: 'stats_extremes_humid'.tr(namedArgs: {
+                    extremes: extremesHumidKey.tr(namedArgs: {
                       'max': extremes?.humidMax?.toStringAsFixed(0) ?? '--',
                       'min': extremes?.humidMin?.toStringAsFixed(0) ?? '--',
                     }),

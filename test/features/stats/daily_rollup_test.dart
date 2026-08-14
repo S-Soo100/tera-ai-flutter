@@ -25,8 +25,8 @@ void main() {
         _b(DateTime(2026, 8, 7, 8), t: 30),
       ], window: _window);
 
-      final d6 = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 6, 7));
-      final d7 = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 7, 7));
+      final d6 = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 6, 19));
+      final d7 = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 7, 19));
       expect(d6.tAvg, 20);
       expect(d7.tAvg, 30);
     });
@@ -36,7 +36,7 @@ void main() {
         _b(DateTime(2026, 8, 8, 8), t: 20, h: 40),
         _b(DateTime(2026, 8, 8, 20), t: 30, h: 60),
       ], window: _window);
-      final d = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 8, 7));
+      final d = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 8, 19));
       expect(d.tAvg, 25);
       expect(d.hAvg, 50);
     });
@@ -46,7 +46,7 @@ void main() {
         _b(DateTime(2026, 8, 8, 8), t: 20), // min 19 / max 21
         _b(DateTime(2026, 8, 8, 20), t: 30), // min 29 / max 31
       ], window: _window);
-      final d = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 8, 7));
+      final d = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 8, 19));
       expect(d.tMin, 19);
       expect(d.tMax, 31);
     });
@@ -57,7 +57,7 @@ void main() {
         _b(DateTime(2026, 8, 8, 8), t: 30, h: 60),
         _b(DateTime(2026, 8, 8, 9), t: 0, h: 0),
       ], window: _window);
-      final d = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 8, 7));
+      final d = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 8, 19));
       expect(d.tAvg, 30);
       expect(d.hAvg, 60);
     });
@@ -66,17 +66,19 @@ void main() {
       final out = rollupByDay([
         _b(DateTime(2026, 8, 8, 8), t: 30),
       ], window: _window);
-      final empty = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 9, 7));
+      final empty = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 9, 19));
       expect(empty.tAvg, isNull);
       expect(empty.sampleCount, 0);
     });
 
     test('창의 7일이 빠짐없이 나온다 — 빈 날도 자리를 지킨다', () {
       // 주간 창은 완결된 7일: 8/12 15시 기준 8/5 07시 ~ 8/12 07시.
+      // 스탬프는 하루의 **중앙**(19:00)이다 — 시작(07:00)으로 찍으면 포인트가
+      // 열 왼쪽 경계에 붙어 차트 마지막 1/7이 빈다.
       final out = rollupByDay(const [], window: _window);
       expect(out, hasLength(7));
-      expect(out.first.bucket, DateTime(2026, 8, 5, 7));
-      expect(out.last.bucket, DateTime(2026, 8, 11, 7));
+      expect(out.first.bucket, DateTime(2026, 8, 5, 19));
+      expect(out.last.bucket, DateTime(2026, 8, 11, 19));
     });
 
     test('창 밖 데이터는 무시한다', () {
@@ -91,7 +93,7 @@ void main() {
         _b(DateTime(2026, 8, 8, 8), t: 30),
         _b(DateTime(2026, 8, 8, 9), h: 60),
       ], window: _window);
-      final d = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 8, 7));
+      final d = out.firstWhere((b) => b.bucket == DateTime(2026, 8, 8, 19));
       expect(d.tAvg, 30);
       expect(d.hAvg, 60);
     });

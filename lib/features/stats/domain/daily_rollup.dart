@@ -37,7 +37,11 @@ List<TelemetryBucket> rollupByDay(
     for (final d in days)
       if (acc[d]! case final a)
         TelemetryBucket(
-          bucket: d,
+          // 스탬프는 하루의 **중앙**(시작 07:00 + 12h = 19:00)이다. 시작으로
+          // 찍으면 포인트가 자기 열의 왼쪽 경계에 붙어 마지막 1/7이 빈다 —
+          // 바 차트 문법처럼 값은 열 중앙에, 눈금 라벨은 경계에 둔다.
+          // (19:00은 같은 사육일이라 스크럽 판독 날짜도 그대로다)
+          bucket: DateTime(d.year, d.month, d.day, d.hour + 12),
           // ⚠️ 여기서는 "그 날 유효했던 30분 버킷 수"(온·습 각각 합산)다 —
           // 원본 TelemetryBucket의 sampleCount(3초 원시 행 수, isPartial의
           // 300 임계 기준)와 **단위가 다르다**. 일간 버킷에 isPartial을
