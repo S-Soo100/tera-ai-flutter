@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'tokens/variant_b_tokens.dart';
 import 'variant_b_community_screen.dart';
@@ -35,15 +36,31 @@ class _VariantBShellState extends State<VariantBShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VariantBTokens.background,
-      body: IndexedStack(
-        index: _index,
+      body: Stack(
         children: [
-          // IndexedStack은 다른 탭도 살려 두므로 visible을 내려보내지 않으면
-          // mock 라이브가 안 보이는 탭 뒤에서 계속 돈다.
-          VariantBHomeScreen(visible: _index == 0),
-          const VariantBStatsScreen(),
-          const VariantBPetsScreen(),
-          const VariantBCommunityScreen(),
+          IndexedStack(
+            index: _index,
+            children: [
+              // IndexedStack은 다른 탭도 살려 두므로 visible을 내려보내지
+              // 않으면 mock 라이브가 안 보이는 탭 뒤에서 계속 돈다.
+              VariantBHomeScreen(visible: _index == 0),
+              const VariantBStatsScreen(),
+              const VariantBPetsScreen(),
+              const VariantBCommunityScreen(),
+            ],
+          ),
+          // 랩 나가기 — pushed 라우트라 자기 문법의 출구가 필요하다. 홈의
+          // LIVE 라벨이 좌상단을 쓰므로 우상단에 전광판 톤 ← EXIT.
+          Positioned(
+            top: 0,
+            right: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 12, top: 4),
+                child: _ExitButton(onTap: () => context.pop()),
+              ),
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: Container(
@@ -68,6 +85,43 @@ class _VariantBShellState extends State<VariantBShell> {
                   ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 전광판 톤 나가기(← EXIT) — B안 문법의 뒤로 어포던스.
+class _ExitButton extends StatelessWidget {
+  const _ExitButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '뒤로',
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            // 라이브 헤더(영상) 위에서도 읽히게 배경 톤 스크림을 깐다.
+            color: const Color(0xCC0B0F1A),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: VariantBTokens.divider),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.arrow_back,
+                  size: 14, color: VariantBTokens.textSecondary),
+              SizedBox(width: 5),
+              Text('EXIT', style: VariantBTokens.dataLabel),
+            ],
           ),
         ),
       ),

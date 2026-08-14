@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
+import 'package:go_router/go_router.dart';
 
 import 'tokens/variant_a_tokens.dart';
 import 'variant_a_community_screen.dart';
@@ -66,6 +67,19 @@ class _VariantAShellState extends State<VariantAShell> {
               ],
             ),
           ),
+          // 랩 나가기 — 시안 셸은 pushed 최상위 라우트라, 자기 문법(유리
+          // 캡슐)의 뒤로 어포던스가 없으면 시스템 제스처 말곤 출구가 없다.
+          // 홈 헤더의 접힌 제목이 52pt에서 시작해 좌상단이 비어 있다.
+          Positioned(
+            top: 0,
+            left: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8, top: 4),
+                child: _BackCapsule(onTap: () => context.pop()),
+              ),
+            ),
+          ),
           Align(
             alignment: Alignment.bottomCenter,
             child: _GlassTabDock(
@@ -79,6 +93,34 @@ class _VariantAShellState extends State<VariantAShell> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 좌상단 유리 캡슐 뒤로 버튼(＜) — A안 문법의 나가기.
+class _BackCapsule extends StatelessWidget {
+  const _BackCapsule({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '뒤로',
+      child: GestureDetector(
+        onTap: onTap,
+        child: const AGlass(
+          radius: 100,
+          overlay: VariantATokens.glassOverlayStrong,
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          child: Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: VariantATokens.textPrimary,
+          ),
+        ),
       ),
     );
   }

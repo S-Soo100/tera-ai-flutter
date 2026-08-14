@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'tokens/variant_c_tokens.dart';
 import 'variant_c_community_screen.dart';
@@ -42,13 +43,38 @@ class _VariantCShellState extends State<VariantCShell> {
       backgroundColor: VariantCTokens.background,
       // extendBody는 안 쓴다 — 기존 홈 화면의 하단 패딩(32)이 떠 있는 필에
       // 가려지는 걸 막으려면 body가 탭바 위에서 끝나야 한다.
-      body: IndexedStack(
-        index: _index,
-        children: const [
-          VariantCHomeScreen(),
-          VariantCStatsScreen(),
-          VariantCPetsScreen(),
-          VariantCCommunityScreen(),
+      body: Column(
+        children: [
+          // 랩 나가기 — pushed 라우트라 자기 문법(라이트 라운드 ✕ 칩)의
+          // 출구가 필요하다. 홈 헤더(인사말·아바타)와 안 겹치게 오버레이
+          // 대신 전용 스트립으로 얹는다.
+          SafeArea(
+            bottom: false,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 6, 12, 0),
+                child: _CloseChip(onTap: () => context.pop()),
+              ),
+            ),
+          ),
+          Expanded(
+            // 상단 인셋은 스트립이 이미 소비했다 — 아래 화면들의 SafeArea가
+            // 한 번 더 밀어내지 않게 걷어낸다.
+            child: MediaQuery.removePadding(
+              context: context,
+              removeTop: true,
+              child: IndexedStack(
+                index: _index,
+                children: const [
+                  VariantCHomeScreen(),
+                  VariantCStatsScreen(),
+                  VariantCPetsScreen(),
+                  VariantCCommunityScreen(),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -80,6 +106,36 @@ class _VariantCShellState extends State<VariantCShell> {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 라이트 라운드 ✕ 칩 — C안 문법의 나가기.
+class _CloseChip extends StatelessWidget {
+  const _CloseChip({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '닫기',
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: const BoxDecoration(
+            color: VariantCTokens.card,
+            shape: BoxShape.circle,
+            boxShadow: [VariantCTokens.cardShadow],
+          ),
+          child: const Icon(Icons.close,
+              size: 18, color: VariantCTokens.textSecondary),
         ),
       ),
     );

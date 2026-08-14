@@ -76,6 +76,9 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
   Widget _header(BuildContext context) {
     return SliverAppBar(
       pinned: true,
+      // 뒤로가기는 셸(VariantAShell)의 유리 캡슐이 맡는다 — 자동 leading을
+      // 켜 두면 pushed 라우트에서 Material 화살표가 겹으로 뜬다.
+      automaticallyImplyLeading: false,
       expandedHeight: 132,
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
