@@ -106,10 +106,81 @@ void main() {
     expect(find.text('routine_schedule_empty'.tr()), findsOneWidget);
   });
 
-  testWidgets('백엔드가 없는 타이머는 이유를 밝힌다 — 안 만든 게 아니라 못 만든 것',
+  testWidgets('펌웨어 대기(정지형 가드·히터 타이머)는 각주로 이유를 밝힌다',
       (tester) async {
     await _pump(tester, _FakeRepo());
-    expect(find.byKey(RoutineSettingsScreen.pendingTimerKey), findsOneWidget);
+    expect(
+        find.byKey(RoutineSettingsScreen.pendingFootnoteKey), findsOneWidget);
+  });
+
+  testWidgets('가드를 걸어 저장하면 서버 요청에 실린다', (tester) async {
+    final repo = _FakeRepo();
+    await _pump(tester, repo);
+
+    await tester.tap(find.byKey(RoutineSettingsScreen.addKey));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(
+        find.byKey(const Key('routine_guard_skip_when_humidity_above')));
+    await tester.tap(
+        find.byKey(const Key('routine_guard_skip_when_humidity_above')));
+    await tester.pumpAndSettle();
+    // 종류를 고르면 유효한 출발값(70)이 채워져 저장이 열려야 한다.
+    await tester.ensureVisible(find.byKey(const Key('routine_save')));
+    await tester.tap(find.byKey(const Key('routine_save')));
+    await tester.pumpAndSettle();
+
+    expect(
+      repo.calls.any(
+          (c) => c.startsWith('create:mist') && c.contains('guard=skip_when_humidity_above>70')),
+      isTrue,
+      reason: '실제 호출: ${repo.calls}',
+    );
+  });
+
+  testWidgets('구간 저장은 on/off 예약 2건을 만든다', (tester) async {
+    final repo = _FakeRepo();
+    await _pump(tester, repo);
+
+    await tester.tap(find.byKey(RoutineSettingsScreen.addKey));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('routine_mode_span'.tr()));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('routine_save')));
+    await tester.tap(find.byKey(const Key('routine_save')));
+    await tester.pumpAndSettle();
+
+    final creates = repo.calls.where((c) => c.startsWith('create:')).toList();
+    expect(creates, hasLength(2), reason: '실제 호출: ${repo.calls}');
+    expect(creates[0], startsWith('create:fan_on:08:00'));
+    expect(creates[1], startsWith('create:fan_off:22:00'));
+  });
+
+  testWidgets('구간에서 히터를 고르면 무인 가동 경고를 보여준다', (tester) async {
+    await _pump(tester, _FakeRepo());
+
+    await tester.tap(find.byKey(RoutineSettingsScreen.addKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('routine_mode_span'.tr()));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('routine_span_heater_warn')), findsNothing);
+    await tester.ensureVisible(find.byKey(const Key('routine_span_heater')));
+    await tester.tap(find.byKey(const Key('routine_span_heater')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('routine_span_heater_warn')), findsOneWidget);
+  });
+
+  testWidgets('수정에서는 구간 탭이 없다 — 서버가 action 수정을 안 받고 쌍 개념도 없다',
+      (tester) async {
+    final repo = _FakeRepo(items: [_schedule(id: 'a')]);
+    await _pump(tester, repo);
+
+    await tester.tap(find.byKey(const Key('schedule_a')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('routine_mode_span'.tr()), findsNothing);
   });
 
   testWidgets('토글은 서버에 반영한다', (tester) async {

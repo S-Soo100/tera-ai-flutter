@@ -19,8 +19,8 @@ import 'widgets/schedule_editor_sheet.dart';
 /// |---|---|
 /// | §4.2.1 타이머(즉시·일회성) | ✅ 팬 — 제어 그리드의 팬 시트에서 건다 (히터는 보드 미탑재) |
 /// | §4.2.2 일정 — 시점 예약 | ✅ 여기 |
-/// | §4.2.2 시작~종료 구간 | ⏳ 계약 열림(2026-08-14) — 구현 계획 Part 2 |
-/// | §4.2.2 스마트 조건 | ⏳ 계약 열림(2026-08-14) — 구현 계획 Part 2 |
+/// | §4.2.2 시작~종료 구간 | ✅ 편집기 [구간] — on/off 예약 2건 생성 |
+/// | §4.2.2 스마트 조건 | ✅ 스킵형 4종 (정지형은 펌웨어 후속 — 하단 각주) |
 ///
 /// 상세: `docs/backend-handoff-2026-08-14-summary.md` ·
 /// `docs/plans/2026-08-14-backend-handoff-fan-timer-guard-lcd.md`
@@ -29,7 +29,7 @@ class RoutineSettingsScreen extends ConsumerWidget {
 
   static const listKey = Key('routine_schedule_list');
   static const addKey = Key('routine_add_schedule');
-  static const pendingTimerKey = Key('routine_timer_pending');
+  static const pendingFootnoteKey = Key('routine_pending_footnote');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,8 +54,6 @@ class RoutineSettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(AppStyles.spacing16,
             AppStyles.spacing16, AppStyles.spacing16, 96),
         children: [
-          const _TimerPendingCard(),
-          const SizedBox(height: AppStyles.spacing24),
           Text('routine_schedule_section'.tr(),
               style: AppStyles.subsectionTitle(context)),
           const SizedBox(height: AppStyles.spacing8),
@@ -80,6 +78,14 @@ class RoutineSettingsScreen extends ConsumerWidget {
                     ],
                   ),
           ),
+          const SizedBox(height: AppStyles.spacing24),
+          // 계약이 없어 못 만드는 것 — 빈 자리를 이유 없이 두면 고장으로 읽힌다.
+          Text(
+            'routine_pending_footnote'.tr(),
+            key: pendingFootnoteKey,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
         ],
       ),
     ));
@@ -90,20 +96,33 @@ class RoutineSettingsScreen extends ConsumerWidget {
     if (result == null || !context.mounted) return;
     await _guard(
       context,
-      () => ref.read(schedulesProvider.notifier).add(
-            action: result.action,
-            kind: result.kind,
-            hour: result.hour,
-            minute: result.minute,
-            daysOfWeek: result.daysOfWeek,
-            payload: result.payload,
-          ),
+      () => result.isSpan
+          ? ref.read(schedulesProvider.notifier).addSpan(
+                onAction: result.action,
+                offAction: result.offAction!,
+                kind: result.kind,
+                startHour: result.hour,
+                startMinute: result.minute,
+                endHour: result.endHour!,
+                endMinute: result.endMinute!,
+                daysOfWeek: result.daysOfWeek,
+                guard: result.guard,
+              )
+          : ref.read(schedulesProvider.notifier).add(
+                action: result.action,
+                kind: result.kind,
+                hour: result.hour,
+                minute: result.minute,
+                daysOfWeek: result.daysOfWeek,
+                payload: result.payload,
+                guard: result.guard,
+              ),
     );
   }
 
   Future<void> _edit(
       BuildContext context, WidgetRef ref, Schedule s) async {
-    // `action`은 서버가 수정을 안 받는다. 편집기는 타이밍만 바꾸게 하고,
+    // `action`은 서버가 수정을 안 받는다. 편집기는 타이밍·가드만 바꾸게 하고,
     // 동작을 바꾸려면 지우고 새로 만들어야 한다.
     final result = await showScheduleEditor(context, initial: s);
     if (result == null || !context.mounted) return;
@@ -116,6 +135,8 @@ class RoutineSettingsScreen extends ConsumerWidget {
             minute: result.minute,
             daysOfWeek: result.daysOfWeek,
             payload: result.payload,
+            guard: result.guard,
+            clearGuard: result.clearGuard,
           ),
     );
   }
@@ -159,58 +180,6 @@ class RoutineSettingsScreen extends ConsumerWidget {
   }
 }
 
-/// PRD §4.2가 요구하지만 계약이 없어 못 만든 것들.
-///
-/// **한 자리에 모아 이유까지 밝힌다.** 기획서와 대조하는 사람이 화면만 보고
-/// "빠뜨렸나"를 판단하게 두면 안 된다 — 안 만든 게 아니라 못 만든 것이고,
-/// 셋 다 백엔드 회신을 기다리는 중이다(`docs/backend-handoff-timer-mist.md`).
-class _TimerPendingCard extends StatelessWidget {
-  const _TimerPendingCard();
-
-  /// (제목 키, 사유 키). PRD 순서대로.
-  ///
-  /// 타이머(§4.2.1)는 2026-08-14 계약이 열려 **팬 시트로 구현돼 여기서 빠졌다**.
-  /// 남은 두 줄도 계약은 열렸고 앱 구현 대기다(구현 계획 Part 2) — 구현되면
-  /// 이 카드를 통째로 걷고 "정지형 가드·히터 타이머 펌웨어 후속" 각주만 남긴다.
-  static const _items = [
-    ('routine_pending_span_title', 'routine_pending_span_body'),
-    ('routine_pending_guard_title', 'routine_pending_guard_body'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    // 전역 다크 고정(app.dart) 전제 — 셸 안팎 어디서 읽어도 같은 팔레트다.
-    final theme = Theme.of(context);
-    return Container(
-      key: RoutineSettingsScreen.pendingTimerKey,
-      padding: const EdgeInsets.all(AppStyles.spacing16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppStyles.cardRadius),
-        border: Border.all(color: theme.dividerColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('routine_pending_header'.tr(),
-              style: AppStyles.subsectionTitle(context)),
-          const SizedBox(height: AppStyles.spacing12),
-          for (final (title, body) in _items) ...[
-            Text(title.tr(), style: theme.textTheme.labelLarge),
-            const SizedBox(height: 2),
-            Text(
-              body.tr(),
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            if (title != _items.last.$1)
-              const SizedBox(height: AppStyles.spacing12),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _ScheduleTile extends StatelessWidget {
   const _ScheduleTile({
     required this.schedule,
@@ -238,6 +207,8 @@ class _ScheduleTile extends StatelessWidget {
       subtitle: Text(
         [
           _repeatLabel(),
+          if (schedule.guard case final g? when g.enabled)
+            _guardLabel(g),
           if (schedule.nextRunAt != null && schedule.enabled)
             'routine_next_run'.tr(args: [_formatNext(schedule.nextRunAt!)]),
         ].join(' · '),
@@ -273,6 +244,16 @@ class _ScheduleTile extends StatelessWidget {
   String _repeatLabel() {
     if (schedule.kind == ScheduleKind.daily) return 'routine_daily'.tr();
     return schedule.daysOfWeek.map((d) => _dayName(d)).join('·');
+  }
+
+  /// `습도>70%면 건너뜀` 식. 키는 `routine_guard_chip_<wire 뒷부분>`.
+  static String _guardLabel(ScheduleGuard g) {
+    final key =
+        'routine_guard_chip_${g.type.wire.substring('skip_when_'.length)}';
+    final v = g.value == g.value.roundToDouble()
+        ? '${g.value.toInt()}'
+        : '${g.value}';
+    return key.tr(args: [v]);
   }
 
   static String _dayName(int d) => 'routine_day_$d'.tr();
