@@ -90,8 +90,10 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
         ),
         child: FlexibleSpaceBar(
           expandedTitleScale: 1.8,
-          titlePadding:
-              const EdgeInsetsDirectional.only(start: 52, bottom: 14, end: 16),
+          // 가운데 정렬 — start: 52 비대칭 패딩은 좌측 뒤로 캡슐 자리를 비운
+          // 것이었는데 펼침 상태에서 제목이 왼쪽으로 치우쳐 보였다(2026-08-14).
+          centerTitle: true,
+          titlePadding: const EdgeInsets.only(bottom: 14),
           title:
               const Text('내 사육장', style: VariantATokens.headerTitleCollapsed),
         ),
