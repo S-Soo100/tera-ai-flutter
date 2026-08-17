@@ -89,31 +89,29 @@ class _VariantAShellState extends State<VariantAShell> {
               // 랩 나가기 — 시안 셸은 pushed 최상위 라우트라, 자기 문법(유리
               // 캡슐)의 뒤로 어포던스가 없으면 시스템 제스처 말곤 출구가 없다.
               // 홈 헤더의 접힌 제목이 52pt에서 시작해 좌상단이 비어 있다.
+              // ☀️/🌙 토글은 뒤로 캡슐 **옆**(좌상단)에 — 우상단은 홈 헤더의
+              // 세트 캡슐("1번 사육장")이 쓰고 있어 거기 두면 겹친다.
               Positioned(
                 top: 0,
                 left: 0,
                 child: SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.only(left: 8, top: 4),
-                    child: _BackCapsule(onTap: () => context.pop()),
-                  ),
-                ),
-              ),
-              // 우상단 ☀️/🌙 — 테스터가 두 모드를 즉시 비교한다.
-              Positioned(
-                top: 0,
-                right: 0,
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 8, top: 4),
-                    child: LabModeToggle(
-                      brightness: brightness,
-                      onToggle: () => setState(() {
-                        _override = brightness == Brightness.dark
-                            ? Brightness.light
-                            : Brightness.dark;
-                      }),
-                      builder: (context, icon) => _CapsuleIcon(icon: icon),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _BackCapsule(onTap: () => context.pop()),
+                        const SizedBox(width: 8),
+                        LabModeToggle(
+                          brightness: brightness,
+                          onToggle: () => setState(() {
+                            _override = brightness == Brightness.dark
+                                ? Brightness.light
+                                : Brightness.dark;
+                          }),
+                          builder: (context, icon) => _CapsuleIcon(icon: icon),
+                        ),
+                      ],
                     ),
                   ),
                 ),
