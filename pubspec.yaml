@@ -1,7 +1,7 @@
 name: vivnanaut
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.60.3+105
+version: 0.60.4+106
 
 environment:
   sdk: ^3.5.0

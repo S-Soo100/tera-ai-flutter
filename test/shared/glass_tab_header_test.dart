@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivnanaut/core/theme/app_styles.dart';
 import 'package:vivnanaut/shared/widgets/glass_tab_header.dart';
 
 // 구 ScreenHeader 테스트(7238167에서 삭제)의 불변 3종을 GlassTabHeader로 이식.
@@ -57,21 +58,16 @@ void main() {
     expect(withCapsule, GlassTabHeader.height);
   });
 
-  testWidgets('액션 0~3개에서 높이 불변 + 제목 중심이 화면 중심에 고정된다',
-      (tester) async {
-    // 2026-08-14부터 제목은 **화면 기준 가운데**다(랩 A안과 통일). 액션이
-    // 우측에 몇 개 붙든 제목 중심이 밀리면 탭을 옮길 때 제목이 좌우로 튄다.
+  testWidgets('액션 0~3개에서 높이·제목 시작점이 불변이다', (tester) async {
     final heights = <double>{};
+    final titleXs = <double>{};
     for (var n = 0; n <= 3; n++) {
       await _pump(tester, actionCount: n);
       heights.add(tester.getSize(find.byType(GlassTabHeader)).height);
-      final headerCenter =
-          tester.getCenter(find.byType(GlassTabHeader)).dx;
-      final titleCenter = tester.getCenter(find.text('크랑이')).dx;
-      expect(titleCenter, closeTo(headerCenter, 1.0),
-          reason: '액션 $n개일 때 제목이 중앙에서 밀렸다');
+      titleXs.add(tester.getTopLeft(find.text('크랑이')).dx);
     }
     expect(heights, {GlassTabHeader.height});
+    expect(titleXs, {AppStyles.spacing16});
   });
 
   testWidgets('좁은 폭(320) + 액션 3개 — 제목은 ellipsis로 버티고 넘치지 않는다',

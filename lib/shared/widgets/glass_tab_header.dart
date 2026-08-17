@@ -8,9 +8,13 @@ import 'glass_chip.dart';
 /// 역사적, 2차부터 솔리드).
 ///
 /// 홈 `HomeHeaderBar`가 세운 문법을 **홈 포함 모든 탭**이 공유한다 —
-/// **대형 타이틀이 주인공**, 보조 정보는 캡슐([GlassChip]), 액션
-/// 아이콘은 항상 밝다(바닥이 테마와 무관하게 어두워 테마 기본색에
+/// **좌정렬 타이틀(22pt)이 주인공**, 보조 정보는 캡슐([GlassChip]), 액션
+/// 아이콘은 우측·항상 밝다(바닥이 테마와 무관하게 어두워 테마 기본색에
 /// 맡기지 않는다).
+///
+/// 2026-08-14 가운데 정렬을 시도했다가 되돌렸다 — 우측 액션 3개와 짝이
+/// 없어 무게가 한쪽으로 쏠리고 아래 빈 슬롯이 휑했다. 가운데 문법은
+/// 좌우가 대칭인 랩 A안 홈(뒤로 캡슐 ↔ 세트 캡슐)에만 어울린다.
 ///
 /// 홈도 렌더링은 여기에 위임한다 — 세트 분기·알림 점 같은 로직만
 /// `HomeHeaderBar`에 남는다. 구 `ScreenHeader`(56pt 고정)는 참조가 0이 되어
@@ -40,7 +44,7 @@ class GlassTabHeader extends StatelessWidget {
   final List<Widget> actions;
 
   /// 제목 줄 슬롯 — [AppTheme.glassHeaderTitle] 실높이(fontSize × height).
-  /// 토큰에서 파생시켜 글자 크기를 바꿔도 슬롯이 따라온다.
+  /// 토큰에서 파생 — 글자 크기를 바꾸면 여기도 같이 맞춘다.
   static const double _titleSlot = 22 * 1.2;
 
   /// 캡슐 줄 슬롯 — 캡슐(글자 13 + 세로 패딩 5×2 + 테두리)이 앉는 높이.
@@ -55,147 +59,80 @@ class GlassTabHeader extends StatelessWidget {
       _capsuleSlot +
       AppStyles.spacing12;
 
-  /// 액션 하나가 차지하는 폭(아이콘 버튼 48pt) — 제목이 액션 밑으로 깔리지
-  /// 않게 **양옆 대칭**으로 비운다. 한쪽만 비우면 제목이 화면 중앙에서 밀린다.
-  static const double _actionSlotWidth = 48;
-
   @override
   Widget build(BuildContext context) {
-    // 제목·캡슐은 **화면 기준 가운데**(2026-08-14 사용자 결정 — 랩 A안과 통일).
-    // 액션이 우측에 있어 Row로 두면 제목이 왼쪽으로 밀리므로, 제목 열을 Stack
-    // 바닥에 화면 폭 전체로 깔고 액션은 우측 오버레이로 얹는다.
-    final actionsWidth = _actionSlotWidth * actions.length.clamp(0, 3);
-    final rightInset = AppStyles.spacing8 + actionsWidth;
-
     return SizedBox(
       height: height,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
-          AppStyles.spacing8,
+          AppStyles.spacing16,
           AppStyles.spacing8,
           AppStyles.spacing8,
           AppStyles.spacing12,
         ),
-        child: LayoutBuilder(
-          builder: (context, c) => Stack(
-            children: [
-              Positioned.fill(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: _titleSlot,
-                      child: _CenteredTitle(
-                        title: title,
-                        rightInset: rightInset,
-                        maxWidth: c.maxWidth,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: _titleSlot,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        title,
+                        style: AppTheme.glassHeaderTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(height: AppStyles.spacing4),
-                    SizedBox(
-                      height: _capsuleSlot,
-                      child: capsuleLabel == null
-                          ? null
-                          : Center(
-                              child: GlassChip(
-                                onTap: onPickCapsule,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 5),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        capsuleLabel!,
-                                        style: AppTheme.glassTileStatus,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                  ),
+                  const SizedBox(height: AppStyles.spacing4),
+                  SizedBox(
+                    height: _capsuleSlot,
+                    child: capsuleLabel == null
+                        ? null
+                        : Align(
+                            alignment: Alignment.centerLeft,
+                            child: GlassChip(
+                              onTap: onPickCapsule,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      capsuleLabel!,
+                                      style: AppTheme.glassTileStatus,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    if (onPickCapsule != null) ...[
-                                      const SizedBox(width: AppStyles.spacing4),
-                                      Icon(
-                                        Icons.expand_more,
-                                        key: capsuleArrowKey,
-                                        size: 16,
-                                        color: AppTheme.glassTextSecondary,
-                                      ),
-                                    ],
+                                  ),
+                                  if (onPickCapsule != null) ...[
+                                    const SizedBox(width: AppStyles.spacing4),
+                                    Icon(
+                                      Icons.expand_more,
+                                      key: capsuleArrowKey,
+                                      size: 16,
+                                      color: AppTheme.glassTextSecondary,
+                                    ),
                                   ],
-                                ),
+                                ],
                               ),
                             ),
-                    ),
-                  ],
-                ),
-              ),
-              // 액션은 우측 상단(제목 줄 높이)에 얹는다.
-              if (actions.isNotEmpty)
-                // 높이는 제목 슬롯에 맞추되 **세로 중앙**으로 — 슬롯(26pt)보다
-                // 큰 IconButton(48pt)을 top 기준으로 두면 아바타(28pt)만 위로 떠 보인다.
-                Positioned(
-                  right: 0,
-                  top: (_titleSlot - _actionSlotWidth) / 2,
-                  height: _actionSlotWidth,
-                  child: IconTheme.merge(
-                    data:
-                        const IconThemeData(color: AppTheme.glassTextPrimary),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: actions,
-                    ),
+                          ),
                   ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 제목 한 줄 — 화면 정중앙 우선, 공간이 모자라면 읽히는 쪽 우선.
-///
-/// 우측 인셋은 액션 폭 그대로(제목이 액션 밑으로 절대 안 들어간다). 좌측
-/// 인셋은 우측과 **같게** 두어 대칭 → 정중앙인데, 액션 3개(144pt)면 대칭
-/// 인셋만으로 제목 폭이 ~90pt까지 줄어 긴 제목이 "사…"로 뭉개진다. 그때만
-/// 좌측 인셋을 풀어(0까지) 텍스트에 폭을 준다 — 짧은 제목은 정중앙, 긴 제목은
-/// 살짝 좌측으로 무게가 실리더라도 읽힌다.
-class _CenteredTitle extends StatelessWidget {
-  const _CenteredTitle({
-    required this.title,
-    required this.rightInset,
-    required this.maxWidth,
-  });
-
-  final String title;
-  final double rightInset;
-  final double maxWidth;
-
-  @override
-  Widget build(BuildContext context) {
-    final painter = TextPainter(
-      text: TextSpan(text: title, style: AppTheme.glassHeaderTitle),
-      maxLines: 1,
-      textDirection: Directionality.of(context),
-    )..layout();
-    final needed = painter.width;
-    // 대칭일 때 남는 폭. 모자라면 좌측 인셋을 줄여 보충한다.
-    final symmetricRoom = maxWidth - rightInset * 2;
-    final leftInset = needed <= symmetricRoom
-        ? rightInset
-        : (maxWidth - rightInset - needed).clamp(0.0, rightInset);
-
-    return Padding(
-      padding: EdgeInsets.only(left: leftInset, right: rightInset),
-      child: Center(
-        child: Text(
-          title,
-          style: AppTheme.glassHeaderTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
+                ],
+              ),
+            ),
+            IconTheme.merge(
+              data: const IconThemeData(color: AppTheme.glassTextPrimary),
+              child: Row(mainAxisSize: MainAxisSize.min, children: actions),
+            ),
+          ],
         ),
       ),
     );
