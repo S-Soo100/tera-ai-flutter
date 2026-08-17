@@ -89,7 +89,7 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 | `/search` (보조) | search | 백색목록 검색 | SpeciesRepository |
 | `/notifications`·`/enclosure-settings`·`/home/routines` (보조) | notification / my_cage / home | 홈 헤더·루틴 진입점 | PRD §3.1 / §3.4 |
 | `/dev/chart-lab` (보조) | dev | ChartLabScreen — 온습도 그래프 디자인 검토(더미 데이터) | 없음(하드코딩 픽스처) |
-| `/design-test` (보조, **공개**) | dev/design_lab | 디자인 테스트 선택 + A/B/C 4탭 mock 셸(구 `/dev/design-lab` 교체, 비로그인 공개 — `kPublicPaths`). 롤백: `docs/design-test-rollout-plan.md` §2.4 | 없음(랩 fixtures + 번들 루프 영상) |
+| `/design-test` (보조, **공개**) | dev/design_lab | 디자인 테스트 선택 + **A/B** 4탭 mock 셸(구 `/dev/design-lab` 교체, 비로그인 공개 — `kPublicPaths`). C안은 2026-08-14 폐기. 롤백: `docs/design-test-rollout-plan.md` §2.4 | 없음(랩 fixtures + 번들 루프 영상) |
 | — | splash/error | SplashScreen / ErrorScreen | — |
 
 > 홈 탭 도메인: `home/domain/{day_window,device_mode,enclosure_set,env_extremes,env_chart_series,actuator_marker,chart_time_axis,running_timer,mist_lock,mist_duration,schedule,timeline_summary,pet_dday}.dart`. 하루 경계는 **07:00~익일 07:00**(`DayWindow`), 차트 범위는 전날 19:00~현재 — 어젯밤 리포트(22~06시)와 별개 개념이니 혼용 금지.
@@ -130,7 +130,7 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 - Supabase 테이블/RLS/접속 정보는 `docs/supabase-setup.md` 참조.
 
 ### UI/테마
-- **현행은 Liquid Glass 시스템(A안, 2026-08-13 전면 적용)** — 월페이퍼 바닥 + 유리 표면(`GlassCard`류) + 기기 틴트 + 유리 타이포 위계. 상세·적용 현황은 `docs/design-direction.md` §0. **Figma 팔레트 SOT 갱신은 후속 과제(사용자 작업 필요)** — Figma `Asset`은 아직 구 팔레트다
+- **현행은 A안 2차 — 솔리드 다크 시스템(2026-08-14, 리퀴드 글래스 제거)** — 단색 딥 네이비 바닥 + 불투명 솔리드 표면 + 채도 낮춘 기기 틴트 + 홈 풀블리드 4:3 카메라. 공용 위젯 이름(`GlassCard`·`GlassDock` 등)과 `AppTheme.glass*` 토큰명은 **역사적 명칭으로 유지**되며 값만 솔리드다(blur 경로 제거, `blur` 파라미터는 no-op). 상세는 `docs/design-direction.md` §0. **Figma 팔레트 SOT 갱신은 후속 과제(사용자 작업 필요)** — Figma `Asset`은 아직 구 팔레트다
 - **시각 디자인 방향**: `docs/design-direction.md` — 위계·타이포·색 역할·시그니처(밤 띠). **팔레트·컴포넌트 규격 SOT는 Figma**(`docs/figma-final-design-transcript.md` §4)
 - **디자인 시스템(구)**: `docs/design-system.md` — 토큰·공유 위젯 정의
 - **하드코딩 색상 금지**. `AppTheme` 또는 `Theme.of(context)` 사용.
