@@ -16,9 +16,17 @@ import '../webrtc_live_controller.dart';
 /// - streaming: RTCVideoView
 /// - failed: 아이콘 + 에러 메시지 + "다시 연결" 버튼
 class WebRtcLiveView extends ConsumerWidget {
-  const WebRtcLiveView({super.key, required this.cameraUuid});
+  const WebRtcLiveView({
+    super.key,
+    required this.cameraUuid,
+    this.cover = false,
+  });
 
   final String cameraUuid;
+
+  /// true면 영상이 면을 **꽉 채운다**(가장자리 크롭 허용). 홈 풀블리드 면이
+  /// 쓴다. 기본 false(contain) — 카메라 상세는 프레임 전체를 보여준다.
+  final bool cover;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,6 +44,7 @@ class WebRtcLiveView extends ConsumerWidget {
         ),
       WebRtcLivePhase.streaming => _StreamingView(
           renderer: state.renderer!,
+          cover: cover,
         ),
       WebRtcLivePhase.failed => _FailedView(
           errorKey: state.errorKey ?? 'crecam_live_error_failed',
@@ -102,15 +111,18 @@ class _ConnectingView extends StatelessWidget {
 // ── 스트리밍 ────────────────────────────────────────────────────────────────
 
 class _StreamingView extends StatelessWidget {
-  const _StreamingView({required this.renderer});
+  const _StreamingView({required this.renderer, required this.cover});
 
   final RTCVideoRenderer renderer;
+  final bool cover;
 
   @override
   Widget build(BuildContext context) {
     return RTCVideoView(
       renderer,
-      objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
+      objectFit: cover
+          ? RTCVideoViewObjectFit.RTCVideoViewObjectFitCover
+          : RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
     );
   }
 }

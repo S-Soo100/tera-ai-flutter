@@ -54,15 +54,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Column(
         children: [
           const HomeHeaderBar(),
-          // 라이브/프로필 면을 유리 카드 모양으로 — 내부(LiveSurface·
-          // 오버레이 슬롯)는 무변경, 감싸는 모서리·여백만 A안.
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
-            child: ClipRRect(
-              borderRadius:
-                  BorderRadius.all(Radius.circular(AppTheme.glassTileRadius)),
-              child: TopFixedArea(),
+          // 라이브/프로필 면은 **풀블리드**다(A안 2차, 2026-08-14) — 좌우 여백 0,
+          // 헤더 바로 아래에서 시작해 화면 폭을 다 쓴다. 카메라가 홈의
+          // 주인공이라 카드 한 장으로 가두지 않는다. 내부(LiveSurface·
+          // 오버레이 슬롯)는 무변경, 아래 모서리만 둥글려 뒤 콘텐츠와 잇는다.
+          const ClipRRect(
+            borderRadius: BorderRadius.vertical(
+              bottom: Radius.circular(AppTheme.glassTileRadius),
             ),
+            child: TopFixedArea(),
           ),
           const SizedBox(height: AppStyles.spacing12),
           const HomeSubTabsBar(),

@@ -74,13 +74,14 @@ void main() {
     expect(c.read(selectedSetIndexProvider), 1);
   });
 
-  testWidgets('16:9 비율을 유지한다 — 서브탭 높이 변화에 안 흔들림', (tester) async {
+  testWidgets('4:3 비율을 유지한다 — 서브탭 높이 변화에 안 흔들림', (tester) async {
     await _pump(tester, [_set('e1', dev: true)]);
     final ar = tester.widget<AspectRatio>(find
         .descendant(
             of: find.byType(TopFixedArea), matching: find.byType(AspectRatio))
         .first);
-    expect(ar.aspectRatio, closeTo(16 / 9, 0.001));
+    expect(ar.aspectRatio, closeTo(TopFixedArea.aspectRatio, 0.001));
+    expect(TopFixedArea.aspectRatio, closeTo(4 / 3, 0.001));
   });
 
   testWidgets('세트 없음 → 빈 상태로 죽지 않는다', (tester) async {

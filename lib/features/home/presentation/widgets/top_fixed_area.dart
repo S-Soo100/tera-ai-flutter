@@ -19,7 +19,8 @@ import 'pet_profile_card.dart';
 /// 캠이 있으면 라이브 뷰어, 없으면 개체 프로필 카드. 좌/우 스와이프로 세트를
 /// 전환하고 하단 인디케이터가 이를 반영한다(PRD §3.2 스와이프 UX).
 ///
-/// 16:9 고정이라 아래 서브탭 컨텐츠 높이가 바뀌어도 상단이 흔들리지 않는다.
+/// **4:3 고정**(A안 2차, 2026-08-14 — 16:9에서 키움)이라 아래 서브탭 컨텐츠
+/// 높이가 바뀌어도 상단이 흔들리지 않는다. 비율은 [aspectRatio] 한 곳이다.
 class TopFixedArea extends ConsumerStatefulWidget {
   const TopFixedArea({super.key});
 
@@ -27,6 +28,9 @@ class TopFixedArea extends ConsumerStatefulWidget {
   static const liveKey = Key('top_fixed_live');
   static const profileKey = Key('top_fixed_profile');
   static const indicatorKey = Key('top_fixed_indicator');
+
+  /// 라이브/프로필 면 비율. 화면 폭 393pt 기준 높이 ~295pt.
+  static const double aspectRatio = 4 / 3;
 
   @override
   ConsumerState<TopFixedArea> createState() => _TopFixedAreaState();
@@ -77,7 +81,7 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
       return ColoredBox(
         color: AppTheme.liveSurface,
         child: AspectRatio(
-          aspectRatio: 16 / 9,
+          aspectRatio: TopFixedArea.aspectRatio,
           child: Center(
             child: Text('home_no_set'.tr(),
                 style: const TextStyle(color: Colors.white70)),
@@ -105,6 +109,7 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
     // 슬롯이 페이지마다 흩어지면 위치가 달라지고, 인디케이터가 안내 문구와
     // 겹치는 일이 생긴다(실기기에서 그랬다).
     return LiveSurface(
+      aspectRatio: TopFixedArea.aspectRatio,
       status: _ConnectionStatus(camera: current.camera),
       corner: current.camera == null ? null : const LiveClockOverlay(),
       footer: sets.length > 1
@@ -171,7 +176,7 @@ class _SetPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 이 영역은 **라이브 전용**이다. 녹화 클립은 전체화면 가로 플레이어로 간다
-    // (`/crecam/motion-clips/:id`) — 여기서 재생하면 16:9 조각 안에 갇힌다.
+    // (`/crecam/motion-clips/:id`) — 여기서 재생하면 상단 조각 안에 갇힌다.
     final cam = set.camera;
     if (cam == null) {
       return Container(
@@ -186,7 +191,9 @@ class _SetPane extends ConsumerWidget {
     }
     return KeyedSubtree(
       key: TopFixedArea.liveKey,
-      child: WebRtcLiveView(cameraUuid: cam.id),
+      // 풀블리드 면을 영상이 꽉 채운다 — contain이면 스트림 비율(16:9)과
+      // 면 비율(4:3) 차이만큼 위아래 검은 띠가 남아 넓힌 의미가 없다.
+      child: WebRtcLiveView(cameraUuid: cam.id, cover: true),
     );
   }
 }
