@@ -7,9 +7,9 @@ import 'wallpaper_background.dart';
 /// 출처**다. 화면마다 수기로 세우면 규칙 주석까지 네 벌이 되고, 한 곳만
 /// 고쳐진 채 남는다.
 ///
-/// 규칙(2026-08-13, Liquid Glass):
-/// - 바닥은 [WallpaperBackground](월페이퍼) — UI는 그 위에 뜬 유리 레이어다.
-///   Scaffold 배경도 월페이퍼 상단색으로 맞춰 오버스크롤에서 흰 바닥이
+/// 규칙(2026-08-14, 솔리드 — 1차 Liquid Glass에서 유리만 걷어냄):
+/// - 바닥은 [WallpaperBackground](정적 단색) — UI는 그 위에 놓인 솔리드
+///   표면이다. Scaffold 배경도 같은 색으로 맞춰 오버스크롤에서 흰 바닥이
 ///   비치지 않게 한다.
 /// - 다크 팔레트는 **앱 전역**이 보장한다(`app.dart`의 `themeMode: dark`,
 ///   2026-08-14) — 화면별 Theme 래핑은 하지 않는다.

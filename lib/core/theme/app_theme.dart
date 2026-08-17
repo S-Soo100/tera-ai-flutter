@@ -157,37 +157,42 @@ class AppTheme {
       );
 
   // ══════════════════════════════════════════════════════════════════════════
-  // Liquid Glass 디자인 시스템 (A안 — Apple Home iOS 26, 2026-08-13 확정)
-  // 출처: `lib/features/dev/design_lab/tokens/variant_a_tokens.dart` +
-  //       `docs/design-lab-benchmark-specs.md` A안.
-  // 문법: **월페이퍼(그라데이션)가 바닥**이고 UI는 그 위에 뜬 반투명 유리 레이어.
-  // 라이트/다크 공통 단일 룩 — 월페이퍼 기반이라 테마 분기가 없다.
+  // 솔리드 다크 디자인 시스템 (A안 2차, 2026-08-14 — 리퀴드 제거)
+  // 1차(2026-08-13)는 Liquid Glass(월페이퍼 그라데이션 + blur 유리)였다.
+  // 2차에서 **유리를 걷어내고 솔리드하고 차분한 면**으로 바꿨다 — 이유: 차분함·
+  // 가독(반투명 위 텍스트 대비 불안정)·성능(BackdropFilter saveLayer).
+  // 토큰·위젯 이름의 `glass`는 **역사적 명칭**이다 — 호출부 33파일이 참조하므로
+  // 이름은 두고 값만 바꿨다. 새 코드에서 "유리"로 읽지 말 것.
+  // 라이트/다크 공통 단일 룩 — 바닥이 항상 어두워 테마 분기가 없다.
   // 기존 brandNavy 등 구 토큰은 아직 다른 화면이 참조하므로 유지한다(단계 이전).
   // ══════════════════════════════════════════════════════════════════════════
 
-  // ── 월페이퍼 (딥 그라데이션: 네이비→틸, 비바나트 브랜드 도출) ──
-  static const glassWallpaperTop = Color(0xFF141E45); // brandNavy 근방
-  static const glassWallpaperMid = Color(0xFF1B3A5C);
-  static const glassWallpaperBottom = Color(0xFF0F5E5A); // 틸
+  // ── 바닥 (정적 단색 — 차분한 딥 네이비). Top/Mid/Bottom은 호환용 3벌이며
+  //    사실상 동일 톤이다. WallpaperBackground는 Top 하나만 칠한다.
+  static const glassWallpaperTop = Color(0xFF141A2E);
+  static const glassWallpaperMid = Color(0xFF141A2E);
+  static const glassWallpaperBottom = Color(0xFF141A2E);
 
-  // ── 유리 표면 ──
-  static const double glassBlurSigma = 24;
-  static const glassOverlay = Color(0x24FFFFFF); // 흰색 ~14%
-  static const glassOverlayStrong = Color(0x2EFFFFFF); // ~18%
-  static const glassOverlayFaint = Color(0x14FFFFFF); // ~8% — 비활성 표면
-  static const glassBorder = Color(0x33FFFFFF);
-  static const double glassTileRadius = 26;
+  // ── 표면 (불투명 솔리드 — 바닥보다 한 단계 밝은 네이비 그레이) ──
+  /// 호환용. 2차에서 blur 경로가 제거되어 어디서도 읽지 않는다.
+  @Deprecated('솔리드 전환(2026-08-14)으로 blur 없음 — 참조하지 말 것')
+  static const double glassBlurSigma = 0;
+  static const glassOverlay = Color(0xFF1E2640); // 기본 표면
+  static const glassOverlayStrong = Color(0xFF242D4A); // 독·시트 — 또렷한 표면
+  static const glassOverlayFaint = Color(0xFF1A2138); // 비활성 표면
+  static const glassBorder = Color(0x14FFFFFF); // 흰색 ~8% — 아주 낮은 대비
+  static const double glassTileRadius = 20;
 
-  /// 활성 타일 — 유리가 아니라 **불투명 흰색**으로 전환된다(Apple Home 문법).
-  static const glassActiveTile = Color(0xFFF7F7FA);
+  /// 활성 타일 — **밝은 뉴트럴 불투명면**으로 전환된다(Apple Home 문법).
+  static const glassActiveTile = Color(0xFFF2F3F7);
 
-  // ── 기기 틴트 (활성 타일 아이콘·센서 칩) ──
-  static const deviceHeaterTint = Color(0xFFFF8F45); // 히터 주황
-  static const deviceMistTint = Color(0xFF4AA8FF); // 분무 파랑
-  static const deviceLedTint = Color(0xFFFFC93C); // LED 노랑
-  static const deviceFanTint = Color(0xFF4FD8C4); // 팬 민트
+  // ── 기기 틴트 (활성 타일 아이콘·센서 칩) — 2차에서 채도·명도를 낮춰 톤 통일 ──
+  static const deviceHeaterTint = Color(0xFFE8823F); // 히터 주황
+  static const deviceMistTint = Color(0xFF4A90D9); // 분무 파랑
+  static const deviceLedTint = Color(0xFFE0B341); // LED 노랑
+  static const deviceFanTint = Color(0xFF4DBFAE); // 팬 민트
 
-  // ── 유리 위 텍스트 위계 ──
+  // ── 어두운 면 위 텍스트 위계 ──
   static const glassTextPrimary = Colors.white;
   static const glassTextSecondary = Color(0x99FFFFFF); // 60%
   static const glassTextTertiary = Color(0x4DFFFFFF); // 30% — 비활성
@@ -197,7 +202,7 @@ class AppTheme {
   /// LIVE 배지 빨강 (iOS 시스템 레드 계열).
   static const glassLiveRed = Color(0xFFFF453A);
 
-  // ── 유리 위 타이포 (Pretendard 명시 — 유리 위젯은 테마 밖에서도 쓰인다) ──
+  // ── 표면 위 타이포 (Pretendard 명시 — 공용 위젯은 테마 밖에서도 쓰인다) ──
   static const glassHeaderTitle = TextStyle(
     fontFamily: _pretendard,
     fontSize: 28,

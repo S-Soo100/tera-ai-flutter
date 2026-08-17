@@ -31,10 +31,12 @@ class GlassDockItem {
   final String label;
 }
 
-/// 플로팅 유리 독. 디자인 시스템 `Components / GlassDock` (A안 Liquid Glass).
+/// 플로팅 독. 디자인 시스템 `Components / GlassDock` (A안 — 이름은 역사적).
 ///
-/// iOS 26 탭바 문법 — 화면 하단에 **떠 있는 캡슐**이고, 콘텐츠는 그 뒤로
-/// 스크롤되어 blur에 비친다(`Scaffold.extendBody: true` 전제).
+/// 화면 하단에 **떠 있는 캡슐**이고 콘텐츠는 그 뒤로 스크롤된다
+/// (`Scaffold.extendBody: true` 전제). A안 2차(2026-08-14, 솔리드)부터는
+/// blur 없이 **바닥보다 확실히 밝은 불투명 표면 + 미세 그림자**로 떠 있는
+/// 느낌만 낸다.
 ///
 /// 네비게이션 로직은 갖지 않는다. [currentIndex]/[onSelected]만 받아
 /// `StatefulNavigationShell` 등 호출자가 배선한다.
@@ -54,29 +56,41 @@ class GlassDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 전역 다크 고정 — 바닥(월페이퍼)이 항상 어두우니 전경은 흰 계열 하나다.
+    // 전역 다크 고정 — 바닥이 항상 어두우니 전경은 흰 계열 하나다.
     const selectedColor = AppTheme.glassTextPrimary;
     const unselectedColor = AppTheme.glassTextSecondary;
 
-    return GlassCard(
-      radius: 100,
-      overlay: AppTheme.glassOverlayStrong,
-      // 독만 진짜 blur를 쓴다 — extendBody라 콘텐츠가 뒤로 지나가는
-      // 유일한 표면이고, 화면에 하나뿐이라 비용도 카드 한 장 값이다.
-      blur: true,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < items.length; i++)
-            _DockButton(
-              item: items[i],
-              selected: i == currentIndex,
-              selectedColor: selectedColor,
-              unselectedColor: unselectedColor,
-              onTap: () => onSelected(i),
-            ),
+    return DecoratedBox(
+      // 그림자는 카드 밖에 둔다 — GlassCard가 ClipRRect로 자르므로 안에
+      // 넣으면 잘려 나간다. 콘텐츠가 뒤로 지나가는 유일한 표면이라
+      // 그림자 하나로 "떠 있음"을 말한다.
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
         ],
+      ),
+      child: GlassCard(
+        radius: 100,
+        overlay: AppTheme.glassOverlayStrong,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < items.length; i++)
+              _DockButton(
+                item: items[i],
+                selected: i == currentIndex,
+                selectedColor: selectedColor,
+                unselectedColor: unselectedColor,
+                onTap: () => onSelected(i),
+              ),
+          ],
+        ),
       ),
     );
   }

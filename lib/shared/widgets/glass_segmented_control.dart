@@ -21,10 +21,11 @@ class GlassSegment<T> {
   final Key? itemKey;
 }
 
-/// 유리 세그먼트. 디자인 시스템 `Components / GlassSegmentedControl` (A안).
+/// 세그먼트. 디자인 시스템 `Components / GlassSegmentedControl` (A안 — 이름은
+/// 역사적, 2차부터 솔리드).
 ///
-/// 홈 서브탭(`HomeSubTabsBar`)이 세운 문법의 공용판 — 유리 트랙(캡슐) 안에서
-/// **선택 항목만 불투명 흰 알약**([AppTheme.glassActiveTile])으로 뜬다.
+/// 홈 서브탭(`HomeSubTabsBar`)이 세운 문법의 공용판 — 솔리드 트랙(캡슐)
+/// 안에서 **선택 항목만 밝은 알약**([AppTheme.glassActiveTile])으로 뜬다.
 /// 밑줄·체크 대신 면으로 말한다(Apple Home 문법).
 ///
 /// 선택 로직은 갖지 않는다. [selected]/[onChanged]만 받아 호출자가 배선한다.

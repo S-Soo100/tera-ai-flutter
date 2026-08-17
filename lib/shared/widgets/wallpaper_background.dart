@@ -1,20 +1,19 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 
-/// Liquid Glass 월페이퍼. 디자인 시스템 `Components / WallpaperBackground`.
+/// 화면 바닥. 디자인 시스템 `Components / WallpaperBackground`.
 ///
-/// A안(Apple Home) 문법의 **바닥 레이어**다 — 유리([GlassCard] 등)는 반투명이라
-/// 받쳐줄 콘텐츠가 없으면 그냥 회색 판이 된다. 은은한 빛 번짐(glow)을 함께
-/// 그려 유리가 "비쳐 보일" 거리를 만든다.
+/// A안 2차(2026-08-14, 솔리드)부터는 **정적 단색**이다 — 그라데이션·glow는
+/// 유리가 "비쳐 보일" 거리를 만들려고 있었고, 유리를 걷어낸 지금은 차분한
+/// 단색 바닥이 표면([GlassCard] 등)을 가장 또렷하게 받쳐 준다.
+/// 이름의 "Wallpaper"는 1차(Liquid Glass) 때의 역사적 명칭이다.
 ///
 /// 쓰는 법: 화면 `Stack` 맨 아래에 `Positioned.fill`로 깐다.
 /// ```dart
 /// Stack(children: [
 ///   const Positioned.fill(child: WallpaperBackground()),
-///   ...유리 콘텐츠,
+///   ...콘텐츠,
 /// ])
 /// ```
 class WallpaperBackground extends StatelessWidget {
@@ -24,61 +23,9 @@ class WallpaperBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.glassWallpaperTop,
-            AppTheme.glassWallpaperMid,
-            AppTheme.glassWallpaperBottom,
-          ],
-        ),
-      ),
-      child: CustomPaint(
-        painter: _GlowPainter(),
-        child: child,
-      ),
+    return ColoredBox(
+      color: AppTheme.glassWallpaperTop,
+      child: child,
     );
   }
-}
-
-/// 은은한 빛 번짐 — 유리가 받쳐 보일 바닥 콘텐츠.
-class _GlowPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final glow = Paint()
-      ..shader = ui.Gradient.radial(
-        Offset(size.width * 0.8, size.height * 0.25),
-        size.width * 0.7,
-        [
-          AppTheme.deviceFanTint.withValues(alpha: 0.18),
-          AppTheme.deviceFanTint.withValues(alpha: 0),
-        ],
-      );
-    canvas.drawCircle(
-      Offset(size.width * 0.8, size.height * 0.25),
-      size.width * 0.7,
-      glow,
-    );
-
-    final glow2 = Paint()
-      ..shader = ui.Gradient.radial(
-        Offset(size.width * 0.1, size.height * 0.7),
-        size.width * 0.6,
-        [
-          AppTheme.deviceMistTint.withValues(alpha: 0.14),
-          AppTheme.deviceMistTint.withValues(alpha: 0),
-        ],
-      );
-    canvas.drawCircle(
-      Offset(size.width * 0.1, size.height * 0.7),
-      size.width * 0.6,
-      glow2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

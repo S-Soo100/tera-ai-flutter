@@ -1,16 +1,14 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 
-/// 유리 카드. 디자인 시스템 `Components / GlassCard` (A안 Liquid Glass).
+/// 솔리드 카드. 디자인 시스템 `Components / GlassCard`.
 ///
-/// 흰 오버레이 + 얇은 테두리(+선택적 blur). **[WallpaperBackground] 같은
-/// 어두운 바닥 위에 올린다** — 밝은 면 위에서는 흰 오버레이가 묻혀 유리로
-/// 안 읽힌다.
+/// 이름의 "Glass"는 1차(Liquid Glass, 2026-08-13) 때의 역사적 명칭이다.
+/// A안 2차(2026-08-14)부터는 **불투명 솔리드 표면** + 아주 얇은 저대비 테두리다.
+/// blur·반투명 오버레이는 없다 — [WallpaperBackground](정적 단색) 위에 올린다.
 ///
-/// 색은 전부 `AppTheme` 글래스 토큰이다. 화면별로 색을 새로 만들지 말 것.
+/// 색은 전부 `AppTheme` 토큰이다. 화면별로 색을 새로 만들지 말 것.
 class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,
@@ -20,15 +18,16 @@ class GlassCard extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     this.onTap,
     this.onLongPress,
+    @Deprecated('솔리드 전환(2026-08-14)으로 blur 없음 — 넘겨도 무시된다')
     this.blur = false,
   });
 
   final Widget child;
 
-  /// 모서리. 기본은 타일 radius(26). 배지처럼 작은 조각은 8~18을 준다.
+  /// 모서리. 기본은 타일 radius(20). 배지처럼 작은 조각은 8~18을 준다.
   final double radius;
 
-  /// 유리 농도. 기본 ~14%([AppTheme.glassOverlay]),
+  /// 표면색. 기본 [AppTheme.glassOverlay],
   /// 독·시트처럼 또렷해야 하는 곳은 [AppTheme.glassOverlayStrong].
   final Color overlay;
 
@@ -38,10 +37,8 @@ class GlassCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
-  /// BackdropFilter blur를 깔지. **기본 false** — 배경이 정적 그라데이션이라
-  /// 반투명 플랫 필과 시각 차이가 미미한데, BackdropFilter는 카드 수만큼
-  /// saveLayer를 쌓아 스크롤 프레임을 잡아먹는다. 뒤로 실제 콘텐츠가
-  /// 지나가는 표면(독)만 true를 준다.
+  /// 호환용 no-op. 1차에서 BackdropFilter를 켜던 스위치였고 2차에서 경로가
+  /// 제거됐다. 호출부(독)가 아직 넘기므로 파라미터만 남겼다.
   final bool blur;
 
   @override
@@ -58,7 +55,7 @@ class GlassCard extends StatelessWidget {
           border: Border.all(color: AppTheme.glassBorder, width: 0.5),
         ),
         // 안에 InkWell을 두는 카드(독·서브탭·세그먼트)의 리플이 앉을 면.
-        // 이게 없으면 잉크가 카드 뒤 불투명 월페이퍼에 그려져 안 보인다.
+        // 이게 없으면 잉크가 카드 뒤 불투명 바닥에 그려져 안 보인다.
         child: Material(type: MaterialType.transparency, child: child),
       );
     } else {
@@ -81,17 +78,6 @@ class GlassCard extends StatelessWidget {
       );
     }
 
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: blur
-          ? BackdropFilter(
-              filter: ui.ImageFilter.blur(
-                sigmaX: AppTheme.glassBlurSigma,
-                sigmaY: AppTheme.glassBlurSigma,
-              ),
-              child: body,
-            )
-          : body,
-    );
+    return ClipRRect(borderRadius: borderRadius, child: body);
   }
 }
