@@ -203,12 +203,14 @@ class AppTheme {
   static const glassLiveRed = Color(0xFFFF453A);
 
   // ── 표면 위 타이포 (Pretendard 명시 — 공용 위젯은 테마 밖에서도 쓰인다) ──
+  /// 탭 헤더 제목. 28 Bold → 22 SemiBold(2026-08-14, 사용자: "제목이 너무
+  /// 크다"). 가운데 정렬 뒤로 대형 타이틀 문법이 과해졌다.
   static const glassHeaderTitle = TextStyle(
     fontFamily: _pretendard,
-    fontSize: 28,
-    fontWeight: FontWeight.w700,
+    fontSize: 22,
+    fontWeight: FontWeight.w600,
     color: glassTextPrimary,
-    height: 1.15,
+    height: 1.2,
   );
   static const glassTileTitle = TextStyle(
     fontFamily: _pretendard,

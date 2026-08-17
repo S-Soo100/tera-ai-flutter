@@ -39,8 +39,9 @@ class GlassTabHeader extends StatelessWidget {
 
   final List<Widget> actions;
 
-  /// 제목 줄 슬롯 — [AppTheme.glassHeaderTitle] 실높이(28 × 1.15).
-  static const double _titleSlot = 28 * 1.15;
+  /// 제목 줄 슬롯 — [AppTheme.glassHeaderTitle] 실높이(fontSize × height).
+  /// 토큰에서 파생시켜 글자 크기를 바꿔도 슬롯이 따라온다.
+  static const double _titleSlot = 22 * 1.2;
 
   /// 캡슐 줄 슬롯 — 캡슐(글자 13 + 세로 패딩 5×2 + 테두리)이 앉는 높이.
   /// **캡슐이 없어도 이 줄을 예약한다** — 탭마다 캡슐 유무가 달라서, 내용에
@@ -130,15 +131,20 @@ class GlassTabHeader extends StatelessWidget {
               ),
               // 액션은 우측 상단(제목 줄 높이)에 얹는다.
               if (actions.isNotEmpty)
+                // 높이는 제목 슬롯에 맞추되 **세로 중앙**으로 — 슬롯(26pt)보다
+                // 큰 IconButton(48pt)을 top 기준으로 두면 아바타(28pt)만 위로 떠 보인다.
                 Positioned(
                   right: 0,
-                  top: 0,
-                  height: _titleSlot,
+                  top: (_titleSlot - _actionSlotWidth) / 2,
+                  height: _actionSlotWidth,
                   child: IconTheme.merge(
                     data:
                         const IconThemeData(color: AppTheme.glassTextPrimary),
-                    child:
-                        Row(mainAxisSize: MainAxisSize.min, children: actions),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: actions,
+                    ),
                   ),
                 ),
             ],

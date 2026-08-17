@@ -89,7 +89,7 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
           color: VariantATokens.wallpaperTop.withValues(alpha: 0.85),
         ),
         child: FlexibleSpaceBar(
-          expandedTitleScale: 1.8,
+          expandedTitleScale: 1.3, // 17×1.3≈22 — 실앱 glassHeaderTitle과 통일
           // 가운데 정렬 — start: 52 비대칭 패딩은 좌측 뒤로 캡슐 자리를 비운
           // 것이었는데 펼침 상태에서 제목이 왼쪽으로 치우쳐 보였다(2026-08-14).
           centerTitle: true,
