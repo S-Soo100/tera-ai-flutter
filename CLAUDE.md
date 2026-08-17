@@ -54,7 +54,7 @@ lib/
 ├── app.dart                     # MaterialApp.router, 테마, GoRouter
 ├── core/
 │   ├── constants/               # AppConstants (색상, 문자열, D-day 날짜)
-│   ├── theme/                   # AppTheme (전역 다크 고정, Material 3)
+│   ├── theme/                   # AppTheme + GlassPalette(다크/라이트 2벌) + themeModeProvider
 │   ├── router/                  # GoRouter 설정, 리다이렉트
 │   └── error/                   # AppException 계층
 ├── features/
@@ -130,7 +130,7 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 - Supabase 테이블/RLS/접속 정보는 `docs/supabase-setup.md` 참조.
 
 ### UI/테마
-- **현행은 A안 2차 — 솔리드 다크 시스템(2026-08-14, 리퀴드 글래스 제거)** — 단색 딥 네이비 바닥 + 불투명 솔리드 표면 + 채도 낮춘 기기 틴트 + 홈 풀블리드 4:3 카메라. 공용 위젯 이름(`GlassCard`·`GlassDock` 등)과 `AppTheme.glass*` 토큰명은 **역사적 명칭으로 유지**되며 값만 솔리드다(blur 경로 제거, `blur` 파라미터는 no-op). 상세는 `docs/design-direction.md` §0. **Figma 팔레트 SOT 갱신은 후속 과제(사용자 작업 필요)** — Figma `Asset`은 아직 구 팔레트다
+- **현행은 A안 2차 — 솔리드 시스템 다크/라이트 2벌(2026-08-14, 리퀴드 글래스 제거 + 같은 날 오후 전역 다크 고정 철회)** — 단색 바닥 + 불투명 솔리드 표면 + 기기 틴트 + 홈 풀블리드 4:3 카메라. 문법은 같고 값만 반전한다. **색 토큰은 `lib/core/theme/glass_palette.dart`의 `GlassPalette`(ThemeExtension) 인스턴스 필드 — 소비처는 `context.glass.overlay`처럼 꺼낸다. `AppTheme.glassX` 정적 색 상수는 삭제됐으니 되살리지 말 것**(두 벌이 남으면 라이트에서 다크 값이 샌다). 모드는 시스템/라이트/다크 3단(`themeModeProvider`, Hive `app_settings/theme_mode`, 프로필 "화면 모드"). 공용 위젯 이름(`GlassCard`·`GlassDock` 등)은 **역사적 명칭으로 유지**되며 값만 솔리드다(blur 경로 제거, `blur` 파라미터는 no-op). 상세는 `docs/design-direction.md` §0. **Figma 팔레트 SOT 갱신은 후속 과제(사용자 작업 필요)** — Figma `Asset`은 아직 구 팔레트다
 - **시각 디자인 방향**: `docs/design-direction.md` — 위계·타이포·색 역할·시그니처(밤 띠). **팔레트·컴포넌트 규격 SOT는 Figma**(`docs/figma-final-design-transcript.md` §4)
 - **디자인 시스템(구)**: `docs/design-system.md` — 토큰·공유 위젯 정의
 - **하드코딩 색상 금지**. `AppTheme` 또는 `Theme.of(context)` 사용.

@@ -5,7 +5,9 @@
 
 ---
 
-## 0. 현행 — 솔리드 다크 (A안 2차, 2026-08-14 확정)
+## 0. 현행 — 솔리드 다크/라이트 2벌 (A안 2차, 2026-08-14 확정)
+
+**다크/라이트 2벌 — 솔리드 문법 동일, 값만 반전. 전역 다크 고정 철회(2026-08-14 오후).** 같은 날 오전 리뷰 수정(`6848e6e`)에서 `AppTheme.light`를 지우고 `themeMode: dark`로 못 박았는데, 사용자가 다크/라이트 구분을 요구해 되돌리며 제대로 만들었다. 색 토큰은 전부 `lib/core/theme/glass_palette.dart`의 **`GlassPalette`(ThemeExtension) 인스턴스 필드**로 옮겼고(`GlassPalette.dark` = 기존 값 그대로, `GlassPalette.light` = 웜 그레이 바닥 `#F4F5F9`·흰 표면·검정 8% 테두리·**딥 네이비 활성 타일 `#1E2640`**·텍스트 `#14181F`·기기 틴트는 밝은 바닥 대비로 채도 조정), 소비처는 `context.glass.overlay`처럼 현재 테마에서 꺼낸다. **`AppTheme.glassX` 정적 색 상수는 삭제**했다 — 두 벌이 남으면 라이트에서 다크 값이 샌다. 모드는 `themeModeProvider`(Hive `app_settings/theme_mode`, 기본 **시스템**)가 고르고 프로필 화면의 "화면 모드" 세그먼트(시스템/라이트/다크)로 바꾼다. 차트 토큰(밤 띠·격자·미도래 밴드·마커)도 밝기별 값을 팔레트가 든다. 라이브 영역(`liveSurface`)만 두 모드 공통으로 어둡다(영상 뷰포트). 랩 A·B(`/design-test`)도 토큰을 2벌 인스턴스로 바꾸고 셸 상단 ☀️/🌙 토글을 달았다(랩 로컬 state, 기본 시스템 밝기).
 
 **2026-08-14 결정: A안 개선 · B안 유지 · C안 폐기.** A안 1차(Liquid Glass)의 유리(반투명 오버레이 + blur + 그라데이션 월페이퍼 + glow)를 **전부 걷어내고 솔리드하고 차분한 면**으로 바꿨다. 이유: ① **차분함** — 유리·글로우가 야간 관측소 성격(§2)보다 장식으로 읽혔다 ② **가독** — 반투명 표면 위 텍스트 대비가 배경 위치마다 달라졌다 ③ **성능** — 독의 BackdropFilter saveLayer. 바닥은 정적 단색(`#141A2E`), 표면은 불투명 네이비 그레이(`#1E2640` / strong `#242D4A` / faint `#1A2138`), 테두리는 흰 8%, radius 26→20, 기기 틴트 4종은 채도·명도를 낮췄다. **토큰·위젯 이름의 `glass`는 역사적 명칭**이다 — 33개 소비처가 참조하므로 이름은 두고 값·내부만 바꿨다(`GlassCard.blur`는 `@Deprecated` no-op). 아래 1차 서술 중 "유리·blur·그라데이션·glow"는 더 이상 유효하지 않고, 위계 문법(활성=밝은 불투명면, 타이포 위계, 플로팅 독, 밤 띠)은 그대로다. 홈 상단 카메라 영역은 같은 날 풀블리드 4:3으로 넓혔다.
 
@@ -18,7 +20,7 @@
 - **활성은 유리가 아니라 불투명 흰색**(`glassActiveTile`) — 켜짐/선택을 면으로 말한다
 - **기기 틴트 4종**(히터 주황·분무 파랑·LED 노랑·팬 민트)은 활성 타일 아이콘·센서 칩에만
 - **타이포 위계는 유리 전용 스타일**(`glassHeaderTitle` 28 ~ `glassTileStatus` 13, Pretendard)
-- **라이트/다크 분기가 없다** — 월페이퍼가 항상 어두워 단일 룩. 앱 전역이 다크 고정이다(`app.dart`의 `darkTheme`+`themeMode: dark`, 2026-08-14 — 화면별 `Theme(data:)` 래핑은 걷어냈고 `AppTheme.light`도 삭제됐다). 4탭 루트 프레임은 `GlassTabShell` 한 곳이 맡는다
+- ~~**라이트/다크 분기가 없다**~~ → **2026-08-14 오후 철회.** 다크/라이트 2벌(`GlassPalette`), 모드는 시스템/수동 3단(위 §0 머리). 화면별 `Theme(data:)` 래핑은 여전히 하지 않는다 — 4탭 루트 프레임은 `GlassTabShell` 한 곳이 맡고 바닥색은 `context.glass.wallpaper`
 - 탭바는 **플로팅 유리 독**(`GlassDock`, `extendBody: true`) — 스크롤 뷰가 `MediaQuery.padding.bottom`을 소비해야 마지막 항목이 안 가려진다
 
 **Figma 팔레트 SOT 갱신은 후속 과제다** — 아래 §6 등 구 팔레트 서술과 Figma `Asset` 섹션(`docs/figma-final-design-transcript.md` §4)은 아직 구 시스템 기준이며, Figma 반영은 사용자 작업이 필요하다.
@@ -64,7 +66,7 @@
 - 주행성 반려동물 앱에 옮기면 **의미를 잃는다** — 이 앱에서만 성립하는 요소다
 - 메인컬러 `#192553`이 마침 한밤중 하늘색이라는 점을 활용한다
 
-**제약**: 데이터 선을 절대 가리지 않는다. 라이트는 `brandNavy` 6%, 다크는 흰색 5% — 다크 배경에 남색을 더 깔면 아무것도 안 보인다. 구현: `AppTheme.nightBand(brightness)`, `home/domain/night_band.dart`.
+**제약**: 데이터 선을 절대 가리지 않는다. 라이트는 `brandNavy` 10%, 다크는 `brandNavyDark` 18% — 다크 배경에 원본 남색을 더 깔면 아무것도 안 보인다. 구현: `GlassPalette.nightBand`(`context.glass.nightBand`), `shared/domain/night_band.dart`.
 
 띠 옆에 범례(`밤 10시–6시`)를 한 번 붙인다. 색만 깔면 *"왜 저기만 어둡지?"*가 된다.
 
@@ -153,4 +155,4 @@ flutter test test/features/home/control_tab_golden_test.dart --update-goldens --
 
 - Pretendard를 직접 로드하고 ko 번역을 초기화한다 — 안 하면 글자가 네모로, 문구가 i18n 키로 찍혀 실제와 전혀 달라진다
 - **Material Icons는 안 실린다.** 아이콘이 네모로 나오는 것은 렌더 한계이며 실제 앱에서는 정상이다
-- 홈 골든은 **단일 케이스**(`control_dark.png`)다 — 전역 다크 고정으로 라이트 케이스가 바이트 동일 PNG를 만들어 삭제했다(`7c416d2`). 통계 골든(`test/features/stats/stats_chart_golden_test.dart`)처럼 한 파일에 케이스가 여럿이면 **한 번에 돌릴 때 두 번째가 백지**로 나온다(easy_localization 이중 초기화) — `--plain-name`으로 하나씩 갱신할 것
+- 홈 골든은 **다크/라이트 두 케이스**(`control_dark.png`·`control_light.png`, 2026-08-14 오후 라이트 재도입)다. 한 파일에 케이스가 여럿이면 **한 번에 돌릴 때 두 번째가 백지**로 나온다(easy_localization 이중 초기화) — `--name 다크` / `--name 라이트`로 하나씩 갱신할 것(`--plain-name`은 tag skip 때문에 매치되지 않는다)
