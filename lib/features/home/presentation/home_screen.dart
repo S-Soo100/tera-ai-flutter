@@ -9,7 +9,7 @@ import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
 import '../domain/device_mode.dart';
 import 'home_set_providers.dart';
-import 'widgets/env_mini_chart.dart';
+import 'widgets/hourly_env_strip.dart';
 import 'widgets/home_header_bar.dart';
 import 'widgets/home_sub_tabs_bar.dart';
 import 'widgets/live_env_card.dart';
@@ -20,6 +20,7 @@ import 'widgets/timeline_clip_feed.dart';
 import 'widgets/timeline_date_scroller.dart';
 import 'widgets/timeline_summary_chips.dart';
 import 'widgets/top_fixed_area.dart';
+import 'widgets/weekly_env_rows_card.dart';
 
 /// PRD §2 홈 탭 와이어프레임 조립 + A안(Liquid Glass) 표면.
 ///
@@ -100,7 +101,10 @@ class _ControlContainer extends StatelessWidget {
         // 먼저 만나지 않는다.
         DeviceOfflineNotice(),
         LiveEnvCard(),
-        EnvMiniChart(),
+        // 애플 날씨 문법(2026-08-17): 시간대 스트립 + 이번 주 7행. 통계 탭의
+        // 연속 곡선과 일부러 다르다 — 홈은 훑는 자리다.
+        HourlyEnvStrip(),
+        WeeklyEnvRowsCard(),
         QuickControlGrid(),
         SizedBox(height: AppStyles.spacing16),
         _RoutineSettingsButton(),

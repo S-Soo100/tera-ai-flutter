@@ -202,6 +202,27 @@ class AppTheme {
   /// LIVE 배지 빨강 (iOS 시스템 레드 계열).
   static const glassLiveRed = Color(0xFFFF453A);
 
+  // ── 홈 온습도 "애플 날씨 행" 문법 (2026-08-17) ──
+  // 홈은 통계 탭(연속 곡선 EnvChart)과 다르게 애플 날씨 10일 예보의 **온도
+  // 범위 바**로 읽는다. 채움 그라데이션은 애플 온도 색 그대로(노랑→주황).
+  // `docs/design-direction.md` "홈 온습도 = 행 문법 / 통계 = 연속 곡선".
+
+  /// 범위 바 채움 왼쪽(최저 쪽). iOS 시스템 옐로.
+  static const weatherBarWarmStart = Color(0xFFFFD60A);
+
+  /// 범위 바 채움 오른쪽(최고 쪽). iOS 시스템 오렌지.
+  static const weatherBarWarmEnd = Color(0xFFFF9F0A);
+
+  /// 범위 바 트랙(이번 주 전체 폭). 어두운 회색 — 채움만 도드라져야 한다.
+  static const weatherBarTrack = Color(0x2EFFFFFF); // 흰 18%
+
+  /// 오늘 행의 현재 온도 점. 흰 원 + 어두운 테두리(애플 시그니처).
+  static const weatherDot = Colors.white;
+  static const weatherDotBorder = Color(0xFF1E2640); // = glassOverlay
+
+  /// 행 사이 구분선. 흰 6% — 테두리([glassBorder] 8%)보다 한 단 낮다.
+  static const weatherRowDivider = Color(0x0FFFFFFF);
+
   // ── 표면 위 타이포 (Pretendard 명시 — 공용 위젯은 테마 밖에서도 쓰인다) ──
   /// 탭 헤더 제목. 28 Bold → 22 SemiBold(2026-08-14, 사용자: "제목이 너무
   /// 크다"). 가운데 정렬 뒤로 대형 타이틀 문법이 과해졌다.

@@ -1,7 +1,6 @@
 @Tags(['golden'])
 library;
 
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +10,11 @@ import 'package:vivnanaut/core/theme/app_theme.dart';
 import 'package:vivnanaut/shared/domain/env_extremes.dart';
 import 'package:vivnanaut/shared/widgets/wallpaper_background.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/env_mini_chart.dart';
+import 'package:vivnanaut/features/home/domain/weekly_env_row.dart';
+import 'package:vivnanaut/features/home/presentation/widgets/hourly_env_strip.dart';
+import 'package:vivnanaut/features/home/presentation/widgets/weekly_env_rows_card.dart';
+import 'package:vivnanaut/features/stats/domain/daily_rollup.dart';
+import 'package:vivnanaut/shared/domain/actuator_marker.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/live_env_card.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/quick_control_grid.dart';
 import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
@@ -60,12 +63,44 @@ TelemetryReading _reading() => TelemetryReading(
 List<TelemetryBucket> _buckets() {
   final from = DateTime(2026, 8, 7, 19);
   const temps = [
-    25.8, 25.4, 24.9, 24.3, 23.8, 23.4, 23.1, 22.9, 23.0, 23.3,
-    23.9, 24.6, 25.3, 25.9, 26.3, 26.5, 26.2, 25.7,
+    25.8,
+    25.4,
+    24.9,
+    24.3,
+    23.8,
+    23.4,
+    23.1,
+    22.9,
+    23.0,
+    23.3,
+    23.9,
+    24.6,
+    25.3,
+    25.9,
+    26.3,
+    26.5,
+    26.2,
+    25.7,
   ];
   const humids = [
-    62.0, 64.0, 67.0, 71.0, 76.0, 80.0, 82.0, 81.0, 78.0, 74.0,
-    70.0, 67.0, 64.0, 62.0, 60.0, 59.0, 61.0, 63.0,
+    62.0,
+    64.0,
+    67.0,
+    71.0,
+    76.0,
+    80.0,
+    82.0,
+    81.0,
+    78.0,
+    74.0,
+    70.0,
+    67.0,
+    64.0,
+    62.0,
+    60.0,
+    59.0,
+    61.0,
+    63.0,
   ];
   return [
     for (var i = 0; i < temps.length; i++)
@@ -82,6 +117,52 @@ List<TelemetryBucket> _buckets() {
   ];
 }
 
+/// 8/2~8/8(오늘) 일간 — "이번 주" 7행용. 손으로 적은 결정적 값.
+List<TelemetryBucket> _weekBuckets() {
+  const rows = [
+    // day, tMin, tMax, hAvg
+    (2, 23.1, 27.4, 66.0),
+    (3, 23.6, 28.2, 63.0),
+    (4, 22.8, 26.9, 69.0),
+    (5, 24.0, 28.8, 60.0),
+    (6, 23.4, 27.7, 64.0),
+    (7, 22.9, 27.1, 67.0),
+    (8, 23.0, 26.5, 71.0),
+  ];
+  return [
+    for (final (d, lo, hi, h) in rows)
+      TelemetryBucket(
+        bucket: DateTime(2026, 8, d, 12),
+        sampleCount: 6,
+        tAvg: (lo + hi) / 2,
+        tMin: lo,
+        tMax: hi,
+        hAvg: h,
+        hMin: h - 3,
+        hMax: h + 3,
+      ),
+  ];
+}
+
+/// 이번 주 분무 이력 — 오늘 2회, 어제 1회, 8/5 3회.
+List<ActuatorMarker> _weekMarkers() => [
+      ActuatorMarker(kind: MarkerKind.mist, at: DateTime(2026, 8, 8, 9)),
+      ActuatorMarker(kind: MarkerKind.mist, at: DateTime(2026, 8, 8, 12)),
+      ActuatorMarker(kind: MarkerKind.mist, at: DateTime(2026, 8, 7, 20)),
+      ActuatorMarker(kind: MarkerKind.mist, at: DateTime(2026, 8, 5, 9)),
+      ActuatorMarker(kind: MarkerKind.mist, at: DateTime(2026, 8, 5, 15)),
+      ActuatorMarker(kind: MarkerKind.mist, at: DateTime(2026, 8, 5, 21)),
+    ];
+
+/// 24h 창의 기기 동작 — 시간대 스트립 아이콘용.
+List<ActuatorMarker> _dayMarkers() => [
+      ActuatorMarker(kind: MarkerKind.heater, at: DateTime(2026, 8, 7, 21, 40)),
+      ActuatorMarker(kind: MarkerKind.mist, at: DateTime(2026, 8, 7, 23, 50)),
+      ActuatorMarker(kind: MarkerKind.led, at: DateTime(2026, 8, 8, 7, 5)),
+      ActuatorMarker(kind: MarkerKind.mist, at: DateTime(2026, 8, 8, 12)),
+      ActuatorMarker(kind: MarkerKind.fan, at: DateTime(2026, 8, 8, 12, 30)),
+    ];
+
 Future<void> _loadPretendard() async {
   for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
     final loader = FontLoader('Pretendard')
@@ -97,18 +178,28 @@ Future<void> _shoot(WidgetTester tester, {required String name}) async {
   tester.view.physicalSize = const Size(393 * dpr, 820 * dpr);
   tester.view.devicePixelRatio = dpr;
 
+  final homeWeekly = ChartWindow.homeWeekly(DateTime(2026, 8, 8, 13));
   final c = ProviderContainer(overrides: [
     currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
     telemetryStreamProvider(_deviceId)
         .overrideWith((ref) => Stream.value(_reading())),
     moduleOnlineProvider(_deviceId).overrideWithValue(true),
-    chartExtremesProvider.overrideWith((ref) async => EnvExtremes.from(_buckets())),
+    chartExtremesProvider
+        .overrideWith((ref) async => EnvExtremes.from(_buckets())),
     // 창을 고정하지 않으면 실제 `now` 기준이라 고정 시각 버킷이 구간 밖으로
     // 밀려 빈 차트가 찍힌다.
     chartWindowProvider
         .overrideWith((ref) => ChartWindow.of(DateTime(2026, 8, 8, 13))),
     chartBucketsProvider.overrideWith((ref) async => _buckets()),
-    actuatorMarkersProvider.overrideWith((ref) async => const []),
+    actuatorMarkersProvider.overrideWith((ref) async => _dayMarkers()),
+    homeWeeklyWindowProvider.overrideWith((ref) => homeWeekly),
+    homeWeeklyRowsProvider.overrideWith(
+      (ref) async => WeeklyEnvRows.from(
+        days: rollupByDay(_weekBuckets(), window: homeWeekly),
+        window: homeWeekly,
+        markers: _weekMarkers(),
+      ),
+    ),
   ]);
   addTearDown(c.dispose);
 
@@ -144,7 +235,8 @@ Future<void> _shoot(WidgetTester tester, {required String name}) async {
                           children: [
                             SizedBox(height: 12),
                             LiveEnvCard(),
-                            EnvMiniChart(),
+                            HourlyEnvStrip(),
+                            WeeklyEnvRowsCard(),
                             SizedBox(height: 16),
                             QuickControlGrid(),
                             SizedBox(height: 24),

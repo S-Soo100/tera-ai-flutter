@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:vivnanaut/shared/domain/env_extremes.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/env_mini_chart.dart';
+import 'package:vivnanaut/features/home/domain/weekly_env_row.dart';
+import 'package:vivnanaut/features/home/presentation/widgets/hourly_env_strip.dart';
+import 'package:vivnanaut/features/home/presentation/widgets/temp_range_bar.dart';
+import 'package:vivnanaut/features/home/presentation/widgets/weekly_env_rows_card.dart';
+import 'package:vivnanaut/features/stats/domain/daily_rollup.dart';
 import 'package:vivnanaut/shared/domain/chart_window.dart';
-import 'package:vivnanaut/shared/widgets/env_chart.dart';
 import 'package:vivnanaut/shared/widgets/env_summary_bar.dart';
 import 'package:vivnanaut/shared/widgets/status_badge.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/live_env_card.dart';
@@ -49,6 +53,23 @@ List<TelemetryBucket> _buckets() {
   ];
 }
 
+/// 8/2~8/8(오늘) 각 날 정오 버킷 — "이번 주" 7행용. 오늘은 8/8 13:00 기준.
+List<TelemetryBucket> _weekBuckets() => [
+      for (var d = 2; d <= 8; d++)
+        TelemetryBucket(
+          bucket: DateTime(2026, 8, d, 12),
+          sampleCount: 1,
+          tAvg: 24.0 + (d % 3),
+          tMin: 22.0 + (d % 3),
+          tMax: 27.0 + (d % 3),
+          hAvg: 60.0 + d,
+          hMin: 55,
+          hMax: 70,
+        ),
+    ];
+
+final _homeWeekly = ChartWindow.homeWeekly(DateTime(2026, 8, 8, 13));
+
 /// 실제 기기 폭으로 제어 서브탭 전체를 세운다.
 /// **오버플로가 나면 flutter_test가 예외로 실패**시키므로, 이 테스트 자체가
 /// 레이아웃 안전망이다 (큰 리드아웃·가로형 타일이 좁은 화면에서 넘치는지).
@@ -72,46 +93,69 @@ Future<void> _pumpControlTab(WidgetTester tester, Size size) async {
         .overrideWith((ref) => ChartWindow.of(DateTime(2026, 8, 8, 13))),
     chartBucketsProvider.overrideWith((ref) async => _buckets()),
     actuatorMarkersProvider.overrideWith((ref) async => const []),
+    homeWeeklyWindowProvider.overrideWith((ref) => _homeWeekly),
+    homeWeeklyRowsProvider.overrideWith(
+      (ref) async => WeeklyEnvRows.from(
+        days: rollupByDay(_weekBuckets(), window: _homeWeekly),
+        window: _homeWeekly,
+        markers: const [],
+      ),
+    ),
   ]);
   addTearDown(c.dispose);
 
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: c,
-      child: const MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                LiveEnvCard(),
-                EnvMiniChart(),
-                QuickControlGrid(),
-              ],
-            ),
-          ),
-        ),
-      ),
+      child: MaterialApp.router(routerConfig: _buildRouter()),
     ),
   );
   await tester.pumpAndSettle();
 }
+
+/// 행 탭이 `/stats`로 가는지 보려고 라우터를 세운다 — 홈 그대로 두 경로.
+/// 테스트마다 새로 만든다 — 공유하면 앞 테스트가 /stats로 옮겨둔 채로 남는다.
+GoRouter _buildRouter() => GoRouter(
+      initialLocation: '/home',
+      routes: [
+        GoRoute(
+          path: '/home',
+          builder: (_, __) => const Scaffold(
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  LiveEnvCard(),
+                  HourlyEnvStrip(),
+                  WeeklyEnvRowsCard(),
+                  QuickControlGrid(),
+                ],
+              ),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/stats',
+          builder: (_, __) =>
+              const Scaffold(body: SizedBox(key: Key('stats_stub'))),
+        ),
+      ],
+    );
 
 void main() {
   group('제어 서브탭 레이아웃 — 오버플로 방지', () {
     testWidgets('iPhone 14 Pro 폭(393)에서 넘치지 않는다', (tester) async {
       await _pumpControlTab(tester, const Size(393, 852));
       expect(find.byKey(LiveEnvCard.cardKey), findsOneWidget);
-      expect(find.byKey(EnvMiniChart.chartKey), findsOneWidget);
+      expect(find.byKey(HourlyEnvStrip.stripKey), findsOneWidget);
+      expect(find.byKey(WeeklyEnvRowsCard.cardKey), findsOneWidget);
     });
 
-    testWidgets('좁은 기기(320)에서도 넘치지 않는다 — 큰 리드아웃이 위험 지점',
-        (tester) async {
+    testWidgets('좁은 기기(320)에서도 넘치지 않는다 — 큰 리드아웃이 위험 지점', (tester) async {
       await _pumpControlTab(tester, const Size(320, 640));
       expect(find.byKey(LiveEnvCard.cardKey), findsOneWidget);
     });
 
-    testWidgets('큰 글씨 접근성 설정(textScale 1.5)에서도 넘치지 않는다',
-        (tester) async {
+    testWidgets('큰 글씨 접근성 설정(textScale 1.5)에서도 넘치지 않는다', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 1.5;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       await _pumpControlTab(tester, const Size(393, 852));
@@ -169,30 +213,62 @@ void main() {
   });
 
   group('제어 그리드', () {
-    testWidgets('제어기가 있으면 2x2 그리드가 나온다 — 사육장 제어의 유일한 진입점이다',
-        (tester) async {
+    testWidgets('제어기가 있으면 2x2 그리드가 나온다 — 사육장 제어의 유일한 진입점이다', (tester) async {
       await _pumpControlTab(tester, const Size(393, 852));
       expect(find.byKey(QuickControlGrid.mistKey), findsOneWidget);
     });
   });
 
-  group('홈 차트', () {
-    // 밤 띠는 이제 공용 차트가 그린다. 위젯 트리에 별도 노드가 남지 않으므로
-    // **켜져 있는지**를 본다 — 통계 화면은 꺼야 하는 값이라 확인할 값어치가 있다.
-    testWidgets('밤 띠를 켠다 — 야행성 개체를 다루는 이 앱의 시그니처다',
-        (tester) async {
+  group('홈 온습도 — 애플 날씨 행 문법', () {
+    testWidgets('이번 주 7행이 그려지고 오늘이 맨 위다', (tester) async {
       await _pumpControlTab(tester, const Size(393, 852));
-      final chart = tester.widget<EnvChart>(find.byType(EnvChart));
-      expect(chart.nightBand, isTrue);
+      for (var i = 0; i < 7; i++) {
+        expect(find.byKey(WeeklyEnvRowsCard.rowKey(i)), findsOneWidget,
+            reason: 'row $i');
+      }
+      expect(find.byKey(WeeklyEnvRowsCard.rowKey(7)), findsNothing);
+      // 오늘 행(0)에만 현재 온도 점이 있다.
+      final dot = tester
+          .widget<TempRangeBar>(find.byKey(WeeklyEnvRowsCard.todayDotKey));
+      expect(dot.dot, isNotNull);
+      expect(dot.dot, inInclusiveRange(0, 1));
+      expect(
+        find.descendant(
+            of: find.byKey(WeeklyEnvRowsCard.rowKey(0)),
+            matching: find.byKey(WeeklyEnvRowsCard.todayDotKey)),
+        findsOneWidget,
+      );
+      expect(find.byKey(WeeklyEnvRowsCard.todayDotKey), findsOneWidget);
     });
 
-    // 홈 차트 전체가 `/stats` 진입점이다. 스크럽이 탭을 가져가면 그 동선이 막힌다.
-    testWidgets('스크러버를 켜지 않는다 — 탭은 통계 탭으로 가는 길이다',
-        (tester) async {
+    testWidgets('범위 바 채움은 그날 min~max, 트랙 안(0~1)이다', (tester) async {
       await _pumpControlTab(tester, const Size(393, 852));
-      final chart = tester.widget<EnvChart>(find.byType(EnvChart));
-      expect(chart.onScrubChanged, isNull);
-      expect(chart.scrubX, isNull);
+      final bars = tester.widgetList<TempRangeBar>(find.byType(TempRangeBar));
+      expect(bars, hasLength(7));
+      for (final b in bars) {
+        expect(b.start, isNotNull);
+        expect(b.end, isNotNull);
+        expect(b.start, inInclusiveRange(0, 1));
+        expect(b.end, inInclusiveRange(0, 1));
+        expect(b.start! <= b.end!, isTrue);
+      }
+    });
+
+    testWidgets('행을 누르면 /stats로 간다 — 예전 미니 차트의 동선 승계', (tester) async {
+      await _pumpControlTab(tester, const Size(393, 852));
+      await tester.ensureVisible(find.byKey(WeeklyEnvRowsCard.rowKey(3)));
+      await tester.tap(find.byKey(WeeklyEnvRowsCard.rowKey(3)));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('stats_stub')), findsOneWidget);
+    });
+
+    testWidgets('지난 24시간 스트립은 지금 + 8칸이고 왼쪽 첫 칸이 지금이다', (tester) async {
+      await _pumpControlTab(tester, const Size(393, 852));
+      expect(find.byKey(HourlyEnvStrip.slotKey(0)), findsOneWidget);
+      // 스크롤 밖 칸은 lazy라 안 그려질 수 있다 — 첫 칸 존재와 순서만 본다.
+      final first = tester.getTopLeft(find.byKey(HourlyEnvStrip.slotKey(0)));
+      final second = tester.getTopLeft(find.byKey(HourlyEnvStrip.slotKey(1)));
+      expect(first.dx, lessThan(second.dx));
     });
   });
 }

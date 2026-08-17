@@ -224,7 +224,7 @@ class _MainChartSection extends ConsumerWidget {
                 )
               // 유리 카드는 겉면만이다 — 차트 내부(격자·창·눈금·스크러버
               // 동작: 밤 띠 off·손 떼도 유지·✕ 해제)는 홈과 같은 [EnvChart]
-              // 그대로. 홈 EnvMiniChart와 같은 카드 문법이다.
+              // 그대로. 홈 온습도 카드(GlassCard)와 같은 카드 문법이다.
               : Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: AppStyles.spacing16),
