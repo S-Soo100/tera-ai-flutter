@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/network/connectivity_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
 import 'shared/widgets/offline_overlay.dart';
 
 class App extends ConsumerWidget {
@@ -16,13 +17,12 @@ class App extends ConsumerWidget {
     return MaterialApp.router(
       title: 'app_name'.tr(),
       debugShowCheckedModeBanner: false,
-      // A안 Liquid Glass는 **단일 룩**이다 — 모든 화면이 어두운 월페이퍼 위
-      // 유리 표면이라, 시스템 라이트/다크를 따르면 절반의 위젯이 안 읽힌다.
-      // 화면마다 Theme(data: AppTheme.dark)로 감싸던 것을 여기로 올렸다(2026-08-14).
-      // darkTheme + themeMode.dark 조합 하나면 충분하다 — `theme:`(라이트 슬롯)은
-      // themeMode가 dark로 고정된 이상 절대 선택되지 않아 두지 않는다.
+      // 다크/라이트 2벌(2026-08-14 오후 — 오전의 전역 다크 고정을 철회).
+      // 솔리드 문법은 같고 값만 반전한다(`GlassPalette`). 모드는 프로필의
+      // "화면 모드"(시스템/라이트/다크)로 고르고 Hive에 남는다.
+      theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.dark,
+      themeMode: ref.watch(themeModeProvider),
       routerConfig: router,
       builder: (context, child) {
         final mq = MediaQuery.of(context);

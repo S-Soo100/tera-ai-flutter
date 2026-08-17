@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'glass_palette.dart';
+
 class AppTheme {
   AppTheme._();
 
@@ -286,9 +288,11 @@ class AppTheme {
 
   static const _pretendard = 'Pretendard';
 
-  static TextTheme _buildTextTheme() {
-    const baseColor = Color(0xFFE0E0E0);
-    return const TextTheme(
+  static TextTheme _buildTextTheme({required Brightness brightness}) {
+    final baseColor = brightness == Brightness.dark
+        ? const Color(0xFFE0E0E0)
+        : const Color(0xFF1A1A1A);
+    return TextTheme(
       displayLarge: TextStyle(fontFamily: _pretendard, color: baseColor),
       displayMedium: TextStyle(fontFamily: _pretendard, color: baseColor),
       displaySmall: TextStyle(fontFamily: _pretendard, color: baseColor),
@@ -311,8 +315,110 @@ class AppTheme {
     );
   }
 
-  // `light` 테마는 전역 다크 고정(app.dart, 2026-08-14)과 함께 삭제했다.
-  // 라이트 스킴 원본값이 필요하면 git 이력에서 복원할 것.
+  /// 라이트 테마. 2026-08-14 오전 전역 다크 고정과 함께 지웠다가 같은 날 오후
+  /// 복원(사용자 결정: 다크/라이트 구분). Material 스킴은 Figma 라이트 팔레트
+  /// (`brandNavy`·`textTitle`·`lineColor`)를 그대로 쓰고, 솔리드 표면 토큰은
+  /// [GlassPalette.light]가 extension으로 든다.
+  ///
+  /// Scaffold 바닥은 팔레트의 [GlassPalette.wallpaper]와 같은 값이다 —
+  /// 셸(`GlassTabShell`/`GlassPageShell`) 밖 화면도 같은 바닥에 앉는다.
+  static ThemeData get light {
+    const palette = GlassPalette.light;
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: brandNavy,
+      brightness: Brightness.light,
+    ).copyWith(
+      primary: brandNavy,
+      onPrimary: Colors.white,
+      // secondary는 Figma에 정의가 없다 → seed(brandNavy) 파생값 그대로.
+      surface: palette.wallpaper,
+      onSurface: textTitle,
+      surfaceContainerLowest: Colors.white,
+      surfaceContainerLow: palette.overlayStrong,
+      surfaceContainer: palette.overlayFaint,
+      surfaceContainerHigh: const Color(0xFFE3E6EE),
+      surfaceContainerHighest: const Color(0xFFD9DCE5),
+      outline: lineColor,
+      outlineVariant: lineColor,
+      onSurfaceVariant: textMuted,
+    );
+
+    final textTheme = _buildTextTheme(brightness: Brightness.light);
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      extensions: const [palette],
+      disabledColor: neutralDisabled,
+      scaffoldBackgroundColor: palette.wallpaper,
+      textTheme: textTheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: palette.wallpaper,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        titleTextStyle: textTheme.titleLarge,
+        iconTheme: const IconThemeData(color: textTitle),
+      ),
+      cardTheme: CardThemeData(
+        color: palette.overlay,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: lineColor),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: surfaceMuted,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: palette.wallpaper,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: brandNavy.withValues(alpha: 0.15),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: brandNavy,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: neutralDisabled,
+          disabledForegroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: palette.overlay,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: lineColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: lineColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: brandNavy, width: 2),
+        ),
+      ),
+      tabBarTheme: const TabBarThemeData(
+        indicatorColor: brandNavy,
+        labelColor: brandNavy,
+        unselectedLabelColor: textMuted,
+      ),
+      expansionTileTheme: const ExpansionTileThemeData(
+        collapsedIconColor: textMuted,
+        iconColor: textTitle,
+      ),
+      dividerTheme: const DividerThemeData(color: lineColor),
+    );
+  }
+
+  /// 다크 테마. 솔리드 표면 토큰은 [GlassPalette.dark]가 extension으로 든다.
   static ThemeData get dark {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: brandNavy,
@@ -337,11 +443,12 @@ class AppTheme {
       onSurfaceVariant: const Color(0xFF9E9E9E),
     );
 
-    final textTheme = _buildTextTheme();
+    final textTheme = _buildTextTheme(brightness: Brightness.dark);
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      extensions: const [GlassPalette.dark],
       disabledColor: neutralDisabled,
       scaffoldBackgroundColor: _surfaceDark,
       textTheme: textTheme,
