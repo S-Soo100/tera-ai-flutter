@@ -321,6 +321,69 @@ final double kLabWeekTempMax =
 final double kLabWeekTempMin =
     kLabWeekEnv.map((d) => d.tempMin).reduce(math.min);
 
+/// [kLabWeekEnv]와 같은 순서(오래된 날 먼저)의 **그날 분무 횟수** — 애플 날씨
+/// 행 문법의 "강수확률" 자리. 손으로 적은 결정적 값. 마지막(오늘 8/13)은 3회로
+/// [kLabDevices] 분무 상태 텍스트('오늘 3회')와 맞춘다.
+const List<int> kLabWeekMist = [1, 0, 2, 3, 0, 1, 3];
+
+/// 홈 "지난 24시간" 스트립의 한 칸 — 시각 / 기기 동작 / 온도. [kLabNow] 기준
+/// 지금 + 3시간 간격 8칸(과거로). 온도는 [kLabEnvSeries]에서, 동작은
+/// [kLabTimeline]의 기기 이벤트에서 결정적으로 뽑는다.
+class LabHourSlot {
+  const LabHourSlot({
+    required this.at,
+    required this.isNow,
+    required this.temp,
+    required this.kinds,
+  });
+
+  final DateTime at;
+  final bool isNow;
+  final double temp;
+  final Set<LabDeviceKind> kinds;
+}
+
+final List<LabHourSlot> kLabHourSlots = List.unmodifiable(() {
+  const step = 3;
+  final times = <DateTime>[
+    kLabNow,
+    for (var i = 1; i <= 8; i++)
+      DateTime(
+          kLabNow.year, kLabNow.month, kLabNow.day, kLabNow.hour - step * i),
+  ];
+  DateTime mid(DateTime a, DateTime b) =>
+      a.add(Duration(microseconds: b.difference(a).inMicroseconds ~/ 2));
+  LabDeviceKind? kindOf(LabEventKind k) => switch (k) {
+        LabEventKind.heater => LabDeviceKind.heater,
+        LabEventKind.mist => LabDeviceKind.mist,
+        LabEventKind.led => LabDeviceKind.led,
+        LabEventKind.fan => LabDeviceKind.fan,
+        _ => null,
+      };
+  final out = <LabHourSlot>[];
+  for (var i = 0; i < times.length; i++) {
+    final t = times[i];
+    final upper = i == 0 ? kLabNow : mid(times[i - 1], t);
+    final lower = i == times.length - 1
+        ? t.subtract(const Duration(minutes: step * 30))
+        : mid(t, times[i + 1]);
+    final kinds = <LabDeviceKind>{
+      for (final e in kLabTimeline)
+        if (kindOf(e.kind) case final k?)
+          if (!e.at.isBefore(lower) && e.at.isBefore(upper) ||
+              (i == 0 && e.at.isAtSameMomentAs(upper)))
+            k,
+    };
+    // 가장 가까운 시계열 점의 온도.
+    var best = kLabEnvSeries.first;
+    for (final p in kLabEnvSeries) {
+      if (p.at.difference(t).abs() < best.at.difference(t).abs()) best = p;
+    }
+    out.add(LabHourSlot(at: t, isNow: i == 0, temp: best.temp, kinds: kinds));
+  }
+  return out;
+}());
+
 const List<String> kLabWeekdayKo = ['월', '화', '수', '목', '금', '토', '일'];
 
 /// '목 8/13' 식 요일+날짜 라벨.

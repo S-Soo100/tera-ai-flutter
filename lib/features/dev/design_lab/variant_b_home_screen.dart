@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'design_lab_fixtures.dart';
+import 'lab_weather_rows.dart';
 import 'mock_live_player.dart';
 import 'tokens/variant_b_tokens.dart';
 
@@ -41,7 +42,8 @@ class _VariantBHomeScreenState extends State<VariantBHomeScreen>
   Widget _staggered(int i, Widget child) {
     final curved = CurvedAnimation(
       parent: _enter,
-      curve: Interval(0.15 * i, 0.15 * i + 0.45, curve: Curves.easeOutCubic),
+      // 카드 5장(0~4) — 마지막 구간 끝이 1.0을 넘지 않게 보폭 0.12.
+      curve: Interval(0.12 * i, 0.12 * i + 0.4, curve: Curves.easeOutCubic),
     );
     return FadeTransition(
       opacity: curved,
@@ -71,10 +73,13 @@ class _VariantBHomeScreenState extends State<VariantBHomeScreen>
               children: [
                 _staggered(0, const _TonightCard()),
                 const SizedBox(height: VariantBTokens.cardGap),
-                _staggered(1, const _StepTimelineCard()),
+                // 온습도 — 애플 날씨 행 문법(A안과 같은 구조), 옷만 전광판 앰버.
+                _staggered(1, const _WeatherCard()),
+                const SizedBox(height: VariantBTokens.cardGap),
+                _staggered(2, const _StepTimelineCard()),
                 const SizedBox(height: VariantBTokens.cardGap),
                 _staggered(
-                  2,
+                  3,
                   _ControlCard(
                     on: _on,
                     onToggle: (k) =>
@@ -82,7 +87,7 @@ class _VariantBHomeScreenState extends State<VariantBHomeScreen>
                   ),
                 ),
                 const SizedBox(height: VariantBTokens.cardGap),
-                _staggered(3, const _RecentEventsCard()),
+                _staggered(4, const _RecentEventsCard()),
               ],
             ),
           ),
@@ -261,8 +266,7 @@ class _TonightCard extends StatelessWidget {
               const Spacer(),
               // ON TIME → "안정" 배지.
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: VariantBTokens.green.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
@@ -479,8 +483,7 @@ class _Step extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dotColor =
-        done ? VariantBTokens.green : VariantBTokens.textTertiary;
+    final dotColor = done ? VariantBTokens.green : VariantBTokens.textTertiary;
 
     return IntrinsicHeight(
       child: Row(
@@ -684,8 +687,7 @@ class _RecentEventsCard extends StatelessWidget {
               const Divider(
                   color: VariantBTokens.divider, height: 1, thickness: 1),
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
                   SizedBox(
@@ -698,8 +700,8 @@ class _RecentEventsCard extends StatelessWidget {
                     ),
                   ),
                   Expanded(
-                    child: Text(kLabTimeline[i].title,
-                        style: VariantBTokens.body),
+                    child:
+                        Text(kLabTimeline[i].title, style: VariantBTokens.body),
                   ),
                   if (kLabTimeline[i].detail != null)
                     Text(
@@ -712,6 +714,69 @@ class _RecentEventsCard extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 온습도 — 애플 날씨 행 문법 (2026-08-17), 전광판 앰버 옷
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// B 토큰으로 입힌 날씨 행 스타일. 범위 바는 앰버 단색 계열(전광판 시맨틱 —
+/// 애플의 노랑→주황을 B의 주의색 앰버로 수렴), 기기 아이콘도 앰버/그린 톤.
+const _bWeather = LabWeatherStyle(
+  textPrimary: VariantBTokens.textPrimary,
+  textSecondary: VariantBTokens.textSecondary,
+  textTertiary: VariantBTokens.textTertiary,
+  divider: VariantBTokens.divider,
+  barTrack: VariantBTokens.progressTrack,
+  barStart: Color(0xFFFFD54F),
+  barEnd: VariantBTokens.amber,
+  dot: Colors.white,
+  dotBorder: VariantBTokens.card,
+  mist: Color(0xFF64B5F6),
+  humid: Color(0xFF64B5F6),
+  heater: VariantBTokens.amber,
+  fan: VariantBTokens.green,
+  led: Color(0xFFFFD54F),
+  sectionLabel: VariantBTokens.dataLabel,
+  dayText: VariantBTokens.body,
+  numText: TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    color: VariantBTokens.textPrimary,
+    fontFeatures: [FontFeature.tabularFigures()],
+  ),
+  smallText: VariantBTokens.dataLabel,
+);
+
+class _WeatherCard extends StatelessWidget {
+  const _WeatherCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: const [
+          LabWeatherSectionLabel(
+              icon: Icons.schedule, text: 'LAST 24H', style: _bWeather),
+          SizedBox(height: 8),
+          LabHourlyStrip(style: _bWeather),
+          SizedBox(height: 12),
+          Divider(color: VariantBTokens.divider, height: 1),
+          SizedBox(height: 12),
+          LabWeatherSectionLabel(
+            icon: Icons.calendar_today_outlined,
+            text: 'THIS WEEK',
+            style: _bWeather,
+            chevron: true,
+          ),
+          SizedBox(height: 4),
+          LabWeeklyRows(style: _bWeather),
         ],
       ),
     );

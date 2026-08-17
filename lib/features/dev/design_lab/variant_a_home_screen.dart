@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'design_lab_fixtures.dart';
+import 'lab_weather_rows.dart';
 import 'mock_live_player.dart';
 import 'tokens/variant_a_tokens.dart';
 import 'variant_a_widgets.dart';
@@ -54,7 +55,9 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
                     _accessoryGrid(),
                     const SizedBox(height: 20),
                     const ASectionLabel('온습도'),
-                    const _MiniChartCard(),
+                    const _HourlyStripCard(),
+                    const SizedBox(height: VariantATokens.tileGap),
+                    const _WeeklyRowsCard(),
                     const SizedBox(height: 20),
                     const ASectionLabel('타임라인'),
                     for (final e in kLabTimeline) ...[
@@ -404,64 +407,87 @@ class _DetailSheetState extends State<_DetailSheet> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 미니 차트 (유리 카드 + 더미 곡선)
+// 온습도 — 애플 날씨 행 문법 (2026-08-17). 통계 탭의 연속 곡선과 일부러 다르다.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _MiniChartCard extends StatelessWidget {
-  const _MiniChartCard();
+/// A 토큰으로 입힌 날씨 행 스타일. 범위 바 그라데이션은 애플 온도 색(노랑→주황).
+const _aWeather = LabWeatherStyle(
+  textPrimary: VariantATokens.textPrimary,
+  textSecondary: VariantATokens.textSecondary,
+  textTertiary: Color(0x4DFFFFFF),
+  divider: Color(0x0FFFFFFF),
+  barTrack: Color(0x2EFFFFFF),
+  barStart: Color(0xFFFFD60A),
+  barEnd: Color(0xFFFF9F0A),
+  dot: Colors.white,
+  dotBorder: VariantATokens.glassOverlay,
+  mist: VariantATokens.mistTint,
+  humid: Color(0xFF8ABCFC),
+  heater: VariantATokens.heaterTint,
+  fan: VariantATokens.fanTint,
+  led: VariantATokens.ledTint,
+  sectionLabel: VariantATokens.sectionLabel,
+  dayText: VariantATokens.tileTitle,
+  numText: TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w500,
+    color: VariantATokens.textPrimary,
+    fontFeatures: [FontFeature.tabularFigures()],
+  ),
+  smallText: TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    color: VariantATokens.textSecondary,
+  ),
+);
+
+/// ② 지난 24시간 — 시각 / 기기 동작 / 온도 스트립.
+class _HourlyStripCard extends StatelessWidget {
+  const _HourlyStripCard();
 
   @override
   Widget build(BuildContext context) {
     return AGlass(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 0, 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              const Text('지난 24시간', style: VariantATokens.tileTitle),
-              const Spacer(),
-              Text(
-                '최고 ${kLabTempMax.toStringAsFixed(1)}℃ · '
-                '최저 ${kLabTempMin.toStringAsFixed(1)}℃',
-                style: VariantATokens.tileStatus,
-              ),
-            ],
+          const Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: LabWeatherSectionLabel(
+                icon: Icons.schedule, text: '지난 24시간', style: _aWeather),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 88,
-            child: CustomPaint(
-              size: Size.infinite,
-              painter: _MiniChartPainter(),
-            ),
-          ),
+          const SizedBox(height: 8),
+          const LabHourlyStrip(style: _aWeather),
         ],
       ),
     );
   }
 }
 
-class _MiniChartPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 정규화 폴리라인은 공용 [aPolylinePath] 한 벌 — 통계 일간 차트와 같은 수식.
-    final stroke = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    canvas.drawPath(
-      aPolylinePath(size, kLabEnvSeries.map((p) => p.temp).toList()),
-      stroke..color = VariantATokens.heaterTint,
-    );
-    canvas.drawPath(
-      aPolylinePath(size, kLabEnvSeries.map((p) => p.humid).toList()),
-      stroke..color = VariantATokens.mistTint,
-    );
-  }
+/// ① 이번 주 — 요일 | 분무 | 최저° | 범위 바 | 최고° | 습도%. 오늘 행에 현재 점.
+class _WeeklyRowsCard extends StatelessWidget {
+  const _WeeklyRowsCard();
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Widget build(BuildContext context) {
+    return AGlass(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: const [
+          LabWeatherSectionLabel(
+            icon: Icons.calendar_today_outlined,
+            text: '이번 주',
+            style: _aWeather,
+            chevron: true,
+          ),
+          SizedBox(height: 4),
+          LabWeeklyRows(style: _aWeather),
+        ],
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
