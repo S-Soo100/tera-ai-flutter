@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/glass_palette.dart';
 import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../cage_control_actions.dart';
@@ -32,6 +33,7 @@ class QuickControlGrid extends ConsumerWidget {
     final online = ref.watch(moduleOnlineProvider(deviceId));
     final lock = ref.watch(mistLockProvider(deviceId));
     final mistDuration = ref.watch(mistDurationProvider);
+    final glass = context.glass;
     final mistLocked = lock.isLocked(DateTime.now());
 
     return Padding(
@@ -51,7 +53,7 @@ class QuickControlGrid extends ConsumerWidget {
             label: 'module_actuator_fan'.tr(),
             value: _stateLabel(t?.fan),
             icon: Icons.mode_fan_off,
-            tint: AppTheme.deviceFanTint,
+            tint: glass.fanTint,
             enabled: online,
             active: t?.fan == ActuatorState.on,
             onTap: () => handleFanTap(context, ref, deviceId, t),
@@ -60,7 +62,7 @@ class QuickControlGrid extends ConsumerWidget {
             label: 'module_actuator_heater'.tr(),
             value: _stateLabel(t?.heaterState),
             icon: Icons.local_fire_department,
-            tint: AppTheme.deviceHeaterTint,
+            tint: glass.heaterTint,
             enabled: online,
             active: t?.heaterState == ActuatorState.on,
             onTap: () => handleHeaterTap(context, ref, deviceId, t),
@@ -72,7 +74,7 @@ class QuickControlGrid extends ConsumerWidget {
             // 2026-08-12). 아무 효과 없는 숫자보다 비워두는 게 정직하다.
             value: '',
             icon: Icons.lightbulb_outline,
-            tint: AppTheme.deviceLedTint,
+            tint: glass.ledTint,
             // terra-server 계약에 LED 상태 telemetry가 없다(메모리
             // project_led_control_gap). 모르는 것을 켜진 것처럼 칠하지 않는다.
             enabled: online,
@@ -89,7 +91,7 @@ class QuickControlGrid extends ConsumerWidget {
                 ? 'home_mist_cooldown_short'.tr()
                 : 'home_mist_seconds'.tr(args: ['${mistDuration.seconds}']),
             icon: Icons.water_drop_outlined,
-            tint: AppTheme.deviceMistTint,
+            tint: glass.mistTint,
             enabled: online && !mistLocked,
             // 1회성 동작이라 '켜진 상태'가 없다.
             active: false,
@@ -152,24 +154,23 @@ class _TileState extends State<_Tile> {
   @override
   Widget build(BuildContext context) {
     final on = widget.active && widget.enabled;
+    final glass = context.glass;
 
     final Color iconColor;
     final TextStyle titleStyle;
     final TextStyle statusStyle;
     if (!widget.enabled) {
-      iconColor = AppTheme.glassTextTertiary;
-      titleStyle =
-          AppTheme.glassTileTitle.copyWith(color: AppTheme.glassTextTertiary);
-      statusStyle =
-          AppTheme.glassTileStatus.copyWith(color: AppTheme.glassTextTertiary);
+      iconColor = glass.textTertiary;
+      titleStyle = glass.tileTitle.copyWith(color: glass.textTertiary);
+      statusStyle = glass.tileStatus.copyWith(color: glass.textTertiary);
     } else if (on) {
       iconColor = widget.tint;
-      titleStyle = AppTheme.glassTileTitleActive;
-      statusStyle = AppTheme.glassTileStatusActive;
+      titleStyle = glass.tileTitleActive;
+      statusStyle = glass.tileStatusActive;
     } else {
-      iconColor = AppTheme.glassTextSecondary;
-      titleStyle = AppTheme.glassTileTitle;
-      statusStyle = AppTheme.glassTileStatus;
+      iconColor = glass.textSecondary;
+      titleStyle = glass.tileTitle;
+      statusStyle = glass.tileStatus;
     }
 
     final content = Padding(
@@ -227,12 +228,10 @@ class _TileState extends State<_Tile> {
           curve: Curves.easeOut,
           decoration: BoxDecoration(
             color: on
-                ? AppTheme.glassActiveTile
-                : (widget.enabled
-                    ? AppTheme.glassOverlay
-                    : AppTheme.glassOverlayFaint),
+                ? glass.activeTile
+                : (widget.enabled ? glass.overlay : glass.overlayFaint),
             borderRadius: BorderRadius.circular(AppTheme.glassTileRadius),
-            border: Border.all(color: AppTheme.glassBorder, width: 0.5),
+            border: Border.all(color: glass.border, width: 0.5),
           ),
           // 안쪽 잉크가 앉을 면 — GlassCard가 하던 Material transparency 유지.
           child: Material(type: MaterialType.transparency, child: content),

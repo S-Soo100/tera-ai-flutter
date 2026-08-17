@@ -10,10 +10,10 @@ import 'wallpaper_background.dart';
 /// 놓이게 해 탭 화면과의 위화감을 없앤다. Scaffold·AppBar·폼 로직은 각 화면
 /// 그대로.
 ///
-/// 다크 팔레트는 앱 전역이 보장하므로(`app.dart`의 `themeMode: dark`,
-/// 2026-08-14) 여기서는 **투명 오버라이드만** 얹는다 — Scaffold·AppBar 배경을
-/// 투명으로 만들어 바닥색이 비치게 한다. 화면에서 띄우는 시트·다이얼로그도
-/// 같은 다크 테마를 이어받는다(탭과 같은 의도된 동작).
+/// 팔레트(다크/라이트)는 앱 전역이 고르므로(`app.dart`의 `themeMode`,
+/// 2026-08-14 오후) 여기서는 **투명 오버라이드만** 얹는다 — Scaffold·AppBar
+/// 배경을 투명으로 만들어 바닥색이 비치게 한다. 화면에서 띄우는 시트·
+/// 다이얼로그도 같은 테마를 이어받는다(탭과 같은 의도된 동작).
 class GlassPageShell extends StatelessWidget {
   const GlassPageShell({super.key, required this.child});
 

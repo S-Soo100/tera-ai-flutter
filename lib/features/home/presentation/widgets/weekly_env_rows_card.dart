@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../../shared/widgets/skeleton_loading.dart';
@@ -59,8 +60,8 @@ class WeeklyEnvRowsCard extends ConsumerWidget {
             EnvSectionLabel(
               icon: Icons.calendar_today_outlined,
               label: 'home_week_title'.tr(),
-              trailing: const Icon(Icons.chevron_right,
-                  size: 16, color: AppTheme.glassTextSecondary),
+              trailing: Icon(Icons.chevron_right,
+                  size: 16, color: context.glass.textSecondary),
             ),
             const SizedBox(height: AppStyles.spacing4),
             rowsAsync.when(
@@ -91,8 +92,10 @@ class _Rows extends StatelessWidget {
       children: [
         for (var i = 0; i < rows.rows.length; i++) ...[
           if (i > 0)
-            const Divider(
-                height: 1, thickness: 1, color: AppTheme.weatherRowDivider),
+            Divider(
+                height: 1,
+                thickness: 1,
+                color: context.glass.weatherRowDivider),
           _Row(
             key: WeeklyEnvRowsCard.rowKey(i),
             row: rows.rows[i],
@@ -160,7 +163,7 @@ class _Row extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: tabular?.copyWith(
-                    color: AppTheme.glassTextPrimary,
+                    color: context.glass.textPrimary,
                     fontWeight: row.isToday ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
@@ -173,7 +176,7 @@ class _Row extends StatelessWidget {
                   row.hasRange
                       ? 'home_week_temp'.tr(args: [_fmt(row.tMin)])
                       : '',
-                  style: tabular?.copyWith(color: AppTheme.glassTextSecondary),
+                  style: tabular?.copyWith(color: context.glass.textSecondary),
                   align: TextAlign.right,
                 ),
               ),
@@ -194,7 +197,7 @@ class _Row extends StatelessWidget {
                       ? 'home_week_temp'.tr(args: [_fmt(row.tMax)])
                       : '',
                   style: tabular?.copyWith(
-                    color: AppTheme.glassTextPrimary,
+                    color: context.glass.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                   align: TextAlign.left,
@@ -254,7 +257,7 @@ class _MistCell extends StatelessWidget {
       return Text('·',
           textAlign: TextAlign.center,
           style: theme.textTheme.labelSmall
-              ?.copyWith(color: AppTheme.glassTextTertiary));
+              ?.copyWith(color: context.glass.textTertiary));
     }
     return FittedBox(
       fit: BoxFit.scaleDown,
@@ -262,13 +265,12 @@ class _MistCell extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.water_drop,
-              size: 11, color: AppTheme.deviceMistTint),
+          Icon(Icons.water_drop, size: 11, color: context.glass.mistTint),
           const SizedBox(width: 2),
           Text(
             'home_week_mist_count'.tr(args: ['$count']),
             style: theme.textTheme.labelSmall?.copyWith(
-              color: AppTheme.deviceMistTint,
+              color: context.glass.mistTint,
               fontWeight: FontWeight.w600,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),

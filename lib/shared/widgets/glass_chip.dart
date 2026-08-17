@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_theme.dart';
 import 'glass_card.dart';
 
 /// 캡슐 칩. 디자인 시스템 `Components / GlassChip` (A안 — 이름은 역사적,
@@ -13,15 +12,15 @@ class GlassChip extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-    this.overlay = AppTheme.glassOverlay,
+    this.overlay,
     this.onTap,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
 
-  /// 표면색. [GlassCard.overlay]와 같은 규칙.
-  final Color overlay;
+  /// 표면색. [GlassCard.overlay]와 같은 규칙(null = 팔레트 기본 표면).
+  final Color? overlay;
 
   final VoidCallback? onTap;
 

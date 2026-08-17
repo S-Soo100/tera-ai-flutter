@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/core/theme/app_theme.dart';
+import 'package:vivnanaut/core/theme/glass_palette.dart';
 import 'package:vivnanaut/shared/domain/env_extremes.dart';
 import 'package:vivnanaut/shared/widgets/wallpaper_background.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
@@ -29,15 +30,20 @@ import 'package:vivnanaut/shared/domain/chart_window.dart';
 /// `control_tab_layout_test.dart`가 맡고, 여기서는 "이 디자인이 어떻게 보이나"를
 /// 확인한다. 그래서 실패 판정을 하지 않고 항상 갱신한다(`--update-goldens`).
 ///
-/// **케이스는 하나뿐이다.** 전역 다크 고정(`app.dart`의 `themeMode: dark`) +
-/// 홈의 월페이퍼·다크 래핑 때문에 라이트/다크 케이스가 바이트 동일 PNG를
-/// 만들어, 라이트 케이스를 지웠다.
+/// **케이스는 다크/라이트 둘이다**(2026-08-14 오후 — 다크/라이트 2벌 복원).
+/// 팔레트는 `Theme(data: AppTheme.dark|light)`가 고른다.
 ///
 /// 갱신 (`--tags golden`만으로는 dart_test.yaml의 tag skip에 걸려 돌지 않는다
-/// — `--run-skipped`가 필수, `--plain-name`은 skip 때문에 매치되지 않는다):
+/// — `--run-skipped`가 필수, `--plain-name`은 skip 때문에 매치되지 않는다).
+/// ⚠️ **케이스별로 따로 돌린다** — 한 프로세스에서 둘을 이어 돌리면 두 번째가
+/// 백지로 찍힌다(easy_localization 재초기화 문제). `--name`으로 하나씩:
 /// ```
 /// flutter test --tags golden --run-skipped \
-///   test/features/home/control_tab_golden_test.dart --update-goldens
+///   test/features/home/control_tab_golden_test.dart --update-goldens \
+///   --name 다크
+/// flutter test --tags golden --run-skipped \
+///   test/features/home/control_tab_golden_test.dart --update-goldens \
+///   --name 라이트
 /// ```
 ///
 /// Pretendard를 직접 로드하고 ko 번역을 초기화한다. 안 하면 글자가 네모로
@@ -171,7 +177,11 @@ Future<void> _loadPretendard() async {
   }
 }
 
-Future<void> _shoot(WidgetTester tester, {required String name}) async {
+Future<void> _shoot(
+  WidgetTester tester, {
+  required String name,
+  required ThemeData theme,
+}) async {
   // physicalSize는 **물리 픽셀**이다. 논리 393x820을 원하면 dpr을 곱해야 한다 —
   // 안 곱하면 논리 폭이 131px이 되어 화면이 전부 잘린다.
   const dpr = 3.0;
@@ -217,15 +227,15 @@ Future<void> _shoot(WidgetTester tester, {required String name}) async {
             localizationsDelegates: context.localizationDelegates,
             supportedLocales: context.supportedLocales,
             locale: context.locale,
-            theme: AppTheme.dark,
-            // A안(Liquid Glass) 이후 홈은 **월페이퍼 + 다크 테마 래핑** 단일
-            // 룩이다(HomeScreen과 같은 조건). 맨 Scaffold에 찍으면 유리가
-            // 받칠 바닥이 없어 실제 화면과 전혀 달라진다.
+            theme: theme,
+            // A안 이후 홈은 **월페이퍼 + 테마 래핑**이다(HomeScreen과 같은
+            // 조건). 맨 Scaffold에 찍으면 표면이 받칠 바닥이 없어 실제
+            // 화면과 전혀 달라진다.
             home: Theme(
-              data: AppTheme.dark,
-              child: const Scaffold(
-                backgroundColor: AppTheme.glassWallpaperTop,
-                body: Stack(
+              data: theme,
+              child: Scaffold(
+                backgroundColor: theme.extension<GlassPalette>()!.wallpaper,
+                body: const Stack(
                   children: [
                     Positioned.fill(child: WallpaperBackground()),
                     SafeArea(
@@ -274,8 +284,12 @@ void main() {
     await _loadPretendard();
   });
 
-  testWidgets('제어 서브탭', (tester) async {
-    await _shoot(tester, name: 'control_dark');
+  testWidgets('제어 서브탭 다크', (tester) async {
+    await _shoot(tester, name: 'control_dark', theme: AppTheme.dark);
+  });
+
+  testWidgets('제어 서브탭 라이트', (tester) async {
+    await _shoot(tester, name: 'control_light', theme: AppTheme.light);
   });
 }
 

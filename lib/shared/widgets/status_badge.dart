@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/glass_palette.dart';
 
 /// 상태 알약. 디자인 시스템 `Components / StatusBadge`.
 ///
@@ -108,17 +109,17 @@ class StatusBadge extends StatelessWidget {
           ),
       };
     }
-    // Figma의 `*Bg`(라이트 전용 파스텔)는 쓰지 않는다 — 어두운 화면에 그대로
-    // 깔면 흰 알약이 박힌다. subBadgeTone이 다크용 쌍을 만든다.
-    final base = switch (tone) {
-      StatusTone.safe => AppTheme.subGreen,
-      // ⚠️ 주의색은 Figma 미정의 — 앱 도출값(#ff8f00).
-      StatusTone.caution => AppTheme.warning,
-      StatusTone.danger => AppTheme.subRed,
-      StatusTone.live => AppTheme.subRed,
-      StatusTone.neutral => AppTheme.textMuted,
+    // Figma의 `*Bg`는 **라이트 전용 파스텔**이라 다크에서 그대로 쓰면
+    // 어두운 화면에 흰 알약이 박힌다. 팔레트가 밝기별로 쌍을 만든다.
+    final (base, lightBg) = switch (tone) {
+      StatusTone.safe => (AppTheme.subGreen, AppTheme.subGreenBg),
+      // ⚠️ 주의 배경은 Figma 미정의 — 앱 도출값(전경 #ff8f00도 마찬가지).
+      StatusTone.caution => (AppTheme.warning, const Color(0xFFFFF4E5)),
+      StatusTone.danger => (AppTheme.subRed, AppTheme.subRedBg),
+      StatusTone.live => (AppTheme.subRed, AppTheme.subRedBg),
+      StatusTone.neutral => (AppTheme.textMuted, AppTheme.subGrayBg),
     };
-    final t = AppTheme.subBadgeTone(base);
+    final t = context.glass.badgeTone(base, lightBg: lightBg);
     return (t.bg, t.fg);
   }
 }

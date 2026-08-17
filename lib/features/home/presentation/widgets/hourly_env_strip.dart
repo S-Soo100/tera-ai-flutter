@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
-import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/domain/actuator_marker.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../../../shared/widgets/glass_card.dart';
@@ -140,8 +140,8 @@ class _Slot extends StatelessWidget {
               maxLines: 1,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: slot.isNow
-                    ? AppTheme.glassTextPrimary
-                    : AppTheme.glassTextSecondary,
+                    ? context.glass.textPrimary
+                    : context.glass.textSecondary,
                 fontWeight: slot.isNow ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
@@ -156,8 +156,8 @@ class _Slot extends StatelessWidget {
               maxLines: 1,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: temp == null
-                    ? AppTheme.glassTextTertiary
-                    : AppTheme.glassTextPrimary,
+                    ? context.glass.textTertiary
+                    : context.glass.textPrimary,
                 fontWeight: FontWeight.w600,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
@@ -186,15 +186,15 @@ class _KindGlyphs extends StatelessWidget {
     MarkerKind.led,
   ];
 
-  static const _tint = {
-    MarkerKind.mist: AppTheme.deviceMistTint,
-    MarkerKind.fan: AppTheme.deviceFanTint,
-    MarkerKind.heater: AppTheme.deviceHeaterTint,
-    MarkerKind.led: AppTheme.deviceLedTint,
-  };
+  static Color _tint(GlassPalette glass, MarkerKind k) => switch (k) {
+        MarkerKind.mist => glass.mistTint,
+        MarkerKind.fan => glass.fanTint,
+        MarkerKind.heater => glass.heaterTint,
+        MarkerKind.led => glass.ledTint,
+      };
 
-  Widget _glyph(MarkerKind k) {
-    final color = _tint[k]!;
+  Widget _glyph(GlassPalette glass, MarkerKind k) {
+    final color = _tint(glass, k);
     return switch (k) {
       MarkerKind.mist =>
         FigmaIcon.tinted(FigmaIcons.shower, color: color, size: _size),
@@ -216,8 +216,8 @@ class _KindGlyphs extends StatelessWidget {
       return Container(
         width: 4,
         height: 4,
-        decoration: const BoxDecoration(
-          color: AppTheme.glassTextTertiary,
+        decoration: BoxDecoration(
+          color: context.glass.textTertiary,
           shape: BoxShape.circle,
         ),
       );
@@ -229,7 +229,7 @@ class _KindGlyphs extends StatelessWidget {
         alignment: WrapAlignment.center,
         spacing: 2,
         runSpacing: 2,
-        children: [for (final k in shown) _glyph(k)],
+        children: [for (final k in shown) _glyph(context.glass, k)],
       ),
     );
   }

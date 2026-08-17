@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_styles.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/glass_palette.dart';
 import 'glass_card.dart';
 
 /// 세그먼트 항목 하나.
@@ -25,7 +25,7 @@ class GlassSegment<T> {
 /// 역사적, 2차부터 솔리드).
 ///
 /// 홈 서브탭(`HomeSubTabsBar`)이 세운 문법의 공용판 — 솔리드 트랙(캡슐)
-/// 안에서 **선택 항목만 밝은 알약**([AppTheme.glassActiveTile])으로 뜬다.
+/// 안에서 **선택 항목만 반전된 알약**([GlassPalette.activeTile])으로 뜬다.
 /// 밑줄·체크 대신 면으로 말한다(Apple Home 문법).
 ///
 /// 선택 로직은 갖지 않는다. [selected]/[onChanged]만 받아 호출자가 배선한다.
@@ -80,14 +80,15 @@ class _SegmentTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final glass = context.glass;
     final isOn = selected && enabled;
     final Color fg;
     if (!enabled) {
-      fg = AppTheme.glassTextTertiary;
+      fg = glass.textTertiary;
     } else if (isOn) {
-      fg = AppTheme.glassTextOnActive;
+      fg = glass.textOnActive;
     } else {
-      fg = AppTheme.glassTextSecondary;
+      fg = glass.textSecondary;
     }
 
     return InkWell(
@@ -98,7 +99,7 @@ class _SegmentTab extends StatelessWidget {
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(vertical: AppStyles.spacing8),
         decoration: BoxDecoration(
-          color: isOn ? AppTheme.glassActiveTile : Colors.transparent,
+          color: isOn ? glass.activeTile : Colors.transparent,
           borderRadius: BorderRadius.circular(100),
         ),
         child: Text(
@@ -106,7 +107,7 @@ class _SegmentTab extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AppTheme.glassTileTitle.copyWith(
+          style: glass.tileTitle.copyWith(
             fontSize: 14,
             color: fg,
             fontWeight: isOn ? FontWeight.w600 : FontWeight.w500,

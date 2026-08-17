@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/glass_palette.dart';
 
 /// 화면 바닥. 디자인 시스템 `Components / WallpaperBackground`.
 ///
@@ -24,7 +24,7 @@ class WallpaperBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: AppTheme.glassWallpaperTop,
+      color: context.glass.wallpaper,
       child: child,
     );
   }

@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_styles.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/inline_retry.dart';
@@ -31,8 +31,7 @@ class NightlyReportView extends ConsumerWidget {
     final async = ref.watch(nightlyReportProvider);
     // 하단은 플로팅 독 높이를 [glassDockListPadding]이 직접 소비한다 —
     // padding을 명시한 ListView는 자동 인셋이 꺼져 마지막 카드가 독에 가려진다.
-    final padding =
-        glassDockListPadding(context, base: AppStyles.pagePadding);
+    final padding = glassDockListPadding(context, base: AppStyles.pagePadding);
     return async.when(
       loading: () => ListView(
         padding: padding,
@@ -43,8 +42,8 @@ class NightlyReportView extends ConsumerWidget {
         ],
       ),
       error: (_, __) => Center(
-        child: InlineRetry(
-            onRetry: () => ref.invalidate(nightlyReportProvider)),
+        child:
+            InlineRetry(onRetry: () => ref.invalidate(nightlyReportProvider)),
       ),
       data: (report) => ListView(
         padding: padding,
@@ -54,11 +53,10 @@ class NightlyReportView extends ConsumerWidget {
           if (report.highlights.isEmpty)
             _QuietBox()
           else
-            ...report.highlights
-                .map((h) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _HighlightCard(highlight: h),
-                    )),
+            ...report.highlights.map((h) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _HighlightCard(highlight: h),
+                )),
         ],
       ),
     );
@@ -78,13 +76,22 @@ class _SummaryCard extends StatelessWidget {
     final activity = h > 0 ? '${h}h ${m}m' : '${m}m';
     final stats = <(String, String, String)>[
       ('⏱️', 'nightly_activity'.tr(), activity),
-      ('💧', 'nightly_count_drink'.tr(),
-          'nightly_count_unit'.tr(namedArgs: {'n': '${report.drinkCount}'})),
-      ('🍽️', 'nightly_count_eat'.tr(),
-          'nightly_count_unit'.tr(namedArgs: {'n': '${report.eatCount}'})),
+      (
+        '💧',
+        'nightly_count_drink'.tr(),
+        'nightly_count_unit'.tr(namedArgs: {'n': '${report.drinkCount}'})
+      ),
+      (
+        '🍽️',
+        'nightly_count_eat'.tr(),
+        'nightly_count_unit'.tr(namedArgs: {'n': '${report.eatCount}'})
+      ),
       if (report.shedCount > 0)
-        ('🐍', 'nightly_count_shed'.tr(),
-            'nightly_count_unit'.tr(namedArgs: {'n': '${report.shedCount}'})),
+        (
+          '🐍',
+          'nightly_count_shed'.tr(),
+          'nightly_count_unit'.tr(namedArgs: {'n': '${report.shedCount}'})
+        ),
     ];
     // A안 유리 카드 — 예전 흰 카드+그림자는 어두운 월페이퍼 위에서 카드가
     // 통째로 사라지거나 화면에서 제일 밝은 조각이 됐다.
@@ -102,15 +109,14 @@ class _SummaryCard extends StatelessWidget {
                 .map((s) => Expanded(
                       child: Column(
                         children: [
-                          Text(s.$1,
-                              style: const TextStyle(fontSize: 22)),
+                          Text(s.$1, style: const TextStyle(fontSize: 22)),
                           const SizedBox(height: 4),
                           Text(s.$2,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              // 다크 outline(#444)은 유리 위에서 안 읽힌다.
+                              // 테마 outline은 솔리드 표면 위에서 안 읽힌다.
                               style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.glassTextSecondary)),
+                                  color: context.glass.textSecondary)),
                           const SizedBox(height: 2),
                           FittedBox(
                             fit: BoxFit.scaleDown,
@@ -160,59 +166,59 @@ class _HighlightCard extends ConsumerWidget {
     return GlassCard(
       onTap: () => context.push('/my-pets/clips/${highlight.clipId}'),
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: thumb.when(
-                data: (url) => url != null
-                    ? CachedNetworkImage(
-                        imageUrl: url,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => const SkeletonLoading(
-                            width: double.infinity,
-                            height: double.infinity,
-                            borderRadius: 0),
-                        errorWidget: (_, __, ___) => _fallback(cs),
-                      )
-                    : _fallback(cs),
-                loading: () => const SkeletonLoading(
-                    width: double.infinity,
-                    height: double.infinity,
-                    borderRadius: 0),
-                error: (_, __) => _fallback(cs),
-              ),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: thumb.when(
+              data: (url) => url != null
+                  ? CachedNetworkImage(
+                      imageUrl: url,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => const SkeletonLoading(
+                          width: double.infinity,
+                          height: double.infinity,
+                          borderRadius: 0),
+                      errorWidget: (_, __, ___) => _fallback(cs),
+                    )
+                  : _fallback(cs),
+              loading: () => const SkeletonLoading(
+                  width: double.infinity,
+                  height: double.infinity,
+                  borderRadius: 0),
+              error: (_, __) => _fallback(cs),
             ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: careColor.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(reportActionLabel(highlight.vlmAction),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                            color: careColor, fontWeight: FontWeight.w700)),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: careColor.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    DateFormat('MM.dd HH:mm')
-                        .format(highlight.startedAt.toLocal()),
-                    // 다크 outline(#444)은 유리 위에서 안 읽힌다 — 유리 텍스트
-                    // 위계 토큰을 쓴다.
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: AppTheme.glassTextSecondary),
-                  ),
-                  const Spacer(),
-                  FavoriteToggleButton(clipId: highlight.clipId),
-                ],
-              ),
+                  child: Text(reportActionLabel(highlight.vlmAction),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                          color: careColor, fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  DateFormat('MM.dd HH:mm')
+                      .format(highlight.startedAt.toLocal()),
+                  // 테마 outline은 솔리드 표면 위에서 안 읽힌다 — 팔레트
+                  // 텍스트 위계 토큰을 쓴다.
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: context.glass.textSecondary),
+                ),
+                const Spacer(),
+                FavoriteToggleButton(clipId: highlight.clipId),
+              ],
             ),
-          ],
+          ),
+        ],
       ),
     );
   }

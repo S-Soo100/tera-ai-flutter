@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_styles.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/glass_palette.dart';
 import 'glass_card.dart';
 
 /// 플로팅 독 아래로 스크롤되는 리스트의 padding.
@@ -56,9 +56,9 @@ class GlassDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 전역 다크 고정 — 바닥이 항상 어두우니 전경은 흰 계열 하나다.
-    const selectedColor = AppTheme.glassTextPrimary;
-    const unselectedColor = AppTheme.glassTextSecondary;
+    final glass = context.glass;
+    final selectedColor = glass.textPrimary;
+    final unselectedColor = glass.textSecondary;
 
     return DecoratedBox(
       // 그림자는 카드 밖에 둔다 — GlassCard가 ClipRRect로 자르므로 안에
@@ -68,7 +68,9 @@ class GlassDock extends StatelessWidget {
         borderRadius: BorderRadius.circular(100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
+            // 라이트에선 그림자가 훨씬 잘 보이니 반으로 줄인다.
+            color: Colors.black.withValues(
+                alpha: glass.brightness == Brightness.dark ? 0.35 : 0.14),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),
@@ -76,7 +78,7 @@ class GlassDock extends StatelessWidget {
       ),
       child: GlassCard(
         radius: 100,
-        overlay: AppTheme.glassOverlayStrong,
+        overlay: glass.overlayStrong,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,

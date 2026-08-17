@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/theme/theme_mode_provider.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../auth/data/auth_repository.dart';
@@ -51,7 +52,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     setState(() => _isUploading = true);
     try {
-      await ref.read(profileNotifierProvider.notifier).uploadAvatar(File(image.path));
+      await ref
+          .read(profileNotifierProvider.notifier)
+          .uploadAvatar(File(image.path));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('profile_avatar_updated'.tr())),
@@ -130,7 +133,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ? CachedNetworkImageProvider(profile!.avatarUrl!)
                             : null,
                         child: profile?.avatarUrl == null
-                            ? Icon(Icons.person, size: 48, color: colorScheme.onSurfaceVariant)
+                            ? Icon(Icons.person,
+                                size: 48, color: colorScheme.onSurfaceVariant)
                             : null,
                       ),
                       Positioned(
@@ -140,8 +144,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           radius: 18,
                           backgroundColor: colorScheme.primary,
                           child: _isUploading
-                              ? const SkeletonLoading(width: 16, height: 16, borderRadius: 8)
-                              : Icon(Icons.camera_alt, size: 18, color: colorScheme.onPrimary),
+                              ? const SkeletonLoading(
+                                  width: 16, height: 16, borderRadius: 8)
+                              : Icon(Icons.camera_alt,
+                                  size: 18, color: colorScheme.onPrimary),
                         ),
                       ),
                     ],
@@ -162,17 +168,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // 경험 레벨
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('profile_experience'.tr(), style: theme.textTheme.labelLarge),
+                  child: Text('profile_experience'.tr(),
+                      style: theme.textTheme.labelLarge),
                 ),
                 const SizedBox(height: 8),
                 SegmentedButton<String>(
                   segments: [
-                    ButtonSegment(value: 'beginner', label: Text('profile_exp_beginner'.tr())),
-                    ButtonSegment(value: 'intermediate', label: Text('profile_exp_intermediate'.tr())),
-                    ButtonSegment(value: 'expert', label: Text('profile_exp_expert'.tr())),
+                    ButtonSegment(
+                        value: 'beginner',
+                        label: Text('profile_exp_beginner'.tr())),
+                    ButtonSegment(
+                        value: 'intermediate',
+                        label: Text('profile_exp_intermediate'.tr())),
+                    ButtonSegment(
+                        value: 'expert',
+                        label: Text('profile_exp_expert'.tr())),
                   ],
                   selected: {_experience},
-                  onSelectionChanged: (v) => setState(() => _experience = v.first),
+                  onSelectionChanged: (v) =>
+                      setState(() => _experience = v.first),
                 ),
                 const SizedBox(height: 24),
 
@@ -182,11 +196,44 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: FilledButton(
                     onPressed: _isSaving ? null : _saveProfile,
                     child: _isSaving
-                        ? const SkeletonLoading(width: 20, height: 20, borderRadius: 10)
+                        ? const SkeletonLoading(
+                            width: 20, height: 20, borderRadius: 10)
                         : Text('profile_save'.tr()),
                   ),
                 ),
                 const SizedBox(height: 32),
+
+                const Divider(),
+                const SizedBox(height: 16),
+
+                // 화면 모드 (시스템/라이트/다크). 프로필 저장과 무관하게 즉시
+                // 적용·저장된다(Hive `app_settings/theme_mode`).
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('profile_theme_mode'.tr(),
+                      style: theme.textTheme.labelLarge),
+                ),
+                const SizedBox(height: 8),
+                SegmentedButton<ThemeMode>(
+                  segments: [
+                    ButtonSegment(
+                        value: ThemeMode.system,
+                        icon: const Icon(Icons.brightness_auto_outlined),
+                        label: Text('profile_theme_system'.tr())),
+                    ButtonSegment(
+                        value: ThemeMode.light,
+                        icon: const Icon(Icons.light_mode_outlined),
+                        label: Text('profile_theme_light'.tr())),
+                    ButtonSegment(
+                        value: ThemeMode.dark,
+                        icon: const Icon(Icons.dark_mode_outlined),
+                        label: Text('profile_theme_dark'.tr())),
+                  ],
+                  selected: {ref.watch(themeModeProvider)},
+                  onSelectionChanged: (v) =>
+                      ref.read(themeModeProvider.notifier).set(v.first),
+                ),
+                const SizedBox(height: 24),
 
                 const Divider(),
                 const SizedBox(height: 8),
@@ -204,13 +251,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // 로그아웃
                 ListTile(
                   leading: Icon(Icons.logout, color: colorScheme.error),
-                  title: Text('auth_logout'.tr(), style: TextStyle(color: colorScheme.error)),
+                  title: Text('auth_logout'.tr(),
+                      style: TextStyle(color: colorScheme.error)),
                   onTap: _logout,
                 ),
 
                 // 앱 버전
                 ListTile(
-                  leading: Icon(Icons.info_outlined, color: colorScheme.onSurfaceVariant),
+                  leading: Icon(Icons.info_outlined,
+                      color: colorScheme.onSurfaceVariant),
                   title: Text('profile_app_version'.tr()),
                   subtitle: Text(
                     ref.watch(appVersionProvider).when(

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
-import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/glass_chip.dart';
 import '../../../../shared/widgets/glass_segmented_control.dart';
 import '../../domain/stats_metric.dart';
@@ -108,24 +108,24 @@ class _MetricChip extends StatelessWidget {
     final ready = metric.isReady;
     final on = selected && ready;
 
+    final glass = context.glass;
     final Color fg;
     if (!ready) {
-      fg = AppTheme.glassTextTertiary;
+      fg = glass.textTertiary;
     } else if (on) {
-      fg = AppTheme.glassTextOnActive;
+      fg = glass.textOnActive;
     } else {
-      fg = AppTheme.glassTextSecondary;
+      fg = glass.textSecondary;
     }
 
     final chip = GlassChip(
-      overlay: !ready
-          ? AppTheme.glassOverlayFaint
-          : (on ? AppTheme.glassActiveTile : AppTheme.glassOverlay),
+      overlay:
+          !ready ? glass.overlayFaint : (on ? glass.activeTile : glass.overlay),
       onTap: onTap,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Text(
         metric.labelKey.tr(),
-        style: AppTheme.glassTileTitle.copyWith(
+        style: glass.tileTitle.copyWith(
           fontSize: 13,
           color: fg,
           fontWeight: on ? FontWeight.w600 : FontWeight.w500,

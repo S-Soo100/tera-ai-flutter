@@ -379,9 +379,15 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
 /// `context.glass.overlay` — 현재 테마의 팔레트.
 ///
 /// `AppTheme.dark`/`AppTheme.light` 둘 다 extension을 넣으므로 앱 안에서는
-/// 항상 있다. 테마 없이 띄운 위젯 테스트에서 null이 나오면 `Theme(data:
-/// AppTheme.dark, ...)`로 감쌀 것 — 여기서 다크로 조용히 폴백하지 않는다
-/// (그 폴백이 라이트에서 다크 값이 새는 통로가 된다).
+/// 항상 있다. extension이 없는 테마(맨 `MaterialApp()`을 띄운 위젯 테스트 등)
+/// 에서는 **그 테마의 밝기**로 두 벌 중 하나를 고른다 — 무조건 다크로
+/// 떨어지지 않는다(그 폴백이 라이트에서 다크 값이 새는 통로가 된다).
 extension GlassPaletteX on BuildContext {
-  GlassPalette get glass => Theme.of(this).extension<GlassPalette>()!;
+  GlassPalette get glass {
+    final theme = Theme.of(this);
+    return theme.extension<GlassPalette>() ??
+        (theme.brightness == Brightness.dark
+            ? GlassPalette.dark
+            : GlassPalette.light);
+  }
 }

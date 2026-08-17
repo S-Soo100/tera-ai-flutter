@@ -2,7 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_styles.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/glass_palette.dart';
 import '../domain/chart_window.dart';
 import '../domain/env_extremes.dart';
 import 'env_chart.dart';
@@ -319,7 +319,7 @@ class _Metric extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.bodySecondary,
+                color: context.glass.bodySecondary,
               ),
         ),
       ],

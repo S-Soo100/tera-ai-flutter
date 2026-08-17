@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/glass_palette.dart';
 import '../domain/actuator_marker.dart';
 import '../domain/axis_bounds.dart';
 import '../domain/chart_window.dart';
@@ -415,10 +416,10 @@ class _Plot extends StatelessWidget {
               nights: nightBand
                   ? nightBands(from: window.start, to: window.end)
                   : const [],
-              night: AppTheme.nightBand,
-              line: AppTheme.chartGridLine,
-              band: AppTheme.chartFutureBand,
-              nowLine: AppTheme.chartNowLine,
+              night: context.glass.nightBand,
+              line: context.glass.chartGridLine,
+              band: context.glass.chartFutureBand,
+              nowLine: context.glass.chartNowLine,
             ),
           ),
         ),
@@ -610,8 +611,8 @@ class _MarkerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     // 기기 종류별로 색을 나누지는 않는다 — 온·습도 선과 색이 경쟁해 정작
     // 읽어야 할 곡선이 묻힌다. 대신 Figma가 정한 메인컬러 한 가지로 또렷하게.
-    final fg = AppTheme.chartMarkerGlyph;
-    final bg = AppTheme.chartMarkerChip;
+    final fg = context.glass.chartMarkerGlyph;
+    final bg = context.glass.chartMarkerChip;
     const size = EnvChart.markerChip;
 
     return LayoutBuilder(

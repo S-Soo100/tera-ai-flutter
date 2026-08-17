@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/core/theme/app_theme.dart';
+import 'package:vivnanaut/core/theme/glass_palette.dart';
 import 'package:vivnanaut/shared/domain/actuator_marker.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
@@ -138,8 +139,7 @@ void main() {
       expect(_svg(FigmaIcons.modeFan), findsOneWidget);
     });
 
-    testWidgets('창 밖 마커는 그리지 않는다 — 차트 밖 동작을 안에 찍으면 거짓말이 된다',
-        (tester) async {
+    testWidgets('창 밖 마커는 그리지 않는다 — 차트 밖 동작을 안에 찍으면 거짓말이 된다', (tester) async {
       await _pumpChart(tester, markers: [
         ActuatorMarker(
           kind: MarkerKind.mist,
@@ -176,8 +176,9 @@ void main() {
       expect(_window.elapsed, lessThan(1));
     });
 
-    test('밴드 색은 다크용 뒤집힌 값 — 어두운 플롯에 흰 띠가 박히면 안 된다', () {
-      expect(AppTheme.chartFutureBand, isNot(AppTheme.lineColor));
+    test('밴드 색은 밝기별 — 다크는 뒤집힌 값, 라이트는 Figma 원본', () {
+      expect(GlassPalette.dark.chartFutureBand, isNot(AppTheme.lineColor));
+      expect(GlassPalette.light.chartFutureBand, AppTheme.lineColor);
     });
   });
 
@@ -216,8 +217,7 @@ void main() {
 
     // 손을 떼도 값은 남는다(사용자 결정) — 읽고, 비교하고, 스크린샷을 찍을 수
     // 있어야 하기 때문이다. 대신 **나가는 문**이 반드시 있어야 한다.
-    testWidgets('스크럽 중에는 해제 버튼이 함께 뜬다 — 없으면 최고/최저로 못 돌아간다',
-        (tester) async {
+    testWidgets('스크럽 중에는 해제 버튼이 함께 뜬다 — 없으면 최고/최저로 못 돌아간다', (tester) async {
       final c = await _pumpSummary(tester);
       expect(find.byKey(EnvSummaryBar.clearKey), findsNothing);
 
@@ -244,8 +244,7 @@ void main() {
           reason: 'readout=$readout clear=$clear text=$text');
     });
 
-    testWidgets('스크럽해도 요약 바 높이가 변하지 않는다 — 차트가 위아래로 튀면 못 읽는다',
-        (tester) async {
+    testWidgets('스크럽해도 요약 바 높이가 변하지 않는다 — 차트가 위아래로 튀면 못 읽는다', (tester) async {
       final c = await _pumpSummary(tester);
       final before = tester.getSize(find.byKey(EnvSummaryBar.barKey));
 

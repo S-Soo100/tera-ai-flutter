@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../core/theme/app_styles.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/account_avatar.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -184,7 +184,7 @@ class _MainChartSection extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
           child: Text(period.chartTitleKey.tr(),
-              style: AppTheme.glassSectionLabel),
+              style: context.glass.sectionLabel),
         ),
         const SizedBox(height: AppStyles.spacing8),
         // 요약은 홈 LiveEnvCard와 같은 유리 카드 — 안의 [StatsSummaryBar]

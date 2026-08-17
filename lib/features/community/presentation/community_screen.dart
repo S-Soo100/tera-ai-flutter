@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_styles.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/account_avatar.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_chip.dart';
@@ -177,18 +177,17 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A안 유리 캡슐 — 선택은 불투명 흰 알약(통계 메트릭 필터와 같은 문법).
+    // A안 캡슐 — 선택은 반전 알약(통계 메트릭 필터와 같은 문법).
+    final glass = context.glass;
     return GlassChip(
-      overlay: selected ? AppTheme.glassActiveTile : AppTheme.glassOverlay,
+      overlay: selected ? glass.activeTile : glass.overlay,
       onTap: onTap,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Text(
         label,
-        style: AppTheme.glassTileTitle.copyWith(
+        style: glass.tileTitle.copyWith(
           fontSize: 13,
-          color: selected
-              ? AppTheme.glassTextOnActive
-              : AppTheme.glassTextSecondary,
+          color: selected ? glass.textOnActive : glass.textSecondary,
           fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
         ),
       ),
@@ -269,9 +268,9 @@ class _PostCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   '${post.authorName} · ${_relativeTime(post.createdAt)}',
-                  // 다크 outline(#444)은 유리 위에서 안 읽힌다.
+                  // 테마 outline은 솔리드 표면 위에서 안 읽힌다.
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppTheme.glassTextSecondary,
+                    color: context.glass.textSecondary,
                   ),
                 ),
               ],
@@ -281,16 +280,16 @@ class _PostCard extends StatelessWidget {
             padding: const EdgeInsets.only(left: 12, top: 28),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.chat_bubble_outline,
                   size: 16,
-                  color: AppTheme.glassTextSecondary,
+                  color: context.glass.textSecondary,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${post.commentCount}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppTheme.glassTextSecondary,
+                    color: context.glass.textSecondary,
                   ),
                 ),
               ],
@@ -308,17 +307,17 @@ class _WikiShortcutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // 위키는 이 화면의 유일한 실물이다 — 살짝 진한 유리로 세운다.
+    // 위키는 이 화면의 유일한 실물이다 — 살짝 또렷한 표면으로 세운다.
     return GlassCard(
-      overlay: AppTheme.glassOverlayStrong,
+      overlay: context.glass.overlayStrong,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.menu_book_rounded,
-                  color: AppTheme.glassTextPrimary, size: 20),
+              Icon(Icons.menu_book_rounded,
+                  color: context.glass.textPrimary, size: 20),
               const SizedBox(width: 8),
               Text(
                 'community_wiki_shortcut_title'.tr(),

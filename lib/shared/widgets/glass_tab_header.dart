@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_styles.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/glass_palette.dart';
 import 'glass_chip.dart';
 
 /// 탭 상단 헤더. 디자인 시스템 `Components / GlassTabHeader` (A안 — 이름은
@@ -9,8 +9,7 @@ import 'glass_chip.dart';
 ///
 /// 홈 `HomeHeaderBar`가 세운 문법을 **홈 포함 모든 탭**이 공유한다 —
 /// **좌정렬 타이틀(22pt)이 주인공**, 보조 정보는 캡슐([GlassChip]), 액션
-/// 아이콘은 우측·항상 밝다(바닥이 테마와 무관하게 어두워 테마 기본색에
-/// 맡기지 않는다).
+/// 아이콘은 우측·팔레트의 1차 텍스트색([GlassPalette.textPrimary])이다.
 ///
 /// 2026-08-14 가운데 정렬을 시도했다가 되돌렸다 — 우측 액션 3개와 짝이
 /// 없어 무게가 한쪽으로 쏠리고 아래 빈 슬롯이 휑했다. 가운데 문법은
@@ -43,7 +42,7 @@ class GlassTabHeader extends StatelessWidget {
 
   final List<Widget> actions;
 
-  /// 제목 줄 슬롯 — [AppTheme.glassHeaderTitle] 실높이(fontSize × height).
+  /// 제목 줄 슬롯 — [GlassPalette.headerTitle] 실높이(fontSize × height).
   /// 토큰에서 파생 — 글자 크기를 바꾸면 여기도 같이 맞춘다.
   static const double _titleSlot = 22 * 1.2;
 
@@ -61,6 +60,7 @@ class GlassTabHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final glass = context.glass;
     return SizedBox(
       height: height,
       child: Padding(
@@ -83,7 +83,7 @@ class GlassTabHeader extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         title,
-                        style: AppTheme.glassHeaderTitle,
+                        style: glass.headerTitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -106,7 +106,7 @@ class GlassTabHeader extends StatelessWidget {
                                   Flexible(
                                     child: Text(
                                       capsuleLabel!,
-                                      style: AppTheme.glassTileStatus,
+                                      style: glass.tileStatus,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -117,7 +117,7 @@ class GlassTabHeader extends StatelessWidget {
                                       Icons.expand_more,
                                       key: capsuleArrowKey,
                                       size: 16,
-                                      color: AppTheme.glassTextSecondary,
+                                      color: glass.textSecondary,
                                     ),
                                   ],
                                 ],
@@ -129,7 +129,7 @@ class GlassTabHeader extends StatelessWidget {
               ),
             ),
             IconTheme.merge(
-              data: const IconThemeData(color: AppTheme.glassTextPrimary),
+              data: IconThemeData(color: glass.textPrimary),
               child: Row(mainAxisSize: MainAxisSize.min, children: actions),
             ),
           ],

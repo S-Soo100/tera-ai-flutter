@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
-import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/stat_row.dart';
 import '../home_timeline_providers.dart';
 
@@ -73,7 +73,7 @@ class _NightCaption extends StatelessWidget {
           width: 10,
           height: 10,
           decoration: BoxDecoration(
-            color: AppTheme.nightBand,
+            color: context.glass.nightBand,
             borderRadius: BorderRadius.circular(2),
             border: Border.all(color: theme.dividerColor),
           ),

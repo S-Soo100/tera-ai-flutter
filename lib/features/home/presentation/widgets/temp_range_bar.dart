@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/glass_palette.dart';
 
 /// 애플 날씨 10일 예보의 **온도 범위 바**.
 ///
@@ -47,6 +47,7 @@ class TempRangeBar extends StatelessWidget {
           end: end,
           dot: dot,
           height: height,
+          glass: context.glass,
         ),
       ),
     );
@@ -59,6 +60,7 @@ class _TempRangeBarPainter extends CustomPainter {
     required this.end,
     required this.dot,
     required this.height,
+    required this.glass,
   });
 
   final double? start;
@@ -66,13 +68,16 @@ class _TempRangeBarPainter extends CustomPainter {
   final double? dot;
   final double height;
 
+  /// 색은 팔레트에서 — 페인터는 context가 없어 위젯이 넘겨준다.
+  final GlassPalette glass;
+
   @override
   void paint(Canvas canvas, Size size) {
     final cy = size.height / 2;
     final r = Radius.circular(height / 2);
     final track =
         RRect.fromLTRBR(0, cy - height / 2, size.width, cy + height / 2, r);
-    canvas.drawRRect(track, Paint()..color = AppTheme.weatherBarTrack);
+    canvas.drawRRect(track, Paint()..color = glass.weatherBarTrack);
 
     final s = start;
     final e = end;
@@ -90,8 +95,8 @@ class _TempRangeBarPainter extends CustomPainter {
       canvas.drawRRect(
         fill,
         Paint()
-          ..shader = const LinearGradient(
-            colors: [AppTheme.weatherBarWarmStart, AppTheme.weatherBarWarmEnd],
+          ..shader = LinearGradient(
+            colors: [glass.weatherBarWarmStart, glass.weatherBarWarmEnd],
           ).createShader(fill.outerRect),
       );
     }
@@ -102,12 +107,12 @@ class _TempRangeBarPainter extends CustomPainter {
       canvas.drawCircle(
         Offset(cx, cy),
         TempRangeBar.dotRadius + TempRangeBar.dotBorder,
-        Paint()..color = AppTheme.weatherDotBorder,
+        Paint()..color = glass.weatherDotBorder,
       );
       canvas.drawCircle(
         Offset(cx, cy),
         TempRangeBar.dotRadius,
-        Paint()..color = AppTheme.weatherDot,
+        Paint()..color = glass.weatherDot,
       );
     }
   }
@@ -117,5 +122,6 @@ class _TempRangeBarPainter extends CustomPainter {
       old.start != start ||
       old.end != end ||
       old.dot != dot ||
-      old.height != height;
+      old.height != height ||
+      old.glass != glass;
 }

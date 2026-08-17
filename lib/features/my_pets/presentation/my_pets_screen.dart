@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/account_avatar.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_dock.dart';
@@ -223,10 +224,10 @@ class _PetCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  // 유리 위라 테마 다크 outline(#333)은 묻힌다 — 유리 테두리
+                  // 솔리드 표면 위라 테마 outline은 묻힌다 — 팔레트 테두리
                   // 토큰으로 맞춘다.
-                  side: const BorderSide(color: AppTheme.glassBorder),
-                  foregroundColor: AppTheme.glassTextPrimary,
+                  side: BorderSide(color: context.glass.border),
+                  foregroundColor: context.glass.textPrimary,
                 ),
                 child: Text('my_pets_edit_info'.tr()),
               ),
@@ -305,9 +306,12 @@ class _SexBadge extends StatelessWidget {
     // 구분을 못 하고 있었다. 팔레트에 없는 하드코딩 색이기도 했다.
     //
     // `*Bg`를 직접 쓰지 않는다. 그 파스텔은 라이트 전용이라 다크에서
-    // **배지가 화면에서 제일 밝은 조각**이 된다(실기기 확인).
-    final t =
-        AppTheme.subBadgeTone(isMale ? AppTheme.subBlue : AppTheme.subRed);
+    // **배지가 화면에서 제일 밝은 조각**이 된다(실기기 확인) — 팔레트가
+    // 밝기별로 쌍을 만든다.
+    final t = context.glass.badgeTone(
+      isMale ? AppTheme.subBlue : AppTheme.subRed,
+      lightBg: isMale ? AppTheme.subBlueBg : AppTheme.subRedBg,
+    );
     final color = t.fg;
     final bg = t.bg;
     final label = isMale ? 'pet_sex_male'.tr() : 'pet_sex_female'.tr();
@@ -347,17 +351,17 @@ class _AddPetCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppTheme.glassBorder,
+              color: context.glass.border,
               style: BorderStyle.solid,
               width: 1.5,
             ),
           ),
           child: Column(
             children: [
-              const Icon(
+              Icon(
                 Icons.add,
                 size: 32,
-                color: AppTheme.glassTextSecondary,
+                color: context.glass.textSecondary,
               ),
               const SizedBox(height: 8),
               Text(
@@ -370,7 +374,7 @@ class _AddPetCard extends StatelessWidget {
               Text(
                 'my_pets_add_new_subtitle'.tr(),
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.glassTextSecondary,
+                  color: context.glass.textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
