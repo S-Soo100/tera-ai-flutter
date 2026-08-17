@@ -150,6 +150,29 @@ void main() {
     });
   });
 
+  group('홈 주간 창 — 오늘(진행 중) + 지난 6일', () {
+    test('시작은 오늘 07시의 6일 전, 끝은 내일 07시(미래) — 오늘 자리를 만든다', () {
+      final w = ChartWindow.homeWeekly(DateTime(2026, 8, 12, 15, 43));
+      expect(w.start, DateTime(2026, 8, 6, 7));
+      expect(w.end, DateTime(2026, 8, 13, 7));
+      expect(w.tickCount, 7);
+      expect(w.ticks.last.at, DateTime(2026, 8, 12, 7), reason: '마지막 칸이 오늘');
+    });
+
+    test('07시 이전이면 "오늘"은 어제 07시에 시작한 날이다', () {
+      final w = ChartWindow.homeWeekly(DateTime(2026, 8, 12, 3, 10));
+      expect(w.ticks.last.at, DateTime(2026, 8, 11, 7));
+      expect(w.end, DateTime(2026, 8, 12, 7));
+    });
+
+    test('조회 끝은 now — 미래 시간을 물어보지 않는다', () {
+      final now = DateTime(2026, 8, 12, 15, 43);
+      final w = ChartWindow.homeWeekly(now);
+      expect(w.queryEnd, now);
+      expect(w.elapsed, lessThan(1.0));
+    });
+  });
+
   group('queryEnd — 조회 끝은 창이 스스로 안다', () {
     test('진행 중인 창(일간)은 now — 없는 시간을 물어보지 않는다', () {
       final now = DateTime(2026, 8, 12, 15);

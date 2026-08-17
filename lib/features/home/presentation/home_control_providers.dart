@@ -8,6 +8,9 @@ import '../../../shared/domain/actuator_marker.dart';
 import '../../../shared/domain/chart_window.dart';
 import '../../../shared/domain/env_chart_data.dart';
 import '../../../shared/domain/env_extremes.dart';
+import '../../stats/domain/daily_rollup.dart';
+import '../domain/hourly_env_slot.dart';
+import '../domain/weekly_env_row.dart';
 import 'home_set_providers.dart';
 
 /// 현재 세트 제어기 id. 없으면 null(캠 단품 등).
@@ -113,4 +116,60 @@ final actuatorMarkersProvider =
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) return const [];
   return fetchActuatorMarkers(client, deviceId, from: w.start, to: w.now);
+});
+
+// ── 홈 "지난 24시간" 스트립 · "이번 주" 행 (애플 날씨 문법, 2026-08-17) ──
+//
+// 홈은 통계 탭(연속 곡선 EnvChart)과 **다른 문법**을 쓴다 — 훑는 자리라
+// 숫자와 바로 읽히는 리스트다. 데이터 창은 그대로 재사용한다.
+
+/// 지난 24시간 스트립의 칸 목록. 창·버킷·마커는 24h 차트와 **같은 것**이다.
+///
+/// 실시간 온도는 위젯이 따로 [telemetryStreamProvider]에서 읽어 "지금" 칸에
+/// 얹는다 — 여기서 스트림까지 물면 값이 올 때마다 24h 조립을 다시 한다.
+final hourlyEnvSlotsProvider =
+    FutureProvider.autoDispose<List<HourlyEnvSlot>>((ref) async {
+  // watch를 await 앞으로 — fetchChartBuckets와 같은 이유.
+  final w = ref.watch(chartWindowProvider);
+  final buckets = await ref.watch(chartBucketsProvider.future);
+  final markers = await ref.watch(actuatorMarkersProvider.future);
+  return HourlyEnvSlots.build(now: w.now, buckets: buckets, markers: markers);
+});
+
+/// "이번 주" 창 — 오늘(진행 중) + 지난 6일. 화면이 살아 있는 동안 고정.
+final homeWeeklyWindowProvider = Provider.autoDispose<ChartWindow>(
+    (ref) => ChartWindow.homeWeekly(DateTime.now()));
+
+/// "이번 주" 창의 30분 버킷 원본(최대 7×48행). 조회는 24h와 같은 한 벌.
+final _homeWeeklyRawBucketsProvider =
+    FutureProvider.autoDispose<List<TelemetryBucket>>((ref) {
+  final w = ref.watch(homeWeeklyWindowProvider);
+  return fetchChartBuckets(ref, w);
+});
+
+/// "이번 주" 창의 기기 마커(분무 횟수용). 조회 실패는 빈 목록 — 횟수 없다고
+/// 온도 행을 못 그릴 이유는 없다([fetchActuatorMarkers]가 흡수).
+final _homeWeeklyMarkersProvider =
+    FutureProvider.autoDispose<List<ActuatorMarker>>((ref) async {
+  final w = ref.watch(homeWeeklyWindowProvider);
+  final client = ref.watch(supabaseClientProvider);
+  final deviceId = await ref.watch(currentDeviceIdProvider.future);
+  if (deviceId == null) return const [];
+  return fetchActuatorMarkers(client, deviceId, from: w.start, to: w.now);
+});
+
+/// "이번 주" 7행 — 오늘이 맨 위. 오늘 행은 07:00부터 지금까지의 min/max다.
+///
+/// 통계 탭 [weeklyDailyBucketsProvider]와 **다른 창**이다(저쪽은 오늘을 뺀
+/// 완결 7일). 접기는 같은 [rollupByDay] 한 벌을 쓴다.
+final homeWeeklyRowsProvider =
+    FutureProvider.autoDispose<WeeklyEnvRows>((ref) async {
+  final w = ref.watch(homeWeeklyWindowProvider);
+  final raw = await ref.watch(_homeWeeklyRawBucketsProvider.future);
+  final markers = await ref.watch(_homeWeeklyMarkersProvider.future);
+  return WeeklyEnvRows.from(
+    days: rollupByDay(raw, window: w),
+    window: w,
+    markers: markers,
+  );
 });
