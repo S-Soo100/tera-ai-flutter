@@ -10,7 +10,7 @@ import 'tokens/variant_a_tokens.dart';
 
 /// 하단 플로팅 독 여유(px) — 리스트 마지막 항목이 셸의 독에 가려지지 않게
 /// 스크롤 끝에 남겨 두는 높이. 4탭이 같은 값을 쓴다.
-const double aDockClearance = 120;
+double aDockClearance = 120;
 
 /// A안 탭 화면 공통 프레임 — 단색 바닥 + `SafeArea(bottom: false)` +
 /// ListView(가로 [VariantATokens.screenHPad], 하단 [aDockClearance]).
@@ -28,14 +28,14 @@ class AScreenScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VariantATokens.wallpaperTop,
+      backgroundColor: VariantATokens.of(context).wallpaperTop,
       body: Stack(
         children: [
           const Positioned.fill(child: AWallpaper()),
           SafeArea(
             bottom: false,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 VariantATokens.screenHPad,
                 12,
                 VariantATokens.screenHPad,
@@ -43,7 +43,7 @@ class AScreenScaffold extends StatelessWidget {
               ),
               children: [
                 if (title != null) ...[
-                  Text(title!, style: VariantATokens.headerTitle),
+                  Text(title!, style: VariantATokens.of(context).headerTitle),
                   const SizedBox(height: 16),
                 ],
                 ...children,
@@ -63,7 +63,7 @@ class AWallpaper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(color: VariantATokens.wallpaperTop);
+    return ColoredBox(color: VariantATokens.of(context).wallpaperTop);
   }
 }
 
@@ -73,14 +73,16 @@ class AGlass extends StatelessWidget {
     super.key,
     required this.child,
     this.radius = VariantATokens.tileRadius,
-    this.overlay = VariantATokens.glassOverlay,
+    this.overlay,
     this.padding = EdgeInsets.zero,
     this.blur = false,
   });
 
   final Widget child;
   final double radius;
-  final Color overlay;
+
+  /// null이면 토큰 기본 표면.
+  final Color? overlay;
   final EdgeInsetsGeometry padding;
 
   /// 호환용 no-op. 1차 BackdropFilter 스위치 — 2차에서 경로 제거
@@ -94,9 +96,10 @@ class AGlass extends StatelessWidget {
       child: Container(
         padding: padding,
         decoration: BoxDecoration(
-          color: overlay,
+          color: overlay ?? VariantATokens.of(context).glassOverlay,
           borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: VariantATokens.glassBorder, width: 0.5),
+          border: Border.all(
+              color: VariantATokens.of(context).glassBorder, width: 0.5),
         ),
         child: child,
       ),
@@ -150,13 +153,14 @@ class AGlassSegment extends StatelessWidget {
       padding: const EdgeInsets.all(3),
       child: Row(
         children: [
-          for (var i = 0; i < labels.length; i++) Expanded(child: _segment(i)),
+          for (var i = 0; i < labels.length; i++)
+            Expanded(child: _segment(context, i)),
         ],
       ),
     );
   }
 
-  Widget _segment(int i) {
+  Widget _segment(BuildContext context, int i) {
     final disabled = disabledFrom != null && i >= disabledFrom!;
     final active = i == selected && !disabled;
 
@@ -167,7 +171,9 @@ class AGlassSegment extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 7),
         decoration: BoxDecoration(
-          color: active ? VariantATokens.activeTile : Colors.transparent,
+          color: active
+              ? VariantATokens.of(context).activeTile
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(100),
         ),
         child: Opacity(
@@ -184,8 +190,8 @@ class AGlassSegment extends StatelessWidget {
                   fontSize: 13,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                   color: active
-                      ? VariantATokens.textOnActive
-                      : VariantATokens.textPrimary,
+                      ? VariantATokens.of(context).textOnActive
+                      : VariantATokens.of(context).textPrimary,
                 ),
               ),
               if (disabled && disabledHint != null)
@@ -193,9 +199,9 @@ class AGlassSegment extends StatelessWidget {
                   disabledHint!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 9,
-                    color: VariantATokens.textSecondary,
+                    color: VariantATokens.of(context).textSecondary,
                   ),
                 ),
             ],
@@ -216,7 +222,7 @@ class ASectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Text(text, style: VariantATokens.sectionLabel),
+      child: Text(text, style: VariantATokens.of(context).sectionLabel),
     );
   }
 }
@@ -242,9 +248,10 @@ Path aPolylinePath(Size size, List<double> values, {double inset = 0}) {
 }
 
 /// 차트 가로 격자선 — 타일 테두리 색의 얇은 선을 고른 간격으로 [rows]+1개.
-void aChartGrid(Canvas canvas, Size size, {int rows = 3}) {
+/// 페인터는 context가 없어 토큰을 받는다.
+void aChartGrid(Canvas canvas, Size size, VariantATokens t, {int rows = 3}) {
   final paint = Paint()
-    ..color = VariantATokens.glassBorder
+    ..color = t.glassBorder
     ..strokeWidth = 0.5;
   for (var i = 0; i <= rows; i++) {
     final y = size.height * i / rows;

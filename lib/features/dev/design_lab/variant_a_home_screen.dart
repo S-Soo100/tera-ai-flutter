@@ -32,7 +32,7 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       // 배경은 Stack의 월페이퍼가 담당 — Scaffold는 비워 둔다.
-      backgroundColor: VariantATokens.wallpaperTop,
+      backgroundColor: VariantATokens.of(context).wallpaperTop,
       extendBody: true,
       body: Stack(
         children: [
@@ -64,7 +64,7 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
                       _TimelineTile(event: e),
                       const SizedBox(height: 8),
                     ],
-                    const SizedBox(height: aDockClearance),
+                    SizedBox(height: aDockClearance),
                   ],
                 ),
               ),
@@ -84,12 +84,13 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
       expandedHeight: 132,
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
-      foregroundColor: VariantATokens.textPrimary,
+      foregroundColor: VariantATokens.of(context).textPrimary,
       // 핀 헤더 가림막은 플랫 반투명(바닥 톤) — blur는 스크롤 프레임마다
       // 재실행되어 쓰지 않는다.
       flexibleSpace: DecoratedBox(
         decoration: BoxDecoration(
-          color: VariantATokens.wallpaperTop.withValues(alpha: 0.85),
+          color:
+              VariantATokens.of(context).wallpaperTop.withValues(alpha: 0.85),
         ),
         child: FlexibleSpaceBar(
           expandedTitleScale: 1.3, // 17×1.3≈22 — 실앱 glassHeaderTitle과 통일
@@ -97,8 +98,8 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
           // 것이었는데 펼침 상태에서 제목이 왼쪽으로 치우쳐 보였다(2026-08-14).
           centerTitle: true,
           titlePadding: const EdgeInsets.only(bottom: 14),
-          title:
-              const Text('내 사육장', style: VariantATokens.headerTitleCollapsed),
+          title: Text('내 사육장',
+              style: VariantATokens.of(context).headerTitleCollapsed),
         ),
       ),
       actions: [
@@ -107,11 +108,11 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
           child: AGlassCapsule(
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
-                Text('1번 사육장', style: VariantATokens.tileStatus),
-                SizedBox(width: 4),
+              children: [
+                Text('1번 사육장', style: VariantATokens.of(context).tileStatus),
+                const SizedBox(width: 4),
                 Icon(Icons.expand_more,
-                    size: 16, color: VariantATokens.textSecondary),
+                    size: 16, color: VariantATokens.of(context).textSecondary),
               ],
             ),
           ),
@@ -212,8 +213,9 @@ class _SensorChipRow extends StatelessWidget {
       children: [
         Expanded(
           child: _sensorChip(
+            context,
             icon: Icons.thermostat,
-            tint: VariantATokens.heaterTint,
+            tint: VariantATokens.of(context).heaterTint,
             value: '${kLabCurrent.temp.toStringAsFixed(1)}℃',
             label: '온도',
           ),
@@ -221,8 +223,9 @@ class _SensorChipRow extends StatelessWidget {
         const SizedBox(width: VariantATokens.tileGap),
         Expanded(
           child: _sensorChip(
+            context,
             icon: Icons.water_drop_outlined,
-            tint: VariantATokens.mistTint,
+            tint: VariantATokens.of(context).mistTint,
             value: '${kLabCurrent.humid.round()}%',
             label: '습도',
           ),
@@ -231,7 +234,8 @@ class _SensorChipRow extends StatelessWidget {
     );
   }
 
-  Widget _sensorChip({
+  Widget _sensorChip(
+    BuildContext context, {
     required IconData icon,
     required Color tint,
     required String value,
@@ -244,9 +248,9 @@ class _SensorChipRow extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: tint),
           const SizedBox(width: 8),
-          Text(value, style: VariantATokens.chipValue),
+          Text(value, style: VariantATokens.of(context).chipValue),
           const SizedBox(width: 6),
-          Text(label, style: VariantATokens.tileStatus),
+          Text(label, style: VariantATokens.of(context).tileStatus),
         ],
       ),
     );
@@ -277,12 +281,12 @@ class _AccessoryTile extends StatefulWidget {
 class _AccessoryTileState extends State<_AccessoryTile> {
   bool _pressed = false;
 
-  static const _tints = {
-    LabDeviceKind.heater: VariantATokens.heaterTint,
-    LabDeviceKind.mist: VariantATokens.mistTint,
-    LabDeviceKind.led: VariantATokens.ledTint,
-    LabDeviceKind.fan: VariantATokens.fanTint,
-  };
+  static Color _tintOf(VariantATokens t, LabDeviceKind k) => switch (k) {
+        LabDeviceKind.heater => t.heaterTint,
+        LabDeviceKind.mist => t.mistTint,
+        LabDeviceKind.led => t.ledTint,
+        LabDeviceKind.fan => t.fanTint,
+      };
   static const _icons = {
     LabDeviceKind.heater: Icons.local_fire_department_outlined,
     LabDeviceKind.mist: Icons.water_drop_outlined,
@@ -293,7 +297,7 @@ class _AccessoryTileState extends State<_AccessoryTile> {
   @override
   Widget build(BuildContext context) {
     final on = widget.isOn;
-    final tint = _tints[widget.device.kind]!;
+    final tint = _tintOf(VariantATokens.of(context), widget.device.kind);
 
     final content = Padding(
       padding: const EdgeInsets.all(14),
@@ -301,17 +305,18 @@ class _AccessoryTileState extends State<_AccessoryTile> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(_icons[widget.device.kind],
-              size: 24, color: on ? tint : VariantATokens.textSecondary),
+              size: 24,
+              color: on ? tint : VariantATokens.of(context).textSecondary),
           const Spacer(),
           Text(widget.device.name,
               style: on
-                  ? VariantATokens.tileTitleActive
-                  : VariantATokens.tileTitle),
+                  ? VariantATokens.of(context).tileTitleActive
+                  : VariantATokens.of(context).tileTitle),
           Text(
             on ? widget.device.statusLabel : '꺼짐',
             style: on
-                ? VariantATokens.tileStatusActive
-                : VariantATokens.tileStatus,
+                ? VariantATokens.of(context).tileStatusActive
+                : VariantATokens.of(context).tileStatus,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -334,7 +339,7 @@ class _AccessoryTileState extends State<_AccessoryTile> {
             ? AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: VariantATokens.activeTile,
+                  color: VariantATokens.of(context).activeTile,
                   borderRadius:
                       BorderRadius.circular(VariantATokens.tileRadius),
                 ),
@@ -368,24 +373,25 @@ class _DetailSheetState extends State<_DetailSheet> {
     return Padding(
       padding: const EdgeInsets.all(VariantATokens.screenHPad),
       child: AGlass(
-        overlay: VariantATokens.glassOverlayStrong,
+        overlay: VariantATokens.of(context).glassOverlayStrong,
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.device.name, style: VariantATokens.tileTitle),
+            Text(widget.device.name,
+                style: VariantATokens.of(context).tileTitle),
             const SizedBox(height: 4),
             Text(
               widget.isOn ? widget.device.statusLabel : '꺼짐',
-              style: VariantATokens.tileStatus,
+              style: VariantATokens.of(context).tileStatus,
             ),
             const SizedBox(height: 16),
             // 더미 세기 슬라이더 — 상세 제어 문법 자리만 확인.
             SliderTheme(
               data: SliderThemeData(
-                activeTrackColor: VariantATokens.activeTile,
-                inactiveTrackColor: VariantATokens.glassOverlay,
+                activeTrackColor: VariantATokens.of(context).activeTile,
+                inactiveTrackColor: VariantATokens.of(context).glassOverlay,
                 thumbColor: Colors.white,
                 trackHeight: 28,
                 overlayShape: SliderComponentShape.noOverlay,
@@ -397,7 +403,7 @@ class _DetailSheetState extends State<_DetailSheet> {
             ),
             const SizedBox(height: 8),
             Text('세기 ${(_level * 100).round()}% (더미)',
-                style: VariantATokens.tileStatus),
+                style: VariantATokens.of(context).tileStatus),
             const SizedBox(height: 8),
           ],
         ),
@@ -411,35 +417,35 @@ class _DetailSheetState extends State<_DetailSheet> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// A 토큰으로 입힌 날씨 행 스타일. 범위 바 그라데이션은 애플 온도 색(노랑→주황).
-const _aWeather = LabWeatherStyle(
-  textPrimary: VariantATokens.textPrimary,
-  textSecondary: VariantATokens.textSecondary,
-  textTertiary: Color(0x4DFFFFFF),
-  divider: Color(0x0FFFFFFF),
-  barTrack: Color(0x2EFFFFFF),
-  barStart: Color(0xFFFFD60A),
-  barEnd: Color(0xFFFF9F0A),
-  dot: Colors.white,
-  dotBorder: VariantATokens.glassOverlay,
-  mist: VariantATokens.mistTint,
-  humid: Color(0xFF8ABCFC),
-  heater: VariantATokens.heaterTint,
-  fan: VariantATokens.fanTint,
-  led: VariantATokens.ledTint,
-  sectionLabel: VariantATokens.sectionLabel,
-  dayText: VariantATokens.tileTitle,
-  numText: TextStyle(
-    fontSize: 15,
-    fontWeight: FontWeight.w500,
-    color: VariantATokens.textPrimary,
-    fontFeatures: [FontFeature.tabularFigures()],
-  ),
-  smallText: TextStyle(
-    fontSize: 11,
-    fontWeight: FontWeight.w500,
-    color: VariantATokens.textSecondary,
-  ),
-);
+LabWeatherStyle _aWeather(BuildContext context) => LabWeatherStyle(
+      textPrimary: VariantATokens.of(context).textPrimary,
+      textSecondary: VariantATokens.of(context).textSecondary,
+      textTertiary: VariantATokens.of(context).textTertiary,
+      divider: VariantATokens.of(context).rowDivider,
+      barTrack: VariantATokens.of(context).barTrack,
+      barStart: const Color(0xFFFFD60A),
+      barEnd: const Color(0xFFFF9F0A),
+      dot: Colors.white,
+      dotBorder: VariantATokens.of(context).dotBorder,
+      mist: VariantATokens.of(context).mistTint,
+      humid: const Color(0xFF8ABCFC),
+      heater: VariantATokens.of(context).heaterTint,
+      fan: VariantATokens.of(context).fanTint,
+      led: VariantATokens.of(context).ledTint,
+      sectionLabel: VariantATokens.of(context).sectionLabel,
+      dayText: VariantATokens.of(context).tileTitle,
+      numText: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w500,
+        color: VariantATokens.of(context).textPrimary,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+      smallText: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        color: VariantATokens.of(context).textSecondary,
+      ),
+    );
 
 /// ② 지난 24시간 — 시각 / 기기 동작 / 온도 스트립.
 class _HourlyStripCard extends StatelessWidget {
@@ -452,13 +458,15 @@ class _HourlyStripCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(right: 16),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
             child: LabWeatherSectionLabel(
-                icon: Icons.schedule, text: '지난 24시간', style: _aWeather),
+                icon: Icons.schedule,
+                text: '지난 24시간',
+                style: _aWeather(context)),
           ),
           const SizedBox(height: 8),
-          const LabHourlyStrip(style: _aWeather),
+          LabHourlyStrip(style: _aWeather(context)),
         ],
       ),
     );
@@ -475,15 +483,15 @@ class _WeeklyRowsCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: const [
+        children: [
           LabWeatherSectionLabel(
             icon: Icons.calendar_today_outlined,
             text: '이번 주',
-            style: _aWeather,
+            style: _aWeather(context),
             chevron: true,
           ),
-          SizedBox(height: 4),
-          LabWeeklyRows(style: _aWeather),
+          const SizedBox(height: 4),
+          LabWeeklyRows(style: _aWeather(context)),
         ],
       ),
     );
@@ -516,20 +524,20 @@ class _TimelineTile extends StatelessWidget {
       child: Row(
         children: [
           Icon(_icons[event.kind],
-              size: 18, color: VariantATokens.textSecondary),
+              size: 18, color: VariantATokens.of(context).textSecondary),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               event.detail == null
                   ? event.title
                   : '${event.title} · ${event.detail}',
-              style: VariantATokens.tileStatus,
+              style: VariantATokens.of(context).tileStatus,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 8),
-          Text(labHm(event.at), style: VariantATokens.tileStatus),
+          Text(labHm(event.at), style: VariantATokens.of(context).tileStatus),
         ],
       ),
     );

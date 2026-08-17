@@ -72,11 +72,11 @@ class _PetCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(pet.name, style: VariantATokens.tileTitle),
+                Text(pet.name, style: VariantATokens.of(context).tileTitle),
                 const SizedBox(height: 2),
                 Text(
                   '${pet.species} · ${pet.morph}',
-                  style: VariantATokens.tileStatus,
+                  style: VariantATokens.of(context).tileStatus,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -87,10 +87,11 @@ class _PetCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('D+${pet.ageDays}', style: VariantATokens.chipValue),
+              Text('D+${pet.ageDays}',
+                  style: VariantATokens.of(context).chipValue),
               const SizedBox(height: 2),
               Text('${pet.weightG.toStringAsFixed(1)}g',
-                  style: VariantATokens.tileStatus),
+                  style: VariantATokens.of(context).tileStatus),
             ],
           ),
         ],
@@ -120,11 +121,11 @@ class _NightReportCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('어젯밤 활동', style: VariantATokens.tileTitle),
+              Text('어젯밤 활동', style: VariantATokens.of(context).tileTitle),
               const Spacer(),
               Text(
                 '${labHm(night.start)} → ${labHm(night.end)}',
-                style: VariantATokens.tileStatus,
+                style: VariantATokens.of(context).tileStatus,
               ),
             ],
           ),
@@ -138,12 +139,14 @@ class _NightReportCard extends StatelessWidget {
                 children: [
                   Expanded(
                     flex: (report.activeRatio * 1000).round().clamp(1, 999),
-                    child: const ColoredBox(color: VariantATokens.heaterTint),
+                    child: ColoredBox(
+                        color: VariantATokens.of(context).heaterTint),
                   ),
                   Expanded(
                     flex: (1000 - (report.activeRatio * 1000).round())
                         .clamp(1, 999),
-                    child: const ColoredBox(color: VariantATokens.glassOverlay),
+                    child: ColoredBox(
+                        color: VariantATokens.of(context).glassOverlay),
                   ),
                 ],
               ),
@@ -185,11 +188,11 @@ class _ReportStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: VariantATokens.tileStatus),
+        Text(label, style: VariantATokens.of(context).tileStatus),
         const SizedBox(height: 2),
         Text(
           value,
-          style: VariantATokens.tileTitle.copyWith(
+          style: VariantATokens.of(context).tileTitle.copyWith(
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),

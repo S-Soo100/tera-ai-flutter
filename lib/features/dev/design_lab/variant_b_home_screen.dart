@@ -58,7 +58,7 @@ class _VariantBHomeScreenState extends State<VariantBHomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VariantBTokens.background,
+      backgroundColor: VariantBTokens.of(context).background,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _LiveHeader(visible: widget.visible)),
@@ -142,13 +142,16 @@ class _LiveHeader extends StatelessWidget {
             ),
           ),
           // 하단으로 갈수록 배경색에 잠기는 그라데이션.
-          const DecoratedBox(
+          DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, VariantBTokens.background],
-                stops: [0.45, 1.0],
+                colors: [
+                  Colors.transparent,
+                  VariantBTokens.of(context).background
+                ],
+                stops: const [0.45, 1.0],
               ),
             ),
           ),
@@ -160,15 +163,17 @@ class _LiveHeader extends StatelessWidget {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(
-                    color: VariantBTokens.red,
+                  decoration: BoxDecoration(
+                    color: VariantBTokens.of(context).red,
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 6),
-                const Text('LIVE · 1번 사육장', style: VariantBTokens.dataLabel),
+                Text('LIVE · 1번 사육장',
+                    style: VariantBTokens.of(context).dataLabel),
                 const SizedBox(width: 8),
-                Text(labHm(kLabNow), style: VariantBTokens.dataLabel),
+                Text(labHm(kLabNow),
+                    style: VariantBTokens.of(context).dataLabel),
               ],
             ),
           ),
@@ -190,7 +195,7 @@ class _LiveHeader extends StatelessWidget {
                 Container(
                   width: 1,
                   height: 44,
-                  color: VariantBTokens.divider,
+                  color: VariantBTokens.of(context).divider,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -229,7 +234,7 @@ class _BigStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: VariantBTokens.dataLabel),
+        Text(label, style: VariantBTokens.of(context).dataLabel),
         const SizedBox(height: 4),
         TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: value),
@@ -237,7 +242,7 @@ class _BigStat extends StatelessWidget {
           curve: Curves.easeOutCubic,
           builder: (context, v, _) => Text(
             '${v.toStringAsFixed(decimals)}$unit',
-            style: VariantBTokens.bigNumber,
+            style: VariantBTokens.of(context).bigNumber,
           ),
         ),
       ],
@@ -262,19 +267,20 @@ class _TonightCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('오늘 밤', style: VariantBTokens.body),
+              Text('오늘 밤', style: VariantBTokens.of(context).body),
               const Spacer(),
               // ON TIME → "안정" 배지.
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: VariantBTokens.green.withValues(alpha: 0.15),
+                  color:
+                      VariantBTokens.of(context).green.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   '안정',
                   style: VariantBTokens.badge
-                      .copyWith(color: VariantBTokens.green),
+                      .copyWith(color: VariantBTokens.of(context).green),
                 ),
               ),
             ],
@@ -283,19 +289,21 @@ class _TonightCard extends StatelessWidget {
           // 출발지/도착지 대신 22:00 → 06:00.
           Row(
             children: [
-              Text(labHm(night.start), style: VariantBTokens.midNumber),
+              Text(labHm(night.start),
+                  style: VariantBTokens.of(context).midNumber),
               const SizedBox(width: 8),
-              const Text('활동 시작', style: VariantBTokens.dataLabel),
+              Text('활동 시작', style: VariantBTokens.of(context).dataLabel),
               const Spacer(),
-              const Text('활동 종료', style: VariantBTokens.dataLabel),
+              Text('활동 종료', style: VariantBTokens.of(context).dataLabel),
               const SizedBox(width: 8),
-              Text(labHm(night.end), style: VariantBTokens.midNumber),
+              Text(labHm(night.end),
+                  style: VariantBTokens.of(context).midNumber),
             ],
           ),
           const SizedBox(height: 10),
           _NightProgressBar(progress: night.progress),
           const SizedBox(height: 16),
-          const Divider(color: VariantBTokens.divider, height: 1),
+          Divider(color: VariantBTokens.of(context).divider, height: 1),
           const SizedBox(height: 12),
           // 하단 3열 데이터 그리드.
           Row(
@@ -354,7 +362,7 @@ class _NightProgressBar extends StatelessWidget {
                   Container(
                     height: VariantBTokens.progressHeight,
                     decoration: BoxDecoration(
-                      color: VariantBTokens.progressTrack,
+                      color: VariantBTokens.of(context).progressTrack,
                       borderRadius: BorderRadius.circular(100),
                     ),
                   ),
@@ -362,14 +370,14 @@ class _NightProgressBar extends StatelessWidget {
                     height: VariantBTokens.progressHeight,
                     width: w * p,
                     decoration: BoxDecoration(
-                      color: VariantBTokens.amber,
+                      color: VariantBTokens.of(context).amber,
                       borderRadius: BorderRadius.circular(100),
                     ),
                   ),
                   Positioned(
                     left: (w * p - 11).clamp(0.0, w - 22),
-                    child: const Icon(Icons.pets,
-                        size: 20, color: VariantBTokens.amber),
+                    child: Icon(Icons.pets,
+                        size: 20, color: VariantBTokens.of(context).amber),
                   ),
                 ],
               ),
@@ -398,14 +406,14 @@ class _GridStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: VariantBTokens.dataLabel),
+        Text(label, style: VariantBTokens.of(context).dataLabel),
         const SizedBox(height: 4),
         TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: value),
           duration: const Duration(milliseconds: 900),
           curve: Curves.easeOutCubic,
           builder: (context, v, _) =>
-              Text(format(v), style: VariantBTokens.midNumber),
+              Text(format(v), style: VariantBTokens.of(context).midNumber),
         ),
       ],
     );
@@ -449,7 +457,7 @@ class _StepTimelineCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('NIGHT TIMELINE', style: VariantBTokens.dataLabel),
+          Text('NIGHT TIMELINE', style: VariantBTokens.of(context).dataLabel),
           const SizedBox(height: 12),
           for (var i = 0; i < steps.length; i++)
             _Step(
@@ -483,7 +491,9 @@ class _Step extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dotColor = done ? VariantBTokens.green : VariantBTokens.textTertiary;
+    final dotColor = done
+        ? VariantBTokens.of(context).green
+        : VariantBTokens.of(context).textTertiary;
 
     return IntrinsicHeight(
       child: Row(
@@ -504,10 +514,12 @@ class _Step extends StatelessWidget {
               if (!isLast)
                 Expanded(
                   child: nextDone
-                      ? Container(width: 2, color: VariantBTokens.green)
+                      ? Container(
+                          width: 2, color: VariantBTokens.of(context).green)
                       : CustomPaint(
                           size: const Size(2, double.infinity),
-                          painter: _DashedLinePainter(),
+                          painter: _DashedLinePainter(
+                              color: VariantBTokens.of(context).textTertiary),
                         ),
                 ),
             ],
@@ -522,11 +534,11 @@ class _Step extends StatelessWidget {
                     child: Text(
                       title,
                       style: done
-                          ? VariantBTokens.body
-                          : VariantBTokens.bodySecondary,
+                          ? VariantBTokens.of(context).body
+                          : VariantBTokens.of(context).bodySecondary,
                     ),
                   ),
-                  Text(time, style: VariantBTokens.bodySecondary),
+                  Text(time, style: VariantBTokens.of(context).bodySecondary),
                 ],
               ),
             ),
@@ -538,10 +550,14 @@ class _Step extends StatelessWidget {
 }
 
 class _DashedLinePainter extends CustomPainter {
+  const _DashedLinePainter({required this.color});
+
+  final Color color;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = VariantBTokens.textTertiary
+      ..color = color
       ..strokeWidth = 2;
     const dash = 4.0;
     const gapLen = 4.0;
@@ -554,7 +570,7 @@ class _DashedLinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DashedLinePainter old) => old.color != color;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -581,9 +597,10 @@ class _ControlCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text('CONTROLS', style: VariantBTokens.dataLabel),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child:
+                Text('CONTROLS', style: VariantBTokens.of(context).dataLabel),
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(
@@ -631,10 +648,12 @@ class _CapsuleButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           color: active
-              ? VariantBTokens.amber.withValues(alpha: 0.16)
+              ? VariantBTokens.of(context).amber.withValues(alpha: 0.16)
               : Colors.transparent,
           border: Border.all(
-            color: active ? VariantBTokens.amber : VariantBTokens.divider,
+            color: active
+                ? VariantBTokens.of(context).amber
+                : VariantBTokens.of(context).divider,
           ),
           borderRadius: BorderRadius.circular(100),
         ),
@@ -644,17 +663,17 @@ class _CapsuleButton extends StatelessWidget {
             Icon(icon,
                 size: 16,
                 color: active
-                    ? VariantBTokens.amber
-                    : VariantBTokens.textSecondary),
+                    ? VariantBTokens.of(context).amber
+                    : VariantBTokens.of(context).textSecondary),
             const SizedBox(width: 6),
             Text(
               label,
-              style: VariantBTokens.bodySecondary.copyWith(
-                color: active
-                    ? VariantBTokens.amber
-                    : VariantBTokens.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
+              style: VariantBTokens.of(context).bodySecondary.copyWith(
+                    color: active
+                        ? VariantBTokens.of(context).amber
+                        : VariantBTokens.of(context).textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ],
         ),
@@ -677,15 +696,17 @@ class _RecentEventsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text('RECENT', style: VariantBTokens.dataLabel),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text('RECENT', style: VariantBTokens.of(context).dataLabel),
           ),
           const SizedBox(height: 8),
           for (var i = 0; i < kLabTimeline.length; i++) ...[
             if (i > 0)
-              const Divider(
-                  color: VariantBTokens.divider, height: 1, thickness: 1),
+              Divider(
+                  color: VariantBTokens.of(context).divider,
+                  height: 1,
+                  thickness: 1),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
@@ -694,19 +715,19 @@ class _RecentEventsCard extends StatelessWidget {
                     width: 48,
                     child: Text(
                       labHm(kLabTimeline[i].at),
-                      style: VariantBTokens.bodySecondary.copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                      style: VariantBTokens.of(context).bodySecondary.copyWith(
+                        fontFeatures: [const FontFeature.tabularFigures()],
                       ),
                     ),
                   ),
                   Expanded(
-                    child:
-                        Text(kLabTimeline[i].title, style: VariantBTokens.body),
+                    child: Text(kLabTimeline[i].title,
+                        style: VariantBTokens.of(context).body),
                   ),
                   if (kLabTimeline[i].detail != null)
                     Text(
                       kLabTimeline[i].detail!,
-                      style: VariantBTokens.bodySecondary,
+                      style: VariantBTokens.of(context).bodySecondary,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -726,31 +747,31 @@ class _RecentEventsCard extends StatelessWidget {
 
 /// B 토큰으로 입힌 날씨 행 스타일. 범위 바는 앰버 단색 계열(전광판 시맨틱 —
 /// 애플의 노랑→주황을 B의 주의색 앰버로 수렴), 기기 아이콘도 앰버/그린 톤.
-const _bWeather = LabWeatherStyle(
-  textPrimary: VariantBTokens.textPrimary,
-  textSecondary: VariantBTokens.textSecondary,
-  textTertiary: VariantBTokens.textTertiary,
-  divider: VariantBTokens.divider,
-  barTrack: VariantBTokens.progressTrack,
-  barStart: Color(0xFFFFD54F),
-  barEnd: VariantBTokens.amber,
-  dot: Colors.white,
-  dotBorder: VariantBTokens.card,
-  mist: Color(0xFF64B5F6),
-  humid: Color(0xFF64B5F6),
-  heater: VariantBTokens.amber,
-  fan: VariantBTokens.green,
-  led: Color(0xFFFFD54F),
-  sectionLabel: VariantBTokens.dataLabel,
-  dayText: VariantBTokens.body,
-  numText: TextStyle(
-    fontSize: 15,
-    fontWeight: FontWeight.w600,
-    color: VariantBTokens.textPrimary,
-    fontFeatures: [FontFeature.tabularFigures()],
-  ),
-  smallText: VariantBTokens.dataLabel,
-);
+LabWeatherStyle _bWeather(BuildContext context) => LabWeatherStyle(
+      textPrimary: VariantBTokens.of(context).textPrimary,
+      textSecondary: VariantBTokens.of(context).textSecondary,
+      textTertiary: VariantBTokens.of(context).textTertiary,
+      divider: VariantBTokens.of(context).divider,
+      barTrack: VariantBTokens.of(context).progressTrack,
+      barStart: const Color(0xFFFFD54F),
+      barEnd: VariantBTokens.of(context).amber,
+      dot: Colors.white,
+      dotBorder: VariantBTokens.of(context).card,
+      mist: const Color(0xFF64B5F6),
+      humid: const Color(0xFF64B5F6),
+      heater: VariantBTokens.of(context).amber,
+      fan: VariantBTokens.of(context).green,
+      led: const Color(0xFFFFD54F),
+      sectionLabel: VariantBTokens.of(context).dataLabel,
+      dayText: VariantBTokens.of(context).body,
+      numText: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: VariantBTokens.of(context).textPrimary,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+      smallText: VariantBTokens.of(context).dataLabel,
+    );
 
 class _WeatherCard extends StatelessWidget {
   const _WeatherCard();
@@ -761,22 +782,24 @@ class _WeatherCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: const [
+        children: [
           LabWeatherSectionLabel(
-              icon: Icons.schedule, text: 'LAST 24H', style: _bWeather),
-          SizedBox(height: 8),
-          LabHourlyStrip(style: _bWeather),
-          SizedBox(height: 12),
-          Divider(color: VariantBTokens.divider, height: 1),
-          SizedBox(height: 12),
+              icon: Icons.schedule,
+              text: 'LAST 24H',
+              style: _bWeather(context)),
+          const SizedBox(height: 8),
+          LabHourlyStrip(style: _bWeather(context)),
+          const SizedBox(height: 12),
+          Divider(color: VariantBTokens.of(context).divider, height: 1),
+          const SizedBox(height: 12),
           LabWeatherSectionLabel(
             icon: Icons.calendar_today_outlined,
             text: 'THIS WEEK',
-            style: _bWeather,
+            style: _bWeather(context),
             chevron: true,
           ),
-          SizedBox(height: 4),
-          LabWeeklyRows(style: _bWeather),
+          const SizedBox(height: 4),
+          LabWeeklyRows(style: _bWeather(context)),
         ],
       ),
     );
@@ -801,7 +824,7 @@ class _Card extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: VariantBTokens.card,
+        color: VariantBTokens.of(context).card,
         borderRadius: BorderRadius.circular(VariantBTokens.cardRadius),
       ),
       child: child,

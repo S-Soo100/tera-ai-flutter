@@ -13,7 +13,7 @@ class VariantBCommunityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VariantBTokens.background,
+      backgroundColor: VariantBTokens.of(context).background,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -22,10 +22,11 @@ class VariantBCommunityScreen extends StatelessWidget {
             VariantBTokens.screenHPad,
             32,
           ),
-          children: const [
-            Text('DEPARTURES — 커뮤니티', style: VariantBTokens.dataLabel),
-            SizedBox(height: 12),
-            _BoardCard(),
+          children: [
+            Text('DEPARTURES — 커뮤니티',
+                style: VariantBTokens.of(context).dataLabel),
+            const SizedBox(height: 12),
+            const _BoardCard(),
           ],
         ),
       ),
@@ -41,15 +42,17 @@ class _BoardCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: VariantBTokens.card,
+        color: VariantBTokens.of(context).card,
         borderRadius: BorderRadius.circular(VariantBTokens.cardRadius),
       ),
       child: Column(
         children: [
           for (var i = 0; i < kLabPosts.length; i++) ...[
             if (i > 0)
-              const Divider(
-                  color: VariantBTokens.divider, height: 1, thickness: 1),
+              Divider(
+                  color: VariantBTokens.of(context).divider,
+                  height: 1,
+                  thickness: 1),
             _BoardRow(post: kLabPosts[i]),
           ],
         ],
@@ -64,9 +67,10 @@ class _BoardRow extends StatelessWidget {
   final LabPost post;
 
   /// 공지는 앰버 강조(보드의 지연 안내 문법), 나머지는 그린.
-  Color get _categoryColor => post.category == LabPostCategory.notice
-      ? VariantBTokens.amber
-      : VariantBTokens.green;
+  Color _categoryColor(BuildContext context) =>
+      post.category == LabPostCategory.notice
+          ? VariantBTokens.of(context).amber
+          : VariantBTokens.of(context).green;
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +84,7 @@ class _BoardRow extends StatelessWidget {
             width: 48,
             child: Text(
               labHm(post.at),
-              style: VariantBTokens.bodySecondary.copyWith(
+              style: VariantBTokens.of(context).bodySecondary.copyWith(
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -91,20 +95,21 @@ class _BoardRow extends StatelessWidget {
               children: [
                 Text(
                   post.categoryLabel.toUpperCase(),
-                  style: VariantBTokens.dataLabel
-                      .copyWith(color: _categoryColor),
+                  style: VariantBTokens.of(context)
+                      .dataLabel
+                      .copyWith(color: _categoryColor(context)),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   post.title,
-                  style: VariantBTokens.body,
+                  style: VariantBTokens.of(context).body,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 3),
                 Text(
                   '${post.author} · ${labDaySection(post.at)}',
-                  style: VariantBTokens.bodySecondary,
+                  style: VariantBTokens.of(context).bodySecondary,
                 ),
               ],
             ),
@@ -114,12 +119,12 @@ class _BoardRow extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Icon(Icons.chat_bubble_outline,
-                  size: 14, color: VariantBTokens.textTertiary),
+              Icon(Icons.chat_bubble_outline,
+                  size: 14, color: VariantBTokens.of(context).textTertiary),
               const SizedBox(height: 2),
               Text(
                 '${post.commentCount}',
-                style: VariantBTokens.bodySecondary.copyWith(
+                style: VariantBTokens.of(context).bodySecondary.copyWith(
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),

@@ -13,7 +13,7 @@ class VariantBPetsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VariantBTokens.background,
+      backgroundColor: VariantBTokens.of(context).background,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -23,14 +23,14 @@ class VariantBPetsScreen extends StatelessWidget {
             32,
           ),
           children: [
-            const Text('MY CREATURES', style: VariantBTokens.dataLabel),
+            Text('MY CREATURES', style: VariantBTokens.of(context).dataLabel),
             const SizedBox(height: 12),
             for (final p in kLabPets) ...[
               _BoardingPassCard(pet: p),
               const SizedBox(height: VariantBTokens.cardGap),
             ],
             const SizedBox(height: 8),
-            const Text('LAST NIGHT', style: VariantBTokens.dataLabel),
+            Text('LAST NIGHT', style: VariantBTokens.of(context).dataLabel),
             const SizedBox(height: 12),
             const _NightReportCard(),
           ],
@@ -53,7 +53,7 @@ class _BoardingPassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: VariantBTokens.card,
+        color: VariantBTokens.of(context).card,
         borderRadius: BorderRadius.circular(VariantBTokens.cardRadius),
       ),
       child: Column(
@@ -79,10 +79,11 @@ class _BoardingPassCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(pet.name, style: VariantBTokens.midNumber),
+                      Text(pet.name,
+                          style: VariantBTokens.of(context).midNumber),
                       const SizedBox(height: 2),
                       Text(pet.species,
-                          style: VariantBTokens.bodySecondary),
+                          style: VariantBTokens.of(context).bodySecondary),
                     ],
                   ),
                 ),
@@ -90,13 +91,15 @@ class _BoardingPassCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: VariantBTokens.green.withValues(alpha: 0.15),
+                    color: VariantBTokens.of(context)
+                        .green
+                        .withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     '건강',
                     style: VariantBTokens.badge
-                        .copyWith(color: VariantBTokens.green),
+                        .copyWith(color: VariantBTokens.of(context).green),
                   ),
                 ),
               ],
@@ -109,7 +112,8 @@ class _BoardingPassCard extends StatelessWidget {
               Expanded(
                 child: CustomPaint(
                   size: const Size(double.infinity, 1),
-                  painter: _DashPainter(),
+                  painter:
+                      _DashPainter(color: VariantBTokens.of(context).divider),
                 ),
               ),
               const _Notch(isLeft: false),
@@ -167,15 +171,17 @@ class _PassField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: VariantBTokens.dataLabel),
+        Text(label, style: VariantBTokens.of(context).dataLabel),
         const SizedBox(height: 4),
         Text(
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: VariantBTokens.body.copyWith(
+          style: VariantBTokens.of(context).body.copyWith(
             fontWeight: FontWeight.w700,
-            color: accent ? VariantBTokens.amber : VariantBTokens.textPrimary,
+            color: accent
+                ? VariantBTokens.of(context).amber
+                : VariantBTokens.of(context).textPrimary,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
@@ -196,7 +202,7 @@ class _Notch extends StatelessWidget {
       width: 8,
       height: 16,
       decoration: BoxDecoration(
-        color: VariantBTokens.background,
+        color: VariantBTokens.of(context).background,
         borderRadius: BorderRadius.horizontal(
           left: isLeft ? Radius.zero : const Radius.circular(16),
           right: isLeft ? const Radius.circular(16) : Radius.zero,
@@ -207,10 +213,14 @@ class _Notch extends StatelessWidget {
 }
 
 class _DashPainter extends CustomPainter {
+  const _DashPainter({required this.color});
+
+  final Color color;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = VariantBTokens.divider
+      ..color = color
       ..strokeWidth = 1.4;
     const dash = 5.0;
     const gap = 4.0;
@@ -223,7 +233,7 @@ class _DashPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DashPainter old) => old.color != color;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -240,7 +250,7 @@ class _NightReportCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: VariantBTokens.card,
+        color: VariantBTokens.of(context).card,
         borderRadius: BorderRadius.circular(VariantBTokens.cardRadius),
       ),
       child: Column(
@@ -248,12 +258,12 @@ class _NightReportCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('어젯밤 활동', style: VariantBTokens.body),
+              Text('어젯밤 활동', style: VariantBTokens.of(context).body),
               const Spacer(),
               Text(
                 '${labHm(kLabNightActivity.start)} → '
                 '${labHm(kLabNightActivity.end)}',
-                style: VariantBTokens.bodySecondary.copyWith(
+                style: VariantBTokens.of(context).bodySecondary.copyWith(
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
@@ -273,12 +283,13 @@ class _NightReportCard extends StatelessWidget {
                   children: [
                     Expanded(
                       flex: (r * 1000).round().clamp(1, 999),
-                      child: const ColoredBox(color: VariantBTokens.amber),
+                      child:
+                          ColoredBox(color: VariantBTokens.of(context).amber),
                     ),
                     Expanded(
                       flex: (1000 - (r * 1000).round()).clamp(1, 999),
-                      child: const ColoredBox(
-                          color: VariantBTokens.progressTrack),
+                      child: ColoredBox(
+                          color: VariantBTokens.of(context).progressTrack),
                     ),
                   ],
                 ),
@@ -331,11 +342,11 @@ class _ReportStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: VariantBTokens.dataLabel),
+        Text(label, style: VariantBTokens.of(context).dataLabel),
         const SizedBox(height: 4),
         Text(
           value,
-          style: VariantBTokens.body.copyWith(
+          style: VariantBTokens.of(context).body.copyWith(
             fontWeight: FontWeight.w700,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),

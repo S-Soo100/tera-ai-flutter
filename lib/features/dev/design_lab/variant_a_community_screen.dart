@@ -82,20 +82,20 @@ class _CategoryChip extends StatelessWidget {
           ? Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
-                color: VariantATokens.activeTile,
+                color: VariantATokens.of(context).activeTile,
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: VariantATokens.textOnActive,
+                  color: VariantATokens.of(context).textOnActive,
                 ),
               ),
             )
           : AGlassCapsule(
-              child: Text(label, style: VariantATokens.tileStatus),
+              child: Text(label, style: VariantATokens.of(context).tileStatus),
             ),
     );
   }
@@ -111,11 +111,11 @@ class _PostCard extends StatelessWidget {
   final LabPost post;
 
   /// 카테고리 틴트 — 기기 틴트 팔레트 재사용(랩 격리 내 일관 색).
-  Color get _tint => switch (post.category) {
-        LabPostCategory.notice => VariantATokens.heaterTint,
-        LabPostCategory.qna => VariantATokens.mistTint,
-        LabPostCategory.free => VariantATokens.ledTint,
-        LabPostCategory.wiki => VariantATokens.fanTint,
+  Color _tint(BuildContext context) => switch (post.category) {
+        LabPostCategory.notice => VariantATokens.of(context).heaterTint,
+        LabPostCategory.qna => VariantATokens.of(context).mistTint,
+        LabPostCategory.free => VariantATokens.of(context).ledTint,
+        LabPostCategory.wiki => VariantATokens.of(context).fanTint,
       };
 
   @override
@@ -130,23 +130,23 @@ class _PostCard extends StatelessWidget {
             children: [
               Text(
                 post.categoryLabel,
-                style: VariantATokens.tileStatus.copyWith(
-                  color: _tint,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
+                style: VariantATokens.of(context).tileStatus.copyWith(
+                      color: _tint(context),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
               ),
               const Spacer(),
               Text(
                 '${labDaySection(post.at)} ${labHm(post.at)}',
-                style: VariantATokens.tileStatus,
+                style: VariantATokens.of(context).tileStatus,
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
             post.title,
-            style: VariantATokens.tileTitle,
+            style: VariantATokens.of(context).tileTitle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -156,15 +156,16 @@ class _PostCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   post.author,
-                  style: VariantATokens.tileStatus,
+                  style: VariantATokens.of(context).tileStatus,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Icon(Icons.chat_bubble_outline,
-                  size: 14, color: VariantATokens.textSecondary),
+              Icon(Icons.chat_bubble_outline,
+                  size: 14, color: VariantATokens.of(context).textSecondary),
               const SizedBox(width: 4),
-              Text('${post.commentCount}', style: VariantATokens.tileStatus),
+              Text('${post.commentCount}',
+                  style: VariantATokens.of(context).tileStatus),
             ],
           ),
         ],

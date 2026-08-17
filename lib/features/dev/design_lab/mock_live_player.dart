@@ -136,18 +136,18 @@ class _MockLivePlayerState extends State<MockLivePlayer>
                   Container(
                     width: 7,
                     height: 7,
-                    decoration: const BoxDecoration(
-                      color: VariantATokens.liveRed,
+                    decoration: BoxDecoration(
+                      color: VariantATokens.of(context).liveRed,
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 5),
-                  const Text(
+                  Text(
                     'LIVE',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: VariantATokens.textPrimary,
+                      color: VariantATokens.of(context).textPrimary,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -159,7 +159,8 @@ class _MockLivePlayerState extends State<MockLivePlayer>
             right: 12,
             bottom: 12,
             child: _badgeGlass(
-              child: Text(labHm(kLabNow), style: VariantATokens.tileStatus),
+              child: Text(labHm(kLabNow),
+                  style: VariantATokens.of(context).tileStatus),
             ),
           ),
         ],
@@ -170,7 +171,7 @@ class _MockLivePlayerState extends State<MockLivePlayer>
   /// 배지 공통 마감 — 공용 [AGlass]에 배지 규격(radius 8·강한 오버레이)만 입힌다.
   Widget _badgeGlass({required Widget child}) => AGlass(
         radius: 8,
-        overlay: VariantATokens.glassOverlayStrong,
+        overlay: VariantATokens.of(context).glassOverlayStrong,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: child,
       );

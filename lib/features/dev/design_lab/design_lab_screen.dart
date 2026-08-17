@@ -43,11 +43,11 @@ class DesignLabScreen extends StatelessWidget {
             summary: '4탭 풀 체험(홈·통계·마이크레·커뮤니티). '
                 '차분한 단색 바닥 위 솔리드 타일, 풀블리드 4:3 카메라, '
                 '2×2 그리드, 스프링 스케일 탭.',
-            colors: const [
-              VariantATokens.wallpaperTop,
-              VariantATokens.glassOverlayStrong,
-              VariantATokens.heaterTint,
-              VariantATokens.mistTint,
+            colors: [
+              VariantATokens.of(context).wallpaperTop,
+              VariantATokens.of(context).glassOverlayStrong,
+              VariantATokens.of(context).heaterTint,
+              VariantATokens.of(context).mistTint,
             ],
             onTap: () => context.push('/design-test/a'),
           ),
@@ -57,11 +57,11 @@ class DesignLabScreen extends StatelessWidget {
             title: 'Flighty — 공항 전광판',
             summary: '4탭 풀 체험(홈·통계·마이크레·커뮤니티). '
                 '다크 전광판 위계, FIDS 보드, 보딩패스 개체 카드.',
-            colors: const [
-              VariantBTokens.background,
-              VariantBTokens.card,
-              VariantBTokens.amber,
-              VariantBTokens.green,
+            colors: [
+              VariantBTokens.of(context).background,
+              VariantBTokens.of(context).card,
+              VariantBTokens.of(context).amber,
+              VariantBTokens.of(context).green,
             ],
             onTap: () => context.push('/design-test/b'),
           ),

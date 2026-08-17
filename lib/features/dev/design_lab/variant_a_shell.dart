@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:go_router/go_router.dart';
 
+import 'lab_mode_toggle.dart';
 import 'tokens/variant_a_tokens.dart';
 import 'variant_a_community_screen.dart';
 import 'variant_a_home_screen.dart';
@@ -15,6 +16,10 @@ import 'variant_a_widgets.dart';
 /// 탭바는 실앱 독 문법: 플로팅 솔리드 캡슐 + 아이콘/라벨, 콘텐츠가
 /// 그 뒤로 스크롤된다. 스크롤 내리면 독이 축소된다(iOS 26).
 /// `AppTheme`·실 `GlassDock` 미참조 — 랩 격리 유지.
+///
+/// 다크/라이트(2026-08-14 오후): 토큰 한 벌([VariantATokens.dark]/[.light])을
+/// [ALabTheme]으로 내려보낸다. 기본은 시스템 밝기, 우상단 ☀️/🌙로 즉시 전환
+/// (랩 로컬 state — 실앱 `themeModeProvider`와 무관).
 class VariantAShell extends StatefulWidget {
   const VariantAShell({super.key});
 
@@ -27,6 +32,12 @@ class _VariantAShellState extends State<VariantAShell> {
 
   /// 스크롤 방향에 따라 독 축소/복원 — 어느 탭에서 올라온 알림이든 받는다.
   bool _dockShrunk = false;
+
+  /// null = 시스템 밝기 따름. 토글하면 고정.
+  Brightness? _override;
+
+  Brightness _brightnessOf(BuildContext context) =>
+      _override ?? MediaQuery.platformBrightnessOf(context);
 
   static const _tabs = [
     (icon: Icons.home_outlined, selectedIcon: Icons.home, label: '홈'),
@@ -49,51 +60,98 @@ class _VariantAShellState extends State<VariantAShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: VariantATokens.wallpaperTop,
-      body: Stack(
-        children: [
-          NotificationListener<UserScrollNotification>(
-            onNotification: _onScroll,
-            child: IndexedStack(
-              index: _index,
-              children: [
-                // IndexedStack은 다른 탭도 살려 두므로 visible을 내려보내지
-                // 않으면 mock 라이브가 안 보이는 탭 뒤에서 계속 돈다.
-                VariantAHomeScreen(visible: _index == 0),
-                const VariantAStatsScreen(),
-                const VariantAPetsScreen(),
-                const VariantACommunityScreen(),
-              ],
-            ),
-          ),
-          // 랩 나가기 — 시안 셸은 pushed 최상위 라우트라, 자기 문법(유리
-          // 캡슐)의 뒤로 어포던스가 없으면 시스템 제스처 말곤 출구가 없다.
-          // 홈 헤더의 접힌 제목이 52pt에서 시작해 좌상단이 비어 있다.
-          Positioned(
-            top: 0,
-            left: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8, top: 4),
-                child: _BackCapsule(onTap: () => context.pop()),
+    final brightness = _brightnessOf(context);
+    final t = brightness == Brightness.dark
+        ? const VariantATokens.dark()
+        : const VariantATokens.light();
+    return ALabTheme(
+      tokens: t,
+      child: LabThemeScope(
+        brightness: brightness,
+        child: Scaffold(
+          backgroundColor: t.wallpaperTop,
+          body: Stack(
+            children: [
+              NotificationListener<UserScrollNotification>(
+                onNotification: _onScroll,
+                child: IndexedStack(
+                  index: _index,
+                  children: [
+                    // IndexedStack은 다른 탭도 살려 두므로 visible을 내려보내지
+                    // 않으면 mock 라이브가 안 보이는 탭 뒤에서 계속 돈다.
+                    VariantAHomeScreen(visible: _index == 0),
+                    const VariantAStatsScreen(),
+                    const VariantAPetsScreen(),
+                    const VariantACommunityScreen(),
+                  ],
+                ),
               ),
-            ),
+              // 랩 나가기 — 시안 셸은 pushed 최상위 라우트라, 자기 문법(유리
+              // 캡슐)의 뒤로 어포던스가 없으면 시스템 제스처 말곤 출구가 없다.
+              // 홈 헤더의 접힌 제목이 52pt에서 시작해 좌상단이 비어 있다.
+              Positioned(
+                top: 0,
+                left: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8, top: 4),
+                    child: _BackCapsule(onTap: () => context.pop()),
+                  ),
+                ),
+              ),
+              // 우상단 ☀️/🌙 — 테스터가 두 모드를 즉시 비교한다.
+              Positioned(
+                top: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8, top: 4),
+                    child: LabModeToggle(
+                      brightness: brightness,
+                      onToggle: () => setState(() {
+                        _override = brightness == Brightness.dark
+                            ? Brightness.light
+                            : Brightness.dark;
+                      }),
+                      builder: (context, icon) => _CapsuleIcon(icon: icon),
+                    ),
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: _GlassTabDock(
+                  tabs: _tabs,
+                  index: _index,
+                  shrunk: _dockShrunk,
+                  onSelected: (i) => setState(() {
+                    _index = i;
+                    _dockShrunk = false; // 탭 전환 시 독 복원.
+                  }),
+                ),
+              ),
+            ],
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: _GlassTabDock(
-              tabs: _tabs,
-              index: _index,
-              shrunk: _dockShrunk,
-              onSelected: (i) => setState(() {
-                _index = i;
-                _dockShrunk = false; // 탭 전환 시 독 복원.
-              }),
-            ),
-          ),
-        ],
+        ),
       ),
+    );
+  }
+}
+
+/// 캡슐 안 아이콘 하나 — 뒤로/모드 토글이 같은 문법을 쓴다.
+class _CapsuleIcon extends StatelessWidget {
+  const _CapsuleIcon({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = VariantATokens.of(context);
+    return AGlass(
+      radius: 100,
+      overlay: t.glassOverlayStrong,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      child: Icon(icon, size: 18, color: t.textPrimary),
     );
   }
 }
@@ -111,16 +169,7 @@ class _BackCapsule extends StatelessWidget {
       label: '뒤로',
       child: GestureDetector(
         onTap: onTap,
-        child: const AGlass(
-          radius: 100,
-          overlay: VariantATokens.glassOverlayStrong,
-          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          child: Icon(
-            Icons.arrow_back_ios_new,
-            size: 18,
-            color: VariantATokens.textPrimary,
-          ),
-        ),
+        child: const _CapsuleIcon(icon: Icons.arrow_back_ios_new),
       ),
     );
   }
@@ -160,8 +209,8 @@ class _GlassTabDock extends StatelessWidget {
           curve: Curves.easeOutCubic,
           builder: (context, t, child) => AGlass(
             radius: 100,
-            overlay: VariantATokens.glassOverlayStrong
-                .withValues(alpha: VariantATokens.glassOverlayStrong.a * t),
+            overlay: VariantATokens.of(context).glassOverlayStrong.withValues(
+                alpha: VariantATokens.of(context).glassOverlayStrong.a * t),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: child!,
           ),
@@ -199,8 +248,8 @@ class _DockButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = selected
-        ? VariantATokens.textPrimary
-        : VariantATokens.textSecondary;
+        ? VariantATokens.of(context).textPrimary
+        : VariantATokens.of(context).textSecondary;
 
     // excludeSemantics가 자식 InkWell의 tap 액션까지 지우므로 onTap을 직접 단다
     // (실앱 GlassDock과 동일).

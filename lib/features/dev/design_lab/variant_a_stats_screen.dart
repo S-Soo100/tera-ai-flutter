@@ -52,14 +52,14 @@ class _VariantAStatsScreenState extends State<VariantAStatsScreen> {
           children: [
             _MetricChip(
               label: '온도',
-              tint: VariantATokens.heaterTint,
+              tint: VariantATokens.of(context).heaterTint,
               active: _showTemp,
               onTap: () => _toggleMetric(true),
             ),
             const SizedBox(width: 8),
             _MetricChip(
               label: '습도',
-              tint: VariantATokens.mistTint,
+              tint: VariantATokens.of(context).mistTint,
               active: _showHumid,
               onTap: () => _toggleMetric(false),
             ),
@@ -120,12 +120,13 @@ class _MetricChip extends StatelessWidget {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: active ? tint : VariantATokens.textSecondary,
+                  color:
+                      active ? tint : VariantATokens.of(context).textSecondary,
                   shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: 6),
-              Text(label, style: VariantATokens.tileStatus),
+              Text(label, style: VariantATokens.of(context).tileStatus),
             ],
           ),
         ),
@@ -159,7 +160,7 @@ class _ChartCard extends StatelessWidget {
           Row(
             children: [
               Text(isDaily ? '지난 24시간' : '지난 7일',
-                  style: VariantATokens.tileTitle),
+                  style: VariantATokens.of(context).tileTitle),
               const Spacer(),
               Flexible(
                 child: Text(
@@ -168,7 +169,7 @@ class _ChartCard extends StatelessWidget {
                           '최저 ${kLabTempMin.toStringAsFixed(1)}℃'
                       : '최고 ${kLabWeekTempMax.toStringAsFixed(1)}℃ · '
                           '최저 ${kLabWeekTempMin.toStringAsFixed(1)}℃',
-                  style: VariantATokens.tileStatus,
+                  style: VariantATokens.of(context).tileStatus,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -181,9 +182,14 @@ class _ChartCard extends StatelessWidget {
             child: CustomPaint(
               size: Size.infinite,
               painter: isDaily
-                  ? _DailyChartPainter(showTemp: showTemp, showHumid: showHumid)
+                  ? _DailyChartPainter(
+                      showTemp: showTemp,
+                      showHumid: showHumid,
+                      t: VariantATokens.of(context))
                   : _WeeklyChartPainter(
-                      showTemp: showTemp, showHumid: showHumid),
+                      showTemp: showTemp,
+                      showHumid: showHumid,
+                      t: VariantATokens.of(context)),
             ),
           ),
           const SizedBox(height: 8),
@@ -193,7 +199,9 @@ class _ChartCard extends StatelessWidget {
               children: [
                 for (final h in const ['-24h', '-18h', '-12h', '-6h', '지금'])
                   Text(h,
-                      style: VariantATokens.tileStatus.copyWith(fontSize: 10)),
+                      style: VariantATokens.of(context)
+                          .tileStatus
+                          .copyWith(fontSize: 10)),
               ],
             )
           else
@@ -204,7 +212,9 @@ class _ChartCard extends StatelessWidget {
                     child: Text(
                       kLabWeekdayKo[d.day.weekday - 1],
                       textAlign: TextAlign.center,
-                      style: VariantATokens.tileStatus.copyWith(fontSize: 10),
+                      style: VariantATokens.of(context)
+                          .tileStatus
+                          .copyWith(fontSize: 10),
                     ),
                   ),
               ],
@@ -250,9 +260,9 @@ class _SummaryStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: VariantATokens.tileStatus),
+        Text(label, style: VariantATokens.of(context).tileStatus),
         const SizedBox(height: 2),
-        Text(value, style: VariantATokens.chipValue),
+        Text(value, style: VariantATokens.of(context).chipValue),
       ],
     );
   }
@@ -260,7 +270,10 @@ class _SummaryStat extends StatelessWidget {
 
 /// 일간 — 24시간 곡선(온도·습도 각자 정규화, 홈 미니 차트 문법 확대).
 class _DailyChartPainter extends CustomPainter {
-  _DailyChartPainter({required this.showTemp, required this.showHumid});
+  _DailyChartPainter(
+      {required this.showTemp, required this.showHumid, required this.t});
+
+  final VariantATokens t;
 
   final bool showTemp;
   final bool showHumid;
@@ -269,7 +282,7 @@ class _DailyChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // 격자·폴리라인은 공용 헬퍼 한 벌([aChartGrid]/[aPolylinePath]) —
     // 홈 미니 차트와 같은 수식. inset 6%는 곡선이 카드 모서리에 닿지 않게.
-    aChartGrid(canvas, size);
+    aChartGrid(canvas, size, t);
     final stroke = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5
@@ -278,26 +291,29 @@ class _DailyChartPainter extends CustomPainter {
       canvas.drawPath(
         aPolylinePath(size, kLabEnvSeries.map((p) => p.temp).toList(),
             inset: 0.06),
-        stroke..color = VariantATokens.heaterTint,
+        stroke..color = t.heaterTint,
       );
     }
     if (showHumid) {
       canvas.drawPath(
         aPolylinePath(size, kLabEnvSeries.map((p) => p.humid).toList(),
             inset: 0.06),
-        stroke..color = VariantATokens.mistTint,
+        stroke..color = t.mistTint,
       );
     }
   }
 
   @override
   bool shouldRepaint(covariant _DailyChartPainter old) =>
-      old.showTemp != showTemp || old.showHumid != showHumid;
+      old.showTemp != showTemp || old.showHumid != showHumid || old.t != t;
 }
 
 /// 주간 — 일별 온도 범위 바(최저~최고) + 평균 점, 습도는 평균 곡선.
 class _WeeklyChartPainter extends CustomPainter {
-  _WeeklyChartPainter({required this.showTemp, required this.showHumid});
+  _WeeklyChartPainter(
+      {required this.showTemp, required this.showHumid, required this.t});
+
+  final VariantATokens t;
 
   final bool showTemp;
   final bool showHumid;
@@ -315,7 +331,7 @@ class _WeeklyChartPainter extends CustomPainter {
     final slot = size.width / days.length;
 
     // 가로 격자 — 공용 [aChartGrid].
-    aChartGrid(canvas, size);
+    aChartGrid(canvas, size, t);
 
     double tempY(double v) =>
         size.height * (1 - (v - _tFloor) / (_tCeil - _tFloor));
@@ -339,14 +355,13 @@ class _WeeklyChartPainter extends CustomPainter {
             Radius.circular(barW / 2),
           ),
           Paint()
-            ..color = VariantATokens.heaterTint
-                .withValues(alpha: d.isWarning ? 0.85 : 0.45),
+            ..color = t.heaterTint.withValues(alpha: d.isWarning ? 0.85 : 0.45),
         );
         // 평균 점.
         canvas.drawCircle(
           Offset(cx, tempY(d.tempAvg)),
           3,
-          Paint()..color = VariantATokens.heaterTint,
+          Paint()..color = t.heaterTint,
         );
       }
     }
@@ -364,14 +379,14 @@ class _WeeklyChartPainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.5
           ..strokeCap = StrokeCap.round
-          ..color = VariantATokens.mistTint,
+          ..color = t.mistTint,
       );
     }
   }
 
   @override
   bool shouldRepaint(covariant _WeeklyChartPainter old) =>
-      old.showTemp != showTemp || old.showHumid != showHumid;
+      old.showTemp != showTemp || old.showHumid != showHumid || old.t != t;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -397,25 +412,26 @@ class _PendingCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: VariantATokens.textSecondary),
+            Icon(icon,
+                size: 22, color: VariantATokens.of(context).textSecondary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: VariantATokens.tileTitle),
+                  Text(title, style: VariantATokens.of(context).tileTitle),
                   const SizedBox(height: 2),
                   Text(
                     reason,
-                    style: VariantATokens.tileStatus,
+                    style: VariantATokens.of(context).tileStatus,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.lock_outline,
-                size: 16, color: VariantATokens.textSecondary),
+            Icon(Icons.lock_outline,
+                size: 16, color: VariantATokens.of(context).textSecondary),
           ],
         ),
       ),
