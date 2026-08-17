@@ -70,7 +70,6 @@ class LabDevice {
     required this.name,
     required this.isOn,
     required this.statusLabel,
-    required this.todayRuntimeMinutes,
   });
 
   final LabDeviceKind kind;
@@ -81,9 +80,6 @@ class LabDevice {
 
   /// 카드에 붙는 한 줄 상태 텍스트.
   final String statusLabel;
-
-  /// 오늘 가동 시간(분). C안 진행 링 등에 쓴다.
-  final int todayRuntimeMinutes;
 }
 
 const List<LabDevice> kLabDevices = [
@@ -92,28 +88,24 @@ const List<LabDevice> kLabDevices = [
     name: '히터',
     isOn: true,
     statusLabel: '켜짐 · 26.5℃ 유지',
-    todayRuntimeMinutes: 312,
   ),
   LabDevice(
     kind: LabDeviceKind.mist,
     name: '분무',
     isOn: false,
     statusLabel: '오늘 3회',
-    todayRuntimeMinutes: 1,
   ),
   LabDevice(
     kind: LabDeviceKind.led,
     name: 'LED',
     isOn: false,
     statusLabel: '19:30 소등',
-    todayRuntimeMinutes: 618,
   ),
   LabDevice(
     kind: LabDeviceKind.fan,
     name: '팬',
     isOn: true,
     statusLabel: '켜짐 · 환기 중',
-    todayRuntimeMinutes: 84,
   ),
 ];
 

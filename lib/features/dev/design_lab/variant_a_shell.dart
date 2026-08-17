@@ -9,11 +9,11 @@ import 'variant_a_pets_screen.dart';
 import 'variant_a_stats_screen.dart';
 import 'variant_a_widgets.dart';
 
-/// A안 — Liquid Glass 4탭 셸.
+/// A안 — 솔리드 다크(2차) 4탭 셸.
 ///
-/// B·C 셸과 같은 방식(IndexedStack + 로컬 state, 라우터 무변경)이되
-/// 탭바는 실앱 유리 독 문법: 플로팅 유리 캡슐 + 아이콘/라벨, 콘텐츠가
-/// 그 뒤로 스크롤되어 blur에 비친다. 스크롤 내리면 독이 축소된다(iOS 26).
+/// B 셸과 같은 방식(IndexedStack + 로컬 state, 라우터 무변경)이되
+/// 탭바는 실앱 독 문법: 플로팅 솔리드 캡슐 + 아이콘/라벨, 콘텐츠가
+/// 그 뒤로 스크롤된다. 스크롤 내리면 독이 축소된다(iOS 26).
 /// `AppTheme`·실 `GlassDock` 미참조 — 랩 격리 유지.
 class VariantAShell extends StatefulWidget {
   const VariantAShell({super.key});
@@ -152,8 +152,8 @@ class _GlassTabDock extends StatelessWidget {
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
         // 축소 시 흐림은 Opacity 레이어가 아니라 **decoration 알파**로 낸다 —
-        // AnimatedOpacity는 blur(BackdropFilter)의 saveLayer 위에 opacity
-        // saveLayer를 하나 더 쌓는다(quick_control_grid의 단일 표면 전례).
+        // AnimatedOpacity는 saveLayer를 하나 더 쌓는다(quick_control_grid의
+        // 단일 표면 전례).
         child: TweenAnimationBuilder<double>(
           tween: Tween(end: shrunk ? 0.55 : 1.0),
           duration: const Duration(milliseconds: 260),
@@ -162,8 +162,6 @@ class _GlassTabDock extends StatelessWidget {
             radius: 100,
             overlay: VariantATokens.glassOverlayStrong
                 .withValues(alpha: VariantATokens.glassOverlayStrong.a * t),
-            // 독은 콘텐츠가 뒤로 지나가는 유일한 표면 — 여기만 진짜 blur.
-            blur: true,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: child!,
           ),

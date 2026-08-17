@@ -3,9 +3,9 @@ import 'package:go_router/go_router.dart';
 
 import 'tokens/variant_a_tokens.dart';
 import 'tokens/variant_b_tokens.dart';
-import 'tokens/variant_c_tokens.dart';
 
-/// 디자인 테스트 선택 화면 — 테스트 유저용 A/B/C 시안 카드.
+/// 디자인 테스트 선택 화면 — 테스트 유저용 A/B 시안 카드.
+/// C안(Copilot Money)은 2026-08-14 폐기(A안 개선·B안 유지 결정).
 ///
 /// 스펙: `docs/design-lab-benchmark-specs.md`, 공개 계획:
 /// `docs/design-test-rollout-plan.md`. 하드코딩 색·문자열은
@@ -25,7 +25,7 @@ class DesignLabScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            '비바나트가 검토 중인 세 가지 디자인을 직접 체험해 보세요. '
+            '비바나트가 검토 중인 두 가지 디자인을 직접 체험해 보세요. '
             '모든 데이터는 데모입니다 — 실제 사육장·계정과 연결되지 않아요.',
             style: theme.textTheme.bodySmall,
           ),
@@ -39,12 +39,13 @@ class DesignLabScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _VariantCard(
             label: 'A안',
-            title: 'Apple Home — Liquid Glass',
+            title: 'Apple Home — 솔리드 다크·와이드 카메라',
             summary: '4탭 풀 체험(홈·통계·마이크레·커뮤니티). '
-                '딥 월페이퍼 위 유리 타일, 2×2 그리드, 스프링 스케일 탭.',
+                '차분한 단색 바닥 위 솔리드 타일, 풀블리드 4:3 카메라, '
+                '2×2 그리드, 스프링 스케일 탭.',
             colors: const [
               VariantATokens.wallpaperTop,
-              VariantATokens.wallpaperBottom,
+              VariantATokens.glassOverlayStrong,
               VariantATokens.heaterTint,
               VariantATokens.mistTint,
             ],
@@ -63,20 +64,6 @@ class DesignLabScreen extends StatelessWidget {
               VariantBTokens.green,
             ],
             onTap: () => context.push('/design-test/b'),
-          ),
-          const SizedBox(height: 12),
-          _VariantCard(
-            label: 'C안',
-            title: 'Copilot Money — 데이터 시각화',
-            summary: '4탭 풀 체험(홈·통계·마이크레·커뮤니티). '
-                '웜 화이트 + 그라데이션 차트 + 파스텔 카드/도넛.',
-            colors: const [
-              VariantCTokens.background,
-              VariantCTokens.tempGradStart,
-              VariantCTokens.tempGradEnd,
-              VariantCTokens.humidGradStart,
-            ],
-            onTap: () => context.push('/design-test/c'),
           ),
         ],
       ),

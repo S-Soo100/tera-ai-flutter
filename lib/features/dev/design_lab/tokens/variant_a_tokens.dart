@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 
-/// A안 — Apple Home (iOS 26, Liquid Glass) 토큰.
+/// A안 — Apple Home 문법, **2차 솔리드 다크**(2026-08-14) 토큰.
 ///
-/// 스펙: 배경 위 유리 타일. 콘텐츠가 바닥이고 UI는 반투명 레이어로 뜬다.
-/// `AppTheme`/`AppStyles` 참조 금지 — 랩 격리.
+/// 1차는 Liquid Glass(그라데이션 월페이퍼 + blur 유리)였고, 2차에서 유리를
+/// 걷어내 솔리드 표면으로 바꿨다. 값은 실앱 `AppTheme` 글래스 블록의 미러다
+/// (이름의 glass는 역사적 명칭). `AppTheme`/`AppStyles` 참조 금지 — 랩 격리.
 abstract final class VariantATokens {
-  // ── 배경 (딥 그라데이션 월페이퍼: 네이비→틸, 비바나트 브랜드 도출) ──
-  static const wallpaperTop = Color(0xFF141E45); // brandNavy 근방
-  static const wallpaperMid = Color(0xFF1B3A5C);
-  static const wallpaperBottom = Color(0xFF0F5E5A); // 틸
+  // ── 배경 (정적 단색 — 차분한 딥 네이비. 3벌은 호환용, 동일 톤) ──
+  static const wallpaperTop = Color(0xFF141A2E);
+  static const wallpaperMid = Color(0xFF141A2E);
+  static const wallpaperBottom = Color(0xFF141A2E);
 
-  // ── 유리 타일 ──
-  static const double blurSigma = 24;
-  static const glassOverlay = Color(0x24FFFFFF); // 흰색 ~14%
-  static const glassOverlayStrong = Color(0x2EFFFFFF); // ~18%
-  static const glassBorder = Color(0x33FFFFFF);
-  static const double tileRadius = 26;
+  // ── 솔리드 타일 (blur 없음) ──
+  static const glassOverlay = Color(0xFF1E2640); // 기본 표면
+  static const glassOverlayStrong = Color(0xFF242D4A); // 독·시트
+  static const glassBorder = Color(0x14FFFFFF); // 흰 ~8%
+  static const double tileRadius = 20;
 
-  // ── 활성 타일: 불투명 흰색 + 기기색 틴트 ──
-  static const activeTile = Color(0xFFF7F7FA);
-  static const heaterTint = Color(0xFFFF8F45); // 주황
-  static const mistTint = Color(0xFF4AA8FF); // 파랑
-  static const ledTint = Color(0xFFFFC93C); // 노랑
-  static const fanTint = Color(0xFF4FD8C4); // 민트
+  // ── 활성 타일: 밝은 뉴트럴 불투명면 + 기기색 틴트(채도·명도 하향) ──
+  static const activeTile = Color(0xFFF2F3F7);
+  static const heaterTint = Color(0xFFE8823F); // 주황
+  static const mistTint = Color(0xFF4A90D9); // 파랑
+  static const ledTint = Color(0xFFE0B341); // 노랑
+  static const fanTint = Color(0xFF4DBFAE); // 민트
 
   // ── 텍스트 ──
   static const textPrimary = Colors.white;

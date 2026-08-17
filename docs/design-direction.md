@@ -136,7 +136,7 @@ Figma 팔레트를 바꾸지 않고 **적용 범위만 좁힌다.**
 | 커뮤니티 탭 | ✅ 풀 전환 (로컬 seed 로직 불변) |
 | 보조 라우트 (/wiki /search /crecam /smart-cage /notifications /enclosure-settings /home/routines /profile) | ✅ 경량 전환 (배경+표면 톤만) |
 | 페어링 플로우·위키 하위·클립 플레이어 등 내부 단계 화면 | ⬜ 스킵 (시간 대비 효과 낮음 — 후속) |
-| 디자인 랩 (`/design-test`) | 존치 (3안 비교 페이지, 전환 대상 아님) |
+| 디자인 랩 (`/design-test`) | 존치 (A/B 2안 비교 페이지 — C안은 2026-08-14 폐기. A 셸은 실앱 솔리드 룩을 미러) |
 
 ---
 

@@ -1,9 +1,8 @@
-/// A안 공용 유리 조각 — 홈/통계/마이크레/커뮤니티 4탭이 같은 문법을 쓴다.
-/// `AppTheme` 참조 금지(랩 격리) — [VariantATokens]만 쓴다.
+/// A안 공용 조각(2차 솔리드) — 홈/통계/마이크레/커뮤니티 4탭이 같은 문법을
+/// 쓴다. `AppTheme` 참조 금지(랩 격리) — [VariantATokens]만 쓴다.
 library;
 
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -13,7 +12,7 @@ import 'tokens/variant_a_tokens.dart';
 /// 스크롤 끝에 남겨 두는 높이. 4탭이 같은 값을 쓴다.
 const double aDockClearance = 120;
 
-/// A안 탭 화면 공통 프레임 — 월페이퍼 + `SafeArea(bottom: false)` +
+/// A안 탭 화면 공통 프레임 — 단색 바닥 + `SafeArea(bottom: false)` +
 /// ListView(가로 [VariantATokens.screenHPad], 하단 [aDockClearance]).
 ///
 /// 홈은 CustomScrollView(슬리버 핀 헤더)라 이 프레임을 못 쓰고
@@ -57,57 +56,18 @@ class AScreenScaffold extends StatelessWidget {
   }
 }
 
-/// 배경 월페이퍼 — 딥 그라데이션 + 은은한 빛 번짐.
-/// 유리가 "받쳐 보일" 바닥 콘텐츠라 탭마다 깔아 준다.
+/// 배경 — 정적 단색(2차 솔리드). 1차의 그라데이션·glow는 유리가 받쳐
+/// 보일 거리를 만들려고 있었고, 지금은 필요 없다.
 class AWallpaper extends StatelessWidget {
   const AWallpaper({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            VariantATokens.wallpaperTop,
-            VariantATokens.wallpaperMid,
-            VariantATokens.wallpaperBottom,
-          ],
-        ),
-      ),
-      child: CustomPaint(painter: _GlowPainter()),
-    );
+    return const ColoredBox(color: VariantATokens.wallpaperTop);
   }
 }
 
-class _GlowPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final glow = Paint()
-      ..shader = ui.Gradient.radial(
-        Offset(size.width * 0.8, size.height * 0.25),
-        size.width * 0.7,
-        [const Color(0x2E4FD8C4), const Color(0x004FD8C4)],
-      );
-    canvas.drawCircle(
-        Offset(size.width * 0.8, size.height * 0.25), size.width * 0.7, glow);
-
-    final glow2 = Paint()
-      ..shader = ui.Gradient.radial(
-        Offset(size.width * 0.1, size.height * 0.7),
-        size.width * 0.6,
-        [const Color(0x244AA8FF), const Color(0x004AA8FF)],
-      );
-    canvas.drawCircle(
-        Offset(size.width * 0.1, size.height * 0.7), size.width * 0.6, glow2);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// 유리 타일 공통 — 흰 오버레이 + 얇은 테두리(+선택적 blur).
+/// 솔리드 타일 공통 — 불투명 표면 + 얇은 저대비 테두리. blur 경로 없음.
 class AGlass extends StatelessWidget {
   const AGlass({
     super.key,
@@ -123,40 +83,28 @@ class AGlass extends StatelessWidget {
   final Color overlay;
   final EdgeInsetsGeometry padding;
 
-  /// BackdropFilter blur를 깔지. **기본 false** — 배경이 정적 그라데이션이라
-  /// 반투명 플랫 필과 시각 차이가 미미한데, BackdropFilter는 조각 수만큼
-  /// saveLayer를 쌓아 스크롤 프레임을 잡아먹는다(프로덕션 GlassCard와 같은
-  /// 결론). 뒤로 실제 콘텐츠가 지나가는 표면(셸의 독)만 true를 준다.
+  /// 호환용 no-op. 1차 BackdropFilter 스위치 — 2차에서 경로 제거
+  /// (프로덕션 `GlassCard.blur`와 같은 처리).
   final bool blur;
 
   @override
   Widget build(BuildContext context) {
-    final body = Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: overlay,
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: VariantATokens.glassBorder, width: 0.5),
-      ),
-      child: child,
-    );
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
-      child: blur
-          ? BackdropFilter(
-              filter: ui.ImageFilter.blur(
-                sigmaX: VariantATokens.blurSigma,
-                sigmaY: VariantATokens.blurSigma,
-              ),
-              child: body,
-            )
-          : body,
+      child: Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: overlay,
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(color: VariantATokens.glassBorder, width: 0.5),
+        ),
+        child: child,
+      ),
     );
   }
 }
 
-/// 유리 캡슐(알약) — 칩·배지·드롭다운 헤더용.
+/// 캡슐(알약) — 칩·배지·드롭다운 헤더용.
 class AGlassCapsule extends StatelessWidget {
   const AGlassCapsule({super.key, required this.child});
 
@@ -172,7 +120,7 @@ class AGlassCapsule extends StatelessWidget {
   }
 }
 
-/// 유리 세그먼트 컨트롤 — 캡슐 안에서 활성 칸만 흰 필이 뜬다.
+/// 세그먼트 컨트롤 — 캡슐 안에서 활성 칸만 밝은 필이 뜬다.
 ///
 /// [disabledFrom] 이후 인덱스는 흐리게 그리고 탭을 막는다('준비 중' 문법).
 class AGlassSegment extends StatelessWidget {
@@ -293,7 +241,7 @@ Path aPolylinePath(Size size, List<double> values, {double inset = 0}) {
   return path;
 }
 
-/// 차트 가로 격자선 — 유리 테두리 색의 얇은 선을 고른 간격으로 [rows]+1개.
+/// 차트 가로 격자선 — 타일 테두리 색의 얇은 선을 고른 간격으로 [rows]+1개.
 void aChartGrid(Canvas canvas, Size size, {int rows = 3}) {
   final paint = Paint()
     ..color = VariantATokens.glassBorder

@@ -39,12 +39,14 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
           CustomScrollView(
             slivers: [
               _header(context),
+              // 카메라는 **풀블리드**(2차, 2026-08-14) — 좌우 여백 밖에서
+              // 화면 폭을 다 쓴다. 실앱 홈 TopFixedArea와 같은 룩.
+              SliverToBoxAdapter(child: _CameraCard(visible: widget.visible)),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: VariantATokens.screenHPad),
                 sliver: SliverList.list(
                   children: [
-                    _CameraCard(visible: widget.visible),
                     const SizedBox(height: VariantATokens.tileGap),
                     const _SensorChipRow(),
                     const SizedBox(height: 20),
@@ -80,8 +82,8 @@ class _VariantAHomeScreenState extends State<VariantAHomeScreen> {
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       foregroundColor: VariantATokens.textPrimary,
-      // 핀 헤더의 BackdropFilter는 **스크롤 프레임마다** 재실행된다 —
-      // 가림막은 플랫 반투명(월페이퍼 톤)으로 충분하다.
+      // 핀 헤더 가림막은 플랫 반투명(바닥 톤) — blur는 스크롤 프레임마다
+      // 재실행되어 쓰지 않는다.
       flexibleSpace: DecoratedBox(
         decoration: BoxDecoration(
           color: VariantATokens.wallpaperTop.withValues(alpha: 0.85),
@@ -158,9 +160,12 @@ class _CameraCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(VariantATokens.tileRadius),
+      // 풀블리드라 아래 모서리만 둥글린다.
+      borderRadius: const BorderRadius.vertical(
+        bottom: Radius.circular(VariantATokens.tileRadius),
+      ),
       child: AspectRatio(
-        aspectRatio: 16 / 9,
+        aspectRatio: 4 / 3,
         // 번들 루프 영상 mock 라이브. LIVE 배지·타임스탬프는 플레이어가 그린다.
         child: MockLivePlayer(
           visible: visible,

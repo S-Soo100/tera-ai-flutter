@@ -15,9 +15,11 @@
 - 폰트는 Pretendard 유지(웨이트·스케일만 벤치마크를 따름). 숫자 강조 구간은 `FontFeature.tabularFigures()`.
 - 로딩은 shimmer 스켈레톤 (CircularProgressIndicator 금지 — 프로젝트 규칙).
 
-## A안 — Apple Home (iOS 26, Liquid Glass)
+## A안 — Apple Home (iOS 26) — **2차 솔리드 다크·와이드 카메라 (2026-08-14)**
 
-**핵심 문법**: 배경 위 유리 타일. 콘텐츠(월페이퍼/카메라)가 바닥이고 UI는 그 위에 떠 있는 반투명 레이어.
+> **2026-08-14 결정: A안 개선 · B안 유지 · C안 폐기.** 1차 Liquid Glass(아래 원문)에서 유리(blur·반투명 오버레이·그라데이션 월페이퍼·glow)를 걷어내고 **솔리드하고 차분한 면**으로, 홈 카메라는 **풀블리드 4:3**으로 넓혔다. 2차 값: 바닥 `#141A2E` 단색 / 타일 `#1E2640`(strong `#242D4A`) 불투명 + 흰 8% 테두리, radius 20 / 활성 `#F2F3F7` / 틴트 히터 `#E8823F`·분무 `#4A90D9`·LED `#E0B341`·팬 `#4DBFAE`. 랩 `variant_a_tokens.dart`는 실앱 `AppTheme` 글래스 블록의 미러다. 아래 1차 원문의 "유리·blur·그라데이션"은 더 이상 유효하지 않고 위계·그리드·모션 문법은 그대로다.
+
+**핵심 문법(1차 원문)**: 배경 위 유리 타일. 콘텐츠(월페이퍼/카메라)가 바닥이고 UI는 그 위에 떠 있는 반투명 레이어.
 
 ### 토큰
 | 항목 | 값 |
@@ -58,7 +60,9 @@
 4. **제어**: 다크 카드 안 가로 스크롤 캡슐 버튼 행(Flighty 하단 액션 문법). 데이터가 주인공, 제어는 보조.
 5. **모션**: 수치 카운트업, 진행 바 부드러운 채움, 카드 진입 시 순차 페이드+슬라이드.
 
-## C안 — Copilot Money (프리미엄 데이터 시각화)
+## C안 — Copilot Money (프리미엄 데이터 시각화) — **2026-08-14 폐기**
+
+> 사용자 결정(A안 개선·B안 유지·C안 폐기)으로 `variant_c_*.dart` 5파일 + `tokens/variant_c_tokens.dart`, `/design-test/c` 라우트, 선택 화면 C 카드를 삭제했다. 아래는 기록용 원문.
 
 **핵심 문법**: 밝은 배경 + 채도 높은 그라데이션 차트 + 큰 라운드 수치. "데이터가 아름다워서 매일 열어보고 싶은 앱".
 가계부 월 요약 ↔ 사육장 환경 요약이 동형. 통계 탭까지의 확장성이 가장 좋다.
@@ -87,17 +91,15 @@ lib/features/dev/design_lab/
 ├── design_lab_screen.dart          # 선택 화면: A/B/C 카드 → push
 ├── design_lab_fixtures.dart        # 공용 더미(온습도 24h·주간 7일, 기기 4종, 개체 3, 리포트, 게시글)
 ├── mock_live_player.dart           # 공용 mock 라이브 루프 플레이어(LIVE 배지+폴백, A·B 홈)
-├── variant_a_shell.dart            # A안 4탭 셸(IndexedStack, 유리 독+축소 모션)
+├── variant_a_shell.dart            # A안 4탭 셸(IndexedStack, 솔리드 독+축소 모션)
 ├── variant_a_{home,stats,pets,community}_screen.dart
-├── variant_a_widgets.dart          # A 공용 조각(AWallpaper/AGlass/AScreenScaffold 등)
+├── variant_a_widgets.dart          # A 공용 조각(AWallpaper/AGlass/AScreenScaffold 등 — 이름은 역사적, 2차 솔리드)
 ├── variant_b_shell.dart            # B안 4탭 셸(Flighty 전광판 탭바)
 ├── variant_b_{home,stats,pets,community}_screen.dart
-├── variant_c_shell.dart            # C안 4탭 셸(Copilot 필 탭바)
-├── variant_c_{home,stats,pets,community}_screen.dart
 └── tokens/
     ├── variant_a_tokens.dart       # 안별 색·타이포·radius·spacing 상수 (AppTheme 미참조)
-    ├── variant_b_tokens.dart
-    └── variant_c_tokens.dart
+    └── variant_b_tokens.dart
+    (variant_c_* 는 2026-08-14 폐기·삭제)
 ```
 
 - 라우트: `/design-test`(선택 화면) + `/design-test/a|b|c`. `app_router.dart` 보조 최상위 등록(`/dev/chart-lab` 옆). 2026-08-14부터 비로그인 공개(`kPublicPaths`) — 진입점·롤백은 `design-test-rollout-plan.md` §2.4.
