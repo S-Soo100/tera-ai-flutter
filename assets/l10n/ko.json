@@ -757,5 +757,13 @@
   "stats_fids_max": "MAX",
   "stats_fids_min": "MIN",
   "stats_fids_status": "STATUS",
-  "stats_fids_date_fmt": "{m}/{d} ({w})"
+  "stats_fids_date_fmt": "{m}/{d} ({w})",
+  "my_pets_pass_morph": "MORPH",
+  "my_pets_pass_age": "AGE",
+  "my_pets_pass_adopted": "ADOPTED",
+  "my_pets_pass_weight": "WEIGHT",
+  "my_pets_pass_days": "D+{n}",
+  "my_pets_pass_weight_value": "{}g",
+  "nightly_ratio_active": "ACTIVE",
+  "nightly_ratio_rest": "REST"
 }

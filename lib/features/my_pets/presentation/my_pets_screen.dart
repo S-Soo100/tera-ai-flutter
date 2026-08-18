@@ -145,26 +145,40 @@ class _PetListView extends StatelessWidget {
   }
 }
 
+/// 개체 카드 — B안 **보딩패스** 문법(2026-08-18).
+///
+/// ```
+/// [사진]  이름 (크게)  [수컷]
+///         종
+/// ◖- - - - - - - - - - - - - - - - - -◗   ← 절취선
+/// MORPH          AGE           WEIGHT
+/// 릴리화이트     D+412         38.5g
+/// [ 정보 수정 ]
+/// ```
+///
+/// 데이터는 [petListProvider]의 [Pet] 그대로 — 탭은 상세(`/my-pets/:id`),
+/// "정보 수정"은 편집 화면. 값이 없는 칸은 `--`(0·가짜 날짜로 위장하지 않는다).
+/// AGE는 생년월이 있을 때 D+N, 없고 입양일만 있으면 라벨을 ADOPTED로 바꿔
+/// 입양 경과일을 보여준다 — 두 날짜를 한 라벨 아래 섞지 않는다.
 class _PetCard extends StatelessWidget {
   const _PetCard({required this.pet});
   final Pet pet;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // A안 유리 카드. 안의 구성(썸네일·이름·성별 배지·수정 버튼)은 불변 —
-    // 감싸는 표면만 유리다.
+    final glass = context.glass;
     return GlassCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AppStyles.spacing12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => context.push('/my-pets/${pet.id}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 상단: 사진 + 이름(크게) + 종 + 성별 배지. 탭 → 상세.
+          InkWell(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            onTap: () => context.push('/my-pets/${pet.id}'),
+            child: Padding(
+              padding: const EdgeInsets.all(AppStyles.spacing16),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   _PetThumbnail(pet: pet),
                   const SizedBox(width: 14),
@@ -172,15 +186,12 @@ class _PetCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 4),
                         Row(
                           children: [
                             Flexible(
                               child: Text(
                                 pet.name,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: glass.figureMid,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -189,68 +200,201 @@ class _PetCard extends StatelessWidget {
                             _SexBadge(sex: pet.sex),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _subtitle(pet),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
                         const SizedBox(height: 4),
-                        if (pet.adoptionDate != null)
-                          Text(
-                            'my_pets_adoption_date'.tr(
-                              namedArgs: {
-                                'date': _formatDate(pet.adoptionDate!),
-                              },
-                            ),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.outline,
-                            ),
-                          ),
+                        Text(
+                          pet.speciesName,
+                          style: glass.tileStatus
+                              .copyWith(color: glass.textSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => context.push('/my-pets/${pet.id}/edit'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  // 솔리드 표면 위라 테마 outline은 묻힌다 — 팔레트 테두리
-                  // 토큰으로 맞춘다.
-                  side: BorderSide(color: context.glass.border),
-                  foregroundColor: context.glass.textPrimary,
+          ),
+          // 절취선 — 보딩패스 문법. 홈은 바닥색으로 파낸다.
+          Row(
+            children: [
+              const _Notch(isLeft: true),
+              Expanded(
+                child: CustomPaint(
+                  size: const Size(double.infinity, 1),
+                  painter: _DashPainter(color: glass.border),
                 ),
-                child: Text('my_pets_edit_info'.tr()),
               ),
+              const _Notch(isLeft: false),
+            ],
+          ),
+          // 하단: 게이트/좌석 문법 3열 (MORPH | AGE | WEIGHT) + 정보 수정.
+          Padding(
+            padding: const EdgeInsets.all(AppStyles.spacing16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _PassField(
+                        label: 'my_pets_pass_morph'.tr(),
+                        value: (pet.morph == null || pet.morph!.isEmpty)
+                            ? 'home_value_none'.tr()
+                            : pet.morph!,
+                      ),
+                    ),
+                    Expanded(flex: 2, child: _ageField(pet)),
+                    Expanded(
+                      flex: 2,
+                      child: _PassField(
+                        label: 'my_pets_pass_weight'.tr(),
+                        value: pet.weight == null
+                            ? 'home_value_none'.tr()
+                            : 'my_pets_pass_weight_value'
+                                .tr(args: [pet.weight!.toStringAsFixed(1)]),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppStyles.spacing12),
+                OutlinedButton(
+                  onPressed: () => context.push('/my-pets/${pet.id}/edit'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    // 솔리드 표면 위라 테마 outline은 묻힌다 — 팔레트 테두리
+                    // 토큰으로 맞춘다.
+                    side: BorderSide(color: glass.border),
+                    foregroundColor: glass.textPrimary,
+                  ),
+                  child: Text('my_pets_edit_info'.tr()),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  String _subtitle(Pet pet) {
-    final parts = <String>[];
-    if (pet.morph != null && pet.morph!.isNotEmpty) parts.add(pet.morph!);
-    if (pet.weight != null) {
-      parts.add('${pet.weight!.toStringAsFixed(0)}g');
+  /// AGE(생년월 기준 D+N) → 없으면 ADOPTED(입양일 기준 D+N) → 둘 다 없으면 `--`.
+  static Widget _ageField(Pet pet) {
+    final birth = pet.birthDate;
+    final adopted = pet.adoptionDate;
+    if (birth != null) {
+      return _PassField(
+        label: 'my_pets_pass_age'.tr(),
+        value: 'my_pets_pass_days'.tr(namedArgs: {'n': '${_daysSince(birth)}'}),
+        accent: true,
+      );
     }
-    if (parts.isEmpty) return pet.speciesName;
-    return parts.join(' | ');
+    if (adopted != null) {
+      return _PassField(
+        label: 'my_pets_pass_adopted'.tr(),
+        value:
+            'my_pets_pass_days'.tr(namedArgs: {'n': '${_daysSince(adopted)}'}),
+        accent: true,
+      );
+    }
+    return _PassField(
+        label: 'my_pets_pass_age'.tr(), value: 'home_value_none'.tr());
   }
 
-  String _formatDate(DateTime d) {
-    return '${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
+  /// **달력 날짜 차이**다. 시각까지 든 DateTime을 그대로 빼면 자정 전후로
+  /// 하루가 어긋난다(저녁에 태어난 개체가 다음날 아침에도 D+0).
+  static int _daysSince(DateTime d) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(d.year, d.month, d.day);
+    final n = today.difference(day).inDays;
+    return n < 0 ? 0 : n;
   }
+}
+
+class _PassField extends StatelessWidget {
+  const _PassField({
+    required this.label,
+    required this.value,
+    this.accent = false,
+  });
+
+  final String label;
+  final String value;
+
+  /// 앰버 강조 — 보딩패스의 게이트 번호처럼 눈이 먼저 가는 칸(AGE).
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: glass.labelCaps, maxLines: 1),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: glass.tileTitle.copyWith(
+            fontWeight: FontWeight.w700,
+            color: accent ? glass.signalWarn : glass.textPrimary,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 절취선 좌우 반원 홈 — 바닥색으로 파낸다.
+class _Notch extends StatelessWidget {
+  const _Notch({required this.isLeft});
+
+  final bool isLeft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 8,
+      height: 16,
+      decoration: BoxDecoration(
+        color: context.glass.wallpaper,
+        borderRadius: BorderRadius.horizontal(
+          left: isLeft ? Radius.zero : const Radius.circular(16),
+          right: isLeft ? const Radius.circular(16) : Radius.zero,
+        ),
+      ),
+    );
+  }
+}
+
+class _DashPainter extends CustomPainter {
+  const _DashPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.4;
+    const dash = 5.0;
+    const gap = 4.0;
+    var x = 0.0;
+    final y = size.height / 2;
+    while (x < size.width) {
+      canvas.drawLine(Offset(x, y), Offset(x + dash, y), paint);
+      x += dash + gap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashPainter old) => old.color != color;
 }
 
 class _PetThumbnail extends StatelessWidget {
@@ -264,8 +408,8 @@ class _PetThumbnail extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
-        width: 80,
-        height: 80,
+        width: 64,
+        height: 64,
         child: hasPhoto
             ? (isNetwork
                 ? CachedNetworkImage(

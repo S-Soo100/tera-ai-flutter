@@ -12,6 +12,7 @@ import '../../../shared/widgets/inline_retry.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/nightly_highlight.dart';
 import '../domain/nightly_report.dart';
+import 'highlights_controller.dart';
 import 'my_cage_providers.dart';
 import 'widgets/favorite_toggle_button.dart';
 
@@ -63,19 +64,29 @@ class NightlyReportView extends ConsumerWidget {
   }
 }
 
+/// 어젯밤 요약 카드 — B안 **활동/휴식 비율 진행 바**(2026-08-18) + 행동 카운트.
+///
+/// 비율의 분모는 [nightlyReportProvider]와 같은 창([lastNightSince]~
+/// [lastNightEnd], 22~06시 — 06시 이전이면 지금까지)이다. 분모를 8시간으로
+/// 박아두면 새벽 2시에 "휴식 7시간"이 나온다(홈 타임라인 요약과 같은 함정).
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.report});
   final NightlyReport report;
 
+  static const ratioKey = Key('nightly_ratio_bar');
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final h = report.activityMinutes ~/ 60;
-    final m = report.activityMinutes % 60;
-    final activity = h > 0 ? '${h}h ${m}m' : '${m}m';
+    final glass = context.glass;
+    final now = DateTime.now();
+    final windowSec =
+        lastNightEnd(now).difference(lastNightSince(now)).inSeconds;
+    final activeSec = report.activitySeconds.clamp(0, windowSec);
+    final restSec = windowSec - activeSec;
+    final ratio = windowSec <= 0 ? 0.0 : activeSec / windowSec;
+
     final stats = <(String, String, String)>[
-      ('⏱️', 'nightly_activity'.tr(), activity),
       (
         '💧',
         'nightly_count_drink'.tr(),
@@ -93,8 +104,6 @@ class _SummaryCard extends StatelessWidget {
           'nightly_count_unit'.tr(namedArgs: {'n': '${report.shedCount}'})
         ),
     ];
-    // A안 유리 카드 — 예전 흰 카드+그림자는 어두운 월페이퍼 위에서 카드가
-    // 통째로 사라지거나 화면에서 제일 밝은 조각이 됐다.
     return GlassCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -104,34 +113,95 @@ class _SummaryCard extends StatelessWidget {
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 14),
+          // 활동/휴식 비율 바 — 홈 "오늘 밤" 진행 바와 같은 앰버 문법.
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: ratio),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (context, r, _) => ClipRRect(
+              key: ratioKey,
+              borderRadius: BorderRadius.circular(100),
+              child: SizedBox(
+                height: 6,
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: (r * 1000).round().clamp(1, 999),
+                      child: ColoredBox(color: glass.signalWarn),
+                    ),
+                    Expanded(
+                      flex: (1000 - (r * 1000).round()).clamp(1, 999),
+                      child: ColoredBox(color: glass.weatherBarTrack),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
-            children: stats
-                .map((s) => Expanded(
-                      child: Column(
-                        children: [
-                          Text(s.$1, style: const TextStyle(fontSize: 22)),
-                          const SizedBox(height: 4),
-                          Text(s.$2,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              // 테마 outline은 솔리드 표면 위에서 안 읽힌다.
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                  color: context.glass.textSecondary)),
-                          const SizedBox(height: 2),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(s.$3,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: cs.onSurface)),
-                          ),
-                        ],
-                      ),
-                    ))
-                .toList(),
+            children: [
+              Expanded(
+                child: _RatioStat(
+                  label: 'nightly_ratio_active'.tr(),
+                  value: _hm(activeSec),
+                ),
+              ),
+              Expanded(
+                child: _RatioStat(
+                  label: 'nightly_ratio_rest'.tr(),
+                  value: _hm(restSec),
+                ),
+              ),
+              for (final s in stats)
+                Expanded(
+                  child: _RatioStat(label: '${s.$1} ${s.$2}', value: s.$3),
+                ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  static String _hm(int seconds) {
+    final m = (seconds / 60).round();
+    final h = m ~/ 60;
+    final mm = m % 60;
+    return h > 0 ? '${h}h ${mm}m' : '${mm}m';
+  }
+}
+
+class _RatioStat extends StatelessWidget {
+  const _RatioStat({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: glass.labelCaps,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: glass.tileTitle.copyWith(
+              fontWeight: FontWeight.w700,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+            maxLines: 1,
+          ),
+        ),
+      ],
     );
   }
 }
