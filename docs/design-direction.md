@@ -1,11 +1,34 @@
 # 비바나트 — 시각 디자인 방향
 
-> **작성일**: 2026-08-08 · **갱신**: 2026-08-14 (A안 2차 — 리퀴드 제거·솔리드 전환)
+> **작성일**: 2026-08-08 · **갱신**: 2026-08-14 저녁 (B안 Flighty 프로덕션 채택 · 라이트 기본)
 > **범위**: 시각 언어(위계·타이포·색 역할·시그니처). 화면 구조는 기획안(`docs/prd-vivnanaut-app.md`)이 정한다.
 
 ---
 
-## 0. 현행 — 솔리드 다크/라이트 2벌 (A안 2차, 2026-08-14 확정)
+## 0. 현행 — B안(Flighty 전광판) 다크/라이트 2벌, 라이트 기본 (2026-08-14 저녁 확정)
+
+**2026-08-14 저녁: B안(Flighty) 프로덕션 채택, 라이트 기본, A안은 랩 비교용으로 강등.** 사용자 결정 3건 — (1) B안 라이트 모드를 로그인 앱 기본으로 (2) 로그인 후 설정(프로필)에도 디자인 비교 페이지(`/design-test`) 진입점 (3) 실앱은 mock이 아닌 실기능. 1단계(팔레트·공용 위젯 문법 교체)를 반영했고, 2단계(홈/통계/마이크레 화면을 B 문법으로 이식)는 후속이다.
+
+문법(FIDS 위계): 단색 바닥 + 카드(radius **16**, 그림자 없음, divider 톤 테두리) + **데이터 라벨은 소형 대문자 자간**(`labelCaps` 11 Medium +0.8) + **수치는 큰 tabular Bold**(`figure` 28 / `figureMid` 22) + 상태 시맨틱 **앰버/그린/레드**(`signalWarn`/`signalOk`/`signalAlert`, 두 모드 같은 역할) + **활성=앰버**(`activeTile`, 위 텍스트 `textOnActive` = 짙은 `#12151C`, A안의 흰 반전 타일 아님) + 하단 탭바는 **전광판 고정 바**(`GlassDock` — 캡슐·그림자 없음, 활성 앰버 아이콘+라벨) + 세그먼트는 **앰버 텍스트+얇은 밑줄**(`GlassSegmentedControl` — 채움 알약 아님). 토큰 SOT는 `lib/core/theme/glass_palette.dart`(`GlassPalette`, `variant_b_tokens.dart`의 미러), 기본 모드는 `ThemeModeRepository.defaultMode = light`. 위젯·토큰 이름의 `glass`는 여전히 역사적 명칭이다.
+
+| 토큰 | 다크 | 라이트 |
+|---|---|---|
+| wallpaper(바닥) | `#0B0F1A` | `#F5F6F8` |
+| overlay(카드) / strong / faint | `#161B2C` / `#1C2236` / `#111624` | `#FFFFFF` / `#FBFCFD` / `#EEF0F3` |
+| border(divider) | 흰 6% | 검정 8% |
+| tabBar | `#0E1322` | `#FFFFFF` |
+| activeTile(앰버) / textOnActive | `#FFB300` / `#12151C` | `#E09A00` / `#12151C` |
+| signalOk / signalWarn / signalAlert | `#34C759` / `#FFB300` / `#FF453A` | `#1FA84A` / `#E09A00` / `#E5382E` |
+| 히터 / 분무 / 팬 / LED 틴트 | `#FFB300` / `#4A90D9` / `#34C759` / `#FFD54F` | `#E09A00` / `#2F7BD1` / `#1FA84A` / `#E8B33A` |
+| textPrimary / secondary / tertiary | 흰 / 흰 60% / 흰 36% | `#12151C` / 60% / 36% |
+| liveRed | `#FF453A` | `#E5382E` |
+| weatherBar start→end / track | `#FFD54F`→`#FFB300` / 흰 12% | `#FFD54F`→`#E09A00` / 검정 12% |
+| chart grid / futureBand / nowLine / markerChip / markerGlyph | 흰 8% / 6% / 38% / 12% / 87% | 검정 8% / 4% / `#12151C` 38% / 검정 8% / `#12151C` |
+| nightBand | B 블루 18% | B 블루 라이트 10% |
+
+아래 "A안 2차" 서술은 직전 시스템 기록으로 남긴다.
+
+### 0-이전. 솔리드 다크/라이트 2벌 (A안 2차, 2026-08-14 오후 — 저녁에 B안으로 교체)
 
 **다크/라이트 2벌 — 솔리드 문법 동일, 값만 반전. 전역 다크 고정 철회(2026-08-14 오후).** 같은 날 오전 리뷰 수정(`6848e6e`)에서 `AppTheme.light`를 지우고 `themeMode: dark`로 못 박았는데, 사용자가 다크/라이트 구분을 요구해 되돌리며 제대로 만들었다. 색 토큰은 전부 `lib/core/theme/glass_palette.dart`의 **`GlassPalette`(ThemeExtension) 인스턴스 필드**로 옮겼고(`GlassPalette.dark` = 기존 값 그대로, `GlassPalette.light` = 웜 그레이 바닥 `#F4F5F9`·흰 표면·검정 8% 테두리·**딥 네이비 활성 타일 `#1E2640`**·텍스트 `#14181F`·기기 틴트는 밝은 바닥 대비로 채도 조정), 소비처는 `context.glass.overlay`처럼 현재 테마에서 꺼낸다. **`AppTheme.glassX` 정적 색 상수는 삭제**했다 — 두 벌이 남으면 라이트에서 다크 값이 샌다. 모드는 `themeModeProvider`(Hive `app_settings/theme_mode`, 기본 **시스템**)가 고르고 프로필 화면의 "화면 모드" 세그먼트(시스템/라이트/다크)로 바꾼다. 차트 토큰(밤 띠·격자·미도래 밴드·마커)도 밝기별 값을 팔레트가 든다. 라이브 영역(`liveSurface`)만 두 모드 공통으로 어둡다(영상 뷰포트). 랩 A·B(`/design-test`)도 토큰을 2벌 인스턴스로 바꾸고 셸 상단 ☀️/🌙 토글을 달았다(랩 로컬 state, 기본 시스템 밝기).
 
