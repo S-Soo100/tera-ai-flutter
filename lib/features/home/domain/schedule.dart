@@ -381,7 +381,7 @@ class Schedule {
     return (daysOfWeek.map((d) => d % 7 + 1).toList())..sort();
   }
 
-  Schedule copyWith({bool? enabled}) => Schedule(
+  Schedule copyWith({bool? enabled, String? pairId}) => Schedule(
         id: id,
         deviceId: deviceId,
         action: action,
@@ -392,7 +392,7 @@ class Schedule {
         daysOfWeek: daysOfWeek,
         enabled: enabled ?? this.enabled,
         guard: guard,
-        pairId: pairId,
+        pairId: pairId ?? this.pairId,
         nextRunAt: nextRunAt,
         lastRunAt: lastRunAt,
       );
@@ -425,9 +425,14 @@ class SchedulePair {
 
   String get pairId => on.pairId!;
 
-  /// 두 행이 모두 켜져 있을 때만 "켜짐". 한쪽만 꺼진 상태(웹 콘솔 등)는
-  /// 목록에서 꺼짐으로 보이고, 토글을 켜면 둘 다 켜져 정상으로 돌아온다.
-  bool get enabled => on.enabled && off.enabled;
+  /// **한쪽이라도 켜져 있으면 "켜짐"**으로 본다. 켜기만 살아 있고 끄기가 꺼진
+  /// 반쪽 상태(부분 실패·웹 콘솔)를 OFF로 그리면 사용자는 안심하고 지나가는데
+  /// 실제로는 켜지고 안 꺼진다 — 히터면 과열. 켜짐으로 보여야 스위치를 내려
+  /// 둘 다 끌 수 있다. 어긋남 자체는 [isSkewed]로 따로 밝힌다.
+  bool get enabled => on.enabled || off.enabled;
+
+  /// on/off의 enabled가 다르다 — 목록에 경고를 띄운다.
+  bool get isSkewed => on.enabled != off.enabled;
 
   ScheduleKind get kind => on.kind;
   List<int> get daysOfWeek => on.daysOfWeek;

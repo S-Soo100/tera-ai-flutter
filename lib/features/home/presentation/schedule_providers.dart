@@ -129,32 +129,45 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
   }
 
   /// 구간 한 줄 ON/OFF — 두 행을 같이 바꾼다. on을 먼저 바꾸고 off가 실패하면
-  /// on을 되돌린다: on만 켜진 채 남는 쪽이 위험하다(꺼지지 않는 히터).
+  /// on을 **원래 값**으로 되돌린다: on만 켜진 채 남는 쪽이 위험하다(꺼지지 않는
+  /// 히터). 되돌리기까지 실패하면 그 사실을 담아 던진다 — 원래 에러를 삼키고
+  /// "실패했다"만 말하면 사용자는 목록이 서버와 어긋난 줄 모른다.
   Future<void> setPairEnabled(SchedulePair p, bool enabled) async {
     final repo = ref.read(scheduleRepositoryProvider);
+    final prevOn = p.on.enabled;
     final on = await repo.patch(p.on.id, {'enabled': enabled});
     _replace(on);
     try {
       final off = await repo.patch(p.off.id, {'enabled': enabled});
       _replace(off);
-    } catch (_) {
-      _replace(await repo.patch(p.on.id, {'enabled': !enabled}));
+    } catch (e) {
+      try {
+        _replace(await repo.patch(p.on.id, {'enabled': prevOn}));
+      } catch (_) {
+        throw ScheduleException(
+            0, '종료 예약 변경 실패 + 시작 예약 복구 실패 — 예약 목록을 확인하세요: $e');
+      }
       rethrow;
     }
   }
 
-  /// 구간 삭제 — 서버가 짝을 함께 지우므로 한 건만 보내고 둘 다 목록에서 뺀다.
+  /// 구간 삭제 — 서버가 짝을 함께 지운다(회신 §3)고 **믿지 않고 다시 읽는다.**
+  /// 한 건만 DELETE한 뒤 목록을 재조회해 서버가 실제로 남긴 것을 그린다 —
+  /// 캐스케이드가 없는 서버(구버전)라면 off 낱개가 그대로 보여 지울 수 있다.
   Future<void> removePair(SchedulePair p) async {
-    await ref.read(scheduleRepositoryProvider).delete(p.on.id);
-    state = AsyncData(
-      [...?state.valueOrNull]
-          .where((e) => e.id != p.on.id && e.id != p.off.id)
-          .toList(),
-    );
+    final deviceId = _deviceId;
+    final repo = ref.read(scheduleRepositoryProvider);
+    await repo.delete(p.on.id);
+    if (deviceId == null) return;
+    state = AsyncData(await repo.list(deviceId));
   }
 
-  /// 구간 타이밍 수정 — 두 행을 순서대로 PATCH. off는 요일 밀기를 다시 계산한다.
-  /// 가드는 on쪽에만 싣는다(off+guard는 서버 400).
+  /// 구간 타이밍 수정 — on을 먼저 PATCH하고 off를 PATCH한다. off는 요일 밀기를
+  /// 다시 계산하고, 가드는 on쪽에만 싣는다(off+guard는 서버 400).
+  ///
+  /// **off가 실패하면 on을 원래 타이밍으로 되돌린다.** 안 되돌리면 새 시각에
+  /// 켜지고 옛 시각에 꺼지는 반쪽 구간이 남는다 — 히터면 꺼지기 전에 켜지는
+  /// 순서로 뒤집힐 수 있다([addSpan]의 롤백과 같은 불변식).
   Future<void> updateSpanTiming(
     SchedulePair p, {
     required ScheduleKind kind,
@@ -166,6 +179,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
     ScheduleGuard? guard,
     bool clearGuard = false,
   }) async {
+    final origOn = p.on;
     await updateTiming(
       p.on,
       kind: kind,
@@ -185,13 +199,32 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
         endMinute: endMinute,
       ),
     );
-    await updateTiming(
-      p.off,
-      kind: kind,
-      hour: endHour,
-      minute: endMinute,
-      daysOfWeek: offDays,
-    );
+    try {
+      await updateTiming(
+        p.off,
+        kind: kind,
+        hour: endHour,
+        minute: endMinute,
+        daysOfWeek: offDays,
+      );
+    } catch (e) {
+      try {
+        await updateTiming(
+          origOn,
+          kind: origOn.kind,
+          hour: origOn.hour,
+          minute: origOn.minute,
+          daysOfWeek: origOn.daysOfWeek,
+          // 원래 가드가 있었으면 그대로, 없었으면 명시적으로 비운다.
+          guard: origOn.guard,
+          clearGuard: origOn.guard == null,
+        );
+      } catch (_) {
+        throw ScheduleException(
+            0, '종료 예약 수정 실패 + 시작 예약 복구 실패 — 예약 목록을 확인하세요: $e');
+      }
+      rethrow;
+    }
   }
 
   /// 일정 ON/OFF. 목록에서 토글로 바로 누른다.
@@ -236,10 +269,18 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
     _replace(updated);
   }
 
+  /// PATCH 응답의 `pair_id`가 비어 있으면 기존 값을 지킨다 — 회신 §3은 GET/POST
+  /// 응답만 명시했다. 응답이 바뀐 컬럼만 돌려주는 순간 구간 한 줄이 낱개 둘로
+  /// 쪼개지는 걸 막는다.
   void _replace(Schedule updated) {
     state = AsyncData([
       for (final e in state.valueOrNull ?? const <Schedule>[])
-        if (e.id == updated.id) updated else e,
+        if (e.id == updated.id)
+          (updated.pairId == null && e.pairId != null
+              ? updated.copyWith(pairId: e.pairId)
+              : updated)
+        else
+          e,
     ]);
   }
 }

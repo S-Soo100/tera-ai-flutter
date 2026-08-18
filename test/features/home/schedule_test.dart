@@ -245,12 +245,26 @@ void main() {
       expect(twoOn.every((r) => r is Schedule), isTrue);
     });
 
-    test('SchedulePair.enabled는 둘 다 켜져 있을 때만', () {
+    test('SchedulePair.enabled는 한쪽이라도 켜져 있으면 true + isSkewed', () {
+      // 켜기만 살아 있는 반쪽 상태를 OFF로 그리면 켜지고 안 꺼지는 히터를 숨긴다.
       final p = SchedulePair(
         on: s('on', ScheduleAction.fanOn, pair: 'p'),
         off: s('off', ScheduleAction.fanOff, pair: 'p').copyWith(enabled: false),
       );
-      expect(p.enabled, isFalse);
+      expect(p.enabled, isTrue);
+      expect(p.isSkewed, isTrue);
+      final both = SchedulePair(
+        on: s('on', ScheduleAction.fanOn, pair: 'p').copyWith(enabled: false),
+        off: s('off', ScheduleAction.fanOff, pair: 'p').copyWith(enabled: false),
+      );
+      expect(both.enabled, isFalse);
+      expect(both.isSkewed, isFalse);
+    });
+
+    test('copyWith(pairId)로 PATCH 응답의 빈 pair_id를 메울 수 있다', () {
+      final a = s('a', ScheduleAction.fanOn);
+      expect(a.copyWith(pairId: 'p9').pairId, 'p9');
+      expect(s('b', ScheduleAction.fanOn, pair: 'p1').copyWith().pairId, 'p1');
     });
   });
 

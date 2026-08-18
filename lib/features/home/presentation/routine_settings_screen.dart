@@ -376,6 +376,7 @@ class _PairTile extends StatelessWidget {
               : on.daysOfWeek.map(_ScheduleTile._dayName).join('·'),
           if (on.guard case final g? when g.enabled)
             _ScheduleTile._guardLabel(g),
+          if (pair.isSkewed) 'routine_pair_skewed'.tr(),
           if (next != null && pair.enabled)
             'routine_next_run'.tr(args: [_ScheduleTile._formatNext(next)]),
         ].join(' · '),

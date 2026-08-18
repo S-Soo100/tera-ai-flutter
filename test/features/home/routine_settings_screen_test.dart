@@ -10,10 +10,25 @@ import 'package:vivnanaut/features/home/presentation/schedule_providers.dart';
 
 /// 네트워크를 타지 않는 대역. 호출 기록을 남겨 "정말 서버에 갔는가"를 본다.
 class _FakeRepo implements ScheduleRepository {
-  _FakeRepo({this.items = const [], this.failOnPatch = false});
+  _FakeRepo({
+    this.items = const [],
+    this.failOnPatch = false,
+    this.failPatchIds = const {},
+    this.cascadeDelete = true,
+    this.echoPairId = true,
+  });
 
   List<Schedule> items;
   final bool failOnPatch;
+
+  /// 이 id의 PATCH만 실패시킨다 — 두 행 중 하나만 실패하는 부분 실패 재현.
+  final Set<String> failPatchIds;
+
+  /// 서버가 pair_id 짝을 함께 지우는가(회신 §3). false면 구버전 서버.
+  final bool cascadeDelete;
+
+  /// PATCH 응답이 pair_id를 돌려주는가. false면 바뀐 컬럼만 주는 서버.
+  final bool echoPairId;
   final List<String> calls = [];
 
   @override
@@ -22,16 +37,55 @@ class _FakeRepo implements ScheduleRepository {
     return items;
   }
 
+  /// 서버처럼 바뀐 값을 **적용해서** 돌려준다 — 화면이 stale 값을 그리면
+  /// 테스트가 잡아야 한다.
   @override
   Future<Schedule> patch(String id, Map<String, dynamic> changes) async {
     calls.add('patch:$id:$changes');
-    if (failOnPatch) throw const ScheduleException(500, 'boom');
+    if (failOnPatch || failPatchIds.contains(id)) {
+      throw const ScheduleException(500, 'boom');
+    }
     final s = items.firstWhere((e) => e.id == id);
-    return s.copyWith(enabled: changes['enabled'] as bool? ?? s.enabled);
+    final tod = changes['time_of_day'] as String?;
+    final parts = tod?.split(':');
+    final updated = Schedule(
+      id: s.id,
+      deviceId: s.deviceId,
+      action: s.action,
+      payload: (changes['payload'] as Map?)?.cast<String, dynamic>() ??
+          s.payload,
+      kind: changes.containsKey('kind')
+          ? ScheduleKind.fromWire(changes['kind'] as String?)
+          : s.kind,
+      hour: parts == null ? s.hour : int.parse(parts[0]),
+      minute: parts == null ? s.minute : int.parse(parts[1]),
+      daysOfWeek: changes.containsKey('days_of_week')
+          ? ((changes['days_of_week'] as List?)?.cast<int>() ?? const [])
+          : s.daysOfWeek,
+      enabled: changes['enabled'] as bool? ?? s.enabled,
+      guard: changes.containsKey('guard')
+          ? ScheduleGuard.fromJson(changes['guard'])
+          : s.guard,
+      pairId: echoPairId ? s.pairId : null,
+      nextRunAt: s.nextRunAt,
+      lastRunAt: s.lastRunAt,
+    );
+    items = [for (final e in items) if (e.id == id) updated else e];
+    return updated;
   }
 
   @override
-  Future<void> delete(String id) async => calls.add('delete:$id');
+  Future<void> delete(String id) async {
+    calls.add('delete:$id');
+    final target = items.where((e) => e.id == id).firstOrNull;
+    items = items
+        .where((e) =>
+            e.id != id &&
+            !(cascadeDelete &&
+                target?.pairId != null &&
+                e.pairId == target!.pairId))
+        .toList();
+  }
 
   @override
   Future<Schedule> create(String deviceId,
@@ -468,5 +522,95 @@ void main() {
     await tester.tap(find.text('common_cancel'.tr()));
     await tester.pumpAndSettle();
     expect(repo.calls.any((c) => c.startsWith('delete')), isFalse);
+  });
+
+  testWidgets('구간 삭제: 서버가 짝을 안 지우면(구버전) off 낱개가 그대로 보인다',
+      (tester) async {
+    final repo = _FakeRepo(cascadeDelete: false, items: [
+      _schedule(id: 'on', action: ScheduleAction.fanOn, pairId: 'p1'),
+      _schedule(id: 'off', action: ScheduleAction.fanOff, pairId: 'p1'),
+    ]);
+    await _pump(tester, repo);
+    await tester.tap(find.byKey(const Key('schedule_pair_delete_p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('routine_delete_confirm'.tr()));
+    await tester.pumpAndSettle();
+    // 지웠다고 믿지 않고 다시 읽는다 — 남은 off는 지울 수 있게 보여야 한다.
+    expect(find.byKey(const Key('schedule_pair_p1')), findsNothing);
+    expect(find.byKey(const Key('schedule_off')), findsOneWidget);
+  });
+
+  testWidgets('구간 편집: off PATCH 실패 시 on을 원래 타이밍으로 되돌린다', (tester) async {
+    final repo = _FakeRepo(failPatchIds: {'off'}, items: [
+      _schedule(id: 'on', action: ScheduleAction.heaterOn, hour: 8, pairId: 'p1'),
+      _schedule(id: 'off', action: ScheduleAction.heaterOff, hour: 20, pairId: 'p1'),
+    ]);
+    await _pump(tester, repo);
+    await tester.tap(find.byKey(const Key('schedule_pair_p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('routine_pick_time')));
+    await tester.pumpAndSettle();
+    // 시간 피커: 확인만 눌러도 PATCH가 나간다(같은 값). 값 변화보다 롤백 경로가 목적.
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('routine_save')));
+    await tester.tap(find.byKey(const Key('routine_save')));
+    await tester.pumpAndSettle();
+    final patches = repo.calls.where((c) => c.startsWith('patch:')).toList();
+    // on 수정 → off 실패 → on 복구
+    expect(patches, hasLength(3), reason: '실제 호출: ${repo.calls}');
+    expect(patches[0], startsWith('patch:on:'));
+    expect(patches[1], startsWith('patch:off:'));
+    expect(patches[2], startsWith('patch:on:'));
+    expect(patches[2], contains('time_of_day: 08:00'));
+    expect(find.byType(SnackBar), findsOneWidget);
+  });
+
+  testWidgets('구간 토글: off PATCH 실패 시 on을 원래 값으로 되돌린다', (tester) async {
+    final repo = _FakeRepo(failPatchIds: {'off'}, items: [
+      _schedule(id: 'on', action: ScheduleAction.fanOn, pairId: 'p1'),
+      _schedule(id: 'off', action: ScheduleAction.fanOff, pairId: 'p1'),
+    ]);
+    await _pump(tester, repo);
+    await tester.tap(find.byKey(const Key('schedule_pair_toggle_p1')));
+    await tester.pumpAndSettle();
+    expect(repo.calls.where((c) => c.startsWith('patch:')).toList(), [
+      'patch:on:{enabled: false}',
+      'patch:off:{enabled: false}',
+      'patch:on:{enabled: true}',
+    ]);
+    // 화면도 되돌아온다.
+    final sw = tester.widget<Switch>(
+        find.byKey(const Key('schedule_pair_toggle_p1')));
+    expect(sw.value, isTrue);
+  });
+
+  testWidgets('반쪽 켜짐(on만 enabled)은 OFF로 숨기지 않고 켜짐+경고로 보인다',
+      (tester) async {
+    final repo = _FakeRepo(items: [
+      _schedule(id: 'on', action: ScheduleAction.heaterOn, pairId: 'p1'),
+      _schedule(
+          id: 'off',
+          action: ScheduleAction.heaterOff,
+          pairId: 'p1',
+          enabled: false),
+    ]);
+    await _pump(tester, repo);
+    final sw = tester.widget<Switch>(
+        find.byKey(const Key('schedule_pair_toggle_p1')));
+    expect(sw.value, isTrue);
+    expect(find.textContaining('routine_pair_skewed'), findsOneWidget);
+  });
+
+  testWidgets('PATCH 응답에 pair_id가 없어도 구간 한 줄이 쪼개지지 않는다', (tester) async {
+    final repo = _FakeRepo(echoPairId: false, items: [
+      _schedule(id: 'on', action: ScheduleAction.fanOn, pairId: 'p1'),
+      _schedule(id: 'off', action: ScheduleAction.fanOff, pairId: 'p1'),
+    ]);
+    await _pump(tester, repo);
+    await tester.tap(find.byKey(const Key('schedule_pair_toggle_p1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('schedule_pair_p1')), findsOneWidget);
+    expect(find.byKey(const Key('schedule_on')), findsNothing);
   });
 }
