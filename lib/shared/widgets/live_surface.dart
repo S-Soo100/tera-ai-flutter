@@ -27,11 +27,17 @@ class LiveSurface extends StatelessWidget {
     this.status,
     this.corner,
     this.footer,
+    this.overlay,
     this.aspectRatio = 16 / 9,
   });
 
   /// 영상 또는 안내 화면.
   final Widget child;
+
+  /// 영상 바로 위, 슬롯 3곳 **아래**에 깔리는 풀사이즈 오버레이(B안 전광판
+  /// 수치 + 하단 스크림). 스스로 `IgnorePointer`여야 한다 — 면의 스와이프를
+  /// 가로채면 세트 전환이 죽는다.
+  final Widget? overlay;
 
   /// 좌상단 — 상태 배지. **연결 상태를 말하는 유일한 자리**다.
   final Widget? status;
@@ -55,6 +61,7 @@ class LiveSurface extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             child,
+            if (overlay != null) Positioned.fill(child: overlay!),
             if (status != null)
               Positioned(
                 left: AppStyles.spacing8,

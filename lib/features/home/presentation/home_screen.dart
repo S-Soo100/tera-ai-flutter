@@ -19,6 +19,7 @@ import 'widgets/running_timer_chip.dart';
 import 'widgets/timeline_clip_feed.dart';
 import 'widgets/timeline_date_scroller.dart';
 import 'widgets/timeline_summary_chips.dart';
+import 'widgets/tonight_card.dart';
 import 'widgets/top_fixed_area.dart';
 import 'widgets/weekly_env_rows_card.dart';
 
@@ -88,7 +89,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-/// PRD §3.4 사육장 제어 서브탭.
+/// PRD §3.4 사육장 제어 서브탭 — B안(Flighty) 카드 순서(2026-08-18).
+///
+/// 오늘 밤(주인공) → 온습도 행(지난 24시간·이번 주) → CONTROLS 캡슐 행 → 루틴.
+/// 현재값 리드아웃은 라이브 위 전광판 오버레이([LiveStatOverlay])로 올라갔다
+/// — 캠 없는 세트만 아래 카드([_EnvReadoutFallback])로 남는다.
 class _ControlContainer extends StatelessWidget {
   const _ControlContainer();
 
@@ -97,20 +102,37 @@ class _ControlContainer extends StatelessWidget {
     return ListView(
       children: const [
         RunningTimerChip(),
-        // 제어 타일이 왜 안 눌리는지 밝힌다. 맨 위에 둬야 회색 버튼을
+        // 제어 캡슐이 왜 안 눌리는지 밝힌다. 맨 위에 둬야 회색 버튼을
         // 먼저 만나지 않는다.
         DeviceOfflineNotice(),
-        LiveEnvCard(),
+        _EnvReadoutFallback(),
+        TonightCard(),
         // 애플 날씨 문법(2026-08-17): 시간대 스트립 + 이번 주 7행. 통계 탭의
         // 연속 곡선과 일부러 다르다 — 홈은 훑는 자리다.
         HourlyEnvStrip(),
         WeeklyEnvRowsCard(),
         QuickControlGrid(),
-        SizedBox(height: AppStyles.spacing16),
+        SizedBox(height: AppStyles.spacing8),
         _RoutineSettingsButton(),
         SizedBox(height: AppStyles.spacing24),
       ],
     );
+  }
+}
+
+/// 상단이 **개체 프로필 면**(캠 없는 세트)일 때만 현재값 카드를 남긴다.
+///
+/// 라이브가 있으면 같은 숫자가 영상 위 오버레이에 이미 있다 — 두 번 보여주지
+/// 않는다. 분기 조건은 [TopFixedArea]와 같은 `camera == null`이다.
+class _EnvReadoutFallback extends ConsumerWidget {
+  const _EnvReadoutFallback();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasCamera =
+        ref.watch(currentSetProvider).valueOrNull?.camera != null;
+    if (hasCamera) return const SizedBox.shrink();
+    return const LiveEnvCard();
   }
 }
 

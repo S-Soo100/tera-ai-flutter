@@ -3,26 +3,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_palette.dart';
+import '../../../../shared/widgets/glass_card.dart';
 import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../cage_control_actions.dart';
 import '../home_control_providers.dart';
 
-/// PRD §3.4 IoT 퀵 제어판 (2x2 Grid) — A안 액세서리 타일 표면.
+/// PRD §3.4 IoT 퀵 제어 — B안 **가로 스크롤 캡슐 행**(2026-08-18).
+///
+/// 이름은 2×2 그리드 시절(A안)의 것이다. 표면만 바뀌었고 자리·역할은 같다.
 ///
 /// **사육장 제어의 유일한 진입점**이다. 한때 라이브 바로 아래 같은 4종을 담은
 /// 컴팩트 바를 얹었다가 한 화면에 버튼이 두 벌 쌓여 걷어냈다(2026-08-09).
 /// 다시 두 벌로 만들지 말 것 — 어느 쪽을 눌러야 하는지 매번 판단하게 된다.
 ///
-/// 표면만 A안(Apple Home 액세서리 타일)이다 — 켜짐 = 불투명 흰 타일 + 기기색
-/// 아이콘, 꺼짐 = 유리. **탭 동작은 전부 기존 [cage_control_actions] 경유**
-/// (히터 2단 안전확인 포함) — 여기서 명령을 직접 만들지 말 것.
+/// B 문법: 데이터가 주인공, 제어는 보조 — 카드 한 장 안에 `CONTROLS` 라벨 +
+/// 캡슐 버튼 행. 켜짐 = **앰버 채움 + 짙은 글자**([GlassPalette.textOnActive]),
+/// 꺼짐 = 테두리 캡슐, 비활성(오프라인) = 3차 텍스트색. **탭 동작은 전부
+/// 기존 [cage_control_actions] 경유**(히터 2단 안전확인 포함) — 여기서 명령을
+/// 직접 만들지 말 것.
 class QuickControlGrid extends ConsumerWidget {
   const QuickControlGrid({super.key});
 
   static const mistKey = Key('quick_control_mist');
+  static const fanKey = Key('quick_control_fan');
+  static const heaterKey = Key('quick_control_heater');
+  static const ledKey = Key('quick_control_led');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,67 +44,85 @@ class QuickControlGrid extends ConsumerWidget {
     final mistLocked = lock.isLocked(DateTime.now());
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
-      child: GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: AppStyles.spacing12,
-        crossAxisSpacing: AppStyles.spacing12,
-        // 랩의 오버플로 교훈: 1.72도 좁은 폭(320)에서는 아이콘+두 줄 텍스트가
-        // 몇 px 넘친다. 1.45로 세로 여유를 확보하고, 텍스트 블록은 타일 쪽에서
-        // FittedBox로 한 번 더 방어한다.
-        childAspectRatio: 1.45,
-        children: [
-          _Tile(
-            label: 'module_actuator_fan'.tr(),
-            value: _stateLabel(t?.fan),
-            icon: Icons.mode_fan_off,
-            tint: glass.fanTint,
-            enabled: online,
-            active: t?.fan == ActuatorState.on,
-            onTap: () => handleFanTap(context, ref, deviceId, t),
-          ),
-          _Tile(
-            label: 'module_actuator_heater'.tr(),
-            value: _stateLabel(t?.heaterState),
-            icon: Icons.local_fire_department,
-            tint: glass.heaterTint,
-            enabled: online,
-            active: t?.heaterState == ActuatorState.on,
-            onTap: () => handleHeaterTap(context, ref, deviceId, t),
-          ),
-          _Tile(
-            label: 'module_actuator_led'.tr(),
-            // 밝기 %를 띄우던 자리다. 현 보드의 LED는 PWM이 아니라 on/off
-            // 릴레이라 그 숫자가 기기에 반영된 적이 없다(백엔드 회신
-            // 2026-08-12). 아무 효과 없는 숫자보다 비워두는 게 정직하다.
-            value: '',
-            icon: Icons.lightbulb_outline,
-            tint: glass.ledTint,
-            // terra-server 계약에 LED 상태 telemetry가 없다(메모리
-            // project_led_control_gap). 모르는 것을 켜진 것처럼 칠하지 않는다.
-            enabled: online,
-            active: false,
-            onTap: () => openLedSheet(context, ref, deviceId),
-          ),
-          _Tile(
-            key: mistKey,
-            label: 'home_mist_once'.tr(),
-            // 남은 초를 표시하지 않는다. build 시점 값이라 매초 갱신되지 않아
-            // 멈춘 숫자를 보여주게 된다 — 없는 편이 정직하다.
-            // 쿨다운이 아닐 때는 마지막에 고른 분사 시간을 띄운다.
-            value: mistLocked
-                ? 'home_mist_cooldown_short'.tr()
-                : 'home_mist_seconds'.tr(args: ['${mistDuration.seconds}']),
-            icon: Icons.water_drop_outlined,
-            tint: glass.mistTint,
-            enabled: online && !mistLocked,
-            // 1회성 동작이라 '켜진 상태'가 없다.
-            active: false,
-            onTap: () => openMistSheet(context, ref, deviceId),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppStyles.spacing16,
+        vertical: AppStyles.spacing8,
+      ),
+      child: GlassCard(
+        padding: const EdgeInsets.symmetric(vertical: AppStyles.spacing16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
+              child: Text('home_controls_label'.tr(), style: glass.labelCaps),
+            ),
+            const SizedBox(height: AppStyles.spacing12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
+              child: Row(
+                children: [
+                  _Capsule(
+                    key: fanKey,
+                    label: 'module_actuator_fan'.tr(),
+                    value: _stateLabel(t?.fan),
+                    icon: Icons.air,
+                    enabled: online,
+                    active: t?.fan == ActuatorState.on,
+                    onTap: () => handleFanTap(context, ref, deviceId, t),
+                  ),
+                  const SizedBox(width: AppStyles.spacing8),
+                  _Capsule(
+                    key: heaterKey,
+                    label: 'module_actuator_heater'.tr(),
+                    value: _stateLabel(t?.heaterState),
+                    icon: Icons.local_fire_department_outlined,
+                    enabled: online,
+                    active: t?.heaterState == ActuatorState.on,
+                    onTap: () => handleHeaterTap(context, ref, deviceId, t),
+                  ),
+                  const SizedBox(width: AppStyles.spacing8),
+                  _Capsule(
+                    key: ledKey,
+                    label: 'module_actuator_led'.tr(),
+                    // 밝기 %를 띄우던 자리다. 현 보드의 LED는 PWM이 아니라
+                    // on/off 릴레이라 그 숫자가 기기에 반영된 적이 없다(백엔드
+                    // 회신 2026-08-12). 아무 효과 없는 숫자보다 비워두는 게
+                    // 정직하다.
+                    value: '',
+                    icon: Icons.light_mode_outlined,
+                    // terra-server 계약에 LED 상태 telemetry가 없다(메모리
+                    // project_led_control_gap). 모르는 것을 켜진 것처럼 칠하지
+                    // 않는다.
+                    enabled: online,
+                    active: false,
+                    onTap: () => openLedSheet(context, ref, deviceId),
+                  ),
+                  const SizedBox(width: AppStyles.spacing8),
+                  _Capsule(
+                    key: mistKey,
+                    label: 'home_mist_once'.tr(),
+                    // 남은 초를 표시하지 않는다. build 시점 값이라 매초 갱신되지
+                    // 않아 멈춘 숫자를 보여주게 된다 — 없는 편이 정직하다.
+                    // 쿨다운이 아닐 때는 마지막에 고른 분사 시간을 띄운다.
+                    value: mistLocked
+                        ? 'home_mist_cooldown_short'.tr()
+                        : 'home_mist_seconds'
+                            .tr(args: ['${mistDuration.seconds}']),
+                    icon: Icons.water_drop_outlined,
+                    enabled: online && !mistLocked,
+                    // 1회성 동작이라 '켜진 상태'가 없다.
+                    active: false,
+                    onTap: () => openMistSheet(context, ref, deviceId),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -114,18 +139,20 @@ class QuickControlGrid extends ConsumerWidget {
   }
 }
 
-/// 제어 타일 — A안 액세서리 타일 문법.
+/// 제어 캡슐 — B안 문법.
 ///
-/// 켜짐은 **불투명 흰 타일 + 기기색 아이콘**, 꺼짐은 유리, 비활성은 흐린 유리.
+/// 켜짐은 **앰버 채움 + 짙은 글자**, 꺼짐은 테두리만, 비활성은 3차 텍스트색.
 /// 상태를 텍스트(`ON`/`OFF`)로만 구분하면 훑어볼 때 안 읽힌다 — 면과 색이
 /// 먼저 보이고 글자가 확인해주는 순서여야 한다.
-class _Tile extends StatefulWidget {
-  const _Tile({
+///
+/// 1단계에서 발견한 "활성 아이콘 묻힘"(앰버 위 앰버 아이콘)은 아이콘·글자를
+/// 전부 [GlassPalette.textOnActive]로 통일해 해소했다.
+class _Capsule extends StatefulWidget {
+  const _Capsule({
     super.key,
     required this.label,
     required this.value,
     required this.icon,
-    required this.tint,
     required this.enabled,
     required this.active,
     required this.onTap,
@@ -134,21 +161,17 @@ class _Tile extends StatefulWidget {
   final String label;
   final String value;
   final IconData icon;
-
-  /// 기기색 (히터 주황·분무 파랑·LED 노랑·팬 민트).
-  final Color tint;
-
   final bool enabled;
 
-  /// 기기가 켜져 있는가. 흰 타일 전환 여부를 가른다.
+  /// 기기가 켜져 있는가. 앰버 채움 전환 여부를 가른다.
   final bool active;
   final VoidCallback onTap;
 
   @override
-  State<_Tile> createState() => _TileState();
+  State<_Capsule> createState() => _CapsuleState();
 }
 
-class _TileState extends State<_Tile> {
+class _CapsuleState extends State<_Capsule> {
   bool _pressed = false;
 
   @override
@@ -156,66 +179,26 @@ class _TileState extends State<_Tile> {
     final on = widget.active && widget.enabled;
     final glass = context.glass;
 
-    final Color iconColor;
-    final TextStyle titleStyle;
-    final TextStyle statusStyle;
+    final Color fg;
+    final Color fgSecondary;
     if (!widget.enabled) {
-      iconColor = glass.textTertiary;
-      titleStyle = glass.tileTitle.copyWith(color: glass.textTertiary);
-      statusStyle = glass.tileStatus.copyWith(color: glass.textTertiary);
+      fg = glass.textTertiary;
+      fgSecondary = glass.textTertiary;
     } else if (on) {
-      iconColor = widget.tint;
-      titleStyle = glass.tileTitleActive;
-      statusStyle = glass.tileStatusActive;
+      fg = glass.textOnActive;
+      fgSecondary = glass.textOnActiveSecondary;
     } else {
-      iconColor = glass.textSecondary;
-      titleStyle = glass.tileTitle;
-      statusStyle = glass.tileStatus;
+      fg = glass.textSecondary;
+      fgSecondary = glass.textTertiary;
     }
 
-    final content = Padding(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(widget.icon, size: 24, color: iconColor),
-          // 텍스트 블록은 남은 높이 안에서만 그린다 — 큰 글씨 설정·좁은 폭에서
-          // 넘치는 대신 비율을 유지한 채 줄어든다(랩의 오버플로 교훈).
-          Expanded(
-            child: Align(
-              alignment: Alignment.bottomLeft,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.bottomLeft,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(widget.label, style: titleStyle, maxLines: 1),
-                    if (widget.value.isNotEmpty)
-                      Text(widget.value, style: statusStyle, maxLines: 1),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    // 탭 스프링 스케일(0.96→1.0) + 켜짐 시 불투명 흰 타일 전환 (A안 모션).
-    //
-    // **표면은 단일 AnimatedContainer 하나로 지속시킨다.** 예전처럼
-    // `on ? AnimatedContainer : GlassCard`로 타입을 갈아끼우면 토글마다
-    // element가 재생성돼, 새 위젯에는 출발색이 없어 200ms 전환 없이 팝만
-    // 됐다. 삼항은 위젯이 아니라 decoration **안**에 둔다(서브탭 방식).
-    // 켜짐/꺼짐 면은 GlassCard와 같은 토큰(blur 없는 플랫 유리 + 테두리)이다.
+    // 표면은 단일 AnimatedContainer 하나로 지속시킨다 — 위젯 타입을 갈아끼우면
+    // element가 재생성돼 200ms 전환 없이 팝만 된다(A안 타일과 같은 교훈).
     return GestureDetector(
       onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
       // 리셋은 enabled와 무관하게 **무조건** 한다. 눌림 도중 enabled가 플립돼
       // 콜백이 전부 null로 갈리면 GestureDetector가 recognizer를 dispose하며
       // build 중 cancel을 쏴서 debug 에러 로그 + 한 프레임 리빌드가 늘어난다.
-      // 핸들러를 살려 두면 dispose 자체가 일어나지 않는다.
       onTapCancel: () => setState(() => _pressed = false),
       onTapUp: (_) => setState(() => _pressed = false),
       onTap: widget.enabled ? widget.onTap : null,
@@ -226,15 +209,33 @@ class _TileState extends State<_Tile> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
-            color: on
-                ? glass.activeTile
-                : (widget.enabled ? glass.overlay : glass.overlayFaint),
-            borderRadius: BorderRadius.circular(AppTheme.glassTileRadius),
-            border: Border.all(color: glass.border, width: 0.5),
+            color: on ? glass.activeTile : Colors.transparent,
+            border: Border.all(
+              color: on ? glass.activeTile : glass.border,
+            ),
+            borderRadius: BorderRadius.circular(100),
           ),
-          // 안쪽 잉크가 앉을 면 — GlassCard가 하던 Material transparency 유지.
-          child: Material(type: MaterialType.transparency, child: content),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, size: 16, color: fg),
+              const SizedBox(width: 6),
+              Text(
+                widget.label,
+                style: glass.tileStatus
+                    .copyWith(color: fg, fontWeight: FontWeight.w600),
+              ),
+              if (widget.value.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                Text(
+                  widget.value,
+                  style: glass.labelCaps.copyWith(color: fgSecondary),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

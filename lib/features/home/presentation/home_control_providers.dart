@@ -2,8 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
+import '../../my_cage/domain/species_comfort.dart';
 import '../../my_cage/domain/telemetry_bucket.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
+import '../../wiki/data/care_info_repository.dart';
 import '../../../shared/domain/actuator_marker.dart';
 import '../../../shared/domain/chart_window.dart';
 import '../../../shared/domain/env_chart_data.dart';
@@ -18,6 +20,32 @@ final currentDeviceIdProvider =
     FutureProvider.autoDispose<String?>((ref) async {
   final set = await ref.watch(currentSetProvider.future);
   return set?.device?.id;
+});
+
+/// 현재 세트 사육장 **종**에서 도출한 안심존. 종 미설정·미지원 종이면 null.
+///
+/// 사육장 탭의 [currentSpeciesComfortProvider]와 같은 규칙(care_info 실값만,
+/// **임의 수치 없음**)이지만 기준이 다르다 — 저쪽은 사육장 탭의 선택 기기,
+/// 여기는 홈이 보고 있는 세트다. 세트가 여럿이면 두 값이 다른 종일 수 있다.
+///
+/// 홈 "오늘 밤" 카드의 안정/주의 배지, 통계 주간 FIDS 표의 STATUS가 쓴다.
+/// null이면 배지를 **생략**한다 — 모르는 것을 안정이라 말하지 않는다.
+final currentSetComfortProvider =
+    FutureProvider.autoDispose<SpeciesComfort?>((ref) async {
+  // watch는 await 앞에서(이 파일 규칙).
+  final careRepo = ref.watch(careInfoRepositoryProvider);
+  final set = await ref.watch(currentSetProvider.future);
+  final sid = speciesIdFromText(set?.enclosure.species);
+  if (sid == null) return null;
+  final care = await careRepo.getCareInfo(sid);
+  return SpeciesComfort(
+    speciesId: sid,
+    speciesNameKo: care.speciesNameKo,
+    tempMin: care.coolZone.min.toDouble(),
+    tempMax: care.hotZone.max.toDouble(),
+    humidMin: care.humidityMin.toDouble(),
+    humidMax: care.humidityMax.toDouble(),
+  );
 });
 
 /// 온습도 차트의 표시 창([ChartWindow]).

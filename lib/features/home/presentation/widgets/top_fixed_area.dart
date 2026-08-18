@@ -12,6 +12,7 @@ import '../../domain/enclosure_set.dart';
 import '../../domain/pet_dday.dart';
 import '../home_set_providers.dart';
 import 'live_clock_overlay.dart';
+import 'live_stat_overlay.dart';
 import 'pet_profile_card.dart';
 
 /// PRD §3.2 Top Fixed Area.
@@ -112,6 +113,9 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
       aspectRatio: TopFixedArea.aspectRatio,
       status: _ConnectionStatus(camera: current.camera),
       corner: current.camera == null ? null : const LiveClockOverlay(),
+      // B안 전광판 수치 — 라이브 위에만 얹는다. 개체 프로필 면(캠 없음)에는
+      // 온습도 카드가 아래 서브탭에 따로 남는다(`_EnvReadoutFallback`).
+      overlay: current.camera == null ? null : const LiveStatOverlay(),
       footer: sets.length > 1
           ? _PageDots(
               key: TopFixedArea.indicatorKey,

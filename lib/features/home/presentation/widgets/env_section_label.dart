@@ -31,7 +31,9 @@ class EnvSectionLabel extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: glass.sectionLabel.copyWith(letterSpacing: 0.4),
+            // B안 전광판 데이터 라벨 톤(2026-08-18) — "오늘 밤" 카드·CONTROLS
+            // 라벨과 같은 자간·크기.
+            style: glass.labelCaps,
           ),
         ),
         if (trailing != null) trailing!,

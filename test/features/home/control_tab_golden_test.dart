@@ -16,8 +16,11 @@ import 'package:vivnanaut/features/home/presentation/widgets/hourly_env_strip.da
 import 'package:vivnanaut/features/home/presentation/widgets/weekly_env_rows_card.dart';
 import 'package:vivnanaut/features/stats/domain/daily_rollup.dart';
 import 'package:vivnanaut/shared/domain/actuator_marker.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/live_env_card.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/quick_control_grid.dart';
+import 'package:vivnanaut/features/home/presentation/widgets/tonight_card.dart';
+import 'package:vivnanaut/features/my_cage/domain/nightly_report.dart';
+import 'package:vivnanaut/features/my_cage/domain/species_comfort.dart';
+import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_reading.dart';
@@ -191,6 +194,19 @@ Future<void> _shoot(
   final homeWeekly = ChartWindow.homeWeekly(DateTime(2026, 8, 8, 13));
   final c = ProviderContainer(overrides: [
     currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
+    // "오늘 밤" 카드 — 시각을 고정해야 진행 바가 결정적이다(새벽 3시 = 밤의 5/8).
+    nowTickProvider
+        .overrideWith((ref) => Stream.value(DateTime(2026, 8, 8, 3))),
+    nightlyReportProvider.overrideWith((ref) async =>
+        const NightlyReport(activitySeconds: 42 * 60, highlights: [])),
+    currentSetComfortProvider.overrideWith((ref) async => const SpeciesComfort(
+          speciesId: 'crested-gecko',
+          speciesNameKo: '크레스티드 게코',
+          tempMin: 22,
+          tempMax: 27,
+          humidMin: 60,
+          humidMax: 80,
+        )),
     telemetryStreamProvider(_deviceId)
         .overrideWith((ref) => Stream.value(_reading())),
     moduleOnlineProvider(_deviceId).overrideWithValue(true),
@@ -244,7 +260,7 @@ Future<void> _shoot(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             SizedBox(height: 12),
-                            LiveEnvCard(),
+                            TonightCard(),
                             HourlyEnvStrip(),
                             WeeklyEnvRowsCard(),
                             SizedBox(height: 16),

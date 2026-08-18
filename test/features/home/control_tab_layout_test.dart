@@ -14,6 +14,10 @@ import 'package:vivnanaut/shared/widgets/env_summary_bar.dart';
 import 'package:vivnanaut/shared/widgets/status_badge.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/live_env_card.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/quick_control_grid.dart';
+import 'package:vivnanaut/features/home/presentation/widgets/tonight_card.dart';
+import 'package:vivnanaut/features/my_cage/domain/nightly_report.dart';
+import 'package:vivnanaut/features/my_cage/domain/species_comfort.dart';
+import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_reading.dart';
@@ -84,6 +88,18 @@ Future<void> _pumpControlTab(WidgetTester tester, Size size) async {
     telemetryStreamProvider(_deviceId)
         .overrideWith((ref) => Stream.value(_reading())),
     moduleOnlineProvider(_deviceId).overrideWithValue(true),
+    nowTickProvider
+        .overrideWith((ref) => Stream.value(DateTime(2026, 8, 8, 13))),
+    nightlyReportProvider.overrideWith((ref) async =>
+        const NightlyReport(activitySeconds: 42 * 60, highlights: [])),
+    currentSetComfortProvider.overrideWith((ref) async => const SpeciesComfort(
+          speciesId: 'crested-gecko',
+          speciesNameKo: '크레스티드 게코',
+          tempMin: 22,
+          tempMax: 27,
+          humidMin: 60,
+          humidMax: 80,
+        )),
     chartExtremesProvider.overrideWith(
       (ref) async => EnvExtremes.from(_buckets()),
     ),
@@ -125,6 +141,7 @@ GoRouter _buildRouter() => GoRouter(
               child: Column(
                 children: [
                   LiveEnvCard(),
+                  TonightCard(),
                   HourlyEnvStrip(),
                   WeeklyEnvRowsCard(),
                   QuickControlGrid(),
@@ -146,6 +163,10 @@ void main() {
     testWidgets('iPhone 14 Pro 폭(393)에서 넘치지 않는다', (tester) async {
       await _pumpControlTab(tester, const Size(393, 852));
       expect(find.byKey(LiveEnvCard.cardKey), findsOneWidget);
+      expect(find.byKey(TonightCard.cardKey), findsOneWidget);
+      // 안심존(22~27) 안의 24.5℃ → "안정" 배지가 선다.
+      expect(find.byKey(TonightCard.badgeKey), findsOneWidget);
+      expect(find.byKey(TonightCard.progressKey), findsOneWidget);
       expect(find.byKey(HourlyEnvStrip.stripKey), findsOneWidget);
       expect(find.byKey(WeeklyEnvRowsCard.cardKey), findsOneWidget);
     });
