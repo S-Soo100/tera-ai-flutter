@@ -248,6 +248,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onTap: () => context.push('/dev/chart-lab'),
                 ),
 
+                // 디자인 비교(A/B 랩) — 로그인 후에도 볼 수 있게(2026-08-14 저녁,
+                // B안 프로덕션 채택 결정 (2)). 롤백 위치:
+                // docs/design-test-rollout-plan.md §2.4
+                ListTile(
+                  leading: Icon(Icons.compare_outlined,
+                      color: colorScheme.onSurfaceVariant),
+                  title: Text('login_design_preview'.tr()),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/design-test'),
+                ),
+
                 // 로그아웃
                 ListTile(
                   leading: Icon(Icons.logout, color: colorScheme.error),

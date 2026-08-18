@@ -58,6 +58,10 @@ A안을 제대로 볼 수 없다. **B·C와 같은 방식의 A안 4탭 mock 셸*
 주석 앵커가 붙어 있다 — 라인 번호가 아니라 **그 주석으로 grep**해서 찾을 것.
 - 진입점: `lib/features/auth/presentation/login_screen.dart`
   — "디자인 미리보기 — 테스트 유저용" 주석이 달린 `TextButton` 블록(주석 포함) 제거
+- 로그인 후 진입점(2026-08-14 저녁 추가): `lib/features/profile/presentation/profile_screen.dart`
+  — "디자인 비교(A/B 랩)" 주석이 달린 `ListTile`(`context.push('/design-test')`) 제거.
+  로그인 상태에서는 `kPublicPaths`와 무관하게 라우트가 열리므로, 이 항목을 지우지
+  않으면 공개 경로를 걷어내도 설정에서 계속 들어갈 수 있다
 - 공개 경로: `lib/core/router/tab_branches.dart`
   — `kPublicPaths`의 `'/design-test'` 항목(주석 포함) 제거
 - **순서: 로그인 진입점 먼저 제거.** 공개 경로만 먼저 지우면 로그인 화면에
