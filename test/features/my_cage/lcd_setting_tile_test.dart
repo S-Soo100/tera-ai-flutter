@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivnanaut/features/my_cage/domain/device.dart';
+import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivnanaut/features/my_cage/data/lcd_repository.dart';
 import 'package:vivnanaut/features/my_cage/presentation/widgets/lcd_setting_tile.dart';
 
@@ -31,7 +34,21 @@ Future<void> _pump(WidgetTester tester, _FakeLcdRepo repo,
     ProviderScope(
       overrides: [
         lcdRepositoryProvider.overrideWithValue(repo),
-        currentDeviceIdProvider.overrideWith((ref) async => deviceId),
+        currentSetProvider.overrideWith((ref) async => deviceId == null
+            ? null
+            : EnclosureSet(
+                enclosure: Enclosure(
+                    id: 'e1', name: '1번', createdAt: DateTime(2026, 8, 1)),
+                device: Device(
+                    id: deviceId,
+                    ownerId: null,
+                    enclosureId: null,
+                    name: null,
+                    isOnline: true,
+                    lastSeenAt: null),
+                camera: null,
+                pet: null,
+              )),
       ],
       child: const MaterialApp(
         home: Scaffold(body: LcdSettingTile()),
@@ -101,7 +118,8 @@ void main() {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo, deviceId: null);
 
-    final tile = tester.widget<ListTile>(find.byKey(LcdSettingTile.tileKey));
+    final tile = tester.widget<ListTile>(find.descendant(
+        of: find.byKey(LcdSettingTile.tileKey), matching: find.byType(ListTile)));
     expect(tile.enabled, isFalse);
     expect(find.text('lcd_no_device'), findsOneWidget);
   });

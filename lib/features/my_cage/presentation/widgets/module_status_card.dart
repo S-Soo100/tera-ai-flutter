@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../shared/widgets/skeleton_loading.dart';
+import '../../../../shared/domain/num_format.dart';
 import '../../domain/device_settings.dart';
 import '../../domain/telemetry_reading.dart';
 import '../device_settings_providers.dart';
@@ -335,18 +336,15 @@ String _targetTempLabel(AsyncValue<DeviceSettings> s) {
   if (!s.hasValue) return '';
   final v = s.value?.targetTempC;
   if (v == null) return 'smart_cage_target_unset'.tr();
-  return 'smart_cage_target_temp_fmt'.tr(args: [_fmt(v)]);
+  return 'smart_cage_target_temp_fmt'.tr(args: [formatCompact(v)]);
 }
 
 String _targetHumidityLabel(AsyncValue<DeviceSettings> s) {
   if (!s.hasValue) return '';
   final v = s.value?.targetHumidityPct;
   if (v == null) return 'smart_cage_target_unset'.tr();
-  return 'smart_cage_target_humidity_fmt'.tr(args: [_fmt(v)]);
+  return 'smart_cage_target_humidity_fmt'.tr(args: [formatCompact(v)]);
 }
-
-String _fmt(double v) =>
-    v == v.roundToDouble() ? '${v.toInt()}' : v.toStringAsFixed(1);
 
 class _SensorBox extends StatelessWidget {
   const _SensorBox({

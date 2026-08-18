@@ -153,7 +153,8 @@ void main() {
 
   testWidgets('기기가 없으면 탭이 막히고 이유가 subtitle에 있다', (tester) async {
     await _pump(tester, _FakeRepo(), deviceId: null);
-    final tile = tester.widget<ListTile>(find.byKey(SetpointSettingTile.tileKey));
+    final tile = tester.widget<ListTile>(find.descendant(
+        of: find.byKey(SetpointSettingTile.tileKey), matching: find.byType(ListTile)));
     expect(tile.enabled, isFalse);
     expect(find.text('lcd_no_device'), findsOneWidget);
   });

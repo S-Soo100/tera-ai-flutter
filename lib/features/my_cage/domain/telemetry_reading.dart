@@ -1,3 +1,4 @@
+import '../../../shared/domain/num_format.dart';
 import 'actuator_state.dart';
 
 /// Supabase `telemetry` row 매핑.
@@ -45,18 +46,18 @@ class TelemetryReading {
   factory TelemetryReading.fromJson(Map<String, dynamic> j) {
     return TelemetryReading(
       deviceId: j['device_id'] as String? ?? '',
-      tA: _parseDouble(j['t_a']),
-      hA: _parseDouble(j['h_a']),
+      tA: parseDouble(j['t_a']),
+      hA: parseDouble(j['h_a']),
       aOk: j['a_ok'] as bool? ?? false,
-      tB: _parseDouble(j['t_b']),
-      hB: _parseDouble(j['h_b']),
+      tB: parseDouble(j['t_b']),
+      hB: parseDouble(j['h_b']),
       bOk: j['b_ok'] as bool? ?? false,
       relay: _parseActuator(j['relay']),
       fan: _parseActuator(j['fan']),
       heaterState: _parseActuator(j['heater_state']),
       heaterLocked: j['heater_locked'] as bool? ?? false,
       led: _parseActuator(j['led']),
-      ledBrightness: _parseDouble(j['led_brightness'])?.round(),
+      ledBrightness: parseDouble(j['led_brightness'])?.round(),
       ts: j['ts'] != null ? DateTime.tryParse(j['ts'].toString()) : null,
     );
   }
@@ -74,12 +75,5 @@ class TelemetryReading {
       return actuatorFromString(v);
     }
     return ActuatorState.unavailable;
-  }
-
-  static double? _parseDouble(Object? v) {
-    if (v == null) return null;
-    if (v is num) return v.toDouble();
-    if (v is String) return double.tryParse(v);
-    return null;
   }
 }

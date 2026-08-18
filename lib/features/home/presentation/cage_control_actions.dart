@@ -375,7 +375,7 @@ class _LedSheetState extends State<_LedSheet> {
                   Text('home_led_brightness'.tr(),
                       style: Theme.of(context).textTheme.labelMedium),
                   const Spacer(),
-                  Text('${_brightness.round()}%',
+                  Text('unit_percent_fmt'.tr(args: ['${_brightness.round()}']),
                       key: const Key('led_brightness_value'),
                       style: Theme.of(context).textTheme.titleMedium),
                 ],

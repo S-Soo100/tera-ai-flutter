@@ -133,7 +133,7 @@ class QuickControlGrid extends ConsumerWidget {
   static String _ledLabel(TelemetryReading? t) {
     if (t == null || t.led == ActuatorState.unavailable) return '';
     if (t.led == ActuatorState.on && t.ledBrightness != null) {
-      return '${t.ledBrightness}%';
+      return 'unit_percent_fmt'.tr(args: ['${t.ledBrightness}']);
     }
     return _stateLabel(t.led);
   }

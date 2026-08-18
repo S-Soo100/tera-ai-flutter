@@ -3,58 +3,52 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
-import '../../../home/presentation/home_set_providers.dart';
+import '../../../../shared/domain/num_format.dart';
 import '../../domain/device_settings.dart';
 import '../device_settings_providers.dart';
+import 'device_setting_sheet.dart';
 
 /// 사육장 설정의 목표 온습도(setpoint) 진입점 (2026-08-18 회신 §5).
 ///
 /// 대상은 **현재 세트의 제어 기기**(홈이 보고 있는 세트 — LCD·예약과 같은
-/// 기준). 사육장 탭의 카드는 자기 기기(`currentDeviceProvider`)를 따로 고르므로
-/// 두 축이 다를 수 있다 — 그래서 여기서는 **대상 기기 이름을 title에 밝히고**,
-/// 카드 쪽에는 [showSetpointSheet]로 그 카드의 기기를 바로 고치는 진입점을
-/// 따로 둔다. 어느 화면에서 고치든 "지금 보고 있는 기기"가 대상이다.
-/// 기기가 없으면 탭을 막는 대신 이유를 subtitle로 밝힌다.
-class SetpointSettingTile extends ConsumerWidget {
+/// 기준, 껍데기는 [DeviceSettingTile]). 사육장 탭의 카드는 자기 기기
+/// (`currentDeviceProvider`)를 따로 고르므로 두 축이 다를 수 있다 — 그래서
+/// 여기서는 **대상 기기 이름을 title에 밝히고**, 카드 쪽에는
+/// [showSetpointSheet]로 그 카드의 기기를 바로 고치는 진입점을 따로 둔다.
+/// 어느 화면에서 고치든 "지금 보고 있는 기기"가 대상이다.
+class SetpointSettingTile extends StatelessWidget {
   const SetpointSettingTile({super.key});
 
   static const tileKey = Key('setpoint_setting_tile');
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final device = ref.watch(currentSetProvider).valueOrNull?.device;
-    final deviceId = device?.id;
-    final settings = deviceId == null
-        ? null
-        : ref.watch(deviceSettingsProvider(deviceId)).valueOrNull;
-    final name = device?.name;
-    return ListTile(
+  Widget build(BuildContext context) {
+    return DeviceSettingTile(
       key: tileKey,
-      leading: const Icon(Icons.thermostat_outlined),
-      title: Text(name == null || name.isEmpty
-          ? 'setpoint_tile_title'.tr()
-          : 'setpoint_tile_title_for'.tr(args: [name])),
-      subtitle: Text(_subtitle(deviceId, settings)),
-      enabled: deviceId != null,
-      onTap: deviceId == null
-          ? null
-          : () => showSetpointSheet(context, ref, deviceId),
+      icon: Icons.thermostat_outlined,
+      title: (d) {
+        final name = d?.name;
+        return name == null || name.isEmpty
+            ? 'setpoint_tile_title'.tr()
+            : 'setpoint_tile_title_for'.tr(args: [name]);
+      },
+      subtitle: (ref, d) =>
+          _subtitle(ref.watch(deviceSettingsProvider(d.id)).valueOrNull),
+      onTap: (context, ref, d) => showSetpointSheet(context, ref, d.id),
     );
   }
 
-  static String _subtitle(String? deviceId, DeviceSettings? s) {
-    if (deviceId == null) return 'lcd_no_device'.tr();
+  static String _subtitle(DeviceSettings? s) {
     if (s == null || !s.hasTarget) return 'setpoint_tile_subtitle'.tr();
     return 'setpoint_tile_value'.tr(args: [
-      s.targetTempC == null ? 'setpoint_unset'.tr() : _fmt(s.targetTempC!),
+      s.targetTempC == null
+          ? 'setpoint_unset'.tr()
+          : formatCompact(s.targetTempC!),
       s.targetHumidityPct == null
           ? 'setpoint_unset'.tr()
-          : _fmt(s.targetHumidityPct!),
+          : formatCompact(s.targetHumidityPct!),
     ]);
   }
-
-  static String _fmt(double v) =>
-      v == v.roundToDouble() ? '${v.toInt()}' : v.toStringAsFixed(1);
 }
 
 /// 목표 온습도 편집 시트. **[deviceId]가 대상이다** — 호출한 화면이 보여주고
@@ -92,9 +86,9 @@ class _SetpointSheetState extends State<_SetpointSheet> {
       text: _init(widget.initial?.targetHumidityPct));
   bool _sending = false;
 
-  static String _init(double? v) => v == null
-      ? ''
-      : (v == v.roundToDouble() ? '${v.toInt()}' : v.toStringAsFixed(1));
+  // 되채움은 소수 2자리까지 — 저장값이 편집기 왕복에서 바뀌지 않게.
+  static String _init(double? v) =>
+      v == null ? '' : formatCompact(v, maxFractionDigits: 2);
 
   @override
   void dispose() {
@@ -125,86 +119,64 @@ class _SetpointSheetState extends State<_SetpointSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: AppStyles.spacing16,
-          right: AppStyles.spacing16,
-          top: AppStyles.spacing16,
-          bottom:
-              MediaQuery.of(context).viewInsets.bottom + AppStyles.spacing16,
+    return DeviceSettingSheet(
+      title: 'setpoint_sheet_title'.tr(),
+      children: [
+        TextField(
+          key: const Key('setpoint_temp_field'),
+          controller: _temp,
+          keyboardType: const TextInputType.numberWithOptions(
+              decimal: true, signed: true),
+          decoration: InputDecoration(
+            labelText: 'setpoint_temp_label'.tr(),
+            isDense: true,
+          ),
+          onChanged: (_) => setState(() {}),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('setpoint_sheet_title'.tr(),
-                style: AppStyles.subsectionTitle(context)),
-            const SizedBox(height: AppStyles.spacing12),
-            TextField(
-              key: const Key('setpoint_temp_field'),
-              controller: _temp,
-              keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true, signed: true),
-              decoration: InputDecoration(
-                labelText: 'setpoint_temp_label'.tr(),
-                isDense: true,
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: AppStyles.spacing8),
-            TextField(
-              key: const Key('setpoint_humidity_field'),
-              controller: _humid,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'setpoint_humidity_label'.tr(),
-                helperText: 'setpoint_range_hint'.tr(),
-                isDense: true,
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: AppStyles.spacing12),
-            FilledButton(
-              key: const Key('setpoint_apply'),
-              onPressed: _valid && !_sending ? _save : null,
-              child: Text('setpoint_apply'.tr()),
-            ),
-            if (!_valid &&
-                (_temp.text.isNotEmpty || _humid.text.isNotEmpty)) ...[
-              const SizedBox(height: AppStyles.spacing4),
-              Text(
-                'setpoint_invalid'.tr(),
-                key: const Key('setpoint_invalid'),
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
-          ],
+        const SizedBox(height: AppStyles.spacing8),
+        TextField(
+          key: const Key('setpoint_humidity_field'),
+          controller: _humid,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: 'setpoint_humidity_label'.tr(),
+            helperText: 'setpoint_range_hint'.tr(),
+            isDense: true,
+          ),
+          onChanged: (_) => setState(() {}),
         ),
-      ),
+        const SizedBox(height: AppStyles.spacing12),
+        FilledButton(
+          key: const Key('setpoint_apply'),
+          onPressed: _valid && !_sending ? _save : null,
+          child: Text('setpoint_apply'.tr()),
+        ),
+        if (!_valid && (_temp.text.isNotEmpty || _humid.text.isNotEmpty)) ...[
+          const SizedBox(height: AppStyles.spacing4),
+          Text(
+            'setpoint_invalid'.tr(),
+            key: const Key('setpoint_invalid'),
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall
+                ?.copyWith(color: Theme.of(context).colorScheme.error),
+          ),
+        ],
+      ],
     );
   }
 
   Future<void> _save() async {
     setState(() => _sending = true);
-    try {
-      await widget.onSave(
+    final ok = await submitAndClose(
+      context,
+      () => widget.onSave(
         _temp.text.trim().isEmpty ? null : _tempValue,
         _humid.text.trim().isEmpty ? null : _humidValue,
-      );
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('setpoint_saved'.tr())));
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _sending = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('setpoint_failed'.tr(args: ['$e']))));
-    }
+      ),
+      successKey: 'setpoint_saved',
+      failureKey: 'setpoint_failed',
+    );
+    if (!ok && mounted) setState(() => _sending = false);
   }
 }

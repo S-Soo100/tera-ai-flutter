@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_styles.dart';
+import '../../../shared/domain/num_format.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/mist_duration.dart';
@@ -251,6 +252,87 @@ class RoutineSettingsScreen extends ConsumerWidget {
   }
 }
 
+/// 예약 목록 한 줄 공용 모양 — 시점([_ScheduleTile])·구간([_PairTile]) 둘 다
+/// 이걸로 그린다. 제목·부제 조각·키·enabled만 다르고 트레일링(스위치+삭제)과
+/// 스타일은 같아야 두 종류가 한 목록에서 어긋나지 않는다.
+class _ScheduleRowTile extends StatelessWidget {
+  const _ScheduleRowTile({
+    required super.key,
+    required this.title,
+    required this.subtitleParts,
+    required this.enabled,
+    required this.toggleKey,
+    required this.deleteKey,
+    required this.onToggle,
+    required this.onDelete,
+    required this.onEdit,
+  });
+
+  final String title;
+  final List<String> subtitleParts;
+  final bool enabled;
+  final Key toggleKey;
+  final Key deleteKey;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(title, style: theme.textTheme.titleSmall),
+      subtitle: Text(
+        subtitleParts.join(' · '),
+        style: theme.textTheme.bodySmall
+            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      onTap: onEdit,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Switch(key: toggleKey, value: enabled, onChanged: onToggle),
+          IconButton(
+            key: deleteKey,
+            icon: const Icon(Icons.delete_outline),
+            onPressed: onDelete,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 부제 조각 헬퍼 (시점·구간 공용) ─────────────────────────────────────────
+
+String _repeatLabel(ScheduleKind kind, List<int> daysOfWeek) {
+  if (kind == ScheduleKind.daily) return 'routine_daily'.tr();
+  return daysOfWeek.map((d) => 'routine_day_$d'.tr()).join('·');
+}
+
+/// `습도>70%면 건너뜀` 식. 키는 `routine_guard_chip_<wire 뒷부분>`.
+String _guardLabel(ScheduleGuard g) {
+  final key =
+      'routine_guard_chip_${g.type.wire.substring('skip_when_'.length)}';
+  return key.tr(args: [formatCompact(g.value, maxFractionDigits: 2)]);
+}
+
+/// 이미 로컬로 바꿔 보관한 값이라 여기서 시차를 더하지 않는다.
+String _formatNext(DateTime at) {
+  final now = DateTime.now();
+  final sameDay =
+      at.year == now.year && at.month == now.month && at.day == now.day;
+  final hhmm = '${at.hour.toString().padLeft(2, '0')}:'
+      '${at.minute.toString().padLeft(2, '0')}';
+  if (sameDay) return 'routine_today_at'.tr(args: [hhmm]);
+  return '${at.month}/${at.day} $hhmm';
+}
+
+String _nextRunLabel(DateTime? at) =>
+    'routine_next_run'.tr(args: [_formatNext(at!)]);
+
+/// 시점 예약 한 줄 — `08:00  분무 2초`.
 class _ScheduleTile extends StatelessWidget {
   const _ScheduleTile({
     required this.schedule,
@@ -266,42 +348,21 @@ class _ScheduleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListTile(
-      key: Key('schedule_${schedule.id}'),
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        '${schedule.hhmm}  ${schedule.action.displayKey.tr()}'
-        '${_durationSuffix()}',
-        style: theme.textTheme.titleSmall,
-      ),
-      subtitle: Text(
-        [
-          _repeatLabel(),
-          if (schedule.guard case final g? when g.enabled)
-            _guardLabel(g),
-          if (schedule.nextRunAt != null && schedule.enabled)
-            'routine_next_run'.tr(args: [_formatNext(schedule.nextRunAt!)]),
-        ].join(' · '),
-        style: theme.textTheme.bodySmall
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-      ),
-      onTap: onEdit,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Switch(
-            key: Key('schedule_toggle_${schedule.id}'),
-            value: schedule.enabled,
-            onChanged: onToggle,
-          ),
-          IconButton(
-            key: Key('schedule_delete_${schedule.id}'),
-            icon: const Icon(Icons.delete_outline),
-            onPressed: onDelete,
-          ),
-        ],
-      ),
+    final s = schedule;
+    return _ScheduleRowTile(
+      key: Key('schedule_${s.id}'),
+      title: '${s.hhmm}  ${s.action.displayKey.tr()}${_durationSuffix()}',
+      subtitleParts: [
+        _repeatLabel(s.kind, s.daysOfWeek),
+        if (s.guard case final g? when g.enabled) _guardLabel(g),
+        if (s.nextRunAt != null && s.enabled) _nextRunLabel(s.nextRunAt),
+      ],
+      enabled: s.enabled,
+      toggleKey: Key('schedule_toggle_${s.id}'),
+      deleteKey: Key('schedule_delete_${s.id}'),
+      onToggle: onToggle,
+      onDelete: onDelete,
+      onEdit: onEdit,
     );
   }
 
@@ -311,38 +372,10 @@ class _ScheduleTile extends StatelessWidget {
     return ' ${MistDuration.fromMilliseconds(ms.toInt()).seconds}'
         '${'routine_seconds_suffix'.tr()}';
   }
-
-  String _repeatLabel() {
-    if (schedule.kind == ScheduleKind.daily) return 'routine_daily'.tr();
-    return schedule.daysOfWeek.map((d) => _dayName(d)).join('·');
-  }
-
-  /// `습도>70%면 건너뜀` 식. 키는 `routine_guard_chip_<wire 뒷부분>`.
-  static String _guardLabel(ScheduleGuard g) {
-    final key =
-        'routine_guard_chip_${g.type.wire.substring('skip_when_'.length)}';
-    final v = g.value == g.value.roundToDouble()
-        ? '${g.value.toInt()}'
-        : '${g.value}';
-    return key.tr(args: [v]);
-  }
-
-  static String _dayName(int d) => 'routine_day_$d'.tr();
-
-  /// 이미 로컬로 바꿔 보관한 값이라 여기서 시차를 더하지 않는다.
-  static String _formatNext(DateTime at) {
-    final now = DateTime.now();
-    final sameDay =
-        at.year == now.year && at.month == now.month && at.day == now.day;
-    final hhmm = '${at.hour.toString().padLeft(2, '0')}:'
-        '${at.minute.toString().padLeft(2, '0')}';
-    if (sameDay) return 'routine_today_at'.tr(args: [hhmm]);
-    return '${at.month}/${at.day} $hhmm';
-  }
 }
 
 /// 구간 한 줄 — `20:00 → 06:00  히터`. 반복·가드는 on행 기준, 다음 실행은
-/// 두 행 중 먼저 오는 쪽.
+/// 두 행 중 먼저 오는 쪽. 반쪽 켜짐이면 경고 조각을 붙인다.
 class _PairTile extends StatelessWidget {
   const _PairTile({
     required this.pair,
@@ -358,47 +391,25 @@ class _PairTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final on = pair.on;
     final off = pair.off;
     final next = _earliest(on.nextRunAt, off.nextRunAt);
-    return ListTile(
+    return _ScheduleRowTile(
       key: Key('schedule_pair_${pair.pairId}'),
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        '${on.hhmm} → ${off.hhmm}  ${on.action.labelKey.tr()}',
-        style: theme.textTheme.titleSmall,
-      ),
-      subtitle: Text(
-        [
-          on.kind == ScheduleKind.daily
-              ? 'routine_daily'.tr()
-              : on.daysOfWeek.map(_ScheduleTile._dayName).join('·'),
-          if (on.guard case final g? when g.enabled)
-            _ScheduleTile._guardLabel(g),
-          if (pair.isSkewed) 'routine_pair_skewed'.tr(),
-          if (next != null && pair.enabled)
-            'routine_next_run'.tr(args: [_ScheduleTile._formatNext(next)]),
-        ].join(' · '),
-        style: theme.textTheme.bodySmall
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-      ),
-      onTap: onEdit,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Switch(
-            key: Key('schedule_pair_toggle_${pair.pairId}'),
-            value: pair.enabled,
-            onChanged: onToggle,
-          ),
-          IconButton(
-            key: Key('schedule_pair_delete_${pair.pairId}'),
-            icon: const Icon(Icons.delete_outline),
-            onPressed: onDelete,
-          ),
-        ],
-      ),
+      // 시점 타일과 같은 조립 규칙(시각 + 라벨) — 화살표는 로케일 중립.
+      title: '${on.hhmm} → ${off.hhmm}  ${on.action.labelKey.tr()}',
+      subtitleParts: [
+        _repeatLabel(on.kind, on.daysOfWeek),
+        if (on.guard case final g? when g.enabled) _guardLabel(g),
+        if (pair.isSkewed) 'routine_pair_skewed'.tr(),
+        if (next != null && pair.enabled) _nextRunLabel(next),
+      ],
+      enabled: pair.enabled,
+      toggleKey: Key('schedule_pair_toggle_${pair.pairId}'),
+      deleteKey: Key('schedule_pair_delete_${pair.pairId}'),
+      onToggle: onToggle,
+      onDelete: onDelete,
+      onEdit: onEdit,
     );
   }
 

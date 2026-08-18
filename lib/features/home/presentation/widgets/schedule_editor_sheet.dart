@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../shared/domain/num_format.dart';
 import '../../domain/mist_duration.dart';
 import '../../domain/schedule.dart';
 
@@ -155,7 +156,9 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
     );
     _guardType = i?.guard?.type;
     _guardValue = TextEditingController(
-      text: i?.guard == null ? '' : _fmtNum(i!.guard!.value),
+      text: i?.guard == null
+          ? ''
+          : formatCompact(i!.guard!.value, maxFractionDigits: 2),
     );
   }
 
@@ -164,9 +167,6 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
     _guardValue.dispose();
     super.dispose();
   }
-
-  static String _fmtNum(double v) =>
-      v == v.roundToDouble() ? '${v.toInt()}' : '$v';
 
   double? get _parsedGuardValue => double.tryParse(_guardValue.text.trim());
 

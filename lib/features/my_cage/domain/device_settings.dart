@@ -1,3 +1,5 @@
+import '../../../shared/domain/num_format.dart';
+
 /// 기기 목표 환경(setpoint) — terra-api `GET/PATCH /devices/{id}/settings`
 /// (2026-08-18 백엔드 회신 §5).
 ///
@@ -43,12 +45,12 @@ class DeviceSettings {
   factory DeviceSettings.fromJson(Map<String, dynamic> j) {
     return DeviceSettings(
       deviceId: j['device_id'] as String? ?? '',
-      targetTempC: _d(j['target_temp_c']),
-      targetHumidityPct: _d(j['target_humidity_pct']),
-      targetTempMin: _d(j['target_temp_min']),
-      targetTempMax: _d(j['target_temp_max']),
-      targetHumidMin: _d(j['target_humid_min']),
-      targetHumidMax: _d(j['target_humid_max']),
+      targetTempC: parseDouble(j['target_temp_c']),
+      targetHumidityPct: parseDouble(j['target_humidity_pct']),
+      targetTempMin: parseDouble(j['target_temp_min']),
+      targetTempMax: parseDouble(j['target_temp_max']),
+      targetHumidMin: parseDouble(j['target_humid_min']),
+      targetHumidMax: parseDouble(j['target_humid_max']),
       updatedAt: j['updated_at'] != null
           ? DateTime.tryParse(j['updated_at'].toString())?.toLocal()
           : null,
@@ -64,11 +66,4 @@ class DeviceSettings {
         if (targetTempC != null) 'target_temp_c': targetTempC,
         if (targetHumidityPct != null) 'target_humidity_pct': targetHumidityPct,
       };
-
-  static double? _d(Object? v) {
-    if (v == null) return null;
-    if (v is num) return v.toDouble();
-    if (v is String) return double.tryParse(v);
-    return null;
-  }
 }
