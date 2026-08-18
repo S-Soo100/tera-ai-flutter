@@ -8,9 +8,10 @@
 /// INSERT도 통과하지만, 그러면 서버가 계산하는 `next_run_at`이 비어 예약이
 /// 영영 안 돈다.
 ///
-/// 시작~종료 구간은 on/off 예약 **2건**으로 구성하고(서버에 "쌍" 개념은 없다),
-/// 스마트 조건은 [ScheduleGuard](스킵형 4종)로 건다 — 2026-08-14 핸드오프로
-/// 계약이 열렸다(`docs/backend-handoff-2026-08-14-summary.md` §2).
+/// 시작~종료 구간은 on/off 예약 **2건**에 같은 [pairId]를 실어 만든다 —
+/// 서버가 짝을 묶어 한쪽을 지우면 다른 쪽도 지운다(2026-08-18 회신 §3,
+/// `docs/backend-reply-2026-08-18-app-delivery.md`). 스마트 조건은
+/// [ScheduleGuard](스킵형 4종)로 건다(2026-08-14 핸드오프 §2).
 library;
 
 enum ScheduleKind {
@@ -236,6 +237,10 @@ class Schedule {
   /// 스마트 조건. 없거나 서버가 모르는 형태면 null.
   final ScheduleGuard? guard;
 
+  /// 구간 예약의 짝 식별자(앱 생성 UUID). on/off 두 행이 같은 값을 갖는다.
+  /// 시점 예약·2026-08-18 이전에 만든 구간(낱개 2건)은 null.
+  final String? pairId;
+
   /// 다음 실행 시각. **서버는 UTC로 주고 여기서 로컬로 바꿔 보관한다.**
   final DateTime? nextRunAt;
   final DateTime? lastRunAt;
@@ -253,6 +258,7 @@ class Schedule {
     required this.nextRunAt,
     required this.lastRunAt,
     this.guard,
+    this.pairId,
   });
 
   String get hhmm =>
@@ -277,9 +283,43 @@ class Schedule {
       daysOfWeek: days ?? const [],
       enabled: j['enabled'] as bool? ?? true,
       guard: ScheduleGuard.fromJson(j['guard']),
+      pairId: j['pair_id'] as String?,
       nextRunAt: _parseLocal(j['next_run_at']),
       lastRunAt: _parseLocal(j['last_run_at']),
     );
+  }
+
+  /// 목록을 **구간 한 줄**로 묶는다. 같은 [pairId]를 가진 on/off를 [SchedulePair]로,
+  /// 나머지(시점·짝 없는 낱개)는 그대로 돌려준다. 순서는 원본 첫 등장 순.
+  ///
+  /// 짝이 한쪽만 남았거나(서버가 짝 삭제를 보장하지만 웹 콘솔 직접 삭제 등)
+  /// 두 행이 다 켜기/다 끄기면 묶지 않고 낱개로 둔다 — 억지로 묶어 그리면
+  /// 삭제·토글이 어느 행에 걸리는지 사용자가 알 수 없다.
+  static List<Object> group(List<Schedule> list) {
+    final byPair = <String, List<Schedule>>{};
+    for (final s in list) {
+      if (s.pairId != null) byPair.putIfAbsent(s.pairId!, () => []).add(s);
+    }
+    final out = <Object>[];
+    final emitted = <String>{};
+    for (final s in list) {
+      final pid = s.pairId;
+      if (pid == null) {
+        out.add(s);
+        continue;
+      }
+      if (emitted.contains(pid)) continue;
+      final legs = byPair[pid]!;
+      final on = legs.where((e) => !e.action.isOffAction).firstOrNull;
+      final off = legs.where((e) => e.action.isOffAction).firstOrNull;
+      if (legs.length == 2 && on != null && off != null) {
+        out.add(SchedulePair(on: on, off: off));
+      } else {
+        out.addAll(legs);
+      }
+      emitted.add(pid);
+    }
+    return out;
   }
 
   /// 생성 요청 본문.
@@ -294,6 +334,7 @@ class Schedule {
     required List<int> daysOfWeek,
     Map<String, dynamic>? payload,
     ScheduleGuard? guard,
+    String? pairId,
   }) {
     final sorted = [...daysOfWeek]..sort();
     return {
@@ -304,6 +345,7 @@ class Schedule {
       if (kind == ScheduleKind.weekly) 'days_of_week': sorted,
       if (payload != null) 'payload': payload,
       if (guard != null) 'guard': guard.toJson(),
+      if (pairId != null) 'pair_id': pairId,
     };
   }
 
@@ -350,6 +392,7 @@ class Schedule {
         daysOfWeek: daysOfWeek,
         enabled: enabled ?? this.enabled,
         guard: guard,
+        pairId: pairId,
         nextRunAt: nextRunAt,
         lastRunAt: lastRunAt,
       );
@@ -371,4 +414,22 @@ class Schedule {
     if (v == null) return null;
     return DateTime.tryParse(v.toString())?.toLocal();
   }
+}
+
+/// 구간 예약 한 줄 — 같은 `pair_id`의 켜기/끄기 행. [Schedule.group]이 만든다.
+class SchedulePair {
+  final Schedule on;
+  final Schedule off;
+
+  const SchedulePair({required this.on, required this.off});
+
+  String get pairId => on.pairId!;
+
+  /// 두 행이 모두 켜져 있을 때만 "켜짐". 한쪽만 꺼진 상태(웹 콘솔 등)는
+  /// 목록에서 꺼짐으로 보이고, 토글을 켜면 둘 다 켜져 정상으로 돌아온다.
+  bool get enabled => on.enabled && off.enabled;
+
+  ScheduleKind get kind => on.kind;
+  List<int> get daysOfWeek => on.daysOfWeek;
+  ScheduleGuard? get guard => on.guard;
 }

@@ -172,6 +172,88 @@ void main() {
     });
   });
 
+  group('pair_id (2026-08-18 회신 §3)', () {
+    Schedule s(String id, ScheduleAction a, {String? pair}) => Schedule(
+          id: id,
+          deviceId: 'd',
+          action: a,
+          payload: null,
+          kind: ScheduleKind.daily,
+          hour: 8,
+          minute: 0,
+          daysOfWeek: const [],
+          enabled: true,
+          pairId: pair,
+          nextRunAt: null,
+          lastRunAt: null,
+        );
+
+    test('createBody: pairId가 있으면 pair_id, 없으면 키 생략', () {
+      final with_ = Schedule.createBody(
+        action: ScheduleAction.fanOn,
+        kind: ScheduleKind.daily,
+        hour: 8,
+        minute: 0,
+        daysOfWeek: const [],
+        pairId: 'p1',
+      );
+      expect(with_['pair_id'], 'p1');
+      final without = Schedule.createBody(
+        action: ScheduleAction.mist,
+        kind: ScheduleKind.daily,
+        hour: 8,
+        minute: 0,
+        daysOfWeek: const [],
+      );
+      expect(without.containsKey('pair_id'), isFalse);
+    });
+
+    test('fromJson: pair_id 읽음, 없으면 null', () {
+      expect(
+        Schedule.fromJson({'id': 'a', 'action': 'fan_on', 'pair_id': 'p1'})
+            .pairId,
+        'p1',
+      );
+      expect(Schedule.fromJson({'id': 'a', 'action': 'mist'}).pairId, isNull);
+    });
+
+    test('group: 같은 pair_id의 on/off → SchedulePair 1개, 나머지는 낱개', () {
+      final rows = Schedule.group([
+        s('x', ScheduleAction.mist),
+        s('on', ScheduleAction.heaterOn, pair: 'p1'),
+        s('y', ScheduleAction.ledOn),
+        s('off', ScheduleAction.heaterOff, pair: 'p1'),
+      ]);
+      expect(rows, hasLength(3));
+      expect(rows[0], isA<Schedule>());
+      expect(rows[1], isA<SchedulePair>());
+      final p = rows[1] as SchedulePair;
+      expect(p.on.id, 'on');
+      expect(p.off.id, 'off');
+      expect(p.pairId, 'p1');
+      expect(rows[2], isA<Schedule>());
+    });
+
+    test('group: 짝이 한쪽만 남았거나 둘 다 켜기면 묶지 않는다', () {
+      final lone = Schedule.group([s('on', ScheduleAction.fanOn, pair: 'p1')]);
+      expect(lone.single, isA<Schedule>());
+      final twoOn = Schedule.group([
+        s('a', ScheduleAction.fanOn, pair: 'p2'),
+        s('b', ScheduleAction.fanOn, pair: 'p2'),
+      ]);
+      expect(twoOn, hasLength(2));
+      expect(twoOn.every((r) => r is Schedule), isTrue);
+    });
+
+    test('SchedulePair.enabled는 둘 다 켜져 있을 때만', () {
+      final p = SchedulePair(
+        on: s('on', ScheduleAction.fanOn, pair: 'p'),
+        off: s('off', ScheduleAction.fanOff, pair: 'p').copyWith(enabled: false),
+      );
+      expect(p.enabled, isFalse);
+    });
+  });
+
   group('구간 예약 자정 넘김', () {
     test('종료가 시작보다 이르거나 같으면 자정 넘김', () {
       expect(

@@ -33,6 +33,7 @@ class ScheduleRepository {
     required List<int> daysOfWeek,
     Map<String, dynamic>? payload,
     ScheduleGuard? guard,
+    String? pairId,
   }) async {
     final body = Schedule.createBody(
       action: action,
@@ -42,6 +43,7 @@ class ScheduleRepository {
       daysOfWeek: daysOfWeek,
       payload: payload,
       guard: guard,
+      pairId: pairId,
     );
     final decoded = await _client.post('/devices/$deviceId/schedules', body);
     return Schedule.fromJson(Map<String, dynamic>.from(decoded as Map));
@@ -56,6 +58,8 @@ class ScheduleRepository {
     return Schedule.fromJson(Map<String, dynamic>.from(decoded as Map));
   }
 
+  /// `pair_id`가 있는 행이면 서버가 **짝(on/off)도 함께 지운다**(회신 §3) —
+  /// 구간은 둘 중 아무 한 건만 지우면 된다.
   Future<void> delete(String scheduleId) =>
       _client.delete('/schedules/$scheduleId');
 }

@@ -7,8 +7,8 @@ import '../../domain/schedule.dart';
 
 /// 편집기가 돌려주는 값. 화면이 그대로 notifier에 넘긴다.
 ///
-/// [offAction]이 있으면 **구간 예약**이다 — 화면이 `addSpan`으로 분기해
-/// on/off 2건을 만든다(서버에 쌍 개념이 없어 생성 헬퍼일 뿐이다).
+/// [offAction]이 있으면 **구간 예약**이다 — 화면이 `addSpan`/`updateSpanTiming`
+/// 으로 분기해 같은 `pair_id`의 on/off 2건을 만들거나 고친다.
 class ScheduleDraft {
   final ScheduleAction action;
 
@@ -59,6 +59,14 @@ enum _SpanActuator {
   final ScheduleAction offAction;
 
   String get labelKey => 'routine_span_$name';
+
+  /// 켜기 동작으로 역추적. 구간 편집에서 잠긴 칩을 그리는 데 쓴다.
+  static _SpanActuator? fromOnAction(ScheduleAction a) {
+    for (final v in values) {
+      if (v.onAction == a) return v;
+    }
+    return null;
+  }
 }
 
 /// 가드 종류 선택 라벨. `skip_when_humidity_above` → `routine_guard_humidity_above`.
@@ -67,24 +75,28 @@ String _guardPickKey(GuardType t) =>
 
 /// 예약 추가·수정 시트.
 ///
-/// [initial]이 있으면 수정이다. **이때 동작·구간은 못 바꾼다** — 서버가 `action`
-/// 수정을 안 받고(`APP_TIMER_MIST.md` §2.3), 구간은 쌍 개념이 없어 낱개로만
-/// 수정된다. 타이밍·가드만 바꿀 수 있다.
+/// [initial](시점) 또는 [initialPair](구간)가 있으면 수정이다. **이때 동작은
+/// 못 바꾼다** — 서버가 `action` 수정을 안 받는다(`APP_TIMER_MIST.md` §2.3).
+/// 타이밍·가드만 바꿀 수 있고, 구간은 시작·종료 둘 다 고칠 수 있다.
 Future<ScheduleDraft?> showScheduleEditor(
   BuildContext context, {
   Schedule? initial,
+  SchedulePair? initialPair,
 }) {
+  assert(initial == null || initialPair == null);
   return showModalBottomSheet<ScheduleDraft>(
     context: context,
     isScrollControlled: true,
-    builder: (ctx) => _ScheduleEditor(initial: initial),
+    builder: (ctx) =>
+        _ScheduleEditor(initial: initial, initialPair: initialPair),
   );
 }
 
 class _ScheduleEditor extends StatefulWidget {
-  const _ScheduleEditor({this.initial});
+  const _ScheduleEditor({this.initial, this.initialPair});
 
   final Schedule? initial;
+  final SchedulePair? initialPair;
 
   @override
   State<_ScheduleEditor> createState() => _ScheduleEditorState();
@@ -110,18 +122,30 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
   /// 가드(enabled:false, 웹 콘솔 등에서 설정)가 시간만 고쳐도 재무장된다.
   bool _guardTouched = false;
 
-  bool get _isEdit => widget.initial != null;
+  bool get _isEdit => widget.initial != null || widget.initialPair != null;
+
+  /// 수정 대상의 원래 가드(시점이면 그 행, 구간이면 on행).
+  ScheduleGuard? get _initialGuard =>
+      widget.initial?.guard ?? widget.initialPair?.on.guard;
 
   /// 이 예약에 가드를 걸 수 있는가. **끄기 계열이면 금지** — 조건 때문에
   /// 끄기가 스킵되면 기기가 켜진 채 남는다(addSpan이 off쪽에 가드를 안 거는
   /// 것과 같은 불변식을 편집 경로에도 적용). 구간 모드는 가드가 켜기쪽에만
   /// 붙으므로 항상 허용.
-  bool get _allowsGuard => (!_isEdit && _isSpan) || !_action.isOffAction;
+  bool get _allowsGuard => _isSpan || !_action.isOffAction;
 
   @override
   void initState() {
     super.initState();
-    final i = widget.initial;
+    final pair = widget.initialPair;
+    // 구간 편집이면 on행이 기준, off행은 종료 시각만 준다.
+    final i = widget.initial ?? pair?.on;
+    if (pair != null) {
+      _isSpan = true;
+      _spanActuator =
+          _SpanActuator.fromOnAction(pair.on.action) ?? _SpanActuator.fan;
+      _endTime = TimeOfDay(hour: pair.off.hour, minute: pair.off.minute);
+    }
     _action = i?.action ?? ScheduleAction.mist;
     _kind = i?.kind ?? ScheduleKind.daily;
     _time = TimeOfDay(hour: i?.hour ?? 8, minute: i?.minute ?? 0);
@@ -184,7 +208,7 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
             ),
             const SizedBox(height: AppStyles.spacing16),
 
-            // ── 시점/구간 (추가에서만 — 구간은 쌍이 없어 수정 불가) ──────
+            // ── 시점/구간 (추가에서만 — 수정은 종류를 못 바꾼다) ──────
             if (!_isEdit) ...[
               SegmentedButton<bool>(
                 segments: [
@@ -218,7 +242,10 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                       key: Key('routine_span_${a.name}'),
                       label: Text(a.labelKey.tr()),
                       selected: _spanActuator == a,
-                      onSelected: (_) => setState(() => _spanActuator = a),
+                      // 수정 중엔 잠근다 — action은 서버가 안 받는다.
+                      onSelected: _isEdit
+                          ? null
+                          : (_) => setState(() => _spanActuator = a),
                     ),
                 ],
               )
@@ -386,8 +413,7 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                         // 70%를 70°C로 그대로 들고 가면 절대 발화하지 않는
                         // 무력 가드가 조용히 만들어진다.
                         final prevUnit =
-                            (_guardType ?? widget.initial?.guard?.type)
-                                ?.isHumidity;
+                            (_guardType ?? _initialGuard?.type)?.isHumidity;
                         _guardType = t;
                         _guardTouched = true;
                         if (_guardValue.text.trim().isEmpty ||
@@ -460,7 +486,7 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
   }
 
   void _save() {
-    final span = !_isEdit && _isSpan;
+    final span = _isSpan;
     // 수정에서 가드를 안 건드렸으면 null(키 생략) — 서버 값이 enabled까지
     // 그대로 남는다. 끄기 계열이면 어떤 경로로도 가드를 싣지 않는다.
     final emitsGuard = _allowsGuard && (!_isEdit || _guardTouched);
@@ -478,7 +504,7 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
       // 수정에서 원래 가드가 있었는데 직접 '사용 안 함'으로 껐다 → 명시적 해제.
       clearGuard: _isEdit &&
           _guardTouched &&
-          widget.initial?.guard != null &&
+          _initialGuard != null &&
           _guardType == null,
     ));
   }

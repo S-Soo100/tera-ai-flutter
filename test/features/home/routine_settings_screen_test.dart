@@ -41,13 +41,18 @@ class _FakeRepo implements ScheduleRepository {
       required int minute,
       required List<int> daysOfWeek,
       Map<String, dynamic>? payload,
-      ScheduleGuard? guard}) async {
+      ScheduleGuard? guard,
+      String? pairId}) async {
     calls.add('create:${action.wire}:'
         '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}'
         ':d=${daysOfWeek.join(',')}'
         '${guard == null ? '' : ':guard=${guard.type.wire}>${guard.value}'}');
-    return _schedule(id: 'new-${calls.length}');
+    pairIds.add(pairId);
+    return _schedule(id: 'new-${calls.length}', pairId: pairId);
   }
+
+  /// create마다 받은 pair_id(시점 예약이면 null).
+  final List<String?> pairIds = [];
 }
 
 Schedule _schedule({
@@ -57,6 +62,9 @@ Schedule _schedule({
   ScheduleKind kind = ScheduleKind.daily,
   List<int> days = const [],
   ScheduleGuard? guard,
+  String? pairId,
+  int hour = 8,
+  int minute = 0,
 }) =>
     Schedule(
       id: id,
@@ -64,11 +72,12 @@ Schedule _schedule({
       action: action,
       payload: const {'duration_ms': 2000},
       kind: kind,
-      hour: 8,
-      minute: 0,
+      hour: hour,
+      minute: minute,
       daysOfWeek: days,
       enabled: enabled,
       guard: guard,
+      pairId: pairId,
       nextRunAt: null,
       lastRunAt: null,
     );
@@ -158,6 +167,86 @@ void main() {
     expect(creates, hasLength(2), reason: '실제 호출: ${repo.calls}');
     expect(creates[0], startsWith('create:fan_on:08:00'));
     expect(creates[1], startsWith('create:fan_off:22:00'));
+    // 2026-08-18 회신 §3 — 두 행이 같은 pair_id를 갖는다.
+    expect(repo.pairIds, hasLength(2));
+    expect(repo.pairIds[0], isNotNull);
+    expect(repo.pairIds[0], repo.pairIds[1]);
+  });
+
+  testWidgets('시점 예약은 pair_id를 싣지 않는다', (tester) async {
+    final repo = _FakeRepo();
+    await _pump(tester, repo);
+    await tester.tap(find.byKey(RoutineSettingsScreen.addKey));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('routine_save')));
+    await tester.tap(find.byKey(const Key('routine_save')));
+    await tester.pumpAndSettle();
+    expect(repo.pairIds, [null]);
+  });
+
+  testWidgets('같은 pair_id의 on/off는 목록에 한 줄로 묶인다', (tester) async {
+    final repo = _FakeRepo(items: [
+      _schedule(id: 'on', action: ScheduleAction.heaterOn, hour: 20, pairId: 'p1'),
+      _schedule(id: 'off', action: ScheduleAction.heaterOff, hour: 6, pairId: 'p1'),
+      _schedule(id: 'solo'),
+    ]);
+    await _pump(tester, repo);
+    expect(find.byKey(const Key('schedule_pair_p1')), findsOneWidget);
+    expect(find.byKey(const Key('schedule_on')), findsNothing);
+    expect(find.byKey(const Key('schedule_off')), findsNothing);
+    expect(find.byKey(const Key('schedule_solo')), findsOneWidget);
+    expect(find.textContaining('20:00 → 06:00'), findsOneWidget);
+  });
+
+  testWidgets('구간 삭제는 한 건만 DELETE — 서버가 짝을 같이 지운다', (tester) async {
+    final repo = _FakeRepo(items: [
+      _schedule(id: 'on', action: ScheduleAction.fanOn, pairId: 'p1'),
+      _schedule(id: 'off', action: ScheduleAction.fanOff, pairId: 'p1'),
+    ]);
+    await _pump(tester, repo);
+    await tester.tap(find.byKey(const Key('schedule_pair_delete_p1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('routine_delete_pair_body')), findsOneWidget);
+    await tester.tap(find.text('routine_delete_confirm'.tr()));
+    await tester.pumpAndSettle();
+    expect(repo.calls.where((c) => c.startsWith('delete:')), ['delete:on']);
+    expect(find.byKey(const Key('schedule_pair_p1')), findsNothing);
+  });
+
+  testWidgets('구간 토글은 두 행을 같이 바꾼다', (tester) async {
+    final repo = _FakeRepo(items: [
+      _schedule(id: 'on', action: ScheduleAction.fanOn, pairId: 'p1'),
+      _schedule(id: 'off', action: ScheduleAction.fanOff, pairId: 'p1'),
+    ]);
+    await _pump(tester, repo);
+    await tester.tap(find.byKey(const Key('schedule_pair_toggle_p1')));
+    await tester.pumpAndSettle();
+    expect(repo.calls.where((c) => c.startsWith('patch:')).toList(), [
+      'patch:on:{enabled: false}',
+      'patch:off:{enabled: false}',
+    ]);
+  });
+
+  testWidgets('구간 편집은 시작·종료를 다 고치고 두 행을 PATCH한다', (tester) async {
+    final repo = _FakeRepo(items: [
+      _schedule(id: 'on', action: ScheduleAction.fanOn, hour: 8, pairId: 'p1'),
+      _schedule(id: 'off', action: ScheduleAction.fanOff, hour: 20, pairId: 'p1'),
+    ]);
+    await _pump(tester, repo);
+    await tester.tap(find.byKey(const Key('schedule_pair_p1')));
+    await tester.pumpAndSettle();
+    // 편집 모드: 구간 UI가 그대로 뜨고 종료 시각 행이 있다.
+    expect(find.byKey(const Key('routine_pick_end_time')), findsOneWidget);
+    expect(find.text('routine_mode_span'.tr()), findsNothing);
+    await tester.ensureVisible(find.byKey(const Key('routine_save')));
+    await tester.tap(find.byKey(const Key('routine_save')));
+    await tester.pumpAndSettle();
+    final patches = repo.calls.where((c) => c.startsWith('patch:')).toList();
+    expect(patches, hasLength(2), reason: '실제 호출: ${repo.calls}');
+    expect(patches[0], startsWith('patch:on:'));
+    expect(patches[0], contains('time_of_day: 08:00'));
+    expect(patches[1], startsWith('patch:off:'));
+    expect(patches[1], contains('time_of_day: 20:00'));
   });
 
   testWidgets('구간에서 히터를 고르면 무인 가동 경고를 보여준다', (tester) async {

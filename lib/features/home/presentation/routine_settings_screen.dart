@@ -19,7 +19,7 @@ import 'widgets/schedule_editor_sheet.dart';
 /// |---|---|
 /// | §4.2.1 타이머(즉시·일회성) | ✅ 팬 — 제어 그리드의 팬 시트에서 건다 (히터는 보드 미탑재) |
 /// | §4.2.2 일정 — 시점 예약 | ✅ 여기 |
-/// | §4.2.2 시작~종료 구간 | ✅ 편집기 [구간] — on/off 예약 2건 생성 |
+/// | §4.2.2 시작~종료 구간 | ✅ 편집기 [구간] — 같은 `pair_id`의 on/off 2건, 목록엔 한 줄 |
 /// | §4.2.2 스마트 조건 | ✅ 스킵형 4종 (정지형은 펌웨어 후속 — 하단 각주) |
 ///
 /// 상세: `docs/backend-handoff-2026-08-14-summary.md` ·
@@ -65,16 +65,28 @@ class RoutineSettingsScreen extends ConsumerWidget {
                 : Column(
                     key: listKey,
                     children: [
-                      for (final s in list)
-                        _ScheduleTile(
-                          schedule: s,
-                          onToggle: (v) => _guard(
-                              context, () => ref
-                                  .read(schedulesProvider.notifier)
-                                  .setEnabled(s, v)),
-                          onDelete: () => _confirmDelete(context, ref, s),
-                          onEdit: () => _edit(context, ref, s),
-                        ),
+                      // 같은 pair_id의 on/off는 한 줄로(2026-08-18 회신 §3).
+                      for (final row in Schedule.group(list))
+                        if (row case final SchedulePair p)
+                          _PairTile(
+                            pair: p,
+                            onToggle: (v) => _guard(
+                                context, () => ref
+                                    .read(schedulesProvider.notifier)
+                                    .setPairEnabled(p, v)),
+                            onDelete: () => _confirmDeletePair(context, ref, p),
+                            onEdit: () => _editPair(context, ref, p),
+                          )
+                        else if (row case final Schedule s)
+                          _ScheduleTile(
+                            schedule: s,
+                            onToggle: (v) => _guard(
+                                context, () => ref
+                                    .read(schedulesProvider.notifier)
+                                    .setEnabled(s, v)),
+                            onDelete: () => _confirmDelete(context, ref, s),
+                            onEdit: () => _edit(context, ref, s),
+                          ),
                     ],
                   ),
           ),
@@ -141,11 +153,57 @@ class RoutineSettingsScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _editPair(
+      BuildContext context, WidgetRef ref, SchedulePair p) async {
+    final result = await showScheduleEditor(context, initialPair: p);
+    if (result == null || !context.mounted) return;
+    await _guard(
+      context,
+      () => ref.read(schedulesProvider.notifier).updateSpanTiming(
+            p,
+            kind: result.kind,
+            startHour: result.hour,
+            startMinute: result.minute,
+            endHour: result.endHour!,
+            endMinute: result.endMinute!,
+            daysOfWeek: result.daysOfWeek,
+            guard: result.guard,
+            clearGuard: result.clearGuard,
+          ),
+    );
+  }
+
+  /// 구간 삭제 — 서버가 짝을 같이 지운다는 걸 확인문에 밝힌다.
+  Future<void> _confirmDeletePair(
+      BuildContext context, WidgetRef ref, SchedulePair p) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('routine_delete_title'.tr()),
+        content: Text('routine_delete_pair_body'.tr(),
+            key: const Key('routine_delete_pair_body')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('common_cancel'.tr()),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('routine_delete_confirm'.tr()),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    await _guard(
+        context, () => ref.read(schedulesProvider.notifier).removePair(p));
+  }
+
   Future<void> _confirmDelete(
       BuildContext context, WidgetRef ref, Schedule s) async {
     // 끄기 예약을 지우는데 짝이 될 켜기 예약이 살아 있으면 경고를 바꾼다 —
-    // 서버에 쌍 개념이 없어(구간 예약 = 낱개 2건) 이 목록 검사로만 잡을 수
-    // 있다. 켜기만 남으면 기기가 켜진 채 방치된다(히터면 과열).
+    // pair_id 없는 낱개(2026-08-18 이전 구간, 웹 콘솔 생성)는 이 목록 검사로만
+    // 잡을 수 있다. 켜기만 남으면 기기가 켜진 채 방치된다(히터면 과열).
     final others = ref.read(schedulesProvider).valueOrNull ?? const [];
     final leavesOrphanOn = s.action.isOffAction &&
         others.any((e) =>
@@ -280,6 +338,73 @@ class _ScheduleTile extends StatelessWidget {
         '${at.minute.toString().padLeft(2, '0')}';
     if (sameDay) return 'routine_today_at'.tr(args: [hhmm]);
     return '${at.month}/${at.day} $hhmm';
+  }
+}
+
+/// 구간 한 줄 — `20:00 → 06:00  히터`. 반복·가드는 on행 기준, 다음 실행은
+/// 두 행 중 먼저 오는 쪽.
+class _PairTile extends StatelessWidget {
+  const _PairTile({
+    required this.pair,
+    required this.onToggle,
+    required this.onDelete,
+    required this.onEdit,
+  });
+
+  final SchedulePair pair;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final on = pair.on;
+    final off = pair.off;
+    final next = _earliest(on.nextRunAt, off.nextRunAt);
+    return ListTile(
+      key: Key('schedule_pair_${pair.pairId}'),
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        '${on.hhmm} → ${off.hhmm}  ${on.action.labelKey.tr()}',
+        style: theme.textTheme.titleSmall,
+      ),
+      subtitle: Text(
+        [
+          on.kind == ScheduleKind.daily
+              ? 'routine_daily'.tr()
+              : on.daysOfWeek.map(_ScheduleTile._dayName).join('·'),
+          if (on.guard case final g? when g.enabled)
+            _ScheduleTile._guardLabel(g),
+          if (next != null && pair.enabled)
+            'routine_next_run'.tr(args: [_ScheduleTile._formatNext(next)]),
+        ].join(' · '),
+        style: theme.textTheme.bodySmall
+            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      onTap: onEdit,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Switch(
+            key: Key('schedule_pair_toggle_${pair.pairId}'),
+            value: pair.enabled,
+            onChanged: onToggle,
+          ),
+          IconButton(
+            key: Key('schedule_pair_delete_${pair.pairId}'),
+            icon: const Icon(Icons.delete_outline),
+            onPressed: onDelete,
+          ),
+        ],
+      ),
+    );
+  }
+
+  static DateTime? _earliest(DateTime? a, DateTime? b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    return a.isBefore(b) ? a : b;
   }
 }
 

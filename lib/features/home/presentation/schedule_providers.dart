@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/network/terra_rest_client.dart';
 import '../data/schedule_repository.dart';
@@ -54,17 +55,16 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
     state = AsyncData([created, ...state.valueOrNull ?? const []]);
   }
 
-  /// 구간 예약 — on(시작)·off(종료) 예약 2건 생성 (핸드오프 §1.1).
-  ///
-  /// 서버에 "쌍" 개념은 없다 — 목록에는 낱개 2건으로 보인다. 앱만 쌍을
-  /// 기억하면 웹 콘솔·다른 기기와 어긋나므로 일부러 안 만든다.
+  /// 구간 예약 — on(시작)·off(종료) 예약 2건을 **같은 `pair_id`**로 생성
+  /// (2026-08-18 회신 §3). 서버가 짝을 묶어 목록에서 한 줄로 그리고, 삭제는
+  /// 한 건만 지워도 짝이 같이 지워진다.
   ///
   /// **off 생성이 실패하면 on을 지우고 다시 던진다.** on만 남으면 기기가
   /// 켜진 채 방치된다 — 히터면 과열이다. 롤백 삭제까지 실패하면 그 사실을
   /// 담아 던져 화면이 "예약 목록을 확인하라"고 말할 수 있게 한다.
   ///
   /// 가드는 **on쪽에만** 건다 — "습도가 높으면 켜지 마라"가 자연스러운 뜻이고,
-  /// off는 조건 없이 꺼져야 안전하다.
+  /// off는 조건 없이 꺼져야 안전하다(서버도 off+guard를 400으로 막는다, §4-3).
   ///
   /// 시작>종료 검증은 하지 않는다 — 자정을 넘는 구간("22:00 켜고 06:00 끄기")은
   /// 정상 사용이다. 대신 **weekly + 자정 넘김이면 off쪽 요일을 하루 민다**
@@ -84,6 +84,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
     final deviceId = _deviceId;
     if (deviceId == null) return;
     final repo = ref.read(scheduleRepositoryProvider);
+    final pairId = const Uuid().v4();
     final on = await repo.create(
       deviceId,
       action: onAction,
@@ -92,6 +93,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
       minute: startMinute,
       daysOfWeek: daysOfWeek,
       guard: guard,
+      pairId: pairId,
     );
     final offDays = Schedule.offLegDays(
       kind: kind,
@@ -112,6 +114,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
         hour: endHour,
         minute: endMinute,
         daysOfWeek: offDays,
+        pairId: pairId,
       );
     } catch (e) {
       try {
@@ -123,6 +126,72 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
       rethrow;
     }
     state = AsyncData([off, on, ...state.valueOrNull ?? const []]);
+  }
+
+  /// 구간 한 줄 ON/OFF — 두 행을 같이 바꾼다. on을 먼저 바꾸고 off가 실패하면
+  /// on을 되돌린다: on만 켜진 채 남는 쪽이 위험하다(꺼지지 않는 히터).
+  Future<void> setPairEnabled(SchedulePair p, bool enabled) async {
+    final repo = ref.read(scheduleRepositoryProvider);
+    final on = await repo.patch(p.on.id, {'enabled': enabled});
+    _replace(on);
+    try {
+      final off = await repo.patch(p.off.id, {'enabled': enabled});
+      _replace(off);
+    } catch (_) {
+      _replace(await repo.patch(p.on.id, {'enabled': !enabled}));
+      rethrow;
+    }
+  }
+
+  /// 구간 삭제 — 서버가 짝을 함께 지우므로 한 건만 보내고 둘 다 목록에서 뺀다.
+  Future<void> removePair(SchedulePair p) async {
+    await ref.read(scheduleRepositoryProvider).delete(p.on.id);
+    state = AsyncData(
+      [...?state.valueOrNull]
+          .where((e) => e.id != p.on.id && e.id != p.off.id)
+          .toList(),
+    );
+  }
+
+  /// 구간 타이밍 수정 — 두 행을 순서대로 PATCH. off는 요일 밀기를 다시 계산한다.
+  /// 가드는 on쪽에만 싣는다(off+guard는 서버 400).
+  Future<void> updateSpanTiming(
+    SchedulePair p, {
+    required ScheduleKind kind,
+    required int startHour,
+    required int startMinute,
+    required int endHour,
+    required int endMinute,
+    required List<int> daysOfWeek,
+    ScheduleGuard? guard,
+    bool clearGuard = false,
+  }) async {
+    await updateTiming(
+      p.on,
+      kind: kind,
+      hour: startHour,
+      minute: startMinute,
+      daysOfWeek: daysOfWeek,
+      guard: guard,
+      clearGuard: clearGuard,
+    );
+    final offDays = Schedule.offLegDays(
+      kind: kind,
+      daysOfWeek: daysOfWeek,
+      crossesMidnight: Schedule.spanCrossesMidnight(
+        startHour: startHour,
+        startMinute: startMinute,
+        endHour: endHour,
+        endMinute: endMinute,
+      ),
+    );
+    await updateTiming(
+      p.off,
+      kind: kind,
+      hour: endHour,
+      minute: endMinute,
+      daysOfWeek: offDays,
+    );
   }
 
   /// 일정 ON/OFF. 목록에서 토글로 바로 누른다.
