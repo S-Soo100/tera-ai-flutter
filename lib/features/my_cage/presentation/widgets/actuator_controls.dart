@@ -35,9 +35,15 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
   // LED 전원 버튼 시각 피드백
   bool _ledPulsing = false;
 
-  // LED 로컬 on/off 상태 — telemetry에 LED 상태 없으므로 세션 내 추적.
-  // 앱 재시작 시 false로 초기화됨 (정상 동작).
-  bool _ledOn = false;
+  // LED 로컬 on/off 추정 — **`telemetry.led`가 없을 때만**(구 펌웨어) 쓰는
+  // 폴백이다. 2026-08-18 회신 §4로 컬럼이 생겨 실제 상태는 telemetry가 SOT다.
+  // 폴백은 앱 재시작·다기기·예약 실행 뒤에 어긋날 수 있다(그래서 폴백이다).
+  bool _ledOnFallback = false;
+
+  /// 표시용 LED on 여부. telemetry가 보고하면 그 값, 아니면 로컬 폴백.
+  bool _ledOnFor(TelemetryReading t) => t.led == ActuatorState.unavailable
+      ? _ledOnFallback
+      : t.led == ActuatorState.on;
 
   @override
   void initState() {
@@ -187,7 +193,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
         const SizedBox(height: 12),
         // ── 행 2: LED 통합 타일 (전폭) ────────────────────────────
         _LedTile(
-          ledOn: _ledOn,
+          ledOn: _ledOnFor(telemetry),
           pulsing: _ledPulsing,
           isBusy: hasPending,
           onTurnOn: () => _ledTurnOn(context, device),
@@ -337,7 +343,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     if (_ledPulsing) return;
     setState(() {
       _ledPulsing = true;
-      _ledOn = true; // 낙관적 업데이트
+      _ledOnFallback = true; // 폴백만 갱신 — telemetry가 오면 그쪽이 이긴다
     });
     await _sendCommand(context, device, CommandAction.ledOn);
     if (mounted) {
@@ -347,12 +353,11 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
   }
 
   // ── LED 전원 끄기 ────────────────────────────────────────────────────────────
-  // 낙관적 업데이트: 끄기 명령 발행 즉시 _ledOn = false.
-  // 펌웨어가 led_off 미지원 시 rejected_unknown_action → _handleCommandResult가
-  // 스낵바를 표시하고 _ledOn을 다시 true로 롤백한다.
+  // 폴백 플래그만 끈다. 펌웨어가 led_off 미지원이면 rejected_unknown_action →
+  // _handleCommandResult가 스낵바를 띄우고 폴백을 true로 되돌린다.
 
   Future<void> _ledTurnOff(BuildContext context, Device device) async {
-    setState(() => _ledOn = false); // 낙관적 업데이트
+    setState(() => _ledOnFallback = false);
     await _sendCommand(context, device, CommandAction.ledOff);
   }
 
@@ -370,10 +375,10 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
       return;
     }
 
-    // led_off 거부 시 낙관적 업데이트 롤백
+    // led_off 거부 시 폴백 롤백 (telemetry가 보고하는 기기엔 영향 없음)
     if (cmd.action == CommandAction.ledOff &&
         result == CommandResult.unknownAction) {
-      setState(() => _ledOn = true);
+      setState(() => _ledOnFallback = true);
     }
 
     String message;
@@ -732,8 +737,8 @@ class _HeaterTile extends StatelessWidget {
 
 // ── iOS 제어센터 스타일: LED 통합 타일 (전폭, 켜기/끄기 토글) ─────────────────
 //
-// _ledOn == false: [아이콘] LED (Spacer) [켜기]
-// _ledOn == true:  [아이콘] LED (Spacer) [끄기]
+// ledOn == false: [아이콘] LED (Spacer) [켜기]
+// ledOn == true:  [아이콘] LED (Spacer) [끄기]
 
 class _LedTile extends StatelessWidget {
   const _LedTile({

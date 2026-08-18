@@ -6,6 +6,7 @@ import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../my_cage/domain/actuator_state.dart';
+import '../../../my_cage/domain/telemetry_reading.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../cage_control_actions.dart';
 import '../home_control_providers.dart';
@@ -88,18 +89,15 @@ class QuickControlGrid extends ConsumerWidget {
                   _Capsule(
                     key: ledKey,
                     label: 'module_actuator_led'.tr(),
-                    // 밝기 %를 띄우던 자리다. 현 보드의 LED는 PWM이 아니라
-                    // on/off 릴레이라 그 숫자가 기기에 반영된 적이 없다(백엔드
-                    // 회신 2026-08-12). 아무 효과 없는 숫자보다 비워두는 게
-                    // 정직하다.
-                    value: '',
+                    // `telemetry.led`/`led_brightness`(2026-08-18 회신 §4).
+                    // 구 펌웨어는 안 보내 unavailable → 빈 값·비활성 색 —
+                    // 모르는 것을 켜진 것처럼 칠하지 않는다.
+                    value: _ledLabel(t),
                     icon: Icons.light_mode_outlined,
-                    // terra-server 계약에 LED 상태 telemetry가 없다(메모리
-                    // project_led_control_gap). 모르는 것을 켜진 것처럼 칠하지
-                    // 않는다.
                     enabled: online,
-                    active: false,
-                    onTap: () => openLedSheet(context, ref, deviceId),
+                    active: t?.led == ActuatorState.on,
+                    onTap: () => openLedSheet(context, ref, deviceId,
+                        currentBrightness: t?.ledBrightness),
                   ),
                   const SizedBox(width: AppStyles.spacing8),
                   _Capsule(
@@ -125,6 +123,15 @@ class QuickControlGrid extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// 켜짐 + 밝기 보고(MOSFET)면 `60%`, 아니면 ON/OFF, 모르면 빈 값.
+  static String _ledLabel(TelemetryReading? t) {
+    if (t == null || t.led == ActuatorState.unavailable) return '';
+    if (t.led == ActuatorState.on && t.ledBrightness != null) {
+      return '${t.ledBrightness}%';
+    }
+    return _stateLabel(t.led);
   }
 
   static String _stateLabel(ActuatorState? s) {

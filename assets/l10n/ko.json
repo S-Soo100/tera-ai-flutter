@@ -571,6 +571,8 @@
   "home_led_pick_title": "조명을 켜거나 끕니다",
   "home_led_turn_on": "켜기",
   "home_led_turn_off": "끄기",
+  "home_led_brightness": "밝기",
+  "home_led_apply_brightness": "이 밝기로 켜기",
   "common_confirm": "확인",
   "home_device_offline_title": "기기 연결이 끊겼어요",
   "home_device_offline_body": "마지막 신호 {} · 연결될 때까지 제어와 현재값이 멈춰 있어요",

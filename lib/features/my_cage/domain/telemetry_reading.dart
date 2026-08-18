@@ -14,6 +14,15 @@ class TelemetryReading {
   final ActuatorState fan;
   final ActuatorState heaterState;
   final bool heaterLocked;
+
+  /// LED 상태 (`telemetry.led`, 2026-08-18 백엔드 회신 §4). 구 펌웨어는 컬럼을
+  /// 안 보내 [ActuatorState.unavailable]로 온다 — 그때는 "모른다"이지 "꺼짐"이
+  /// 아니다.
+  final ActuatorState led;
+
+  /// LED 밝기 0~100 (`telemetry.led_brightness`). MOSFET 보드만 값이 있고
+  /// 릴레이 보드·구 펌웨어는 null.
+  final int? ledBrightness;
   final DateTime? ts;
 
   const TelemetryReading({
@@ -29,6 +38,8 @@ class TelemetryReading {
     required this.heaterState,
     required this.heaterLocked,
     required this.ts,
+    this.led = ActuatorState.unavailable,
+    this.ledBrightness,
   });
 
   factory TelemetryReading.fromJson(Map<String, dynamic> j) {
@@ -44,6 +55,8 @@ class TelemetryReading {
       fan: _parseActuator(j['fan']),
       heaterState: _parseActuator(j['heater_state']),
       heaterLocked: j['heater_locked'] as bool? ?? false,
+      led: _parseActuator(j['led']),
+      ledBrightness: _parseDouble(j['led_brightness'])?.round(),
       ts: j['ts'] != null ? DateTime.tryParse(j['ts'].toString()) : null,
     );
   }

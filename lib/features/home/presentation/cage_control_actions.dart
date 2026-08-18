@@ -290,25 +290,77 @@ Future<void> openMistSheet(
   await mistOnce(context, ref, deviceId, picked);
 }
 
-/// LED 켜기/끄기 시트.
+/// LED 켜기/끄기 시트 — 보드 능력에 따라 밝기 슬라이더가 붙는다.
 ///
-/// **밝기 조절은 없다.** 현 보드의 LED는 PWM이 아니라 단순 on/off 릴레이라
-/// `brightness`가 물리적으로 반영되지 않는다(백엔드 회신 2026-08-12). 실제로
-/// 실DB의 `led_*` 236건이 전부 `payload = null`이었고, 그동안 앱 슬라이더는
-/// 아무 효과 없이 떠 있었다. PRD §4.2.2의 0~100%는 하드웨어 PWM이 생기면
-/// 되살린다.
+/// **밝기는 `Device.ledDimmable`(MOSFET 보드)일 때만** 보여준다. 릴레이 보드는
+/// `brightness`를 무시하고 켜기만 하므로(2026-08-18 백엔드 회신 §2) 슬라이더를
+/// 띄우면 아무 효과 없는 UI가 된다 — 2026-08-12에 그래서 걷어냈던 것이다.
+/// 펌웨어가 아직 capabilities를 보고하지 않아 당분간은 전부 on/off로 보이고,
+/// 보고가 붙거나 운영자가 DB를 갱신하면 그 기기만 슬라이더가 열린다.
 ///
-/// 토글이 아니라 **켜기/끄기를 따로 고르게** 한다. 기기가 LED 상태를 telemetry로
-/// 올려주지 않아 앱이 지금 켜져 있는지 모르는데, 모르는 상태를 뒤집는 버튼은
-/// 어느 쪽으로 갈지 사용자도 모른다.
+/// 토글이 아니라 **켜기/끄기를 따로 고르게** 한다. `telemetry.led`가 생겨
+/// (회신 §4) 현재 상태는 알 수 있지만, 구 펌웨어는 여전히 안 보내므로 모르는
+/// 상태를 뒤집는 버튼은 두지 않는다.
 Future<void> openLedSheet(
   BuildContext context,
   WidgetRef ref,
-  String deviceId,
-) async {
-  final on = await showModalBottomSheet<bool>(
+  String deviceId, {
+  int? currentBrightness,
+}) async {
+  final device = ref
+      .read(deviceListProvider)
+      .valueOrNull
+      ?.where((d) => d.id == deviceId)
+      .firstOrNull;
+  final dimmable = device?.ledDimmable ?? false;
+  final choice = await showModalBottomSheet<_LedChoice>(
     context: context,
-    builder: (ctx) => SafeArea(
+    builder: (ctx) => _LedSheet(
+      dimmable: dimmable,
+      initialBrightness: currentBrightness ?? 60,
+    ),
+  );
+  if (choice == null || !context.mounted) return;
+  await sendCageCommand(
+    context,
+    ref,
+    deviceId,
+    choice.on ? CommandAction.ledOn : CommandAction.ledOff,
+    // 릴레이 보드엔 brightness를 싣지 않는다 — 서버·펌웨어가 무시하긴 하지만
+    // 실DB `led_*` 이력에 의미 없는 payload를 남기지 않는다.
+    payload: choice.on && dimmable && choice.brightness != null
+        ? {'brightness': choice.brightness}
+        : null,
+  );
+}
+
+class _LedChoice {
+  const _LedChoice.on([this.brightness]) : on = true;
+  const _LedChoice.off()
+      : on = false,
+        brightness = null;
+
+  final bool on;
+  final int? brightness;
+}
+
+class _LedSheet extends StatefulWidget {
+  const _LedSheet({required this.dimmable, required this.initialBrightness});
+
+  final bool dimmable;
+  final int initialBrightness;
+
+  @override
+  State<_LedSheet> createState() => _LedSheetState();
+}
+
+class _LedSheetState extends State<_LedSheet> {
+  late double _brightness =
+      widget.initialBrightness.clamp(1, 100).toDouble();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(AppStyles.spacing16),
         child: Column(
@@ -316,22 +368,49 @@ Future<void> openLedSheet(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text('home_led_pick_title'.tr(),
-                style: AppStyles.subsectionTitle(ctx)),
+                style: AppStyles.subsectionTitle(context)),
             const SizedBox(height: AppStyles.spacing12),
+            if (widget.dimmable) ...[
+              Row(
+                children: [
+                  Text('home_led_brightness'.tr(),
+                      style: Theme.of(context).textTheme.labelMedium),
+                  const Spacer(),
+                  Text('${_brightness.round()}%',
+                      key: const Key('led_brightness_value'),
+                      style: Theme.of(context).textTheme.titleMedium),
+                ],
+              ),
+              Slider(
+                key: const Key('led_brightness_slider'),
+                value: _brightness,
+                min: 1,
+                max: 100,
+                divisions: 99,
+                onChanged: (v) => setState(() => _brightness = v),
+              ),
+              const SizedBox(height: AppStyles.spacing8),
+            ],
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
                     key: const Key('led_on'),
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    child: Text('home_led_turn_on'.tr()),
+                    onPressed: () => Navigator.of(context).pop(widget.dimmable
+                        ? _LedChoice.on(_brightness.round())
+                        : const _LedChoice.on()),
+                    child: Text((widget.dimmable
+                            ? 'home_led_apply_brightness'
+                            : 'home_led_turn_on')
+                        .tr()),
                   ),
                 ),
                 const SizedBox(width: AppStyles.spacing8),
                 Expanded(
                   child: OutlinedButton(
                     key: const Key('led_off'),
-                    onPressed: () => Navigator.of(ctx).pop(false),
+                    onPressed: () =>
+                        Navigator.of(context).pop(const _LedChoice.off()),
                     child: Text('home_led_turn_off'.tr()),
                   ),
                 ),
@@ -340,13 +419,6 @@ Future<void> openLedSheet(
           ],
         ),
       ),
-    ),
-  );
-  if (on == null || !context.mounted) return;
-  await sendCageCommand(
-    context,
-    ref,
-    deviceId,
-    on ? CommandAction.ledOn : CommandAction.ledOff,
-  );
+    );
+  }
 }
