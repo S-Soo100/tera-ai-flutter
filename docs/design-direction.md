@@ -9,6 +9,8 @@
 
 **2026-08-14 저녁: B안(Flighty) 프로덕션 채택, 라이트 기본, A안은 랩 비교용으로 강등.** 사용자 결정 3건 — (1) B안 라이트 모드를 로그인 앱 기본으로 (2) 로그인 후 설정(프로필)에도 디자인 비교 페이지(`/design-test`) 진입점 (3) 실앱은 mock이 아닌 실기능. 1단계(팔레트·공용 위젯 문법 교체)를 반영했고, 2단계(홈/통계/마이크레 화면을 B 문법으로 이식)는 후속이다.
 
+**2단계 완료(2026-08-18, `5c35781`~`d132ab0`): 홈·통계·마이크레 화면 문법을 B로 이식했다 — 전부 실데이터·실기능이다(mock 없음).** 홈: 라이브 위 전광판 수치 오버레이(`LiveStatOverlay`, `telemetryStream`) + "오늘 밤" 카드(`TonightCard` — 22:00→06:00 진행 바 `NightProgress`, LAST NIGHT=`nightlyReport`, MAX TEMP/MIST=`homeWeeklyRows` 오늘 행, 안정/주의 배지=`currentSetComfortProvider`·`classifyComfort`, 종 없으면 생략) + CONTROLS 가로 캡슐 행(`QuickControlGrid` 이름 유지, 탭은 `cage_control_actions` 경유 그대로) + 타임라인 수직 스텝(그린 도트·실선, 오늘은 맨 위 "아침 리포트" 점선 스텝). 통계: 주간 모드에 `WEEKLY REPORT`(평균 2종·일별 최고 미니 바)+FIDS 표(DATE|MAX|MIN|STATUS) — `weeklyDailyBuckets` 한 벌, 곡선 `EnvChart`는 그 아래 유지(홈=행, 통계=곡선). 마이크레: 보딩패스 개체 카드(MORPH|AGE D+N|WEIGHT) + 리포트 활동/휴식 비율 바. **커뮤니티·보조 라우트는 1단계 팔레트만**(문법 이식 안 함). 랩(`lib/features/dev/design_lab/`)은 참고만 했고 무접촉.
+
 문법(FIDS 위계): 단색 바닥 + 카드(radius **16**, 그림자 없음, divider 톤 테두리) + **데이터 라벨은 소형 대문자 자간**(`labelCaps` 11 Medium +0.8) + **수치는 큰 tabular Bold**(`figure` 28 / `figureMid` 22) + 상태 시맨틱 **앰버/그린/레드**(`signalWarn`/`signalOk`/`signalAlert`, 두 모드 같은 역할) + **활성=앰버**(`activeTile`, 위 텍스트 `textOnActive` = 짙은 `#12151C`, A안의 흰 반전 타일 아님) + 하단 탭바는 **전광판 고정 바**(`GlassDock` — 캡슐·그림자 없음, 활성 앰버 아이콘+라벨) + 세그먼트는 **앰버 텍스트+얇은 밑줄**(`GlassSegmentedControl` — 채움 알약 아님). 토큰 SOT는 `lib/core/theme/glass_palette.dart`(`GlassPalette`, `variant_b_tokens.dart`의 미러), 기본 모드는 `ThemeModeRepository.defaultMode = light`. 위젯·토큰 이름의 `glass`는 여전히 역사적 명칭이다.
 
 | 토큰 | 다크 | 라이트 |
