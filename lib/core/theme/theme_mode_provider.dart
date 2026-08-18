@@ -5,6 +5,10 @@ import 'package:hive/hive.dart';
 /// 화면 모드(시스템/라이트/다크) 저장소. Widget → Provider → Repository 체인을
 /// 지킨다 — 프로필 화면이 Hive를 직접 만지지 않는다.
 abstract class ThemeModeRepository {
+  /// 저장값이 없을 때의 모드. **라이트**(2026-08-14 저녁, B안 프로덕션 채택 —
+  /// "B안 라이트 모드를 로그인 앱 기본으로"). 이전 기본은 `system`이었다.
+  static const defaultMode = ThemeMode.light;
+
   ThemeMode load();
   Future<void> save(ThemeMode mode);
 }
@@ -25,13 +29,13 @@ class HiveThemeModeRepository implements ThemeModeRepository {
   @override
   ThemeMode load() {
     final raw = _box?.get(key);
-    if (raw is! String) return ThemeMode.system;
-    // 알 수 없는 값(과거 버전·손상)은 시스템으로 — 던지지 않는다.
+    if (raw is! String) return ThemeModeRepository.defaultMode;
+    // 알 수 없는 값(과거 버전·손상)은 기본값으로 — 던지지 않는다.
     return ThemeMode.values.cast<ThemeMode?>().firstWhere(
               (m) => m!.name == raw,
               orElse: () => null,
             ) ??
-        ThemeMode.system;
+        ThemeModeRepository.defaultMode;
   }
 
   @override
@@ -44,7 +48,7 @@ final themeModeRepositoryProvider = Provider<ThemeModeRepository>(
   (_) => const HiveThemeModeRepository(),
 );
 
-/// 앱 전역 화면 모드. 기본 `system`. `app.dart`의 `themeMode:`가 watch한다.
+/// 앱 전역 화면 모드. 기본 [ThemeModeRepository.defaultMode](라이트). `app.dart`의 `themeMode:`가 watch한다.
 final themeModeProvider =
     NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
 

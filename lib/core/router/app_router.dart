@@ -323,15 +323,18 @@ GoRouter buildAppRouter({
 }
 
 
-/// 4탭 셸 — A안(Liquid Glass) 플로팅 유리 독.
+/// 4탭 셸 — B안(Flighty 전광판) 하단 고정 탭바(2026-08-14 저녁, A안 플로팅
+/// 독 교체).
 ///
-/// `extendBody: true`라 탭 콘텐츠가 독 **뒤로** 스크롤되어 blur에 비친다.
-/// 대신 Scaffold가 body의 `MediaQuery.padding.bottom`에 독 높이를 더해주므로,
-/// 각 탭 스크롤 뷰는 그 패딩을 소비해야 마지막 항목이 독에 가려지지 않는다
-/// (padding을 안 준 ListView는 자동, CustomScrollView는 직접).
+/// `extendBody: true`는 유지한다 — Scaffold가 body의 `MediaQuery.padding.bottom`
+/// 에 탭바 높이(홈 인디케이터 포함)를 더해주고, 각 탭 스크롤 뷰는
+/// `glassDockListPadding`으로 그 패딩을 소비해 마지막 항목이 바에 가려지지
+/// 않는다(padding을 안 준 ListView는 자동, CustomScrollView는 직접). 바는
+/// 불투명이라 뒤로 비치는 건 없지만, 인셋 계약을 한 곳(`GlassDock`)이 소유하게
+/// 두는 편이 안전하다.
 ///
 /// 네비게이션 로직(goBranch·initialLocation)은 NavigationBar 시절 그대로다 —
-/// 표면만 [GlassDock]으로 바뀌었다. 스크롤 축소 모션은 후속.
+/// 표면만 [GlassDock]으로 바뀌었다.
 class _ScaffoldWithBottomNav extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -339,40 +342,28 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 유리 전경색은 **바닥**을 따라간다. 4탭 전부가 월페이퍼(항상 어두움)로
-    // 넘어왔으므로(2026-08-13) 분기 없이 항상 밝은 전경이다.
     return Scaffold(
       extendBody: true,
       body: navigationShell,
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GlassDock(
-                currentIndex: navigationShell.currentIndex,
-                onSelected: (index) {
-                  navigationShell.goBranch(
-                    index,
-                    initialLocation: index == navigationShell.currentIndex,
-                  );
-                },
-                // 독 항목은 탭 테이블(tab_branches.dart)에서 파생한다 —
-                // 여기 인라인으로 나열하면 경로·라벨과 3중 병렬이 된다.
-                items: [
-                  for (var i = 0; i < kHomeTabPaths.length; i++)
-                    GlassDockItem(
-                      icon: kHomeTabIcons[i].icon,
-                      selectedIcon: kHomeTabIcons[i].selectedIcon,
-                      label: kHomeTabLabelKeys[i].tr(),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
+      // 바 자체가 SafeArea(bottom)를 안고 있다 — 여기서 또 감싸면 인셋이 두 번 든다.
+      bottomNavigationBar: GlassDock(
+        currentIndex: navigationShell.currentIndex,
+        onSelected: (index) {
+          navigationShell.goBranch(
+            index,
+            initialLocation: index == navigationShell.currentIndex,
+          );
+        },
+        // 독 항목은 탭 테이블(tab_branches.dart)에서 파생한다 —
+        // 여기 인라인으로 나열하면 경로·라벨과 3중 병렬이 된다.
+        items: [
+          for (var i = 0; i < kHomeTabPaths.length; i++)
+            GlassDockItem(
+              icon: kHomeTabIcons[i].icon,
+              selectedIcon: kHomeTabIcons[i].selectedIcon,
+              label: kHomeTabLabelKeys[i].tr(),
+            ),
+        ],
       ),
     );
   }

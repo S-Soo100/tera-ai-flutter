@@ -6,7 +6,8 @@ import '../../core/theme/glass_palette.dart';
 /// 솔리드 카드. 디자인 시스템 `Components / GlassCard`.
 ///
 /// 이름의 "Glass"는 1차(Liquid Glass, 2026-08-13) 때의 역사적 명칭이다.
-/// A안 2차(2026-08-14)부터는 **불투명 솔리드 표면** + 아주 얇은 저대비 테두리다.
+/// A안 2차(2026-08-14)부터 **불투명 솔리드 표면** + 아주 얇은 저대비 테두리,
+/// B안(2026-08-14 저녁)부터는 radius 16·그림자 없음·divider 톤 테두리다.
 /// blur·반투명 오버레이는 없다 — [WallpaperBackground](정적 단색) 위에 올린다.
 ///
 /// 색은 전부 [GlassPalette] 토큰이다(`context.glass`) — 다크/라이트가 값만
@@ -25,7 +26,7 @@ class GlassCard extends StatelessWidget {
 
   final Widget child;
 
-  /// 모서리. 기본은 타일 radius(20). 배지처럼 작은 조각은 8~18을 준다.
+  /// 모서리. 기본은 타일 radius(16, B `cardRadius`). 배지처럼 작은 조각은 8~12를 준다.
   final double radius;
 
   /// 표면색. null이면 [GlassPalette.overlay],

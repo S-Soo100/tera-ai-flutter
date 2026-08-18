@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/core/theme/app_theme.dart';
 import 'package:vivnanaut/core/theme/glass_palette.dart';
 import 'package:vivnanaut/shared/domain/actuator_marker.dart';
 import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
@@ -176,9 +175,14 @@ void main() {
       expect(_window.elapsed, lessThan(1));
     });
 
-    test('밴드 색은 밝기별 — 다크는 뒤집힌 값, 라이트는 Figma 원본', () {
-      expect(GlassPalette.dark.chartFutureBand, isNot(AppTheme.lineColor));
-      expect(GlassPalette.light.chartFutureBand, AppTheme.lineColor);
+    test('밴드 색은 밝기별 — 다크는 흰 기, 라이트는 검정 기(B안 팔레트, 2026-08-14 저녁)', () {
+      final d = GlassPalette.dark.chartFutureBand;
+      final l = GlassPalette.light.chartFutureBand;
+      expect(d, isNot(l));
+      // 둘 다 반투명 — 곡선을 가리지 않는다.
+      expect(d.a, lessThan(0.2));
+      expect(l.a, lessThan(0.2));
+      expect(d.computeLuminance(), greaterThan(l.computeLuminance()));
     });
   });
 

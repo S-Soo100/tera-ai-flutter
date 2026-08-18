@@ -79,7 +79,7 @@ class AppTheme {
   static const liveSurface = Color(0xFF0E1424);
 
   // ══════════════════════════════════════════════════════════════════════════
-  // 솔리드 디자인 시스템 (A안 2차, 2026-08-14 — 리퀴드 제거)
+  // 솔리드 디자인 시스템 (B안 전광판, 2026-08-14 저녁 — A안 2차 값 교체)
   // 색 토큰은 전부 [GlassPalette](다크/라이트 2벌, ThemeExtension)에 있다 —
   // `context.glass.overlay`처럼 현재 테마에서 꺼낸다. 2026-08-14 오전에 정적
   // 상수 `AppTheme.glassX`로 다크만 두었다가, 오후 다크/라이트 구분 결정으로
@@ -91,8 +91,9 @@ class AppTheme {
   @Deprecated('솔리드 전환(2026-08-14)으로 blur 없음 — 참조하지 말 것')
   static const double glassBlurSigma = 0;
 
-  /// 타일·카드 모서리. 배지처럼 작은 조각은 8~18을 준다.
-  static const double glassTileRadius = 20;
+  /// 타일·카드 모서리. B안(2026-08-14 저녁) `cardRadius` 16. 배지처럼 작은
+  /// 조각은 8~12를 준다.
+  static const double glassTileRadius = 16;
 
   // ── 다크 테마 전용 — ⚠️ Figma에 다크 팔레트가 없어 이 앱이 도출한 값 ──
 

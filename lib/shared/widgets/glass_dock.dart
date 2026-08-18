@@ -2,19 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/glass_palette.dart';
-import 'glass_card.dart';
 
-/// 플로팅 독 아래로 스크롤되는 리스트의 padding.
+/// 하단 탭바 아래로 스크롤되는 리스트의 padding.
 ///
-/// `extendBody: true`라 Scaffold가 body의 `MediaQuery.padding.bottom`에 독
-/// 높이를 더해준다 — padding을 **명시한** 스크롤 뷰는 그 자동 인셋이 꺼지므로,
-/// 마지막 항목(저장 버튼·카드)이 독에 가려지지 않게 이 헬퍼로 직접 소비한다.
-/// 화면마다 수기로 더하면 한 곳만 빠뜨려도 조용히 가려진다.
+/// `extendBody: true`라 Scaffold가 body의 `MediaQuery.padding.bottom`에 탭바
+/// 높이(홈 인디케이터 포함)를 더해준다 — padding을 **명시한** 스크롤 뷰는 그
+/// 자동 인셋이 꺼지므로, 마지막 항목(저장 버튼·카드)이 바에 가려지지 않게 이
+/// 헬퍼로 직접 소비한다. 화면마다 수기로 더하면 한 곳만 빠뜨려도 조용히
+/// 가려진다.
+///
+/// 여유는 [AppStyles.spacing16] — B안 바는 불투명 고정 바라 플로팅 독(24)만큼
+/// 숨 쉴 거리가 필요 없다.
 EdgeInsets glassDockListPadding(BuildContext context,
     {EdgeInsets base = EdgeInsets.zero}) {
   return base +
       EdgeInsets.only(
-        bottom: AppStyles.spacing24 + MediaQuery.paddingOf(context).bottom,
+        bottom: AppStyles.spacing16 + MediaQuery.paddingOf(context).bottom,
       );
 }
 
@@ -31,17 +34,21 @@ class GlassDockItem {
   final String label;
 }
 
-/// 플로팅 독. 디자인 시스템 `Components / GlassDock` (A안 — 이름은 역사적).
+/// 하단 탭바. 디자인 시스템 `Components / GlassDock` (이름은 역사적 — A안
+/// 플로팅 캡슐 시절의 것. **B안(2026-08-14 저녁)부터 전광판 고정 바**다).
 ///
-/// 화면 하단에 **떠 있는 캡슐**이고 콘텐츠는 그 뒤로 스크롤된다
-/// (`Scaffold.extendBody: true` 전제). A안 2차(2026-08-14, 솔리드)부터는
-/// blur 없이 **바닥보다 확실히 밝은 불투명 표면 + 미세 그림자**로 떠 있는
-/// 느낌만 낸다.
+/// 문법(Flighty 전광판): 화면 폭 전체를 쓰는 **불투명 바** + 위쪽 divider
+/// 한 줄. 그림자·캡슐 없음. 4항목이 폭을 균등 분할하고, 활성 탭만
+/// **앰버**(아이콘+라벨), 나머지는 3차 텍스트색. 라벨은 소형·자간
+/// ([GlassPalette.dockLabel]).
+///
+/// [height]는 SafeArea 아래 인셋을 뺀 콘텐츠 높이다 — 홈 인디케이터는
+/// 안쪽 `SafeArea(top: false)`가 더한다. `Scaffold.bottomNavigationBar`에
+/// 그대로 앉히고 `extendBody: true`를 유지하면 body 인셋 계약
+/// ([glassDockListPadding])이 그대로 성립한다.
 ///
 /// 네비게이션 로직은 갖지 않는다. [currentIndex]/[onSelected]만 받아
 /// `StatefulNavigationShell` 등 호출자가 배선한다.
-///
-/// 스크롤 축소/복원 모션은 이 단계에서 넣지 않았다(고정 독) — 후속 작업.
 class GlassDock extends StatelessWidget {
   const GlassDock({
     super.key,
@@ -50,6 +57,9 @@ class GlassDock extends StatelessWidget {
     required this.onSelected,
   });
 
+  /// 바 콘텐츠 높이(홈 인디케이터 제외). B 셸 실측 56.
+  static const double height = 56;
+
   final List<GlassDockItem> items;
   final int currentIndex;
   final ValueChanged<int> onSelected;
@@ -57,41 +67,33 @@ class GlassDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
-    final selectedColor = glass.textPrimary;
-    final unselectedColor = glass.textSecondary;
-
     return DecoratedBox(
-      // 그림자는 카드 밖에 둔다 — GlassCard가 ClipRRect로 자르므로 안에
-      // 넣으면 잘려 나간다. 콘텐츠가 뒤로 지나가는 유일한 표면이라
-      // 그림자 하나로 "떠 있음"을 말한다.
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(100),
-        boxShadow: [
-          BoxShadow(
-            // 라이트에선 그림자가 훨씬 잘 보이니 반으로 줄인다.
-            color: Colors.black.withValues(
-                alpha: glass.brightness == Brightness.dark ? 0.35 : 0.14),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: glass.tabBar,
+        border: Border(top: BorderSide(color: glass.border, width: 0.5)),
       ),
-      child: GlassCard(
-        radius: 100,
-        overlay: glass.overlayStrong,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < items.length; i++)
-              _DockButton(
-                item: items[i],
-                selected: i == currentIndex,
-                selectedColor: selectedColor,
-                unselectedColor: unselectedColor,
-                onTap: () => onSelected(i),
-              ),
-          ],
+      // 리플이 앉을 면 — 없으면 잉크가 불투명 바 뒤에 그려져 안 보인다.
+      child: Material(
+        type: MaterialType.transparency,
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: height,
+            child: Row(
+              children: [
+                for (var i = 0; i < items.length; i++)
+                  Expanded(
+                    child: _DockButton(
+                      item: items[i],
+                      selected: i == currentIndex,
+                      selectedColor: glass.signalWarn,
+                      unselectedColor: glass.textTertiary,
+                      onTap: () => onSelected(i),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -115,6 +117,7 @@ class _DockButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final glass = context.glass;
     final color = selected ? selectedColor : unselectedColor;
     // 라벨은 Semantics가 말한다 — 안의 아이콘·텍스트까지 읽히면 겹말이 된다.
     // excludeSemantics는 자식 InkWell의 **tap 액션까지** 지우므로, 스크린리더가
@@ -128,33 +131,20 @@ class _DockButton extends StatelessWidget {
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(100),
-        // 접근성 히트 타깃 48dp 보장 — 콘텐츠만으로는 ~46dp라 살짝 모자란다.
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(selected ? item.selectedIcon : item.icon,
-                    size: 22, color: color),
-                const SizedBox(height: 2),
-                Text(
-                  item.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Pretendard',
-                    fontSize: 10,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: color,
-                  ),
-                ),
-              ],
+        // Expanded 셀 전체(≥ 48×56)가 히트 타깃 — 접근성 최소 크기 충족.
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(selected ? item.selectedIcon : item.icon,
+                size: 22, color: color),
+            const SizedBox(height: 3),
+            Text(
+              item.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: glass.dockLabel.copyWith(color: color),
             ),
-          ),
+          ],
         ),
       ),
     );

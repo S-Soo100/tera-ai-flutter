@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 
-import 'app_theme.dart';
-
-/// 솔리드 디자인 시스템 팔레트 — **다크/라이트 2벌**을 `ThemeExtension`으로 든다.
+/// 디자인 시스템 팔레트 — **다크/라이트 2벌**을 `ThemeExtension`으로 든다.
 ///
-/// 2026-08-14 오전에 `AppTheme.light`를 지우고 전역 다크로 고정했다가, 같은 날
-/// 오후 사용자가 다크/라이트 구분을 요구해 되돌렸다. 되돌리되 정적 상수
-/// (`AppTheme.glassX`)로 되돌리지 않는다 — 그 방식은 모드가 바뀌어도 값이
-/// 그대로라 라이트에서 다크 값이 새어 나온다. 색은 전부 **인스턴스 필드**이고,
-/// 소비처는 `context.glass.overlay`처럼 현재 테마에서 꺼내 쓴다.
+/// **2026-08-14 저녁: B안(Flighty 전광판) 프로덕션 채택.** 값은
+/// `features/dev/design_lab/tokens/variant_b_tokens.dart`의 미러다 — 랩 토큰은
+/// 비교 페이지용으로 그대로 두고, 실앱은 이 파일 하나만 본다. 라이트가 기본
+/// (`themeModeProvider`), 다크는 같은 문법에 값만 반전한 벌이다.
+///
+/// 문법(FIDS 위계): 단색 바닥 + 흰/짙은 카드(radius 16, 그림자 없음, 얇은
+/// divider 테두리) + 데이터 라벨은 작은 대문자 자간([labelCaps]) + 수치는 큰
+/// tabular Bold([figure]) + 상태 시맨틱 앰버/그린/레드([signalWarn]/[signalOk]/
+/// [signalAlert])는 두 모드 공통. **활성 = 앰버**([activeTile]) — 흰 반전 타일
+/// (A안)이 아니다.
 ///
 /// 이름의 `glass`는 1차(Liquid Glass, 2026-08-13)의 역사적 명칭이다 — 값은
-/// 2차(2026-08-14)부터 불투명 솔리드다. `docs/design-direction.md` §0.
+/// 2차(2026-08-14)부터 불투명 솔리드고, 3차(B안)도 솔리드다.
+/// `docs/design-direction.md` §0.
 ///
-/// **두 벌의 문법은 같다** — 단색 바닥 + 불투명 표면 + 저대비 테두리 + 활성
-/// 타일은 바닥과 반전된 면. 값만 뒤집는다. 밝기별 예외 처리를 소비처에 두지
-/// 말고, 필요하면 여기 필드를 하나 늘릴 것.
+/// 색은 전부 **인스턴스 필드**이고 소비처는 `context.glass.overlay`처럼 현재
+/// 테마에서 꺼내 쓴다. 정적 상수로 되돌리지 말 것 — 라이트에서 다크 값이 샌다.
+/// 밝기별 예외 처리를 소비처에 두지 말고, 필요하면 여기 필드를 하나 늘릴 것.
 @immutable
 class GlassPalette extends ThemeExtension<GlassPalette> {
   const GlassPalette({
@@ -25,11 +29,15 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     required this.overlayStrong,
     required this.overlayFaint,
     required this.border,
+    required this.tabBar,
     required this.activeTile,
     required this.heaterTint,
     required this.mistTint,
     required this.ledTint,
     required this.fanTint,
+    required this.signalOk,
+    required this.signalWarn,
+    required this.signalAlert,
     required this.textPrimary,
     required this.textSecondary,
     required this.textTertiary,
@@ -57,72 +65,77 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   /// 갈리는 곳에서 쓴다.
   final Brightness brightness;
 
-  // ── 바닥 (정적 단색). 1차의 Top/Mid/Bottom 3벌은 동일 톤이라 하나로 합쳤다. ──
+  // ── 바닥 (정적 단색) = B `background` ──
   final Color wallpaper;
 
-  // ── 표면 (불투명 솔리드) ──
-  final Color overlay; // 기본 표면
-  final Color overlayStrong; // 독·시트 — 또렷한 표면
-  final Color overlayFaint; // 비활성 표면
-  final Color border; // 아주 낮은 대비 테두리
+  // ── 표면 (불투명 솔리드) = B `card` 기준 ──
+  final Color overlay; // 기본 표면 = card
+  final Color overlayStrong; // 시트 — card보다 한 단계 또렷
+  final Color overlayFaint; // 비활성 표면 — card보다 한 단계 가라앉음
+  final Color border; // = B `divider` (흰 6% / 검정 8%)
 
-  /// 활성 타일 — **바닥과 반전된 불투명면**(Apple Home 문법). 다크에선 밝은
-  /// 뉴트럴, 라이트에선 딥 네이비. 위 텍스트는 [textOnActive].
+  /// 하단 전광판 탭바 바닥 = B `tabBar`. 다크에선 카드보다 더 어둡고,
+  /// 라이트에선 흰색 — 카드가 아니라 **바닥에 붙은 바**다.
+  final Color tabBar;
+
+  /// 활성 타일/세그먼트 — **앰버**(전광판 "주의/점등" 시맨틱). A안의 반전
+  /// 뉴트럴 타일이 아니다. 위 텍스트는 [textOnActive](두 모드 모두 짙은 색).
   final Color activeTile;
 
-  // ── 기기 틴트 (활성 타일 아이콘·센서 칩) ──
+  // ── 기기 틴트 (B 시맨틱으로 재배정: 히터=앰버·분무=블루·팬=그린·LED=밝은 앰버) ──
   final Color heaterTint;
   final Color mistTint;
   final Color ledTint;
   final Color fanTint;
 
+  // ── 상태 시맨틱 (전광판 3색, 두 모드 같은 역할) ──
+  final Color signalOk; // 정상 = green
+  final Color signalWarn; // 주의/활성 = amber
+  final Color signalAlert; // 경보 = red
+
   // ── 표면 위 텍스트 위계 ──
   final Color textPrimary;
   final Color textSecondary;
   final Color textTertiary; // 비활성
-  final Color textOnActive; // 활성 타일 위
+  final Color textOnActive; // 활성(앰버) 타일 위
   final Color textOnActiveSecondary;
 
-  /// LIVE 배지 빨강 (iOS 시스템 레드 계열). 두 모드 공통.
+  /// LIVE 배지 빨강 = [signalAlert]와 같은 값(별 필드로 두는 이유: 소비처가
+  /// "라이브"라는 의미로 읽게 — 경보와 섞이지 않게).
   final Color liveRed;
 
-  // ── 홈 온습도 "애플 날씨 행" 문법 (2026-08-17) ──
-  /// 범위 바 채움 왼쪽(최저 쪽) → 오른쪽(최고 쪽). 애플 온도 색(노랑→주황)은
-  /// 밝은 바닥에서도 읽혀 두 모드 공통이다 — 트랙만 바닥에 맞춘다.
+  // ── 홈 온습도 "애플 날씨 행" 문법 (2026-08-17) — B 앰버 옷 ──
+  /// 범위 바 채움 왼쪽(최저) → 오른쪽(최고). 애플의 노랑→주황을 B 앰버로 수렴.
   final Color weatherBarWarmStart;
   final Color weatherBarWarmEnd;
-  final Color weatherBarTrack;
+  final Color weatherBarTrack; // = B `progressTrack`
 
-  /// 오늘 행의 현재 온도 점 — 흰 채움 + 테두리(애플 시그니처). 다크에선
-  /// 테두리가 카드색이라 "구멍"처럼 보이고, 라이트에선 검정 테두리로 흰 점이
-  /// 흰 카드에 묻히지 않게 한다.
+  /// 오늘 행의 현재 온도 점 — 흰 채움 + 테두리(다크: 카드색, 라이트: 짙은 색).
   final Color weatherDot;
   final Color weatherDotBorder;
   final Color weatherRowDivider;
 
-  // ── 시간축 차트 (EnvChart 공용) ──
-  /// 미도래 구간 밴드 — `지금 ~ 창 끝`. 아직 안 지난 시간.
+  // ── 시간축 차트 (EnvChart 공용) — B 바닥 대비로 재도출 ──
+  /// 미도래 구간 밴드 — `지금 ~ 창 끝`.
   final Color chartFutureBand;
 
-  /// "지금" 경계선. 굵기가 아니라 색으로 눈에 띄고, 스크러버보다는 연하다.
+  /// "지금" 경계선.
   final Color chartNowLine;
 
   /// 동작 마커 칩 배경(14×14, radius 4).
   final Color chartMarkerChip;
 
   /// 차트 격자선. `dividerColor`를 쓰지 않는다 — M3에서 그 값은
-  /// `outlineVariant`로 풀려 Figma가 정한 색과 다르다.
+  /// `outlineVariant`로 풀려 디자인이 정한 색과 다르다.
   final Color chartGridLine;
 
-  /// 동작 마커 글리프 — 그 시각에 기기가 실제로 돌았다는 기록. 또렷해야 한다.
+  /// 동작 마커 글리프 — 또렷해야 한다.
   final Color chartMarkerGlyph;
 
-  /// 밤 띠(22:00~06:00). 미도래 밴드(중성 회색)와 **색상**으로 갈리도록
-  /// 남색 기가 남을 만큼만 진하게 — 곡선은 가리지 않는다.
+  /// 밤 띠(22:00~06:00). 미도래 밴드(중성)와 **색상**으로 갈리도록 블루 기.
   final Color nightBand;
 
-  /// 본문 보조 텍스트 — 축 눈금보다 한 단 진하다. 요약 바의 최고/최저처럼
-  /// **읽으라고 둔 값**에 쓴다.
+  /// 본문 보조 텍스트 — 축 눈금보다 한 단 진하다.
   final Color bodySecondary;
 
   // ── shimmer 스켈레톤 ──
@@ -142,13 +155,25 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   TextStyle get sectionLabel => _kSectionLabel.copyWith(color: textSecondary);
   TextStyle get chipValue => _kChipValue.copyWith(color: textPrimary);
 
+  /// 전광판 데이터 라벨 — 11 Medium, 자간 +0.8, 2차 텍스트색. 영문이면
+  /// 대문자로 쓴다(`toUpperCase()`는 호출부 책임 — 한글엔 대소문자가 없다).
+  TextStyle get labelCaps => _kLabelCaps.copyWith(color: textSecondary);
+
+  /// 전광판 수치 — 28 Bold tabular. 라이브 헤더·오늘 밤 카드의 주인공 숫자.
+  TextStyle get figure => _kFigure.copyWith(color: textPrimary);
+
+  /// 전광판 수치(중) — 22 Bold tabular. 카드 안 보조 수치.
+  TextStyle get figureMid => _kFigureMid.copyWith(color: textPrimary);
+
+  /// 하단 탭바 라벨 — 10 SemiBold, 자간 +0.6. 색은 호출부(활성=앰버).
+  TextStyle get dockLabel => _kDockLabel.copyWith(color: textTertiary);
+
   /// 서브컬러 배지의 배경·전경 한 쌍.
   ///
   /// 라이트: Figma의 `*Bg` 파스텔([lightBg])을 그대로 깔고 글자는 원색.
   /// 다크: 그 파스텔을 그대로 깔면 어두운 화면에 흰 알약이 박혀 주인공이 아닌
-  /// 배지가 화면에서 제일 밝아진다(실기기에서 개체 카드의 `수컷` 배지가
-  /// 그랬다). 같은 색을 낮은 투명도로 깔고, 글자는 밝은 쪽으로 올린다.
-  /// [lightBg]가 없으면(Figma 미정의 색) 원색 14%로 대신한다.
+  /// 배지가 화면에서 제일 밝아진다. 같은 색을 낮은 투명도로 깔고, 글자는 밝은
+  /// 쪽으로 올린다. [lightBg]가 없으면(Figma 미정의 색) 원색 14%로 대신한다.
   ({Color bg, Color fg}) badgeTone(Color base, {Color? lightBg}) =>
       brightness == Brightness.dark
           ? (
@@ -157,76 +182,82 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
             )
           : (bg: lightBg ?? base.withValues(alpha: 0.14), fg: base);
 
-  // ── 다크 (A안 2차 현행값 그대로) ──
+  // ── 다크 (B 다크 토큰 미러) ──
   static const dark = GlassPalette(
     brightness: Brightness.dark,
-    wallpaper: Color(0xFF141A2E),
-    overlay: Color(0xFF1E2640),
-    overlayStrong: Color(0xFF242D4A),
-    overlayFaint: Color(0xFF1A2138),
-    border: Color(0x14FFFFFF), // 흰 ~8%
-    activeTile: Color(0xFFF2F3F7),
-    heaterTint: Color(0xFFE8823F),
-    mistTint: Color(0xFF4A90D9),
-    ledTint: Color(0xFFE0B341),
-    fanTint: Color(0xFF4DBFAE),
+    wallpaper: Color(0xFF0B0F1A), // B background
+    overlay: Color(0xFF161B2C), // B card
+    overlayStrong: Color(0xFF1C2236), // card +1
+    overlayFaint: Color(0xFF111624), // card -1
+    border: Color(0x0FFFFFFF), // B divider — 흰 6%
+    tabBar: Color(0xFF0E1322), // B tabBar
+    activeTile: Color(0xFFFFB300), // B amber
+    heaterTint: Color(0xFFFFB300), // amber
+    mistTint: Color(0xFF4A90D9), // B 블루(신규)
+    ledTint: Color(0xFFFFD54F), // 밝은 앰버
+    fanTint: Color(0xFF34C759), // B green
+    signalOk: Color(0xFF34C759),
+    signalWarn: Color(0xFFFFB300),
+    signalAlert: Color(0xFFFF453A),
     textPrimary: Colors.white,
     textSecondary: Color(0x99FFFFFF), // 60%
-    textTertiary: Color(0x4DFFFFFF), // 30%
-    textOnActive: Color(0xFF1C1C1E),
-    textOnActiveSecondary: Color(0x991C1C1E),
-    liveRed: Color(0xFFFF453A),
-    weatherBarWarmStart: Color(0xFFFFD60A),
-    weatherBarWarmEnd: Color(0xFFFF9F0A),
-    weatherBarTrack: Color(0x2EFFFFFF), // 흰 18%
+    textTertiary: Color(0x5CFFFFFF), // 36%
+    textOnActive: Color(0xFF12151C),
+    textOnActiveSecondary: Color(0x9912151C),
+    liveRed: Color(0xFFFF453A), // B red
+    weatherBarWarmStart: Color(0xFFFFD54F),
+    weatherBarWarmEnd: Color(0xFFFFB300), // amber
+    weatherBarTrack: Color(0x1FFFFFFF), // B progressTrack — 흰 12%
     weatherDot: Colors.white,
-    weatherDotBorder: Color(0xFF1E2640), // = overlay
+    weatherDotBorder: Color(0xFF161B2C), // = overlay
     weatherRowDivider: Color(0x0FFFFFFF), // 흰 6%
     chartFutureBand: Color(0x0FFFFFFF), // 흰 6%
     chartNowLine: Color(0x61FFFFFF), // 흰 38%
     chartMarkerChip: Color(0x1FFFFFFF), // 흰 12%
-    chartGridLine: Color(0x1AFFFFFF), // 흰 10%
+    chartGridLine: Color(0x14FFFFFF), // 흰 8% — 더 어두운 바닥이라 A(10%)보다 연하게
     chartMarkerGlyph: Color(0xDEFFFFFF), // 흰 87%
-    nightBand: Color(0x2E768AD6), // brandNavyDark 18%
+    nightBand: Color(0x2E4A90D9), // B 블루 18%
     bodySecondary: Color(0xFFC9CDD2),
-    skeletonBase: Color(0xFF424242), // grey 800
-    skeletonHighlight: Color(0xFF616161), // grey 700
+    skeletonBase: Color(0xFF1E2438),
+    skeletonHighlight: Color(0xFF2A3148),
   );
 
-  // ── 라이트 (2026-08-14 오후 — 차분·솔리드 문법 유지, 값만 반전) ──
+  // ── 라이트 (B 라이트 토큰 미러 — 기본 모드) ──
   static const light = GlassPalette(
     brightness: Brightness.light,
-    wallpaper: Color(0xFFF4F5F9), // 웜 그레이 바닥
-    overlay: Color(0xFFFFFFFF),
-    overlayStrong: Color(0xFFF7F8FC),
-    overlayFaint: Color(0xFFEDEFF5),
-    border: Color(0x14000000), // 검정 8%
-    activeTile: Color(0xFF1E2640), // 다크 표면색의 반전 배치 — 딥 네이비
-    // 밝은 바닥 대비 확보를 위해 채도·명도를 조금 조정
-    heaterTint: Color(0xFFD9702A),
-    mistTint: Color(0xFF2F7BD1),
-    ledTint: Color(0xFFC79A1F),
-    fanTint: Color(0xFF2FA894),
-    textPrimary: Color(0xFF14181F),
-    textSecondary: Color(0x9914181F), // 60%
-    textTertiary: Color(0x5914181F), // 35%
-    textOnActive: Colors.white,
-    textOnActiveSecondary: Color(0x99FFFFFF),
-    liveRed: Color(0xFFFF453A),
-    weatherBarWarmStart: Color(0xFFFFD60A),
-    weatherBarWarmEnd: Color(0xFFFF9F0A),
-    weatherBarTrack: Color(0x1A000000), // 검정 10%
+    wallpaper: Color(0xFFF5F6F8), // B background
+    overlay: Color(0xFFFFFFFF), // B card
+    overlayStrong: Color(0xFFFBFCFD), // card 기준 한 단계(흰이 상한이라 미세)
+    overlayFaint: Color(0xFFEEF0F3), // card -1
+    border: Color(0x14000000), // B divider — 검정 8%
+    tabBar: Color(0xFFFFFFFF), // B tabBar
+    activeTile: Color(0xFFE09A00), // B amber(라이트 — 흰 바닥 대비로 눌림)
+    heaterTint: Color(0xFFE09A00),
+    mistTint: Color(0xFF2F7BD1), // B 블루 라이트(신규)
+    ledTint: Color(0xFFE8B33A), // 밝은 앰버 — 흰 카드 위 대비 확보
+    fanTint: Color(0xFF1FA84A), // B green 라이트
+    signalOk: Color(0xFF1FA84A),
+    signalWarn: Color(0xFFE09A00),
+    signalAlert: Color(0xFFE5382E),
+    textPrimary: Color(0xFF12151C),
+    textSecondary: Color(0x9912151C), // 60%
+    textTertiary: Color(0x5C12151C), // 36%
+    textOnActive: Color(0xFF12151C),
+    textOnActiveSecondary: Color(0x9912151C),
+    liveRed: Color(0xFFE5382E), // B red 라이트
+    weatherBarWarmStart: Color(0xFFFFD54F),
+    weatherBarWarmEnd: Color(0xFFE09A00),
+    weatherBarTrack: Color(0x1F000000), // B progressTrack — 검정 12%
     weatherDot: Colors.white,
-    weatherDotBorder: Color(0xFF14181F), // 검정 테두리 — 흰 카드 위 가시성
+    weatherDotBorder: Color(0xFF12151C), // 짙은 테두리 — 흰 카드 위 가시성
     weatherRowDivider: Color(0x0F000000), // 검정 6%
-    // 차트는 Figma 라이트 원본값 (§3.1)
-    chartFutureBand: AppTheme.lineColor,
-    chartNowLine: AppTheme.textMuted,
-    chartMarkerChip: AppTheme.surfaceMuted,
-    chartGridLine: AppTheme.lineColor,
-    chartMarkerGlyph: AppTheme.brandNavy,
-    nightBand: Color(0x1A192553), // brandNavy 10% — 마침 한밤중 하늘색
-    bodySecondary: AppTheme.textBody,
+    chartFutureBand: Color(0x0A000000), // 검정 4%
+    chartNowLine: Color(0x6112151C), // 38%
+    chartMarkerChip: Color(0x14000000), // 검정 8%
+    chartGridLine: Color(0x14000000), // 검정 8%
+    chartMarkerGlyph: Color(0xFF12151C),
+    nightBand: Color(0x1A2F7BD1), // B 블루 라이트 10%
+    bodySecondary: Color(0xFF454852),
     skeletonBase: Color(0xFFE0E0E0), // grey 300
     skeletonHighlight: Color(0xFFF5F5F5), // grey 100
   );
@@ -239,11 +270,15 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     Color? overlayStrong,
     Color? overlayFaint,
     Color? border,
+    Color? tabBar,
     Color? activeTile,
     Color? heaterTint,
     Color? mistTint,
     Color? ledTint,
     Color? fanTint,
+    Color? signalOk,
+    Color? signalWarn,
+    Color? signalAlert,
     Color? textPrimary,
     Color? textSecondary,
     Color? textTertiary,
@@ -273,11 +308,15 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       overlayStrong: overlayStrong ?? this.overlayStrong,
       overlayFaint: overlayFaint ?? this.overlayFaint,
       border: border ?? this.border,
+      tabBar: tabBar ?? this.tabBar,
       activeTile: activeTile ?? this.activeTile,
       heaterTint: heaterTint ?? this.heaterTint,
       mistTint: mistTint ?? this.mistTint,
       ledTint: ledTint ?? this.ledTint,
       fanTint: fanTint ?? this.fanTint,
+      signalOk: signalOk ?? this.signalOk,
+      signalWarn: signalWarn ?? this.signalWarn,
+      signalAlert: signalAlert ?? this.signalAlert,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textTertiary: textTertiary ?? this.textTertiary,
@@ -316,11 +355,15 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       overlayStrong: c(overlayStrong, other.overlayStrong),
       overlayFaint: c(overlayFaint, other.overlayFaint),
       border: c(border, other.border),
+      tabBar: c(tabBar, other.tabBar),
       activeTile: c(activeTile, other.activeTile),
       heaterTint: c(heaterTint, other.heaterTint),
       mistTint: c(mistTint, other.mistTint),
       ledTint: c(ledTint, other.ledTint),
       fanTint: c(fanTint, other.fanTint),
+      signalOk: c(signalOk, other.signalOk),
+      signalWarn: c(signalWarn, other.signalWarn),
+      signalAlert: c(signalAlert, other.signalAlert),
       textPrimary: c(textPrimary, other.textPrimary),
       textSecondary: c(textSecondary, other.textSecondary),
       textTertiary: c(textTertiary, other.textTertiary),
@@ -373,6 +416,32 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     fontSize: 17,
     fontWeight: FontWeight.w600,
     fontFeatures: [FontFeature.tabularFigures()],
+  );
+  static const _kLabelCaps = TextStyle(
+    fontFamily: _pretendard,
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    letterSpacing: 0.8,
+  );
+  static const _kFigure = TextStyle(
+    fontFamily: _pretendard,
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    height: 1.1,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+  static const _kFigureMid = TextStyle(
+    fontFamily: _pretendard,
+    fontSize: 22,
+    fontWeight: FontWeight.w700,
+    height: 1.1,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+  static const _kDockLabel = TextStyle(
+    fontFamily: _pretendard,
+    fontSize: 10,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.6,
   );
 }
 
