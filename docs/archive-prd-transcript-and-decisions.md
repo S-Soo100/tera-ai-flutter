@@ -601,6 +601,7 @@ Figma `Asset` 팔레트를 `AppTheme` 토큰으로 옮기고 라이트/다크 �
 - **같이 끊어야 할 진입점 3곳** (안 지우면 죽은 버튼이 남는다):
   `wiki_screen.dart:59`(`/chat`), `wiki_screen.dart:68`·`wiki_detail_screen.dart:44`(`/chat/new?speciesId=`)
 - **문서 처리**: `docs/chat-feature-spec.md`·`llm-chat-integration-report.md`·`knowledge-graph-prd.md`·`graph-visualization-plan.md`는 **지우지 않고 폐기 표시**한다 — 되살릴 때 재작성 비용이 크고, 삭제해도 얻는 게 없다.
+  - **번복(2026-08-18)**: 사용자 지시로 위 4건을 **삭제**했다(커밋 "docs: 불필요 문서 처분"). git 이력(`git log --all -- docs/chat-feature-spec.md` 등)으로 복원 가능.
 - **되돌리기**: git 이력에 남으므로 복원 가능하나, 제거는 **단독 커밋**으로 분리해 revert 한 방에 되돌아오게 한다.
 - **확인 완료**: `assets/data/citations.json`은 `citation_repository.dart`가 종 상세의 출처 섹션에서 쓰고 있어 **존치**했다.
 
