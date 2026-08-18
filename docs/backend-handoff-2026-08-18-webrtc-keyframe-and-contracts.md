@@ -2,7 +2,7 @@
 
 > ## 📌 회신 받음 — 같은 날 §2~§6 백엔드 구현·배포 완료, 앱 반영 완료 (2026-08-18)
 > 회신 원문: `docs/backend-reply-2026-08-18-app-delivery.md`. 결정: §2 `devices.capabilities` JSONB(`board`/`led_dimmable`, 구 행은 relay 백필·펌웨어 보고는 미구현), §3 `schedules.pair_id`(앱 UUID, 한 건 삭제 시 짝 삭제), §4 `telemetry.led`/`led_brightness`, §5 `GET/PATCH /devices/{id}/settings`(미설정=전부 null 200), §6 예약 `*_toggle` 400 + **추가로 off+guard 400**. §1 카메라는 **보류** — esp_video 2.2.0이 force-key-frame 컨트롤 미지원, 선택지(esp_video 업그레이드 / GOP 축소 / 라이브 인코더 분리)는 하드웨어 담당 결정 대기.
-> 앱 반영 커밋: `5a16bf1`(§2·§4) · `598c9a4`(§3) · `0c83a74`(§5). 원문 §0~§8은 요청 그대로 둔다.
+> 앱 반영 커밋: `5a16bf1`(§2·§4) · `598c9a4`(§3) · `0c83a74`(§5) → 리뷰 수정 `8817a40`·`636af2f`, 클린업 `e2bf1a1` (v0.64.2). 원문 §0~§8은 요청 그대로 둔다.
 
 > **대상**: terra-server / ESP32-P4 카메라 펌웨어(`FB2_P4_CAM`) / terra-iot-nano 담당자
 > **배경**: 2026-08-14 핸드오프(`docs/backend-handoff-2026-08-14-summary.md`)로 받은 계약(on/off 절대 명령·팬 타이머·구간 예약·스킵형 가드·LCD·`commands.source`)은 **앱에 전부 반영 완료**했습니다. 그 위에서 앱 쪽 코드로는 풀 수 없고 백엔드·펌웨어 변경이 있어야 하는 항목만 추립니다.
