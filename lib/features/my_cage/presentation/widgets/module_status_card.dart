@@ -5,7 +5,9 @@ import '../../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../shared/widgets/skeleton_loading.dart';
+import '../../domain/device_settings.dart';
 import '../../domain/telemetry_reading.dart';
+import '../device_settings_providers.dart';
 import '../supabase_module_providers.dart';
 
 /// 환경 모니터링 카드.
@@ -45,6 +47,9 @@ class ModuleStatusCard extends ConsumerWidget {
     }
 
     final telemetryAsync = ref.watch(telemetryStreamProvider(device.id));
+    // 목표 환경(setpoint) — REST(2026-08-18 회신 §5). 로딩·실패 중엔 목표
+    // 줄만 비운다(하드코딩 상수로 메우지 않는다 — 틀린 목표는 해롭다).
+    final settings = ref.watch(deviceSettingsProvider(device.id)).valueOrNull;
 
     // 첫 telemetry 미도착: shimmer
     if (!telemetryAsync.hasValue) {
@@ -108,7 +113,7 @@ class ModuleStatusCard extends ConsumerWidget {
                 value: telemetry.aOk && telemetry.tA != null
                     ? '${telemetry.tA!.toStringAsFixed(1)}°'
                     : '—',
-                targetLabel: 'smart_cage_target_temp'.tr(),
+                targetLabel: _targetTempLabel(settings),
                 status: telemetry.aOk,
                 okBg: _greenBg,
                 okFg: _green,
@@ -124,7 +129,7 @@ class ModuleStatusCard extends ConsumerWidget {
                 value: telemetry.aOk && telemetry.hA != null
                     ? '${telemetry.hA!.toStringAsFixed(0)}%'
                     : '—',
-                targetLabel: 'smart_cage_target_humidity'.tr(),
+                targetLabel: _targetHumidityLabel(settings),
                 status: telemetry.aOk,
                 okBg: _greenBg,
                 okFg: _green,
@@ -318,6 +323,22 @@ class _DisconnectedLabel extends StatelessWidget {
 
 // ── 센서 박스 ─────────────────────────────────────────────────────────────────
 
+/// `목표 28°` / 미설정이면 `목표 미설정`. 소수점은 .0이면 감춘다.
+String _targetTempLabel(DeviceSettings? s) {
+  final v = s?.targetTempC;
+  if (v == null) return 'smart_cage_target_unset'.tr();
+  return 'smart_cage_target_temp_fmt'.tr(args: [_fmt(v)]);
+}
+
+String _targetHumidityLabel(DeviceSettings? s) {
+  final v = s?.targetHumidityPct;
+  if (v == null) return 'smart_cage_target_unset'.tr();
+  return 'smart_cage_target_humidity_fmt'.tr(args: [_fmt(v)]);
+}
+
+String _fmt(double v) =>
+    v == v.roundToDouble() ? '${v.toInt()}' : v.toStringAsFixed(1);
+
 class _SensorBox extends StatelessWidget {
   const _SensorBox({
     required this.icon,
@@ -384,7 +405,7 @@ class _SensorBox extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          // 목표값 라인 (하드코딩 상수 표시만 — setpoint 연동은 별도 후속)
+          // 목표값 라인 — device_settings(REST) 값. 미설정이면 "목표 미설정".
           Text(
             targetLabel,
             style: theme.textTheme.labelSmall?.copyWith(
