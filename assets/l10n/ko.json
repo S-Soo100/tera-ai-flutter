@@ -748,5 +748,14 @@
   "home_tonight_badge_ok": "안정",
   "home_tonight_badge_warn": "주의",
   "home_controls_label": "CONTROLS",
-  "home_timeline_pending_report": "아침 리포트"
+  "home_timeline_pending_report": "아침 리포트",
+  "stats_weekly_report_label": "WEEKLY REPORT",
+  "stats_avg_temp": "AVG TEMP",
+  "stats_avg_humid": "AVG HUMIDITY",
+  "stats_daily_max_label": "DAILY MAX TEMP",
+  "stats_fids_date": "DATE",
+  "stats_fids_max": "MAX",
+  "stats_fids_min": "MIN",
+  "stats_fids_status": "STATUS",
+  "stats_fids_date_fmt": "{m}/{d} ({w})"
 }

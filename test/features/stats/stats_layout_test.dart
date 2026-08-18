@@ -13,6 +13,7 @@ import 'package:vivnanaut/features/stats/presentation/weekly_providers.dart';
 import 'package:vivnanaut/shared/widgets/env_chart.dart';
 import 'package:vivnanaut/features/stats/presentation/widgets/stats_period_bar.dart';
 import 'package:vivnanaut/shared/widgets/pending_section.dart';
+import 'package:vivnanaut/features/stats/presentation/widgets/weekly_report_board.dart';
 
 final _from = DateTime(2026, 8, 4, 19);
 final _to = DateTime(2026, 8, 5, 7);
@@ -54,6 +55,21 @@ Future<ProviderContainer> _pump(WidgetTester tester, {double width = 402}) async
     weeklyChartDataProvider.overrideWith((ref) async => _chart()),
     weeklyExtremesProvider
         .overrideWith((ref) async => throw UnimplementedError()),
+    // 주간 B안 보드(WEEKLY REPORT + FIDS)의 원천 — 7일 접기 픽스처.
+    weeklyDailyBucketsProvider.overrideWith((ref) async => [
+          for (var d = 1; d <= 7; d++)
+            TelemetryBucket(
+              bucket: DateTime(2026, 8, d, 19),
+              sampleCount: 1,
+              tAvg: 25,
+              tMin: 23,
+              tMax: 27.0 + (d % 2),
+              hAvg: 65,
+              hMin: 60,
+              hMax: 70,
+            ),
+        ]),
+    currentSetComfortProvider.overrideWith((ref) async => null),
   ]);
   addTearDown(c.dispose);
 
@@ -98,6 +114,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(EnvChart.chartKey), findsOneWidget);
+      // B안 보드는 곡선 **위**에 선다 — 곡선은 정밀 도구로 남는다.
+      expect(find.byKey(WeeklyReportBoard.boardKey), findsOneWidget);
+      expect(find.byKey(WeeklyReportBoard.fidsRowKey(6)), findsOneWidget);
+      final board = tester.getTopLeft(find.byKey(WeeklyReportBoard.boardKey));
+      final chart = tester.getTopLeft(find.byKey(EnvChart.chartKey));
+      expect(board.dy, lessThan(chart.dy));
+    });
+
+    testWidgets('일간에서는 주간 보드가 없다', (tester) async {
+      await _pump(tester);
+      expect(find.byKey(WeeklyReportBoard.boardKey), findsNothing);
     });
 
     testWidgets('월간을 고르면 차트 자리가 자리표시자로 바뀐다 — 사라지지 않는다',

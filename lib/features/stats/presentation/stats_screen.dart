@@ -22,6 +22,7 @@ import '../domain/stats_metric.dart';
 import '../domain/stats_period.dart';
 import 'widgets/stats_period_bar.dart';
 import 'widgets/stats_summary_bar.dart';
+import 'widgets/weekly_report_board.dart';
 
 /// 통계 탭. 기획안 §4.3.
 ///
@@ -63,6 +64,9 @@ class StatsScreen extends ConsumerWidget {
                   SizedBox(height: AppStyles.spacing8),
                   StatsMetricFilter(),
                   SizedBox(height: AppStyles.spacing8),
+                  // B안 전광판 보드(2026-08-18) — 주간에서만. 곡선 차트는 그
+                  // 아래 정밀 도구로 남는다(홈=행, 통계=곡선 원칙).
+                  _WeeklyBoardSection(),
                   _MainChartSection(),
                   SizedBox(height: AppStyles.spacing24),
                   _PendingSections(key: StatsScreen.pendingKey),
@@ -143,6 +147,22 @@ class _StatsHeader extends ConsumerWidget {
     if (picked != null) {
       ref.read(selectedSetIndexProvider.notifier).state = picked;
     }
+  }
+}
+
+/// 주간 모드에서만 서는 B안 보드. 일간·월간은 아무것도 그리지 않는다.
+class _WeeklyBoardSection extends ConsumerWidget {
+  const _WeeklyBoardSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(statsPeriodProvider) != StatsPeriod.weekly) {
+      return const SizedBox.shrink();
+    }
+    return const Padding(
+      padding: EdgeInsets.only(bottom: AppStyles.spacing24),
+      child: WeeklyReportBoard(),
+    );
   }
 }
 

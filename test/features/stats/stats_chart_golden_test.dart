@@ -22,6 +22,10 @@ import 'package:vivnanaut/shared/domain/chart_window.dart';
 import 'package:vivnanaut/features/stats/presentation/stats_providers.dart';
 import 'package:vivnanaut/shared/widgets/env_chart.dart';
 import 'package:vivnanaut/features/stats/presentation/widgets/stats_summary_bar.dart';
+import 'package:vivnanaut/features/stats/presentation/weekly_providers.dart';
+import 'package:vivnanaut/features/stats/presentation/widgets/weekly_report_board.dart';
+import 'package:vivnanaut/features/my_cage/domain/species_comfort.dart';
+import 'package:vivnanaut/core/theme/glass_palette.dart';
 
 /// 통계 탭 24시 그래프를 실제 위젯 그대로 렌더해 PNG로 남긴다.
 ///
@@ -212,6 +216,90 @@ Future<void> _shoot(
   );
 }
 
+/// 주간 B안 보드(WEEKLY REPORT + 일별 최고 바 + FIDS 표) — 라이트, 결정적 픽스처.
+Future<void> _shootWeeklyBoard(WidgetTester tester) async {
+  const dpr = 3.0;
+  tester.view.physicalSize = const Size(393 * dpr, 640 * dpr);
+  tester.view.devicePixelRatio = dpr;
+
+  const rows = [
+    // day, tMin, tMax, hAvg — 8/11(화)~8/17(월). 8/13·8/16이 안심존(22~27) 초과.
+    (11, 23.1, 26.4, 66.0),
+    (12, 23.6, 26.9, 63.0),
+    (13, 22.8, 27.8, 69.0),
+    (14, 24.0, 26.2, 60.0),
+    (15, 23.4, 26.7, 64.0),
+    (16, 22.9, 28.1, 67.0),
+    (17, 23.0, 26.5, 71.0),
+  ];
+  final c = ProviderContainer(overrides: [
+    weeklyDailyBucketsProvider.overrideWith((ref) async => [
+          for (final (d, lo, hi, h) in rows)
+            TelemetryBucket(
+              bucket: DateTime(2026, 8, d, 19),
+              sampleCount: 6,
+              tAvg: (lo + hi) / 2,
+              tMin: lo,
+              tMax: hi,
+              hAvg: h,
+              hMin: h - 3,
+              hMax: h + 3,
+            ),
+        ]),
+    currentSetComfortProvider.overrideWith((ref) async => const SpeciesComfort(
+          speciesId: 'crested-gecko',
+          speciesNameKo: '크레스티드 게코',
+          tempMin: 22,
+          tempMax: 27,
+          humidMin: 60,
+          humidMax: 80,
+        )),
+  ]);
+  addTearDown(c.dispose);
+
+  final theme = AppTheme.light;
+  await tester.pumpWidget(
+    EasyLocalization(
+      supportedLocales: const [Locale('ko')],
+      path: 'assets/l10n',
+      fallbackLocale: const Locale('ko'),
+      startLocale: const Locale('ko'),
+      child: UncontrolledProviderScope(
+        container: c,
+        child: Builder(
+          builder: (context) => MaterialApp(
+            debugShowCheckedModeBanner: false,
+            localizationsDelegates: context.localizationDelegates,
+            supportedLocales: context.supportedLocales,
+            locale: context.locale,
+            theme: theme,
+            home: Scaffold(
+              backgroundColor: theme.extension<GlassPalette>()!.wallpaper,
+              body: const SafeArea(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: WeeklyReportBoard(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  for (var i = 0; i < 5; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+  await tester.pumpAndSettle(const Duration(seconds: 2));
+
+  await expectLater(
+    find.byType(MaterialApp),
+    matchesGoldenFile('preview/stats_weekly_board_light.png'),
+  );
+}
+
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -226,6 +314,10 @@ void main() {
 
   testWidgets('24시 그래프 — 다크', (tester) async {
     await _shoot(tester, name: 'stats_24h_dark');
+  });
+
+  testWidgets('주간 보드 — 라이트', (tester) async {
+    await _shootWeeklyBoard(tester);
   });
 }
 
