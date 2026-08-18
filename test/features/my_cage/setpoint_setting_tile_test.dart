@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivnanaut/features/my_cage/data/device_settings_repository.dart';
+import 'package:vivnanaut/features/my_cage/domain/device.dart';
+import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivnanaut/features/my_cage/domain/device_settings.dart';
 import 'package:vivnanaut/features/my_cage/presentation/widgets/setpoint_setting_tile.dart';
 
@@ -34,13 +37,29 @@ class _FakeRepo implements DeviceSettingsRepository {
   }
 }
 
+Enclosure _enclosure() =>
+    Enclosure(id: 'e1', name: '1번 사육장', createdAt: DateTime(2026, 8, 1));
+
 Future<void> _pump(WidgetTester tester, _FakeRepo repo,
     {String? deviceId = 'd1'}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         deviceSettingsRepositoryProvider.overrideWithValue(repo),
-        currentDeviceIdProvider.overrideWith((ref) async => deviceId),
+        currentSetProvider.overrideWith((ref) async => deviceId == null
+            ? null
+            : EnclosureSet(
+                enclosure: _enclosure(),
+                device: Device(
+                    id: deviceId,
+                    ownerId: null,
+                    enclosureId: null,
+                    name: '거실 사육장',
+                    isOnline: true,
+                    lastSeenAt: null),
+                camera: null,
+                pet: null,
+              )),
       ],
       child: const MaterialApp(
         home: Scaffold(body: SetpointSettingTile()),
@@ -120,12 +139,16 @@ void main() {
     expect(repo.calls.where((c) => c.startsWith('patch:')), isEmpty);
   });
 
-  testWidgets('현재 목표가 있으면 subtitle에 바로 보인다', (tester) async {
+  testWidgets('현재 목표가 있으면 subtitle에 바로 보인다 + 대상 기기 이름을 밝힌다',
+      (tester) async {
     final repo = _FakeRepo(
         current: const DeviceSettings(
             deviceId: 'd1', targetTempC: 28, targetHumidityPct: 60));
     await _pump(tester, repo);
     expect(find.text('setpoint_tile_value'), findsOneWidget);
+    // 편집기가 어느 기기를 고치는지 title에 있다 — 사육장 탭 카드의 기기와
+    // 다를 수 있어서.
+    expect(find.text('setpoint_tile_title_for'), findsOneWidget);
   });
 
   testWidgets('기기가 없으면 탭이 막히고 이유가 subtitle에 있다', (tester) async {

@@ -96,8 +96,12 @@ class QuickControlGrid extends ConsumerWidget {
                     icon: Icons.light_mode_outlined,
                     enabled: online,
                     active: t?.led == ActuatorState.on,
+                    // 꺼져 있을 때 보고되는 0을 시드로 넘기면 슬라이더가 1%로
+                    // 열린다 — 켜져 있을 때의 밝기만 넘긴다.
                     onTap: () => openLedSheet(context, ref, deviceId,
-                        currentBrightness: t?.ledBrightness),
+                        currentBrightness: t?.led == ActuatorState.on
+                            ? t?.ledBrightness
+                            : null),
                   ),
                   const SizedBox(width: AppStyles.spacing8),
                   _Capsule(

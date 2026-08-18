@@ -313,12 +313,11 @@ Future<void> openLedSheet(
       ?.where((d) => d.id == deviceId)
       .firstOrNull;
   final dimmable = device?.ledDimmable ?? false;
+  // 0 이하는 "꺼짐"이지 밝기가 아니다 — 시드로 쓰면 1%로 열린다.
+  final seed = (currentBrightness ?? 0) > 0 ? currentBrightness! : 60;
   final choice = await showModalBottomSheet<_LedChoice>(
     context: context,
-    builder: (ctx) => _LedSheet(
-      dimmable: dimmable,
-      initialBrightness: currentBrightness ?? 60,
-    ),
+    builder: (ctx) => _LedSheet(dimmable: dimmable, initialBrightness: seed),
   );
   if (choice == null || !context.mounted) return;
   await sendCageCommand(

@@ -3,15 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
-import '../../../home/presentation/home_control_providers.dart';
+import '../../../home/presentation/home_set_providers.dart';
 import '../../domain/device_settings.dart';
 import '../device_settings_providers.dart';
 
 /// 사육장 설정의 목표 온습도(setpoint) 진입점 (2026-08-18 회신 §5).
 ///
-/// 대상은 **현재 세트의 제어 기기**(`currentDeviceIdProvider` — LCD·예약과
-/// 같은 기준). 기기가 없으면 탭을 막는 대신 이유를 subtitle로 밝힌다.
-/// 값이 있으면 subtitle에 현재 목표를 바로 보여줘 시트를 안 열어도 확인된다.
+/// 대상은 **현재 세트의 제어 기기**(홈이 보고 있는 세트 — LCD·예약과 같은
+/// 기준). 사육장 탭의 카드는 자기 기기(`currentDeviceProvider`)를 따로 고르므로
+/// 두 축이 다를 수 있다 — 그래서 여기서는 **대상 기기 이름을 title에 밝히고**,
+/// 카드 쪽에는 [showSetpointSheet]로 그 카드의 기기를 바로 고치는 진입점을
+/// 따로 둔다. 어느 화면에서 고치든 "지금 보고 있는 기기"가 대상이다.
+/// 기기가 없으면 탭을 막는 대신 이유를 subtitle로 밝힌다.
 class SetpointSettingTile extends ConsumerWidget {
   const SetpointSettingTile({super.key});
 
@@ -19,19 +22,23 @@ class SetpointSettingTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final deviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
+    final device = ref.watch(currentSetProvider).valueOrNull?.device;
+    final deviceId = device?.id;
     final settings = deviceId == null
         ? null
         : ref.watch(deviceSettingsProvider(deviceId)).valueOrNull;
+    final name = device?.name;
     return ListTile(
       key: tileKey,
       leading: const Icon(Icons.thermostat_outlined),
-      title: Text('setpoint_tile_title'.tr()),
+      title: Text(name == null || name.isEmpty
+          ? 'setpoint_tile_title'.tr()
+          : 'setpoint_tile_title_for'.tr(args: [name])),
       subtitle: Text(_subtitle(deviceId, settings)),
       enabled: deviceId != null,
       onTap: deviceId == null
           ? null
-          : () => _openSheet(context, ref, deviceId, settings),
+          : () => showSetpointSheet(context, ref, deviceId),
     );
   }
 
@@ -48,20 +55,24 @@ class SetpointSettingTile extends ConsumerWidget {
 
   static String _fmt(double v) =>
       v == v.roundToDouble() ? '${v.toInt()}' : v.toStringAsFixed(1);
+}
 
-  Future<void> _openSheet(BuildContext context, WidgetRef ref, String deviceId,
-      DeviceSettings? current) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => _SetpointSheet(
-        initial: current,
-        onSave: (t, h) => ref
-            .read(deviceSettingsProvider(deviceId).notifier)
-            .save(targetTempC: t, targetHumidityPct: h),
-      ),
-    );
-  }
+/// 목표 온습도 편집 시트. **[deviceId]가 대상이다** — 호출한 화면이 보여주고
+/// 있는 기기를 넘겨야 편집기와 표시가 어긋나지 않는다. 현재값은 provider에서
+/// 읽는다(호출부가 stale한 값을 넘길 일이 없게).
+Future<void> showSetpointSheet(
+    BuildContext context, WidgetRef ref, String deviceId) async {
+  final current = ref.read(deviceSettingsProvider(deviceId)).valueOrNull;
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => _SetpointSheet(
+      initial: current,
+      onSave: (t, h) => ref
+          .read(deviceSettingsProvider(deviceId).notifier)
+          .save(targetTempC: t, targetHumidityPct: h),
+    ),
+  );
 }
 
 class _SetpointSheet extends StatefulWidget {

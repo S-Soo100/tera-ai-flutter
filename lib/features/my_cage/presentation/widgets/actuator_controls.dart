@@ -35,15 +35,10 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
   // LED 전원 버튼 시각 피드백
   bool _ledPulsing = false;
 
-  // LED 로컬 on/off 추정 — **`telemetry.led`가 없을 때만**(구 펌웨어) 쓰는
-  // 폴백이다. 2026-08-18 회신 §4로 컬럼이 생겨 실제 상태는 telemetry가 SOT다.
-  // 폴백은 앱 재시작·다기기·예약 실행 뒤에 어긋날 수 있다(그래서 폴백이다).
-  bool _ledOnFallback = false;
-
-  /// 표시용 LED on 여부. telemetry가 보고하면 그 값, 아니면 로컬 폴백.
-  bool _ledOnFor(TelemetryReading t) => t.led == ActuatorState.unavailable
-      ? _ledOnFallback
-      : t.led == ActuatorState.on;
+  // LED 상태는 **`telemetry.led`만** 본다(2026-08-18 회신 §4). 구 펌웨어가
+  // 컬럼을 안 보내면 `unavailable`이고, 그때는 "모른다"를 그대로 그린다 —
+  // 켜기/끄기 버튼을 둘 다 내놓고 어느 쪽으로도 칠하지 않는다. 홈의
+  // `QuickControlGrid`도 같은 규칙이라 두 화면이 한 기기를 다르게 말하지 않는다.
 
   @override
   void initState() {
@@ -193,7 +188,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
         const SizedBox(height: 12),
         // ── 행 2: LED 통합 타일 (전폭) ────────────────────────────
         _LedTile(
-          ledOn: _ledOnFor(telemetry),
+          ledState: telemetry.led,
           pulsing: _ledPulsing,
           isBusy: hasPending,
           onTurnOn: () => _ledTurnOn(context, device),
@@ -341,10 +336,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
 
   Future<void> _ledTurnOn(BuildContext context, Device device) async {
     if (_ledPulsing) return;
-    setState(() {
-      _ledPulsing = true;
-      _ledOnFallback = true; // 폴백만 갱신 — telemetry가 오면 그쪽이 이긴다
-    });
+    setState(() => _ledPulsing = true);
     await _sendCommand(context, device, CommandAction.ledOn);
     if (mounted) {
       await Future.delayed(const Duration(milliseconds: 200));
@@ -353,11 +345,10 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
   }
 
   // ── LED 전원 끄기 ────────────────────────────────────────────────────────────
-  // 폴백 플래그만 끈다. 펌웨어가 led_off 미지원이면 rejected_unknown_action →
-  // _handleCommandResult가 스낵바를 띄우고 폴백을 true로 되돌린다.
+  // 펌웨어가 led_off 미지원이면 rejected_unknown_action → _handleCommandResult가
+  // 스낵바를 띄운다. 상태는 telemetry가 말한다.
 
   Future<void> _ledTurnOff(BuildContext context, Device device) async {
-    setState(() => _ledOnFallback = false);
     await _sendCommand(context, device, CommandAction.ledOff);
   }
 
@@ -373,12 +364,6 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     if (status == CommandStatus.acked && result == CommandResult.ok) {
       // 성공: 조용히 처리 (telemetry stream이 UI 자동 갱신)
       return;
-    }
-
-    // led_off 거부 시 폴백 롤백 (telemetry가 보고하는 기기엔 영향 없음)
-    if (cmd.action == CommandAction.ledOff &&
-        result == CommandResult.unknownAction) {
-      setState(() => _ledOnFallback = true);
     }
 
     String message;
@@ -737,19 +722,22 @@ class _HeaterTile extends StatelessWidget {
 
 // ── iOS 제어센터 스타일: LED 통합 타일 (전폭, 켜기/끄기 토글) ─────────────────
 //
-// ledOn == false: [아이콘] LED (Spacer) [켜기]
-// ledOn == true:  [아이콘] LED (Spacer) [끄기]
+// off:         [아이콘] LED (Spacer) [켜기]
+// on:          [아이콘] LED (Spacer) [끄기]
+// unavailable: [아이콘] LED (Spacer) [켜기] [끄기]  ← 상태를 모르니 둘 다
 
 class _LedTile extends StatelessWidget {
   const _LedTile({
-    required this.ledOn,
+    required this.ledState,
     required this.pulsing,
     required this.isBusy,
     required this.onTurnOn,
     required this.onTurnOff,
   });
 
-  final bool ledOn;
+  final ActuatorState ledState;
+  bool get ledOn => ledState == ActuatorState.on;
+  bool get unknown => ledState == ActuatorState.unavailable;
   final bool pulsing;
   final bool isBusy;
   final VoidCallback onTurnOn;
@@ -814,16 +802,33 @@ class _LedTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // 우측 컨트롤 — 켜기 / 끄기 토글
-          _LedActionBtn(
-            label: ledOn
-                ? 'module_actuator_power_off'.tr()
-                : 'module_actuator_power_on'.tr(),
-            color: labelColor,
-            tileBg: tileBg,
-            dimmed: dimmed,
-            onTap: dimmed ? null : (ledOn ? onTurnOff : onTurnOn),
-          ),
+          // 우측 컨트롤 — 상태를 알면 반대 동작 하나, 모르면 둘 다
+          if (unknown) ...[
+            _LedActionBtn(
+              label: 'module_actuator_power_on'.tr(),
+              color: labelColor,
+              tileBg: tileBg,
+              dimmed: dimmed,
+              onTap: dimmed ? null : onTurnOn,
+            ),
+            const SizedBox(width: 6),
+            _LedActionBtn(
+              label: 'module_actuator_power_off'.tr(),
+              color: labelColor,
+              tileBg: tileBg,
+              dimmed: dimmed,
+              onTap: dimmed ? null : onTurnOff,
+            ),
+          ] else
+            _LedActionBtn(
+              label: ledOn
+                  ? 'module_actuator_power_off'.tr()
+                  : 'module_actuator_power_on'.tr(),
+              color: labelColor,
+              tileBg: tileBg,
+              dimmed: dimmed,
+              onTap: dimmed ? null : (ledOn ? onTurnOff : onTurnOn),
+            ),
           if (isBusy) ...[
             const SizedBox(width: 4),
             _BusyDot(color: labelColor),
