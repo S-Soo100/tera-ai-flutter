@@ -58,7 +58,7 @@ class TelemetryReading {
       heaterLocked: j['heater_locked'] as bool? ?? false,
       led: _parseActuator(j['led']),
       ledBrightness: parseDouble(j['led_brightness'])?.round(),
-      ts: j['ts'] != null ? DateTime.tryParse(j['ts'].toString()) : null,
+      ts: parseLocalDateTime(j['ts']),
     );
   }
 

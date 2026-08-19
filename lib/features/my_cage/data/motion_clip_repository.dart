@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/cage_activity.dart';
 import '../domain/motion_clip.dart';
 import 'camera_exceptions.dart';
+import '../../../shared/domain/num_format.dart';
 
 /// 활동시간 집계용 row 로더 seam. 테스트가 네트워크 없이 주입할 수 있게 분리한다.
 /// 기본 구현은 Supabase에서 [table]/[columns]를 camera_id·started_at 범위로 조회한다.
@@ -229,7 +230,7 @@ class MotionClipRepository {
     final rows = await _loadActivityRows(cameraId, from, to);
     final clips = <({DateTime startedAt, double durationSec})>[];
     for (final row in rows) {
-      final startedAt = DateTime.tryParse(row['started_at']?.toString() ?? '');
+      final startedAt = parseLocalDateTime(row['started_at']);
       if (startedAt == null) continue;
       clips.add((
         startedAt: startedAt,
@@ -265,6 +266,6 @@ class MotionClipRepository {
     final list = rows as List;
     if (list.isEmpty) return null;
     final ts = (list.first as Map<String, dynamic>)['started_at'];
-    return DateTime.tryParse(ts?.toString() ?? '');
+    return parseLocalDateTime(ts);
   }
 }

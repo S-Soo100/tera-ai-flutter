@@ -23,3 +23,16 @@ double? parseDouble(Object? v) {
   if (v is String) return double.tryParse(v);
   return null;
 }
+
+/// JSON 타임스탬프 → **로컬** DateTime. Supabase `timestamptz`는 `+00:00`으로
+/// 오고 `DateTime.tryParse`는 그것을 **UTC 객체**로 만든다 — 그대로 두면
+/// `DateFormat('HH:mm')`이 UTC 시각을 찍어 한국에서 9시간 빠르게 보이고,
+/// 07:00 하루 경계 비교도 어긋난다(2026-08-19 타임라인 실기기 버그).
+/// 표시·날짜 경계에 쓰는 모든 시각은 이 헬퍼로 파싱해 로컬로 통일한다.
+/// 오프셋 없는 문자열은 Dart 규칙대로 로컬로 해석된다(그대로 둔다).
+DateTime? parseLocalDateTime(Object? v) {
+  if (v == null) return null;
+  final parsed = DateTime.tryParse(v.toString());
+  if (parsed == null) return null;
+  return parsed.isUtc ? parsed.toLocal() : parsed;
+}

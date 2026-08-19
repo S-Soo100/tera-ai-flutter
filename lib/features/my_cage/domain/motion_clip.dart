@@ -1,3 +1,5 @@
+import '../../../shared/domain/num_format.dart';
+
 /// Supabase `motion_clips` 테이블 매핑 (terra-server P4 카메라 모션 클립).
 ///
 /// 컬럼: id, camera_id, enclosure_id, owner_id, started_at, duration_sec,
@@ -37,7 +39,7 @@ class MotionClip {
       id: j['id'] as String? ?? '',
       cameraId: j['camera_id'] as String? ?? '',
       startedAt: j['started_at'] != null
-          ? DateTime.tryParse(j['started_at'].toString()) ?? DateTime.now()
+          ? parseLocalDateTime(j['started_at']) ?? DateTime.now()
           : DateTime.now(),
       durationSec: (j['duration_sec'] as num?)?.toDouble() ?? 0,
       motionScore: (j['motion_score'] as num?)?.toDouble(),

@@ -223,41 +223,63 @@ class _StepRow extends StatelessWidget {
   static const double _dot = 10;
   static const double _gutter = 12;
 
+  /// 도트의 상단 오프셋 — 썸네일(40pt) 세로 중앙에 맞춘 값.
+  static const double _dotTop = 19;
+
+  /// 세로 연결선 한 구간. 지난 구간은 실선(그린), 미도래는 점선(회색).
+  Widget _lineSegment(GlassPalette glass, {required bool solid}) {
+    return solid
+        ? Container(width: 2, color: glass.signalOk)
+        : CustomPaint(
+            size: const Size(2, double.infinity),
+            painter: _DashedLinePainter(color: glass.textTertiary),
+          );
+  }
+
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
     final dotColor = done ? glass.signalOk : glass.textTertiary;
 
+    // 선은 **행의 위 끝에서 아래 끝까지** 한 줄로 긋고 도트를 그 위에 얹는다.
+    // 예전처럼 "도트 아래부터 행 바닥까지"만 그으면 다음 행의 도트(top 19)
+    // 까지 ~19pt + 행간 8pt가 비어 선이 끊겨 보였다(2026-08-19 실기기).
+    // 위쪽 구간(이 도트까지)은 이 스텝이 지났으면 실선, 아래쪽 구간(다음
+    // 도트까지)은 다음 스텝 상태를 따른다.
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
             width: _dot,
-            child: Column(
+            child: Stack(
+              alignment: Alignment.topCenter,
               children: [
-                Container(
-                  width: _dot,
-                  height: _dot,
-                  margin: const EdgeInsets.only(top: 19),
-                  decoration: BoxDecoration(
-                    color: done ? dotColor : Colors.transparent,
-                    border: Border.all(color: dotColor, width: 2),
-                    shape: BoxShape.circle,
-                  ),
+                // 위 반절: 행 상단 → 도트 중심. 첫 행은 상단 여백이라 굳이
+                // 긋지 않아도 되지만, 행 높이가 같아야 도트 y가 고정된다.
+                Positioned(
+                  top: 0,
+                  height: _dotTop + _dot / 2,
+                  child: _lineSegment(glass, solid: done),
                 ),
                 if (!isLast)
-                  Expanded(
-                    child: Center(
-                      child: nextDone
-                          ? Container(width: 2, color: glass.signalOk)
-                          : CustomPaint(
-                              size: const Size(2, double.infinity),
-                              painter: _DashedLinePainter(
-                                  color: glass.textTertiary),
-                            ),
+                  Positioned(
+                    top: _dotTop + _dot / 2,
+                    bottom: 0,
+                    child: _lineSegment(glass, solid: nextDone),
+                  ),
+                Positioned(
+                  top: _dotTop,
+                  child: Container(
+                    width: _dot,
+                    height: _dot,
+                    decoration: BoxDecoration(
+                      color: done ? dotColor : glass.overlay,
+                      border: Border.all(color: dotColor, width: 2),
+                      shape: BoxShape.circle,
                     ),
                   ),
+                ),
               ],
             ),
           ),
