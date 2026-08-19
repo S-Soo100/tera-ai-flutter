@@ -103,6 +103,12 @@
 
 > 참고: 실제 값이 뜨려면 해당 기기가 **§4 반영 펌웨어**로 플래시돼 있어야 함(구 펌웨어는 `led` 미전송 → null).
 
+> **⚠️ 2026-08-19 실기기 확인 — 확인 요청 (펌웨어)**: `test_device_02`(`c61b2066…`, `capabilities.board=mosfet, led_dimmable=true`, 온라인)에서
+> 앱 슬라이더로 `led_on {brightness: 41}`을 보내면 `commands.status`는 **`acked`**가 되는데, 같은 시각 이후 3초 주기
+> telemetry 행의 **`led`·`led_brightness`가 계속 `null`**이다(`fan`·`heater_state`는 정상 보고). 즉 명령 수신은 되나
+> **LED 상태 publish가 빠져 있다** — 이 기기에 §4 펌웨어가 실제로 플래시됐는지, 또는 MOSFET 보드 빌드에서 LED 필드
+> publish가 누락된 건지 확인 부탁. 그 전까지 앱은 규칙대로 LED를 "모름"으로 그리고 켜기·끄기를 둘 다 내놓는다(로컬 추측 없음).
+
 ---
 
 ## §6 — 예약 `*_toggle` 금지
@@ -137,5 +143,5 @@
 
 ## 남은 것 (백엔드/펌웨어 트랙)
 - 펌웨어 페어링 시 `capabilities` 보고 (→ §2 자동화). **미구현**
-- 펌웨어 `telemetry.led` publish 는 nano/relay 반영·플래시 완료.
+- 펌웨어 `telemetry.led` publish 는 nano/relay 반영·플래시 완료 — **단 MOSFET 기기 `test_device_02`는 2026-08-19 실측에서 `led`/`led_brightness` null**(§4 확인 요청 참조). 플래시 여부·MOSFET 빌드 누락 확인 필요.
 - 카메라 §1 방향 결정.
