@@ -24,6 +24,7 @@ import '../../my_cage/domain/actuator_state.dart';
 import '../../my_cage/domain/telemetry_reading.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../../my_cage/presentation/widgets/heater_lock_dialog.dart';
+import '../../../shared/services/fan_timer_notification_service.dart';
 import '../domain/fan_timer_duration.dart';
 import '../domain/mist_duration.dart';
 import '../domain/mist_lock.dart';
@@ -43,8 +44,9 @@ final mistDurationProvider =
 ///
 /// onTap은 VoidCallback이라 여기서 던지면 unhandled async error로 콘솔에만
 /// 남고 사용자는 "눌렀는데 아무 일도 안 일어남"을 기기 고장으로 오해한다.
-/// 그래서 여기서 잡아 토스트로 알린다.
-Future<void> sendCageCommand(
+/// 그래서 여기서 잡아 토스트로 알린다. 반환값은 전송 성공 여부 — 팬 타이머
+/// 알림처럼 "명령이 실제로 나갔을 때만" 이어져야 하는 후속 동작이 본다.
+Future<bool> sendCageCommand(
   BuildContext context,
   WidgetRef ref,
   String deviceId,
@@ -55,12 +57,15 @@ Future<void> sendCageCommand(
     await ref
         .read(moduleCommandSenderProvider.notifier)
         .send(deviceId, action, payload: payload);
+    return true;
   } catch (e, st) {
     debugPrint('[cage-control] $action failed: $e\n$st');
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('module_command_failed'.tr())),
-    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('module_command_failed'.tr())),
+      );
+    }
+    return false;
   }
 }
 
@@ -135,10 +140,20 @@ Future<void> handleFanTap(
   String deviceId,
   TelemetryReading? telemetry,
 ) async {
+  // 서비스를 await 전에 잡아 둔다 — 전송 중 화면을 떠나도 예약된 로컬 알림은
+  // 취소/등록돼야 한다(ref는 unmount 후 못 쓴다).
+  final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
+
   final isOn = telemetry?.fan == ActuatorState.on;
   if (isOn) {
-    await sendCageCommand(context, ref, deviceId, CommandAction.fanOff);
-    // 타이머 가동 중이었다면 취소된 것 — 칩을 깨워 내린다.
+    final sent =
+        await sendCageCommand(context, ref, deviceId, CommandAction.fanOff);
+    // 타이머 가동 중이었다면 취소된 것 — 예약된 완료 알림도 함께 내린다.
+    if (sent) {
+      await timerNotifs.onFanCommandSent(
+          deviceId, CommandAction.fanOff.toWire(), null);
+    }
+    // 칩을 깨워 내린다.
     // await 뒤라 mounted 재확인 — 전송 중 화면을 떠났으면 ref는 죽어 있다.
     if (context.mounted) ref.invalidate(runningTimersProvider);
     return;
@@ -187,13 +202,22 @@ Future<void> handleFanTap(
   if (picked == null || !context.mounted) return;
 
   final duration = picked.$1;
-  await sendCageCommand(
+  final sent = await sendCageCommand(
     context,
     ref,
     deviceId,
     CommandAction.fanOn,
     payload: duration?.payload,
   );
+  // 타이머면 만료 시각에 완료 알림을 예약하고, '계속 켜기'면 기존 예약을
+  // 내린다(기존 타이머 대체). 판단은 서비스 쪽 plan이 한다.
+  if (sent) {
+    await timerNotifs.onFanCommandSent(
+      deviceId,
+      CommandAction.fanOn.toWire(),
+      duration == null ? null : duration.minutes * 60000,
+    );
+  }
   // '계속 켜기'(duration 없음)도 invalidate한다 — duration 없는 fan_on은
   // 진행 중이던 타이머를 대체(소멸)시키므로, 안 깨우면 옛 칩이 만료 시각까지
   // 가짜 카운트다운을 돈다. await 뒤라 mounted 재확인.

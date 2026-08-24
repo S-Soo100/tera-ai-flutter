@@ -8,6 +8,7 @@ import '../../domain/actuator_state.dart';
 import '../../domain/device.dart';
 import '../../domain/device_command.dart';
 import '../../domain/telemetry_reading.dart';
+import '../../../../shared/services/fan_timer_notification_service.dart';
 import '../supabase_module_providers.dart';
 import 'heater_lock_dialog.dart';
 
@@ -268,6 +269,8 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
       _showOfflineBlockedOn(messenger);
       return;
     }
+    // await 전에 잡는다 — 전송 중 unmount돼도 팬 타이머 알림 정리는 해야 한다.
+    final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
     try {
       final cmd = await ref
           .read(moduleCommandSenderProvider.notifier)
@@ -275,6 +278,9 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
       if (mounted) {
         setState(() => _pendingIds.add(cmd.id));
       }
+      // 여기의 fan_on(항상 duration 없음)·fan_off는 진행 중 타이머를 소멸시킨다
+      // — 홈에서 걸어 둔 완료 알림을 내린다. 팬 무관 명령은 서비스가 무시한다.
+      await timerNotifs.onFanCommandSent(device.id, action.toWire(), null);
     } catch (_) {
       if (!mounted) return;
       _showErrorOn(messenger);
