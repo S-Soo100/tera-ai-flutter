@@ -51,6 +51,39 @@ class FanTimerNotificationService {
     }
   }
 
+  /// 서버 `commands` 이력에서 재계산한 타이머 상태로 알림을 맞춘다 (앱 열 때
+  /// 재동기화, 2026-08-25). 다른 폰이 타이머를 취소·대체했으면 알림을 내리고,
+  /// 다른 폰이 **시작**한 타이머면 이 폰에도 알림을 건다.
+  ///
+  /// 명령 발행 경로와 달리 **권한을 요청하지 않는다** — 앱을 열자마자 맥락
+  /// 없는 권한 팝업이 뜨면 안 된다. 권한이 없으면 OS가 표시만 막는다.
+  Future<void> resyncTimer(
+    String deviceId, {
+    DateTime? endsAt,
+    int? minutes,
+  }) async {
+    try {
+      await _core.ensureInitialized();
+      final id = notificationIdFor(deviceId);
+      if (endsAt == null || !endsAt.isAfter(DateTime.now())) {
+        await _core.plugin.cancel(id: id);
+        return;
+      }
+      await _core.plugin.zonedSchedule(
+        id: id,
+        title: 'notif_fan_timer_done_title'.tr(),
+        body: 'notif_fan_timer_done_body'.tr(args: ['${minutes ?? 0}']),
+        // 여기는 상대가 아니라 **절대 시각**이다 — 타이머를 시작한 폰과 같은
+        // 종료 시각(issued_at + duration_ms)에 울려야 한다.
+        scheduledDate: tz.TZDateTime.from(endsAt, tz.local),
+        notificationDetails: _details(),
+        androidScheduleMode: await _core.scheduleMode(),
+      );
+    } catch (e, st) {
+      debugPrint('[fan-timer-notif] resync failed for $deviceId: $e\n$st');
+    }
+  }
+
   Future<void> _schedule(String deviceId, ScheduleFanDone plan) async {
     await _core.requestPermission();
     await _core.plugin.zonedSchedule(
@@ -60,7 +93,12 @@ class FanTimerNotificationService {
       // 이름 있는 시간대가 필요 없다 — 상대 시간 예약이라 tz.local이 무엇으로
       // 잡혀 있든 "지금 + duration"의 절대 시각은 같다.
       scheduledDate: tz.TZDateTime.now(tz.local).add(plan.duration),
-      notificationDetails: NotificationDetails(
+      notificationDetails: _details(),
+      androidScheduleMode: await _core.scheduleMode(),
+    );
+  }
+
+  NotificationDetails _details() => NotificationDetails(
         android: AndroidNotificationDetails(
           'fan_timer',
           'notif_channel_timer_name'.tr(),
@@ -72,8 +110,5 @@ class FanTimerNotificationService {
           presentBanner: true,
           presentSound: true,
         ),
-      ),
-      androidScheduleMode: await _core.scheduleMode(),
-    );
-  }
+      );
 }
