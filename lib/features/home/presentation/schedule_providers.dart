@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/network/terra_rest_client.dart';
+import '../data/schedule_notification_sync.dart';
 import '../data/schedule_repository.dart';
 import '../domain/schedule.dart';
 import 'home_control_providers.dart';
@@ -9,6 +12,9 @@ import 'home_control_providers.dart';
 final scheduleRepositoryProvider = Provider<ScheduleRepository>((ref) {
   return ScheduleRepository(ref.watch(terraRestClientProvider));
 });
+
+final scheduleNotificationSyncProvider =
+    Provider<ScheduleNotificationSync>((ref) => ScheduleNotificationSync());
 
 /// 현재 사육장의 예약 목록.
 ///
@@ -27,7 +33,26 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
     final deviceId = await ref.watch(currentDeviceIdProvider.future);
     _deviceId = deviceId;
     if (deviceId == null) return const [];
-    return ref.watch(scheduleRepositoryProvider).list(deviceId);
+    final list = await ref.watch(scheduleRepositoryProvider).list(deviceId);
+    _syncNotifications(list);
+    return list;
+  }
+
+  /// 예약 실행 시각 로컬 알림을 서버 목록에 맞춘다. **fire-and-forget** —
+  /// 알림 동기화가 목록 렌더·CRUD 응답을 붙잡으면 안 된다(실패는 서비스가
+  /// 삼킨다). 목록이 바뀌는 모든 경로가 이걸 거쳐야 삭제·토글이 알림에
+  /// 반영된다.
+  void _syncNotifications(List<Schedule> list) {
+    final deviceId = _deviceId;
+    if (deviceId == null) return;
+    unawaited(
+        ref.read(scheduleNotificationSyncProvider).sync(deviceId, list));
+  }
+
+  /// 상태 교체 + 알림 동기화. `state =` 직접 대입 대신 이걸 쓸 것.
+  void _commit(List<Schedule> list) {
+    state = AsyncData(list);
+    _syncNotifications(list);
   }
 
   Future<void> add({
@@ -52,7 +77,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
           guard: guard,
         );
     // 서버가 계산한 next_run_at을 그대로 쓴다 — 직접 계산하면 서버와 어긋난다.
-    state = AsyncData([created, ...state.valueOrNull ?? const []]);
+    _commit([created, ...state.valueOrNull ?? const []]);
   }
 
   /// 구간 예약 — on(시작)·off(종료) 예약 2건을 **같은 `pair_id`**로 생성
@@ -125,7 +150,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
       }
       rethrow;
     }
-    state = AsyncData([off, on, ...state.valueOrNull ?? const []]);
+    _commit([off, on, ...state.valueOrNull ?? const []]);
   }
 
   /// 구간 한 줄 ON/OFF — 두 행을 같이 바꾼다. on을 먼저 바꾸고 off가 실패하면
@@ -159,7 +184,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
     final repo = ref.read(scheduleRepositoryProvider);
     await repo.delete(p.on.id);
     if (deviceId == null) return;
-    state = AsyncData(await repo.list(deviceId));
+    _commit(await repo.list(deviceId));
   }
 
   /// 구간 타이밍 수정 — on을 먼저 PATCH하고 off를 PATCH한다. off는 요일 밀기를
@@ -240,9 +265,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
 
   Future<void> remove(Schedule s) async {
     await ref.read(scheduleRepositoryProvider).delete(s.id);
-    state = AsyncData(
-      [...?state.valueOrNull].where((e) => e.id != s.id).toList(),
-    );
+    _commit([...?state.valueOrNull].where((e) => e.id != s.id).toList());
   }
 
   Future<void> updateTiming(
@@ -273,7 +296,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
   /// 응답만 명시했다. 응답이 바뀐 컬럼만 돌려주는 순간 구간 한 줄이 낱개 둘로
   /// 쪼개지는 걸 막는다.
   void _replace(Schedule updated) {
-    state = AsyncData([
+    _commit([
       for (final e in state.valueOrNull ?? const <Schedule>[])
         if (e.id == updated.id)
           (updated.pairId == null && e.pairId != null
