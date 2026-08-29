@@ -34,8 +34,9 @@
 
 ```
 크레캠 클립 즐겨찾기 → [커뮤니티 탭 FAB 또는 클립 상세 "공유"]
-  → 즐겨찾기 클립 선택 → 캡션 작성 → 게시(영상·썸네일 복사 업로드)
-  → 피드 노출 → 타 유저 좋아요/댓글
+  → 즐겨찾기 클립 선택 → 찍힌 크레 자동 연결(카메라→사육장→개체 1:1, 변경 가능)
+  → 캡션 작성 → 게시(영상·썸네일·크레 사진 복사 업로드)
+  → 피드 노출 (클립 + 크레 이름·종·모프·사진) → 타 유저 좋아요/댓글
 ```
 
 ### 핵심 설계 결정: 왜 "스냅샷 복사"인가
@@ -91,6 +92,12 @@ CREATE TABLE community_posts (
   source_clip_id UUID,                   -- 출처 motion_clips.id (참고용. FK 없음 — 원본 삭제와 무관)
   duration_sec   DOUBLE PRECISION,
   action         TEXT,                   -- 행동 분류 라벨 스냅샷 (behavior_logs 대표 라벨)
+  -- 찍힌 크레(개체) 스냅샷 — 카메라→사육장→개체 1:1로 게시 시 자동 유도.
+  -- pets RLS·pet-media 버킷이 본인 한정이라 참조 대신 굳혀 담는다. 미연결 카메라면 전부 NULL.
+  pet_name       TEXT,
+  pet_species    TEXT,                   -- 종 표시명 스냅샷
+  pet_morph      TEXT,
+  pet_photo_path TEXT,                   -- community-media 복사본 {user_id}/posts/{post_id}_pet.jpg
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX community_posts_created_idx ON community_posts (created_at DESC);
@@ -225,7 +232,7 @@ CREATE POLICY "community-media delete own" ON storage.objects FOR DELETE TO auth
   USING (bucket_id = 'community-media' AND (storage.foldername(name))[1] = auth.uid()::text);
 ```
 
-경로 규약: `{user_id}/posts/{post_id}.mp4` + `{user_id}/posts/{post_id}.jpg`
+경로 규약: `{user_id}/posts/{post_id}.mp4`(영상) + `{user_id}/posts/{post_id}.jpg`(썸네일) + `{user_id}/posts/{post_id}_pet.jpg`(크레 사진 스냅샷)
 
 ### 3.6 카운트 조회
 
