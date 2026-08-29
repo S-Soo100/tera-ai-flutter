@@ -94,9 +94,12 @@ CREATE TABLE community_posts (
   action         TEXT,                   -- 행동 분류 라벨 스냅샷 (behavior_logs 대표 라벨)
   -- 찍힌 크레(개체) 스냅샷 — 카메라→사육장→개체 1:1로 게시 시 자동 유도.
   -- pets RLS·pet-media 버킷이 본인 한정이라 참조 대신 굳혀 담는다. 미연결 카메라면 전부 NULL.
+  -- 앱 표기: "n살 릴리화이트 여아" (sex: female=여아 / male=남아 / unknown=아가)
   pet_name       TEXT,
-  pet_species    TEXT,                   -- 종 표시명 스냅샷
+  pet_species    TEXT,                   -- 종 표시명 스냅샷 (표기 미사용 — 필터·다종 대비)
   pet_morph      TEXT,
+  pet_sex        TEXT,                   -- pets.sex 스냅샷 ('female'/'male'/'unknown')
+  pet_birth_date DATE,                   -- pets.birth_date 스냅샷 — 나이 표기용
   pet_photo_path TEXT,                   -- community-media 복사본 {user_id}/posts/{post_id}_pet.jpg
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
