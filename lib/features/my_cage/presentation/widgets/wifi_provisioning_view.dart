@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../data/ble_pairing_repository.dart';
+import '../../data/ble_pairing_repository_demo.dart';
 import '../../domain/pair_target_kind.dart';
 import '../../domain/wifi_access_point.dart';
 
@@ -128,7 +129,8 @@ class WifiProvisioningView extends ConsumerStatefulWidget {
 }
 
 class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
-  final _repo = BlePairingRepository();
+  final BlePairingRepository _repo =
+      kBleDemoMode ? DemoBlePairingRepository() : BlePairingRepository();
 
   _ProvState _state = const _ProvState();
 
@@ -160,6 +162,11 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
   // ── 어댑터 상태 확인 + BLE 스캔 ──────────────────────────────────────────────
 
   Future<void> _checkAdapterAndScan() async {
+    if (kBleDemoMode) {
+      // 데모 모드 — 시뮬레이터에는 BLE 권한/어댑터가 없어 검사 없이 바로 스캔.
+      _startBleScan();
+      return;
+    }
     final statuses = await [
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
