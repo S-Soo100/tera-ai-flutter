@@ -43,7 +43,12 @@ lib/features/community/
 
 ## Phase 0 — 마이그레이션
 
-### Task 0: Supabase 마이그레이션 실행
+### Task 0: Supabase 마이그레이션 실행 ✅ **완료 (2026-08-31)**
+
+> 회신 수신(`docs/backend-reply-2026-08-31-community-clip-feed.md` — 충돌 없음·진행 OK) 후 실행 완료.
+> migration `community_clip_feed` + `community_is_admin_revoke_anon`(advisor anon 실행권 회수).
+> 실행 사본: `supabase/migrations/2026-08-31_community_clip_feed.sql`. 검증: 테이블 6·정책 16·뷰 1·비공개 버킷 1·storage 정책 3.
+> **회신 §5-③ 반영 사항**: R2 원본은 30일 lifecycle(실측 미확정·row 잔존) → **만료 클립 404를 정상 케이스로 처리** — Task 3·7의 "2026-08-31 회신 반영" 블록 참조.
 
 **Context:**
 - Depends on: 백엔드 회신 (§5-① 네임스페이스, §5-② R2 egress 최소 2건 OK)
@@ -794,6 +799,29 @@ class CommunityPostPublisher {
 ```
 
 - [ ] **Step 3:** `flutter analyze` → 에러 0 (community_screen의 구 API 에러는 Task 5까지 유예 — Phase 1은 한 push 단위)
+
+- [ ] **Step 4 (2026-08-31 회신 반영): 만료 클립 예외** — R2 원본은 30일 lifecycle로 삭제될 수 있고 DB row는 남는다(회신 §3). 로컬 유실 + 원본 만료 조합에서 폴백 다운로드가 404를 맞으면 **정상 케이스**로 구분한다:
+
+```dart
+// community_post_publisher.dart 상단에 추가
+/// 원본 클립이 R2 30일 보존기한으로 만료됨 — 사용자 안내용 (회신 2026-08-31 §3).
+class ClipExpiredException implements Exception {}
+```
+
+```dart
+// publish() 1) 폴백 분기 교체:
+      } else {
+        final url = await _motionRepo.getPlaybackUrl(fav.clipId);
+        final resp = await http.get(Uri.parse(url));
+        if (resp.statusCode == 404) throw ClipExpiredException();
+        if (resp.statusCode != 200) {
+          throw Exception('clip download failed: ${resp.statusCode}');
+        }
+        videoBytes = resp.bodyBytes;
+      }
+```
+
+> `getPlaybackUrl` 자체가 404(BackendException)면 그것도 만료다 — `on BackendException catch (e) { if (e.statusCode == 404) throw ClipExpiredException(); rethrow; }`로 감싼다 (`camera_exceptions.dart`의 BackendException에 statusCode 필드가 없으면 확인 후 필드명에 맞춘다).
 
 ### Task 4: Providers 재작성
 
@@ -1853,6 +1881,7 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../home/presentation/home_set_providers.dart';
 import '../../my_pets/domain/pet.dart';
 import '../../my_pets/presentation/my_pets_providers.dart';
+import '../data/community_post_publisher.dart' show ClipExpiredException;
 import '../domain/community_post.dart';
 import 'clip_select_screen.dart' show ComposeDraft;
 import 'community_providers.dart';
@@ -1917,6 +1946,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       if (!mounted) return;
       await ref.read(communityFeedProvider.notifier).refresh();
       if (mounted) context.go('/community');
+    } on ClipExpiredException {
+      // 회신 2026-08-31 §3 — 원본 만료는 정상 케이스: 실패가 아니라 안내
+      if (mounted) {
+        setState(() {
+          _progress = null;
+          _error = 'community_clip_expired'.tr();
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -2326,6 +2363,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
   "community_publishing": "영상 복사 중 {pct}%",
   "community_publishing_short": "게시 중…",
   "community_publish_error": "게시에 실패했어요. 네트워크를 확인하고 다시 시도해주세요.",
+  "community_clip_expired": "이 클립의 원본이 보관 기한(30일)이 지나 만료됐어요. 다른 클립을 선택해주세요.",
   "community_play_error": "영상을 재생할 수 없어요",
   "community_comments_title": "댓글 {n}",
   "community_comments_empty": "첫 댓글을 남겨보세요",

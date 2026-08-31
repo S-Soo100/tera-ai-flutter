@@ -1,5 +1,9 @@
 # 백엔드 핸드오프 — 커뮤니티 탭 리뉴얼: 크레캠 클립 공유 피드 (2026-08-29)
 
+> ## 📌 회신 받음 + 마이그레이션 실행 완료 (2026-08-31)
+> 회신 원문: `docs/backend-reply-2026-08-31-community-clip-feed.md`. 판정: §5-①·② **OK**(충돌 없음·R2 egress 무료), §5-③ **주의**(R2 30일 lifecycle 정책·실측 미확정, row는 잔존 → 앱은 만료 클립 404를 정상 케이스로 처리 — 계획서 Task 3·7 반영), §5-④ 앱 팀 소유(이니셜 폴백 시작).
+> §3 DDL은 2026-08-31 프로덕션 적용 완료(migration `community_clip_feed` + `community_is_admin_revoke_anon`). **실행 사본: `supabase/migrations/2026-08-31_community_clip_feed.sql`**(백엔드 §6 부탁 사항 이행). 검증: 테이블 6·정책 16·뷰 1·비공개 버킷 1·storage 정책 3·RLS on. advisor 잔여 경고는 `public_profiles` SECURITY DEFINER 뷰 1건(의도적 — 회신 §5-4 무시 OK).
+
 > **대상**: terra-server 담당자
 > **성격**: 이번 문서는 요청서가 아니라 **사전 공유 + 확인 요청**입니다. terra-server 코드·API·펌웨어 변경은 **없습니다**. 신규 테이블·버킷 마이그레이션은 **앱 팀이 직접 실행**합니다(같은 Supabase 프로젝트를 공유하므로 충돌 여부만 확인받으려 합니다).
 > **배경**: 커뮤니티 탭이 현재 껍데기(카테고리 칩 + "준비 중")입니다. 텍스트 게시판(QnA/자유) 대신 **크레캠 모션 클립을 공유하는 영상 피드**(인스타그램 스타일)로 리뉴얼합니다.

@@ -386,3 +386,13 @@ CREATE INDEX idx_camera_clips_motion
 - guide: `assets/data/guide.json`
 - citations: `assets/data/citations.json`
 - graph: `assets/data/graph.json`
+
+---
+
+## 커뮤니티 클립 피드 테이블 (앱 팀 소유, 2026-08-31 적용)
+
+`community_posts` / `community_comments` / `community_likes` / `community_notices` / `community_reports` / `community_blocks` + `public_profiles`(뷰, SECURITY DEFINER — 노출 3컬럼) + `community_is_admin()`(함수, anon 실행권 회수) + Storage `community-media`(비공개 버킷) + `user_profiles.is_admin`(컬럼).
+
+- **DDL 원본(실행 사본): `supabase/migrations/2026-08-31_community_clip_feed.sql`** — 이 문서에는 중복 전사하지 않는다
+- 설계 근거·RLS 요약: `docs/backend-handoff-2026-08-29-community-clip-feed.md` §3, 백엔드 회신: `docs/backend-reply-2026-08-31-community-clip-feed.md`
+- 게시물 영상·썸네일·크레 사진은 **스냅샷 복사**(`community-media`) — `motion_clips`/R2 원본과 무관 (원본은 30일 lifecycle 만료 가능, row 잔존)
