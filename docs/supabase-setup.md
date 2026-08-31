@@ -285,3 +285,18 @@ supabase.channel('telemetry-$deviceId')
 | P2 2차 | Google + Apple 소셜 로그인 |
 | P2 3차 | Kakao 소셜 로그인 (OIDC Custom Provider) |
 | **현재** | Supabase 인증 + 유저 CRUD + 게코캠(`camera_clips`) + **terra-server 사육장 IoT 실연동**(디바이스/명령/텔레메트리 Realtime). 캠 라이브/소셜 로그인은 후속 |
+
+### 커뮤니티 테이블 (2026-08-31, 앱 팀 소유)
+
+| 정책 | 조건 |
+|------|------|
+| `community_posts`/`comments`/`likes`/`notices` SELECT | `TO authenticated USING (true)` — 로그인 유저 전체 열람 |
+| posts/comments INSERT·UPDATE | 본인(`author_id = auth.uid()`) |
+| posts/comments DELETE | 본인 **또는 운영자**(`community_is_admin()` — `user_profiles.is_admin`, anon 실행권 회수) |
+| `community_notices` 쓰기 | 운영자만 (앱은 읽기 전용 배너, 작성은 대시보드) |
+| `community_reports` | INSERT 본인 / SELECT 본인 신고건+운영자 / UPDATE 운영자 |
+| `community_blocks` | 본인 행만 CRUD — 피드 숨김은 앱 필터 |
+| Storage `community-media` | 읽기 authenticated 전체 / 쓰기·삭제 본인 폴더 `{user_id}/` |
+| `public_profiles` 뷰 | SECURITY DEFINER(의도적) — `user_profiles`의 id·display_name·avatar_url 3컬럼만 노출 |
+
+DDL 원본: `supabase/migrations/2026-08-31_community_clip_feed.sql`. **커뮤니티 쓰기 API는 uid 없으면 throw** — 비로그인 열람(kPublicPaths)과 구분된다.
