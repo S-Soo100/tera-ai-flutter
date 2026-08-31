@@ -34,6 +34,15 @@ class CommunityRepository {
 
   String? get _uid => _supabase.auth.currentUser?.id;
 
+  /// 쓰기 경로의 로그인 강제. 커뮤니티는 비로그인 열람 허용(kPublicPaths)이라
+  /// uid 없는 쓰기를 조용히 삼키면 "접수됐어요" 같은 거짓 성공 안내가 된다 —
+  /// 던져서 호출부의 실패 UI로 보낸다.
+  String _requireUid() {
+    final uid = _uid;
+    if (uid == null) throw StateError('community write requires sign-in');
+    return uid;
+  }
+
   /// 피드 한 페이지 (최신순). offset 기반 range 페이지네이션.
   Future<List<CommunityPost>> listPosts({int offset = 0, int limit = 20}) async {
     final rows = await _supabase
@@ -129,8 +138,7 @@ class CommunityRepository {
 
   /// like=true면 좋아요, false면 해제. upsert/조건 delete라 중복 탭에 안전.
   Future<void> setLike(String postId, bool like) async {
-    final uid = _uid;
-    if (uid == null) return;
+    final uid = _requireUid();
     if (like) {
       await _supabase
           .from('community_likes')
@@ -164,8 +172,7 @@ class CommunityRepository {
   }
 
   Future<void> addComment(String postId, String body) async {
-    final uid = _uid;
-    if (uid == null) return;
+    final uid = _requireUid();
     await _supabase.from('community_comments').insert({
       'post_id': postId,
       'author_id': uid,
@@ -209,16 +216,14 @@ class CommunityRepository {
   }
 
   Future<void> blockUser(String userId) async {
-    final uid = _uid;
-    if (uid == null) return;
+    final uid = _requireUid();
     await _supabase
         .from('community_blocks')
         .upsert({'blocker_id': uid, 'blocked_id': userId});
   }
 
   Future<void> unblockUser(String userId) async {
-    final uid = _uid;
-    if (uid == null) return;
+    final uid = _requireUid();
     await _supabase
         .from('community_blocks')
         .delete()
@@ -249,8 +254,7 @@ class CommunityRepository {
     required String reason,
     String? detail,
   }) async {
-    final uid = _uid;
-    if (uid == null) return;
+    final uid = _requireUid();
     await _supabase.from('community_reports').insert({
       'reporter_id': uid,
       'target_kind': targetKind,
@@ -261,13 +265,18 @@ class CommunityRepository {
   }
 
   /// 피드 한 페이지의 썸네일·크레 사진 signed URL 일괄 발급. path → url.
-  Future<Map<String, String>> signedImageUrls(List<CommunityPost> posts) async {
-    final paths = <String>{
+  Future<Map<String, String>> signedImageUrls(List<CommunityPost> posts) {
+    return signedUrls(<String>{
       for (final p in posts) ...[
         if (p.thumbnailPath != null) p.thumbnailPath!,
         if (p.petPhotoPath != null) p.petPhotoPath!,
       ],
-    }.toList();
+    }.toList());
+  }
+
+  /// storage 경로 목록 → signed URL 일괄 발급 (path → url). 실패 시 빈 맵 —
+  /// 이미지 로드는 화면을 막지 않는다(카드는 아이콘 폴백).
+  Future<Map<String, String>> signedUrls(List<String> paths) async {
     if (paths.isEmpty) return {};
     try {
       final signed = await _supabase.storage

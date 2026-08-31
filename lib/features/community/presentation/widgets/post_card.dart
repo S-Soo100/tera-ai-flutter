@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../core/theme/glass_palette.dart';
+import '../../../../shared/domain/time_ago.dart';
 import '../../../../shared/widgets/account_avatar.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../domain/community_post.dart';
@@ -26,6 +27,7 @@ class PostCard extends StatelessWidget {
     this.onReport, // 사유('spam'…) 선택 후 호출 — 타인 글 메뉴
     this.onBlock, // 타인 글 메뉴 (Task 12에서 배선 — null이면 항목 미표시)
     this.onOpenAuthor, // 작성자 행 탭 = 유저별 모아보기 (Task 13)
+    this.now, // nowTickProvider 1분 틱 — "N분 전"이 멈춰 있지 않게
   });
 
   final CommunityPost post;
@@ -39,18 +41,7 @@ class PostCard extends StatelessWidget {
   final void Function(String reason)? onReport;
   final VoidCallback? onBlock;
   final VoidCallback? onOpenAuthor;
-
-  String _relativeTime(DateTime t) {
-    final diff = DateTime.now().difference(t);
-    if (diff.inMinutes < 1) return 'time_just_now'.tr();
-    if (diff.inMinutes < 60) {
-      return 'time_minutes_ago'.tr(namedArgs: {'n': '${diff.inMinutes}'});
-    }
-    if (diff.inHours < 24) {
-      return 'time_hours_ago'.tr(namedArgs: {'n': '${diff.inHours}'});
-    }
-    return 'time_days_ago'.tr(namedArgs: {'n': '${diff.inDays}'});
-  }
+  final DateTime? now;
 
   String _duration(double? sec) {
     if (sec == null) return '';
@@ -89,7 +80,7 @@ class PostCard extends StatelessWidget {
                     children: [
                       Text(authorLabel,
                           style: glass.tileTitle.copyWith(fontSize: 12.5)),
-                      Text(_relativeTime(post.createdAt),
+                      Text(timeAgo(post.createdAt, now: now),
                           style: glass.tileStatus.copyWith(fontSize: 10.5)),
                     ],
                   ),

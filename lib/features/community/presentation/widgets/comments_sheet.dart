@@ -1,16 +1,18 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/account_avatar.dart';
+import '../../../../shared/widgets/skeleton_loading.dart';
 import '../../../auth/presentation/auth_providers.dart';
 import '../../domain/community_post.dart';
 import '../community_providers.dart';
 import 'post_card.dart' show showReportReasonsSheet;
 
-/// 댓글 시트 — 피드 위에 떠서 맥락 유지 (시안 ④). 닫히면 피드 refresh로 카운트 수렴.
+/// 댓글 시트 — 피드 위에 떠서 맥락 유지 (시안 ④).
+/// 닫히면 **그 게시물 하나만** 카운트를 동기화한다 — 전체 refresh는
+/// 페이지네이션을 폐기하고 스크롤을 점프시킨다.
 Future<void> showCommentsSheet(
     BuildContext context, WidgetRef ref, CommunityPost post) async {
   await showModalBottomSheet<void>(
@@ -19,7 +21,9 @@ Future<void> showCommentsSheet(
     useSafeArea: true,
     builder: (_) => _CommentsSheet(postId: post.id),
   );
-  ref.read(communityFeedProvider.notifier).refresh();
+  // 시트가 떠 있는 동안 화면이 pop됐으면 ref도 죽어 있다.
+  if (!context.mounted) return;
+  await ref.read(communityFeedProvider.notifier).refreshPost(post.id);
 }
 
 class _CommentsSheet extends ConsumerStatefulWidget {
@@ -43,13 +47,19 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
   Future<void> _send() async {
     final body = _input.text.trim();
     if (body.isEmpty || _sending) return;
+    final messenger = ScaffoldMessenger.of(context); // async gap 전에 캡처
     setState(() => _sending = true);
     try {
       await ref
           .read(communityRepositoryProvider)
           .addComment(widget.postId, body);
+      // 전송 중 시트가 닫혔으면 ref는 이미 dispose — 만지면 StateError.
+      if (!mounted) return;
       _input.clear();
       ref.invalidate(commentsProvider(widget.postId));
+    } catch (_) {
+      messenger.showSnackBar(
+          SnackBar(content: Text('community_comment_send_failed'.tr())));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -100,18 +110,11 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
           const SizedBox(height: 8),
           Expanded(
             child: comments.when(
-              loading: () => Shimmer.fromColors(
-                baseColor: glass.skeletonBase,
-                highlightColor: glass.skeletonHighlight,
-                child: ListView(
-                  controller: scroll,
-                  children: [
-                    for (var i = 0; i < 3; i++)
-                      const ListTile(
-                          title: SizedBox(height: 14),
-                          subtitle: SizedBox(height: 12)),
-                  ],
-                ),
+              // 투명 SizedBox를 Shimmer로 감싸면 칠할 픽셀이 없어 아무것도
+              // 안 그려진다(srcIn) — 불투명 배경을 가진 공용 스켈레톤을 쓴다.
+              loading: () => ListView(
+                controller: scroll,
+                children: const [SkeletonListLoading(itemCount: 3)],
               ),
               error: (e, _) => Center(
                   child: Text('community_comments_error'.tr(),
@@ -152,11 +155,21 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                                   icon: Icon(Icons.delete_outline,
                                       size: 18, color: glass.textTertiary),
                                   onPressed: () async {
-                                    await ref
-                                        .read(communityRepositoryProvider)
-                                        .deleteComment(c.id);
-                                    ref.invalidate(
-                                        commentsProvider(widget.postId));
+                                    final messenger =
+                                        ScaffoldMessenger.of(context);
+                                    try {
+                                      await ref
+                                          .read(communityRepositoryProvider)
+                                          .deleteComment(c.id);
+                                      if (!mounted) return;
+                                      ref.invalidate(
+                                          commentsProvider(widget.postId));
+                                    } catch (_) {
+                                      messenger.showSnackBar(SnackBar(
+                                          content: Text(
+                                              'community_comment_delete_failed'
+                                                  .tr())));
+                                    }
                                   },
                                 )
                               : null,

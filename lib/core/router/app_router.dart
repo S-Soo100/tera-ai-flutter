@@ -176,8 +176,14 @@ GoRouter buildAppRouter({
         routes: [
           GoRoute(
             path: 'caption',
-            builder: (context, state) =>
-                ComposeScreen(draft: state.extra! as ComposeDraft),
+            builder: (context, state) {
+              // extra 없이 진입(웹 새로고침·상태복원·향후 딥링크)하면 캡션
+              // 화면이 성립하지 않는다 — 클립 선택 1단계로 되돌린다.
+              final draft = state.extra;
+              return draft is ComposeDraft
+                  ? ComposeScreen(draft: draft)
+                  : const ClipSelectScreen();
+            },
           ),
         ],
       ),

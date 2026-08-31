@@ -13,6 +13,8 @@ import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../my_cage/presentation/supabase_module_providers.dart'
+    show nowTickProvider;
 import '../../profile/presentation/profile_providers.dart';
 import '../domain/community_post.dart';
 import 'community_providers.dart';
@@ -53,6 +55,8 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
     final imageUrls = ref.watch(feedImageUrlsProvider).valueOrNull ?? const {};
     final profile = ref.watch(profileNotifierProvider).valueOrNull;
     final myId = ref.watch(currentUserProvider.select((u) => u?.id));
+    // 1분 틱 — 카드의 "N분 전"이 멈춰 있지 않게 리빌드를 건다(time_ago.dart).
+    final now = ref.watch(nowTickProvider).valueOrNull;
     final glass = context.glass;
 
     return GlassTabShell(
@@ -100,6 +104,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                               0),
                           child: PostCard(
                             post: post,
+                            now: now,
                             thumbnailUrl: post.thumbnailPath == null
                                 ? null
                                 : imageUrls[post.thumbnailPath],
@@ -174,9 +179,16 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
       ),
     );
     if (ok == true && mounted) {
-      await ref
-          .read(communityFeedProvider.notifier)
-          .blockUser(post.authorId);
+      final messenger = ScaffoldMessenger.of(context); // async gap 전에 캡처
+      try {
+        await ref
+            .read(communityFeedProvider.notifier)
+            .blockUser(post.authorId);
+      } catch (_) {
+        // 실패를 삼키면 카드가 남아 있는 이유를 알 길이 없다 — 신고와 동일 문법.
+        messenger.showSnackBar(
+            SnackBar(content: Text('community_block_failed'.tr())));
+      }
     }
   }
 
@@ -197,7 +209,13 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
       ),
     );
     if (ok == true && mounted) {
-      await ref.read(communityFeedProvider.notifier).deletePost(post);
+      final messenger = ScaffoldMessenger.of(context); // async gap 전에 캡처
+      try {
+        await ref.read(communityFeedProvider.notifier).deletePost(post);
+      } catch (_) {
+        messenger.showSnackBar(
+            SnackBar(content: Text('community_delete_failed'.tr())));
+      }
     }
   }
 }

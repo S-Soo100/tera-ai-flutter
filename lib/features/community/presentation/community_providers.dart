@@ -30,16 +30,26 @@ class CommunityFeed extends AsyncNotifier<List<CommunityPost>> {
   bool get hasMore => _hasMore;
 
   /// 차단 유저 필터 (Task 12) — 앱 필터 결정(핸드오프 §3.3, RLS 서브쿼리 보류).
-  /// offset은 서버 기준이라 필터 후 화면 개수가 페이지보다 적을 수 있음(허용).
   Set<String> _blocked = {};
+
+  /// 서버에서 가져온 **누적 행 수** — 페이지 offset은 반드시 이 값을 쓴다.
+  /// 화면 리스트 길이(차단 필터·삭제 반영 후)를 쓰면 필터된 만큼 창이 뒤로
+  /// 밀려 이미 표시한 행을 다시 받아 중복 카드가 생긴다.
+  int _fetchedCount = 0;
+
+  /// loadMore 재진입 가드. `state.isLoading`은 여기서 못 쓴다 — loadMore는
+  /// state를 loading으로 바꾸지 않아 await 동안에도 AsyncData가 유지된다.
+  bool _loadingMore = false;
 
   @override
   Future<List<CommunityPost>> build() async {
     ref.watch(currentUserProvider.select((u) => u?.id)); // 3층 격리 ①
     _hasMore = true;
+    _loadingMore = false;
     final repo = ref.read(communityRepositoryProvider);
     _blocked = await repo.blockedUserIds();
     final page = await repo.listPosts(limit: _pageSize);
+    _fetchedCount = page.length;
     _hasMore = page.length == _pageSize;
     return page.where((p) => !_blocked.contains(p.authorId)).toList();
   }
@@ -49,17 +59,48 @@ class CommunityFeed extends AsyncNotifier<List<CommunityPost>> {
     await future;
   }
 
+  /// 게시물 1건의 카운트·좋아요만 서버와 동기화. 댓글 시트가 닫힐 때 전체
+  /// refresh를 부르면 loadMore로 쌓은 페이지가 전부 폐기되고 스크롤이
+  /// 점프한다 — 그 자리를 이걸로 대신한다. 삭제된 글이면 목록에서 뺀다.
+  Future<void> refreshPost(String postId) async {
+    final updated =
+        await ref.read(communityRepositoryProvider).getPost(postId);
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final idx = current.indexWhere((p) => p.id == postId);
+    if (idx < 0) return;
+    if (updated == null) {
+      state = AsyncData(current.where((p) => p.id != postId).toList());
+      return;
+    }
+    state = AsyncData([...current]..[idx] = current[idx].copyWith(
+        likeCount: updated.likeCount,
+        commentCount: updated.commentCount,
+        likedByMe: updated.likedByMe));
+  }
+
   Future<void> loadMore() async {
     final current = state.valueOrNull;
-    if (current == null || !_hasMore || state.isLoading) return;
-    final next = await ref
-        .read(communityRepositoryProvider)
-        .listPosts(offset: current.length, limit: _pageSize);
-    _hasMore = next.length == _pageSize;
-    state = AsyncData([
-      ...current,
-      ...next.where((p) => !_blocked.contains(p.authorId)),
-    ]);
+    if (current == null || !_hasMore || _loadingMore) return;
+    _loadingMore = true;
+    try {
+      final next = await ref
+          .read(communityRepositoryProvider)
+          .listPosts(offset: _fetchedCount, limit: _pageSize);
+      // await 동안 refresh/계정 전환으로 state가 갈렸으면 이 페이지는 폐기 —
+      // 옛 리스트 위에 append하면 리셋된 피드가 되살아난다.
+      if (!identical(state.valueOrNull, current)) return;
+      _fetchedCount += next.length;
+      _hasMore = next.length == _pageSize;
+      final existing = {for (final p in current) p.id};
+      state = AsyncData([
+        ...current,
+        ...next.where((p) =>
+            !_blocked.contains(p.authorId) && !existing.contains(p.id)),
+      ]);
+    } finally {
+      _loadingMore = false;
+    }
   }
 
   /// 유저 차단 → 피드 재조회(해당 유저 글 즉시 사라짐).
@@ -103,10 +144,27 @@ class CommunityFeed extends AsyncNotifier<List<CommunityPost>> {
 final communityFeedProvider =
     AsyncNotifierProvider<CommunityFeed, List<CommunityPost>>(CommunityFeed.new);
 
-/// 피드 이미지(썸네일·크레 사진) signed URL. 피드 데이터에 종속.
+/// 피드 이미지(썸네일·크레 사진) signed URL — **경로 집합에만 종속**한다.
+/// `communityFeedProvider.future`를 통째로 watch하면 좋아요 토글·삭제의
+/// 리스트 재대입마다 전 페이지를 재발급하고, 토큰이 바뀐 URL은 ImageCache를
+/// 전량 미스시킨다. 반대로 시간에는 반응해야 한다 — TTL(1h)보다 짧은
+/// 50분마다 스스로 무효화해 만료 URL을 갱신한다(postVideoUrlProvider와 동일).
 final feedImageUrlsProvider = FutureProvider<Map<String, String>>((ref) async {
-  final posts = await ref.watch(communityFeedProvider.future);
-  return ref.read(communityRepositoryProvider).signedImageUrls(posts);
+  final timer = Timer(const Duration(minutes: 50), ref.invalidateSelf);
+  ref.onDispose(timer.cancel);
+  // 정렬된 경로 문자열이 캐시 키 — String ==라 내용이 같으면 재실행이 없다.
+  final pathKey = await ref.watch(communityFeedProvider.selectAsync((posts) {
+    final paths = <String>{
+      for (final p in posts) ...[
+        if (p.thumbnailPath != null) p.thumbnailPath!,
+        if (p.petPhotoPath != null) p.petPhotoPath!,
+      ],
+    }.toList()
+      ..sort();
+    return paths.join('\n');
+  }));
+  final paths = pathKey.isEmpty ? const <String>[] : pathKey.split('\n');
+  return ref.read(communityRepositoryProvider).signedUrls(paths);
 });
 
 final commentsProvider = FutureProvider.autoDispose
