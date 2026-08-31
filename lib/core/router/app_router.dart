@@ -22,6 +22,9 @@ import '../../features/my_cage/presentation/camera_pairing_screen.dart';
 import '../../features/my_cage/presentation/enclosure_list_screen.dart';
 import '../../features/my_cage/presentation/enclosure_detail_screen.dart';
 import '../../features/community/presentation/community_screen.dart';
+import '../../features/community/presentation/community_player_screen.dart';
+import '../../features/community/presentation/clip_select_screen.dart';
+import '../../features/community/presentation/compose_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -163,6 +166,23 @@ GoRouter buildAppRouter({
             ],
           ),
         ],
+      ),
+      // 커뮤니티 전체화면 플로우 (독 없는 최상위 — shell 탈출, /crecam 선례)
+      GoRoute(
+        path: '/community-share',
+        builder: (context, state) => const ClipSelectScreen(),
+        routes: [
+          GoRoute(
+            path: 'caption',
+            builder: (context, state) =>
+                ComposeScreen(draft: state.extra! as ComposeDraft),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/community-player/:postId',
+        builder: (context, state) =>
+            CommunityPlayerScreen(postId: state.pathParameters['postId']!),
       ),
       // 크레캠 (탭에서 제거 — 홈 탭이 흡수. 화면·딥링크는 보존)
       GoRoute(
