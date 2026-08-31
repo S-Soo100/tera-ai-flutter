@@ -118,6 +118,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                                 ? () => _confirmDelete(post)
                                 : null,
                             onReport: (reason) => _reportPost(post, reason),
+                            onBlock: () => _confirmBlock(post),
                           ),
                         ),
                   ],
@@ -151,6 +152,29 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
     } catch (_) {
       messenger.showSnackBar(
           SnackBar(content: Text('community_report_failed'.tr())));
+    }
+  }
+
+  Future<void> _confirmBlock(CommunityPost post) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('community_block_user'.tr()),
+        content: Text('community_block_confirm'.tr()),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('common_cancel'.tr())),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('community_block_user'.tr())),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      await ref
+          .read(communityFeedProvider.notifier)
+          .blockUser(post.authorId);
     }
   }
 

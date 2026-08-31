@@ -172,6 +172,57 @@ class CommunityRepository {
     } catch (_) {}
   }
 
+  /// 내가 차단한 유저 id 집합. 실패 시 빈 집합(피드를 막지 않는다).
+  Future<Set<String>> blockedUserIds() async {
+    final uid = _uid;
+    if (uid == null) return {};
+    try {
+      final rows = await _supabase
+          .from('community_blocks')
+          .select('blocked_id')
+          .eq('blocker_id', uid);
+      return {
+        for (final r in rows as List) (r as Map)['blocked_id'] as String
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> blockUser(String userId) async {
+    final uid = _uid;
+    if (uid == null) return;
+    await _supabase
+        .from('community_blocks')
+        .upsert({'blocker_id': uid, 'blocked_id': userId});
+  }
+
+  Future<void> unblockUser(String userId) async {
+    final uid = _uid;
+    if (uid == null) return;
+    await _supabase
+        .from('community_blocks')
+        .delete()
+        .eq('blocker_id', uid)
+        .eq('blocked_id', userId);
+  }
+
+  /// 차단 목록 화면용 — 차단 유저의 표시 이름·아바타(public_profiles).
+  Future<List<({String id, String name, String? avatarUrl})>>
+      blockedProfiles() async {
+    final ids = (await blockedUserIds()).toList();
+    if (ids.isEmpty) return [];
+    final profiles = await _fetchProfiles(ids);
+    return [
+      for (final id in ids)
+        (
+          id: id,
+          name: profiles[id]?.name ?? '',
+          avatarUrl: profiles[id]?.avatarUrl,
+        ),
+    ];
+  }
+
   /// 신고 접수 (Apple 1.2). targetKind: 'post' | 'comment'.
   Future<void> report({
     required String targetKind,

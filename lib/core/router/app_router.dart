@@ -25,6 +25,7 @@ import '../../features/community/presentation/community_screen.dart';
 import '../../features/community/presentation/community_player_screen.dart';
 import '../../features/community/presentation/clip_select_screen.dart';
 import '../../features/community/presentation/compose_screen.dart';
+import '../../features/community/presentation/blocked_users_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -301,6 +302,13 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+        routes: [
+          // 커뮤니티 차단 관리 (Task 12)
+          GoRoute(
+            path: 'blocked',
+            builder: (context, state) => const BlockedUsersScreen(),
+          ),
+        ],
       ),
       // 온습도 그래프 디자인 검토용. 실데이터로는 볼 수 없는 상태(마커 유무,
       // 밴드 폭, 좁은/넓은 구간)를 만들어 보는 자리다.

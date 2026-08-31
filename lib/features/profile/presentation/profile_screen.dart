@@ -238,6 +238,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const Divider(),
                 const SizedBox(height: 8),
 
+                // 커뮤니티에서 차단한 사용자 관리 (Task 12)
+                ListTile(
+                  leading: Icon(Icons.block,
+                      color: colorScheme.onSurfaceVariant),
+                  title: Text('community_blocked_users'.tr()),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/profile/blocked'),
+                ),
+
                 // 디자인 검토용. 실사용 기능이 아니라 로그아웃 위에 조용히 둔다.
                 ListTile(
                   leading: Icon(Icons.palette_outlined,

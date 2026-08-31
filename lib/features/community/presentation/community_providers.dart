@@ -27,14 +27,19 @@ class CommunityFeed extends AsyncNotifier<List<CommunityPost>> {
   bool _hasMore = true;
   bool get hasMore => _hasMore;
 
+  /// 차단 유저 필터 (Task 12) — 앱 필터 결정(핸드오프 §3.3, RLS 서브쿼리 보류).
+  /// offset은 서버 기준이라 필터 후 화면 개수가 페이지보다 적을 수 있음(허용).
+  Set<String> _blocked = {};
+
   @override
   Future<List<CommunityPost>> build() async {
     ref.watch(currentUserProvider.select((u) => u?.id)); // 3층 격리 ①
     _hasMore = true;
-    final page =
-        await ref.read(communityRepositoryProvider).listPosts(limit: _pageSize);
+    final repo = ref.read(communityRepositoryProvider);
+    _blocked = await repo.blockedUserIds();
+    final page = await repo.listPosts(limit: _pageSize);
     _hasMore = page.length == _pageSize;
-    return page;
+    return page.where((p) => !_blocked.contains(p.authorId)).toList();
   }
 
   Future<void> refresh() async {
@@ -49,7 +54,16 @@ class CommunityFeed extends AsyncNotifier<List<CommunityPost>> {
         .read(communityRepositoryProvider)
         .listPosts(offset: current.length, limit: _pageSize);
     _hasMore = next.length == _pageSize;
-    state = AsyncData([...current, ...next]);
+    state = AsyncData([
+      ...current,
+      ...next.where((p) => !_blocked.contains(p.authorId)),
+    ]);
+  }
+
+  /// 유저 차단 → 피드 재조회(해당 유저 글 즉시 사라짐).
+  Future<void> blockUser(String userId) async {
+    await ref.read(communityRepositoryProvider).blockUser(userId);
+    await refresh();
   }
 
   /// 낙관적 좋아요 — UI 먼저, 서버 실패 시 롤백.
@@ -94,8 +108,20 @@ final feedImageUrlsProvider = FutureProvider<Map<String, String>>((ref) async {
 });
 
 final commentsProvider = FutureProvider.autoDispose
-    .family<List<CommunityComment>, String>((ref, postId) {
-  return ref.watch(communityRepositoryProvider).listComments(postId);
+    .family<List<CommunityComment>, String>((ref, postId) async {
+  final repo = ref.watch(communityRepositoryProvider);
+  // 차단 유저 댓글 숨김 (Task 12) — 목록과 병행 로드.
+  final results =
+      await Future.wait([repo.listComments(postId), repo.blockedUserIds()]);
+  final comments = results[0] as List<CommunityComment>;
+  final blocked = results[1] as Set<String>;
+  return comments.where((c) => !blocked.contains(c.authorId)).toList();
+});
+
+/// 차단 목록 화면(/profile/blocked)용 — 이름·아바타 포함.
+final blockedProfilesProvider = FutureProvider.autoDispose<
+    List<({String id, String name, String? avatarUrl})>>((ref) {
+  return ref.watch(communityRepositoryProvider).blockedProfiles();
 });
 
 // ── 운영자 공지 (Task 10) — 앱은 읽기 전용, 작성은 대시보드 INSERT ─────────────
