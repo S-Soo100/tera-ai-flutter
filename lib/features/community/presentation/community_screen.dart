@@ -119,6 +119,8 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                                 : null,
                             onReport: (reason) => _reportPost(post, reason),
                             onBlock: () => _confirmBlock(post),
+                            onOpenAuthor: () => context
+                                .push('/community-user/${post.authorId}'),
                           ),
                         ),
                   ],

@@ -118,6 +118,21 @@ final commentsProvider = FutureProvider.autoDispose
   return comments.where((c) => !blocked.contains(c.authorId)).toList();
 });
 
+// ── 유저별 모아보기 (Task 13) ─────────────────────────────────────────────────
+
+/// 작성자의 게시물 목록 (30건 — 모아보기 초기 규모엔 1페이지로 충분).
+final authorPostsProvider = FutureProvider.autoDispose
+    .family<List<CommunityPost>, String>((ref, authorId) {
+  return ref.watch(communityRepositoryProvider).listPostsByAuthor(authorId);
+});
+
+/// 모아보기 그리드 썸네일 signed URL — 피드와 같은 일괄 발급 재사용.
+final authorPostImageUrlsProvider = FutureProvider.autoDispose
+    .family<Map<String, String>, String>((ref, authorId) async {
+  final posts = await ref.watch(authorPostsProvider(authorId).future);
+  return ref.read(communityRepositoryProvider).signedImageUrls(posts);
+});
+
 /// 차단 목록 화면(/profile/blocked)용 — 이름·아바타 포함.
 final blockedProfilesProvider = FutureProvider.autoDispose<
     List<({String id, String name, String? avatarUrl})>>((ref) {

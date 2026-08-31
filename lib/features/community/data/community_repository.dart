@@ -59,6 +59,25 @@ class CommunityRepository {
     );
   }
 
+  /// 특정 작성자의 게시물 (모아보기, Task 13). listPosts와 같은 병합 로직.
+  Future<List<CommunityPost>> listPostsByAuthor(String authorId,
+      {int offset = 0, int limit = 30}) async {
+    final rows = await _supabase
+        .from('community_posts')
+        .select('*, community_likes(count), community_comments(count)')
+        .eq('author_id', authorId)
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);
+    final posts = (rows as List)
+        .map((r) => CommunityPost.fromJson(r as Map<String, dynamic>))
+        .toList();
+    if (posts.isEmpty) return posts;
+    final profiles = await _fetchProfiles([authorId]);
+    final likes = await _fetchMyLikes(posts.map((p) => p.id).toList());
+    return mergeFeedRows(
+        posts: posts, profiles: profiles, myLikedPostIds: likes);
+  }
+
   Future<CommunityPost?> getPost(String id) async {
     final rows = await _supabase
         .from('community_posts')

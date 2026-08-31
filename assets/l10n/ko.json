@@ -275,6 +275,8 @@
   "community_blocked_users": "차단한 사용자",
   "community_blocked_empty": "차단한 사용자가 없어요",
   "community_unblock": "차단 해제",
+  "community_user_posts_title": "{name}의 클립",
+  "community_user_posts_empty": "아직 공유한 클립이 없어요",
   "community_author_unknown": "집사",
   "community_delete_post": "게시물 삭제",
   "community_delete_confirm": "이 게시물과 댓글·좋아요가 함께 삭제됩니다.",

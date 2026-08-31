@@ -21,6 +21,7 @@ class PostCard extends StatelessWidget {
     this.onDelete, // 내 글 메뉴
     this.onReport, // 사유('spam'…) 선택 후 호출 — 타인 글 메뉴
     this.onBlock, // 타인 글 메뉴 (Task 12에서 배선 — null이면 항목 미표시)
+    this.onOpenAuthor, // 작성자 행 탭 = 유저별 모아보기 (Task 13)
   });
 
   final CommunityPost post;
@@ -33,6 +34,7 @@ class PostCard extends StatelessWidget {
   final VoidCallback? onDelete;
   final void Function(String reason)? onReport;
   final VoidCallback? onBlock;
+  final VoidCallback? onOpenAuthor;
 
   String _relativeTime(DateTime t) {
     final diff = DateTime.now().difference(t);
@@ -66,24 +68,27 @@ class PostCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 3, 8, 3),
             child: Row(children: [
-              // AccountAvatar는 onPressed·tooltip 필수 + 고정 28pt(내장 패딩 8) —
-              // 유저별 모아보기(Task 13) 전까지는 no-op.
+              // 작성자 영역 탭 = 유저별 모아보기 (Task 13).
               AccountAvatar(
                 tooltip: authorLabel,
-                onPressed: () {},
+                onPressed: onOpenAuthor ?? () {},
                 displayName: post.authorName,
                 imageUrl: post.authorAvatarUrl,
               ),
               const SizedBox(width: 1),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(authorLabel,
-                        style: glass.tileTitle.copyWith(fontSize: 12.5)),
-                    Text(_relativeTime(post.createdAt),
-                        style: glass.tileStatus.copyWith(fontSize: 10.5)),
-                  ],
+                child: GestureDetector(
+                  onTap: onOpenAuthor,
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(authorLabel,
+                          style: glass.tileTitle.copyWith(fontSize: 12.5)),
+                      Text(_relativeTime(post.createdAt),
+                          style: glass.tileStatus.copyWith(fontSize: 10.5)),
+                    ],
+                  ),
                 ),
               ),
               // ⋯ 메뉴는 항상 노출 — 내 글 [삭제], 타인 글 [신고]·[차단] (Apple 1.2).

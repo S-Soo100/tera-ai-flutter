@@ -26,6 +26,7 @@ import '../../features/community/presentation/community_player_screen.dart';
 import '../../features/community/presentation/clip_select_screen.dart';
 import '../../features/community/presentation/compose_screen.dart';
 import '../../features/community/presentation/blocked_users_screen.dart';
+import '../../features/community/presentation/user_posts_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -184,6 +185,11 @@ GoRouter buildAppRouter({
         path: '/community-player/:postId',
         builder: (context, state) =>
             CommunityPlayerScreen(postId: state.pathParameters['postId']!),
+      ),
+      GoRoute(
+        path: '/community-user/:userId',
+        builder: (context, state) =>
+            UserPostsScreen(userId: state.pathParameters['userId']!),
       ),
       // 크레캠 (탭에서 제거 — 홈 탭이 흡수. 화면·딥링크는 보존)
       GoRoute(
