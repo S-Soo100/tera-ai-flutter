@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -116,6 +118,21 @@ final commentsProvider = FutureProvider.autoDispose
   final comments = results[0] as List<CommunityComment>;
   final blocked = results[1] as Set<String>;
   return comments.where((c) => !blocked.contains(c.authorId)).toList();
+});
+
+// ── 피드 자동재생 (Task 14) ───────────────────────────────────────────────────
+
+/// 자동재생 중인 게시물 id — **전역 1개**(동시 controller 1개 = OOM 방지).
+final activeAutoplayPostIdProvider = StateProvider<String?>((ref) => null);
+
+/// 게시물 영상 signed URL 캐시 — TTL 1h보다 짧은 50분 유지 후 폐기.
+/// 카드가 보일 때마다 재발급하면 스크롤마다 storage 왕복이 생긴다.
+final postVideoUrlProvider =
+    FutureProvider.autoDispose.family<String, String>((ref, videoPath) {
+  final link = ref.keepAlive();
+  final timer = Timer(const Duration(minutes: 50), link.close);
+  ref.onDispose(timer.cancel);
+  return ref.watch(communityRepositoryProvider).signedVideoUrl(videoPath);
 });
 
 // ── 유저별 모아보기 (Task 13) ─────────────────────────────────────────────────
