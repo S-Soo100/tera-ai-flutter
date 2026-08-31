@@ -113,9 +113,11 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                                 .toggleLike(post.id),
                             onOpenComments: () =>
                                 showCommentsSheet(context, ref, post),
+                            isMine: post.authorId == myId,
                             onDelete: post.authorId == myId
                                 ? () => _confirmDelete(post)
                                 : null,
+                            onReport: (reason) => _reportPost(post, reason),
                           ),
                         ),
                   ],
@@ -136,6 +138,20 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
         ),
       ]),
     );
+  }
+
+  Future<void> _reportPost(CommunityPost post, String reason) async {
+    // async gap 전에 캡처 — 신고 완료 시점엔 context가 죽어 있을 수 있다.
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(communityRepositoryProvider).report(
+          targetKind: 'post', targetId: post.id, reason: reason);
+      messenger.showSnackBar(
+          SnackBar(content: Text('community_report_done'.tr())));
+    } catch (_) {
+      messenger.showSnackBar(
+          SnackBar(content: Text('community_report_failed'.tr())));
+    }
   }
 
   Future<void> _confirmDelete(CommunityPost post) async {

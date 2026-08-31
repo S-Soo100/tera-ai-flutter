@@ -8,6 +8,7 @@ import '../../../../shared/widgets/account_avatar.dart';
 import '../../../auth/presentation/auth_providers.dart';
 import '../../domain/community_post.dart';
 import '../community_providers.dart';
+import 'post_card.dart' show showReportReasonsSheet;
 
 /// 댓글 시트 — 피드 위에 떠서 맥락 유지 (시안 ④). 닫히면 피드 refresh로 카운트 수렴.
 Future<void> showCommentsSheet(
@@ -51,6 +52,20 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
       ref.invalidate(commentsProvider(widget.postId));
     } finally {
       if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _reportComment(String commentId, String reason) async {
+    // async gap 전에 캡처.
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(communityRepositoryProvider).report(
+          targetKind: 'comment', targetId: commentId, reason: reason);
+      messenger.showSnackBar(
+          SnackBar(content: Text('community_report_done'.tr())));
+    } catch (_) {
+      messenger.showSnackBar(
+          SnackBar(content: Text('community_report_failed'.tr())));
     }
   }
 
@@ -114,6 +129,11 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                             ? 'community_author_unknown'.tr()
                             : c.authorName;
                         return ListTile(
+                          // 타인 댓글은 길게 눌러 신고 (Apple 1.2, Task 11).
+                          onLongPress: c.authorId == myId
+                              ? null
+                              : () => showReportReasonsSheet(
+                                  context, (reason) => _reportComment(c.id, reason)),
                           // AccountAvatar는 onPressed·tooltip 필수 시그니처 —
                           // 댓글 아바타는 눌러도 갈 곳이 없어 no-op로 둔다.
                           leading: AccountAvatar(

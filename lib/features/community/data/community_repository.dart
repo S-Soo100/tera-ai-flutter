@@ -172,6 +172,24 @@ class CommunityRepository {
     } catch (_) {}
   }
 
+  /// 신고 접수 (Apple 1.2). targetKind: 'post' | 'comment'.
+  Future<void> report({
+    required String targetKind,
+    required String targetId,
+    required String reason,
+    String? detail,
+  }) async {
+    final uid = _uid;
+    if (uid == null) return;
+    await _supabase.from('community_reports').insert({
+      'reporter_id': uid,
+      'target_kind': targetKind,
+      'target_id': targetId,
+      'reason': reason,
+      'detail': detail,
+    });
+  }
+
   /// 피드 한 페이지의 썸네일·크레 사진 signed URL 일괄 발급. path → url.
   Future<Map<String, String>> signedImageUrls(List<CommunityPost> posts) async {
     final paths = <String>{

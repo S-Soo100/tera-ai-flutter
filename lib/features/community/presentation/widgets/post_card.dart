@@ -17,7 +17,10 @@ class PostCard extends StatelessWidget {
     required this.onPlay,
     required this.onToggleLike,
     required this.onOpenComments,
-    this.onDelete, // 내 글일 때만 non-null
+    required this.isMine,
+    this.onDelete, // 내 글 메뉴
+    this.onReport, // 사유('spam'…) 선택 후 호출 — 타인 글 메뉴
+    this.onBlock, // 타인 글 메뉴 (Task 12에서 배선 — null이면 항목 미표시)
   });
 
   final CommunityPost post;
@@ -26,7 +29,10 @@ class PostCard extends StatelessWidget {
   final VoidCallback onPlay;
   final VoidCallback onToggleLike;
   final VoidCallback onOpenComments;
+  final bool isMine;
   final VoidCallback? onDelete;
+  final void Function(String reason)? onReport;
+  final VoidCallback? onBlock;
 
   String _relativeTime(DateTime t) {
     final diff = DateTime.now().difference(t);
@@ -80,11 +86,11 @@ class PostCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (onDelete != null)
-                IconButton(
-                  icon: Icon(Icons.more_horiz, color: glass.textTertiary),
-                  onPressed: () => _showMenu(context),
-                ),
+              // ⋯ 메뉴는 항상 노출 — 내 글 [삭제], 타인 글 [신고]·[차단] (Apple 1.2).
+              IconButton(
+                icon: Icon(Icons.more_horiz, color: glass.textTertiary),
+                onPressed: () => _showMenu(context),
+              ),
             ]),
           ),
           GestureDetector(
@@ -192,17 +198,60 @@ class PostCard extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
-        child: ListTile(
-          leading: const Icon(Icons.delete_outline),
-          title: Text('community_delete_post'.tr()),
-          onTap: () {
-            Navigator.pop(ctx);
-            onDelete?.call();
-          },
-        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (isMine)
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: Text('community_delete_post'.tr()),
+              onTap: () {
+                Navigator.pop(ctx);
+                onDelete?.call();
+              },
+            )
+          else ...[
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: Text('community_report'.tr()),
+              onTap: () {
+                Navigator.pop(ctx);
+                showReportReasonsSheet(context, onReport);
+              },
+            ),
+            if (onBlock != null)
+              ListTile(
+                leading: const Icon(Icons.block),
+                title: Text('community_block_user'.tr()),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onBlock?.call();
+                },
+              ),
+          ],
+        ]),
       ),
     );
   }
+}
+
+/// 신고 사유 4종 시트 — 게시물·댓글 공용 (Task 11).
+void showReportReasonsSheet(
+    BuildContext context, void Function(String reason)? onReport) {
+  const reasons = ['spam', 'inappropriate', 'animal_abuse', 'other'];
+  showModalBottomSheet<void>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        for (final r in reasons)
+          ListTile(
+            title: Text('community_report_$r'.tr()),
+            onTap: () {
+              Navigator.pop(ctx);
+              onReport?.call(r);
+            },
+          ),
+      ]),
+    ),
+  );
 }
 
 class _ActionChip extends StatelessWidget {
