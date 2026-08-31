@@ -356,6 +356,21 @@ CREATE TABLE commands (
 - 제어: `commands` INSERT(편의 메서드 `toggleFan`/`toggleRelay`/`toggleHeater`/`clearHeater`/`ledOn`/`ledUp`/`ledDown`) + `commands` UPDATE Realtime 로 ack 추적.
 - 페어링: BLE(`flutter_blue_plus` + `permission_handler`) 로 SSID/PASS/NAME/JWT 전달 → ESP32 가 `POST /devices/pair`. 프로토콜 §6은 `APP_INTEGRATION.md` 참조.
 
+#### IoT-4. motion_clips — R2 저장 경로 형식 (2026-08-31 실측)
+
+앱 의존 컬럼: `id` / `camera_id` / `started_at` / `duration_sec` / `motion_score` / `thumbnail_key` (매핑: `lib/features/my_cage/domain/motion_clip.dart`). 재생·썸네일은 terra-api presigned(`GET /clips/{id}/url`, `/clips/{id}/thumbnail/url`)만 사용 — **앱은 `r2_key` 경로를 절대 직접 조립·파싱하지 않는다.**
+
+`r2_key`는 백엔드 개편 이력으로 **4가지 형식이 마이그레이션 없이 영구 혼재**한다 (버킷 `petcam-clips`, 2026-08-31 DB 전수 집계 25,320건):
+
+| 형식 | 예시 | 건수 | 기간 |
+|---|---|---|---|
+| **현행** — 카메라/날짜 폴더 | `terra-clips/clips/p4cam-{id}/{YYYY-MM-DD}/HHMMSS_{uuid}.mp4` | 1,972 | **2026-08-20~** |
+| 구형(평평) | `terra-clips/clips/p4cam-{id}/{YYYYMMDD-HHMMSS}_{uuid}.mp4` | 20,729 | 06-17~08-04 |
+| 과도기 test 프리픽스 | `test/p4cam-{id}/{YYYY-MM-DD}/...` | 2,615 | 06-30~08-20 |
+| 초기 날짜-먼저 | `terra-clips/clips/{YYYY}/{MM}/{DD}/p4cam-{id}/{uuid}.mp4` | 4 | 06-17 |
+
+⚠️ **경로 형식이 하나라고 가정하거나 r2_key에서 날짜를 파싱하는 코드 금지** — 날짜별 조회는 `started_at` 컬럼으로 한다. 신형 클립 일부(16건)는 `thumbnail_key`가 null이므로 썸네일 부재는 정상 케이스로 처리.
+
 ## Indexes
 ```sql
 CREATE INDEX idx_species_category ON species(category_id);
