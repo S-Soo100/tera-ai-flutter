@@ -54,6 +54,13 @@ class FavoriteClipRepository {
       ..sort((a, b) => b.favoritedAt.compareTo(a.favoritedAt));
   }
 
+  /// 전체 즐겨찾기(현재 계정, 최근 저장순) — 커뮤니티 글쓰기 클립 선택용.
+  List<FavoriteClip> listAll() {
+    final uid = _uid;
+    return _box.values.where((f) => f.ownerId == uid).toList()
+      ..sort((a, b) => b.favoritedAt.compareTo(a.favoritedAt));
+  }
+
   /// 로컬 mp4 파일(오프라인 재생용, 현재 계정 소유분만). 없으면 null.
   File? getLocalFile(String clipId) {
     final m = _box.get(clipId);

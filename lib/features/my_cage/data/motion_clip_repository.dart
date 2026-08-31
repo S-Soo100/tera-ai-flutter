@@ -144,6 +144,12 @@ class MotionClipRepository {
     }
   }
 
+  /// 단일 클립의 대표 행동 라벨(게시 스냅샷용). 없거나 실패 시 null.
+  Future<String?> labelFor(String clipId) async {
+    final labels = await _fetchLabels([clipId]);
+    return labels[clipId];
+  }
+
   /// 재생용 presigned URL (terra-api GET /clips/{id}/url). TTL 1h.
   Future<String> getPlaybackUrl(String clipId) async {
     final token = await _tokenProvider();

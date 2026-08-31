@@ -2,42 +2,62 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/account_avatar.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_chip.dart';
-import '../../../shared/widgets/glass_tab_header.dart';
-import '../../../shared/widgets/pending_section.dart';
 import '../../../shared/widgets/glass_dock.dart';
+import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../../profile/presentation/profile_providers.dart';
 import '../domain/community_post.dart';
 import 'community_providers.dart';
+import 'widgets/comments_sheet.dart';
+import 'widgets/post_card.dart';
 
-/// 커뮤니티 탭. 기획안 §4.5 — 공지사항 / QnA / 자유 게시판 / 사육 위키.
-///
-/// **지금 실물은 사육 위키 하나뿐이다.** 게시판은 Supabase에 테이블이 없어
-/// 읽을 것도 쓸 것도 없다. 예전엔 지어낸 글 5건을 채워 그럴듯하게 보였는데,
-/// 사용자에게는 **실재하는 커뮤니티로 보이는 거짓말**이었다. 지금은 카테고리
-/// 구조만 세워두고 무엇이 준비 중인지 밝힌다.
-class CommunityScreen extends ConsumerWidget {
+/// 커뮤니티 탭 = 크레캠 클립 공유 피드 (2026-08-29 리뉴얼).
+/// 구 카테고리 게시판(공지/QnA/자유)은 폐기 — 위키 진입 카드만 유지(§4.5).
+class CommunityScreen extends ConsumerStatefulWidget {
   const CommunityScreen({super.key});
 
-  static const pendingKey = Key('community_board_pending');
+  @override
+  ConsumerState<CommunityScreen> createState() => _CommunityScreenState();
+}
+
+class _CommunityScreenState extends ConsumerState<CommunityScreen> {
+  final _scroll = ScrollController();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selected = ref.watch(selectedCommunityCategoryProvider);
-    final posts = ref.watch(communityPostsProvider);
-    final profile = ref.watch(profileNotifierProvider).valueOrNull;
+  void initState() {
+    super.initState();
+    _scroll.addListener(() {
+      if (_scroll.position.pixels > _scroll.position.maxScrollExtent * 0.8) {
+        ref.read(communityFeedProvider.notifier).loadMore();
+      }
+    });
+  }
 
-    // A안 표면 규칙은 [GlassTabShell] 한 곳이 맡는다. 카테고리·seed 로직은 불변.
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final feed = ref.watch(communityFeedProvider);
+    final imageUrls = ref.watch(feedImageUrlsProvider).valueOrNull ?? const {};
+    final profile = ref.watch(profileNotifierProvider).valueOrNull;
+    final myId = ref.watch(currentUserProvider.select((u) => u?.id));
+    final glass = context.glass;
+
     return GlassTabShell(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: Stack(children: [
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           GlassTabHeader(
             title: 'community_title'.tr(),
             actions: [
@@ -49,343 +69,195 @@ class CommunityScreen extends ConsumerWidget {
               ),
             ],
           ),
-          _CategoryChips(
-            selected: selected,
-            onChanged: (cat) => ref
-                .read(selectedCommunityCategoryProvider.notifier)
-                .state = cat,
-          ),
-          const SizedBox(height: AppStyles.spacing12),
-          Expanded(child: _CategoryBody(selected: selected, posts: posts)),
-        ],
-      ),
-    );
-  }
-}
-
-/// 카테고리별 본문.
-///
-/// 글쓰기 버튼(FAB)을 두지 않는다. 쓸 곳이 없는데 버튼만 있으면 누를 때마다
-/// "준비 중"을 확인하게 된다 — **누르기 전에 알 수 있어야 한다.**
-class _CategoryBody extends StatelessWidget {
-  const _CategoryBody({required this.selected, required this.posts});
-
-  final CommunityCategory selected;
-  final List<CommunityPost> posts;
-
-  /// 이 카테고리가 무엇을 담을 자리인지. 기획안 §4.5의 나열을 그대로 쓴다.
-  String get _descKey => switch (selected) {
-        CommunityCategory.notice => 'community_pending_notice',
-        CommunityCategory.qna => 'community_pending_qna',
-        CommunityCategory.free => 'community_pending_free',
-        _ => 'community_pending_all',
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    // 위키는 별도 탭이 아니라 커뮤니티 하위다(기획안 §4.5). 전체에서도 보인다.
-    final showWiki =
-        selected == CommunityCategory.wiki || selected == CommunityCategory.all;
-
-    return ListView(
-      // 하단은 플로팅 독 높이를 [glassDockListPadding]이 직접 소비한다 —
-      // padding을 명시한 ListView는 자동 인셋이 꺼진다.
-      padding: glassDockListPadding(context),
-      children: [
-        if (showWiki) ...[
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
-            child: _WikiShortcutCard(),
-          ),
-          const SizedBox(height: AppStyles.spacing12),
-        ],
-        // 위키만 고른 상태에서는 게시판 얘기를 꺼내지 않는다 — 여긴 이미 실물이다.
-        if (selected != CommunityCategory.wiki)
-          PendingSection(
-            key: CommunityScreen.pendingKey,
-            title: 'community_board_title'.tr(),
-            description: _descKey.tr(),
-            reason: 'community_pending_reason'.tr(),
-          ),
-        for (final post in posts)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(AppStyles.spacing16,
-                AppStyles.spacing12, AppStyles.spacing16, 0),
-            child: _PostCard(post: post),
-          ),
-      ],
-    );
-  }
-}
-
-// ── 카테고리 칩 ───────────────────────────────────────────────────────────────
-
-class _CategoryChips extends StatelessWidget {
-  const _CategoryChips({required this.selected, required this.onChanged});
-
-  final CommunityCategory selected;
-  final ValueChanged<CommunityCategory> onChanged;
-
-  String _label(CommunityCategory cat) {
-    switch (cat) {
-      case CommunityCategory.all:
-        return 'community_cat_all'.tr();
-      case CommunityCategory.notice:
-        return 'community_cat_notice'.tr();
-      case CommunityCategory.wiki:
-        return 'community_cat_wiki'.tr();
-      case CommunityCategory.qna:
-        return 'community_cat_qna'.tr();
-      case CommunityCategory.free:
-        return 'community_cat_free'.tr();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
-      child: Row(
-        children: CommunityCategory.values.map((cat) {
-          final isSelected = selected == cat;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _Chip(
-              label: _label(cat),
-              selected: isSelected,
-              onTap: () => onChanged(cat),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    // A안 캡슐 — 선택은 반전 알약(통계 메트릭 필터와 같은 문법).
-    final glass = context.glass;
-    return GlassChip(
-      overlay: selected ? glass.activeTile : glass.overlay,
-      onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Text(
-        label,
-        style: glass.tileTitle.copyWith(
-          fontSize: 13,
-          color: selected ? glass.textOnActive : glass.textSecondary,
-          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-        ),
-      ),
-    );
-  }
-}
-
-// ── 게시글 카드 ─────────────────────────────────────────────────────────────
-
-class _PostCard extends StatelessWidget {
-  const _PostCard({required this.post});
-  final CommunityPost post;
-
-  String _categoryLabel(CommunityCategory cat) {
-    switch (cat) {
-      case CommunityCategory.notice:
-        return 'community_cat_notice'.tr();
-      case CommunityCategory.wiki:
-        return 'community_cat_wiki'.tr();
-      case CommunityCategory.qna:
-        return 'community_cat_qna'.tr();
-      case CommunityCategory.free:
-        return 'community_cat_free'.tr();
-      case CommunityCategory.all:
-        return '';
-    }
-  }
-
-  String _relativeTime(DateTime t) {
-    final diff = DateTime.now().difference(t);
-    if (diff.inMinutes < 1) return 'time_just_now'.tr();
-    if (diff.inMinutes < 60) {
-      return 'time_minutes_ago'.tr(namedArgs: {'n': '${diff.inMinutes}'});
-    }
-    if (diff.inHours < 24) {
-      return 'time_hours_ago'.tr(namedArgs: {'n': '${diff.inHours}'});
-    }
-    return 'time_days_ago'.tr(namedArgs: {'n': '${diff.inDays}'});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // A안 유리 카드 — 예전 흰 카드+그림자는 어두운 월페이퍼 위에서 사라진다.
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    _categoryLabel(post.category),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+            child: RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(communityFeedProvider.notifier).refresh(),
+              child: feed.when(
+                loading: () => _FeedSkeleton(glass: glass),
+                error: (e, _) => _ErrorState(
+                    onRetry: () =>
+                        ref.read(communityFeedProvider.notifier).refresh()),
+                data: (posts) => ListView(
+                  controller: _scroll,
+                  padding: glassDockListPadding(context),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppStyles.spacing16),
+                      child: _WikiShortcutCard(),
                     ),
-                  ),
+                    if (posts.isEmpty)
+                      _EmptyFeed()
+                    else
+                      for (final post in posts)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                              AppStyles.spacing16,
+                              AppStyles.spacing12,
+                              AppStyles.spacing16,
+                              0),
+                          child: PostCard(
+                            post: post,
+                            thumbnailUrl: post.thumbnailPath == null
+                                ? null
+                                : imageUrls[post.thumbnailPath],
+                            petPhotoUrl: post.petPhotoPath == null
+                                ? null
+                                : imageUrls[post.petPhotoPath],
+                            onPlay: () =>
+                                context.push('/community-player/${post.id}'),
+                            onToggleLike: () => ref
+                                .read(communityFeedProvider.notifier)
+                                .toggleLike(post.id),
+                            onOpenComments: () =>
+                                showCommentsSheet(context, ref, post),
+                            onDelete: post.authorId == myId
+                                ? () => _confirmDelete(post)
+                                : null,
+                          ),
+                        ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  post.title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${post.authorName} · ${_relativeTime(post.createdAt)}',
-                  // 테마 outline은 솔리드 표면 위에서 안 읽힌다.
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: context.glass.textSecondary,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 12, top: 28),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.chat_bubble_outline,
-                  size: 16,
-                  color: context.glass.textSecondary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${post.commentCount}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: context.glass.textSecondary,
-                  ),
-                ),
-              ],
-            ),
+        ]),
+        Positioned(
+          right: 16,
+          bottom: glassDockListPadding(context).bottom + 8,
+          child: FloatingActionButton(
+            backgroundColor: glass.activeTile,
+            foregroundColor: glass.textOnActive,
+            onPressed: () => context.push('/community-share'),
+            child: const Icon(Icons.add),
           ),
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _confirmDelete(CommunityPost post) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('community_delete_post'.tr()),
+        content: Text('community_delete_confirm'.tr()),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('common_cancel'.tr())),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('common_delete'.tr())),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      await ref.read(communityFeedProvider.notifier).deletePost(post);
+    }
+  }
+}
+
+/// 빈 피드 — "준비 중"이 아니라 첫 공유 유도 (시안 확정).
+class _EmptyFeed extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 64, 32, 0),
+      child: Column(children: [
+        Icon(Icons.video_library_outlined, size: 40, color: glass.textTertiary),
+        const SizedBox(height: 12),
+        Text('community_empty_title'.tr(),
+            style: glass.tileTitle, textAlign: TextAlign.center),
+        const SizedBox(height: 6),
+        Text('community_empty_body'.tr(),
+            style: glass.tileStatus, textAlign: TextAlign.center),
+      ]),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.onRetry});
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text('community_feed_error'.tr(), style: context.glass.tileStatus),
+        const SizedBox(height: 8),
+        TextButton(onPressed: onRetry, child: Text('common_retry'.tr())),
+      ]),
+    );
+  }
+}
+
+/// 로딩 스켈레톤 — CircularProgressIndicator 금지 규칙.
+class _FeedSkeleton extends StatelessWidget {
+  const _FeedSkeleton({required this.glass});
+  final GlassPalette glass;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: glass.skeletonBase,
+      highlightColor: glass.skeletonHighlight,
+      child: ListView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppStyles.spacing16),
+        children: [
+          for (var i = 0; i < 3; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppStyles.spacing12),
+              child: Container(
+                height: 280,
+                decoration: BoxDecoration(
+                  color: glass.overlay,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-// ── 사육위키 카테고리 진입 카드 (wiki 기능 통합) ──────────────────────────────
-
+/// 위키 진입 카드 — 기존 화면에서 그대로 이식 (§4.5 위키는 커뮤니티 하위).
 class _WikiShortcutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // 위키는 이 화면의 유일한 실물이다 — 살짝 또렷한 표면으로 세운다.
     return GlassCard(
-      overlay: context.glass.overlayStrong,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.menu_book_rounded,
-                  color: context.glass.textPrimary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'community_wiki_shortcut_title'.tr(),
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _ShortcutChip(
-                icon: Icons.search,
-                label: 'community_wiki_action_search'.tr(),
-                onTap: () => context.push('/search'),
-              ),
-              _ShortcutChip(
-                icon: Icons.auto_stories_rounded,
-                label: 'community_wiki_action_info'.tr(),
-                onTap: () => context.push('/wiki'),
-              ),
-              _ShortcutChip(
-                icon: Icons.biotech_rounded,
-                label: 'community_wiki_action_morph_calc'.tr(),
-                onTap: () => context.push('/wiki/crested-gecko/morph-calc'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ShortcutChip extends StatelessWidget {
-  const _ShortcutChip({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // A안 유리 캡슐 — 이동 로직 불변.
-    return GlassChip(
-      onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: theme.colorScheme.primary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(children: [
+        Icon(Icons.menu_book_rounded,
+            color: context.glass.textPrimary, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text('community_wiki_shortcut_title'.tr(),
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold)),
+        ),
+        GlassChip(
+          onTap: () => context.push('/search'),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Text('community_wiki_action_search'.tr(),
+              style: theme.textTheme.labelMedium
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+        ),
+        const SizedBox(width: 6),
+        GlassChip(
+          onTap: () => context.push('/wiki'),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Text('community_wiki_action_info'.tr(),
+              style: theme.textTheme.labelMedium
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+        ),
+      ]),
     );
   }
 }
