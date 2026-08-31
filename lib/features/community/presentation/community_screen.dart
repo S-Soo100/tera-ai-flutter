@@ -82,6 +82,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                   controller: _scroll,
                   padding: glassDockListPadding(context),
                   children: [
+                    const _NoticeBanner(),
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: AppStyles.spacing16),
@@ -156,6 +157,55 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
     if (ok == true && mounted) {
       await ref.read(communityFeedProvider.notifier).deletePost(post);
     }
+  }
+}
+
+/// 운영자 공지 배너 — 최신 1건, 0건이면 아무것도 그리지 않는다 (Task 10).
+/// 탭하면 본문 다이얼로그(본문 없는 공지는 탭 불가).
+class _NoticeBanner extends ConsumerWidget {
+  const _NoticeBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notice = ref.watch(latestNoticeProvider).valueOrNull;
+    if (notice == null) return const SizedBox.shrink();
+    final glass = context.glass;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppStyles.spacing16, 0,
+          AppStyles.spacing16, AppStyles.spacing12),
+      child: GlassCard(
+        padding: const EdgeInsets.all(12),
+        child: InkWell(
+          onTap: notice.body == null
+              ? null
+              : () => showDialog<void>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text(notice.title),
+                      content: Text(notice.body!),
+                    ),
+                  ),
+          child: Row(children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle, color: glass.activeTile),
+            ),
+            const SizedBox(width: 10),
+            Text('community_notice_label'.tr(), style: glass.labelCaps),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(notice.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: glass.tileTitle.copyWith(fontSize: 12.5)),
+            ),
+            Icon(Icons.chevron_right, size: 16, color: glass.textTertiary),
+          ]),
+        ),
+      ),
+    );
   }
 }
 

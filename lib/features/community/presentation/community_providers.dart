@@ -97,3 +97,25 @@ final commentsProvider = FutureProvider.autoDispose
     .family<List<CommunityComment>, String>((ref, postId) {
   return ref.watch(communityRepositoryProvider).listComments(postId);
 });
+
+// ── 운영자 공지 (Task 10) — 앱은 읽기 전용, 작성은 대시보드 INSERT ─────────────
+
+typedef CommunityNotice = ({String id, String title, String? body});
+
+/// 최신 공지 1건. 0건이면 null — 배너 자체를 그리지 않는다(빈 카드 금지).
+final latestNoticeProvider =
+    FutureProvider.autoDispose<CommunityNotice?>((ref) async {
+  final rows = await Supabase.instance.client
+      .from('community_notices')
+      .select('id, title, body')
+      .order('created_at', ascending: false)
+      .limit(1);
+  final list = rows as List;
+  if (list.isEmpty) return null;
+  final r = list.first as Map<String, dynamic>;
+  return (
+    id: r['id'] as String,
+    title: r['title'] as String,
+    body: r['body'] as String?,
+  );
+});
