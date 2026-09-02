@@ -9,6 +9,7 @@ import '../../../core/theme/theme_mode_provider.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../notification/presentation/notification_providers.dart';
 import '../domain/user_profile.dart';
 import 'profile_providers.dart';
 
@@ -237,6 +238,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                 const Divider(),
                 const SizedBox(height: 8),
+
+                // 알림 — 홈 헤더 🔔이 PRD 재설계(2026-09-02)로 빠지면서
+                // 진입점이 여기로 왔다. 미읽음 뱃지도 같이 이사.
+                ListTile(
+                  key: const Key('profile_notifications_tile'),
+                  leading: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(Icons.notifications_none,
+                          color: colorScheme.onSurfaceVariant),
+                      if (ref.watch(unreadNotificationCountProvider) > 0)
+                        Positioned(
+                          right: -1,
+                          top: -1,
+                          child: Container(
+                            key: const Key('profile_notifications_dot'),
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: colorScheme.error,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  title: Text('home_notifications'.tr()),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/notifications'),
+                ),
 
                 // 커뮤니티에서 차단한 사용자 관리 (Task 12)
                 ListTile(

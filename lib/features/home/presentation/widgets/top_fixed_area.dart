@@ -2,36 +2,38 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../../my_cage/domain/terra_camera.dart';
 import '../../../my_cage/presentation/webrtc_live_controller.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
 import '../../domain/enclosure_set.dart';
-import '../../domain/pet_dday.dart';
 import '../home_set_providers.dart';
 import 'live_clock_overlay.dart';
-import 'live_stat_overlay.dart';
-import 'pet_profile_card.dart';
 
-/// PRD §3.2 Top Fixed Area.
+/// 홈 라이브 영역 — Figma A.4 ② (369×271, radius 12는 홈이 ClipRRect로 감쌈).
 ///
-/// 캠이 있으면 라이브 뷰어, 없으면 개체 프로필 카드. 좌/우 스와이프로 세트를
-/// 전환하고 하단 인디케이터가 이를 반영한다(PRD §3.2 스와이프 UX).
+/// PRD 재설계(2026-09-02)로 **라이브 전용**이 됐다 — 개체 프로필 카드 분기는
+/// 폐기(단일 스크롤 홈, §4.1). 좌/우 스와이프 세트 전환·LIVE/OFFLINE 뱃지·
+/// 재연결은 유지.
 ///
-/// **4:3 고정**(A안 2차, 2026-08-14 — 16:9에서 키움)이라 아래 서브탭 컨텐츠
-/// 높이가 바뀌어도 상단이 흔들리지 않는다. 비율은 [aspectRatio] 한 곳이다.
+/// 캠 배치에 따라 세 갈래다:
+/// - 세트 없음 → 한 줄 안내(`home_no_set`)로 접힌다
+/// - **어느 세트에도 캠이 없음 → 라이브 자리 생략**, 한 줄 안내(`home_no_camera`)
+/// - 캠이 하나라도 있음 → 라이브 면. 캠 없는 세트의 페이지는 면 안에 안내 한 줄
+///   (PageView 높이는 페이지마다 다를 수 없어, 면 자체는 유지한다)
 class TopFixedArea extends ConsumerStatefulWidget {
   const TopFixedArea({super.key});
 
   static const pageViewKey = Key('top_fixed_pageview');
   static const liveKey = Key('top_fixed_live');
-  static const profileKey = Key('top_fixed_profile');
+  static const noCameraPaneKey = Key('top_fixed_no_camera_pane');
+  static const noCameraLineKey = Key('top_fixed_no_camera_line');
   static const indicatorKey = Key('top_fixed_indicator');
 
-  /// 라이브/프로필 면 비율. 화면 폭 393pt 기준 높이 ~295pt.
-  static const double aspectRatio = 4 / 3;
+  /// 라이브 면 비율 — Figma 실측 369×271.
+  static const double aspectRatio = 369 / 271;
 
   @override
   ConsumerState<TopFixedArea> createState() => _TopFixedAreaState();
@@ -79,15 +81,16 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
     });
 
     if (sets.isEmpty) {
-      return ColoredBox(
-        color: AppTheme.liveSurface,
-        child: AspectRatio(
-          aspectRatio: TopFixedArea.aspectRatio,
-          child: Center(
-            child: Text('home_no_set'.tr(),
-                style: const TextStyle(color: Colors.white70)),
-          ),
-        ),
+      return const _InlineNotice(textKey: 'home_no_set');
+    }
+
+    // 캠이 하나도 없으면 271pt 어두운 면을 세워둘 이유가 없다 — 자리를
+    // 접고 한 줄로 말한다(계획서 Task 4 유의 4). 세트 전환은 헤더 필이 맡는다.
+    final hasAnyCamera = sets.any((s) => s.camera != null);
+    if (!hasAnyCamera) {
+      return const _InlineNotice(
+        key: TopFixedArea.noCameraLineKey,
+        textKey: 'home_no_camera',
       );
     }
 
@@ -106,16 +109,16 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
     final current =
         sets[ref.watch(selectedSetIndexProvider).clamp(0, sets.length - 1)];
 
-    // 오버레이는 **면이 소유한다**. 페이지는 내용(영상/프로필)만 그린다 —
+    // 오버레이는 **면이 소유한다**. 페이지는 내용(영상/안내)만 그린다 —
     // 슬롯이 페이지마다 흩어지면 위치가 달라지고, 인디케이터가 안내 문구와
     // 겹치는 일이 생긴다(실기기에서 그랬다).
+    //
+    // TEMP/HUMIDITY 전광판 오버레이(live_stat_overlay)는 뺐다 — 같은 수치가
+    // 바로 아래 온습도 요약 카드에 있다(2026-09-02). 시계 오버레이는 유지.
     return LiveSurface(
       aspectRatio: TopFixedArea.aspectRatio,
       status: _ConnectionStatus(camera: current.camera),
       corner: current.camera == null ? null : const LiveClockOverlay(),
-      // B안 전광판 수치 — 라이브 위에만 얹는다. 개체 프로필 면(캠 없음)에는
-      // 온습도 카드가 아래 서브탭에 따로 남는다(`_EnvReadoutFallback`).
-      overlay: current.camera == null ? null : const LiveStatOverlay(),
       footer: sets.length > 1
           ? _PageDots(
               key: TopFixedArea.indicatorKey,
@@ -133,6 +136,31 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
           ref.read(selectedSetIndexProvider.notifier).state = i;
         },
         itemBuilder: (_, i) => _SetPane(set: sets[i]),
+      ),
+    );
+  }
+}
+
+/// 접힌 자리의 한 줄 안내 — 큰 면 대신 조용히 말한다.
+class _InlineNotice extends StatelessWidget {
+  const _InlineNotice({super.key, required this.textKey});
+
+  final String textKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        textKey.tr(),
+        style: TextStyle(
+          fontFamily: 'Pretendard',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 14 * -0.02,
+          color: glass.textTertiary,
+        ),
       ),
     );
   }
@@ -172,31 +200,27 @@ class _ConnectionStatus extends ConsumerWidget {
   }
 }
 
-class _SetPane extends ConsumerWidget {
+class _SetPane extends StatelessWidget {
   const _SetPane({required this.set});
 
   final EnclosureSet set;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     // 이 영역은 **라이브 전용**이다. 녹화 클립은 전체화면 가로 플레이어로 간다
     // (`/crecam/motion-clips/:id`) — 여기서 재생하면 상단 조각 안에 갇힌다.
     final cam = set.camera;
     if (cam == null) {
-      return Container(
-        key: TopFixedArea.profileKey,
-        alignment: Alignment.centerLeft,
-        child: PetProfileCard(
-          pet: set.pet,
-          lastFedAt: null,
-          status: EnvStatus.unknown,
-        ),
+      // 다른 세트에 캠이 있어 면은 서 있는 경우 — 이 세트만 안내 한 줄.
+      return LiveSurfaceNotice(
+        key: TopFixedArea.noCameraPaneKey,
+        title: 'home_no_camera'.tr(),
       );
     }
     return KeyedSubtree(
       key: TopFixedArea.liveKey,
       // 풀블리드 면을 영상이 꽉 채운다 — contain이면 스트림 비율(16:9)과
-      // 면 비율(4:3) 차이만큼 위아래 검은 띠가 남아 넓힌 의미가 없다.
+      // 면 비율 차이만큼 위아래 검은 띠가 남는다.
       child: WebRtcLiveView(cameraUuid: cam.id, cover: true),
     );
   }

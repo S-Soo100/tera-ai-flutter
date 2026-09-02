@@ -3,88 +3,102 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../shared/widgets/account_avatar.dart';
-import '../../../../shared/widgets/glass_tab_header.dart';
-import '../../../../shared/widgets/screen_header.dart';
-import '../../../profile/presentation/profile_providers.dart';
+import '../../../../core/theme/glass_palette.dart';
 import '../../domain/enclosure_set.dart';
 import '../home_set_providers.dart';
 
-/// 미읽음 알림 개수. 알림 저장소가 생기기 전까지 0 고정 —
-/// Red Dot 표시 로직 자체는 지금 검증 가능해야 하므로 provider로 뺀다.
-final unreadNotificationCountProvider = Provider<int>((ref) => 0);
-
-/// 홈 헤더. 기획안 §4.1.1 + A안(Liquid Glass) 표면.
+/// 홈 헤더 — Figma A.4 ① (h44, 좌 세트 드롭다운 필 + 우 원형 버튼 2개).
 ///
-/// A안 문법: **대형 타이틀**(개체 이름)이 주인공이고, 사육장은 그 아래
-/// 유리 캡슐이 세트 드롭다운을 겸한다. 렌더링은 공용 [GlassTabHeader]에
-/// 위임한다 — 여기는 세트 분기·레드닷 같은 홈 고유 로직만 남는다.
-/// 액션([HeaderAction]·[AccountAvatar])과 세트 선택 로직은 이전과 같다.
+/// 좌: 세트 드롭다운 필(bg surfaceTint, radius 12, 텍스트 16 SemiBold +
+/// `keyboard_arrow_down` 24 — 세트 1개면 화살표 숨김, PRD §3.1 예외).
+/// 우: 44×44 흰 원형 버튼 ×2 — `[+]`(기기/개체/사육세트 추가 메뉴),
+/// `[person]`(→ `/profile`).
+///
+/// 🔔·⚙️은 PRD 재설계(2026-09-02)로 빠졌다 — 알림 진입은 프로필 화면 안,
+/// 사육장 설정 진입은 `[+]` 메뉴의 사육세트 추가(`/enclosure-settings`)가
+/// 겸한다. 미읽음 provider는 `notification/presentation/notification_providers`
+/// 로 이사했다.
 class HomeHeaderBar extends ConsumerWidget {
   const HomeHeaderBar({super.key});
 
   static const dropdownArrowKey = Key('home_header_dropdown_arrow');
-  static const redDotKey = Key('home_header_red_dot');
-  static const accountAvatarKey = Key('home_header_account_avatar');
+  static const setPillKey = Key('home_header_set_pill');
+  static const addButtonKey = Key('home_header_add_button');
+  static const personButtonKey = Key('home_header_person_button');
+
+  /// Figma 실측 헤더 높이.
+  static const double height = 44;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sets = ref.watch(enclosureSetsProvider).valueOrNull ?? const [];
     final current = ref.watch(currentSetProvider).valueOrNull;
-    final unread = ref.watch(unreadNotificationCountProvider);
     final multi = sets.length > 1;
-    // 프로필이 아직 안 왔거나 실패해도 아바타는 폴백으로 그린다 —
-    // 계정으로 가는 유일한 문이라 조건부로 감추면 안 된다.
-    final profile = ref.watch(profileNotifierProvider).valueOrNull;
+    final glass = context.glass;
 
-    // 개체가 주인공, 사육장은 어디인지 알려주는 보조(캡슐).
-    //
-    // 개체가 없는 멀티 세트에서는 제목을 사육장명으로 폴백하지 않는다 —
-    // 캡슐(드롭다운 어포던스)도 사육장명이라 같은 문자열이 두 번 서게 된다.
-    // 온보딩 직후가 정확히 이 상태다.
-    final title = current == null
+    // 필 라벨: 개체가 있으면 개체명이 세트의 얼굴, 없으면 사육장명.
+    final label = current == null
         ? 'home_no_set'.tr()
-        : current.pet?.name ??
-            (multi ? 'home_title_default'.tr() : current.enclosure.name);
-    // 캡슐이 서는 조건: 사육장 이름이 보조로 필요하거나(개체가 주인공일 때),
-    // 세트가 여럿이라 선택기가 필요할 때. 개체 없는 단일 세트에서는 큰 제목이
-    // 이미 사육장 이름이라 캡슐이 같은 말을 반복하게 된다 — 안 세운다.
-    final showCapsule = current != null && (current.pet != null || multi);
+        : current.pet?.name ?? current.enclosure.name;
 
-    // 화살표 게이트: 공용 위젯은 onPickCapsule != null일 때만 화살표를
-    // 그린다 — multi 게이트와 동치다(선택기가 필요한 때 = 세트가 여럿일 때).
-    return GlassTabHeader(
-      title: title,
-      capsuleLabel: showCapsule ? current.enclosure.name : null,
-      onPickCapsule: multi ? () => _openSetPicker(context, ref) : null,
-      capsuleArrowKey: dropdownArrowKey,
-      actions: [
-        HeaderAction(
-          icon: Icons.notifications_none,
-          tooltip: 'home_notifications'.tr(),
-          onPressed: () => context.push('/notifications'),
-          showDot: unread > 0,
-          dotKey: redDotKey,
-        ),
-        HeaderAction(
-          icon: Icons.settings_outlined,
-          tooltip: 'home_enclosure_settings'.tr(),
-          onPressed: () => context.push('/enclosure-settings'),
-        ),
-        // 내 계정. 이게 붙기 전까지 ProfileScreen은 완성돼 있는데도 앱
-        // 어디서도 갈 수 없어, 로그아웃·프로필 편집이 통째로 잠겨 있었다.
-        //
-        // ⚠️ 이 헤더의 나머지(제목·🔔·⚙️)는 전부 **현재 세트**에 대한
-        // 것이고 계정만 축이 다르다. ⚙️는 '사육장 설정'이지 앱 설정이
-        // 아니다 — 계정 관련 항목을 ⚙️ 쪽으로 옮기지 말 것.
-        AccountAvatar(
-          key: accountAvatarKey,
-          tooltip: 'home_account'.tr(),
-          imageUrl: profile?.avatarUrl,
-          displayName: profile?.displayName,
-          onPressed: () => context.push('/profile'),
-        ),
-      ],
+    return SizedBox(
+      height: height,
+      child: Row(
+        children: [
+          Flexible(
+            child: Material(
+              key: setPillKey,
+              color: glass.surfaceTint,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                // 세트가 하나뿐이면 고를 게 없다 — 필은 라벨로만 선다.
+                onTap: multi ? () => _openSetPicker(context, ref) : null,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Pretendard',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 16 * -0.02,
+                            color: glass.textSecondary,
+                          ),
+                        ),
+                      ),
+                      if (multi) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.keyboard_arrow_down,
+                          key: dropdownArrowKey,
+                          size: 24,
+                          color: glass.textSecondary,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const Spacer(),
+          _AddMenuButton(key: addButtonKey),
+          const SizedBox(width: 12),
+          _CircleButton(
+            key: personButtonKey,
+            icon: Icons.person_outline,
+            tooltip: 'home_account'.tr(),
+            onTap: () => context.push('/profile'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -110,6 +124,95 @@ class HomeHeaderBar extends ConsumerWidget {
     if (picked != null) {
       ref.read(selectedSetIndexProvider.notifier).state = picked;
     }
+  }
+}
+
+/// `[+]` 메뉴 — 기기 추가 / 개체 추가 / 사육세트 추가.
+class _AddMenuButton extends StatelessWidget {
+  const _AddMenuButton({super.key});
+
+  static const deviceItemKey = Key('home_header_add_device');
+  static const petItemKey = Key('home_header_add_pet');
+  static const setItemKey = Key('home_header_add_set');
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return PopupMenuButton<String>(
+      tooltip: 'home_add_device'.tr(),
+      offset: const Offset(0, HomeHeaderBar.height + 4),
+      onSelected: (route) => context.push(route),
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          key: deviceItemKey,
+          value: '/smart-cage/devices/pair',
+          child: Text('home_add_device'.tr()),
+        ),
+        PopupMenuItem(
+          key: petItemKey,
+          value: '/my-pets/add',
+          child: Text('home_add_pet'.tr()),
+        ),
+        PopupMenuItem(
+          key: setItemKey,
+          value: '/enclosure-settings',
+          child: Text('home_add_set'.tr()),
+        ),
+      ],
+      child: _CircleSurface(
+        child: Icon(Icons.add, size: 24, color: glass.textSecondary),
+      ),
+    );
+  }
+}
+
+/// 44×44 흰 원형 버튼(Figma A.4 ①).
+class _CircleButton extends StatelessWidget {
+  const _CircleButton({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    final button = Material(
+      color: glass.overlay,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, size: 24, color: glass.textSecondary),
+        ),
+      ),
+    );
+    if (tooltip == null) return button;
+    return Tooltip(message: tooltip!, child: button);
+  }
+}
+
+/// [PopupMenuButton]의 child로 쓰는 원형 면 — 탭 처리는 메뉴 버튼이 한다.
+class _CircleSurface extends StatelessWidget {
+  const _CircleSurface({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: context.glass.overlay,
+      shape: const CircleBorder(),
+      child: SizedBox(width: 44, height: 44, child: Center(child: child)),
+    );
   }
 }
 
