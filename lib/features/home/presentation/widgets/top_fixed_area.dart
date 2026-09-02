@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/live_surface.dart';
@@ -115,7 +116,7 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
     //
     // TEMP/HUMIDITY 전광판 오버레이(live_stat_overlay)는 뺐다 — 같은 수치가
     // 바로 아래 온습도 요약 카드에 있다(2026-09-02). 시계 오버레이는 유지.
-    return LiveSurface(
+    final surface = LiveSurface(
       aspectRatio: TopFixedArea.aspectRatio,
       status: _ConnectionStatus(camera: current.camera),
       corner: current.camera == null ? null : const LiveClockOverlay(),
@@ -136,6 +137,45 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
           ref.read(selectedSetIndexProvider.notifier).state = i;
         },
         itemBuilder: (_, i) => _SetPane(set: sets[i]),
+      ),
+    );
+
+    final cam = current.camera;
+    if (cam == null) return surface;
+    // Figma 668:859 — 우하단 전체보기. 라이브 전용 전체화면이 없어
+    // 카메라 상세(라이브 크게 보기)로 보낸다.
+    return Stack(
+      children: [
+        surface,
+        Positioned(
+          right: 12,
+          bottom: 12,
+          child: _ExpandButton(cameraId: cam.id),
+        ),
+      ],
+    );
+  }
+}
+
+/// 라이브 우하단 전체보기(Figma 668:859 — 32×32 radius 16, black 30%).
+class _ExpandButton extends StatelessWidget {
+  const _ExpandButton({required this.cameraId});
+
+  final String cameraId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.3),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/crecam/cameras/$cameraId'),
+        child: const SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(Icons.zoom_out_map, size: 17, color: Colors.white),
+        ),
       ),
     );
   }

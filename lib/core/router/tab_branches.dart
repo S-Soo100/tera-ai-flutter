@@ -27,7 +27,8 @@ const List<String> kHomeTabLabelKeys = [
 const List<({IconData icon, IconData selectedIcon})> kHomeTabIcons = [
   (icon: Icons.home_outlined, selectedIcon: Icons.home),
   (icon: Icons.videocam_outlined, selectedIcon: Icons.videocam),
-  (icon: Icons.pets_outlined, selectedIcon: Icons.pets),
+  // 임시 아이콘(2026-09-02 사용자 지시) — 발바닥(pets) 대신 별. 확정 아이콘 나오면 교체.
+  (icon: Icons.star_outline, selectedIcon: Icons.star),
   (icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble),
 ];
 
