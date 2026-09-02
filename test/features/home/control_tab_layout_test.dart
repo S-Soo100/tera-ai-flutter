@@ -129,8 +129,9 @@ Future<void> _pumpControlTab(WidgetTester tester, Size size) async {
   await tester.pumpAndSettle();
 }
 
-/// 행 탭이 `/stats`로 가는지 보려고 라우터를 세운다 — 홈 그대로 두 경로.
-/// 테스트마다 새로 만든다 — 공유하면 앞 테스트가 /stats로 옮겨둔 채로 남는다.
+/// 행 탭이 `/env-detail`로 가는지 보려고 라우터를 세운다 — 홈 그대로 두 경로.
+/// (/stats 라우트는 2026-09-02 폐지 — 온습도 상세가 흡수.)
+/// 테스트마다 새로 만든다 — 공유하면 앞 테스트가 /env-detail로 옮겨둔 채로 남는다.
 GoRouter _buildRouter() => GoRouter(
       initialLocation: '/home',
       routes: [
@@ -151,9 +152,9 @@ GoRouter _buildRouter() => GoRouter(
           ),
         ),
         GoRoute(
-          path: '/stats',
+          path: '/env-detail',
           builder: (_, __) =>
-              const Scaffold(body: SizedBox(key: Key('stats_stub'))),
+              const Scaffold(body: SizedBox(key: Key('env_detail_stub'))),
         ),
       ],
     );
@@ -275,12 +276,12 @@ void main() {
       }
     });
 
-    testWidgets('행을 누르면 /stats로 간다 — 예전 미니 차트의 동선 승계', (tester) async {
+    testWidgets('행을 누르면 /env-detail로 간다 — 예전 미니 차트의 동선 승계', (tester) async {
       await _pumpControlTab(tester, const Size(393, 852));
       await tester.ensureVisible(find.byKey(WeeklyEnvRowsCard.rowKey(3)));
       await tester.tap(find.byKey(WeeklyEnvRowsCard.rowKey(3)));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('stats_stub')), findsOneWidget);
+      expect(find.byKey(const Key('env_detail_stub')), findsOneWidget);
     });
 
     testWidgets('지난 24시간 스트립은 지금 + 8칸이고 왼쪽 첫 칸이 지금이다', (tester) async {
