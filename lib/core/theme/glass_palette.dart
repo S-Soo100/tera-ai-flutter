@@ -59,6 +59,22 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     required this.bodySecondary,
     required this.skeletonBase,
     required this.skeletonHighlight,
+    required this.deviceFan,
+    required this.deviceFanBg,
+    required this.deviceCool,
+    required this.deviceCoolBg,
+    required this.deviceLed,
+    required this.deviceLedBg,
+    required this.deviceLedGauge,
+    required this.deviceHeat,
+    required this.deviceHeatBg,
+    required this.deviceMist,
+    required this.deviceOff,
+    required this.tempAccent,
+    required this.humidAccent,
+    required this.surfaceTint,
+    required this.segmentTrack,
+    required this.surfaceHeader,
   });
 
   /// 이 팔레트가 어느 밝기용인지. [badgeTone]처럼 값이 아니라 **공식**이
@@ -142,6 +158,30 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   final Color skeletonBase;
   final Color skeletonHighlight;
 
+  // ── 기기 상태색 (Figma Asset 팔레트, 2026-09-02 — PRD 재설계 1단계) ──
+  // 켜짐 타일은 `deviceX`(아이콘/글리프) + `deviceXBg`(타일 배경) 한 쌍.
+  // 꺼짐은 공통 [deviceOff]. 다크벌은 Figma에 없어 같은 hue의 도출값이다.
+  final Color deviceFan; // 환기팬 그린
+  final Color deviceFanBg;
+  final Color deviceCool; // 냉각팬 블루
+  final Color deviceCoolBg;
+  final Color deviceLed; // LED 앰버
+  final Color deviceLedBg;
+  final Color deviceLedGauge; // LED 밝기 게이지 채움
+  final Color deviceHeat; // 히터팬 (⚠️ Figma 미정의 — 도출값)
+  final Color deviceHeatBg;
+  final Color deviceMist; // 분무 = [humidAccent]와 같은 값(의미 분리용 별 필드)
+  final Color deviceOff; // 꺼짐 상태 아이콘 원 배경
+
+  // ── 온습도 지표 액센트 (홈 요약·상세 차트 라인) ──
+  final Color tempAccent; // 온도 핑크
+  final Color humidAccent; // 습도 블루
+
+  // ── 연회색 면 3종 (Figma Asset) ──
+  final Color surfaceTint; // 헤더 필·온습도 카드·꺼짐 타일·탭바 top stroke
+  final Color segmentTrack; // 세그먼트 트랙
+  final Color surfaceHeader; // 상세 상단바·제어기록 섹션 배경
+
   // ── 표면 위 타이포 (Pretendard 명시 — 공용 위젯은 테마 밖에서도 쓰인다) ──
   // 색만 팔레트에서 오고 크기·굵기는 두 모드 공통이다.
 
@@ -220,46 +260,81 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     bodySecondary: Color(0xFFC9CDD2),
     skeletonBase: Color(0xFF1E2438),
     skeletonHighlight: Color(0xFF2A3148),
+    // 기기 상태색 — 라이트와 같은 hue. Bg는 카드(#161B2C) 위 20% 블렌드 도출값.
+    deviceFan: Color(0xFF00B591),
+    deviceFanBg: Color(0xFF123A40),
+    deviceCool: Color(0xFF6B7FFF),
+    deviceCoolBg: Color(0xFF272F56),
+    deviceLed: Color(0xFFF5A800),
+    deviceLedBg: Color(0xFF433723),
+    deviceLedGauge: Color(0xFF644C1D),
+    deviceHeat: Color(0xFFFF6B57),
+    deviceHeatBg: Color(0xFF452B35),
+    deviceMist: Color(0xFF00B2F3),
+    deviceOff: Color(0xFF3A4152),
+    tempAccent: Color(0xFFF85478),
+    humidAccent: Color(0xFF00B2F3),
+    surfaceTint: Color(0xFF1A2032),
+    segmentTrack: Color(0xFF1E2438),
+    surfaceHeader: Color(0xFF0E1322),
   );
 
-  // ── 라이트 (B 라이트 토큰 미러 — 기본 모드) ──
+  // ── 라이트 (Figma `Asset` 팔레트 미러 — 기본 모드, 2026-09-02 교체) ──
+  // 값 출처: docs/plans/2026-09-02-prd-redesign-phase1-home.md §A.1
   static const light = GlassPalette(
     brightness: Brightness.light,
-    wallpaper: Color(0xFFF5F6F8), // B background
-    overlay: Color(0xFFFFFFFF), // B card
-    overlayStrong: Color(0xFFFBFCFD), // card 기준 한 단계(흰이 상한이라 미세)
-    overlayFaint: Color(0xFFEEF0F3), // card -1
-    border: Color(0x14000000), // B divider — 검정 8%
-    tabBar: Color(0xFFFFFFFF), // B tabBar
-    activeTile: Color(0xFFE09A00), // B amber(라이트 — 흰 바닥 대비로 눌림)
-    heaterTint: Color(0xFFE09A00),
-    mistTint: Color(0xFF2F7BD1), // B 블루 라이트(신규)
-    ledTint: Color(0xFFE8B33A), // 밝은 앰버 — 흰 카드 위 대비 확보
-    fanTint: Color(0xFF1FA84A), // B green 라이트
-    signalOk: Color(0xFF1FA84A),
-    signalWarn: Color(0xFFE09A00),
-    signalAlert: Color(0xFFE5382E),
-    textPrimary: Color(0xFF12151C),
-    textSecondary: Color(0x9912151C), // 60%
-    textTertiary: Color(0x5C12151C), // 36%
+    wallpaper: Color(0xFFFFFFFF), // 페이지 바닥 흰색
+    overlay: Color(0xFFFFFFFF), // 카드 흰색(테두리로 구분)
+    overlayStrong: Color(0xFFFAFBFD), // = surfaceHeader
+    overlayFaint: Color(0xFFEAEEF0), // surfaceSubtle — 비활성 칩 배경
+    border: Color(0xFFE1E3E4), // 칩 테두리·상단바 하단선
+    tabBar: Color(0xFFFFFFFF),
+    activeTile: Color(0xFFE09A00), // (교체 목록 외 — B 앰버 유지)
+    heaterTint: Color(0xFFFFE9E4), // = deviceHeatBg
+    mistTint: Color(0xFFE0F6FE), // 분무 Bg — humidAccent 12% 도출(Figma 미정의)
+    ledTint: Color(0xFFFFF4D9), // = deviceLedBg
+    fanTint: Color(0xFFDCF5E9), // = deviceFanBg
+    signalOk: Color(0xFF00B591),
+    signalWarn: Color(0xFFF5A800),
+    signalAlert: Color(0xFFD61619), // 브랜드 레드 — 위험 상태 예약
+    textPrimary: Color(0xFF1E1E1E), // textStrong
+    textSecondary: Color(0xFF3C3C3C), // textBody
+    textTertiary: Color(0xFF919497), // textMuted
     textOnActive: Color(0xFF12151C),
     textOnActiveSecondary: Color(0x9912151C),
-    liveRed: Color(0xFFE5382E), // B red 라이트
+    liveRed: Color(0xFFE5382E),
     weatherBarWarmStart: Color(0xFFFFD54F),
-    weatherBarWarmEnd: Color(0xFFE09A00),
-    weatherBarTrack: Color(0x1F000000), // B progressTrack — 검정 12%
+    weatherBarWarmEnd: Color(0xFFF5A800), // 신 앰버로 근사 조정
+    weatherBarTrack: Color(0xFFEAEEF0), // surfaceSubtle
     weatherDot: Colors.white,
-    weatherDotBorder: Color(0xFF12151C), // 짙은 테두리 — 흰 카드 위 가시성
+    weatherDotBorder: Color(0xFF1E1E1E), // 짙은 테두리 — 흰 카드 위 가시성
     weatherRowDivider: Color(0x0F000000), // 검정 6%
     chartFutureBand: Color(0x0A000000), // 검정 4%
-    chartNowLine: Color(0x6112151C), // 38%
-    chartMarkerChip: Color(0x14000000), // 검정 8%
+    chartNowLine: Color(0x611E1E1E), // 38%
+    chartMarkerChip: Color(0xFFEAEEF0), // surfaceSubtle
     chartGridLine: Color(0x14000000), // 검정 8%
-    chartMarkerGlyph: Color(0xFF12151C),
-    nightBand: Color(0x1A2F7BD1), // B 블루 라이트 10%
-    bodySecondary: Color(0xFF454852),
+    chartMarkerGlyph: Color(0xFF3C3C3C), // textBody
+    nightBand: Color(0x1A00B2F3), // 신 습도 블루 10%
+    bodySecondary: Color(0xFF626262), // textMid
     skeletonBase: Color(0xFFE0E0E0), // grey 300
     skeletonHighlight: Color(0xFFF5F5F5), // grey 100
+    // 기기 상태색 (Figma A.1)
+    deviceFan: Color(0xFF00B591),
+    deviceFanBg: Color(0xFFDCF5E9),
+    deviceCool: Color(0xFF6B7FFF),
+    deviceCoolBg: Color(0xFFE0E5FF),
+    deviceLed: Color(0xFFF5A800),
+    deviceLedBg: Color(0xFFFFF4D9),
+    deviceLedGauge: Color(0xFFFFE2A3),
+    deviceHeat: Color(0xFFFF6B57), // 도출값
+    deviceHeatBg: Color(0xFFFFE9E4), // 도출값
+    deviceMist: Color(0xFF00B2F3),
+    deviceOff: Color(0xFFA9B3BE),
+    tempAccent: Color(0xFFF85478),
+    humidAccent: Color(0xFF00B2F3),
+    surfaceTint: Color(0xFFF0F4F9),
+    segmentTrack: Color(0xFFEFF2F5),
+    surfaceHeader: Color(0xFFFAFBFD),
   );
 
   @override
@@ -300,6 +375,22 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     Color? bodySecondary,
     Color? skeletonBase,
     Color? skeletonHighlight,
+    Color? deviceFan,
+    Color? deviceFanBg,
+    Color? deviceCool,
+    Color? deviceCoolBg,
+    Color? deviceLed,
+    Color? deviceLedBg,
+    Color? deviceLedGauge,
+    Color? deviceHeat,
+    Color? deviceHeatBg,
+    Color? deviceMist,
+    Color? deviceOff,
+    Color? tempAccent,
+    Color? humidAccent,
+    Color? surfaceTint,
+    Color? segmentTrack,
+    Color? surfaceHeader,
   }) {
     return GlassPalette(
       brightness: brightness ?? this.brightness,
@@ -339,6 +430,22 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       bodySecondary: bodySecondary ?? this.bodySecondary,
       skeletonBase: skeletonBase ?? this.skeletonBase,
       skeletonHighlight: skeletonHighlight ?? this.skeletonHighlight,
+      deviceFan: deviceFan ?? this.deviceFan,
+      deviceFanBg: deviceFanBg ?? this.deviceFanBg,
+      deviceCool: deviceCool ?? this.deviceCool,
+      deviceCoolBg: deviceCoolBg ?? this.deviceCoolBg,
+      deviceLed: deviceLed ?? this.deviceLed,
+      deviceLedBg: deviceLedBg ?? this.deviceLedBg,
+      deviceLedGauge: deviceLedGauge ?? this.deviceLedGauge,
+      deviceHeat: deviceHeat ?? this.deviceHeat,
+      deviceHeatBg: deviceHeatBg ?? this.deviceHeatBg,
+      deviceMist: deviceMist ?? this.deviceMist,
+      deviceOff: deviceOff ?? this.deviceOff,
+      tempAccent: tempAccent ?? this.tempAccent,
+      humidAccent: humidAccent ?? this.humidAccent,
+      surfaceTint: surfaceTint ?? this.surfaceTint,
+      segmentTrack: segmentTrack ?? this.segmentTrack,
+      surfaceHeader: surfaceHeader ?? this.surfaceHeader,
     );
   }
 
@@ -386,6 +493,22 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       bodySecondary: c(bodySecondary, other.bodySecondary),
       skeletonBase: c(skeletonBase, other.skeletonBase),
       skeletonHighlight: c(skeletonHighlight, other.skeletonHighlight),
+      deviceFan: c(deviceFan, other.deviceFan),
+      deviceFanBg: c(deviceFanBg, other.deviceFanBg),
+      deviceCool: c(deviceCool, other.deviceCool),
+      deviceCoolBg: c(deviceCoolBg, other.deviceCoolBg),
+      deviceLed: c(deviceLed, other.deviceLed),
+      deviceLedBg: c(deviceLedBg, other.deviceLedBg),
+      deviceLedGauge: c(deviceLedGauge, other.deviceLedGauge),
+      deviceHeat: c(deviceHeat, other.deviceHeat),
+      deviceHeatBg: c(deviceHeatBg, other.deviceHeatBg),
+      deviceMist: c(deviceMist, other.deviceMist),
+      deviceOff: c(deviceOff, other.deviceOff),
+      tempAccent: c(tempAccent, other.tempAccent),
+      humidAccent: c(humidAccent, other.humidAccent),
+      surfaceTint: c(surfaceTint, other.surfaceTint),
+      segmentTrack: c(segmentTrack, other.segmentTrack),
+      surfaceHeader: c(surfaceHeader, other.surfaceHeader),
     );
   }
 

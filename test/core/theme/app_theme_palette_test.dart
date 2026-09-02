@@ -38,9 +38,12 @@ void main() {
       expect(AppTheme.subGray, const Color(0xFF3C3C3C));
     });
 
-    test('차트 지표색', () {
-      expect(AppTheme.chartTemperature, const Color(0xFFFF3752));
-      expect(AppTheme.chartHumidity, const Color(0xFF8ABCFC));
+    test('차트 지표색 — 2026-09-02 Asset 팔레트', () {
+      expect(AppTheme.chartTemperature, const Color(0xFFF85478));
+      expect(AppTheme.chartHumidity, const Color(0xFF00B2F3));
+      // 팔레트 액센트 토큰과 항상 같은 값이어야 한다.
+      expect(AppTheme.chartTemperature, GlassPalette.light.tempAccent);
+      expect(AppTheme.chartHumidity, GlassPalette.light.humidAccent);
     });
   });
 
