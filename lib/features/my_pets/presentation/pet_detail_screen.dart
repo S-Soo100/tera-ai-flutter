@@ -6,8 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
-import '../../wiki/data/care_info_repository.dart';
-import '../../wiki/presentation/wiki_providers.dart';
 import '../domain/pet.dart';
 import 'my_pets_providers.dart';
 import 'widgets/event_timeline.dart';
@@ -17,10 +15,6 @@ class PetDetailScreen extends ConsumerWidget {
   final String petId;
 
   const PetDetailScreen({super.key, required this.petId});
-
-  bool _hasCareInfo(String speciesId) {
-    return CareInfoRepository.featuredSpeciesIds.contains(speciesId);
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -67,20 +61,7 @@ class PetDetailScreen extends ConsumerWidget {
           _ProfileSection(pet: pet),
           const SizedBox(height: 16),
 
-          // 위키 바로가기
-          if (_hasCareInfo(pet.speciesId))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  ref.read(selectedWikiSpeciesProvider.notifier).state =
-                      pet.speciesId;
-                  context.go('/wiki');
-                },
-                icon: const Icon(Icons.menu_book_outlined),
-                label: const Text('이 종의 사육 위키 보기'),
-              ),
-            ),
+          // 위키 바로가기 버튼은 2026-09-02 PRD 재설계로 제거(위키 라우트 폐지).
 
           // 이벤트 타임라인
           EventTimeline(petId: petId),

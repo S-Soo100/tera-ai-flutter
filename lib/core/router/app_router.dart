@@ -4,10 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
-import '../../features/wiki/presentation/wiki_screen.dart';
-import '../../features/wiki/presentation/wiki_detail_screen.dart';
-import '../../features/wiki/presentation/morph_calc_screen.dart';
-import '../../features/wiki/presentation/morph_guide_screen.dart';
 import '../../features/my_pets/presentation/my_pets_screen.dart';
 import '../../features/my_pets/presentation/pet_add_screen.dart';
 import '../../features/my_pets/presentation/pet_detail_screen.dart';
@@ -27,7 +23,6 @@ import '../../features/community/presentation/clip_select_screen.dart';
 import '../../features/community/presentation/compose_screen.dart';
 import '../../features/community/presentation/blocked_users_screen.dart';
 import '../../features/community/presentation/user_posts_screen.dart';
-import '../../features/search/presentation/search_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
@@ -38,7 +33,6 @@ import '../../features/dev/design_lab/design_lab_screen.dart';
 import '../../features/dev/design_lab/variant_a_shell.dart';
 import '../../features/dev/design_lab/variant_b_shell.dart';
 import '../../features/profile/presentation/profile_screen.dart';
-import '../../features/stats/presentation/stats_screen.dart';
 import '../../features/notification/presentation/notification_center_screen.dart';
 import '../../features/my_cage/presentation/enclosure_settings_screen.dart';
 import '../../features/home/presentation/routine_settings_screen.dart';
@@ -111,12 +105,14 @@ GoRouter buildAppRouter({
               ),
             ],
           ),
-          // Tab 2: 통계 (Stats)
+          // Tab 2: 카메라 (기존 CrecamScreen 승격 — 2026-09-02 PRD §2.1)
+          // 하위 경로(cameras/clips)는 셸 밖 최상위 라우트다 — 페어링·상세에
+          // 독이 뜨면 안 된다(/home/routines 선례).
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/stats',
-                builder: (context, state) => const StatsScreen(),
+                path: '/crecam',
+                builder: (context, state) => const CrecamScreen(),
               ),
             ],
           ),
@@ -197,39 +193,34 @@ GoRouter buildAppRouter({
         builder: (context, state) =>
             UserPostsScreen(userId: state.pathParameters['userId']!),
       ),
-      // 크레캠 (탭에서 제거 — 홈 탭이 흡수. 화면·딥링크는 보존)
+      // 크레캠 하위 경로 — 루트(/crecam)는 카메라 탭 브랜치로 승격됐고,
+      // 하위는 독 없는 최상위로 남긴다(딥링크 보존 + 페어링·상세 풀스크린).
+      // 정적 경로 'cameras/pair'를 ':cameraId'보다 먼저 등록 —
+      // 'pair'가 cameraId로 오인 매칭되는 것을 방지.
       GoRoute(
-        path: '/crecam',
-        builder: (context, state) => const CrecamScreen(),
-        routes: [
-          // 정적 경로 'cameras/pair'를 ':cameraId'보다 먼저 등록 —
-          // 'pair'가 cameraId로 오인 매칭되는 것을 방지.
-          GoRoute(
-            path: 'cameras/pair',
-            builder: (context, state) => const CameraPairingScreen(),
-          ),
-          GoRoute(
-            path: 'cameras/:cameraId',
-            builder: (context, state) {
-              final id = state.pathParameters['cameraId']!;
-              return CameraDetailScreen(cameraId: id);
-            },
-          ),
-          GoRoute(
-            path: 'clips/:clipId',
-            builder: (context, state) {
-              final id = state.pathParameters['clipId']!;
-              return ClipPlayerScreen(clipId: id);
-            },
-          ),
-          GoRoute(
-            path: 'motion-clips/:clipId',
-            builder: (context, state) {
-              final id = state.pathParameters['clipId']!;
-              return MotionClipPlayerScreen(clipId: id);
-            },
-          ),
-        ],
+        path: '/crecam/cameras/pair',
+        builder: (context, state) => const CameraPairingScreen(),
+      ),
+      GoRoute(
+        path: '/crecam/cameras/:cameraId',
+        builder: (context, state) {
+          final id = state.pathParameters['cameraId']!;
+          return CameraDetailScreen(cameraId: id);
+        },
+      ),
+      GoRoute(
+        path: '/crecam/clips/:clipId',
+        builder: (context, state) {
+          final id = state.pathParameters['clipId']!;
+          return ClipPlayerScreen(clipId: id);
+        },
+      ),
+      GoRoute(
+        path: '/crecam/motion-clips/:clipId',
+        builder: (context, state) {
+          final id = state.pathParameters['clipId']!;
+          return MotionClipPlayerScreen(clipId: id);
+        },
       ),
       // 사육장 (탭에서 제거 — 홈 탭이 흡수. 화면·딥링크는 보존)
       GoRoute(
@@ -255,43 +246,8 @@ GoRouter buildAppRouter({
           ),
         ],
       ),
-      // Wiki (탭에서 제거, 커뮤니티 '사육위키' 카테고리에서 진입)
-      GoRoute(
-        path: '/wiki',
-        builder: (context, state) => const WikiScreen(),
-        routes: [
-          GoRoute(
-            path: ':speciesId/morph-calc',
-            builder: (context, state) {
-              final speciesId = state.pathParameters['speciesId'] ?? '';
-              return MorphCalcScreen(speciesId: speciesId);
-            },
-          ),
-          GoRoute(
-            path: ':speciesId/morph-guide',
-            builder: (context, state) {
-              final speciesId = state.pathParameters['speciesId'] ?? '';
-              return MorphGuideScreen(speciesId: speciesId);
-            },
-          ),
-          GoRoute(
-            path: ':speciesId/:category',
-            builder: (context, state) {
-              final speciesId = state.pathParameters['speciesId'] ?? '';
-              final category = state.pathParameters['category'] ?? '';
-              return WikiDetailScreen(
-                speciesId: speciesId,
-                category: category,
-              );
-            },
-          ),
-        ],
-      ),
-      // Search (full screen, outside tabs)
-      GoRoute(
-        path: '/search',
-        builder: (context, state) => const SearchScreen(),
-      ),
+      // 위키·검색 라우트는 2026-09-02 PRD 재설계로 제거(진입점 폐지).
+      // lib/features/{wiki,search}/ 파일 삭제는 후속 정리 커밋.
       GoRoute(
         path: '/error',
         builder: (context, state) => const ErrorScreen(),

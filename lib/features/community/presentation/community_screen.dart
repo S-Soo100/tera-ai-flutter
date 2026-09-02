@@ -8,7 +8,6 @@ import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/account_avatar.dart';
 import '../../../shared/widgets/glass_card.dart';
-import '../../../shared/widgets/glass_chip.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_tab_header.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
@@ -87,11 +86,6 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                   padding: glassDockListPadding(context),
                   children: [
                     const _NoticeBanner(),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppStyles.spacing16),
-                      child: _WikiShortcutCard(),
-                    ),
                     if (posts.isEmpty)
                       _EmptyFeed()
                     else
@@ -336,38 +330,5 @@ class _FeedSkeleton extends StatelessWidget {
   }
 }
 
-/// 위키 진입 카드 — 기존 화면에서 그대로 이식 (§4.5 위키는 커뮤니티 하위).
-class _WikiShortcutCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GlassCard(
-      padding: const EdgeInsets.all(12),
-      child: Row(children: [
-        Icon(Icons.menu_book_rounded,
-            color: context.glass.textPrimary, size: 18),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text('community_wiki_shortcut_title'.tr(),
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-        ),
-        GlassChip(
-          onTap: () => context.push('/search'),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Text('community_wiki_action_search'.tr(),
-              style: theme.textTheme.labelMedium
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-        ),
-        const SizedBox(width: 6),
-        GlassChip(
-          onTap: () => context.push('/wiki'),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Text('community_wiki_action_info'.tr(),
-              style: theme.textTheme.labelMedium
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-        ),
-      ]),
-    );
-  }
-}
+// 위키 진입 카드(_WikiShortcutCard)는 2026-09-02 PRD 재설계로 제거 —
+// 위키 라우트·진입점 폐지(계획서 Task 2).

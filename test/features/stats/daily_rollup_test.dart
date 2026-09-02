@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
-import 'package:vivnanaut/features/stats/domain/daily_rollup.dart';
+import 'package:vivnanaut/shared/domain/daily_rollup.dart';
 import 'package:vivnanaut/shared/domain/chart_window.dart';
 
 final _window = ChartWindow.weekly(DateTime(2026, 8, 12, 15));

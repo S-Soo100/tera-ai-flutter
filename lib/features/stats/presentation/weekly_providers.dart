@@ -5,7 +5,7 @@ import '../../my_cage/domain/telemetry_bucket.dart';
 import '../../../shared/domain/chart_window.dart';
 import '../../../shared/domain/env_chart_data.dart';
 import '../../../shared/domain/env_extremes.dart';
-import '../domain/daily_rollup.dart';
+import '../../../shared/domain/daily_rollup.dart';
 
 /// 주간 창(최근 7일). 화면이 살아 있는 동안 고정한다 — 일간 창과 같은 이유로,
 /// 매 초 다시 잡으면 눈금과 회색 밴드가 미세하게 떨린다.

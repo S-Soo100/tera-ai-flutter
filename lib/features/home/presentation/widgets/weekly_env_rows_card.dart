@@ -151,7 +151,8 @@ class _Row extends StatelessWidget {
         'mist': '${row.mistCount}',
       }),
       child: InkWell(
-        onTap: () => context.go('/stats'),
+        // /stats 라우트 폐지(2026-09-02) — 온습도 상세로 이동(Task 5에서 등록).
+        onTap: () => context.push('/env-detail'),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppStyles.spacing8),
           child: Row(

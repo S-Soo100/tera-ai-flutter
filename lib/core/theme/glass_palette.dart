@@ -205,7 +205,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   /// 전광판 수치(중) — 22 Bold tabular. 카드 안 보조 수치.
   TextStyle get figureMid => _kFigureMid.copyWith(color: textPrimary);
 
-  /// 하단 탭바 라벨 — 10 SemiBold, 자간 +0.6. 색은 호출부(활성=앰버).
+  /// 하단 탭바 라벨 — 12 Medium, 자간 -2%(Figma). 색은 호출부(활성=primary).
   TextStyle get dockLabel => _kDockLabel.copyWith(color: textTertiary);
 
   /// 서브컬러 배지의 배경·전경 한 쌍.
@@ -562,9 +562,9 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   );
   static const _kDockLabel = TextStyle(
     fontFamily: _pretendard,
-    fontSize: 10,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.6,
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    letterSpacing: -0.24, // 12 × -2% (Figma)
   );
 }
 

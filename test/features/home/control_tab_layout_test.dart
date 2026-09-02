@@ -8,7 +8,7 @@ import 'package:vivnanaut/features/home/domain/weekly_env_row.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/hourly_env_strip.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/temp_range_bar.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/weekly_env_rows_card.dart';
-import 'package:vivnanaut/features/stats/domain/daily_rollup.dart';
+import 'package:vivnanaut/shared/domain/daily_rollup.dart';
 import 'package:vivnanaut/shared/domain/chart_window.dart';
 import 'package:vivnanaut/shared/widgets/env_summary_bar.dart';
 import 'package:vivnanaut/shared/widgets/status_badge.dart';

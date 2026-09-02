@@ -14,7 +14,7 @@ import 'package:vivnanaut/features/home/presentation/home_control_providers.dart
 import 'package:vivnanaut/features/home/domain/weekly_env_row.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/hourly_env_strip.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/weekly_env_rows_card.dart';
-import 'package:vivnanaut/features/stats/domain/daily_rollup.dart';
+import 'package:vivnanaut/shared/domain/daily_rollup.dart';
 import 'package:vivnanaut/shared/domain/actuator_marker.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/quick_control_grid.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/tonight_card.dart';

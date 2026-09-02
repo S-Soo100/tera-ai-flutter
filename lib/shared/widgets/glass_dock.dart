@@ -35,11 +35,12 @@ class GlassDockItem {
 }
 
 /// 하단 탭바. 디자인 시스템 `Components / GlassDock` (이름은 역사적 — A안
-/// 플로팅 캡슐 시절의 것. **B안(2026-08-14 저녁)부터 전광판 고정 바**다).
+/// 플로팅 캡슐 시절의 것).
 ///
-/// 문법(Flighty 전광판): 화면 폭 전체를 쓰는 **불투명 바** + 위쪽 divider
-/// 한 줄. 그림자·캡슐 없음. 4항목이 폭을 균등 분할하고, 활성 탭만
-/// **앰버**(아이콘+라벨), 나머지는 3차 텍스트색. 라벨은 소형·자간
+/// **2026-09-02 Figma `vivanaut app` Navigation(668:2485) 스타일**: 흰 바닥
+/// ([GlassPalette.tabBar]) + top stroke [GlassPalette.surfaceTint]. 그림자
+/// 없음. 4항목이 폭을 균등 분할하고, 활성 탭은 **primary(#192553)**,
+/// 나머지는 [GlassPalette.textTertiary]. 아이콘 24 + 간격 4 + 라벨 12 Medium
 /// ([GlassPalette.dockLabel]).
 ///
 /// [height]는 SafeArea 아래 인셋을 뺀 콘텐츠 높이다 — 홈 인디케이터는
@@ -57,8 +58,8 @@ class GlassDock extends StatelessWidget {
     required this.onSelected,
   });
 
-  /// 바 콘텐츠 높이(홈 인디케이터 제외). B 셸 실측 56.
-  static const double height = 56;
+  /// 바 콘텐츠 높이(홈 인디케이터 제외). Figma 80은 safe area 포함 — 콘텐츠는 64.
+  static const double height = 64;
 
   final List<GlassDockItem> items;
   final int currentIndex;
@@ -70,7 +71,7 @@ class GlassDock extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: glass.tabBar,
-        border: Border(top: BorderSide(color: glass.border, width: 0.5)),
+        border: Border(top: BorderSide(color: glass.surfaceTint)),
       ),
       // 리플이 앉을 면 — 없으면 잉크가 불투명 바 뒤에 그려져 안 보인다.
       child: Material(
@@ -86,7 +87,7 @@ class GlassDock extends StatelessWidget {
                     child: _DockButton(
                       item: items[i],
                       selected: i == currentIndex,
-                      selectedColor: glass.signalWarn,
+                      selectedColor: Theme.of(context).colorScheme.primary,
                       unselectedColor: glass.textTertiary,
                       onTap: () => onSelected(i),
                     ),
@@ -136,8 +137,8 @@ class _DockButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(selected ? item.selectedIcon : item.icon,
-                size: 22, color: color),
-            const SizedBox(height: 3),
+                size: 24, color: color),
+            const SizedBox(height: 4),
             Text(
               item.label,
               maxLines: 1,

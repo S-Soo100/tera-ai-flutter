@@ -10,7 +10,7 @@ import '../../../shared/domain/actuator_marker.dart';
 import '../../../shared/domain/chart_window.dart';
 import '../../../shared/domain/env_chart_data.dart';
 import '../../../shared/domain/env_extremes.dart';
-import '../../stats/domain/daily_rollup.dart';
+import '../../../shared/domain/daily_rollup.dart';
 import '../domain/hourly_env_slot.dart';
 import '../domain/weekly_env_row.dart';
 import 'home_set_providers.dart';

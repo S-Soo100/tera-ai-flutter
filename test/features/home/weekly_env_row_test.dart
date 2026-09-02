@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/features/home/domain/weekly_env_row.dart';
 import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
-import 'package:vivnanaut/features/stats/domain/daily_rollup.dart';
+import 'package:vivnanaut/shared/domain/daily_rollup.dart';
 import 'package:vivnanaut/shared/domain/actuator_marker.dart';
 import 'package:vivnanaut/shared/domain/chart_window.dart';
 

@@ -1,4 +1,4 @@
-import '../../my_cage/domain/telemetry_bucket.dart';
+import '../../features/my_cage/domain/telemetry_bucket.dart';
 import '../../../shared/domain/chart_window.dart';
 
 /// 30분 버킷을 **하루 단위**로 접는다 (기획안 §4.3.1 주간 = 포인트 1일).
