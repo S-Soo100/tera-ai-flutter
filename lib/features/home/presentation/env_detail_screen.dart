@@ -72,6 +72,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
         bottom: false,
         child: SizedBox(
           height: 56,
+          width: double.infinity,
           child: Stack(
             alignment: Alignment.center,
             children: [
@@ -344,21 +345,24 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     required String value,
     required String minMax,
   }) {
+    // Figma §A.5(668:1049): 위 Row(아이콘+값), 아래 최고/최저는 열 왼쪽부터
+    // 전체 폭을 쓴다 — 아이콘 오른쪽에 가두면 실데이터 길이에서 말줄임된다.
     return Expanded(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-            child: Icon(icon, size: 16, color: Colors.white),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration:
+                    BoxDecoration(color: accent, shape: BoxShape.circle),
+                child: Icon(icon, size: 16, color: Colors.white),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -371,19 +375,19 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                     color: glass.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  minMax,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Pretendard',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: glass.textTertiary,
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            minMax,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: glass.textTertiary,
             ),
           ),
         ],

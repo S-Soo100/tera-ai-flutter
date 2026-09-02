@@ -89,7 +89,8 @@ class EnvDayChart extends StatefulWidget {
   static const double totalHeight = markerBand + plotHeight + axisHeight;
 
   /// 고정 Y축 라벨 컬럼 폭 (흰 바닥 마스크 포함).
-  static const double yLabelWidth = 34;
+  // "28.0°"(소수 축)가 12pt로 ~36px — 34면 왼쪽으로 흘러 잘린다.
+  static const double yLabelWidth = 42;
   static const double labelHeight = 14;
 
   @override
