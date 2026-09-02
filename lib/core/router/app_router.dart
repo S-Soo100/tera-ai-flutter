@@ -36,6 +36,7 @@ import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/notification/presentation/notification_center_screen.dart';
 import '../../features/my_cage/presentation/enclosure_settings_screen.dart';
 import '../../features/home/presentation/routine_settings_screen.dart';
+import '../../features/home/presentation/env_detail_screen.dart';
 import '../../shared/widgets/glass_dock.dart';
 import 'tab_branches.dart';
 
@@ -305,6 +306,15 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/home/routines',
         builder: (context, state) => const RoutineSettingsScreen(),
+      ),
+      // 온습도 상세 (Figma §A.5·§A.6) — 홈 요약 카드 진입, 풀스크린 다이얼로그.
+      // 비공개(kPublicPaths 미등록) — 온습도는 계정 종속 데이터다.
+      GoRoute(
+        path: '/env-detail',
+        pageBuilder: (context, state) => const MaterialPage(
+          fullscreenDialog: true,
+          child: EnvDetailScreen(),
+        ),
       ),
       GoRoute(
         path: '/notifications',
