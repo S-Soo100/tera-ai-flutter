@@ -17,7 +17,7 @@
 ## 프로젝트 개요
 파충류 사육자를 위한 올인원 앱. 백색목록 검색, 사육 정보, 모프 유전 계산기 + 게코캠 + 사육장 IoT 제어.
 - **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브) + video_player/gal/share_plus(크레캠 영상 재생·기기저장·공유) + fl_chart(홈·통계 공용 온습도 차트)
-- **현재 상태(2026-08-09)**: P2 상당 구현 — Supabase 인증/유저 CRUD + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE) + **크레캠 영상 개편**(motion_clips 썸네일·저장/공유·즐겨찾기 클라우드·AI분류칩·시크) + **어젯밤 리포트**(마이 크레 탭). **PRD 재설계 진행 중(`feat/prd-redesign`)** — 4탭 IA(홈/통계/마이크레/커뮤니티) + 홈 탭 재구성(사육장 세트·서브탭) + 통계 탭 24h 그래프 구현 완료. 챗·지식그래프·종비교는 폐기(D3).
+- **현재 상태(2026-08-09)**: P2 상당 구현 — Supabase 인증/유저 CRUD + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE) + **크레캠 영상 개편**(motion_clips 썸네일·저장/공유·즐겨찾기 클라우드·AI분류칩·시크) + **어젯밤 리포트**(마이 크레 탭). **PRD 재설계(`feat/prd-redesign`) — 2026-09-02 전면 개정 + 1단계 구현 완료**: 4탭 IA(홈/카메라/마이크레/커뮤니티, 통계 탭 폐지), 홈 단일 스크롤, 온습도 상세(`/env-detail`), Asset 팔레트 교체, 위키·검색 폐기. 2단계(카메라 탭 재설계)는 미착수. 챗·지식그래프·종비교는 폐기(D3).
   - (P0 "로컬 전용/인증 없음/백엔드 없음"은 초기 설계 — 더 이상 유효하지 않음. 신규 작업은 아래 Phase 경계/CAOF 규칙을 따른다.)
 - **기획안 (현행 SOT)**: `docs/prd-vivnanaut-app.md` — **2026-08-08 전면 재작성.** 기존 구현을 전제하지 않고 노션 기획서·PRD만으로 정리한 기획안이다. **구현이 기획안과 다르면 기획안이 맞다.**
   - **기획 ↔ 구현 대조표**: `docs/prd-implementation-gap.md` — 어디가 맞고 어디가 비었는지. 기획안 본문은 구현을 안 다루므로(§0.2) 대조는 이 문서가 맡는다
@@ -76,24 +76,22 @@ lib/
 ### 핵심 feature
 
 **4탭** BottomNav(`StatefulShellRoute`) + 보조 라우트 구조. 탭 테이블은 `core/router/tab_branches.dart`(`kHomeTabPaths`), 조립은 `core/router/app_router.dart` 중앙 관리.
-PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam`·`/smart-cage`는 **삭제하지 않고 보조 최상위 라우트로 강등**(딥링크·하위 페어링 경로 보존).
+**2026-09-02 PRD 전면 개정 1단계 구현 완료** — 탭 = 홈/**카메라**/마이크레/커뮤니티(라벨 영문 Home/Camera/MyCre/Community). **통계 탭 폐지**(`/stats` 라우트 제거 — 온습도 시각화는 `/env-detail`로 흡수), `/crecam`은 **탭2로 승격**(하위 `cameras/...` 경로는 셸 밖 최상위 유지 — 페어링·상세에 독 안 뜸), **`/wiki`·`/search` 라우트 폐기**(care_info_repository 등 data 계층은 공용 인프라라 존치). 계획서: `docs/plans/2026-09-02-prd-redesign-phase1-home.md`.
 
 | 탭/라우트 | feature | 화면 | 데이터 소스 |
 |-----------|---------|------|------------|
-| `/home` (탭1) | home | HomeScreen — 헤더(세트 드롭다운/알림/설정) + 상단 고정영역(라이브↔개체 프로필 분기) + 서브탭 `[사육장 제어\|타임라인]` | 사육장 세트(`EnclosureSet`) = enclosures+cameras+devices+Pet |
-| `/stats` (탭2) | stats | StatsScreen — 24시간 온습도 듀얼축 차트(fl_chart). 주간·분포·행동분석은 **디자인 대기** | `telemetry_30m` (홈 미니 차트와 **같은 구간** 재사용) |
+| `/home` (탭1) | home | HomeScreen — **단일 스크롤**(2026-09-02): 헤더(세트 드롭다운/`[+]` 추가 메뉴/`[사람]`=계정) + 라이브(`TopFixedArea`) + 온습도 요약 카드(`EnvSummaryCard`, 탭→`/env-detail`) + 제어 그리드(`CageControlGrid` 5타일 — 냉각팬·히터팬은 API 없어 미배선 "준비 중") + 일정 설정. 서브탭·타임라인·개체 프로필 분기 폐기 | 사육장 세트(`EnclosureSet`) + `homeTodayExtremesProvider`(오늘 자정~) |
+| `/crecam` (탭2, Camera) | my_cage | CrecamScreen(구 화면 그대로 — **Figma Camera 섹션 재설계는 2단계**) + CameraPairingScreen(셸 밖) | **terra-server** `cameras`(ESP32-P4) + WebRTC P2P 라이브 + `motion_clips` 비디오(썸네일·즐겨찾기 클라우드·AI분류칩) + BLE 페어링 |
 | `/my-pets` (탭3) | my_pets | MyPetsScreen ([개체목록\|리포트] — 개체 CRUD + 어젯밤 리포트) | Supabase `pets`/`pet_events`/`media` + terra-api 하이라이트 |
 | `/community` (탭4) | community | CommunityScreen — **클립 공유 피드**(2026-08-31 리뉴얼): 공지 배너·위키 카드·피드(무한 스크롤·자동재생)·댓글/좋아요·신고/차단. 전체화면 플로우는 최상위 라우트 `/community-share`(글쓰기)·`/community-player/:postId`·`/community-user/:userId` | Supabase `community_*` 6테이블 + `community-media` 버킷(**스냅샷 복사** — 영상·썸네일·크레 사진) + `public_profiles` 뷰. 계획서 `docs/plans/2026-08-29-community-clip-feed.md` |
-| `/crecam` (보조) | my_cage | CrecamScreen + CameraPairingScreen | **terra-server** `cameras`(ESP32-P4) + WebRTC P2P 라이브 + `motion_clips` 비디오(썸네일·즐겨찾기 클라우드·AI분류칩) + BLE 페어링 |
+| `/env-detail` (보조, 2026-09-02 신설) | home | EnvDetailScreen — 세그먼트 [일간\|주간]. 일간=자정 경계 날짜 페이징 + 524pt 가로 스크롤 듀얼 라인 차트(`EnvDayChart`, 마커 행·스크러버) + 현재값/최고최저 + **사육장 제어 기록**(`ControlLogList`, 켠~끈 델타). 주간=요일 min/max 범위 바(`WeekRangeChart`) | `telemetry_30m` + `commands` (`env_detail_providers.dart`, 도메인 `shared/domain/{env_day,week_range,control_log}.dart`) |
 | `/smart-cage` (보조) | my_cage | SmartCageScreen + DevicePairingScreen | **terra-server** `devices`/`telemetry`/`commands` + BLE |
-| `/wiki` (보조) | wiki | WikiScreen + 종 상세/모프 도감/모프 계산기 | 레퍼런스(로컬/Supabase) |
-| `/search` (보조) | search | 백색목록 검색 | SpeciesRepository |
 | `/notifications`·`/enclosure-settings`·`/home/routines` (보조) | notification / my_cage / home | 홈 헤더·루틴 진입점 | PRD §3.1 / §3.4 |
 | `/dev/chart-lab` (보조) | dev | ChartLabScreen — 온습도 그래프 디자인 검토(더미 데이터) | 없음(하드코딩 픽스처) |
 | `/design-test` (보조, **공개**) | dev/design_lab | 디자인 테스트 선택 + **A/B** 4탭 mock 셸(구 `/dev/design-lab` 교체, 비로그인 공개 — `kPublicPaths`). C안은 2026-08-14 폐기. 롤백: `docs/design-test-rollout-plan.md` §2.4 | 없음(랩 fixtures + 번들 루프 영상) |
 | — | splash/error | SplashScreen / ErrorScreen | — |
 
-> 홈 탭 도메인: `home/domain/{day_window,device_mode,enclosure_set,env_extremes,env_chart_series,actuator_marker,chart_time_axis,running_timer,mist_lock,mist_duration,schedule,timeline_summary,pet_dday}.dart`. 하루 경계는 **07:00~익일 07:00**(`DayWindow`), 차트 범위는 전날 19:00~현재 — 어젯밤 리포트(22~06시)와 별개 개념이니 혼용 금지.
+> 홈 탭 도메인: `home/domain/{day_window,device_mode,enclosure_set,env_extremes,env_chart_series,actuator_marker,chart_time_axis,running_timer,mist_lock,mist_duration,schedule,timeline_summary,pet_dday}.dart`. 하루 경계 개념 셋 혼용 금지(PRD §3.1): 활동·클립 귀속=**07:00~익일 07:00**(`DayWindow`) / 밤 집계=22~06시 / **환경(온습도) 하루=자정~자정**(`EnvDay`, 2026-09-02 — 홈 최고최저·온습도 상세 일간 페이징). 구 '전날 19:00~현재' 홈 차트는 폐기(홈엔 차트 없음).
 > **⚠️ 사육장 제어 명령은 반드시 `home/presentation/cage_control_actions.dart`를 경유한다.** 히터 2단 안전확인(과열=개체 폐사)이 거기 있다. 진입점은 서브탭 `QuickControlGrid` **하나뿐**이다 — 라이브 아래 `LiveControlBar`는 버튼이 두 벌 쌓여 2026-08-09 제거(D4 철회). 제어 진입점을 다시 늘린다면 반드시 이 모듈을 경유할 것.
 >
 > **⚠️ 제어는 toggle이 아니라 절대 상태 명령을 쓴다** (2026-08-12). `fan_on/off`·`heater_on/off`·`relay_on/off`가 펌웨어에 **처음부터 있었다** — `APP_INTEGRATION.md §3.2` 표에 toggle만 적혀 있어 없는 줄 알았을 뿐이다. 뒤집기는 기기의 현재 상태를 전제하는데 그 전제가 어긋나면 끄려던 조작이 켜고, 히터에서는 과열=폐사다. 홈 `QuickControlGrid`·사육장 탭 `actuator_controls` 둘 다 전환 완료.
@@ -131,7 +129,8 @@ PRD 재설계(2026-08-05, `feat/prd-redesign`)로 5탭 → 4탭 전환. `/crecam
 - Supabase 테이블/RLS/접속 정보는 `docs/supabase-setup.md` 참조.
 
 ### UI/테마
-- **현행은 B안(Flighty 전광판) — 다크/라이트 2벌, 라이트 기본(2026-08-14 저녁, A안 2차 교체)** — 단색 바닥 + 카드(radius 16·그림자 없음·divider 테두리) + 데이터 라벨 소형 자간(`labelCaps`) + 큰 tabular 수치(`figure`) + 상태 시맨틱 앰버/그린/레드(`signalWarn/Ok/Alert`) + **활성=앰버**(`activeTile`) + 전광판 고정 탭바(`GlassDock`) + 세그먼트는 앰버 텍스트+밑줄. **색 토큰은 `lib/core/theme/glass_palette.dart`의 `GlassPalette`(ThemeExtension) 인스턴스 필드 — `variant_b_tokens.dart`의 미러. 소비처는 `context.glass.overlay`처럼 꺼낸다. `AppTheme.glassX` 정적 색 상수는 삭제됐으니 되살리지 말 것**(두 벌이 남으면 라이트에서 다크 값이 샌다). 모드는 시스템/라이트/다크 3단(`themeModeProvider`, Hive `app_settings/theme_mode`, **기본 라이트** `ThemeModeRepository.defaultMode`, 프로필 "화면 모드"). 공용 위젯 이름(`GlassCard`·`GlassDock` 등)은 **역사적 명칭으로 유지**되며 값만 B다(`blur` 파라미터는 no-op). 랩 A/B(`/design-test`)는 비교 페이지로 존치(설정에서도 진입, `lib/features/dev/design_lab/` 무접촉). 2단계(홈/통계/마이크레 화면 B 문법 이식)는 후속. 상세는 `docs/design-direction.md` §0. **Figma 팔레트 SOT 갱신은 후속 과제(사용자 작업 필요)** — Figma `Asset`은 아직 구 팔레트다
+- **현행은 Figma `vivanaut app` Asset 팔레트 (2026-09-02, 라이트벌 교체)** — 바닥 white, 면 `surfaceTint`(#F0F4F9), 텍스트 그레이스케일(#1E1E1E/#3C3C3C/#919497), 기기 상태색(`deviceFan` 그린 · `deviceCool` 블루 · `deviceLed` 앰버 · `deviceHeat` 도출 레드 · `deviceMist`=`humidAccent` #00B2F3 · 온도 `tempAccent` #F85478), 탭바 white+top stroke(활성 primary #192553). 신규 토큰 16종은 `GlassPalette` 필드로 추가됨 — **필드 추가 시 선언·생성자·dark·light·copyWith·lerp 6곳 동시 수정**. 다크벌은 구 B안 값 유지(Figma에 다크 없음 — 후속). 실측 SOT: `docs/plans/2026-09-02-prd-redesign-phase1-home.md` §A.
+- (구) B안(Flighty 전광판) — 다크/라이트 2벌, 라이트 기본(2026-08-14, A안 2차 교체) — 단색 바닥 + 카드(radius 16·그림자 없음·divider 테두리) + 데이터 라벨 소형 자간(`labelCaps`) + 큰 tabular 수치(`figure`) + 상태 시맨틱 앰버/그린/레드(`signalWarn/Ok/Alert`) + **활성=앰버**(`activeTile`) + 전광판 고정 탭바(`GlassDock`) + 세그먼트는 앰버 텍스트+밑줄. **색 토큰은 `lib/core/theme/glass_palette.dart`의 `GlassPalette`(ThemeExtension) 인스턴스 필드 — `variant_b_tokens.dart`의 미러. 소비처는 `context.glass.overlay`처럼 꺼낸다. `AppTheme.glassX` 정적 색 상수는 삭제됐으니 되살리지 말 것**(두 벌이 남으면 라이트에서 다크 값이 샌다). 모드는 시스템/라이트/다크 3단(`themeModeProvider`, Hive `app_settings/theme_mode`, **기본 라이트** `ThemeModeRepository.defaultMode`, 프로필 "화면 모드"). 공용 위젯 이름(`GlassCard`·`GlassDock` 등)은 **역사적 명칭으로 유지**되며 값만 B다(`blur` 파라미터는 no-op). 랩 A/B(`/design-test`)는 비교 페이지로 존치(설정에서도 진입, `lib/features/dev/design_lab/` 무접촉). 2단계(홈/통계/마이크레 화면 B 문법 이식)는 후속. 상세는 `docs/design-direction.md` §0. **Figma 팔레트 SOT 갱신은 후속 과제(사용자 작업 필요)** — Figma `Asset`은 아직 구 팔레트다
 - **시각 디자인 방향**: `docs/design-direction.md` — 위계·타이포·색 역할·시그니처(밤 띠). **팔레트·컴포넌트 규격 SOT는 Figma**(`docs/figma-final-design-transcript.md` §4)
 - **디자인 시스템(구)**: `docs/design-system.md` — 토큰·공유 위젯 정의
 - **하드코딩 색상 금지**. `AppTheme` 또는 `Theme.of(context)` 사용.
