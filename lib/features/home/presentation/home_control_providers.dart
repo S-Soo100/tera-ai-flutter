@@ -108,13 +108,14 @@ final chartExtremesProvider =
   return EnvExtremes.from(await ref.watch(chartBucketsProvider.future));
 });
 
-/// `commands`에서 [from]~[to] 구간의 기기 동작 마커를 읽는다.
+/// `commands`에서 [from]~[to] 구간의 원시 행을 읽는다.
 ///
-/// 홈 미니 차트와 통계 탭이 **서로 다른 구간**을 쓰므로 조회부를 함수로 빼 둔다
-/// — 쿼리를 두 벌로 복사하면 한쪽만 고쳐진 채로 남는다.
+/// 마커([fetchActuatorMarkers])와 제어 기록(buildControlLog)이 **같은 rows**를
+/// 쓰므로 조회부를 한 벌로 둔다 — 쿼리를 두 벌로 복사하면 한쪽만 고쳐진 채로
+/// 남는다.
 ///
-/// 조회 실패는 빈 목록으로 흡수한다 — 마커가 없다고 차트를 못 그릴 이유는 없다.
-Future<List<ActuatorMarker>> fetchActuatorMarkers(
+/// 조회 실패는 빈 목록으로 흡수한다 — 기록이 없다고 차트를 못 그릴 이유는 없다.
+Future<List<Map<String, dynamic>>> fetchCommandRows(
   SupabaseClient client,
   String deviceId, {
   required DateTime from,
@@ -127,12 +128,26 @@ Future<List<ActuatorMarker>> fetchActuatorMarkers(
         .eq('device_id', deviceId)
         .gte('issued_at', from.toUtc().toIso8601String())
         .lte('issued_at', to.toUtc().toIso8601String());
-    return ActuatorMarker.fromCommands(
-      (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
-    );
+    return (rows as List)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
   } catch (_) {
     return const [];
   }
+}
+
+/// `commands`에서 [from]~[to] 구간의 기기 동작 마커를 읽는다.
+///
+/// 홈 미니 차트와 온습도 상세가 **서로 다른 구간**을 쓰므로 함수로 빼 둔다.
+/// 조회는 [fetchCommandRows] 한 벌을 지난다.
+Future<List<ActuatorMarker>> fetchActuatorMarkers(
+  SupabaseClient client,
+  String deviceId, {
+  required DateTime from,
+  required DateTime to,
+}) async {
+  final rows = await fetchCommandRows(client, deviceId, from: from, to: to);
+  return ActuatorMarker.fromCommands(rows);
 }
 
 /// 차트 창의 기기 동작 마커.
