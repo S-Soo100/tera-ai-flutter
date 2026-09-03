@@ -45,6 +45,7 @@ class CageControlGrid extends ConsumerWidget {
     final mistLocked = lock.isLocked(DateTime.now());
 
     final fanOn = t?.fan == ActuatorState.on;
+    final heaterOn = t?.heaterState == ActuatorState.on;
     final ledOn = t?.led == ActuatorState.on;
 
     final tiles = <Widget>[
@@ -69,7 +70,7 @@ class CageControlGrid extends ConsumerWidget {
             : 'home_mist_seconds'.tr(args: ['${mistDuration.seconds}']),
         icon: Icons.water_drop,
         active: mistLocked,
-        tileColor: mistLocked ? glass.mistTint : glass.surfaceTint,
+        tileColor: mistLocked ? glass.deviceMistBg : glass.surfaceTint,
         iconCircleColor: mistLocked ? glass.deviceMist : glass.deviceOff,
         onTap: online && !mistLocked
             ? () => openMistSheet(context, ref, deviceId)
@@ -86,17 +87,20 @@ class CageControlGrid extends ConsumerWidget {
         iconCircleColor: glass.deviceOff,
         onTap: () => _notReady(context),
       ),
-      // ④ 히터팬 — API 없음, 미배선. 기존 heater_* 귀속은 미결 Q(B.3) —
-      // 여기서 heater 명령을 이어붙이지 말 것(안전확인 플로우 재설계 전).
+      // ④ 히터팬 — 기존 heater_* 절대 명령 배선(리뷰 2026-09-03 최고 심각).
+      // 홈 개편으로 /smart-cage 진입점이 사라져 히터 OFF·안전잠금 해제가
+      // 앱 어디서도 불가능해졌었다 — 과열=개체 폐사라 도달 경로가 필수다.
+      // 2단 안전확인·잠금 다이얼로그는 handleHeaterTap(cage_control_actions)
+      // 안에 있다. 미결 Q(전용 '히터팬' API)가 확정되면 명령만 갈아끼운다.
       _DeviceTile(
         key: heatFanKey,
         name: 'device_heat_fan'.tr(),
-        status: 'device_status_pending'.tr(),
+        status: _stateLabel(t?.heaterState),
         icon: Icons.local_fire_department,
-        active: false,
-        tileColor: glass.surfaceTint,
-        iconCircleColor: glass.deviceOff,
-        onTap: () => _notReady(context),
+        active: heaterOn,
+        tileColor: heaterOn ? glass.deviceHeatBg : glass.surfaceTint,
+        iconCircleColor: heaterOn ? glass.deviceHeat : glass.deviceOff,
+        onTap: online ? () => handleHeaterTap(context, ref, deviceId, t) : null,
       ),
       // ⑤ LED — `telemetry.led`/`led_brightness`만 믿는다(2026-08-18 회신 §4).
       // 구 펌웨어(unavailable)는 "상태 모름"으로 말하고 켜기/끄기 시트를 연다.
@@ -239,9 +243,9 @@ class _DeviceTile extends StatelessWidget {
                         color: iconCircleColor,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      // 원 안 글리프는 항상 흰색 — 기기색/deviceOff 원 위에서
-                      // 켜짐·꺼짐 모두 대비가 나온다(Figma Asset).
-                      child: Icon(icon, size: 20, color: Colors.white),
+                      // 원 안 글리프(Figma Asset) — 토큰으로(하드코딩 금지).
+                      child: Icon(icon,
+                          size: 20, color: context.glass.deviceGlyph),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

@@ -75,12 +75,15 @@ void main() {
     expect(find.text('home_device_not_ready'), findsOneWidget);
   });
 
-  testWidgets('히터팬 탭 → 같은 안내 — heater_* 명령을 잇지 않는다(B.3 미결)',
+  testWidgets('히터팬 탭 → handleHeaterTap 경유 — 2단 안전확인 다이얼로그',
       (tester) async {
+    // 리뷰 2026-09-03: 홈 개편으로 히터 제어 도달 경로가 사라져 배선했다.
+    // 확인 다이얼로그(과열=폐사 안전 플로우)가 떠야 하고, "준비 중"은 금지.
     await _pump(tester);
     await tester.tap(find.byKey(CageControlGrid.heatFanKey));
-    await tester.pump();
-    expect(find.text('home_device_not_ready'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('module_heater_confirm_title'), findsOneWidget);
+    expect(find.text('home_device_not_ready'), findsNothing);
   });
 
   testWidgets('환기팬(꺼짐) 탭 → handleFanTap 경유 — 켜기 방식 시트가 뜬다',

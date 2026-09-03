@@ -60,7 +60,7 @@ GoRouter _router() => GoRouter(
               const Scaffold(body: Center(child: Text('device-pair-screen'))),
         ),
         GoRoute(
-          path: '/my-pets/add',
+          path: '/pet-add',
           builder: (_, __) =>
               const Scaffold(body: Center(child: Text('pet-add-screen'))),
         ),
@@ -138,7 +138,7 @@ void main() {
       expect(find.text('device-pair-screen'), findsOneWidget);
     });
 
-    testWidgets('개체 추가 → /my-pets/add', (tester) async {
+    testWidgets('개체 추가 → /pet-add (셸 밖 전용 라우트)', (tester) async {
       await _pump(tester, [_set('e1', 'A')]);
       await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
       await tester.pumpAndSettle();

@@ -69,6 +69,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     required this.deviceHeat,
     required this.deviceHeatBg,
     required this.deviceMist,
+    required this.deviceMistBg,
+    required this.deviceGlyph,
     required this.deviceOff,
     required this.tempAccent,
     required this.humidAccent,
@@ -171,6 +173,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   final Color deviceHeat; // 히터팬 (⚠️ Figma 미정의 — 도출값)
   final Color deviceHeatBg;
   final Color deviceMist; // 분무 = [humidAccent]와 같은 값(의미 분리용 별 필드)
+  final Color deviceMistBg; // 분무 잠금(작동 중) 타일 배경 — mistTint(전경)와 역할 분리
+  final Color deviceGlyph; // 기기색/deviceOff 원 **안** 글리프 — 하드코딩 white 금지(리뷰 2026-09-03)
   final Color deviceOff; // 꺼짐 상태 아이콘 원 배경
 
   // ── 온습도 지표 액센트 (홈 요약·상세 차트 라인) ──
@@ -271,6 +275,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     deviceHeat: Color(0xFFFF6B57),
     deviceHeatBg: Color(0xFF452B35),
     deviceMist: Color(0xFF00B2F3),
+    deviceMistBg: Color(0xFF10333D), // 다크 카드 위 humidAccent 저명도 도출
+    deviceGlyph: Color(0xFFFFFFFF),
     deviceOff: Color(0xFF3A4152),
     tempAccent: Color(0xFFF85478),
     humidAccent: Color(0xFF00B2F3),
@@ -290,10 +296,10 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     border: Color(0xFFE1E3E4), // 칩 테두리·상단바 하단선
     tabBar: Color(0xFFFFFFFF),
     activeTile: Color(0xFFE09A00), // (교체 목록 외 — B 앰버 유지)
-    heaterTint: Color(0xFFFFE9E4), // = deviceHeatBg
-    mistTint: Color(0xFFE0F6FE), // 분무 Bg — humidAccent 12% 도출(Figma 미정의)
-    ledTint: Color(0xFFFFF4D9), // = deviceLedBg
-    fanTint: Color(0xFFDCF5E9), // = deviceFanBg
+    heaterTint: Color(0xFFE09A00), // 전경(글리프) — 배경은 deviceHeatBg (리뷰 2026-09-03 역할 통일)
+    mistTint: Color(0xFF2F7BD1), // 전경(글리프) — 배경은 deviceMistBg
+    ledTint: Color(0xFFE8B33A), // 전경(글리프) — 배경은 deviceLedBg
+    fanTint: Color(0xFF1FA84A), // 전경(글리프) — 배경은 deviceFanBg
     signalOk: Color(0xFF00B591),
     signalWarn: Color(0xFFF5A800),
     signalAlert: Color(0xFFD61619), // 브랜드 레드 — 위험 상태 예약
@@ -329,6 +335,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     deviceHeat: Color(0xFFFF6B57), // 도출값
     deviceHeatBg: Color(0xFFFFE9E4), // 도출값
     deviceMist: Color(0xFF00B2F3),
+    deviceMistBg: Color(0xFFE0F6FE), // 분무 잠금 타일 Bg — humidAccent 12% 도출(Figma 미정의)
+    deviceGlyph: Color(0xFFFFFFFF),
     deviceOff: Color(0xFFA9B3BE),
     tempAccent: Color(0xFFF85478),
     humidAccent: Color(0xFF00B2F3),
@@ -385,6 +393,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     Color? deviceHeat,
     Color? deviceHeatBg,
     Color? deviceMist,
+    Color? deviceMistBg,
+    Color? deviceGlyph,
     Color? deviceOff,
     Color? tempAccent,
     Color? humidAccent,
@@ -440,6 +450,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       deviceHeat: deviceHeat ?? this.deviceHeat,
       deviceHeatBg: deviceHeatBg ?? this.deviceHeatBg,
       deviceMist: deviceMist ?? this.deviceMist,
+      deviceMistBg: deviceMistBg ?? this.deviceMistBg,
+      deviceGlyph: deviceGlyph ?? this.deviceGlyph,
       deviceOff: deviceOff ?? this.deviceOff,
       tempAccent: tempAccent ?? this.tempAccent,
       humidAccent: humidAccent ?? this.humidAccent,
@@ -503,6 +515,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       deviceHeat: c(deviceHeat, other.deviceHeat),
       deviceHeatBg: c(deviceHeatBg, other.deviceHeatBg),
       deviceMist: c(deviceMist, other.deviceMist),
+      deviceMistBg: c(deviceMistBg, other.deviceMistBg),
+      deviceGlyph: c(deviceGlyph, other.deviceGlyph),
       deviceOff: c(deviceOff, other.deviceOff),
       tempAccent: c(tempAccent, other.tempAccent),
       humidAccent: c(humidAccent, other.humidAccent),

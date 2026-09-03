@@ -122,12 +122,20 @@ Future<List<Map<String, dynamic>>> fetchCommandRows(
   required DateTime to,
 }) async {
   try {
+    // 소비자(마커·제어 기록)는 acked만 쓴다 — 서버에서 걸러 전송량을 줄이고,
+    // PostgREST 기본 1000행 상한에 걸려도 order 덕에 결손이 결정적이 된다
+    // (무정렬 전량 조회는 임의 부분집합이 와서 기록이 조용히 빠졌다 —
+    // 리뷰 2026-09-03). 끝 경계는 telemetryHistory와 같은 exclusive(lt) —
+    // lte면 자정 정각 명령이 이틀 페이지에 이중 계상된다.
     final rows = await client
         .from('commands')
         .select('id, action, status, issued_at')
         .eq('device_id', deviceId)
+        .eq('status', 'acked')
         .gte('issued_at', from.toUtc().toIso8601String())
-        .lte('issued_at', to.toUtc().toIso8601String());
+        .lt('issued_at', to.toUtc().toIso8601String())
+        .order('issued_at', ascending: true)
+        .limit(2000);
     return (rows as List)
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();

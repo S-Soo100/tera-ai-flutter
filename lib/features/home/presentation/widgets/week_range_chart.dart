@@ -136,7 +136,7 @@ class _WeekRangeChartState extends State<WeekRangeChart> {
           width: 28,
           height: 28,
           decoration: BoxDecoration(color: widget.accent, shape: BoxShape.circle),
-          child: Icon(widget.icon, size: 16, color: Colors.white),
+          child: Icon(widget.icon, size: 16, color: glass.deviceGlyph),
         ),
         const SizedBox(width: 10),
         // Flexible + ellipsis — 값이 길어져도(소수·넓은 단위) 헤더 Row가

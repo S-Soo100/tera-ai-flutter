@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
@@ -73,6 +75,11 @@ final envDayControlLogProvider =
     FutureProvider.autoDispose<List<ControlLogEntry>>((ref) async {
   final day = ref.watch(envDetailDayProvider);
   final client = ref.watch(supabaseClientProvider);
+  // watch는 await 앞에서 — await 뒤의 watch는 dispose(날짜 페이저 연타·화면
+  // 이탈) 후 continuation이 죽은 element에 걸려 StateError가 되고, 화면은
+  // 기록이 있는 날인데 "기록 없음"을 그린다(리뷰 2026-09-03). 먼저 잡아두면
+  // commands·버킷 조회가 병렬로도 돈다.
+  final bucketsFuture = ref.watch(envDayBucketsProvider.future);
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) return const [];
   final rows = await fetchCommandRows(
@@ -81,7 +88,7 @@ final envDayControlLogProvider =
     from: day.start,
     to: day.end,
   );
-  final buckets = await ref.watch(envDayBucketsProvider.future);
+  final buckets = await bucketsFuture;
   return buildControlLog(commandRows: rows, buckets: buckets);
 });
 
@@ -110,6 +117,7 @@ final envWeekRowsProvider = FutureProvider.autoDispose<
 final homeTodayExtremesProvider =
     FutureProvider.autoDispose<EnvExtremes>((ref) async {
   final repository = ref.watch(supabaseModuleControlRepositoryProvider);
+  final day = ref.watch(_todayProvider);
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) {
     return const EnvExtremes(
@@ -119,8 +127,22 @@ final homeTodayExtremesProvider =
       humidMax: null,
     );
   }
-  final day = EnvDay.of(DateTime.now());
   final buckets =
       await repository.telemetryHistory(deviceId, day.start, to: DateTime.now());
   return EnvExtremes.from(buckets);
+});
+
+/// "오늘"의 자정 경계 — **자정을 넘기면 스스로 무효화**한다.
+///
+/// 홈 [EnvSummaryCard]가 상시 watch라 autoDispose가 발동하지 않아, 타이머
+/// 없이는 자정 이후에도 어제 창의 최고/최저가 남는다(리뷰 2026-09-03).
+final _todayProvider = Provider.autoDispose<EnvDay>((ref) {
+  final now = DateTime.now();
+  final day = EnvDay.of(now);
+  final timer = Timer(
+    day.end.difference(now) + const Duration(seconds: 1),
+    ref.invalidateSelf,
+  );
+  ref.onDispose(timer.cancel);
+  return day;
 });

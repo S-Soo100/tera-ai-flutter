@@ -268,6 +268,13 @@ GoRouter buildAppRouter({
           return EmailVerificationScreen(email: email);
         },
       ),
+      // 홈 헤더 [+] '개체 추가' 전용 최상위 라우트 — 브랜치 하위
+      // `/my-pets/add`를 홈에서 push하면 셸 인덱스가 탭3으로 점프하고
+      // 뒤로가기가 홈이 아닌 마이크레로 떨어진다(리뷰 2026-09-03).
+      GoRoute(
+        path: '/pet-add',
+        builder: (context, state) => const PetAddScreen(),
+      ),
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),

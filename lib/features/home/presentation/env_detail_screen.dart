@@ -358,7 +358,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                 height: 28,
                 decoration:
                     BoxDecoration(color: accent, shape: BoxShape.circle),
-                child: Icon(icon, size: 16, color: Colors.white),
+                child: Icon(icon, size: 16, color: glass.deviceGlyph),
               ),
               const SizedBox(width: 8),
               Expanded(

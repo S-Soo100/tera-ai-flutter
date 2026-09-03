@@ -148,9 +148,11 @@ class _AddMenuButton extends StatelessWidget {
           value: '/smart-cage/devices/pair',
           child: Text('home_add_device'.tr()),
         ),
+        // 브랜치 하위 `/my-pets/add`가 아니라 셸 밖 전용 라우트 — 홈에서
+        // 타 브랜치 하위를 push하면 탭 인덱스가 점프한다(리뷰 2026-09-03).
         PopupMenuItem(
           key: petItemKey,
-          value: '/my-pets/add',
+          value: '/pet-add',
           child: Text('home_add_pet'.tr()),
         ),
         PopupMenuItem(

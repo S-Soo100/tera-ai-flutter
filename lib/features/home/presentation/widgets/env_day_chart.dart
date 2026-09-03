@@ -298,7 +298,7 @@ class _EnvDayChartState extends State<EnvDayChart> {
               child: Icon(
                 controlKindIcon(spots[i].e.kind),
                 size: 15,
-                color: Colors.white,
+                color: glass.deviceGlyph,
               ),
             ),
           ),

@@ -143,7 +143,8 @@ class _LogRow extends StatelessWidget {
             color: controlEntryColor(entry, glass),
             shape: BoxShape.circle,
           ),
-          child: Icon(controlKindIcon(entry.kind), size: 18, color: Colors.white),
+          child: Icon(controlKindIcon(entry.kind),
+              size: 18, color: glass.deviceGlyph),
         ),
         const SizedBox(width: 12),
         Expanded(

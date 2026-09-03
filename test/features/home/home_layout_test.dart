@@ -127,10 +127,12 @@ void main() {
     expect(find.text('env-detail-screen'), findsOneWidget);
   });
 
-  testWidgets('미배선 타일(히터팬) 탭 → SnackBar 안내', (tester) async {
+  testWidgets('미배선 타일(냉각팬) 탭 → SnackBar 안내', (tester) async {
+    // 히터팬은 리뷰 2026-09-03에서 handleHeaterTap로 배선됐다 — 미배선
+    // 검증은 냉각팬으로 한다(cage_control_grid_test에 히터 다이얼로그 검증).
     await _pump(tester);
-    await tester.ensureVisible(find.byKey(CageControlGrid.heatFanKey));
-    await tester.tap(find.byKey(CageControlGrid.heatFanKey));
+    await tester.ensureVisible(find.byKey(CageControlGrid.coolFanKey));
+    await tester.tap(find.byKey(CageControlGrid.coolFanKey));
     await tester.pump();
     expect(find.text('home_device_not_ready'), findsOneWidget);
   });

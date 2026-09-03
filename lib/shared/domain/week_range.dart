@@ -96,13 +96,13 @@ List<DayMinMax> _weekRanges(
     final i = dayStart.difference(week.start).inDays;
     if (i < 0 || i > 6) continue; // 방어 — 서머타임 등으로 어긋난 경우.
     final v = pick(b);
-    final lo = v.min;
-    final hi = v.max;
-    if (lo != null && lo > 0) {
-      mins[i] = mins[i] == null || lo < mins[i]! ? lo : mins[i];
-    }
-    if (hi != null && hi > 0) {
-      maxs[i] = maxs[i] == null || hi > maxs[i]! ? hi : maxs[i];
+    // min·max 후보를 **한 풀**로 모은다(EnvExtremes.from과 같은 방식) —
+    // 따로 필터하면 부분행(max만 센티넬 0/NULL)이 섞인 날 min>max 역전이
+    // 생겨 주간 헤더·바가 뒤집힌다(리뷰 2026-09-03).
+    for (final x in [v.min, v.max]) {
+      if (x == null || x <= 0) continue; // 0 = 센서 오프라인 센티넬.
+      mins[i] = mins[i] == null || x < mins[i]! ? x : mins[i];
+      maxs[i] = maxs[i] == null || x > maxs[i]! ? x : maxs[i];
     }
   }
 

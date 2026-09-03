@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_styles.dart';
+import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/camera_presence.dart';
@@ -98,12 +99,18 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppTheme.success,
-        foregroundColor: Colors.white,
-        onPressed: _openPairing,
-        tooltip: 'my_cage_add_camera'.tr(),
-        child: const Icon(Icons.add),
+      // 탭 승격(2026-09-02) 후 셸이 extendBody라 body가 독(64pt) 뒤까지
+      // 깔린다 — 보정 없으면 FAB가 독에 묻혀 리스트 모드의 유일한 카메라
+      // 추가 경로가 사라진다(리뷰 2026-09-03).
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: GlassDock.height),
+        child: FloatingActionButton(
+          backgroundColor: AppTheme.success,
+          foregroundColor: Colors.white,
+          onPressed: _openPairing,
+          tooltip: 'my_cage_add_camera'.tr(),
+          child: const Icon(Icons.add),
+        ),
       ),
       body: camerasAsync.when(
         loading: () => const _CrecamSkeleton(),
