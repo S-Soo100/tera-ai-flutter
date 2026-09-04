@@ -33,9 +33,15 @@ class CrecamScreen extends ConsumerStatefulWidget {
   static const bookmarkCardKey = Key('crecam_entry_bookmarks');
   static const periodButtonKey = Key('crecam_period_button');
 
-  /// Figma 좌우 마진·섹션 간격(홈 리듬 동일).
+  /// Figma 좌우 마진(홈 리듬 동일).
   static const double _margin = 12;
+
+  /// 헤더→라이브·기간설정→그리드 간격(Figma 668:427 실측 12).
   static const double _gap = 12;
+
+  /// 라이브→엔트리 카드·엔트리→기간 설정·시간 그룹 간 간격(실측 16 —
+  /// 4536−4520, 4624−4608, 4947.8−4931.8. 12로 두면 전 구간이 1단씩 좁다).
+  static const double _sectionGap = 16;
 
   @override
   ConsumerState<CrecamScreen> createState() => _CrecamScreenState();
@@ -78,8 +84,9 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
       child: Column(
         children: [
           const Padding(
+            // top 0 — Figma 668:427은 헤더가 status bar 바로 아래 선다(홈 동일).
             padding: EdgeInsets.fromLTRB(
-                CrecamScreen._margin, 8, CrecamScreen._margin, CrecamScreen._gap),
+                CrecamScreen._margin, 0, CrecamScreen._margin, CrecamScreen._gap),
             child: HomeHeaderBar(),
           ),
           Expanded(
@@ -99,13 +106,13 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
                           horizontal: CrecamScreen._margin),
                       child: CameraLiveArea(),
                     ),
-                    SizedBox(height: CrecamScreen._gap),
+                    SizedBox(height: CrecamScreen._sectionGap),
                     Padding(
                       padding: EdgeInsets.symmetric(
                           horizontal: CrecamScreen._margin),
                       child: _EntryCards(),
                     ),
-                    SizedBox(height: CrecamScreen._gap),
+                    SizedBox(height: CrecamScreen._sectionGap),
                     Padding(
                       padding: EdgeInsets.symmetric(
                           horizontal: CrecamScreen._margin),
@@ -307,7 +314,8 @@ class _PeriodButton extends ConsumerWidget {
               children: [
                 Icon(Icons.calendar_today,
                     size: 16, color: glass.textSecondary),
-                const SizedBox(width: 6),
+                // Figma 실측 갭 4 (958.39 − 954.39).
+                const SizedBox(width: 4),
                 Text(
                   label,
                   style: TextStyle(
@@ -402,7 +410,7 @@ class _HourClipSections extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (var i = 0; i < groups.length; i++) ...[
-              if (i > 0) const SizedBox(height: 12),
+              if (i > 0) const SizedBox(height: CrecamScreen._sectionGap),
               _HourSection(
                 group: groups[i],
                 // 날짜는 첫 그룹만(Figma) — 아래로는 같은 날짜의 반복이다.

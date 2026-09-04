@@ -99,7 +99,8 @@ class BookmarksScreen extends ConsumerWidget {
     final playlist = [for (final f in filtered) f.clipId];
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(_margin, 12, _margin, 24),
+      // top 24 — Figma 668:717 상단바(4238)→첫 카드(4261) 실측 23≈24.
+      padding: const EdgeInsets.fromLTRB(_margin, 24, _margin, 24),
       itemCount: filtered.length,
       separatorBuilder: (_, __) => const SizedBox(height: 20),
       itemBuilder: (context, i) =>
@@ -250,7 +251,7 @@ class _ListSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(
-          BookmarksScreen._margin, 12, BookmarksScreen._margin, 24),
+          BookmarksScreen._margin, 24, BookmarksScreen._margin, 24),
       physics: const NeverScrollableScrollPhysics(),
       itemCount: 2,
       separatorBuilder: (_, __) => const SizedBox(height: 20),

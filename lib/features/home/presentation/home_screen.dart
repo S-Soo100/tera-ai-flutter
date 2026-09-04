@@ -41,7 +41,9 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         children: [
           const Padding(
-            padding: EdgeInsets.fromLTRB(_margin, 8, _margin, _gap),
+            // top 0 — Figma 668:833은 헤더가 status bar 바로 아래 선다
+            // (Frame 56 y=62 = status bar 끝, 추가 여백 없음).
+            padding: EdgeInsets.fromLTRB(_margin, 0, _margin, _gap),
             child: HomeHeaderBar(),
           ),
           Expanded(
@@ -73,7 +75,9 @@ class HomeScreen extends StatelessWidget {
                     padding: EdgeInsets.symmetric(horizontal: _margin),
                     child: CageControlGrid(),
                   ),
-                  const SizedBox(height: _gap),
+                  // Figma 실측 22 — 그리드끝(634)→일정 로우(683) 49에서
+                  // 라벨 19·라벨-로우 갭 8을 뺀 값.
+                  const SizedBox(height: 22),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: _margin),
                     child: _ScheduleSection(),

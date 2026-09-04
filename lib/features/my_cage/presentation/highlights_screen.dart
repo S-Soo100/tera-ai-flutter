@@ -97,7 +97,7 @@ class HighlightsScreen extends ConsumerWidget {
       return _EmptyMessage(message: 'crecam_home_empty_day'.tr());
     }
     return ListView(
-      padding: const EdgeInsets.fromLTRB(_margin, 12, _margin, 24),
+      padding: const EdgeInsets.fromLTRB(_margin, 24, _margin, 24),
       children: [
         _Section(
           header: DateFormat('yyyy. M. d').format(day),
@@ -117,7 +117,10 @@ class HighlightsScreen extends ConsumerWidget {
     final showBanner = dismissedKey != highlightGroupKey(newest);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(_margin, 12, _margin, 24),
+      // Figma 실측: 배너가 있으면 상단바→배너 12(668:600), 없으면
+      // 상단바→첫 섹션 24(668:655).
+      padding: EdgeInsets.fromLTRB(
+          _margin, showBanner ? 12 : 24, _margin, 24),
       children: [
         if (showBanner) ...[
           _ArrivalBanner(
@@ -207,14 +210,9 @@ class _ArrivalBanner extends ConsumerWidget {
                       color: glass.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                    child: AspectRatio(
-                      aspectRatio: 329 / 161,
-                      child: _Thumbnail(clipId: representative.clipId),
-                    ),
-                  ),
+                  // Figma 실측 9 (날짜 줄끝 4312 → 썸네일 4321).
+                  const SizedBox(height: 9),
+                  _BannerThumbStack(clipId: representative.clipId),
                 ],
               ),
             ),
@@ -236,6 +234,54 @@ class _ArrivalBanner extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 배너 대표 썸네일 — Figma 668:648 스택 장식: 뒤에 살짝 좁은 카드(#9DA3BA,
+/// 폭 290/329, h 160.5)가 위로 10.5 삐죽 보이고, 앞 이미지(폭 가득, h 161.8)가
+/// 그 위에 얹힌다. 전체 프레임 329×172.3 — 치수는 프레임 폭 대비 비율로 그린다.
+class _BannerThumbStack extends StatelessWidget {
+  const _BannerThumbStack({required this.clipId});
+
+  final String clipId;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return AspectRatio(
+      aspectRatio: 329 / 172.3,
+      child: LayoutBuilder(
+        builder: (context, c) {
+          final s = c.maxWidth / 329; // Figma 329pt 기준 스케일
+          return Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 19.5 * s,
+                right: 19.5 * s,
+                height: 160.5 * s,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: glass.deviceOff,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 10.5 * s,
+                left: 0,
+                right: 0,
+                height: 161.8 * s,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  child: _Thumbnail(clipId: clipId),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

@@ -284,25 +284,36 @@ class _ClipPlaylistPlayerScreenState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _topBar(glass, startedAt),
-            if (showPagination) ...[
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _pagination(glass),
-              ),
-            ],
-            const SizedBox(height: 16),
+            // Figma 668:743 수직 리듬: 상단바(4238) → 52 → 페이지네이션(4290,
+            // h4) → 28 → 영상(4322). 페이지네이션이 숨겨져도 자리를 예약해
+            // 영상 위치가 재생목록 유무에 흔들리지 않게 한다.
+            const SizedBox(height: 52),
+            SizedBox(
+              height: 4,
+              child: showPagination
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _pagination(glass),
+                    )
+                  : null,
+            ),
+            const SizedBox(height: 28),
             _videoArea(glass),
-            const SizedBox(height: 12),
+            // 시크 트랙 중심 = 영상끝 +32 (4546→4578). Slider 내부 높이 48의
+            // 중심이 +24이므로 갭 8.
+            const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: _SeekBar(controller: _initialized ? _controller : null),
             ),
-            const SizedBox(height: 12),
+            // 컨트롤 상단 = 트랙 +20 (4578→4598) — Slider 하반부 24가 이미
+            // 그만큼을 차지하므로 추가 갭 없음.
             _controlRow(glass),
             const Spacer(),
             Center(child: _actionPill(glass, clip, isFav)),
-            const SizedBox(height: 24),
+            // Figma 프레임 하단(4984)에서 필 하단(4922)까지 62 — safe area
+            // (~34) 위 28.
+            const SizedBox(height: 28),
           ],
         ),
       ),
@@ -312,7 +323,10 @@ class _ClipPlaylistPlayerScreenState
   Widget _topBar(GlassPalette glass, DateTime? startedAt) {
     return SizedBox(
       height: 44,
-      child: Stack(
+      // Figma — back 버튼은 화면 끝이 아니라 마진 12 안(2076.56 − 2064.56).
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Stack(
         children: [
           Align(
             alignment: Alignment.centerLeft,
@@ -362,6 +376,7 @@ class _ClipPlaylistPlayerScreenState
               ),
             ),
         ],
+        ),
       ),
     );
   }
@@ -536,15 +551,18 @@ class _ClipPlaylistPlayerScreenState
         color: glass.surfaceTint,
         borderRadius: BorderRadius.circular(24),
       ),
+      // Figma 668:766 — 좌우 패딩 12, 아이콘 간 갭 20 (2187/2243/2299).
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           action(
             isFav ? Icons.bookmark : Icons.bookmark_border,
             'clip_favorite_add'.tr(),
             _busy ? null : () => _toggleFavorite(clip),
           ),
+          const SizedBox(width: 20),
           action(Icons.ios_share, 'clip_share'.tr(), _busy ? null : _share),
+          const SizedBox(width: 20),
           action(Icons.download_outlined, 'clip_save'.tr(),
               _busy ? null : _save),
         ],

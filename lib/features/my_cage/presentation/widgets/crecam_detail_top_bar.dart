@@ -25,8 +25,11 @@ class CrecamDetailTopBar extends StatelessWidget {
     final glass = context.glass;
     return SizedBox(
       height: 44,
-      child: Stack(
-        children: [
+      // Figma 668:717 — back·calendar 버튼은 화면 끝이 아니라 마진 12 안에 선다.
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Stack(
+          children: [
           Align(
             alignment: Alignment.centerLeft,
             child: SizedBox(
@@ -70,7 +73,8 @@ class CrecamDetailTopBar extends StatelessWidget {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
