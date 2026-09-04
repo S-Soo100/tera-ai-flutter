@@ -13,6 +13,7 @@ import '../../features/my_cage/presentation/smart_cage_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
 import '../../features/my_cage/presentation/clip_player_screen.dart';
 import '../../features/my_cage/presentation/motion_clip_player_screen.dart';
+import '../../features/my_cage/presentation/clip_playlist_player_screen.dart';
 import '../../features/my_cage/presentation/device_pairing_screen.dart';
 import '../../features/my_cage/presentation/camera_pairing_screen.dart';
 import '../../features/my_cage/presentation/enclosure_list_screen.dart';
@@ -221,6 +222,20 @@ GoRouter buildAppRouter({
         builder: (context, state) {
           final id = state.pathParameters['clipId']!;
           return MotionClipPlayerScreen(clipId: id);
+        },
+      ),
+      // 세로 재생목록 플레이어 (카메라 탭 재설계 T1) — extra = 재생목록 clip id.
+      // 딥링크는 extra가 없으니 단일 재생으로 열린다.
+      GoRoute(
+        path: '/crecam/player/:clipId',
+        builder: (context, state) {
+          final id = state.pathParameters['clipId']!;
+          final extra = state.extra;
+          // 호출부가 List<String>을 넘기지만 dynamic 리스트로 와도 안전하게 거른다.
+          final playlist = extra is List
+              ? extra.whereType<String>().toList()
+              : null;
+          return ClipPlaylistPlayerScreen(clipId: id, playlist: playlist);
         },
       ),
       // 사육장 (탭에서 제거 — 홈 탭이 흡수. 화면·딥링크는 보존)
