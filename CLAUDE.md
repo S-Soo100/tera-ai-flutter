@@ -93,9 +93,9 @@ lib/
 | — | splash/error | SplashScreen / ErrorScreen | — |
 
 > 홈 탭 도메인: `home/domain/{day_window,device_mode,enclosure_set,env_extremes,env_chart_series,actuator_marker,chart_time_axis,running_timer,mist_lock,mist_duration,schedule,timeline_summary,pet_dday}.dart`. 하루 경계 개념 셋 혼용 금지(PRD §3.1): 활동·클립 귀속=**07:00~익일 07:00**(`DayWindow`) / 밤 집계=22~06시 / **환경(온습도) 하루=자정~자정**(`EnvDay`, 2026-09-02 — 홈 최고최저·온습도 상세 일간 페이징). 구 '전날 19:00~현재' 홈 차트는 폐기(홈엔 차트 없음).
-> **⚠️ 사육장 제어 명령은 반드시 `home/presentation/cage_control_actions.dart`를 경유한다.** 히터 2단 안전확인(과열=개체 폐사)이 거기 있다. 진입점은 서브탭 `QuickControlGrid` **하나뿐**이다 — 라이브 아래 `LiveControlBar`는 버튼이 두 벌 쌓여 2026-08-09 제거(D4 철회). 제어 진입점을 다시 늘린다면 반드시 이 모듈을 경유할 것.
+> **⚠️ 사육장 제어 명령은 반드시 `home/presentation/cage_control_actions.dart`를 경유한다.** 히터 2단 안전확인(과열=개체 폐사)이 거기 있다. 진입점은 홈 `CageControlGrid` **하나뿐**이다(구 서브탭 `QuickControlGrid`는 2026-09-04 정리로 삭제 — 라이브 아래 `LiveControlBar`도 버튼이 두 벌 쌓여 2026-08-09 제거, D4 철회). 제어 진입점을 다시 늘린다면 반드시 이 모듈을 경유할 것.
 >
-> **⚠️ 제어는 toggle이 아니라 절대 상태 명령을 쓴다** (2026-08-12). `fan_on/off`·`heater_on/off`·`relay_on/off`가 펌웨어에 **처음부터 있었다** — `APP_INTEGRATION.md §3.2` 표에 toggle만 적혀 있어 없는 줄 알았을 뿐이다. 뒤집기는 기기의 현재 상태를 전제하는데 그 전제가 어긋나면 끄려던 조작이 켜고, 히터에서는 과열=폐사다. 홈 `QuickControlGrid`·사육장 탭 `actuator_controls` 둘 다 전환 완료.
+> **⚠️ 제어는 toggle이 아니라 절대 상태 명령을 쓴다** (2026-08-12). `fan_on/off`·`heater_on/off`·`relay_on/off`가 펌웨어에 **처음부터 있었다** — `APP_INTEGRATION.md §3.2` 표에 toggle만 적혀 있어 없는 줄 알았을 뿐이다. 뒤집기는 기기의 현재 상태를 전제하는데 그 전제가 어긋나면 끄려던 조작이 켜고, 히터에서는 과열=폐사다. 홈 `CageControlGrid`·사육장 탭 `actuator_controls` 둘 다 절대 명령이다.
 > **⚠️ 새 명령을 추가하면 `shared/domain/actuator_marker.dart`의 `_kindByAction`을 같이 고칠 것.** 안 하면 그 동작만 차트에서 **조용히** 사라진다(에러 없음). `led_toggle` 누락으로 12건을 놓쳤고, `mist` 전환 때도 밟을 뻔했다.
 > **분무**: `mist` + `payload.duration_ms`(1000/2000/3000). 앱은 지속시간만 보내고 **OFF는 보내지 않는다** — 펌웨어가 스스로 끈다. 과거 `relay_toggle` 144건도 계속 분무로 해석한다(`MistDuration`, `home_mist_*`).
 > **LED 밝기는 보드 능력으로 분기한다**(2026-08-18): `devices.capabilities.led_dimmable`(`Device.ledDimmable`)이 true인 MOSFET 보드만 `openLedSheet`에 슬라이더(`led_on`+`brightness`)가 뜬다. 릴레이 보드는 on/off만. **⚠️ 펌웨어가 아직 capabilities를 보고하지 않아 전 기기가 `relay`로 백필**돼 있다 — 실제 MOSFET이면 운영자가 DB를 고치거나 펌웨어 보고가 붙어야 슬라이더가 열린다. 앱은 분기만 갖고 기다린다. **LED 실상태는 `telemetry.led`/`led_brightness`**(`TelemetryReading.led`)만 본다 — 구 펌웨어(`unavailable`)는 "모름"으로 그리고 켜기/끄기 버튼을 둘 다 내놓는다(홈 캡슐·사육장 타일 동일 규칙, 로컬 추측 없음).
@@ -104,7 +104,7 @@ lib/
 > **화면에서 이유를 밝힌다**: 정지형 가드·히터 타이머는 펌웨어 후속이라 `RoutineSettingsScreen` 하단 각주로 밝힌다. 기기 오프라인도 `DeviceOfflineNotice`로 밝힌다 — 회색 버튼만 두면 고장으로 읽힌다. **LCD 문구**는 사육장 설정의 `LcdSettingTile`(REST `/lcd`, 64자 상한) — `lcd_bitmap/lcd_clear`는 차트 마커에서 **의도적으로 제외**(액추에이터 동작이 아님).
 > 백엔드 계약 결정 로그: `docs/backend-handoff-timer-mist.md` §10 (2026-08-14 해소 현황 포함) + 신규 계약 `docs/backend-handoff-2026-08-14-summary.md`. ⚠️ 팬타이머·LCD 실동작은 **펌웨어 플래시 선행**.
 > **온습도 차트는 홈·통계 공용이다** — `shared/widgets/env_chart.dart`(`EnvChart`) + `shared/domain/{chart_window,env_chart_data,axis_bounds,actuator_marker,night_band}.dart`. 창(`ChartWindow`)은 **지금 이후 첫 6시간 눈금(04/10/16/22시)에서 24시간 뒤로**, 6시간마다 통째로 전진한다. 남는 꼬리가 미도래 밴드(= 아직 안 지난 시간). 치수는 Figma 393pt 프레임 실측값(`docs/figma-final-design-transcript.md` §3.1 실측 좌표표)이고, 격자는 라이브러리가 아니라 직접 그린다(가로선·세로선·밴드가 서로 다른 세로 범위를 쓴다). Y 눈금은 **항상 6개**, 칸 크기는 데이터에 맞춰 1·2·5 계열로 정해진다.
-> 요약(현재값 + 최고/최저)도 공용이다 — `shared/widgets/env_summary_bar.dart`(`EnvSummaryBar`). **두 위젯 다 provider를 읽지 않고 값만 받는다**(순환 참조 방지). 화면별 얇은 래퍼가 배선한다: 홈 `LiveEnvCard`, 통계 `StatsSummaryBar`.
+> 요약(현재값 + 최고/최저)도 공용이다 — `shared/widgets/env_summary_bar.dart`(`EnvSummaryBar`). **두 위젯 다 provider를 읽지 않고 값만 받는다**(순환 참조 방지). 소비처는 `/dev/chart-lab`만 남았다(홈 `LiveEnvCard`·통계 `StatsSummaryBar` 래퍼는 2026-09-04 정리로 stats 폐지와 함께 삭제 — 실화면 온습도는 `/env-detail`의 `EnvDayChart`/`WeekRangeChart`).
 > 화면별 차이: 홈은 **밤 띠 on·스크러버 off**(차트 전체가 `/stats` 진입점), 통계는 **밤 띠 off·스크러버 on**(손 떼도 유지, ✕로 해제). 그 외 표시는 완전히 같다 — 홈의 위험/주의 배지는 2026-08-10 제거(사용자 결정). 안심존 판정(`classifyComfort`)은 사육장 탭 추이 차트에 남아 있다.
 > 프로바이더는 `home/presentation/home_control_providers.dart`에 모여 있다(`chartWindowProvider`·`envChartDataProvider`·`chartExtremesProvider`·`actuatorMarkersProvider`). 최고/최저는 **차트와 같은 창**을 쓴다(당일 07:00~ 창을 쓰던 `todayExtremesProvider`는 제거).
 
