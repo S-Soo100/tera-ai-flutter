@@ -9,6 +9,7 @@ import '../data/camera_repository.dart';
 import '../data/enclosure_repository.dart';
 import '../data/clip_repository.dart';
 import '../data/favorite_clip_repository.dart';
+import '../data/highlight_banner_store.dart';
 import '../data/highlight_repository.dart';
 import '../data/motion_clip_repository.dart';
 import '../data/video_cache_repository.dart';
@@ -20,6 +21,7 @@ import '../domain/cage_activity.dart';
 import '../domain/clip.dart';
 import '../domain/clip_media_url.dart';
 import '../domain/favorite_clip.dart';
+import '../domain/highlight_group.dart';
 import '../domain/motion_clip.dart';
 import '../domain/nightly_highlight.dart';
 import '../domain/nightly_report.dart';
@@ -438,6 +440,41 @@ final allFavoriteClipsProvider =
   ref.watch(currentUserProvider.select((u) => u?.id));
   return ref.watch(favoriteClipRepositoryProvider).listAll();
 });
+
+// ── 하이라이트 상세 (2026-09-04 재설계 T4) ─────────────────────────────────────
+
+/// 하이라이트 묶음(최근 30일, 72시간 창 그룹핑 — [groupHighlights]).
+/// 그룹·그룹 내 항목 모두 최신부터. 에러는 화면이 retry로 처리(삼키지 않음).
+final highlightGroupsProvider =
+    FutureProvider.autoDispose<List<HighlightGroup>>((ref) async {
+  ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 격리
+  final list = await ref.watch(highlightRepositoryProvider).list(
+        since: DateTime.now().subtract(const Duration(days: 30)),
+        limit: 200,
+      );
+  return groupHighlights(list.where((h) => h.clipId.isNotEmpty).toList());
+});
+
+/// 도착 배너 dismiss 저장소(Hive `app_settings`).
+final highlightBannerStoreProvider = Provider<HighlightBannerStore>(
+  (_) => const HiveHighlightBannerStore(),
+);
+
+/// 마지막으로 dismiss한 그룹 key(from ISO). null = dismiss 이력 없음.
+/// 하이라이트 상세의 도착 배너가 watch — 최신 그룹 key와 같으면 숨긴다.
+final highlightBannerDismissedProvider =
+    NotifierProvider<HighlightBannerDismissedNotifier, String?>(
+        HighlightBannerDismissedNotifier.new);
+
+class HighlightBannerDismissedNotifier extends Notifier<String?> {
+  @override
+  String? build() => ref.watch(highlightBannerStoreProvider).load();
+
+  Future<void> dismiss(String groupKey) async {
+    state = groupKey;
+    await ref.read(highlightBannerStoreProvider).save(groupKey);
+  }
+}
 
 /// 시간(정각) 묶음 — 그룹·그룹 내 클립 모두 최신부터(내림차순).
 typedef CrecamHourGroup = ({DateTime hour, List<MotionClip> clips});
