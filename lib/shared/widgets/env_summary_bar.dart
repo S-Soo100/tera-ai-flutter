@@ -186,7 +186,7 @@ class _ScrubReadout extends StatelessWidget {
       case ChartTickFormat.hour:
         final isAm = at.hour < 12;
         final h12 = at.hour % 12 == 0 ? 12 : at.hour % 12;
-        return (isAm ? 'stats_scrub_time_am' : 'stats_scrub_time_pm').tr(
+        return (isAm ? 'time_am_fmt' : 'time_pm_fmt').tr(
           namedArgs: {
             'h': '$h12',
             'm': at.minute.toString().padLeft(2, '0'),

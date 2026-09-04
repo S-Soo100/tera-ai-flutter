@@ -3,17 +3,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/domain/actuator_marker.dart';
+import '../../../../shared/domain/am_pm_time.dart';
 import '../../../../shared/domain/control_log.dart';
 import '../../../../shared/domain/num_format.dart';
-
-/// 시각을 `오전 11:23`으로. 키는 통계 스크러버와 같은 것을 재사용한다 —
-/// 같은 개념(시각 표기)을 화면마다 다른 키로 두면 문구 수정이 반쪽 난다.
-String formatAmPmTime(DateTime at) {
-  final h12 = at.hour % 12 == 0 ? 12 : at.hour % 12;
-  return (at.hour < 12 ? 'stats_scrub_time_am' : 'stats_scrub_time_pm').tr(
-    namedArgs: {'h': '$h12', 'm': at.minute.toString().padLeft(2, '0')},
-  );
-}
 
 /// 기기 종류 → 아이콘. **홈 제어 그리드([CageControlGrid])와 같은 그림**을
 /// 쓴다 — 그리드에서 누른 버튼과 기록의 아이콘이 다르면 같은 기기로 안 읽힌다.

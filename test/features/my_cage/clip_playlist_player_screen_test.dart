@@ -89,12 +89,14 @@ void main() {
     expect(find.byKey(ClipPlaylistPlayerScreen.paginationKey), findsNothing);
   });
 
-  testWidgets('재생목록 10개 초과 — 페이지네이션을 그리지 않는다', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(393, 852));
-    final ids = List.generate(11, (i) => 'clip-$i');
-    await _pump(tester, clipId: 'clip-0', playlist: ids);
-
-    expect(find.byKey(ClipPlaylistPlayerScreen.paginationKey), findsNothing);
+  testWidgets('재생목록 10개 초과 — 세그먼트 대신 연속 진행 바', (tester) async {
+    // 하루치 재생목록은 쉽게 10개를 넘는다 — 숨기는 대신 같은 자리(높이 4)에
+    // 진행 바로 위치를 말한다(리뷰 2026-09-04).
+    await _pump(tester,
+        clipId: 'c1', playlist: [for (var i = 1; i <= 11; i++) 'c$i']);
+    expect(
+        find.byKey(ClipPlaylistPlayerScreen.paginationKey), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
 
   testWidgets('상단바 — 현재 클립 startedAt으로 날짜·시각을 그린다', (tester) async {
@@ -102,8 +104,8 @@ void main() {
     await _pump(tester, clipId: 'b', playlist: ['a', 'b']);
 
     expect(find.text('2026. 08. 28'), findsOneWidget);
-    // 오전/오후 라벨은 l10n 키 — 테스트엔 EasyLocalization이 없어 키가
-    // 그대로 나오므로 시:분만 확인한다.
-    expect(find.textContaining('10:21'), findsOneWidget);
+    // 시각은 공용 formatAmPmTime(전체 문구 l10n 키) — 테스트엔
+    // EasyLocalization이 없어 namedArgs 미치환 키 원문이 나온다.
+    expect(find.text('time_am_fmt'), findsOneWidget);
   });
 }

@@ -9,15 +9,18 @@ import 'package:flutter/widgets.dart';
 ///
 /// 규칙: 모서리에 맞닿은 가로·세로 이웃 셀이 **둘 다 없을 때만** 둥글린다 —
 /// 한쪽이라도 있으면 그 변이 이웃과 이어져 있어(갭 2뿐) 둥글리면 틈이 생긴다.
-/// [rowCounts]는 행별 채워진 셀 수(왼쪽부터 채움 전제 — 그룹핑이 보장).
+/// 배치는 3열 왼쪽부터 채움이 전제([ClipGrid]가 보장) — 그래서 행별 카운트
+/// 대신 [total] 하나로 이웃 유무가 결정된다(리뷰 2026-09-04 단순화: 구
+/// rowCounts 리스트는 `[3,…,n%3]` 외의 배치를 표현할 일이 없었다).
 BorderRadius clipGridCellRadius({
   required int row,
   required int col,
-  required List<int> rowCounts,
+  required int total,
+  int columns = 3,
   double radius = 12,
 }) {
   bool has(int r, int c) =>
-      r >= 0 && r < rowCounts.length && c >= 0 && c < rowCounts[r];
+      r >= 0 && c >= 0 && c < columns && r * columns + c < total;
 
   final left = has(row, col - 1);
   final right = has(row, col + 1);

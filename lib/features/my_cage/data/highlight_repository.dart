@@ -17,9 +17,14 @@ class HighlightRepository {
   })  : _terraApiUrl = terraApiUrl,
         _tokenProvider = tokenProvider;
 
+  /// 서버가 받는 limit 상한(FastAPI le=100 — 초과분은 422, 2026-09-04 실측).
+  /// 계약을 아는 계층이 지킨다: 넘겨받은 limit은 여기서 클램프된다.
+  static const maxLimit = 100;
+
   /// [since] 이후 하이라이트 목록(최신순 가정, 서버 필터/억제셋 적용본).
   Future<List<NightlyHighlight>> list(
       {required DateTime since, int limit = 50}) async {
+    limit = limit.clamp(1, maxLimit);
     final token = await _tokenProvider();
     final uri = Uri.parse('$_terraApiUrl/clips/highlights').replace(
       queryParameters: {

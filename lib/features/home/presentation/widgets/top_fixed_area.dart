@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../../shared/widgets/status_badge.dart';
@@ -166,7 +167,7 @@ class _ExpandButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withValues(alpha: 0.3),
+      color: AppTheme.liveScrim,
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -174,7 +175,7 @@ class _ExpandButton extends StatelessWidget {
         child: const SizedBox(
           width: 32,
           height: 32,
-          child: Icon(Icons.zoom_out_map, size: 17, color: Colors.white),
+          child: Icon(Icons.zoom_out_map, size: 17, color: AppTheme.liveOnDark),
         ),
       ),
     );
@@ -287,8 +288,8 @@ class _PageDots extends StatelessWidget {
               shape: BoxShape.circle,
               // 어두운 라이브 면 위라 테마 색을 쓰면 안 보인다.
               color: i == current
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.35),
+                  ? AppTheme.liveOnDark
+                  : AppTheme.liveOnDarkFaint,
             ),
           ),
       ],

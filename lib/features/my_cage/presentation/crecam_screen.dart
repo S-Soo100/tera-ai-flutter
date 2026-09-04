@@ -1,10 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/glass_palette.dart';
+import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/domain/time_ago.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
@@ -13,7 +13,10 @@ import '../../home/presentation/widgets/home_header_bar.dart';
 import '../domain/motion_clip.dart';
 import 'my_cage_providers.dart';
 import 'widgets/camera_live_area.dart';
-import 'widgets/clip_grid_radius.dart';
+import 'widgets/clip_grid.dart';
+import 'widgets/crecam_detail_top_bar.dart';
+import 'widgets/crecam_states.dart';
+import 'widgets/motion_clip_thumb.dart';
 
 /// 카메라 탭 Camera Home — Figma 668:427 (2026-09-04 재설계 T2, 전면 재작성).
 ///
@@ -342,16 +345,10 @@ class _PeriodButton extends ConsumerWidget {
 
   Future<void> _pick(
       BuildContext context, WidgetRef ref, DateTime current) async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: current.isAfter(now) ? now : current,
-      firstDate: DateTime(2024, 1, 1),
-      lastDate: now,
-    );
+    // 상세 화면들과 같은 공용 피커(자정 정규화 포함) — 정책 2벌 방지.
+    final picked = await showCrecamDayPicker(context, current);
     if (picked == null || !context.mounted) return;
-    ref.read(crecamDayProvider.notifier).state =
-        DateTime(picked.year, picked.month, picked.day); // 자정 정규화
+    ref.read(crecamDayProvider.notifier).state = picked;
   }
 }
 
@@ -370,27 +367,12 @@ class _HourClipSections extends ConsumerWidget {
       loading: () => const _SectionsSkeleton(),
       error: (_, __) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Column(
-          children: [
-            Text(
-              'error_generic'.tr(),
-              style: TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: glass.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () {
-                // 하위 클립 family까지 — 부모만 깨우면 캐시가 그대로다.
-                ref.invalidate(motionClipsProvider);
-                ref.invalidate(crecamHourGroupsProvider);
-              },
-              child: Text('retry'.tr()),
-            ),
-          ],
+        child: CrecamErrorRetry(
+          onRetry: () {
+            // 하위 클립 family까지 — 부모만 깨우면 캐시가 그대로다.
+            ref.invalidate(motionClipsProvider);
+            ref.invalidate(crecamHourGroupsProvider);
+          },
         ),
       ),
       data: (groups) {
@@ -447,24 +429,9 @@ class _HourSection extends StatelessWidget {
   final String? dateLabel;
   final List<String> playlist;
 
-  /// Figma 셀 실측 121.67×113.
-  static const double _cellAspect = 121.67 / 113;
-  static const double _cellGap = 2;
-
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
-    final rows = <List<MotionClip?>>[];
-    for (var i = 0; i < group.clips.length; i += 3) {
-      final row = <MotionClip?>[
-        for (var j = i; j < i + 3; j++)
-          j < group.clips.length ? group.clips[j] : null,
-      ];
-      rows.add(row);
-    }
-    final rowCounts = [
-      for (final row in rows) row.whereType<MotionClip>().length,
-    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -473,7 +440,7 @@ class _HourSection extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                _hourLabel(group.hour),
+                formatAmPmTime(group.hour),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -499,54 +466,14 @@ class _HourSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        // 그룹 전체 ClipRRect 대신 **셀별 노출 모서리 라운드** — 마지막 행이
-        // 부분만 차거나 클립이 1개뿐일 때도 바깥 모서리가 전부 둥글다
-        // (clip_grid_radius.dart, 2026-09-04 사용자 지시).
-        Column(
-          children: [
-            for (var r = 0; r < rows.length; r++) ...[
-              if (r > 0) const SizedBox(height: _cellGap),
-              Row(
-                children: [
-                  for (var c = 0; c < 3; c++) ...[
-                    if (c > 0) const SizedBox(width: _cellGap),
-                    Expanded(
-                      child: AspectRatio(
-                        aspectRatio: _cellAspect,
-                        child: rows[r][c] == null
-                            ? const SizedBox.shrink()
-                            : ClipRRect(
-                                borderRadius: clipGridCellRadius(
-                                  row: r,
-                                  col: c,
-                                  rowCounts: rowCounts,
-                                ),
-                                child: _ClipCell(
-                                  clip: rows[r][c]!,
-                                  playlist: playlist,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ],
+        ClipGrid<MotionClip>(
+          items: group.clips,
+          cellBuilder: (clip) => _ClipCell(clip: clip, playlist: playlist),
         ),
       ],
     );
   }
 
-  /// "오전 8:00" — intl ko 로케일 미초기화라 오전/오후는 l10n 키로 직접 조합
-  /// (T1 _timeLabel과 같은 이유).
-  static String _hourLabel(DateTime hour) {
-    final period =
-        hour.hour < 12 ? 'crecam_player_am'.tr() : 'crecam_player_pm'.tr();
-    var h = hour.hour % 12;
-    if (h == 0) h = 12;
-    return '$period $h:00';
-  }
 }
 
 /// 썸네일 셀 — terra-api presigned 썸네일(없으면 회색 폴백). 탭 → 세로
@@ -559,46 +486,16 @@ class _ClipCell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final glass = context.glass;
-    final thumbAsync = ref.watch(motionThumbnailProvider(clip.id));
-
-    final fallback = ColoredBox(
-      color: glass.overlayFaint,
-      child: Center(
-        child: Icon(Icons.videocam_rounded,
-            size: 20, color: glass.textTertiary),
-      ),
-    );
-
-    final thumb = thumbAsync.when(
-      data: (url) => url != null
-          ? CachedNetworkImage(
-              imageUrl: url,
-              // presign 서명이 매번 달라도 디스크 캐시가 맞도록(리뷰 2026-09-04)
-              cacheKey: 'thumb_${clip.id}',
-              fit: BoxFit.cover,
-              placeholder: (_, __) => const SkeletonLoading(
-                width: double.infinity,
-                height: double.infinity,
-                borderRadius: 0,
-              ),
-              errorWidget: (_, __, ___) => fallback,
-            )
-          : fallback,
-      loading: () => const SkeletonLoading(
-        width: double.infinity,
-        height: double.infinity,
-        borderRadius: 0,
-      ),
-      error: (_, __) => fallback,
-    );
-
     return GestureDetector(
       key: ValueKey('crecam_clip_${clip.id}'),
       behavior: HitTestBehavior.opaque,
       onTap: () =>
           context.push('/crecam/player/${clip.id}', extra: playlist),
-      child: thumb,
+      child: MotionClipThumb(
+        clipId: clip.id,
+        fallbackIcon: Icons.videocam_rounded,
+        fallbackColor: context.glass.overlayFaint,
+      ),
     );
   }
 }
@@ -617,10 +514,10 @@ class _SectionsSkeleton extends StatelessWidget {
         Row(
           children: [
             for (var c = 0; c < 3; c++) ...[
-              if (c > 0) const SizedBox(width: 2),
+              if (c > 0) const SizedBox(width: ClipGrid.cellGap),
               const Expanded(
                 child: AspectRatio(
-                  aspectRatio: _HourSection._cellAspect,
+                  aspectRatio: ClipGrid.cellAspect,
                   child: SkeletonLoading(
                     width: double.infinity,
                     height: double.infinity,

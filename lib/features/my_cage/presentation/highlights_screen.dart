@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +8,9 @@ import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/highlight_group.dart';
 import '../domain/nightly_highlight.dart';
 import 'my_cage_providers.dart';
-import 'widgets/clip_grid_radius.dart';
+import 'widgets/clip_grid.dart';
+import 'widgets/crecam_states.dart';
+import 'widgets/motion_clip_thumb.dart';
 import 'widgets/crecam_detail_top_bar.dart';
 
 /// 하이라이트 날짜 필터(startedAt 기준, 자정 경계). null = 전체(묶음 보기).
@@ -64,7 +65,7 @@ class HighlightsScreen extends ConsumerWidget {
             Expanded(
               child: groupsAsync.when(
                 loading: () => const _Skeleton(),
-                error: (_, __) => _ErrorRetry(
+                error: (_, __) => CrecamErrorRetry(
                   onRetry: () => ref.invalidate(highlightGroupsProvider),
                 ),
                 data: (groups) => day != null
@@ -95,7 +96,7 @@ class HighlightsScreen extends ConsumerWidget {
     ]..sort((a, b) => b.startedAt.compareTo(a.startedAt));
 
     if (items.isEmpty) {
-      return _EmptyMessage(message: 'crecam_home_empty_day'.tr());
+      return CrecamEmptyMessage(message: 'crecam_home_empty_day'.tr());
     }
     return ListView(
       padding: const EdgeInsets.fromLTRB(_margin, 24, _margin, 24),
@@ -112,7 +113,7 @@ class HighlightsScreen extends ConsumerWidget {
   Widget _groupView(BuildContext context, WidgetRef ref,
       List<HighlightGroup> groups, String? dismissedKey) {
     if (groups.isEmpty) {
-      return _EmptyMessage(message: 'crecam_highlights_empty'.tr());
+      return CrecamEmptyMessage(message: 'crecam_highlights_empty'.tr());
     }
     final newest = groups.first;
     final showBanner = dismissedKey != highlightGroupKey(newest);
@@ -277,7 +278,7 @@ class _BannerThumbStack extends StatelessWidget {
                 height: 161.8 * s,
                 child: ClipRRect(
                   borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  child: _Thumbnail(clipId: clipId),
+                  child: MotionClipThumb(clipId: clipId),
                 ),
               ),
             ],
@@ -298,21 +299,9 @@ class _Section extends StatelessWidget {
   /// startedAt 내림차순.
   final List<NightlyHighlight> items;
 
-  static const double _cellAspect = 121.67 / 113;
-  static const double _cellGap = 2;
-
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
-    final rows = <List<NightlyHighlight?>>[];
-    for (var i = 0; i < items.length; i += 3) {
-      rows.add([
-        for (var j = i; j < i + 3; j++) j < items.length ? items[j] : null,
-      ]);
-    }
-    final rowCounts = [
-      for (final row in rows) row.whereType<NightlyHighlight>().length,
-    ];
     final playlist = [for (final h in items) h.clipId];
 
     return Column(
@@ -331,39 +320,9 @@ class _Section extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        // 셀별 노출 모서리 라운드 — Camera Home 그리드와 동일 규칙
-        // (clip_grid_radius.dart, 2026-09-04 사용자 지시).
-        Column(
-          children: [
-            for (var r = 0; r < rows.length; r++) ...[
-              if (r > 0) const SizedBox(height: _cellGap),
-              Row(
-                children: [
-                  for (var c = 0; c < 3; c++) ...[
-                    if (c > 0) const SizedBox(width: _cellGap),
-                    Expanded(
-                      child: AspectRatio(
-                        aspectRatio: _cellAspect,
-                        child: rows[r][c] == null
-                            ? const SizedBox.shrink()
-                            : ClipRRect(
-                                borderRadius: clipGridCellRadius(
-                                  row: r,
-                                  col: c,
-                                  rowCounts: rowCounts,
-                                ),
-                                child: _Cell(
-                                  highlight: rows[r][c]!,
-                                  playlist: playlist,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ],
+        ClipGrid<NightlyHighlight>(
+          items: items,
+          cellBuilder: (h) => _Cell(highlight: h, playlist: playlist),
         ),
       ],
     );
@@ -384,7 +343,7 @@ class _Cell extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () => context.push('/crecam/player/${highlight.clipId}',
           extra: playlist),
-      child: _Thumbnail(clipId: highlight.clipId),
+      child: MotionClipThumb(clipId: highlight.clipId),
     );
   }
 }
@@ -392,101 +351,6 @@ class _Cell extends StatelessWidget {
 void _openPlayer(BuildContext context, HighlightGroup group, String clipId) {
   final playlist = [for (final h in group.items) h.clipId];
   context.push('/crecam/player/$clipId', extra: playlist);
-}
-
-/// terra-api presigned 썸네일 — 없음·실패 시 surfaceTint + 무비 아이콘 폴백.
-class _Thumbnail extends ConsumerWidget {
-  const _Thumbnail({required this.clipId});
-
-  final String clipId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final glass = context.glass;
-    final thumbAsync = ref.watch(motionThumbnailProvider(clipId));
-
-    final fallback = ColoredBox(
-      color: glass.surfaceTint,
-      child: Center(
-        child: Icon(Icons.movie_outlined, size: 20, color: glass.textTertiary),
-      ),
-    );
-
-    return thumbAsync.when(
-      data: (url) => url != null
-          ? CachedNetworkImage(
-              imageUrl: url,
-              // presign 서명이 매번 달라도 디스크 캐시가 맞도록(리뷰 2026-09-04)
-              cacheKey: 'thumb_$clipId',
-              fit: BoxFit.cover,
-              placeholder: (_, __) => const SkeletonLoading(
-                width: double.infinity,
-                height: double.infinity,
-                borderRadius: 0,
-              ),
-              errorWidget: (_, __, ___) => fallback,
-            )
-          : fallback,
-      loading: () => const SkeletonLoading(
-        width: double.infinity,
-        height: double.infinity,
-        borderRadius: 0,
-      ),
-      error: (_, __) => fallback,
-    );
-  }
-}
-
-class _EmptyMessage extends StatelessWidget {
-  const _EmptyMessage({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final glass = context.glass;
-    return Center(
-      child: Text(
-        message,
-        style: TextStyle(
-          fontFamily: 'Pretendard',
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 14 * -0.02,
-          color: glass.textTertiary,
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorRetry extends StatelessWidget {
-  const _ErrorRetry({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final glass = context.glass;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'error_generic'.tr(),
-            style: TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: glass.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton(onPressed: onRetry, child: Text('retry'.tr())),
-        ],
-      ),
-    );
-  }
 }
 
 /// 로딩 스켈레톤 — 배너 면 + 헤더 줄 + 3열 셀 한 그룹(shimmer, CPI 금지).
@@ -514,10 +378,10 @@ class _Skeleton extends StatelessWidget {
         Row(
           children: [
             for (var c = 0; c < 3; c++) ...[
-              if (c > 0) const SizedBox(width: _Section._cellGap),
+              if (c > 0) const SizedBox(width: ClipGrid.cellGap),
               const Expanded(
                 child: AspectRatio(
-                  aspectRatio: _Section._cellAspect,
+                  aspectRatio: ClipGrid.cellAspect,
                   child: SkeletonLoading(
                     width: double.infinity,
                     height: double.infinity,

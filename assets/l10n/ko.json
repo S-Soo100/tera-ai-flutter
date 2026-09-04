@@ -9,8 +9,6 @@
   "stats_axis_humid": "{v}%",
   "stats_extremes_temp": "최고 {max}° 최저 {min}°",
   "stats_extremes_humid": "최고 {max}% 최저 {min}%",
-  "stats_scrub_time_am": "오전 {h}:{m}",
-  "stats_scrub_time_pm": "오후 {h}:{m}",
   "stats_scrub_date": "{m}/{d}",
   "stats_scrub_clear": "현재값 보기",
   "stats_marker_ran": "{time} {what} 실행",
@@ -237,8 +235,6 @@
   "clip_favorites_empty": "즐겨찾기한 영상이 없어요",
   "crecam_player_rew10": "10초 전",
   "crecam_player_ffw10": "10초 뒤",
-  "crecam_player_am": "오전",
-  "crecam_player_pm": "오후",
   "crecam_home_highlights": "하이라이트",
   "crecam_home_bookmarks": "북마크 영상",
   "crecam_home_updated": "업데이트 {}",
@@ -644,5 +640,7 @@
   "my_pets_pass_weight_value": "{}g",
   "nightly_ratio_active": "ACTIVE",
   "nightly_ratio_rest": "REST",
-  "crecam_home_load_failed": "불러오기 실패"
+  "crecam_home_load_failed": "불러오기 실패",
+  "time_am_fmt": "오전 {h}:{m}",
+  "time_pm_fmt": "오후 {h}:{m}"
 }

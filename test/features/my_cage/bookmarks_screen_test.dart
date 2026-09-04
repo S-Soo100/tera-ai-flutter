@@ -74,9 +74,9 @@ void main() {
     expect(find.text('crecam_bookmarks_title'), findsOneWidget);
     // 00:50 → 오전 12:50 (0시 = 12시 표기 엣지)
     expect(
-        find.text('2026. 08. 12 · crecam_player_am 12:50'), findsOneWidget);
+        find.text('2026. 08. 12 · time_am_fmt'), findsOneWidget);
     // 14:05 → 오후 2:05
-    expect(find.text('2026. 08. 11 · crecam_player_pm 2:05'), findsOneWidget);
+    expect(find.text('2026. 08. 11 · time_pm_fmt'), findsOneWidget);
     expect(find.byKey(CrecamDetailTopBar.calendarButtonKey), findsOneWidget);
   });
 
@@ -89,7 +89,7 @@ void main() {
       (tester) async {
     await _pump(tester);
     // 카드 면적이 커서 카드 중심이 화면 밖일 수 있다 — 헤더 텍스트를 탭한다.
-    final header = find.text('2026. 08. 11 · crecam_player_pm 2:05');
+    final header = find.text('2026. 08. 11 · time_pm_fmt');
     await tester.ensureVisible(header);
     await tester.pumpAndSettle();
     await tester.tap(header);

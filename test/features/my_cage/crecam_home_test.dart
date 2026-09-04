@@ -182,9 +182,9 @@ void main() {
 
   testWidgets('시간 그룹 헤더 — 최신 시간부터, 날짜는 첫 그룹만', (tester) async {
     await _pump(tester);
-    // EasyLocalization 없이 tr()는 키를 돌려준다 → "crecam_player_am 10:00".
-    expect(find.text('crecam_player_am 10:00'), findsOneWidget);
-    expect(find.text('crecam_player_am 8:00'), findsOneWidget);
+    // EasyLocalization 없이 tr()는 키 원문을 돌려준다(namedArgs 미치환) —
+    // 시간 그룹 2개가 각각 헤더를 그린다.
+    expect(find.text('time_am_fmt'), findsNWidgets(2));
     // 첫 그룹(10시)에만 날짜 라벨 — 기간 버튼 라벨과 합쳐 2개.
     expect(find.text('2026. 8. 31'), findsNWidgets(2));
   });

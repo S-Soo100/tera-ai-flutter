@@ -3,13 +3,14 @@ import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/theme/glass_palette.dart';
+import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/motion_clip.dart';
 import 'my_cage_providers.dart';
+import 'widgets/crecam_detail_top_bar.dart';
 
 /// 세로 재생목록 플레이어 (Figma 668:743, 카메라 탭 재설계 T1).
 ///
@@ -293,7 +294,7 @@ class _ClipPlaylistPlayerScreenState
             .getMeta(currentId)
             ?.startedAt;
 
-    final showPagination = _playlist.length > 1 && _playlist.length <= 10;
+    final showPagination = _playlist.length > 1;
 
     return Scaffold(
       body: SafeArea(
@@ -338,79 +339,58 @@ class _ClipPlaylistPlayerScreenState
   }
 
   Widget _topBar(GlassPalette glass, DateTime? startedAt) {
-    return SizedBox(
-      height: 44,
-      // Figma — back 버튼은 화면 끝이 아니라 마진 12 안(2076.56 − 2064.56).
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Stack(
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                icon: Icon(Icons.arrow_back_ios_new,
-                    size: 20, color: glass.textPrimary),
-                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () => context.pop(),
-              ),
-            ),
-          ),
-          if (startedAt != null)
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    DateFormat('yyyy. MM. dd').format(startedAt.toLocal()),
-                    style: TextStyle(
-                      fontFamily: 'Pretendard',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.32, // 16 × -2%
-                      // 기본 행간(1.4×)이면 두 줄 합이 44를 넘친다(시뮬 실측
-                      // 5px overflow) — Figma 행간 19/17px에 맞추고 줄 사이
-                      // 갭 없이 딱 붙인다(4px 갭도 44를 2px 넘겼다).
-                      height: 19 / 16,
-                      color: glass.textSecondary,
-                    ),
+    // 공용 상단바(마진 12·back 44) + 중앙 2줄(날짜/시각 — Figma 668:743,
+    // 행간 19/17px 고정: 기본 행간이면 44를 넘친다. 시뮬 실측 리뷰 이력).
+    return CrecamDetailTopBar(
+      titleWidget: startedAt == null
+          ? null
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  DateFormat('yyyy. MM. dd').format(startedAt.toLocal()),
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.32, // 16 × -2%
+                    height: 19 / 16,
+                    color: glass.textSecondary,
                   ),
-                  Text(
-                    _timeLabel(startedAt.toLocal()),
-                    style: TextStyle(
-                      fontFamily: 'Pretendard',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: -0.28, // 14 × -2%
-                      height: 17 / 14,
-                      color: glass.textTertiary,
-                    ),
+                ),
+                Text(
+                  formatAmPmTime(startedAt.toLocal()),
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.28, // 14 × -2%
+                    height: 17 / 14,
+                    color: glass.textTertiary,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-        ],
-        ),
-      ),
     );
   }
 
-  /// "오전 10:21" — intl ko 로케일 데이터를 앱이 초기화하지 않으므로
-  /// (`initializeDateFormatting` 호출 없음 → `DateFormat('a', 'ko')`는 throw)
-  /// 오전/오후는 l10n 키로 직접 조합한다.
-  String _timeLabel(DateTime t) {
-    final period =
-        t.hour < 12 ? 'crecam_player_am'.tr() : 'crecam_player_pm'.tr();
-    var h = t.hour % 12;
-    if (h == 0) h = 12;
-    final m = t.minute.toString().padLeft(2, '0');
-    return '$period $h:$m';
-  }
 
   Widget _pagination(GlassPalette glass) {
+    // 10개 초과면 세그먼트가 실오라기가 된다 — 같은 자리(높이 4)에 연속
+    // 진행 바로 위치를 말한다(리뷰 2026-09-04: 기존 "그냥 숨김"은 하루치
+    // 재생목록이 쉽게 10개를 넘어 실사용 기본 경로가 무표시였다).
+    if (_playlist.length > 10) {
+      return ClipRRect(
+        key: ClipPlaylistPlayerScreen.paginationKey,
+        borderRadius: BorderRadius.circular(2),
+        child: LinearProgressIndicator(
+          value: (_index + 1) / _playlist.length,
+          minHeight: 4,
+          backgroundColor: glass.outline,
+          valueColor: AlwaysStoppedAnimation(glass.textPrimary),
+        ),
+      );
+    }
     return Row(
       key: ClipPlaylistPlayerScreen.paginationKey,
       children: [

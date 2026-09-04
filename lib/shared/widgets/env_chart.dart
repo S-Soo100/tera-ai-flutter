@@ -597,7 +597,7 @@ class _MarkerRow extends StatelessWidget {
   String _label(ActuatorMarker m) {
     final isAm = m.at.hour < 12;
     final h12 = m.at.hour % 12 == 0 ? 12 : m.at.hour % 12;
-    final time = (isAm ? 'stats_scrub_time_am' : 'stats_scrub_time_pm').tr(
+    final time = (isAm ? 'time_am_fmt' : 'time_pm_fmt').tr(
       namedArgs: {
         'h': '$h12',
         'm': m.at.minute.toString().padLeft(2, '0'),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../../shared/widgets/skeleton_loading.dart';
@@ -201,7 +202,7 @@ class _ExpandButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withValues(alpha: 0.3),
+      color: AppTheme.liveScrim,
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -209,7 +210,7 @@ class _ExpandButton extends StatelessWidget {
         child: const SizedBox(
           width: 32,
           height: 32,
-          child: Icon(Icons.zoom_out_map, size: 17.5, color: Colors.white),
+          child: Icon(Icons.zoom_out_map, size: 17.5, color: AppTheme.liveOnDark),
         ),
       ),
     );
@@ -236,8 +237,8 @@ class _PageDots extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: i == current
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.35),
+                  ? AppTheme.liveOnDark
+                  : AppTheme.liveOnDarkFaint,
             ),
           ),
       ],

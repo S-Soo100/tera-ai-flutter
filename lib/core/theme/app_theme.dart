@@ -29,6 +29,12 @@ class AppTheme {
   static const textBody = Color(0xFF3C3C3C); // 폰트 본문
   static const textMuted = Color(0xFF919497); // 중요도 낮은 텍스트
   static const lineColor = Color(0xFFE1E3E4); // 라인컬러
+
+  // ── 라이브 면(항상 어두운 영상 위) 고정색 — 테마 불변이라 팔레트 밖.
+  //    Colors.white/black 리터럴 산재를 토큰으로(리뷰 2026-09-04).
+  static const liveOnDark = Color(0xFFFFFFFF); // 어두운 면 위 글리프·활성 점
+  static const liveOnDarkFaint = Color(0x59FFFFFF); // 비활성 점(white 35%)
+  static const liveScrim = Color(0x4D000000); // 확장 버튼 원판(black 30%)
   static const surfaceMuted = Color(0xFFEAEEF0); // Chip Disabled 배경·Tabs 보더
 
   // ── 서브컬러 (Figma: "여기는 위에있는 컬러 아니고 서브컬러들") ──

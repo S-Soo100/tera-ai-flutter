@@ -1,14 +1,16 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/glass_palette.dart';
+import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/favorite_clip.dart';
 import 'my_cage_providers.dart';
 import 'widgets/crecam_detail_top_bar.dart';
+import 'widgets/crecam_states.dart';
+import 'widgets/motion_clip_thumb.dart';
 
 /// 북마크 날짜 필터(클립 startedAt 기준, 자정 경계). null = 전체.
 /// autoDispose — 화면 이탈 시 리셋.
@@ -56,7 +58,7 @@ class BookmarksScreen extends ConsumerWidget {
             Expanded(
               child: favoritesAsync.when(
                 loading: () => const _ListSkeleton(),
-                error: (_, __) => _ErrorRetry(
+                error: (_, __) => CrecamErrorRetry(
                   onRetry: () => ref.invalidate(allFavoriteClipsProvider),
                 ),
                 data: (favorites) => _list(context, favorites, day),
@@ -88,7 +90,7 @@ class BookmarksScreen extends ConsumerWidget {
 
     if (filtered.isEmpty) {
       // 북마크 자체가 없으면 기존 즐겨찾기 빈 문구, 필터 결과만 없으면 날짜 문구.
-      return _EmptyMessage(
+      return CrecamEmptyMessage(
         message: favorites.isEmpty
             ? 'clip_favorites_empty'.tr()
             : 'crecam_home_empty_day'.tr(),
@@ -119,37 +121,8 @@ class _BookmarkCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
-    final thumbAsync = ref.watch(motionThumbnailProvider(clip.clipId));
-
-    final fallback = ColoredBox(
-      color: glass.surfaceTint,
-      child: Center(
-        child: Icon(Icons.movie_outlined, size: 28, color: glass.textTertiary),
-      ),
-    );
-
-    final thumb = thumbAsync.when(
-      data: (url) => url != null
-          ? CachedNetworkImage(
-              imageUrl: url,
-              // presign 서명이 매번 달라도 디스크 캐시가 맞도록(리뷰 2026-09-04)
-              cacheKey: 'thumb_${clip.clipId}',
-              fit: BoxFit.cover,
-              placeholder: (_, __) => const SkeletonLoading(
-                width: double.infinity,
-                height: double.infinity,
-                borderRadius: 0,
-              ),
-              errorWidget: (_, __, ___) => fallback,
-            )
-          : fallback,
-      loading: () => const SkeletonLoading(
-        width: double.infinity,
-        height: double.infinity,
-        borderRadius: 0,
-      ),
-      error: (_, __) => fallback,
-    );
+    final thumb =
+        MotionClipThumb(clipId: clip.clipId, fallbackIconSize: 28);
 
     return GestureDetector(
       key: ValueKey('bookmark_card_${clip.clipId}'),
@@ -181,68 +154,9 @@ class _BookmarkCard extends ConsumerWidget {
     );
   }
 
-  /// "2026. 08. 12 · 오전 12:50" — intl ko 로케일 미초기화라 오전/오후는
-  /// l10n 키로 직접 조합(T1 _timeLabel과 같은 이유).
-  static String _headerLabel(DateTime t) {
-    final period =
-        t.hour < 12 ? 'crecam_player_am'.tr() : 'crecam_player_pm'.tr();
-    var h = t.hour % 12;
-    if (h == 0) h = 12;
-    final m = t.minute.toString().padLeft(2, '0');
-    return '${DateFormat('yyyy. MM. dd').format(t)} · $period $h:$m';
-  }
-}
-
-class _EmptyMessage extends StatelessWidget {
-  const _EmptyMessage({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final glass = context.glass;
-    return Center(
-      child: Text(
-        message,
-        style: TextStyle(
-          fontFamily: 'Pretendard',
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 14 * -0.02,
-          color: glass.textTertiary,
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorRetry extends StatelessWidget {
-  const _ErrorRetry({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final glass = context.glass;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'error_generic'.tr(),
-            style: TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: glass.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton(onPressed: onRetry, child: Text('retry'.tr())),
-        ],
-      ),
-    );
-  }
+  /// "2026. 08. 12 · 오전 12:50" — 시각은 공용 [formatAmPmTime].
+  static String _headerLabel(DateTime t) =>
+      '${DateFormat('yyyy. MM. dd').format(t)} · ${formatAmPmTime(t)}';
 }
 
 /// 로딩 스켈레톤 — 카드 2장(헤더 줄 + 썸네일 면, shimmer, CPI 금지).

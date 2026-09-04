@@ -4,18 +4,28 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 
-/// 북마크·하이라이트 상세 공용 상단바 (Figma 668:717/600, T1 플레이어와 같은
-/// 문법) — 높이 44, 좌 back 44×44, 중앙 타이틀 16 SemiBold textSecondary,
-/// 우 calendar 44×44(날짜 필터).
+/// 북마크·하이라이트 상세·플레이어 공용 상단바 (Figma 668:717/600/743) —
+/// 높이 44, 마진 12, 좌 back 44×44, 중앙 [title](16 SemiBold textSecondary)
+/// 또는 [titleWidget], 우 calendar 44×44([onCalendarTap]이 null이면 없음).
+///
+/// 플레이어의 자체 _topBar 복제는 2026-09-04 정리로 여기로 수렴 — back
+/// 아이콘 크기(24 vs 20)가 화면마다 표류하고 있었다.
 class CrecamDetailTopBar extends StatelessWidget {
   const CrecamDetailTopBar({
     super.key,
-    required this.title,
-    required this.onCalendarTap,
-  });
+    this.title,
+    this.titleWidget,
+    this.onCalendarTap,
+  }) : assert(title == null || titleWidget == null,
+            'title과 titleWidget은 하나만');
 
-  final String title;
-  final VoidCallback onCalendarTap;
+  final String? title;
+
+  /// 중앙에 텍스트 한 줄 대신 얹을 위젯(플레이어의 날짜+시각 2줄 등).
+  final Widget? titleWidget;
+
+  /// null이면 우측 calendar 버튼을 그리지 않는다.
+  final VoidCallback? onCalendarTap;
 
   /// 테스트용 — calendar 버튼 식별.
   static const calendarButtonKey = Key('crecam_detail_calendar');
@@ -45,34 +55,36 @@ class CrecamDetailTopBar extends StatelessWidget {
             ),
           ),
           Center(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 16 * -0.02,
-                color: glass.textSecondary,
+            child: titleWidget ??
+                Text(
+                  title ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 16 * -0.02,
+                    color: glass.textSecondary,
+                  ),
+                ),
+          ),
+          if (onCalendarTap != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: IconButton(
+                  key: calendarButtonKey,
+                  padding: EdgeInsets.zero,
+                  icon: Icon(Icons.calendar_today,
+                      size: 20, color: glass.textPrimary),
+                  tooltip: 'crecam_home_period'.tr(),
+                  onPressed: onCalendarTap,
+                ),
               ),
             ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: IconButton(
-                key: calendarButtonKey,
-                padding: EdgeInsets.zero,
-                icon: Icon(Icons.calendar_today,
-                    size: 20, color: glass.textPrimary),
-                tooltip: 'crecam_home_period'.tr(),
-                onPressed: onCalendarTap,
-              ),
-            ),
-          ),
           ],
         ),
       ),

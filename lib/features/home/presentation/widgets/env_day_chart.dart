@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/glass_palette.dart';
+import '../../../../shared/domain/am_pm_time.dart';
 import '../../../../shared/domain/axis_bounds.dart';
 import '../../../../shared/domain/control_log.dart';
 import '../../../../shared/domain/env_chart_data.dart';
