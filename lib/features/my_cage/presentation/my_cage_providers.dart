@@ -448,9 +448,10 @@ final allFavoriteClipsProvider =
 final highlightGroupsProvider =
     FutureProvider.autoDispose<List<HighlightGroup>>((ref) async {
   ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 격리
+  // ⚠️ limit 서버 상한 100 — 200을 넘기면 422(2026-09-04 실측, FastAPI le=100).
   final list = await ref.watch(highlightRepositoryProvider).list(
         since: DateTime.now().subtract(const Duration(days: 30)),
-        limit: 200,
+        limit: 100,
       );
   return groupHighlights(list.where((h) => h.clipId.isNotEmpty).toList());
 });

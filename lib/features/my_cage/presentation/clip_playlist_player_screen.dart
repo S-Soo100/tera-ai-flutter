@@ -336,18 +336,25 @@ class _ClipPlaylistPlayerScreenState
                   Text(
                     DateFormat('yyyy. MM. dd').format(startedAt.toLocal()),
                     style: TextStyle(
+                      fontFamily: 'Pretendard',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.32, // 16 × -2%
+                      // 기본 행간(1.4×)이면 두 줄 합이 44를 넘친다(시뮬 실측
+                      // 5px overflow) — Figma 행간 19/17px에 맞추고 줄 사이
+                      // 갭 없이 딱 붙인다(4px 갭도 44를 2px 넘겼다).
+                      height: 19 / 16,
                       color: glass.textSecondary,
                     ),
                   ),
                   Text(
                     _timeLabel(startedAt.toLocal()),
                     style: TextStyle(
+                      fontFamily: 'Pretendard',
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       letterSpacing: -0.28, // 14 × -2%
+                      height: 17 / 14,
                       color: glass.textTertiary,
                     ),
                   ),

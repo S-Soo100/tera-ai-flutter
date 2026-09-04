@@ -213,7 +213,9 @@ class _EntryCard extends StatelessWidget {
                   ),
                   child: Icon(icon, size: 24, color: glass.deviceGlyph),
                 ),
-                const SizedBox(width: 12),
+                // Figma 실측 갭 8(668:450 — 아이콘 x+40 → 텍스트 x, 906.89-898.89).
+                // 12로 두면 "업데이트 4일 전"이 말줄임된다(시뮬 실측).
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
