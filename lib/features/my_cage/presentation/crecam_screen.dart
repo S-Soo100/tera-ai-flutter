@@ -13,6 +13,7 @@ import '../../home/presentation/widgets/home_header_bar.dart';
 import '../domain/motion_clip.dart';
 import 'my_cage_providers.dart';
 import 'widgets/camera_live_area.dart';
+import 'widgets/clip_grid_radius.dart';
 
 /// 카메라 탭 Camera Home — Figma 668:427 (2026-09-04 재설계 T2, 전면 재작성).
 ///
@@ -452,6 +453,9 @@ class _HourSection extends StatelessWidget {
       ];
       rows.add(row);
     }
+    final rowCounts = [
+      for (final row in rows) row.whereType<MotionClip>().length,
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -486,33 +490,40 @@ class _HourSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(12)),
-          child: Column(
-            children: [
-              for (var r = 0; r < rows.length; r++) ...[
-                if (r > 0) const SizedBox(height: _cellGap),
-                Row(
-                  children: [
-                    for (var c = 0; c < 3; c++) ...[
-                      if (c > 0) const SizedBox(width: _cellGap),
-                      Expanded(
-                        child: AspectRatio(
-                          aspectRatio: _cellAspect,
-                          child: rows[r][c] == null
-                              ? const SizedBox.shrink()
-                              : _ClipCell(
+        // 그룹 전체 ClipRRect 대신 **셀별 노출 모서리 라운드** — 마지막 행이
+        // 부분만 차거나 클립이 1개뿐일 때도 바깥 모서리가 전부 둥글다
+        // (clip_grid_radius.dart, 2026-09-04 사용자 지시).
+        Column(
+          children: [
+            for (var r = 0; r < rows.length; r++) ...[
+              if (r > 0) const SizedBox(height: _cellGap),
+              Row(
+                children: [
+                  for (var c = 0; c < 3; c++) ...[
+                    if (c > 0) const SizedBox(width: _cellGap),
+                    Expanded(
+                      child: AspectRatio(
+                        aspectRatio: _cellAspect,
+                        child: rows[r][c] == null
+                            ? const SizedBox.shrink()
+                            : ClipRRect(
+                                borderRadius: clipGridCellRadius(
+                                  row: r,
+                                  col: c,
+                                  rowCounts: rowCounts,
+                                ),
+                                child: _ClipCell(
                                   clip: rows[r][c]!,
                                   playlist: playlist,
                                 ),
-                        ),
+                              ),
                       ),
-                    ],
+                    ),
                   ],
-                ),
-              ],
+                ],
+              ),
             ],
-          ),
+          ],
         ),
       ],
     );
