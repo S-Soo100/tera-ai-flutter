@@ -11,7 +11,14 @@ import '../home_control_providers.dart';
 
 /// 사육장 제어 그리드 — Figma A.4 ④ (타일 180.5×72, 갭 8, radius 12).
 ///
-/// 타일 5개(환기팬·분무·냉각팬·히터팬·LED) 2열 3행, 마지막 홀수 칸은 빈 칸.
+/// 타일 4개(환기팬·분무·냉각팬·LED) 2열 2행. 히터팬 타일은 사용자 지시로
+/// **당장 숨김**(2026-09-04, "버튼 5개가 애매함") — [_heaterTile]로 배선은
+/// 남아 있어 다시 넣을 땐 tiles 목록에 되살리면 된다.
+///
+/// ⚠️ 히터팬을 숨긴 동안 **히터 OFF·안전잠금 해제 진입점이 앱에 없다**
+/// (리뷰 2026-09-03이 배선했던 이유 그대로 — /smart-cage 진입점도 없음).
+/// 예약·웹 콘솔로 히터가 켜지면 앱에서 끌 수 없으니, 타일 복귀 또는 별도
+/// 진입점 확보가 후속으로 필요하다(미결 Q와 함께 결정).
 /// ON = 기기색 타일(deviceXBg + 아이콘 원 deviceX), OFF = surfaceTint +
 /// 아이콘 원 deviceOff. LED는 켜짐+밝기 보고 시 [GlassPalette.deviceLedGauge]가
 /// 밝기 비율만큼 좌측을 채운다.
@@ -45,7 +52,6 @@ class CageControlGrid extends ConsumerWidget {
     final mistLocked = lock.isLocked(DateTime.now());
 
     final fanOn = t?.fan == ActuatorState.on;
-    final heaterOn = t?.heaterState == ActuatorState.on;
     final ledOn = t?.led == ActuatorState.on;
 
     final tiles = <Widget>[
@@ -87,22 +93,8 @@ class CageControlGrid extends ConsumerWidget {
         iconCircleColor: glass.deviceOff,
         onTap: () => _notReady(context),
       ),
-      // ④ 히터팬 — 기존 heater_* 절대 명령 배선(리뷰 2026-09-03 최고 심각).
-      // 홈 개편으로 /smart-cage 진입점이 사라져 히터 OFF·안전잠금 해제가
-      // 앱 어디서도 불가능해졌었다 — 과열=개체 폐사라 도달 경로가 필수다.
-      // 2단 안전확인·잠금 다이얼로그는 handleHeaterTap(cage_control_actions)
-      // 안에 있다. 미결 Q(전용 '히터팬' API)가 확정되면 명령만 갈아끼운다.
-      _DeviceTile(
-        key: heatFanKey,
-        name: 'device_heat_fan'.tr(),
-        status: _stateLabel(t?.heaterState),
-        icon: Icons.local_fire_department,
-        active: heaterOn,
-        tileColor: heaterOn ? glass.deviceHeatBg : glass.surfaceTint,
-        iconCircleColor: heaterOn ? glass.deviceHeat : glass.deviceOff,
-        onTap: online ? () => handleHeaterTap(context, ref, deviceId, t) : null,
-      ),
-      // ⑤ LED — `telemetry.led`/`led_brightness`만 믿는다(2026-08-18 회신 §4).
+      // (히터팬 — 숨김 중. 되살릴 땐 여기 `_heaterTile(...)` 한 줄.)
+      // ④ LED — `telemetry.led`/`led_brightness`만 믿는다(2026-08-18 회신 §4).
       // 구 펌웨어(unavailable)는 "상태 모름"으로 말하고 켜기/끄기 시트를 연다.
       _DeviceTile(
         key: ledKey,
@@ -149,6 +141,30 @@ class CageControlGrid extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+
+  /// 히터팬 타일 — **2026-09-04 숨김 중**(빌드에서 미사용, 클래스 doc 참조).
+  ///
+  /// 기존 heater_* 절대 명령 배선(리뷰 2026-09-03 최고 심각 수정). 2단
+  /// 안전확인·잠금 다이얼로그는 [handleHeaterTap](cage_control_actions) 안에
+  /// 있다. 미결 Q(전용 '히터팬' API)가 확정되면 명령만 갈아끼운다.
+  /// 복귀 시 build의 tiles 목록에 `_heaterTile(context, ref, deviceId, t,
+  /// online)` 한 줄을 얹으면 된다 — 컴파일이 유지되도록 메서드로 남긴다.
+  // ignore: unused_element
+  Widget _heaterTile(BuildContext context, WidgetRef ref, String deviceId,
+      TelemetryReading? t, bool online) {
+    final glass = context.glass;
+    final heaterOn = t?.heaterState == ActuatorState.on;
+    return _DeviceTile(
+      key: heatFanKey,
+      name: 'device_heat_fan'.tr(),
+      status: _stateLabel(t?.heaterState),
+      icon: Icons.local_fire_department,
+      active: heaterOn,
+      tileColor: heaterOn ? glass.deviceHeatBg : glass.surfaceTint,
+      iconCircleColor: heaterOn ? glass.deviceHeat : glass.deviceOff,
+      onTap: online ? () => handleHeaterTap(context, ref, deviceId, t) : null,
     );
   }
 

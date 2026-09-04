@@ -53,17 +53,20 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('타일 5개(환기팬·분무·냉각팬·히터팬·LED)를 그린다', (tester) async {
+  testWidgets('타일 4개(환기팬·분무·냉각팬·LED)를 그린다 — 히터팬은 숨김',
+      (tester) async {
+    // 히터팬 타일은 사용자 지시로 숨김(2026-09-04) — 배선(_heaterTile)은
+    // 남아 있고, 복귀 전까지 그리드에 나타나면 안 된다.
     await _pump(tester);
     expect(find.byKey(CageControlGrid.ventFanKey), findsOneWidget);
     expect(find.byKey(CageControlGrid.mistKey), findsOneWidget);
     expect(find.byKey(CageControlGrid.coolFanKey), findsOneWidget);
-    expect(find.byKey(CageControlGrid.heatFanKey), findsOneWidget);
     expect(find.byKey(CageControlGrid.ledKey), findsOneWidget);
+    expect(find.byKey(CageControlGrid.heatFanKey), findsNothing);
     expect(find.text('device_vent_fan'), findsOneWidget);
     expect(find.text('device_mist'), findsOneWidget);
     expect(find.text('device_cool_fan'), findsOneWidget);
-    expect(find.text('device_heat_fan'), findsOneWidget);
+    expect(find.text('device_heat_fan'), findsNothing);
     expect(find.text('device_led'), findsOneWidget);
   });
 
@@ -73,17 +76,6 @@ void main() {
     await tester.tap(find.byKey(CageControlGrid.coolFanKey));
     await tester.pump();
     expect(find.text('home_device_not_ready'), findsOneWidget);
-  });
-
-  testWidgets('히터팬 탭 → handleHeaterTap 경유 — 2단 안전확인 다이얼로그',
-      (tester) async {
-    // 리뷰 2026-09-03: 홈 개편으로 히터 제어 도달 경로가 사라져 배선했다.
-    // 확인 다이얼로그(과열=폐사 안전 플로우)가 떠야 하고, "준비 중"은 금지.
-    await _pump(tester);
-    await tester.tap(find.byKey(CageControlGrid.heatFanKey));
-    await tester.pumpAndSettle();
-    expect(find.text('module_heater_confirm_title'), findsOneWidget);
-    expect(find.text('home_device_not_ready'), findsNothing);
   });
 
   testWidgets('환기팬(꺼짐) 탭 → handleFanTap 경유 — 켜기 방식 시트가 뜬다',
