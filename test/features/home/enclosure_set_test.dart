@@ -65,39 +65,9 @@ void main() {
     });
   });
 
-  group('DeviceMode 서브탭 가용성 (PRD §3.3)', () {
-    test('integrated — 둘 다 활성, 기본은 제어', () {
-      expect(DeviceMode.integrated.controlEnabled, isTrue);
-      expect(DeviceMode.integrated.timelineEnabled, isTrue);
-      expect(DeviceMode.integrated.defaultTab, HomeSubTab.control);
-    });
-
-    test('cageOnly — 타임라인 비활성, 기본은 제어', () {
-      expect(DeviceMode.cageOnly.controlEnabled, isTrue);
-      expect(DeviceMode.cageOnly.timelineEnabled, isFalse);
-      expect(DeviceMode.cageOnly.defaultTab, HomeSubTab.control);
-    });
-
-    test('camOnly — 제어 비활성, 기본은 타임라인', () {
-      expect(DeviceMode.camOnly.controlEnabled, isFalse);
-      expect(DeviceMode.camOnly.timelineEnabled, isTrue);
-      expect(DeviceMode.camOnly.defaultTab, HomeSubTab.timeline);
-    });
-
-    test('none — 둘 다 비활성', () {
-      expect(DeviceMode.none.controlEnabled, isFalse);
-      expect(DeviceMode.none.timelineEnabled, isFalse);
-    });
-  });
-
-  group('showsLiveVideo (PRD §3.2)', () {
-    test('캠이 있으면 라이브 영역, 없으면 프로필 카드', () {
-      expect(DeviceMode.integrated.showsLiveVideo, isTrue);
-      expect(DeviceMode.camOnly.showsLiveVideo, isTrue);
-      expect(DeviceMode.cageOnly.showsLiveVideo, isFalse);
-      expect(DeviceMode.none.showsLiveVideo, isFalse);
-    });
-  });
+  // 구 서브탭·상단 분기 게터(controlEnabled·defaultTab·showsLiveVideo)는
+  // 2026-09-04 정리로 삭제 — 홈 단일 스크롤 개편(2026-09-02)으로 소비처가
+  // 사라졌다. DeviceMode 분류 자체는 후속 화면 분기 근거로 존치.
 
   group('EnclosureSet 표시 라벨', () {
     test('개체가 있으면 "개체명 (사육장명)"', () {

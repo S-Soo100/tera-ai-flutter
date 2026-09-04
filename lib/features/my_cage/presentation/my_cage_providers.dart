@@ -221,14 +221,6 @@ final latestClipTimeProvider =
       );
 });
 
-/// 카메라별 가장 최근 모션 클립 1건 (크레캠 그리드 썸네일 포스터용). 없으면 null.
-/// camera_clips 파이프라인은 2026-07-07 이후 유입이 끊겨(실영상은 motion_clips로만
-/// 들어옴) motion_clips 기준으로 조회한다.
-final latestMotionClipProvider = FutureProvider.autoDispose
-    .family<MotionClip?, String>((ref, cameraId) async {
-  return ref.watch(motionClipRepositoryProvider).latestByCamera(cameraId);
-});
-
 /// 클립 영상 presigned URL. clip_player_screen이 await + 만료 시 ref.refresh.
 final clipFileUrlProvider = FutureProvider.autoDispose
     .family<ClipMediaUrl, String>((ref, clipId) async {

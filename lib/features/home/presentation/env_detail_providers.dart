@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
-import '../../../shared/domain/actuator_marker.dart';
 import '../../../shared/domain/control_log.dart';
 import '../../../shared/domain/env_chart_data.dart';
 import '../../../shared/domain/env_day.dart';
@@ -55,16 +54,6 @@ final envDayChartDataProvider =
 final envDayExtremesProvider =
     FutureProvider.autoDispose<EnvExtremes>((ref) async {
   return EnvExtremes.from(await ref.watch(envDayBucketsProvider.future));
-});
-
-/// 보고 있는 날의 기기 동작 마커 (차트 위 아이콘 행).
-final envDayMarkersProvider =
-    FutureProvider.autoDispose<List<ActuatorMarker>>((ref) async {
-  final day = ref.watch(envDetailDayProvider);
-  final client = ref.watch(supabaseClientProvider);
-  final deviceId = await ref.watch(currentDeviceIdProvider.future);
-  if (deviceId == null) return const [];
-  return fetchActuatorMarkers(client, deviceId, from: day.start, to: day.end);
 });
 
 /// 보고 있는 날의 사육장 제어 기록 (시간 오름차순).

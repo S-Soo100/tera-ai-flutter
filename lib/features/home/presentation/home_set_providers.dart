@@ -44,11 +44,6 @@ final enclosureSetsProvider = FutureProvider<List<EnclosureSet>>((ref) async {
 /// 범위 검증은 여기서 하지 않고 [currentSetProvider]가 clamp 한다.
 final selectedSetIndexProvider = StateProvider<int>((ref) => 0);
 
-/// 현재 서브탭. 세트가 바뀌면 [DeviceMode.defaultTab]으로 되돌린다.
-final homeSubTabProvider = StateProvider<HomeSubTab>(
-  (ref) => HomeSubTab.control,
-);
-
 // ── 현재 세트 ──────────────────────────────────────────────────────────────────
 
 /// 선택된 세트. 세트가 없으면 null.

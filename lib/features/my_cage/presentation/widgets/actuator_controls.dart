@@ -39,7 +39,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
   // LED 상태는 **`telemetry.led`만** 본다(2026-08-18 회신 §4). 구 펌웨어가
   // 컬럼을 안 보내면 `unavailable`이고, 그때는 "모른다"를 그대로 그린다 —
   // 켜기/끄기 버튼을 둘 다 내놓고 어느 쪽으로도 칠하지 않는다. 홈의
-  // `QuickControlGrid`도 같은 규칙이라 두 화면이 한 기기를 다르게 말하지 않는다.
+  // `CageControlGrid`도 같은 규칙이라 두 화면이 한 기기를 다르게 말하지 않는다.
 
   @override
   void initState() {
