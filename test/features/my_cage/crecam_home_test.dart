@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/home_header_bar.dart';
+import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivnanaut/features/my_cage/domain/favorite_clip.dart';
 import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivnanaut/features/my_cage/domain/terra_camera.dart';
@@ -13,17 +15,26 @@ import 'package:vivnanaut/features/my_cage/presentation/widgets/camera_live_area
 
 /// Camera Home(카메라 탭 재설계 T2) 위젯 테스트.
 ///
-/// 카메라는 **오프라인** 픽스처를 쓴다 — 온라인이면 WebRtcLiveView가 실제
-/// 시그널링을 시도한다(홈 home_layout_test가 캠 없는 세트를 쓰는 것과 같은
-/// 이유). 클립 그리드는 카메라 온라인 여부와 무관하게 로드된다.
+/// 라이브 자리는 [liveViewBuilderProvider] 심으로 갈아끼운다 — 실
+/// WebRtcLiveView는 빌드 즉시 시그널링을 시작해 위젯 테스트를 깨뜨린다.
+/// 클립 그리드는 카메라 온라인 여부와 무관하게 로드된다.
 const _cameraId = 'cam-1';
 
-TerraCamera _offlineCamera() => TerraCamera(
-      id: _cameraId,
-      cameraId: 'p4cam-1',
+TerraCamera _offlineCamera({String id = _cameraId}) => TerraCamera(
+      id: id,
+      cameraId: 'p4cam-$id',
       name: '테스트캠',
       isOnline: false,
       createdAt: DateTime(2026, 1, 1),
+    );
+
+/// [camId] 카메라가 물린 사육장 세트 — 홈이 보고 있는 세트 픽스처.
+EnclosureSet _setWithCamera(String camId) => EnclosureSet(
+      enclosure:
+          Enclosure(id: 'e1', name: '1번 사육장', createdAt: DateTime(2026, 1, 1)),
+      device: null,
+      camera: _offlineCamera(id: camId),
+      pet: null,
     );
 
 final _day = DateTime(2026, 8, 31);
@@ -82,15 +93,19 @@ Future<void> _pump(
   List<MotionClip>? clips,
   DateTime? latestHighlightAt,
   List<FavoriteClip>? favorites,
+  List<EnclosureSet> sets = const [],
 }) async {
   pushedClipId = null;
   pushedPlaylist = null;
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        enclosureSetsProvider.overrideWith((ref) async => const []),
+        enclosureSetsProvider.overrideWith((ref) async => sets),
         camerasProvider.overrideWith(
             (ref) => Stream.value(cameras ?? [_offlineCamera()])),
+        // 실피어 연결 차단 심 — _CameraPane이 이 빌더로 라이브 자리를 그린다.
+        liveViewBuilderProvider.overrideWithValue(
+            (uuid) => Text('live-view-$uuid')),
         crecamDayProvider.overrideWith((ref) => _day),
         motionClipsProvider
             .overrideWith((ref, key) async => clips ?? _clips),
@@ -140,12 +155,29 @@ void main() {
     expect(find.text('pair-screen'), findsOneWidget);
   });
 
-  testWidgets('오프라인 카메라 → WebRTC 시도 없이 오프라인 페이지', (tester) async {
-    await _pump(tester);
-    expect(find.byKey(CameraLiveArea.offlinePaneKey), findsOneWidget);
-    expect(find.text('crecam_camera_offline'), findsOneWidget);
-    // 확장 버튼은 오프라인이어도 카메라 상세로 갈 수 있게 노출.
+  testWidgets('DB is_online=false여도 라이브를 시도한다 — 홈과 동일 계약',
+      (tester) async {
+    // is_online은 stale일 수 있다(2026-09-04 실증: 같은 카메라가 홈에선
+    // 나오고 카메라 탭에서만 "오프라인"). 게이팅 없이 항상 시도하고, 실패
+    // 표시는 WebRtcLiveView 몫이다.
+    await _pump(tester); // 기본 카메라가 isOnline: false
+    expect(find.text('live-view-$_cameraId'), findsOneWidget);
+    // 확장 버튼은 항상 카메라 상세로 갈 수 있게 노출.
     expect(find.byKey(CameraLiveArea.expandButtonKey), findsOneWidget);
+  });
+
+  testWidgets('최초 진입은 홈 세트의 카메라에서 시작 — 목록 첫 카메라가 아니다',
+      (tester) async {
+    // 첫 카메라가 무응답이어도 홈이 보고 있는 카메라로 열려야 "홈에선
+    // 보이는데 카메라 탭은 안 보임"이 안 된다(2026-09-04 사용자 제보).
+    await _pump(
+      tester,
+      cameras: [_offlineCamera(id: 'other'), _offlineCamera(id: 'set-cam')],
+      sets: [_setWithCamera('set-cam')],
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('live-view-set-cam'), findsOneWidget);
+    expect(find.text('live-view-other'), findsNothing);
   });
 
   testWidgets('시간 그룹 헤더 — 최신 시간부터, 날짜는 첫 그룹만', (tester) async {

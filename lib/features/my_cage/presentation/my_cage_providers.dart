@@ -407,7 +407,14 @@ final nightlyReportProvider =
 
 /// 카메라 탭 라이브 PageView의 현재 인덱스 — 아래 클립 그리드의 기준 카메라.
 /// 카메라 목록이 줄어들 수 있으니 소비처는 반드시 clamp해서 쓴다.
-final selectedCrecamCameraProvider = StateProvider<int>((ref) => 0);
+///
+/// **-1 = 아직 사용자가 고른 적 없음(센티넬).** CameraLiveArea가 첫 데이터
+/// 프레임에 **홈이 보고 있는 세트의 카메라** 인덱스로 해석해 저장한다 —
+/// 안 그러면 카메라 탭이 항상 목록 첫 카메라(무응답일 수 있음)로 열려
+/// "홈에선 보이는데 카메라 탭은 안 보임"으로 읽힌다(2026-09-04 사용자 제보).
+/// 해석 로직이 여기 없고 위젯에 있는 이유: currentSetProvider(home)를 이
+/// 파일이 import하면 home_set_providers ↔ my_cage_providers 순환이 된다.
+final selectedCrecamCameraProvider = StateProvider<int>((ref) => -1);
 
 /// 기간 설정 날짜(자정 정규화). 기본 = 오늘.
 final crecamDayProvider = StateProvider<DateTime>((ref) {
