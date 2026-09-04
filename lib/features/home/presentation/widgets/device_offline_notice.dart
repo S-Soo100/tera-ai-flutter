@@ -34,13 +34,11 @@ class DeviceOfflineNotice extends ConsumerWidget {
     final lastSeen = device?.lastSeenAt;
 
     final theme = Theme.of(context);
+    // 홈 단일 스크롤의 카드 리듬(좌우 12·섹션 간 12)에 맞춘다 — 구 서브탭
+    // 시절 값(좌우 16·위 8·아래 0)은 다른 카드와 어긋나고 그리드에 붙었다.
+    // 위쪽 여백은 홈의 섹션 gap이 이미 제공하므로 아래만 채운다.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppStyles.spacing16,
-        AppStyles.spacing8,
-        AppStyles.spacing16,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       child: Container(
         key: noticeKey,
         padding: const EdgeInsets.all(AppStyles.spacing12),

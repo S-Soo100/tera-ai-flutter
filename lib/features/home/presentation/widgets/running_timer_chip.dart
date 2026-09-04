@@ -86,12 +86,11 @@ class RunningTimerChip extends ConsumerWidget {
     final t = active.first;
     final scheme = Theme.of(context).colorScheme;
 
+    // 홈 단일 스크롤의 카드 리듬(좌우 12·섹션 간 12) — DeviceOfflineNotice와
+    // 같은 규칙. 위쪽 여백은 홈의 섹션 gap이 제공한다.
     return Padding(
       key: chipKey,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppStyles.spacing16,
-        vertical: AppStyles.spacing8,
-      ),
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       child: Container(
         padding: const EdgeInsets.all(AppStyles.spacing12),
         decoration: BoxDecoration(
