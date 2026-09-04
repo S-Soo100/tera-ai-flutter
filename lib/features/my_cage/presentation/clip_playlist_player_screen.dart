@@ -381,8 +381,8 @@ class _ClipPlaylistPlayerScreenState
             child: Container(
               height: 4,
               decoration: BoxDecoration(
-                // #E1E3E4 근사 — 신규 토큰 추가 금지(T1), 기존 근사 토큰 사용
-                color: i == _index ? glass.textPrimary : glass.chartGridLine,
+                // 비활성 = #E1E3E4 (T2에서 outline 토큰으로 정착)
+                color: i == _index ? glass.textPrimary : glass.outline,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -600,10 +600,10 @@ class _SeekBarState extends State<_SeekBar> {
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
         activeTrackColor: glass.textPrimary,
-        // 연회색 트랙 — #E1E3E4 근사(신규 토큰 금지)
-        inactiveTrackColor: glass.chartGridLine,
-        disabledActiveTrackColor: glass.chartGridLine,
-        disabledInactiveTrackColor: glass.chartGridLine,
+        // 연회색 트랙 — #E1E3E4 (T2에서 outline 토큰으로 정착)
+        inactiveTrackColor: glass.outline,
+        disabledActiveTrackColor: glass.outline,
+        disabledInactiveTrackColor: glass.outline,
         thumbColor: glass.textPrimary,
       ),
       child: Slider(

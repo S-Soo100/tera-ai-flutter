@@ -60,6 +60,11 @@ GoRouter _router() => GoRouter(
               const Scaffold(body: Center(child: Text('device-pair-screen'))),
         ),
         GoRoute(
+          path: '/crecam/cameras/pair',
+          builder: (_, __) =>
+              const Scaffold(body: Center(child: Text('camera-pair-screen'))),
+        ),
+        GoRoute(
           path: '/pet-add',
           builder: (_, __) =>
               const Scaffold(body: Center(child: Text('pet-add-screen'))),
@@ -120,13 +125,24 @@ void main() {
   });
 
   group('[+] 메뉴', () {
-    testWidgets('탭하면 기기/개체/사육세트 추가 3항목이 뜬다', (tester) async {
+    testWidgets('탭하면 기기/카메라/개체/사육세트 추가 4항목이 뜬다', (tester) async {
       await _pump(tester, [_set('e1', 'A')]);
       await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
       await tester.pumpAndSettle();
       expect(find.text('home_add_device'), findsOneWidget);
+      expect(find.text('home_add_camera'), findsOneWidget);
       expect(find.text('home_add_pet'), findsOneWidget);
       expect(find.text('home_add_set'), findsOneWidget);
+    });
+
+    testWidgets('카메라 추가 → /crecam/cameras/pair (카메라 탭 재설계 T2)',
+        (tester) async {
+      await _pump(tester, [_set('e1', 'A')]);
+      await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('home_add_camera'));
+      await tester.pumpAndSettle();
+      expect(find.text('camera-pair-screen'), findsOneWidget);
     });
 
     testWidgets('기기 추가 → /smart-cage/devices/pair', (tester) async {

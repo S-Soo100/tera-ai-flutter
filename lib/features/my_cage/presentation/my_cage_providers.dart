@@ -400,3 +400,75 @@ final nightlyReportProvider =
   final sec = secs.fold<int>(0, (a, b) => a + b);
   return NightlyReport(activitySeconds: sec, highlights: highlights);
 });
+
+// ── 카메라 탭 Camera Home (2026-09-04 재설계 T2) ───────────────────────────────
+
+/// 카메라 탭 라이브 PageView의 현재 인덱스 — 아래 클립 그리드의 기준 카메라.
+/// 카메라 목록이 줄어들 수 있으니 소비처는 반드시 clamp해서 쓴다.
+final selectedCrecamCameraProvider = StateProvider<int>((ref) => 0);
+
+/// 기간 설정 날짜(자정 정규화). 기본 = 오늘.
+final crecamDayProvider = StateProvider<DateTime>((ref) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+});
+
+/// 하이라이트 최신 도착 시각(최근 30일 창, limit 50 중 최댓값).
+/// 실패·빈 값 = null → 엔트리 카드가 "아직 없어요"로 말한다.
+final latestHighlightAtProvider =
+    FutureProvider.autoDispose<DateTime?>((ref) async {
+  ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 격리
+  try {
+    final list = await ref.watch(highlightRepositoryProvider).list(
+          since: DateTime.now().subtract(const Duration(days: 30)),
+          limit: 50,
+        );
+    if (list.isEmpty) return null;
+    return list.map((h) => h.startedAt).reduce((a, b) => a.isAfter(b) ? a : b);
+  } catch (_) {
+    return null;
+  }
+});
+
+/// 전체 즐겨찾기(favoritedAt desc — repository가 정렬). 엔트리 카드 최신
+/// 시각 + 북마크 상세(T3)가 쓴다. non-autoDispose이므로 currentUser id
+/// select-watch 필수(project_auth_provider_stale_pattern).
+final allFavoriteClipsProvider =
+    FutureProvider<List<FavoriteClip>>((ref) async {
+  ref.watch(currentUserProvider.select((u) => u?.id));
+  return ref.watch(favoriteClipRepositoryProvider).listAll();
+});
+
+/// 시간(정각) 묶음 — 그룹·그룹 내 클립 모두 최신부터(내림차순).
+typedef CrecamHourGroup = ({DateTime hour, List<MotionClip> clips});
+
+/// 카메라 탭 시간대별 클립 그룹 — (현재 라이브 카메라, 기간 설정 날짜) 기준.
+/// 카메라가 없으면 빈 목록.
+final crecamHourGroupsProvider =
+    FutureProvider.autoDispose<List<CrecamHourGroup>>((ref) async {
+  final cameras = await ref.watch(camerasProvider.future);
+  if (cameras.isEmpty) return const [];
+  final index =
+      ref.watch(selectedCrecamCameraProvider).clamp(0, cameras.length - 1);
+  final day = ref.watch(crecamDayProvider);
+  final clips = await ref.watch(
+    motionClipsProvider((cameraId: cameras[index].id, day: day)).future,
+  );
+
+  final byHour = <DateTime, List<MotionClip>>{};
+  for (final clip in clips) {
+    final t = clip.startedAt.toLocal();
+    final hour = DateTime(t.year, t.month, t.day, t.hour);
+    byHour.putIfAbsent(hour, () => <MotionClip>[]).add(clip);
+  }
+  final groups = byHour.entries
+      .map<CrecamHourGroup>(
+        (e) => (
+          hour: e.key,
+          clips: e.value..sort((a, b) => b.startedAt.compareTo(a.startedAt)),
+        ),
+      )
+      .toList()
+    ..sort((a, b) => b.hour.compareTo(a.hour));
+  return groups;
+});

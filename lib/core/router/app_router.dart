@@ -238,6 +238,18 @@ GoRouter buildAppRouter({
           return ClipPlaylistPlayerScreen(clipId: id, playlist: playlist);
         },
       ),
+      // 카메라 탭 엔트리 카드 목적지 — T2 임시 placeholder.
+      // T4(하이라이트)·T3(북마크)가 실화면으로 교체한다.
+      GoRoute(
+        path: '/crecam/highlights',
+        builder: (context, state) => const _CrecamPlaceholderScreen(
+            titleKey: 'crecam_home_highlights'),
+      ),
+      GoRoute(
+        path: '/crecam/bookmarks',
+        builder: (context, state) => const _CrecamPlaceholderScreen(
+            titleKey: 'crecam_home_bookmarks'),
+      ),
       // 사육장 (탭에서 제거 — 홈 탭이 흡수. 화면·딥링크는 보존)
       GoRoute(
         path: '/smart-cage',
@@ -350,6 +362,23 @@ GoRouter buildAppRouter({
   );
 }
 
+
+/// 카메라 탭 재설계 T2의 임시 화면 — T3(북마크)·T4(하이라이트)가 교체한다.
+/// 라우트만 먼저 서는 이유: Camera Home 엔트리 카드의 push 목적지가 비면
+/// 탭이 죽은 버튼이 되기 때문.
+class _CrecamPlaceholderScreen extends StatelessWidget {
+  const _CrecamPlaceholderScreen({required this.titleKey});
+
+  final String titleKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(titleKey.tr())),
+      body: Center(child: Text('crecam_home_coming_soon'.tr())),
+    );
+  }
+}
 
 /// 4탭 셸 — B안(Flighty 전광판) 하단 고정 탭바(2026-08-14 저녁, A안 플로팅
 /// 독 교체).

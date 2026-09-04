@@ -29,6 +29,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     required this.overlayStrong,
     required this.overlayFaint,
     required this.border,
+    required this.outline,
     required this.tabBar,
     required this.activeTile,
     required this.heaterTint,
@@ -91,6 +92,12 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   final Color overlayStrong; // 시트 — card보다 한 단계 또렷
   final Color overlayFaint; // 비활성 표면 — card보다 한 단계 가라앉음
   final Color border; // = B `divider` (흰 6% / 검정 8%)
+
+  /// 흰 면 위 버튼·세그먼트 스트로크 — Figma Camera 기간 설정 버튼 #E1E3E4
+  /// (2026-09-04, 카메라 탭 재설계). 라이트는 불투명 연회색, 다크는 Figma에
+  /// 없어 기존 경계 계열([weatherBarTrack] 흰 12%)과 톤을 맞춘 도출값 —
+  /// [border](흰 6%)보다 한 단 또렷해야 스트로크로 선다.
+  final Color outline;
 
   /// 하단 전광판 탭바 바닥 = B `tabBar`. 다크에선 카드보다 더 어둡고,
   /// 라이트에선 흰색 — 카드가 아니라 **바닥에 붙은 바**다.
@@ -234,6 +241,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     overlayStrong: Color(0xFF1C2236), // card +1
     overlayFaint: Color(0xFF111624), // card -1
     border: Color(0x0FFFFFFF), // B divider — 흰 6%
+    outline: Color(0x1FFFFFFF), // 흰 12% — 다크 경계 계열 도출(Figma 다크 없음)
     tabBar: Color(0xFF0E1322), // B tabBar
     activeTile: Color(0xFFFFB300), // B amber
     heaterTint: Color(0xFFFFB300), // amber
@@ -294,6 +302,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     overlayStrong: Color(0xFFFAFBFD), // = surfaceHeader
     overlayFaint: Color(0xFFEAEEF0), // surfaceSubtle — 비활성 칩 배경
     border: Color(0xFFE1E3E4), // 칩 테두리·상단바 하단선
+    outline: Color(0xFFE1E3E4), // 기간 설정 버튼 stroke (Figma Camera)
     tabBar: Color(0xFFFFFFFF),
     activeTile: Color(0xFFE09A00), // (교체 목록 외 — B 앰버 유지)
     heaterTint: Color(0xFFE09A00), // 전경(글리프) — 배경은 deviceHeatBg (리뷰 2026-09-03 역할 통일)
@@ -353,6 +362,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     Color? overlayStrong,
     Color? overlayFaint,
     Color? border,
+    Color? outline,
     Color? tabBar,
     Color? activeTile,
     Color? heaterTint,
@@ -409,6 +419,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       overlayStrong: overlayStrong ?? this.overlayStrong,
       overlayFaint: overlayFaint ?? this.overlayFaint,
       border: border ?? this.border,
+      outline: outline ?? this.outline,
       tabBar: tabBar ?? this.tabBar,
       activeTile: activeTile ?? this.activeTile,
       heaterTint: heaterTint ?? this.heaterTint,
@@ -474,6 +485,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       overlayStrong: c(overlayStrong, other.overlayStrong),
       overlayFaint: c(overlayFaint, other.overlayFaint),
       border: c(border, other.border),
+      outline: c(outline, other.outline),
       tabBar: c(tabBar, other.tabBar),
       activeTile: c(activeTile, other.activeTile),
       heaterTint: c(heaterTint, other.heaterTint),

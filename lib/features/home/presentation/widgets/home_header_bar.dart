@@ -127,11 +127,12 @@ class HomeHeaderBar extends ConsumerWidget {
   }
 }
 
-/// `[+]` 메뉴 — 기기 추가 / 개체 추가 / 사육세트 추가.
+/// `[+]` 메뉴 — 기기 추가 / 카메라 추가 / 개체 추가 / 사육세트 추가.
 class _AddMenuButton extends StatelessWidget {
   const _AddMenuButton({super.key});
 
   static const deviceItemKey = Key('home_header_add_device');
+  static const cameraItemKey = Key('home_header_add_camera');
   static const petItemKey = Key('home_header_add_pet');
   static const setItemKey = Key('home_header_add_set');
 
@@ -147,6 +148,13 @@ class _AddMenuButton extends StatelessWidget {
           key: deviceItemKey,
           value: '/smart-cage/devices/pair',
           child: Text('home_add_device'.tr()),
+        ),
+        // 카메라 탭 재설계(2026-09-04)로 크레캠 그리드·FAB가 사라져 2번째
+        // 카메라의 페어링 진입점이 여기와 빈 상태 카드뿐이다.
+        PopupMenuItem(
+          key: cameraItemKey,
+          value: '/crecam/cameras/pair',
+          child: Text('home_add_camera'.tr()),
         ),
         // 브랜치 하위 `/my-pets/add`가 아니라 셸 밖 전용 라우트 — 홈에서
         // 타 브랜치 하위를 push하면 탭 인덱스가 점프한다(리뷰 2026-09-03).
