@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/device_mode.dart';
 import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
@@ -52,9 +51,4 @@ void main() {
     expect((await c.read(currentSetProvider.future))!.id, 'e1');
   });
 
-  test('currentDeviceMode — 세트 없으면 none', () async {
-    final c = _container(const []);
-    addTearDown(c.dispose);
-    expect(await c.read(currentDeviceModeProvider.future), DeviceMode.none);
-  });
 }

@@ -5,7 +5,6 @@ import '../../my_cage/presentation/my_cage_providers.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../../my_pets/presentation/my_pets_providers.dart';
 import '../data/enclosure_set_repository.dart';
-import '../domain/device_mode.dart';
 import '../domain/enclosure_set.dart';
 
 // ── Repository ────────────────────────────────────────────────────────────────
@@ -59,8 +58,5 @@ final currentSetProvider = FutureProvider<EnclosureSet?>((ref) async {
   return sets[raw.clamp(0, sets.length - 1)];
 });
 
-/// 현재 세트의 기기 연동 모드. 세트가 없으면 [DeviceMode.none].
-final currentDeviceModeProvider = FutureProvider<DeviceMode>((ref) async {
-  final set = await ref.watch(currentSetProvider.future);
-  return set?.mode ?? DeviceMode.none;
-});
+// currentDeviceModeProvider는 2026-09-04 정리로 삭제 — 소비처 0.
+// 분류가 필요하면 currentSetProvider의 EnclosureSet.mode를 직접 읽는다.

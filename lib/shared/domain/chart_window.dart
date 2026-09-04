@@ -107,26 +107,6 @@ class ChartWindow {
     );
   }
 
-  /// 홈 "이번 주" 행 목록용 창 — **오늘(진행 중) + 지난 6완결일** = 7일.
-  ///
-  /// [ChartWindow.weekly]와 다르다. 저쪽은 절벽을 피하려고 오늘을 뺀 완결
-  /// 7일이고, 여기는 애플 날씨 "오늘" 행처럼 **지금까지의 오늘**이 맨 위에
-  /// 있어야 한다. 부분일이어도 그날 min/max는 "지금까지 겪은 값"이라 뜻이 선다.
-  ///
-  /// 끝은 **오늘의 다음 07:00 경계(미래)**다 — 그래야 [rollupByDay]가 오늘
-  /// 자리를 만들고, [queryEnd]가 `now`로 잘린다.
-  factory ChartWindow.homeWeekly(DateTime now) {
-    final todayStart = lastDayBoundaryOnOrBefore(now);
-    return ChartWindow._(
-      start: DateTime(todayStart.year, todayStart.month,
-          todayStart.day - (weeklyDays - 1), todayStart.hour),
-      end: DateTime(todayStart.year, todayStart.month, todayStart.day + 1,
-          todayStart.hour),
-      now: now,
-      format: ChartTickFormat.date,
-      tickCount: weeklyDays,
-    );
-  }
 
   /// [now] **이전**(정각이면 그 시각)의 마지막 하루 경계(07:00).
   static DateTime lastDayBoundaryOnOrBefore(DateTime now) {
