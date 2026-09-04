@@ -54,8 +54,14 @@ class _ClipPlaylistPlayerScreenState
   /// initialize()가 새 컨트롤러를 덮어쓸 수 있다. 시퀀스가 다르면 버린다.
   int _loadSeq = 0;
 
-  /// presign URL 캐시(클립별) — 같은 클립의 저장/공유/즐겨찾기가 재발급 없이 쓴다.
-  final Map<String, String> _urlCache = {};
+  /// presign URL 캐시(클립별, 발급 시각 포함) — 같은 클립의 저장/공유/
+  /// 즐겨찾기가 재발급 없이 쓴다. **TTL을 넘기면 버린다**(리뷰 2026-09-04):
+  /// 서버 presign TTL은 1시간(backend-reply 2026-08-31 §presigned GET) —
+  /// 만료 URL을 계속 쓰면 저장/공유가 재시도해도 영구 실패한다.
+  final Map<String, ({String url, DateTime issuedAt})> _urlCache = {};
+
+  /// 서버 TTL(1h)보다 여유 있게 짧은 로컬 만료.
+  static const _urlTtl = Duration(minutes: 50);
 
   String get _currentClipId => _playlist[_index];
 
@@ -81,12 +87,19 @@ class _ClipPlaylistPlayerScreenState
   }
 
   Future<String> _presignedUrl(String clipId, {bool refresh = false}) async {
-    if (refresh) {
+    final cached = _urlCache[clipId];
+    final stale = cached == null ||
+        DateTime.now().difference(cached.issuedAt) > _urlTtl;
+    if (refresh || stale) {
       _urlCache.remove(clipId);
+      // provider도 무효화해야 한다 — non-refresh stale 경로에서도 provider
+      // 캐시(autoDispose지만 이 화면이 살아 있는 동안 유지)가 옛 URL을 준다.
       ref.invalidate(motionClipUrlProvider(clipId));
+      final url = await ref.read(motionClipUrlProvider(clipId).future);
+      _urlCache[clipId] = (url: url, issuedAt: DateTime.now());
+      return url;
     }
-    return _urlCache[clipId] ??=
-        await ref.read(motionClipUrlProvider(clipId).future);
+    return cached.url;
   }
 
   Future<void> _load({bool isRetry = false}) async {
@@ -242,6 +255,9 @@ class _ClipPlaylistPlayerScreenState
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(clipId));
         if (cameraId != null) ref.invalidate(favoriteClipsProvider(cameraId));
+        // non-autoDispose 전역 목록 — 안 깨우면 북마크 상세·엔트리 카드가
+        // 삭제된 항목을 계속 그린다(리뷰 2026-09-04).
+        ref.invalidate(allFavoriteClipsProvider);
         messenger.showSnackBar(
             SnackBar(content: Text('clip_favorite_removed'.tr())));
       } else {
@@ -253,6 +269,7 @@ class _ClipPlaylistPlayerScreenState
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(clipId));
         ref.invalidate(favoriteClipsProvider(clip.cameraId));
+        ref.invalidate(allFavoriteClipsProvider);
         messenger
             .showSnackBar(SnackBar(content: Text('clip_favorite_added'.tr())));
       }

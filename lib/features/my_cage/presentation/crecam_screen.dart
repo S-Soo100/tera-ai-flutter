@@ -73,8 +73,11 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
 
   Future<void> _refresh() async {
     ref.invalidate(camerasProvider);
+    // 부모 invalidate는 자식을 재실행시키지 않는다(리뷰 2026-09-04) —
+    // 클립 목록 family를 직접 깨워야 새 클립이 온다.
+    ref.invalidate(motionClipsProvider);
     ref.invalidate(crecamHourGroupsProvider);
-    ref.invalidate(latestHighlightAtProvider);
+    ref.invalidate(highlightGroupsProvider);
     ref.invalidate(allFavoriteClipsProvider);
     await ref.read(camerasProvider.future);
   }
@@ -264,7 +267,9 @@ class _EntryCard extends StatelessWidget {
     );
     return latestAt.when(
       loading: () => const SkeletonLoading(width: 72, height: 14),
-      error: (_, __) => Text('crecam_home_no_updates'.tr(),
+      // "없음"과 구분되는 문구 — 오프라인/서버 장애를 "아직 없어요"로
+      // 단정하면 상세 화면(에러+재시도)과 모순된다(리뷰 2026-09-04).
+      error: (_, __) => Text('crecam_home_load_failed'.tr(),
           maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
       data: (at) => Text(
         at == null
@@ -378,7 +383,11 @@ class _HourClipSections extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             OutlinedButton(
-              onPressed: () => ref.invalidate(crecamHourGroupsProvider),
+              onPressed: () {
+                // 하위 클립 family까지 — 부모만 깨우면 캐시가 그대로다.
+                ref.invalidate(motionClipsProvider);
+                ref.invalidate(crecamHourGroupsProvider);
+              },
               child: Text('retry'.tr()),
             ),
           ],
@@ -565,6 +574,8 @@ class _ClipCell extends ConsumerWidget {
       data: (url) => url != null
           ? CachedNetworkImage(
               imageUrl: url,
+              // presign 서명이 매번 달라도 디스크 캐시가 맞도록(리뷰 2026-09-04)
+              cacheKey: 'thumb_${clip.id}',
               fit: BoxFit.cover,
               placeholder: (_, __) => const SkeletonLoading(
                 width: double.infinity,

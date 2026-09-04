@@ -29,6 +29,7 @@ class ClipThumbnail extends ConsumerWidget {
     return urlAsync.when(
       data: (media) => CachedNetworkImage(
         imageUrl: media.url,
+        cacheKey: 'thumb_${clip.id}',
         fit: fit,
         placeholder: (_, __) => const SkeletonLoading(
           width: double.infinity,

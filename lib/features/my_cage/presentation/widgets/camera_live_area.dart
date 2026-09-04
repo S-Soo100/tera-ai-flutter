@@ -53,11 +53,9 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
   /// 미선택(-1) 해석: **홈이 보고 있는 세트의 카메라**에서 시작 — 홈과 같은
   /// 화면이어야 "탭을 옮겼더니 딴 카메라"가 안 된다(2026-09-04 사용자 제보).
   /// 세트에 캠이 없거나 목록에 없으면 0.
-  int _resolveInitial(List<TerraCamera> cameras, int stored) {
+  int _resolveInitial(List<TerraCamera> cameras, int stored, String? setCamId) {
     if (cameras.isEmpty) return 0;
     if (stored >= 0) return stored.clamp(0, cameras.length - 1);
-    final setCamId =
-        ref.read(currentSetProvider).valueOrNull?.camera?.id;
     final i = setCamId == null
         ? -1
         : cameras.indexWhere((c) => c.id == setCamId);
@@ -71,8 +69,11 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
     // (TopFixedArea와 같은 가드).
     final known = ref.read(camerasProvider).valueOrNull ?? const <TerraCamera>[];
     _controller = PageController(
-      initialPage:
-          _resolveInitial(known, ref.read(selectedCrecamCameraProvider)),
+      initialPage: _resolveInitial(
+        known,
+        ref.read(selectedCrecamCameraProvider),
+        ref.read(currentSetProvider).valueOrNull?.camera?.id,
+      ),
     );
   }
 
@@ -106,11 +107,20 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
 
   Widget _liveSurface(List<TerraCamera> cameras) {
     final stored = ref.watch(selectedCrecamCameraProvider);
-    final selected = _resolveInitial(cameras, stored);
+    // 세트는 **watch** — read면 카메라 목록이 세트 체인보다 먼저 도착하는
+    // 콜드스타트/딥링크에서 폴백 0이 postFrame으로 저장돼 센티넬이 영구
+    // 소모된다(리뷰 2026-09-04: bc451af가 고친 증상의 재현 경로).
+    final setAsync = ref.watch(currentSetProvider);
+    // 미선택인데 세트가 아직 로딩이면 해석·저장을 **보류**한다 — 임시로 첫
+    // 카메라를 그리되 센티넬은 남겨, 세트 도착(watch 리빌드) 시 제대로
+    // 해석한다. 세트 로딩이 에러로 끝나면 폴백 0 확정(영구 보류 방지).
+    final resolvable = stored >= 0 || !setAsync.isLoading;
+    final selected =
+        _resolveInitial(cameras, stored, setAsync.valueOrNull?.camera?.id);
     // 미선택(-1) 해석 결과·범위 밖 인덱스는 저장값도 화면값에 맞춘다 —
     // 남겨두면 클립 그리드가 다른 카메라를 보거나(센티넬), 나중에 목록이
     // 늘었을 때 엉뚱한 카메라로 튄다(TopFixedArea 선례).
-    if (stored != selected) {
+    if (resolvable && stored != selected) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ref.read(selectedCrecamCameraProvider.notifier).state = selected;

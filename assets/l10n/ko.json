@@ -643,5 +643,6 @@
   "my_pets_pass_days": "D+{n}",
   "my_pets_pass_weight_value": "{}g",
   "nightly_ratio_active": "ACTIVE",
-  "nightly_ratio_rest": "REST"
+  "nightly_ratio_rest": "REST",
+  "crecam_home_load_failed": "불러오기 실패"
 }

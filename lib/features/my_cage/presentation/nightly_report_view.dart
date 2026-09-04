@@ -244,6 +244,7 @@ class _HighlightCard extends ConsumerWidget {
               data: (url) => url != null
                   ? CachedNetworkImage(
                       imageUrl: url,
+                      cacheKey: 'thumb_${highlight.clipId}',
                       fit: BoxFit.cover,
                       placeholder: (_, __) => const SkeletonLoading(
                           width: double.infinity,

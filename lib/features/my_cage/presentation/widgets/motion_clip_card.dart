@@ -41,6 +41,7 @@ class MotionClipCard extends ConsumerWidget {
                 data: (url) => url != null
                     ? CachedNetworkImage(
                         imageUrl: url,
+                        cacheKey: 'thumb_${clip.id}',
                         fit: BoxFit.cover,
                         width: double.infinity,
                         placeholder: (_, __) => const SkeletonLoading(

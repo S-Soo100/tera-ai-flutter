@@ -250,12 +250,16 @@ final clipInferenceProvider = FutureProvider.autoDispose
 /// family 키: cameraId + day(null=전체 기간).
 typedef MotionClipsKey = ({String cameraId, DateTime? day});
 
-/// 카메라의 모션 클립 목록 (최신 50개). day 지정 시 그 날만.
+/// 카메라의 모션 클립 목록 (최신 200개). day 지정 시 그 날만.
+///
+/// limit 200 명시(리뷰 2026-09-04) — repository 기본 50을 그대로 쓰면 모션이
+/// 활발한 날(일 100건대 실측) 하루 그리드가 밤 시간대만 남고 **조용히**
+/// 잘린다. 200은 listByCameraInWindow와 같은 상한.
 final motionClipsProvider = FutureProvider.autoDispose
     .family<List<MotionClip>, MotionClipsKey>((ref, key) async {
   return ref
       .watch(motionClipRepositoryProvider)
-      .listByCamera(key.cameraId, day: key.day);
+      .listByCamera(key.cameraId, day: key.day, limit: 200);
 });
 
 /// 비디오 기록 날짜 필터(null = 전체 기간). autoDispose — 화면 이탈 시 리셋.
@@ -409,26 +413,31 @@ final nightlyReportProvider =
 final selectedCrecamCameraProvider = StateProvider<int>((ref) => -1);
 
 /// 기간 설정 날짜(자정 정규화). 기본 = 오늘.
+///
+/// **자정을 넘기면 스스로 리셋한다**(리뷰 2026-09-04) — non-autoDispose +
+/// IndexedStack 탭이라 안 그러면 첫 read 시점의 "오늘"이 프로세스 수명 내내
+/// 고정돼, 자정 후 그리드가 어제에 갇히고 기간 버튼 라벨이 어제 날짜로
+/// 바뀐다(env_detail의 `_todayProvider` 선례). 사용자가 고른 과거 날짜도
+/// 자정에 오늘로 돌아온다 — 날짜가 바뀌었는데 어제 선택을 유지하는 것보다
+/// 덜 놀랍다.
 final crecamDayProvider = StateProvider<DateTime>((ref) {
   final now = DateTime.now();
-  return DateTime(now.year, now.month, now.day);
+  final today = DateTime(now.year, now.month, now.day);
+  final timer = Timer(
+    today.add(const Duration(days: 1, seconds: 1)).difference(now),
+    ref.invalidateSelf,
+  );
+  ref.onDispose(timer.cancel);
+  return today;
 });
 
-/// 하이라이트 최신 도착 시각(최근 30일 창, limit 50 중 최댓값).
-/// 실패·빈 값 = null → 엔트리 카드가 "아직 없어요"로 말한다.
+/// 하이라이트 최신 도착 시각 — [highlightGroupsProvider]에서 파생(리뷰
+/// 2026-09-04: 같은 API를 limit만 다르게 2회 치던 것을 1회로, 에러를
+/// null("아직 없어요")로 뭉개던 것을 에러로 전파).
 final latestHighlightAtProvider =
     FutureProvider.autoDispose<DateTime?>((ref) async {
-  ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 격리
-  try {
-    final list = await ref.watch(highlightRepositoryProvider).list(
-          since: DateTime.now().subtract(const Duration(days: 30)),
-          limit: 50,
-        );
-    if (list.isEmpty) return null;
-    return list.map((h) => h.startedAt).reduce((a, b) => a.isAfter(b) ? a : b);
-  } catch (_) {
-    return null;
-  }
+  final groups = await ref.watch(highlightGroupsProvider.future);
+  return groups.isEmpty ? null : groups.first.to;
 });
 
 /// 전체 즐겨찾기(favoritedAt desc — repository가 정렬). 엔트리 카드 최신

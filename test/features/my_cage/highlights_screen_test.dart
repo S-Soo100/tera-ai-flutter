@@ -121,7 +121,7 @@ void main() {
       expect(groups[1].items.map((h) => h.clipId), ['b', 'c']);
     });
 
-    test('그룹 key = from ISO 문자열', () {
+    test('그룹 key = to(최신 항목) ISO 문자열 — 새 항목이 오면 키가 바뀐다', () {
       final a = _h('a', base);
       final groups = groupHighlights([a]);
       expect(highlightGroupKey(groups.single), base.toIso8601String());
@@ -148,14 +148,14 @@ void main() {
       await tester.tap(find.byKey(HighlightsScreen.bannerCloseKey));
       await tester.pumpAndSettle();
       expect(find.byKey(HighlightsScreen.bannerKey), findsNothing);
-      expect(store.value, _h3.startedAt.toIso8601String()); // key = from ISO
+      expect(store.value, _h1.startedAt.toIso8601String()); // key = to ISO
       // 섹션은 그대로 남는다.
       expect(find.text('2026. 8. 28 - 8. 31'), findsOneWidget);
     });
 
     testWidgets('같은 그룹 key가 이미 dismiss → 재방문에도 배너 숨김',
         (tester) async {
-      final store = _FakeBannerStore(_h3.startedAt.toIso8601String());
+      final store = _FakeBannerStore(_h1.startedAt.toIso8601String());
       await _pump(tester, store: store);
       expect(find.byKey(HighlightsScreen.bannerKey), findsNothing);
     });
@@ -176,7 +176,7 @@ void main() {
     testWidgets('셀 탭 → 세로 플레이어 + 그 묶음 재생목록(내림차순)',
         (tester) async {
       // 배너를 dismiss된 상태로 시작해 셀이 화면 안에 오게 한다.
-      final store = _FakeBannerStore(_h3.startedAt.toIso8601String());
+      final store = _FakeBannerStore(_h1.startedAt.toIso8601String());
       await _pump(tester, store: store);
       final cell = find.byKey(const ValueKey('highlight_cell_h2'));
       await tester.ensureVisible(cell);

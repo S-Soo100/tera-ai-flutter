@@ -12,6 +12,7 @@ const _deviceId = 'd1';
 TelemetryReading _reading({
   ActuatorState fan = ActuatorState.off,
   ActuatorState led = ActuatorState.unavailable,
+  ActuatorState heaterState = ActuatorState.off,
   int? ledBrightness,
 }) =>
     TelemetryReading(
@@ -24,7 +25,7 @@ TelemetryReading _reading({
       bOk: false,
       relay: ActuatorState.off,
       fan: fan,
-      heaterState: ActuatorState.off,
+      heaterState: heaterState,
       heaterLocked: false,
       ts: DateTime(2026, 9, 2, 12),
       led: led,
@@ -53,10 +54,10 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('타일 4개(환기팬·분무·냉각팬·LED)를 그린다 — 히터팬은 숨김',
+  testWidgets('타일 4개(환기팬·분무·냉각팬·LED) — 히터 꺼짐이면 히터팬 숨김',
       (tester) async {
-    // 히터팬 타일은 사용자 지시로 숨김(2026-09-04) — 배선(_heaterTile)은
-    // 남아 있고, 복귀 전까지 그리드에 나타나면 안 된다.
+    // 히터팬 타일은 사용자 지시로 평소 숨김(2026-09-04) — 켜짐/잠금일 때만
+    // 나타난다(아래 테스트).
     await _pump(tester);
     expect(find.byKey(CageControlGrid.ventFanKey), findsOneWidget);
     expect(find.byKey(CageControlGrid.mistKey), findsOneWidget);
@@ -76,6 +77,18 @@ void main() {
     await tester.tap(find.byKey(CageControlGrid.coolFanKey));
     await tester.pump();
     expect(find.text('home_device_not_ready'), findsOneWidget);
+  });
+
+  testWidgets('히터 켜짐 → 히터팬 타일 노출 + handleHeaterTap 경유(2단 안전확인)',
+      (tester) async {
+    // 리뷰 2026-09-04: 예약·웹 콘솔로 켜진 히터를 앱에서 끌 유일한 진입점 —
+    // 켜짐/잠금 상태에서 타일이 안 나타나면 과열=폐사 경로가 막힌다.
+    await _pump(tester,
+        reading: _reading(heaterState: ActuatorState.on));
+    await tester.ensureVisible(find.byKey(CageControlGrid.heatFanKey));
+    await tester.tap(find.byKey(CageControlGrid.heatFanKey));
+    await tester.pumpAndSettle();
+    expect(find.text('module_heater_confirm_title'), findsOneWidget);
   });
 
   testWidgets('환기팬(꺼짐) 탭 → handleFanTap 경유 — 켜기 방식 시트가 뜬다',

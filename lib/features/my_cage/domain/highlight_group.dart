@@ -46,6 +46,10 @@ HighlightGroup _toGroup(List<NightlyHighlight> items) => (
       items: List.unmodifiable(items),
     );
 
-/// 도착 배너 dismiss 저장 키 — 그룹의 from(가장 오래된 항목 시각) ISO 문자열.
-/// 같은 그룹이면 재방문에도 숨기고, 새 그룹(from이 다름)이 오면 다시 보인다.
-String highlightGroupKey(HighlightGroup group) => group.from.toIso8601String();
+/// 도착 배너 dismiss 저장 키 — 그룹의 **to(가장 최신 항목 시각)** ISO 문자열.
+///
+/// from을 쓰면 안 된다(리뷰 2026-09-04): 그룹핑 앵커가 최신 항목이라, dismiss
+/// 후 **같은 72h 창 안에 새 하이라이트가 도착해도 from은 그대로**다 — 새
+/// 항목이 왔는데 배너가 영영 안 뜬다. to는 새 항목마다 바뀌므로 dismiss
+/// 의미가 "이 시점까지는 봤다"로 정확해진다.
+String highlightGroupKey(HighlightGroup group) => group.to.toIso8601String();

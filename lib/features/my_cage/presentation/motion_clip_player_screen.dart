@@ -180,6 +180,7 @@ class _MotionClipPlayerScreenState
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         if (cameraId != null) ref.invalidate(favoriteClipsProvider(cameraId));
+        ref.invalidate(allFavoriteClipsProvider); // 전역 목록 동기화(리뷰 2026-09-04)
         messenger.showSnackBar(
             SnackBar(content: Text('clip_favorite_removed'.tr())));
       } else {
@@ -191,6 +192,7 @@ class _MotionClipPlayerScreenState
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         ref.invalidate(favoriteClipsProvider(clip.cameraId));
+        ref.invalidate(allFavoriteClipsProvider);
         messenger.showSnackBar(
             SnackBar(content: Text('clip_favorite_added'.tr())));
       }
