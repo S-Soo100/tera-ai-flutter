@@ -372,8 +372,7 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
         items: [
           for (var i = 0; i < kHomeTabPaths.length; i++)
             GlassDockItem(
-              icon: kHomeTabIcons[i].icon,
-              selectedIcon: kHomeTabIcons[i].selectedIcon,
+              iconAsset: kHomeTabIconAssets[i],
               label: kHomeTabLabelKeys[i].tr(),
             ),
         ],

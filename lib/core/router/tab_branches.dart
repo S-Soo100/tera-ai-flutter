@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart' show IconData, Icons;
-
 /// 바텀 네비 탭 경로. PRD §2.1(2026-09-02 개정) = 홈/카메라/마이크레/커뮤니티 4탭.
 /// 통계 탭은 폐지 — 온습도 상세(`/env-detail`)가 흡수한다.
 ///
@@ -20,16 +18,17 @@ const List<String> kHomeTabLabelKeys = [
   'tab_community',
 ];
 
-/// [kHomeTabPaths]와 같은 순서의 아이콘 쌍(기본, 선택).
+/// [kHomeTabPaths]와 같은 순서의 Figma 아이콘 에셋명(`assets/icons/{name}.svg`).
 ///
+/// Figma Navigation(668:2485)의 원본 SVG(2026-09-04 사용자 제공) — 활성/비활성이
+/// 같은 글리프에 색만 다르므로 아이콘 쌍이 아니라 **단일 에셋**이다.
 /// 라우터가 독 항목을 여기서 **파생**한다 — 경로·라벨·아이콘이 세 곳에
 /// 병렬로 흩어지면 탭 하나를 고칠 때 한 곳이 조용히 어긋난다.
-const List<({IconData icon, IconData selectedIcon})> kHomeTabIcons = [
-  (icon: Icons.home_outlined, selectedIcon: Icons.home),
-  (icon: Icons.videocam_outlined, selectedIcon: Icons.videocam),
-  // 임시 아이콘(2026-09-02 사용자 지시) — 발바닥(pets) 대신 별. 확정 아이콘 나오면 교체.
-  (icon: Icons.star_outline, selectedIcon: Icons.star),
-  (icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble),
+const List<String> kHomeTabIconAssets = [
+  'nav_home',
+  'nav_camera',
+  'nav_mycre', // Figma `fertile` — 구 발바닥/임시 별을 대체(2026-09-04).
+  'nav_community',
 ];
 
 /// 탭에서 내렸지만 화면·딥링크는 유지하는 경로.

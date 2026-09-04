@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/glass_palette.dart';
+import 'figma_icon.dart';
 
 /// 하단 탭바 아래로 스크롤되는 리스트의 padding.
 ///
@@ -21,16 +22,18 @@ EdgeInsets glassDockListPadding(BuildContext context,
       );
 }
 
-/// 독 항목 하나. 아이콘 쌍(기본/선택) + 라벨.
+/// 독 항목 하나. Figma 아이콘 에셋명 + 라벨.
+///
+/// Figma Navigation은 활성/비활성이 같은 글리프에 색만 다르다 — 아이콘 쌍
+/// (기본/선택)이 아니라 단일 에셋을 [FigmaIcon.tinted]로 칠한다(2026-09-04).
 class GlassDockItem {
   const GlassDockItem({
-    required this.icon,
-    required this.selectedIcon,
+    required this.iconAsset,
     required this.label,
   });
 
-  final IconData icon;
-  final IconData selectedIcon;
+  /// `assets/icons/{iconAsset}.svg`의 파일명(확장자 제외).
+  final String iconAsset;
   final String label;
 }
 
@@ -136,8 +139,7 @@ class _DockButton extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(selected ? item.selectedIcon : item.icon,
-                size: 24, color: color),
+            FigmaIcon.tinted(item.iconAsset, size: 24, color: color),
             const SizedBox(height: 4),
             Text(
               item.label,

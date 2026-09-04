@@ -13,14 +13,8 @@ void main() {
       home: Scaffold(
         body: GlassDock(
           items: const [
-            GlassDockItem(
-                icon: Icons.home_outlined,
-                selectedIcon: Icons.home,
-                label: '홈'),
-            GlassDockItem(
-                icon: Icons.insights_outlined,
-                selectedIcon: Icons.insights,
-                label: '통계'),
+            GlassDockItem(iconAsset: 'nav_home', label: '홈'),
+            GlassDockItem(iconAsset: 'nav_camera', label: '카메라'),
           ],
           currentIndex: 0,
           onSelected: (_) {},
@@ -29,7 +23,7 @@ void main() {
     ));
 
     // 선택된 버튼·비선택 버튼 모두 tap 액션을 가져야 한다.
-    for (final label in const ['홈', '통계']) {
+    for (final label in const ['홈', '카메라']) {
       expect(
         tester.getSemantics(find.bySemanticsLabel(label)),
         containsSemantics(
