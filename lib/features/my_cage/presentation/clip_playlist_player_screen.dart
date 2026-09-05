@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -139,6 +140,14 @@ class _ClipPlaylistPlayerScreenState
         _initialized = true;
       });
       controller.play();
+      // 다음 클립 메타 선읽기 — 전환 직후 상단바 날짜가 비고 북마크 버튼이
+      // 잠시 무력화되는 공백을 줄인다(리뷰 2026-09-04). keepAliveFor 유예
+      // 캐시가 받아두고, 실패는 무시(전환 시 어차피 다시 읽는다).
+      if (_index + 1 < _playlist.length) {
+        unawaited(ref
+            .read(motionClipProvider(_playlist[_index + 1]).future)
+            .then<MotionClip?>((c) => c, onError: (_) => null));
+      }
     } catch (e) {
       await controller?.dispose();
       if (!mounted || seq != _loadSeq) return;

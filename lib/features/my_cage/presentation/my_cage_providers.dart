@@ -31,6 +31,21 @@ import 'highlights_controller.dart';
 
 // ── 내부 인프라 Provider ───────────────────────────────────────────────────────
 
+/// autoDispose provider에 **짧은 유예 캐시**를 준다 — 마지막 리스너가 떠난 뒤
+/// [ttl] 동안 살려뒀다가 버린다. 카메라 스와이프 왕복·플레이어 이전/다음
+/// 왕복이 같은 데이터를 매번 재조회하던 낭비를 없앤다(리뷰 2026-09-04).
+/// 리스너가 다시 붙으면 타이머를 취소해 캐시를 이어 쓴다.
+void keepAliveFor(Ref ref, Duration ttl) {
+  final link = ref.keepAlive();
+  Timer? timer;
+  ref.onCancel(() {
+    timer?.cancel();
+    timer = Timer(ttl, link.close);
+  });
+  ref.onResume(() => timer?.cancel());
+  ref.onDispose(() => timer?.cancel());
+}
+
 /// SupabaseClient 싱글톤. auth_providers에 동일 Provider 없으므로 여기서 정의.
 final _supabaseClientProvider = Provider<SupabaseClient>(
   (ref) => Supabase.instance.client,
@@ -257,6 +272,9 @@ typedef MotionClipsKey = ({String cameraId, DateTime? day});
 /// 잘린다. 200은 listByCameraInWindow와 같은 상한.
 final motionClipsProvider = FutureProvider.autoDispose
     .family<List<MotionClip>, MotionClipsKey>((ref, key) async {
+  // 카메라 스와이프로 리스너가 잠깐 떨어져도 2분간 캐시 유지 — A→B→A 왕복이
+  // 0쿼리가 된다. 갱신은 pull-to-refresh/재시도의 명시 invalidate가 맡는다.
+  keepAliveFor(ref, const Duration(minutes: 2));
   return ref
       .watch(motionClipRepositoryProvider)
       .listByCamera(key.cameraId, day: key.day, limit: 200);
@@ -280,6 +298,8 @@ final motionClipUrlProvider =
 /// 단일 모션 클립 메타(즐겨찾기 추가·재생화면 제목용). 없으면 null.
 final motionClipProvider =
     FutureProvider.autoDispose.family<MotionClip?, String>((ref, clipId) async {
+  // 플레이어 이전/다음 왕복이 같은 row를 재조회하지 않게 2분 유예 캐시.
+  keepAliveFor(ref, const Duration(minutes: 2));
   return ref.watch(motionClipRepositoryProvider).getById(clipId);
 });
 

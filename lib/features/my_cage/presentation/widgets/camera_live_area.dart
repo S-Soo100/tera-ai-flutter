@@ -155,7 +155,11 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
           if (ref.read(selectedCrecamCameraProvider) == i) return;
           ref.read(selectedCrecamCameraProvider.notifier).state = i;
         },
-        itemBuilder: (_, i) => _CameraPane(camera: cameras[i]),
+        // 정착 페이지만 라이브 — 드래그로 스쳐 가는 이웃 페이지가 세션
+        // 생성→즉시 철거(offer/ICE/closeSession 왕복)를 반복하지 않게
+        // (리뷰 2026-09-04 효율). 정착(onPageChanged) 시 active가 되며 연결.
+        itemBuilder: (_, i) =>
+            _CameraPane(camera: cameras[i], active: i == selected),
       ),
     );
 
@@ -172,6 +176,13 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
               cameraId: current.id,
             ),
           ),
+          // 어느 카메라를 보는지 — 구 카메라 그리드가 주던 식별 정보의 복원
+          // (리뷰 2026-09-04: 다중 카메라에서 점 인디케이터만으론 알 수 없다).
+          Positioned(
+            left: 12,
+            bottom: 12,
+            child: _CameraNameBadge(name: current.name),
+          ),
         ],
       ),
     );
@@ -183,13 +194,51 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
 /// 카메라가 이 탭에서만 "오프라인"이 된다. 연결/실패 표시는
 /// [WebRtcLiveView]가 스트림 phase로 스스로 한다.
 class _CameraPane extends ConsumerWidget {
-  const _CameraPane({required this.camera});
+  const _CameraPane({required this.camera, required this.active});
 
   final TerraCamera camera;
 
+  /// 정착된(선택) 페이지만 true — 스와이프 중 이웃 페이지는 연결하지 않는다.
+  final bool active;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!active) return const SizedBox.expand();
     return ref.watch(liveViewBuilderProvider)(camera.id);
+  }
+}
+
+/// 좌하단 카메라 이름 배지 — 확장 버튼과 같은 스크림 캡슐.
+class _CameraNameBadge extends StatelessWidget {
+  const _CameraNameBadge({required this.name});
+
+  final String name;
+
+  static const badgeKey = Key('crecam_live_camera_name');
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: badgeKey,
+      constraints: const BoxConstraints(maxWidth: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppTheme.liveScrim,
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Text(
+        name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontFamily: 'Pretendard',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 12 * -0.02,
+          color: AppTheme.liveOnDark,
+        ),
+      ),
+    );
   }
 }
 

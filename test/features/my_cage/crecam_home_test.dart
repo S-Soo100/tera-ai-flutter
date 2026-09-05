@@ -164,6 +164,9 @@ void main() {
     expect(find.text('live-view-$_cameraId'), findsOneWidget);
     // 확장 버튼은 항상 카메라 상세로 갈 수 있게 노출.
     expect(find.byKey(CameraLiveArea.expandButtonKey), findsOneWidget);
+    // 어느 카메라인지 이름 배지로 밝힌다(리뷰 2026-09-04 — 구 그리드가 주던
+    // 식별 정보의 복원).
+    expect(find.text('테스트캠'), findsOneWidget);
   });
 
   testWidgets('최초 진입은 홈 세트의 카메라에서 시작 — 목록 첫 카메라가 아니다',

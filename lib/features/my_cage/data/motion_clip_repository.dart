@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -166,20 +167,33 @@ class MotionClipRepository {
     throw BackendException(resp.statusCode, resp.body);
   }
 
+  /// 썸네일 presign 동시 요청 상한 — 시간대 그리드는 하루 최대 200셀이
+  /// 한 번에 빌드돼(SingleChildScrollView — 라이브 dispose 방지 구조),
+  /// 게이트가 없으면 진입 순간 presign GET 수백 개가 모바일 커넥션 풀을
+  /// 포화시켜 같은 화면의 WebRTC config/offer까지 밀린다(리뷰 2026-09-04).
+  /// 뷰포트 게이팅(visibility_detector) 대신 여기서 조이는 이유: UI·테스트
+  /// 무접촉이고, 총량은 clipId cacheKey 디스크 캐시가 1회로 눌러준다.
+  static final _thumbGate = _Semaphore(4);
+
   /// 썸네일 presigned URL (terra-api GET /clips/{id}/thumbnail/url).
   /// 응답 {url, expires_in}. 썸네일 없으면(404) null → 카드 아이콘 폴백.
   Future<String?> getThumbnailUrl(String clipId) async {
-    final token = await _tokenProvider();
-    final resp = await http.get(
-      Uri.parse('$_terraApiUrl/clips/$clipId/thumbnail/url'),
-      headers: {if (token != null) 'Authorization': 'Bearer $token'},
-    );
-    if (resp.statusCode == 200) {
-      final body = jsonDecode(resp.body) as Map<String, dynamic>;
-      return body['url'] as String?;
+    await _thumbGate.acquire();
+    try {
+      final token = await _tokenProvider();
+      final resp = await http.get(
+        Uri.parse('$_terraApiUrl/clips/$clipId/thumbnail/url'),
+        headers: {if (token != null) 'Authorization': 'Bearer $token'},
+      );
+      if (resp.statusCode == 200) {
+        final body = jsonDecode(resp.body) as Map<String, dynamic>;
+        return body['url'] as String?;
+      }
+      if (resp.statusCode == 404) return null;
+      throw BackendException(resp.statusCode, resp.body);
+    } finally {
+      _thumbGate.release();
     }
-    if (resp.statusCode == 404) return null;
-    throw BackendException(resp.statusCode, resp.body);
   }
 
   /// 단일 모션 클립 조회(즐겨찾기 메타용). 없으면 null. RLS 본인 것만.
@@ -273,5 +287,31 @@ class MotionClipRepository {
     if (list.isEmpty) return null;
     final ts = (list.first as Map<String, dynamic>)['started_at'];
     return parseLocalDateTime(ts);
+  }
+}
+
+/// 최소 카운팅 세마포어 — 썸네일 presign 동시성 제한 전용.
+class _Semaphore {
+  _Semaphore(this._permits);
+
+  int _permits;
+  final _waiters = <Completer<void>>[];
+
+  Future<void> acquire() {
+    if (_permits > 0) {
+      _permits--;
+      return Future.value();
+    }
+    final c = Completer<void>();
+    _waiters.add(c);
+    return c.future;
+  }
+
+  void release() {
+    if (_waiters.isNotEmpty) {
+      _waiters.removeAt(0).complete();
+    } else {
+      _permits++;
+    }
   }
 }
