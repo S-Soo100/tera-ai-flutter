@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:vivnanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivnanaut/features/my_cage/data/highlight_banner_store.dart';
 import 'package:vivnanaut/features/my_cage/domain/highlight_group.dart';
 import 'package:vivnanaut/features/my_cage/domain/nightly_highlight.dart';
@@ -22,11 +23,13 @@ class _FakeBannerStore implements HighlightBannerStore {
 
   String? value;
 
+  // 계정 격리(2026-09-07): 실 스토어는 ownerId별 키를 쓰지만, 위젯 테스트는
+  // 단일 계정 시나리오라 fake는 ownerId를 무시한다.
   @override
-  String? load() => value;
+  String? load(String? ownerId) => value;
 
   @override
-  Future<void> save(String groupKey) async {
+  Future<void> save(String? ownerId, String groupKey) async {
     value = groupKey;
   }
 }
@@ -73,6 +76,9 @@ Future<void> _pump(
         highlightGroupsProvider.overrideWith((ref) async => groups ?? _groups()),
         highlightBannerStoreProvider.overrideWith((ref) => store),
         motionThumbnailProvider.overrideWith((ref, clipId) async => null),
+        // dismiss notifier가 계정 id를 watch한다(격리 2026-09-07) — 테스트는
+        // Supabase 미초기화라 실 체인 대신 미로그인으로 고정.
+        currentUserProvider.overrideWith((ref) => null),
       ],
       child: MaterialApp.router(routerConfig: _router()),
     ),

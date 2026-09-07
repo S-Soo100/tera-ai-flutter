@@ -6,9 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/live_surface.dart';
-import '../../../../shared/widgets/status_badge.dart';
-import '../../../my_cage/domain/terra_camera.dart';
-import '../../../my_cage/presentation/webrtc_live_controller.dart';
+import '../../../my_cage/presentation/widgets/live_connection_badge.dart';
 import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
 import '../../domain/enclosure_set.dart';
 import '../home_set_providers.dart';
@@ -119,7 +117,9 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
     // 바로 아래 온습도 요약 카드에 있다(2026-09-02). 시계 오버레이는 유지.
     final surface = LiveSurface(
       aspectRatio: TopFixedArea.aspectRatio,
-      status: _ConnectionStatus(camera: current.camera),
+      status: current.camera == null
+          ? null
+          : LiveConnectionBadge(cameraId: current.camera!.id),
       corner: current.camera == null ? null : const LiveClockOverlay(),
       footer: sets.length > 1
           ? _PageDots(
@@ -213,39 +213,8 @@ class _InlineNotice extends StatelessWidget {
   }
 }
 
-/// 연결 상태 배지 — **한 번에 하나의 진실만 말한다.**
-///
-/// 이전에는 배지가 DB presence(`cameras.is_online`)를, 가운데 문구가 스트림
-/// 상태를 말해서 `OFFLINE`과 "카메라 호출 중..."이 동시에 떴다. 이제 배지는
-/// **스트림 phase**를 따르고, 연결 중일 때는 아예 배지를 내지 않는다 —
-/// 가운데 문구가 이미 그 말을 하고 있기 때문이다.
-class _ConnectionStatus extends ConsumerWidget {
-  const _ConnectionStatus({required this.camera});
-
-  final TerraCamera? camera;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cam = camera;
-    if (cam == null) return const SizedBox.shrink();
-
-    final phase = ref.watch(webrtcLiveControllerProvider(cam.id)).phase;
-    return switch (phase) {
-      WebRtcLivePhase.streaming => const StatusBadge(
-          label: 'LIVE',
-          tone: StatusTone.live,
-          onDark: true,
-        ),
-      WebRtcLivePhase.failed => StatusBadge(
-          label: 'home_live_offline'.tr(),
-          tone: StatusTone.neutral,
-          onDark: true,
-        ),
-      // 연결 중 — 가운데 문구가 이미 말한다. 배지까지 내면 중복이다.
-      _ => const SizedBox.shrink(),
-    };
-  }
-}
+// 연결 상태 배지(_ConnectionStatus)는 LiveConnectionBadge로 공용화됐다
+// (2026-09-07 A3 — 카메라 탭 라이브 면에도 같은 배지가 달린다).
 
 class _SetPane extends StatelessWidget {
   const _SetPane({required this.set});

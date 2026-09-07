@@ -230,10 +230,7 @@ class _MotionClipPlayerScreenState
     final isFav = ref.watch(isFavoriteProvider(widget.clipId));
     // 일시 오버레이용 녹화 시작 시각 — 온라인은 clip, 오프라인 즐겨찾기는 로컬 메타.
     final startedAt = clip?.startedAt ??
-        ref
-            .watch(favoriteClipRepositoryProvider)
-            .getMeta(widget.clipId)
-            ?.startedAt;
+        ref.watch(favoriteClipMetaProvider(widget.clipId))?.startedAt;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,

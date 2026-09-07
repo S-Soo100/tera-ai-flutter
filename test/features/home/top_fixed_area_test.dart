@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivnanaut/features/my_cage/presentation/webrtc_live_controller.dart';
+
+import '../../helpers/inert_live_controller.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/top_fixed_area.dart';
 import 'package:vivnanaut/features/my_cage/domain/device.dart';
 import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
@@ -36,6 +39,9 @@ Future<ProviderContainer> _pump(
     WidgetTester tester, List<EnclosureSet> sets) async {
   final c = ProviderContainer(overrides: [
     enclosureSetsProvider.overrideWith((ref) async => sets),
+    // 실피어 차단 — startConnection()을 부르지 않은 inert 컨트롤러(A2).
+    webrtcLiveControllerProvider.overrideWith(
+        (ref, uuid) => InertLiveController(ref, uuid)),
   ]);
   addTearDown(c.dispose);
   await tester.pumpWidget(
@@ -49,9 +55,8 @@ Future<ProviderContainer> _pump(
 }
 
 void main() {
-  // ⚠️ 캠 세트를 첫 페이지에 두면 WebRtcLiveView가 실제 피어 연결을 시도해
-  // 위젯 테스트가 깨진다 — 캠 세트는 항상 **방문하지 않는 마지막 페이지**에
-  // 둔다(PageView.builder는 보이는 페이지만 빌드한다).
+  // 실피어는 inert 컨트롤러 오버라이드로 차단된다(2026-09-07 A2) —
+  // 구 '캠 세트는 마지막 페이지에 숨기기' 관례는 폐기. 픽스처 배치는 유지.
 
   testWidgets('어느 세트에도 캠이 없으면 라이브 자리를 접고 한 줄 안내', (tester) async {
     await _pump(tester, [_set('e1', dev: true)]);

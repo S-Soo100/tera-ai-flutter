@@ -7,6 +7,7 @@ import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/domain/telemetry_reading.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../cage_control_actions.dart';
+import '../../domain/mist_duration.dart' show MistDuration;
 import '../home_control_providers.dart';
 
 /// 사육장 제어 그리드 — Figma A.4 ④ (타일 180.5×72, 갭 8, radius 12).
@@ -45,9 +46,11 @@ class CageControlGrid extends ConsumerWidget {
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
     final online = ref.watch(moduleOnlineProvider(deviceId));
     final lock = ref.watch(mistLockProvider(deviceId));
-    final mistDuration = ref.watch(mistDurationProvider);
     final glass = context.glass;
     final mistLocked = lock.isLocked(DateTime.now());
+    // 분사 중(릴레이 ON 텔레메트리) 또는 방금 눌러 잠금 중이면 "켜짐" —
+    // 텔레메트리는 3초 주기라 3초 펄스를 놓칠 수 있어 잠금을 함께 본다.
+    final mistOn = t?.relay == ActuatorState.on || mistLocked;
 
     final fanOn = t?.fan == ActuatorState.on;
     final ledOn = t?.led == ActuatorState.on;
@@ -67,20 +70,22 @@ class CageControlGrid extends ConsumerWidget {
         iconCircleColor: fanOn ? glass.deviceFan : glass.deviceOff,
         onTap: online ? () => handleFanTap(context, ref, deviceId, t) : null,
       ),
-      // ② 분무 — 모멘터리(작동 후 5초 잠금). '켜진 상태'가 없어 잠금 중에만
-      // humid 색으로 "지금 작동함"을 말한다.
+      // ② 분무 — Figma대로 꺼짐/켜짐 표시, **탭 즉시 3초 분사**(2026-09-07
+      // 사용자 지시 — 시간 선택 시트 폐지, 예약 편집기에는 시간 선택이 남는다).
+      // 모멘터리라 분사(릴레이 ON)+잠금 5초 동안만 켜짐으로 말한다.
       _DeviceTile(
         key: mistKey,
         name: 'device_mist'.tr(),
-        status: mistLocked
-            ? 'home_mist_cooldown_short'.tr()
-            : 'home_mist_seconds'.tr(args: ['${mistDuration.seconds}']),
+        status: mistOn
+            ? 'device_state_on'.tr()
+            : 'device_state_off'.tr(),
         icon: Icons.water_drop,
-        active: mistLocked,
-        tileColor: mistLocked ? glass.deviceMistBg : glass.surfaceTint,
-        iconCircleColor: mistLocked ? glass.deviceMist : glass.deviceOff,
+        active: mistOn,
+        tileColor: mistOn ? glass.deviceMistBg : glass.surfaceTint,
+        iconCircleColor: mistOn ? glass.deviceMist : glass.deviceOff,
         onTap: online && !mistLocked
-            ? () => openMistSheet(context, ref, deviceId)
+            ? () => mistOnce(
+                context, ref, deviceId, MistDuration.threeSeconds)
             : null,
       ),
       // ③ 냉각팬 — API 없음, 미배선(UI만).

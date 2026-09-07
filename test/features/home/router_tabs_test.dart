@@ -64,9 +64,26 @@ void main() {
         '/crecam/cameras/abc/live',
         '/crecam/clips/abc',
         '/crecam/motion-clips/abc',
+        // 카메라 탭 재설계 신규 3라우트(2026-09-04) — 가드 테스트 잔여 A4.
+        '/crecam/highlights',
+        '/crecam/bookmarks',
+        '/crecam/player/abc',
       ]) {
         final match = config.findMatch(Uri.parse(path));
         expect(match.matches, isNotEmpty, reason: '$path 매칭 실패');
+      }
+    });
+
+    test('크레캠 하위 딥링크는 비공개 — 비로그인이면 로그인으로 (A4)', () {
+      // 공개 목록은 정확 매칭이 아니라 이 경로들이 들어있지 않음을 본다 —
+      // 카메라·클립은 계정 종속 데이터다.
+      for (final path in [
+        '/crecam/highlights',
+        '/crecam/bookmarks',
+        '/crecam/player/abc',
+        '/crecam/cameras/abc/live',
+      ]) {
+        expect(kPublicPaths, isNot(contains(path)), reason: '$path 공개 금지');
       }
     });
   });

@@ -362,6 +362,18 @@ final isFavoriteProvider =
   return ref.watch(favoriteClipRepositoryProvider).isFavorite(clipId);
 });
 
+/// 로컬 즐겨찾기 메타(오프라인 재생·시각 폴백).
+///
+/// 플레이어가 repository를 직접 `getMeta()` 하던 비반응 read의 대체(2026-09-07
+/// 리뷰 잔여 A5) — [isFavoriteProvider]와 같은 invalidate 채널(토글 후
+/// `ref.invalidate(isFavoriteProvider(id))`)에 동승해, 즐겨찾기 해제 직후에도
+/// 지워진 메타를 계속 그리지 않는다.
+final favoriteClipMetaProvider =
+    Provider.autoDispose.family<FavoriteClip?, String>((ref, clipId) {
+  ref.watch(isFavoriteProvider(clipId));
+  return ref.watch(favoriteClipRepositoryProvider).getMeta(clipId);
+});
+
 /// 즐겨찾기 클라우드→로컬 동기화(탭 진입 시 1회). 완료 후 목록 invalidate로 갱신.
 final favoritesSyncProvider =
     FutureProvider.autoDispose.family<void, String>((ref, cameraId) async {
@@ -526,17 +538,23 @@ final highlightBannerStoreProvider = Provider<HighlightBannerStore>(
 
 /// 마지막으로 dismiss한 그룹 key(from ISO). null = dismiss 이력 없음.
 /// 하이라이트 상세의 도착 배너가 watch — 최신 그룹 key와 같으면 숨긴다.
+/// **계정별 격리**(2026-09-07): 계정 id를 watch해 전환 시 그 계정의 상태로
+/// 다시 읽는다(project_auth_provider_stale_pattern).
 final highlightBannerDismissedProvider =
     NotifierProvider<HighlightBannerDismissedNotifier, String?>(
         HighlightBannerDismissedNotifier.new);
 
 class HighlightBannerDismissedNotifier extends Notifier<String?> {
   @override
-  String? build() => ref.watch(highlightBannerStoreProvider).load();
+  String? build() {
+    final uid = ref.watch(currentUserProvider.select((u) => u?.id));
+    return ref.watch(highlightBannerStoreProvider).load(uid);
+  }
 
   Future<void> dismiss(String groupKey) async {
     state = groupKey;
-    await ref.read(highlightBannerStoreProvider).save(groupKey);
+    final uid = ref.read(currentUserProvider)?.id;
+    await ref.read(highlightBannerStoreProvider).save(uid, groupKey);
   }
 }
 

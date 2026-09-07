@@ -47,13 +47,25 @@ class WebRtcLiveState {
 
 class WebRtcLiveController
     extends StateNotifier<WebRtcLiveState> {
+  /// **생성자는 아무것도 시작하지 않는다**(2026-09-07, 리뷰 잔여 A2).
+  /// 실피어 연결은 provider가 [startConnection]으로 켠다 — 예전엔 생성자가
+  /// 곧장 시그널링을 시작해, 위젯 테스트마다 우회(빌더 심·'마지막 페이지'
+  /// 관례)가 필요했다. 테스트는 provider를 **시작하지 않은 컨트롤러**로
+  /// 오버라이드하면 된다(connectingConfig 스켈레톤으로 멈춘다).
   WebRtcLiveController(this.ref, this.cameraUuid)
-      : super(const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig)) {
-    _start();
-  }
+      : super(const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig));
 
   final Ref ref;
   final String cameraUuid;
+
+  bool _started = false;
+
+  /// 연결 시퀀스 시작. 멱등 — provider가 생성 직후 1회 부른다.
+  void startConnection() {
+    if (_started) return;
+    _started = true;
+    _start();
+  }
 
   RTCPeerConnection? _pc;
   RTCVideoRenderer? _renderer;
@@ -449,5 +461,7 @@ class WebRtcLiveController
 
 final webrtcLiveControllerProvider = StateNotifierProvider.autoDispose
     .family<WebRtcLiveController, WebRtcLiveState, String>(
-  (ref, cameraUuid) => WebRtcLiveController(ref, cameraUuid),
+  // 시작은 여기서 — 위젯 테스트는 startConnection() 없이 생성만 하는
+  // 오버라이드로 실피어를 차단한다(클래스 doc).
+  (ref, cameraUuid) => WebRtcLiveController(ref, cameraUuid)..startConnection(),
 );

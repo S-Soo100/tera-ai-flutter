@@ -38,9 +38,6 @@ final mistLockProvider = StateProvider.family<MistLock, String>(
   (ref, deviceId) => const MistLock(lockedUntil: null),
 );
 
-/// 마지막으로 고른 분무 시간. 기기별로 나눌 이유가 없다(사용자 취향).
-final mistDurationProvider =
-    StateProvider<MistDuration>((ref) => MistDuration.defaultValue);
 
 /// 발행한 명령이 [kCommandAckGrace] 안에 ACK되는지 지켜본다.
 ///
@@ -318,54 +315,9 @@ Future<void> mistOnce(
   }
 }
 
-/// 분무 지속시간 선택 시트. 고른 즉시 분사한다.
-///
-/// 시트를 한 겹 두는 대신 **고르는 행위가 곧 실행**이다. "고르고 → 확인" 2탭을
-/// 요구하면 하루에도 몇 번씩 누르는 동작이 무거워진다.
-Future<void> openMistSheet(
-  BuildContext context,
-  WidgetRef ref,
-  String deviceId,
-) async {
-  final picked = await showModalBottomSheet<MistDuration>(
-    context: context,
-    builder: (ctx) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppStyles.spacing16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'home_mist_pick_title'.tr(),
-              style: AppStyles.subsectionTitle(ctx),
-            ),
-            const SizedBox(height: AppStyles.spacing12),
-            Row(
-              children: [
-                for (final d in MistDuration.values) ...[
-                  Expanded(
-                    child: OutlinedButton(
-                      key: Key('mist_duration_${d.seconds}'),
-                      onPressed: () => Navigator.of(ctx).pop(d),
-                      child: Text('home_mist_seconds'
-                          .tr(args: ['${d.seconds}'])),
-                    ),
-                  ),
-                  if (d != MistDuration.values.last)
-                    const SizedBox(width: AppStyles.spacing8),
-                ],
-              ],
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-  if (picked == null || !context.mounted) return;
-  ref.read(mistDurationProvider.notifier).state = picked;
-  await mistOnce(context, ref, deviceId, picked);
-}
+// 분무 지속시간 선택 시트(openMistSheet)·mistDurationProvider는 2026-09-07
+// 사용자 지시로 폐지 — 홈 분무 타일은 무조건 3초 분사(cage_control_grid).
+// 예약 편집기의 분무 시간 선택(schedule_editor_sheet)은 별개로 유지된다.
 
 /// LED 켜기/끄기 시트 — 보드 능력에 따라 밝기 슬라이더가 붙는다.
 ///

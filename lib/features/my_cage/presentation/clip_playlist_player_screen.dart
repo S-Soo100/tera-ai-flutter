@@ -90,8 +90,8 @@ class _ClipPlaylistPlayerScreenState
 
   Future<String> _presignedUrl(String clipId, {bool refresh = false}) async {
     final cached = _urlCache[clipId];
-    final stale = cached == null ||
-        DateTime.now().difference(cached.issuedAt) > _urlTtl;
+    final stale =
+        cached == null || DateTime.now().difference(cached.issuedAt) > _urlTtl;
     if (refresh || stale) {
       _urlCache.remove(clipId);
       // provider도 무효화해야 한다 — non-refresh stale 경로에서도 provider
@@ -272,8 +272,8 @@ class _ClipPlaylistPlayerScreenState
             SnackBar(content: Text('clip_favorite_removed'.tr())));
       } else {
         if (clip == null) return; // 오프라인 등 메타 없음 → 추가 불가
-        messenger.showSnackBar(
-            SnackBar(content: Text('clip_favorite_saving'.tr())));
+        messenger
+            .showSnackBar(SnackBar(content: Text('clip_favorite_saving'.tr())));
         final url = await _presignedUrl(clipId);
         await repo.add(clip, url);
         if (!mounted) return;
@@ -298,10 +298,7 @@ class _ClipPlaylistPlayerScreenState
     final isFav = ref.watch(isFavoriteProvider(currentId));
     // 온라인은 clip 메타, 오프라인 즐겨찾기는 로컬 메타에서 시각을 얻는다.
     final startedAt = clip?.startedAt ??
-        ref
-            .watch(favoriteClipRepositoryProvider)
-            .getMeta(currentId)
-            ?.startedAt;
+        ref.watch(favoriteClipMetaProvider(currentId))?.startedAt;
 
     final showPagination = _playlist.length > 1;
 
@@ -350,39 +347,45 @@ class _ClipPlaylistPlayerScreenState
   Widget _topBar(GlassPalette glass, DateTime? startedAt) {
     // 공용 상단바(마진 12·back 44) + 중앙 2줄(날짜/시각 — Figma 668:743,
     // 행간 19/17px 고정: 기본 행간이면 44를 넘친다. 시뮬 실측 리뷰 이력).
+    //
+    // 접근성(2026-09-07 A8): 시스템 글자 확대에서 2줄이 44pt 바를 넘치므로
+    // 이 바만 스케일을 1.2로 클램프한다(19×1.2 + 17×1.2 = 43.2 < 44).
+    // 날짜·시각은 본문이 아니라 크롬이라 클램프가 관례에 맞다.
     return CrecamDetailTopBar(
       titleWidget: startedAt == null
           ? null
-          : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  DateFormat('yyyy. MM. dd').format(startedAt.toLocal()),
-                  style: TextStyle(
-                    fontFamily: 'Pretendard',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.32, // 16 × -2%
-                    height: 19 / 16,
-                    color: glass.textSecondary,
+          : MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.2,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    DateFormat('yyyy. MM. dd').format(startedAt.toLocal()),
+                    style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.32, // 16 × -2%
+                      height: 19 / 16,
+                      color: glass.textSecondary,
+                    ),
                   ),
-                ),
-                Text(
-                  formatAmPmTime(startedAt.toLocal()),
-                  style: TextStyle(
-                    fontFamily: 'Pretendard',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: -0.28, // 14 × -2%
-                    height: 17 / 14,
-                    color: glass.textTertiary,
+                  Text(
+                    formatAmPmTime(startedAt.toLocal()),
+                    style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.28, // 14 × -2%
+                      height: 17 / 14,
+                      color: glass.textTertiary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
     );
   }
-
 
   Widget _pagination(GlassPalette glass) {
     // 10개 초과면 세그먼트가 실오라기가 된다 — 같은 자리(높이 4)에 연속
@@ -569,8 +572,8 @@ class _ClipPlaylistPlayerScreenState
           const SizedBox(width: 20),
           action(Icons.ios_share, 'clip_share'.tr(), _busy ? null : _share),
           const SizedBox(width: 20),
-          action(Icons.download_outlined, 'clip_save'.tr(),
-              _busy ? null : _save),
+          action(
+              Icons.download_outlined, 'clip_save'.tr(), _busy ? null : _save),
         ],
       ),
     );

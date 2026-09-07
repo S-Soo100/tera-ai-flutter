@@ -12,11 +12,16 @@ import 'package:vivnanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivnanaut/features/my_cage/presentation/crecam_screen.dart';
 import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivnanaut/features/my_cage/presentation/widgets/camera_live_area.dart';
+import 'package:vivnanaut/features/my_cage/presentation/webrtc_live_controller.dart';
+
+import '../../helpers/inert_live_controller.dart';
+import 'package:vivnanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
 
 /// Camera Home(카메라 탭 재설계 T2) 위젯 테스트.
 ///
-/// 라이브 자리는 [liveViewBuilderProvider] 심으로 갈아끼운다 — 실
-/// WebRtcLiveView는 빌드 즉시 시그널링을 시작해 위젯 테스트를 깨뜨린다.
+/// 라이브는 [webrtcLiveControllerProvider]를 **시작하지 않는 컨트롤러**로
+/// 오버라이드해 실피어를 차단한다(2026-09-07 A2 — 생성자 부작용 분리).
+/// 활성 페인 식별은 WebRtcLiveView.cameraUuid로 한다.
 /// 클립 그리드는 카메라 온라인 여부와 무관하게 로드된다.
 const _cameraId = 'cam-1';
 
@@ -51,6 +56,10 @@ final _clips = [_clip('c2', 10, 5), _clip('c3', 8, 30), _clip('c1', 10, 15)];
 
 String? pushedClipId;
 List<String>? pushedPlaylist;
+
+/// 정착(활성) 페인의 라이브 뷰 — 비활성 페인은 SizedBox라 카메라당 최대 1개.
+Finder _liveFor(String cameraId) => find.byWidgetPredicate(
+    (w) => w is WebRtcLiveView && w.cameraUuid == cameraId);
 
 GoRouter _router() => GoRouter(
       routes: [
@@ -116,9 +125,9 @@ Future<void> _pump(
         enclosureSetsProvider.overrideWith((ref) async => sets),
         camerasProvider.overrideWith(
             (ref) => Stream.value(cameras ?? [_offlineCamera()])),
-        // 실피어 연결 차단 심 — _CameraPane이 이 빌더로 라이브 자리를 그린다.
-        liveViewBuilderProvider.overrideWithValue(
-            (uuid) => Text('live-view-$uuid')),
+        // 실피어 차단 — startConnection()을 부르지 않은 inert 컨트롤러.
+        webrtcLiveControllerProvider.overrideWith(
+            (ref, uuid) => InertLiveController(ref, uuid)),
         crecamDayProvider.overrideWith((ref) => pickedDay ? _day : null),
         latestMotionClipAtProvider
             .overrideWith((ref, cameraId) async => latestClipAt),
@@ -176,7 +185,7 @@ void main() {
     // 나오고 카메라 탭에서만 "오프라인"). 게이팅 없이 항상 시도하고, 실패
     // 표시는 WebRtcLiveView 몫이다.
     await _pump(tester); // 기본 카메라가 isOnline: false
-    expect(find.text('live-view-$_cameraId'), findsOneWidget);
+    expect(_liveFor(_cameraId), findsOneWidget);
     // 확장 버튼은 항상 카메라 상세로 갈 수 있게 노출.
     expect(find.byKey(CameraLiveArea.expandButtonKey), findsOneWidget);
     // 어느 카메라인지 이름 배지로 밝힌다(리뷰 2026-09-04 — 구 그리드가 주던
@@ -204,8 +213,8 @@ void main() {
       sets: [_setWithCamera('set-cam')],
     );
     await tester.pumpAndSettle();
-    expect(find.text('live-view-set-cam'), findsOneWidget);
-    expect(find.text('live-view-other'), findsNothing);
+    expect(_liveFor('set-cam'), findsOneWidget);
+    expect(_liveFor('other'), findsNothing);
   });
 
   // ── 홈 ↔ 카메라 탭 슬라이드 동기화 (2026-09-07 사용자 제보) ──────────────
@@ -221,12 +230,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     // 홈 세트(index 0)의 camA에서 시작 — 정렬이 raw 순서였다면 camB.
-    expect(find.text('live-view-camA'), findsOneWidget);
+    expect(_liveFor('camA'), findsOneWidget);
 
     await tester.fling(
         find.byKey(CameraLiveArea.pageViewKey), const Offset(-400, 0), 1000);
     await tester.pumpAndSettle();
-    expect(find.text('live-view-camB'), findsOneWidget);
+    expect(_liveFor('camB'), findsOneWidget);
 
     final container = ProviderScope.containerOf(
         tester.element(find.byType(CrecamScreen)),
@@ -243,7 +252,7 @@ void main() {
       sets: [_setWithCamera('camA'), _setWithCamera('camB')],
     );
     await tester.pumpAndSettle();
-    expect(find.text('live-view-camA'), findsOneWidget);
+    expect(_liveFor('camA'), findsOneWidget);
 
     // 홈 헤더 드롭다운/스와이프에 해당하는 상태 변경.
     final container = ProviderScope.containerOf(
@@ -252,8 +261,8 @@ void main() {
     container.read(selectedSetIndexProvider.notifier).state = 1;
     await tester.pumpAndSettle();
 
-    expect(find.text('live-view-camB'), findsOneWidget);
-    expect(find.text('live-view-camA'), findsNothing);
+    expect(_liveFor('camB'), findsOneWidget);
+    expect(_liveFor('camA'), findsNothing);
     expect(container.read(selectedCrecamCameraProvider), 'camB');
   });
 

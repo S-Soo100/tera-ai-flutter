@@ -12,6 +12,7 @@ import '../../../home/presentation/home_set_providers.dart';
 import '../../../home/presentation/widgets/live_clock_overlay.dart';
 import '../../domain/terra_camera.dart';
 import '../my_cage_providers.dart';
+import 'live_connection_badge.dart';
 import 'webrtc_live_view.dart';
 
 /// 카메라 탭 라이브 영역 — Figma Camera Home (668:427), 369×271 radius 12.
@@ -51,12 +52,9 @@ class CameraLiveArea extends ConsumerStatefulWidget {
   ConsumerState<CameraLiveArea> createState() => _CameraLiveAreaState();
 }
 
-/// 라이브 페이지가 그릴 위젯의 심 — **위젯 테스트 전용 오버라이드 지점**.
-/// WebRtcLiveView는 빌드 즉시 실피어 연결을 시작해 테스트를 깨뜨린다
-/// (top_fixed_area_test의 "마지막 페이지에 숨기기" 관례를 대체).
-final liveViewBuilderProvider = Provider<Widget Function(String cameraUuid)>(
-  (_) => (uuid) => WebRtcLiveView(cameraUuid: uuid, cover: true),
-);
+// liveViewBuilderProvider(테스트 심)는 2026-09-07 제거 — WebRtcLiveController
+// 생성자가 무해해져(startConnection 분리) 테스트는
+// `webrtcLiveControllerProvider`를 시작 없는 컨트롤러로 오버라이드한다.
 
 /// 카메라 탭 슬라이드 순서 — **홈(세트 PageView)과 같은 순서**로 돌아야 탭을
 /// 오가도 "몇 번째 카메라"가 안 바뀐다(2026-09-07 사용자 제보). 세트에 물린
@@ -217,6 +215,8 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
 
     final surface = LiveSurface(
       aspectRatio: CameraLiveArea.aspectRatio,
+      // 좌상단 연결 배지 — 스트림 phase 기준(홈과 동일 공용 위젯, A3 복원).
+      status: LiveConnectionBadge(cameraId: current.id),
       // 시계는 항상 — 홈(TopFixedArea)과 동일. 연결 실패 문구는 WebRtcLiveView
       // 몫이고, DB is_online은 stale일 수 있어 여기서 판정하지 않는다.
       corner: const LiveClockOverlay(),
@@ -288,7 +288,7 @@ class _CameraPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!active) return const SizedBox.expand();
-    return ref.watch(liveViewBuilderProvider)(camera.id);
+    return WebRtcLiveView(cameraUuid: camera.id, cover: true);
   }
 }
 

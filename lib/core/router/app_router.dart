@@ -283,7 +283,8 @@ GoRouter buildAppRouter({
         ],
       ),
       // 위키·검색 라우트는 2026-09-02 PRD 재설계로 제거(진입점 폐지).
-      // lib/features/{wiki,search}/ 파일 삭제는 후속 정리 커밋.
+      // lib/features/wiki/는 화면·출처 인프라를 지우고(2026-09-07 A6) 개체
+      // 등록이 쓰는 데이터 계층(care_info·morph_genetics)만 남았다.
       GoRoute(
         path: '/error',
         builder: (context, state) => const ErrorScreen(),
