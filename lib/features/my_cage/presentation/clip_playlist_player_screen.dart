@@ -36,6 +36,12 @@ class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
   /// 테스트용 — 페이지네이션 세그먼트 식별.
   static const paginationKey = Key('crecam_player_pagination');
 
+  /// 테스트용 — 이전/다음 화살표·위치 카운터(사용자 피드백 2026-09-08:
+  /// 투명 탭 존만으로는 이전/다음 동작이 인지되지 않는다).
+  static const prevArrowKey = Key('crecam_player_prev_arrow');
+  static const nextArrowKey = Key('crecam_player_next_arrow');
+  static const counterKey = Key('crecam_player_counter');
+
   @override
   ConsumerState<ClipPlaylistPlayerScreen> createState() =>
       _ClipPlaylistPlayerScreenState();
@@ -484,7 +490,89 @@ class _ClipPlaylistPlayerScreenState
                 ],
               ),
             ),
+          // 이전/다음 어포던스(사용자 피드백 2026-09-08) — 투명 탭 존만으로는
+          // 동작이 인지되지 않는다. 화살표는 목록 끝에서 사라져 "여기가
+          // 끝"까지 전달하고, 카운터("3 / 35")는 탭마다 바뀌어 이동했음을
+          // 보여준다. Figma 668:743에는 없는 추가 요소(사용성 보강)다.
+          // 로딩/에러 상태에서도 눌러서 다음 클립으로 건너갈 수 있게
+          // _initialized에 걸지 않는다.
+          if (_playlist.length > 1) ...[
+            if (_index > 0)
+              Positioned(
+                left: 8,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _navArrow(
+                    key: ClipPlaylistPlayerScreen.prevArrowKey,
+                    icon: Icons.chevron_left,
+                    onTap: () => _go(-1),
+                  ),
+                ),
+              ),
+            if (_index < _playlist.length - 1)
+              Positioned(
+                right: 8,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _navArrow(
+                    key: ClipPlaylistPlayerScreen.nextArrowKey,
+                    icon: Icons.chevron_right,
+                    onTap: () => _go(1),
+                  ),
+                ),
+              ),
+            Positioned(
+              top: 8,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  key: ClipPlaylistPlayerScreen.counterKey,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    // 영상 위 오버레이 — 테마와 무관하게 어두운 스크림
+                    // (VideoControls·워터마크와 같은 관례).
+                    color: Colors.black.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_index + 1} / ${_playlist.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _navArrow({
+    required Key key,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: key,
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.35),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 26, color: Colors.white),
       ),
     );
   }

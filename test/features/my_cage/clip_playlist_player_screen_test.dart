@@ -99,6 +99,41 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
 
+  testWidgets('이전/다음 화살표 — 중간 클립은 양쪽, 첫/끝 클립은 한쪽만',
+      (tester) async {
+    // 사용자 피드백 2026-09-08: 투명 탭 존만으로는 이전/다음이 인지 안 됨.
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await _pump(tester, clipId: 'b', playlist: ['a', 'b', 'c']);
+    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsOneWidget);
+    expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsOneWidget);
+
+    // 끝으로 이동 → 다음 화살표가 사라진다("여기가 끝" 전달).
+    await tester.tap(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey));
+    await tester.pumpAndSettle();
+    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsOneWidget);
+    expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsNothing);
+  });
+
+  testWidgets('위치 카운터 — "n / N"이 그려지고 이동하면 바뀐다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await _pump(tester, clipId: 'a', playlist: ['a', 'b', 'c']);
+    expect(find.byKey(ClipPlaylistPlayerScreen.counterKey), findsOneWidget);
+    expect(find.text('1 / 3'), findsOneWidget);
+    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsNothing);
+
+    await tester.tap(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey));
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 3'), findsOneWidget);
+  });
+
+  testWidgets('단일 클립 — 화살표·카운터를 그리지 않는다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await _pump(tester, clipId: 'a');
+    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsNothing);
+    expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsNothing);
+    expect(find.byKey(ClipPlaylistPlayerScreen.counterKey), findsNothing);
+  });
+
   testWidgets('상단바 — 현재 클립 startedAt으로 날짜·시각을 그린다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'b', playlist: ['a', 'b']);
