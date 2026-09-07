@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/supabase/supabase_provider.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../my_cage/domain/device_command.dart';
 import '../../my_cage/domain/actuator_state.dart';
@@ -28,6 +29,7 @@ import '../../../shared/services/fan_timer_notification_service.dart';
 import '../domain/fan_timer_duration.dart';
 import '../domain/mist_duration.dart';
 import '../domain/mist_lock.dart';
+import '../domain/running_timer.dart';
 import 'widgets/running_timer_chip.dart';
 
 /// 분무 중복 클릭 락. **기기별로 분리한다** — 전역이면 A 사육장에서 분무한 뒤
@@ -40,12 +42,53 @@ final mistLockProvider = StateProvider.family<MistLock, String>(
 final mistDurationProvider =
     StateProvider<MistDuration>((ref) => MistDuration.defaultValue);
 
+/// 발행한 명령이 [kCommandAckGrace] 안에 ACK되는지 지켜본다.
+///
+/// mist 블랙아웃(핸드오프 `backend-handoff-2026-09-07-mist-blackout.md`) 중의
+/// 명령은 서버 `sent`까지만 가고 기기에 닿지 않는데, 서버에 sent 만료가 없어
+/// 앱이 말해주지 않으면 "눌렀는데 아무 일도 없음"이 된다. 유예 후에도
+/// 미ACK면 스낵바로 알리고, 타이머 칩 계산도 깨운다([RunningTimer.fanTimerFrom]의
+/// 유예 게이트와 한 쌍 — 안 깨우면 다음 재검증까지 최대 30초 가짜 칩이 돈다).
+///
+/// messenger·client는 호출 시점에 잡아 둔다 — 타이머가 울릴 때쯤 화면을
+/// 떠났을 수 있고, 그때 context로 lookup하면 죽은 엘리먼트를 만진다.
+void _watchCommandAck(
+  BuildContext context,
+  WidgetRef ref,
+  ScaffoldMessengerState messenger,
+  DeviceCommand command,
+) {
+  final client = ref.read(supabaseClientProvider);
+  Timer(kCommandAckGrace + const Duration(seconds: 1), () async {
+    Map<String, dynamic>? row;
+    try {
+      row = await client
+          .from('commands')
+          .select('status')
+          .eq('id', command.id)
+          .maybeSingle();
+    } catch (_) {
+      return; // 조회 실패는 유실 확정이 아니다 — 겁주지 않는다.
+    }
+    final status = row?['status'] as String?;
+    if (status != 'pending' && status != 'sent') return;
+    messenger.showSnackBar(
+      SnackBar(content: Text('module_command_no_ack'.tr())),
+    );
+    // 화면을 떠났으면 ref가 죽어 있다 — 칩은 어차피 다음 진입 때 새로 계산된다.
+    if (context.mounted) ref.invalidate(runningTimersProvider);
+  });
+}
+
 /// 명령 1건 발행. **실패를 삼키지 않는다.**
 ///
 /// onTap은 VoidCallback이라 여기서 던지면 unhandled async error로 콘솔에만
 /// 남고 사용자는 "눌렀는데 아무 일도 안 일어남"을 기기 고장으로 오해한다.
 /// 그래서 여기서 잡아 토스트로 알린다. 반환값은 전송 성공 여부 — 팬 타이머
 /// 알림처럼 "명령이 실제로 나갔을 때만" 이어져야 하는 후속 동작이 본다.
+///
+/// 전송 성공 후에는 [_watchCommandAck]로 ACK를 지켜본다 — "전송 성공"은
+/// 서버에 닿았다는 뜻이지 기기가 받았다는 뜻이 아니다(mist 블랙아웃 유실).
 Future<bool> sendCageCommand(
   BuildContext context,
   WidgetRef ref,
@@ -53,18 +96,20 @@ Future<bool> sendCageCommand(
   CommandAction action, {
   Map<String, dynamic>? payload,
 }) async {
+  // await 전에 잡는다 — 전송 중 화면을 떠나면 of(context)를 못 쓴다.
+  final messenger = ScaffoldMessenger.of(context);
   try {
-    await ref
+    final command = await ref
         .read(moduleCommandSenderProvider.notifier)
         .send(deviceId, action, payload: payload);
+    // 전송 중 화면을 떠났으면 감시 생략 — ref가 죽어 있고, 칩도 이 화면 것이다.
+    if (context.mounted) _watchCommandAck(context, ref, messenger, command);
     return true;
   } catch (e, st) {
     debugPrint('[cage-control] $action failed: $e\n$st');
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('module_command_failed'.tr())),
-      );
-    }
+    messenger.showSnackBar(
+      SnackBar(content: Text('module_command_failed'.tr())),
+    );
     return false;
   }
 }
@@ -246,20 +291,23 @@ Future<void> mistOnce(
   Timer(MistLock.duration, () {
     lockNotifier.state = const MistLock(lockedUntil: null);
   });
+  // await 전에 잡는다 — sendCageCommand와 같은 이유.
+  final messenger = ScaffoldMessenger.of(context);
   try {
-    await ref.read(moduleCommandSenderProvider.notifier).send(
+    final command = await ref.read(moduleCommandSenderProvider.notifier).send(
           deviceId,
           CommandAction.mist,
           payload: duration.payload,
         );
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
+    // mist 자체도 유실될 수 있다 — 분사가 안 됐는데 "분사했어요"로 끝나면
+    // 사육 환경(습도)에 대한 거짓 확신이 된다.
+    if (context.mounted) _watchCommandAck(context, ref, messenger, command);
+    messenger.showSnackBar(
       SnackBar(content: Text('home_mist_sent'.tr(args: ['${duration.seconds}']))),
     );
   } catch (e, st) {
     debugPrint('[cage-control] mist failed: $e\n$st');
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       SnackBar(content: Text('home_mist_failed'.tr())),
     );
   }

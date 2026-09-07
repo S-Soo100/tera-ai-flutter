@@ -605,6 +605,7 @@
   "enclosure_settings_no_pets": "등록된 개체가 없어요.",
   "enclosure_settings_already_assigned": "다른 사육장에 배정됨",
   "module_command_failed": "명령을 보내지 못했어요. 연결 상태를 확인해주세요.",
+  "module_command_no_ack": "기기가 명령에 응답하지 않았어요. 실행되지 않았을 수 있으니 다시 시도해주세요.",
   "home_mist_cooldown_short": "잠시 후",
   "common_pending": "준비 중",
   "stats_metric_temp": "온도",

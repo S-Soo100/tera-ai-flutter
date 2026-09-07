@@ -92,12 +92,38 @@ void main() {
       expect(t, isNotNull);
     });
 
-    test('발행 직후(pending)도 타이머로 본다 — 칩이 바로 떠야 한다', () {
+    test('발행 직후(pending, ACK 유예 안)도 타이머로 본다 — 칩이 바로 떠야 한다', () {
       final t = RunningTimer.fanTimerFrom(
-        [cmd('fan_on', 'pending', '2026-08-14T11:59:00Z', durationMs: 600000)],
+        [cmd('fan_on', 'pending', '2026-08-14T11:59:50Z', durationMs: 600000)],
         now,
       );
       expect(t, isNotNull);
+    });
+
+    test('유예(15초) 넘긴 미ACK fan_on → null — mist 블랙아웃 유실 명령(2026-09-07)', () {
+      // 실DB 실증: 블랙아웃 중 명령은 영영 sent로 남고 팬은 돌지 않는다.
+      // 이걸 타이머로 치면 안 도는 팬을 카운트다운한다.
+      final t = RunningTimer.fanTimerFrom(
+        [cmd('fan_on', 'sent', '2026-08-14T11:50:00Z', durationMs: 3600000)],
+        now,
+      );
+      expect(t, isNull);
+    });
+
+    test('유실된(유예 초과 sent) fan_off는 이전 acked 타이머를 못 죽인다', () {
+      final t = RunningTimer.fanTimerFrom([
+        cmd('fan_off', 'sent', '2026-08-14T11:55:00Z'),
+        cmd('fan_on', 'acked', '2026-08-14T11:50:00Z', durationMs: 1800000),
+      ], now);
+      expect(t, isNotNull);
+    });
+
+    test('유예 안의 sent fan_off는 정상 취소로 본다 → null', () {
+      final t = RunningTimer.fanTimerFrom([
+        cmd('fan_off', 'sent', '2026-08-14T11:59:50Z'),
+        cmd('fan_on', 'acked', '2026-08-14T11:50:00Z', durationMs: 1800000),
+      ], now);
+      expect(t, isNull);
     });
 
     test('duration 없는 fan_on(그냥 켜기) → null', () {
