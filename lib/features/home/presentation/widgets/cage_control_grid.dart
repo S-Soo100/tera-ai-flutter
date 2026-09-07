@@ -85,10 +85,14 @@ class CageControlGrid extends ConsumerWidget {
         status: mistOn
             ? 'device_state_on'.tr()
             : 'device_state_off'.tr(),
-        // Figma 원본 format_color_reset — export가 원 40 프레임 기준(패딩
-        // 포함)이라 40으로 그려야 글리프가 실측 크기가 된다.
-        glyph: FigmaIcon.tinted(FigmaIcons.formatColorReset,
-            size: 40, color: glass.deviceGlyph),
+        // 꺼짐=format_color_reset(사선 물방울, 원 40 프레임 export라 40),
+        // 켜짐=humidity_high(물방울, 글리프만 17×20 → 20) — 2026-09-08
+        // 사용자 지시.
+        glyph: mistOn
+            ? FigmaIcon.tinted(FigmaIcons.humidityHigh,
+                size: 20, color: glass.deviceGlyph)
+            : FigmaIcon.tinted(FigmaIcons.formatColorReset,
+                size: 40, color: glass.deviceGlyph),
         active: mistOn,
         tileColor: mistOn ? glass.deviceMistBg : glass.surfaceTint,
         iconCircleColor: mistOn ? glass.deviceMist : glass.deviceOff,

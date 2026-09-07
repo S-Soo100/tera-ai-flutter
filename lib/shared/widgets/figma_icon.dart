@@ -46,4 +46,6 @@ abstract final class FigmaIcons {
   // 소비처가 크기를 달리 준다 — cage_control_grid 참조.
   static const formatColorReset = 'format_color_reset';
   static const modeCool = 'mode_cool';
+  // 분무 켜짐 글리프(2026-09-08 사용자 지시) — 글리프만 17×20.
+  static const humidityHigh = 'humidity_high';
 }
