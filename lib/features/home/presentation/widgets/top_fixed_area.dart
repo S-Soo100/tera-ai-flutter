@@ -155,7 +155,8 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
         surface,
         if (cam != null)
           Positioned(
-            right: 12,
+            // Figma 668:859 실측 — 우 20(560−540)·하 12 (2026-09-07 재대조).
+            right: 20,
             bottom: 12,
             child: _ExpandButton(cameraId: cam.id),
           ),

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -303,43 +304,56 @@ class _ClipPlaylistPlayerScreenState
     final showPagination = _playlist.length > 1;
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _topBar(glass, startedAt),
-            // Figma 668:743 수직 리듬: 상단바(4238) → 52 → 페이지네이션(4290,
-            // h4) → 28 → 영상(4322). 페이지네이션이 숨겨져도 자리를 예약해
-            // 영상 위치가 재생목록 유무에 흔들리지 않게 한다.
-            const SizedBox(height: 52),
-            SizedBox(
-              height: 4,
-              child: showPagination
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _pagination(glass),
-                    )
-                  : null,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Figma Rectangle 113(668:744) — status bar까지 surfaceHeader +
+          // 헤어라인(2026-09-07 정밀 대조).
+          CrecamDetailHeaderArea(child: _topBar(glass, startedAt)),
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: LayoutBuilder(
+                builder: (context, outer) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Figma 668:743 수직 리듬: 상단바(4238) → 52 → 페이지네이션(4290,
+                  // h4) → 28 → 영상(4322). 페이지네이션이 숨겨져도 자리를 예약해
+                  // 영상 위치가 재생목록 유무에 흔들리지 않게 한다.
+                  const SizedBox(height: 52),
+                  SizedBox(
+                    height: 4,
+                    child: showPagination
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: _pagination(glass),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(height: 28),
+                  _videoArea(glass, outer),
+                  // 시크 트랙 중심 = 영상끝 +32 (4546→4578). Slider 내부 높이 48의
+                  // 중심이 +24이므로 갭 8.
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child:
+                        _SeekBar(controller: _initialized ? _controller : null),
+                  ),
+                  // 컨트롤 상단 = 트랙 +20 (4578→4598) — Slider 하반부 24가 이미
+                  // 그만큼을 차지하므로 추가 갭 없음.
+                  _controlRow(glass),
+                  const Spacer(),
+                  Center(child: _actionPill(glass, clip, isFav)),
+                  // Figma 프레임 하단(4984)에서 필 하단(4922)까지 62 — safe area
+                  // (~34) 위 28.
+                  const SizedBox(height: 28),
+                ],
+                ),
+              ),
             ),
-            const SizedBox(height: 28),
-            _videoArea(glass),
-            // 시크 트랙 중심 = 영상끝 +32 (4546→4578). Slider 내부 높이 48의
-            // 중심이 +24이므로 갭 8.
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: _SeekBar(controller: _initialized ? _controller : null),
-            ),
-            // 컨트롤 상단 = 트랙 +20 (4578→4598) — Slider 하반부 24가 이미
-            // 그만큼을 차지하므로 추가 갭 없음.
-            _controlRow(glass),
-            const Spacer(),
-            Center(child: _actionPill(glass, clip, isFav)),
-            // Figma 프레임 하단(4984)에서 필 하단(4922)까지 62 — safe area
-            // (~34) 위 28.
-            const SizedBox(height: 28),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -364,10 +378,11 @@ class _ClipPlaylistPlayerScreenState
                     style: TextStyle(
                       fontFamily: 'Pretendard',
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      // Figma 668:764 — Bold + #1E1E1E (2026-09-07 재대조).
+                      fontWeight: FontWeight.w700,
                       letterSpacing: -0.32, // 16 × -2%
                       height: 19 / 16,
-                      color: glass.textSecondary,
+                      color: glass.textPrimary,
                     ),
                   ),
                   Text(
@@ -375,10 +390,12 @@ class _ClipPlaylistPlayerScreenState
                     style: TextStyle(
                       fontFamily: 'Pretendard',
                       fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      // Figma 668:765 — SemiBold + #545454(토큰 없음, 배너
+                      // 날짜와 같은 매핑으로 textSecondary).
+                      fontWeight: FontWeight.w600,
                       letterSpacing: -0.28, // 14 × -2%
                       height: 17 / 14,
-                      color: glass.textTertiary,
+                      color: glass.textSecondary,
                     ),
                   ),
                 ],
@@ -423,12 +440,24 @@ class _ClipPlaylistPlayerScreenState
     );
   }
 
-  Widget _videoArea(GlassPalette glass) {
-    return AspectRatio(
-      aspectRatio: 16 / 9,
+  /// 영상 면 — **가로를 항상 꽉 채우고 세로가 영상 비율을 따라간다**
+  /// (2026-09-07 사용자 지시: 3:4 세로 영상이 16:9 고정 박스에서 좌우
+  /// 필러박스로 떠 보임). 세로 영상이 화면에 다 안 담기면 아래 크롬
+  /// (시크바·컨트롤·액션 필)을 밀어내는 대신 상하 중앙을 살짝 크롭한다
+  /// (BoxFit.cover). 16:9 가로 영상은 기존과 동일한 393×약221 면이 된다.
+  Widget _videoArea(GlassPalette glass, BoxConstraints outer) {
+    final v = _initialized ? _controller?.value : null;
+    var ar = v?.aspectRatio ?? 16 / 9;
+    if (!ar.isFinite || ar <= 0) ar = 16 / 9;
+    // 영상 아래 크롬의 고정 소요(시크 8+48, 컨트롤 ~44, 필 위 최소 여백 12,
+    // 필 48, 하단 28) + 위 리듬(52+4+28) ≈ 272 — 넉넉히 280을 남긴다.
+    final maxH = math.max(180.0, outer.maxHeight - 280);
+    final height = math.min(outer.maxWidth / ar, maxH);
+    return SizedBox(
+      height: height,
       child: Stack(
         children: [
-          Positioned.fill(child: Center(child: _video(glass))),
+          Positioned.fill(child: _video(glass)),
           // 좌 1/3=이전 · 중앙 1/3=재생/일시정지 · 우 1/3=다음
           if (_initialized)
             Positioned.fill(
@@ -482,10 +511,20 @@ class _ClipPlaylistPlayerScreenState
       return const SkeletonLoading(
           width: double.infinity, height: double.infinity, borderRadius: 0);
     }
-    final ar = _controller!.value.aspectRatio;
-    return AspectRatio(
-      aspectRatio: ar.isFinite && ar > 0 ? ar : 16 / 9,
-      child: VideoPlayer(_controller!),
+    // cover — 박스 세로가 잘렸을 때(세로 영상이 maxH에 걸림) 가로를 유지한
+    // 채 상하만 크롭. 박스 비율 = 영상 비율이면 크롭 없이 정확히 맞는다.
+    final size = _controller!.value.size;
+    if (size.width <= 0 || size.height <= 0) {
+      return VideoPlayer(_controller!);
+    }
+    return FittedBox(
+      fit: BoxFit.cover,
+      clipBehavior: Clip.hardEdge,
+      child: SizedBox(
+        width: size.width,
+        height: size.height,
+        child: VideoPlayer(_controller!),
+      ),
     );
   }
 

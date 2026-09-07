@@ -78,6 +78,22 @@ GoRouter _router() => GoRouter(
     );
 
 void main() {
+  testWidgets('짧은 세트명에서도 우측 버튼이 헤더 우단에 붙는다 (2026-09-07 회귀)',
+      (tester) async {
+    // Flexible(pill)+Spacer 시절: 여유 공간이 1:1 분배돼 loose 필이 할당을
+    // 남기면 잔여가 Row 우측에 몰려 버튼들이 화면 끝에서 ~40pt 떠 보였다.
+    // 짧은 라벨(긴 라벨은 할당을 다 써 재현 불가)로 고정한다.
+    await _pump(tester, [_set('e1', '집', petName: '크')]);
+    final header = tester.getRect(find.byType(HomeHeaderBar));
+    final person =
+        tester.getRect(find.byKey(HomeHeaderBar.personButtonKey));
+    expect(person.right, header.right);
+    // 필은 h44를 꽉 채운다(Figma 668:430) — 텍스트 높이로 수축 금지.
+    final pill = tester.getRect(find.byKey(HomeHeaderBar.setPillKey));
+    expect(pill.height, HomeHeaderBar.height);
+  });
+
+
   testWidgets('필 라벨 = 개체명(있으면), 사육장명과 합치지 않는다', (tester) async {
     await _pump(tester, [_set('e1', '1번 사육장', petName: '젤리')]);
     expect(find.text('젤리'), findsOneWidget);

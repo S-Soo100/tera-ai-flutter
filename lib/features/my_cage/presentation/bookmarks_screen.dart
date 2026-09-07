@@ -37,35 +37,47 @@ class BookmarksScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: glass.wallpaper,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            CrecamDetailTopBar(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Figma Rectangle 113 — status bar까지 surfaceHeader + 헤어라인.
+          CrecamDetailHeaderArea(
+            child: CrecamDetailTopBar(
               title: 'crecam_bookmarks_title'.tr(),
               onCalendarTap: () => _pickDay(context, ref, day),
             ),
-            if (day != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(_margin, 8, _margin, 0),
-                child: CrecamDateFilterChip(
-                  day: day,
-                  onClear: () =>
-                      ref.read(bookmarksDayFilterProvider.notifier).state =
-                          null,
-                ),
-              ),
-            Expanded(
-              child: favoritesAsync.when(
-                loading: () => const _ListSkeleton(),
-                error: (_, __) => CrecamErrorRetry(
-                  onRetry: () => ref.invalidate(allFavoriteClipsProvider),
-                ),
-                data: (favorites) => _list(context, favorites, day),
+          ),
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (day != null)
+                    Padding(
+                      padding:
+                          const EdgeInsets.fromLTRB(_margin, 8, _margin, 0),
+                      child: CrecamDateFilterChip(
+                        day: day,
+                        onClear: () => ref
+                            .read(bookmarksDayFilterProvider.notifier)
+                            .state = null,
+                      ),
+                    ),
+                  Expanded(
+                    child: favoritesAsync.when(
+                      loading: () => const _ListSkeleton(),
+                      error: (_, __) => CrecamErrorRetry(
+                        onRetry: () => ref.invalidate(allFavoriteClipsProvider),
+                      ),
+                      data: (favorites) => _list(context, favorites, day),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -121,8 +133,7 @@ class _BookmarkCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
-    final thumb =
-        MotionClipThumb(clipId: clip.clipId, fallbackIconSize: 28);
+    final thumb = MotionClipThumb(clipId: clip.clipId, fallbackIconSize: 28);
 
     return GestureDetector(
       key: ValueKey('bookmark_card_${clip.clipId}'),

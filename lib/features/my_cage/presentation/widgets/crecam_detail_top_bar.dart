@@ -5,11 +5,16 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/glass_palette.dart';
 
 /// 북마크·하이라이트 상세·플레이어 공용 상단바 (Figma 668:717/600/743) —
-/// 높이 44, 마진 12, 좌 back 44×44, 중앙 [title](16 SemiBold textSecondary)
-/// 또는 [titleWidget], 우 calendar 44×44([onCalendarTap]이 null이면 없음).
+/// 높이 44, 마진 12, 좌 back 44×44, 중앙 [title](16 **Bold** textPrimary —
+/// Figma 668:670) 또는 [titleWidget], 우 calendar 44×44([onCalendarTap]이
+/// null이면 없음).
 ///
 /// 플레이어의 자체 _topBar 복제는 2026-09-04 정리로 여기로 수렴 — back
 /// 아이콘 크기(24 vs 20)가 화면마다 표류하고 있었다.
+///
+/// 상단부 배경은 [CrecamDetailHeaderArea]가 감싼다 — Figma Rectangle 113:
+/// status bar까지 `surfaceHeader`(#FAFBFD)로 덮고 하단에 outline 헤어라인
+/// (2026-09-07 Figma 정밀 대조에서 누락 발견).
 class CrecamDetailTopBar extends StatelessWidget {
   const CrecamDetailTopBar({
     super.key,
@@ -63,9 +68,10 @@ class CrecamDetailTopBar extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Pretendard',
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    // Figma 668:670 — Bold + #1E1E1E(textPrimary).
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 16 * -0.02,
-                    color: glass.textSecondary,
+                    color: glass.textPrimary,
                   ),
                 ),
           ),
@@ -88,6 +94,29 @@ class CrecamDetailTopBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 상세 상단부 래퍼 — Figma Rectangle 113(668:656/718/744): status bar까지
+/// `surfaceHeader` 배경 + 하단 outline 헤어라인. [child]는 보통
+/// [CrecamDetailTopBar]. 화면 쪽은 이걸 SafeArea **밖**에 두고 본문만
+/// SafeArea(top: false)로 감싼다 — 안 그러면 status bar 영역이 흰 바닥으로
+/// 남아 Figma의 106pt 헤더 면이 44pt로 쪼그라든다.
+class CrecamDetailHeaderArea extends StatelessWidget {
+  const CrecamDetailHeaderArea({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return Container(
+      decoration: BoxDecoration(
+        color: glass.surfaceHeader,
+        border: Border(bottom: BorderSide(color: glass.outline)),
+      ),
+      child: SafeArea(bottom: false, child: child),
     );
   }
 }

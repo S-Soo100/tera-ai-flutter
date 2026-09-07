@@ -76,6 +76,7 @@ Future<void> _pump(
         highlightGroupsProvider.overrideWith((ref) async => groups ?? _groups()),
         highlightBannerStoreProvider.overrideWith((ref) => store),
         motionThumbnailProvider.overrideWith((ref, clipId) async => null),
+        isFavoriteProvider.overrideWith((ref, id) => false),
         // dismiss notifier가 계정 id를 watch한다(격리 2026-09-07) — 테스트는
         // Supabase 미초기화라 실 체인 대신 미로그인으로 고정.
         currentUserProvider.overrideWith((ref) => null),

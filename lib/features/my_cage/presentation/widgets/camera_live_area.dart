@@ -253,7 +253,9 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
         children: [
           surface,
           Positioned(
-            right: 12,
+            // Figma 668:446 실측 — 우 20(1021−1001)·하 12. 좌 이름 배지의
+            // 12와 다르다(2026-09-07 재대조).
+            right: 20,
             bottom: 12,
             child: _ExpandButton(
               key: CameraLiveArea.expandButtonKey,

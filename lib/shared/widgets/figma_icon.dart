@@ -37,4 +37,13 @@ abstract final class FigmaIcons {
   static const waterDrop = 'water_drop';
   static const shower = 'shower';
   static const modeFan = 'mode_fan_2';
+  // 카메라 탭 엔트리 카드(2026-09-07 Figma 대조 — Material 근사치 교체).
+  static const cardsStar = 'cards_star';
+  static const bookmarkCheck = 'bookmark_check';
+  // 홈 제어 타일(2026-09-07 재대조 — Material 근사치 교체). 배경 원은
+  // 타일이 그리므로 export의 rect는 제거하고 글리프만 담았다. viewBox가
+  // 제각각(분무 40 패딩 포함 / 냉각 28 패딩 포함 / 팬 20 글리프만)이라
+  // 소비처가 크기를 달리 준다 — cage_control_grid 참조.
+  static const formatColorReset = 'format_color_reset';
+  static const modeCool = 'mode_cool';
 }

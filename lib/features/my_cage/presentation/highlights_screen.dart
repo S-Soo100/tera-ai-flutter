@@ -10,6 +10,7 @@ import '../domain/nightly_highlight.dart';
 import 'my_cage_providers.dart';
 import 'widgets/clip_grid.dart';
 import 'widgets/crecam_states.dart';
+import 'widgets/favorite_bookmark_badge.dart';
 import 'widgets/motion_clip_thumb.dart';
 import 'widgets/crecam_detail_top_bar.dart';
 
@@ -34,6 +35,7 @@ class HighlightsScreen extends ConsumerWidget {
   /// Figma 콘텐츠 좌우 마진·섹션 간격.
   static const double _margin = 12;
   static const double _sectionGap = 24;
+  static const double _groupGap = 20;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,37 +46,49 @@ class HighlightsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: glass.wallpaper,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            CrecamDetailTopBar(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Figma Rectangle 113 — status bar까지 surfaceHeader + 헤어라인.
+          CrecamDetailHeaderArea(
+            child: CrecamDetailTopBar(
               title: 'crecam_highlights_title'.tr(),
               onCalendarTap: () => _pickDay(context, ref, day),
             ),
-            if (day != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(_margin, 8, _margin, 0),
-                child: CrecamDateFilterChip(
-                  day: day,
-                  onClear: () =>
-                      ref.read(highlightsDayFilterProvider.notifier).state =
-                          null,
-                ),
-              ),
-            Expanded(
-              child: groupsAsync.when(
-                loading: () => const _Skeleton(),
-                error: (_, __) => CrecamErrorRetry(
-                  onRetry: () => ref.invalidate(highlightGroupsProvider),
-                ),
-                data: (groups) => day != null
-                    ? _dayView(context, groups, day)
-                    : _groupView(context, ref, groups, dismissedKey),
+          ),
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (day != null)
+                    Padding(
+                      padding:
+                          const EdgeInsets.fromLTRB(_margin, 8, _margin, 0),
+                      child: CrecamDateFilterChip(
+                        day: day,
+                        onClear: () => ref
+                            .read(highlightsDayFilterProvider.notifier)
+                            .state = null,
+                      ),
+                    ),
+                  Expanded(
+                    child: groupsAsync.when(
+                      loading: () => const _Skeleton(),
+                      error: (_, __) => CrecamErrorRetry(
+                        onRetry: () => ref.invalidate(highlightGroupsProvider),
+                      ),
+                      data: (groups) => day != null
+                          ? _dayView(context, groups, day)
+                          : _groupView(context, ref, groups, dismissedKey),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -121,8 +135,7 @@ class HighlightsScreen extends ConsumerWidget {
     return ListView(
       // Figma 실측: 배너가 있으면 상단바→배너 12(668:600), 없으면
       // 상단바→첫 섹션 24(668:655).
-      padding: EdgeInsets.fromLTRB(
-          _margin, showBanner ? 12 : 24, _margin, 24),
+      padding: EdgeInsets.fromLTRB(_margin, showBanner ? 12 : 24, _margin, 24),
       children: [
         if (showBanner) ...[
           _ArrivalBanner(
@@ -134,7 +147,8 @@ class HighlightsScreen extends ConsumerWidget {
           const SizedBox(height: _sectionGap),
         ],
         for (var i = 0; i < groups.length; i++) ...[
-          if (i > 0) const SizedBox(height: _sectionGap),
+          // 그룹 간 20 (Figma 668:655 실측 4517→4537 — 배너 아래 24와 다르다).
+          if (i > 0) const SizedBox(height: _groupGap),
           _Section(
             header: _rangeLabel(groups[i], padded: false),
             items: groups[i].items,
@@ -155,9 +169,8 @@ class HighlightsScreen extends ConsumerWidget {
     final to = group.to.toLocal();
     final full = DateFormat(padded ? 'yyyy. MM. dd' : 'yyyy. M. d');
     if (_isSameDay(from, to)) return full.format(from);
-    final short = from.year == to.year
-        ? DateFormat(padded ? 'MM. dd' : 'M. d')
-        : full;
+    final short =
+        from.year == to.year ? DateFormat(padded ? 'MM. dd' : 'M. d') : full;
     return '${full.format(from)} - ${short.format(to)}';
   }
 }
@@ -228,8 +241,7 @@ class _ArrivalBanner extends ConsumerWidget {
                   key: HighlightsScreen.bannerCloseKey,
                   padding: EdgeInsets.zero,
                   icon: Icon(Icons.close, size: 24, color: glass.textSecondary),
-                  tooltip: MaterialLocalizations.of(context)
-                      .closeButtonTooltip,
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                   onPressed: onDismiss,
                 ),
               ),
@@ -341,9 +353,20 @@ class _Cell extends StatelessWidget {
     return GestureDetector(
       key: ValueKey('highlight_cell_${highlight.clipId}'),
       behavior: HitTestBehavior.opaque,
-      onTap: () => context.push('/crecam/player/${highlight.clipId}',
-          extra: playlist),
-      child: MotionClipThumb(clipId: highlight.clipId),
+      onTap: () =>
+          context.push('/crecam/player/${highlight.clipId}', extra: playlist),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          MotionClipThumb(clipId: highlight.clipId),
+          // Figma 668:679 — 즐겨찾기한 하이라이트는 좌하단 북마크 표시.
+          Positioned(
+            left: 0,
+            bottom: 0,
+            child: FavoriteBookmarkBadge(clipId: highlight.clipId),
+          ),
+        ],
+      ),
     );
   }
 }
