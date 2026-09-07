@@ -61,7 +61,8 @@ class CageControlGrid extends ConsumerWidget {
 
     final tiles = <Widget>[
       // ① 환기팬 — 기존 fan_* 절대 명령 배선. 글리프는 Figma 원본
-      // mode_fan_2(글리프만 20 — 원 40 안 실측 20).
+      // mode_fan_2(글리프만 20 — 원 40 안 실측 20). 탭=직전 설정 원탭
+      // (초기 30분), 꾹=방식 시트(2026-09-08 UX 개편 — 분무 원탭과 같은 문법).
       _DeviceTile(
         key: ventFanKey,
         name: 'device_vent_fan'.tr(),
@@ -72,6 +73,8 @@ class CageControlGrid extends ConsumerWidget {
         tileColor: fanOn ? glass.deviceFanBg : glass.surfaceTint,
         iconCircleColor: fanOn ? glass.deviceFan : glass.deviceOff,
         onTap: online ? () => handleFanTap(context, ref, deviceId, t) : null,
+        onLongPress:
+            online ? () => openFanSheet(context, ref, deviceId) : null,
       ),
       // ② 분무 — Figma대로 꺼짐/켜짐 표시, **탭 즉시 3초 분사**(2026-09-07
       // 사용자 지시 — 시간 선택 시트 폐지, 예약 편집기에는 시간 선택이 남는다).
@@ -228,6 +231,7 @@ class _DeviceTile extends StatelessWidget {
     this.gaugeFraction,
     this.gaugeColor,
     this.onTap,
+    this.onLongPress,
   });
 
   final String name;
@@ -246,6 +250,9 @@ class _DeviceTile extends StatelessWidget {
 
   /// null이면 비활성(오프라인 등) — 탭 무반응.
   final VoidCallback? onTap;
+
+  /// 꾹 누르기(환기팬 방식 시트 등). null이면 없음.
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -266,6 +273,7 @@ class _DeviceTile extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: onTap,
+              onLongPress: onLongPress,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(

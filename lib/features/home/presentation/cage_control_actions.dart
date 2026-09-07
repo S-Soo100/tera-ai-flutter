@@ -26,6 +26,7 @@ import '../../my_cage/domain/telemetry_reading.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../../my_cage/presentation/widgets/heater_lock_dialog.dart';
 import '../../../shared/services/fan_timer_notification_service.dart';
+import '../data/fan_choice_store.dart';
 import '../domain/fan_timer_duration.dart';
 import '../domain/mist_duration.dart';
 import '../domain/mist_lock.dart';
@@ -37,6 +38,10 @@ import 'widgets/running_timer_chip.dart';
 final mistLockProvider = StateProvider.family<MistLock, String>(
   (ref, deviceId) => const MistLock(lockedUntil: null),
 );
+
+/// 환기팬 직전 설정 저장소(원탭 재실행용) — [handleFanTap]·[openFanSheet]가 쓴다.
+final fanChoiceStoreProvider =
+    Provider<FanChoiceStore>((_) => const HiveFanChoiceStore());
 
 
 /// 발행한 명령이 [kCommandAckGrace] 안에 ACK되는지 지켜본다.
@@ -174,13 +179,16 @@ Future<void> handleHeaterTap(
   );
 }
 
-/// 팬 제어 — 꺼져 있으면 시트(계속 켜기/일회성 타이머), 켜져 있으면 바로 끈다.
+/// 팬 제어 — **탭 한 번이면 직전 설정 그대로 켜지고**(초기 기본 30분 타이머),
+/// 켜져 있으면 바로 끈다. 방식 선택 시트는 [openFanSheet](타일 꾹 누르기 +
+/// 켜짐 스낵바 '변경')로 옮겼다(2026-09-08 UX 개편 — 분무 원탭과 같은 문법).
 ///
 /// 끄기에 시트를 안 두는 이유: 끄기는 망설일 게 없고, **타이머 취소도
 /// `fan_off`다**(2026-08-14 핸드오프 §1.3). 타이머는 `fan_on` +
 /// `payload.duration_ms`로 걸고 **펌웨어가 스스로 끈다** — 분무와 같은 이유로
 /// 앱이 지연 OFF를 흉내내지 않는다. 히터와 달리 안전 확인은 없지만 명령은
-/// 똑같이 절대 상태로 보낸다.
+/// 똑같이 절대 상태로 보낸다. 잘못 켜져도 탭 한 번으로 꺼지는 저위험
+/// 액추에이터라 원탭이 안전하다(히터에는 이 문법을 옮기지 말 것).
 Future<void> handleFanTap(
   BuildContext context,
   WidgetRef ref,
@@ -205,6 +213,22 @@ Future<void> handleFanTap(
     if (context.mounted) ref.invalidate(runningTimersProvider);
     return;
   }
+
+  // 꺼짐 → 직전 설정 즉시 실행. 스낵바 '변경'이 시트로 가는 뒷문이다 —
+  // "30분이 아니라 계속 켜고 싶었는데"를 한 탭 안에서 수습한다.
+  final choice = ref.read(fanChoiceStoreProvider).load(deviceId);
+  await _startFan(context, ref, deviceId, choice, offerChange: true);
+}
+
+/// 환기팬 켜기 방식 시트(계속 켜기 / 10분~2h) — 타일 **꾹 누르기**와 켜짐
+/// 스낵바 '변경'이 연다. 선택은 저장돼 다음 원탭의 값이 된다. 팬이 이미
+/// 켜져 있어도 유효하다 — 새 `fan_on`(+duration)이 기존 타이머를 대체한다.
+Future<void> openFanSheet(
+  BuildContext context,
+  WidgetRef ref,
+  String deviceId,
+) async {
+  final store = ref.read(fanChoiceStoreProvider);
 
   // (FanTimerDuration?,) — null이면 '계속 켜기', 값이 있으면 일회성 타이머.
   // 시트 닫힘(null 반환)과 '계속 켜기'를 구분하려고 레코드로 감싼다.
@@ -249,6 +273,27 @@ Future<void> handleFanTap(
   if (picked == null || !context.mounted) return;
 
   final duration = picked.$1;
+  // 선택 = 새 습관 — 다음 원탭이 이 값을 재실행한다.
+  await store.save(deviceId, duration);
+  if (!context.mounted) return;
+  await _startFan(context, ref, deviceId, duration, offerChange: false);
+}
+
+/// `fan_on`(+타이머) 전송 + 완료 알림 예약 + 칩 갱신 + 켜짐 스낵바.
+///
+/// [offerChange]면 스낵바에 '변경' 액션을 붙여 [openFanSheet]로 보낸다 —
+/// 원탭(직전 설정) 경로에서 "그 설정이 아니었는데"의 수습로다.
+Future<void> _startFan(
+  BuildContext context,
+  WidgetRef ref,
+  String deviceId,
+  FanTimerDuration? duration, {
+  required bool offerChange,
+}) async {
+  // await 전에 잡는다 — 전송 중 화면을 떠나도 알림 예약/스낵바는 살아야 한다.
+  final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
+  final messenger = ScaffoldMessenger.of(context);
+
   final sent = await sendCageCommand(
     context,
     ref,
@@ -269,6 +314,26 @@ Future<void> handleFanTap(
   // 진행 중이던 타이머를 대체(소멸)시키므로, 안 깨우면 옛 칩이 만료 시각까지
   // 가짜 카운트다운을 돈다. await 뒤라 mounted 재확인.
   if (context.mounted) ref.invalidate(runningTimersProvider);
+
+  if (!sent) return; // 실패 스낵바는 sendCageCommand가 이미 냈다.
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(duration == null
+            ? 'home_fan_started_steady'.tr()
+            : 'home_fan_started_timer'.tr(args: [duration.labelKey.tr()])),
+        action: offerChange
+            ? SnackBarAction(
+                label: 'home_fan_change'.tr(),
+                // 누르는 시점에 화면이 떠났을 수 있다 — ref도 함께 죽는다.
+                onPressed: () {
+                  if (context.mounted) openFanSheet(context, ref, deviceId);
+                },
+              )
+            : null,
+      ),
+    );
 }
 
 /// 1회 즉시 분사.

@@ -91,12 +91,29 @@ void main() {
     expect(find.text('module_heater_confirm_title'), findsOneWidget);
   });
 
-  testWidgets('환기팬(꺼짐) 탭 → handleFanTap 경유 — 켜기 방식 시트가 뜬다',
+  testWidgets('환기팬(꺼짐) 탭 → 시트 없이 즉시 실행(직전 설정 원탭, 2026-09-08)',
       (tester) async {
     await _pump(tester);
     await tester.tap(find.byKey(CageControlGrid.ventFanKey));
     await tester.pumpAndSettle();
+    // 원탭 경로 — 방식 시트가 뜨면 개편이 풀린 것.
+    expect(find.text('home_fan_pick_title'), findsNothing);
+  });
+
+  testWidgets('환기팬 꾹 누르기 → 켜기 방식 시트(계속/타이머)', (tester) async {
+    await _pump(tester);
+    await tester.longPress(find.byKey(CageControlGrid.ventFanKey));
+    await tester.pumpAndSettle();
     expect(find.text('home_fan_pick_title'), findsOneWidget);
+    expect(find.byKey(const Key('fan_steady_on')), findsOneWidget);
+    expect(find.byKey(const Key('fan_timer_30')), findsOneWidget);
+  });
+
+  testWidgets('오프라인이면 환기팬 꾹 누르기도 무반응', (tester) async {
+    await _pump(tester, online: false);
+    await tester.longPress(find.byKey(CageControlGrid.ventFanKey));
+    await tester.pumpAndSettle();
+    expect(find.text('home_fan_pick_title'), findsNothing);
   });
 
   testWidgets('LED unavailable(구 펌웨어) → "상태 모름" — 꺼짐으로 칠하지 않는다',
