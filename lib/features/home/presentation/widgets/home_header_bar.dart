@@ -44,52 +44,66 @@ class HomeHeaderBar extends ConsumerWidget {
     return SizedBox(
       height: height,
       child: Row(
+        // 필이 h44를 꽉 채우게(Figma 668:430) — 기본 center면 필이 텍스트
+        // 높이(23)로 수축해 납작한 캡슐이 된다(2026-09-07 지오메트리 실측).
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Flexible(
-            child: Material(
-              key: setPillKey,
-              color: glass.surfaceTint,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                // 세트가 하나뿐이면 고를 게 없다 — 필은 라벨로만 선다.
-                onTap: multi ? () => _openSetPicker(context, ref) : null,
-                child: Padding(
-                  // Figma 실측 12 (668:429 — 텍스트 x 664.4, 필 x 652.4).
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: 'Pretendard',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 16 * -0.02,
-                            color: glass.textSecondary,
+          // ⚠️ Flexible(pill) + Spacer 금지 — 여유 공간이 둘에 1:1 분배되고
+          // loose한 필이 할당보다 좁으면 잔여가 Row **우측**에 남아 버튼들이
+          // 화면 끝에서 ~40pt 떠 보인다(2026-09-07 시뮬 실측 — 짧은 세트명
+          // 에서만 재현되고 위젯 테스트의 긴 라벨은 할당을 다 써 안 잡혔다).
+          // 남는 공간은 전부 Expanded 안 Align이 흡수한다.
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                height: height,
+                child: Material(
+                  key: setPillKey,
+                  color: glass.surfaceTint,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    // 세트가 하나뿐이면 고를 게 없다 — 필은 라벨로만 선다.
+                    onTap: multi ? () => _openSetPicker(context, ref) : null,
+                    child: Padding(
+                      // Figma 실측 12 (668:429 — 텍스트 x 664.4, 필 x 652.4).
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontFamily: 'Pretendard',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 16 * -0.02,
+                                color: glass.textSecondary,
+                              ),
+                            ),
                           ),
-                        ),
+                          if (multi) ...[
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.keyboard_arrow_down,
+                              key: dropdownArrowKey,
+                              size: 24,
+                              color: glass.textSecondary,
+                            ),
+                          ],
+                        ],
                       ),
-                      if (multi) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.keyboard_arrow_down,
-                          key: dropdownArrowKey,
-                          size: 24,
-                          color: glass.textSecondary,
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 12),
           _AddMenuButton(key: addButtonKey),
           const SizedBox(width: 12),
           _CircleButton(
