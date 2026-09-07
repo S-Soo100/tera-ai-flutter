@@ -375,10 +375,11 @@ class _ClipPlaylistPlayerScreenState
                     style: TextStyle(
                       fontFamily: 'Pretendard',
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      // Figma 668:764 — Bold + #1E1E1E (2026-09-07 재대조).
+                      fontWeight: FontWeight.w700,
                       letterSpacing: -0.32, // 16 × -2%
                       height: 19 / 16,
-                      color: glass.textSecondary,
+                      color: glass.textPrimary,
                     ),
                   ),
                   Text(
@@ -386,10 +387,12 @@ class _ClipPlaylistPlayerScreenState
                     style: TextStyle(
                       fontFamily: 'Pretendard',
                       fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      // Figma 668:765 — SemiBold + #545454(토큰 없음, 배너
+                      // 날짜와 같은 매핑으로 textSecondary).
+                      fontWeight: FontWeight.w600,
                       letterSpacing: -0.28, // 14 × -2%
                       height: 17 / 14,
-                      color: glass.textTertiary,
+                      color: glass.textSecondary,
                     ),
                   ),
                 ],

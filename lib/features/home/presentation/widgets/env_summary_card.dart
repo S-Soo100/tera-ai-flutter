@@ -98,7 +98,9 @@ class _EnvColumn extends StatelessWidget {
             color: glass.textPrimary,
           ),
         ),
-        const SizedBox(height: 2),
+        // Figma 668:866 실측 4 (현재값끝 2652 → 최고최저 2656) — 카드 h69의
+        // 구성분(12+24+4+17+12).
+        const SizedBox(height: 4),
         Text(
           minMax,
           style: TextStyle(

@@ -269,7 +269,8 @@ class _EntryCard extends StatelessWidget {
                           color: glass.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      // Figma 668:457 실측 4 (제목끝 4571 → 서브 4575).
+                      const SizedBox(height: 4),
                       _subtitle(glass),
                     ],
                   ),

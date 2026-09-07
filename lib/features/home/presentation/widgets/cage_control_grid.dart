@@ -267,7 +267,8 @@ class _DeviceTile extends StatelessWidget {
                       child: Icon(icon,
                           size: 20, color: context.glass.deviceGlyph),
                     ),
-                    const SizedBox(width: 12),
+                    // Figma 668:872 실측 8 (아이콘끝 247 → 텍스트 255).
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -285,7 +286,8 @@ class _DeviceTile extends StatelessWidget {
                               color: glass.textSecondary,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          // Figma 668:876 실측 4 (이름끝 2732 → 상태 2736).
+                          const SizedBox(height: 4),
                           Text(
                             status,
                             maxLines: 1,
