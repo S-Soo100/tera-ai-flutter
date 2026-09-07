@@ -13,9 +13,11 @@ import '../../home/presentation/widgets/home_header_bar.dart';
 import '../domain/motion_clip.dart';
 import 'my_cage_providers.dart';
 import 'widgets/camera_live_area.dart';
+import '../../../shared/widgets/figma_icon.dart';
 import 'widgets/clip_grid.dart';
 import 'widgets/crecam_detail_top_bar.dart';
 import 'widgets/crecam_states.dart';
+import 'widgets/favorite_bookmark_badge.dart';
 import 'widgets/motion_clip_thumb.dart';
 
 /// 카메라 탭 Camera Home — Figma 668:427 (2026-09-04 재설계 T2, 전면 재작성).
@@ -175,7 +177,7 @@ class _EntryCards extends ConsumerWidget {
         Expanded(
           child: _EntryCard(
             key: CrecamScreen.highlightCardKey,
-            icon: Icons.star,
+            iconAsset: FigmaIcons.cardsStar,
             title: 'crecam_home_highlights'.tr(),
             latestAt: highlightAt,
             extra: nightExtra,
@@ -186,7 +188,7 @@ class _EntryCards extends ConsumerWidget {
         Expanded(
           child: _EntryCard(
             key: CrecamScreen.bookmarkCardKey,
-            icon: Icons.bookmarks,
+            iconAsset: FigmaIcons.bookmarkCheck,
             title: 'crecam_home_bookmarks'.tr(),
             latestAt: bookmarkAt,
             onTap: () => context.push('/crecam/bookmarks'),
@@ -202,14 +204,15 @@ class _EntryCards extends ConsumerWidget {
 class _EntryCard extends StatelessWidget {
   const _EntryCard({
     super.key,
-    required this.icon,
+    required this.iconAsset,
     required this.title,
     required this.latestAt,
     required this.onTap,
     this.extra,
   });
 
-  final IconData icon;
+  /// Figma 원본 SVG 이름(`FigmaIcons`) — Material 근사치는 2026-09-07 교체.
+  final String iconAsset;
   final String title;
 
   /// 최신 항목 시각. data(null) = 항목 없음("아직 없어요").
@@ -241,7 +244,10 @@ class _EntryCard extends StatelessWidget {
                     color: glass.deviceOff,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Icon(icon, size: 24, color: glass.deviceGlyph),
+                  child: Center(
+                    child: FigmaIcon.tinted(iconAsset,
+                        size: 24, color: glass.deviceGlyph),
+                  ),
                 ),
                 // Figma 실측 갭 8(668:450 — 아이콘 x+40 → 텍스트 x, 906.89-898.89).
                 // 12로 두면 "업데이트 4일 전"이 말줄임된다(시뮬 실측).
@@ -421,11 +427,6 @@ class _HourClipSections extends ConsumerWidget {
             ),
           );
         }
-        // 재생목록 = 그 날짜 전체 클립(시간 내림차순 — 그룹·그룹 내 정렬 그대로).
-        final playlist = [
-          for (final g in groups)
-            for (final c in g.clips) c.id,
-        ];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -436,7 +437,6 @@ class _HourClipSections extends ConsumerWidget {
                 // 날짜는 첫 그룹만(Figma) — 아래로는 같은 날짜의 반복이다.
                 dateLabel:
                     i == 0 ? DateFormat('yyyy. M. d').format(day) : null,
-                playlist: playlist,
               ),
             ],
           ],
@@ -450,16 +450,19 @@ class _HourSection extends StatelessWidget {
   const _HourSection({
     required this.group,
     required this.dateLabel,
-    required this.playlist,
   });
 
   final CrecamHourGroup group;
   final String? dateLabel;
-  final List<String> playlist;
 
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
+    // 재생목록 = **이 시간대**의 클립만(2026-09-07 사용자 지시 — 09시 영상을
+    // 열었으면 09시 영상들이 하나의 재생목록). 그날 전체를 이어붙이던 구
+    // 동작은 폐기: 페이지네이션이 수십 칸으로 뭉개지고, "그 시간대의 순간들"
+    // 이라는 그룹 의미가 사라진다.
+    final playlist = [for (final c in group.clips) c.id];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -505,7 +508,8 @@ class _HourSection extends StatelessWidget {
 }
 
 /// 썸네일 셀 — terra-api presigned 썸네일(없으면 회색 폴백). 탭 → 세로
-/// 플레이어(재생목록 = 그 날짜 전체, 시간 내림차순).
+/// 플레이어(재생목록 = 그 시간대, 시간 내림차순). 즐겨찾기면 좌하단 북마크
+/// 표시(Figma 668:373).
 class _ClipCell extends ConsumerWidget {
   const _ClipCell({required this.clip, required this.playlist});
 
@@ -519,10 +523,20 @@ class _ClipCell extends ConsumerWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () =>
           context.push('/crecam/player/${clip.id}', extra: playlist),
-      child: MotionClipThumb(
-        clipId: clip.id,
-        fallbackIcon: Icons.videocam_rounded,
-        fallbackColor: context.glass.overlayFaint,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          MotionClipThumb(
+            clipId: clip.id,
+            fallbackIcon: Icons.videocam_rounded,
+            fallbackColor: context.glass.overlayFaint,
+          ),
+          Positioned(
+            left: 0,
+            bottom: 0,
+            child: FavoriteBookmarkBadge(clipId: clip.id),
+          ),
+        ],
       ),
     );
   }

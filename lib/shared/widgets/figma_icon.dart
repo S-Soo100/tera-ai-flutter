@@ -37,4 +37,7 @@ abstract final class FigmaIcons {
   static const waterDrop = 'water_drop';
   static const shower = 'shower';
   static const modeFan = 'mode_fan_2';
+  // 카메라 탭 엔트리 카드(2026-09-07 Figma 대조 — Material 근사치 교체).
+  static const cardsStar = 'cards_star';
+  static const bookmarkCheck = 'bookmark_check';
 }

@@ -303,43 +303,54 @@ class _ClipPlaylistPlayerScreenState
     final showPagination = _playlist.length > 1;
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _topBar(glass, startedAt),
-            // Figma 668:743 수직 리듬: 상단바(4238) → 52 → 페이지네이션(4290,
-            // h4) → 28 → 영상(4322). 페이지네이션이 숨겨져도 자리를 예약해
-            // 영상 위치가 재생목록 유무에 흔들리지 않게 한다.
-            const SizedBox(height: 52),
-            SizedBox(
-              height: 4,
-              child: showPagination
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _pagination(glass),
-                    )
-                  : null,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Figma Rectangle 113(668:744) — status bar까지 surfaceHeader +
+          // 헤어라인(2026-09-07 정밀 대조).
+          CrecamDetailHeaderArea(child: _topBar(glass, startedAt)),
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Figma 668:743 수직 리듬: 상단바(4238) → 52 → 페이지네이션(4290,
+                  // h4) → 28 → 영상(4322). 페이지네이션이 숨겨져도 자리를 예약해
+                  // 영상 위치가 재생목록 유무에 흔들리지 않게 한다.
+                  const SizedBox(height: 52),
+                  SizedBox(
+                    height: 4,
+                    child: showPagination
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: _pagination(glass),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(height: 28),
+                  _videoArea(glass),
+                  // 시크 트랙 중심 = 영상끝 +32 (4546→4578). Slider 내부 높이 48의
+                  // 중심이 +24이므로 갭 8.
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child:
+                        _SeekBar(controller: _initialized ? _controller : null),
+                  ),
+                  // 컨트롤 상단 = 트랙 +20 (4578→4598) — Slider 하반부 24가 이미
+                  // 그만큼을 차지하므로 추가 갭 없음.
+                  _controlRow(glass),
+                  const Spacer(),
+                  Center(child: _actionPill(glass, clip, isFav)),
+                  // Figma 프레임 하단(4984)에서 필 하단(4922)까지 62 — safe area
+                  // (~34) 위 28.
+                  const SizedBox(height: 28),
+                ],
+              ),
             ),
-            const SizedBox(height: 28),
-            _videoArea(glass),
-            // 시크 트랙 중심 = 영상끝 +32 (4546→4578). Slider 내부 높이 48의
-            // 중심이 +24이므로 갭 8.
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: _SeekBar(controller: _initialized ? _controller : null),
-            ),
-            // 컨트롤 상단 = 트랙 +20 (4578→4598) — Slider 하반부 24가 이미
-            // 그만큼을 차지하므로 추가 갭 없음.
-            _controlRow(glass),
-            const Spacer(),
-            Center(child: _actionPill(glass, clip, isFav)),
-            // Figma 프레임 하단(4984)에서 필 하단(4922)까지 62 — safe area
-            // (~34) 위 28.
-            const SizedBox(height: 28),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

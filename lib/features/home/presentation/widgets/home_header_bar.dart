@@ -55,7 +55,8 @@ class HomeHeaderBar extends ConsumerWidget {
                 // 세트가 하나뿐이면 고를 게 없다 — 필은 라벨로만 선다.
                 onTap: multi ? () => _openSetPicker(context, ref) : null,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  // Figma 실측 12 (668:429 — 텍스트 x 664.4, 필 x 652.4).
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

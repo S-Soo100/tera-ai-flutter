@@ -140,6 +140,8 @@ Future<void> _pump(
             .overrideWith((ref) async => latestHighlightAt),
         allFavoriteClipsProvider
             .overrideWith((ref) async => favorites ?? const []),
+        // 셀 북마크 오버레이(2026-09-07) — 기본 즐겨찾기 없음.
+        isFavoriteProvider.overrideWith((ref, id) => false),
         // 어젯밤 활동 병기(미결 S, 2026-09-07) — 기본 0(병기 없음).
         nightlyReportProvider.overrideWith((ref) async => NightlyReport(
             activitySeconds: nightActivitySec, highlights: const [])),
@@ -337,8 +339,10 @@ void main() {
     expect(find.text('crecam_home_empty_day'), findsOneWidget);
   });
 
-  testWidgets('셀 탭 → 세로 플레이어 + 그날 전체 재생목록(시간 내림차순)',
+  testWidgets('셀 탭 → 세로 플레이어 + **그 시간대** 재생목록(2026-09-07 지시)',
       (tester) async {
+    // 09시 영상을 열면 09시 영상들만 하나의 재생목록 — 그날 전체(구 동작)가
+    // 아니다. c3(08:30)은 단독 그룹, c1(10:15) 그룹은 [c1, c2(10:05)].
     await _pump(tester);
     final cell = find.byKey(const ValueKey('crecam_clip_c3'));
     await tester.ensureVisible(cell);
@@ -346,7 +350,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('player-screen'), findsOneWidget);
     expect(pushedClipId, 'c3');
-    expect(pushedPlaylist, ['c1', 'c2', 'c3']);
+    expect(pushedPlaylist, ['c3']);
+  });
+
+  testWidgets('같은 시간대 클립들은 하나의 재생목록(내림차순)', (tester) async {
+    await _pump(tester);
+    final cell = find.byKey(const ValueKey('crecam_clip_c2'));
+    await tester.ensureVisible(cell);
+    await tester.tap(cell);
+    await tester.pumpAndSettle();
+    expect(pushedClipId, 'c2');
+    expect(pushedPlaylist, ['c1', 'c2']);
   });
 
   testWidgets('어젯밤 활동이 있으면 하이라이트 카드에 병기 (미결 S)',
