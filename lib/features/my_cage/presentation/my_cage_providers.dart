@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -419,7 +420,10 @@ final nightlyReportProvider =
             !h.startedAt.isBefore(start) &&
             !h.startedAt.isAfter(end))
         .toList();
-  } catch (_) {
+  } catch (e) {
+    // 리포트는 활동시간만으로도 서므로 삼키되, 원인은 로그로 남긴다
+    // (2026-09-07 — "불러오기 실패" 원인 특정이 안 됐던 교훈).
+    debugPrint('[nightly-report] highlight fetch failed: $e');
     highlights = const [];
   }
   final cameras = await ref.watch(camerasProvider.future);
@@ -520,15 +524,36 @@ final allFavoriteClipsProvider =
 
 /// 하이라이트 묶음(최근 30일, 72시간 창 그룹핑 — [groupHighlights]).
 /// 그룹·그룹 내 항목 모두 최신부터. 에러는 화면이 retry로 처리(삼키지 않음).
+///
+/// **일시 실패 1회 자동 재시도**(2026-09-07): FutureProvider는 실패를
+/// 캐시하므로 순단 한 번이 pull-to-refresh 전까지 "불러오기 실패"로
+/// 눌러앉았다(시뮬 실증 — API는 3연속 200인데 카드만 에러). 짧게 쉬고
+/// 한 번 더 시도하고, 두 번째 실패만 화면(retry)으로 보낸다. 상태코드
+/// 특정을 위해 두 실패 모두 로그를 남긴다.
 final highlightGroupsProvider =
     FutureProvider.autoDispose<List<HighlightGroup>>((ref) async {
   ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 격리
-  // 상한은 repository가 클램프한다(HighlightRepository.maxLimit=100).
-  final list = await ref.watch(highlightRepositoryProvider).list(
-        since: DateTime.now().subtract(const Duration(days: 30)),
-        limit: HighlightRepository.maxLimit,
-      );
-  return groupHighlights(list.where((h) => h.clipId.isNotEmpty).toList());
+  final repo = ref.watch(highlightRepositoryProvider);
+  final since = DateTime.now().subtract(const Duration(days: 30));
+  Future<List<HighlightGroup>> fetch() async {
+    // 상한은 repository가 클램프한다(HighlightRepository.maxLimit=100).
+    final list =
+        await repo.list(since: since, limit: HighlightRepository.maxLimit);
+    return groupHighlights(list.where((h) => h.clipId.isNotEmpty).toList());
+  }
+
+  try {
+    return await fetch();
+  } catch (e) {
+    debugPrint('[highlights] fetch failed, retrying in 2s: $e');
+    await Future<void>.delayed(const Duration(seconds: 2));
+    try {
+      return await fetch();
+    } catch (e2) {
+      debugPrint('[highlights] retry failed: $e2');
+      rethrow;
+    }
+  }
 });
 
 /// 도착 배너 dismiss 저장소(Hive `app_settings`).
