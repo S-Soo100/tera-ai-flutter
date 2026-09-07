@@ -71,7 +71,12 @@ void _watchCommandAck(
       return; // 조회 실패는 유실 확정이 아니다 — 겁주지 않는다.
     }
     final status = row?['status'] as String?;
-    if (status != 'pending' && status != 'sent') return;
+    // 전달 실패 = 기기에 닿지 못한 상태 전부. pending/sent(미ACK 잔류)에 더해
+    // 서버가 만료 마킹을 먼저 붙인 경우(expired, 예정된 lost — 펌웨어 회신
+    // 2026-09-07 §6.3)도 같은 뜻이다. acked/rejected는 기기가 받았다는
+    // 뜻이라 제외.
+    const undelivered = {'pending', 'sent', 'expired', 'lost'};
+    if (!undelivered.contains(status)) return;
     messenger.showSnackBar(
       SnackBar(content: Text('module_command_no_ack'.tr())),
     );
