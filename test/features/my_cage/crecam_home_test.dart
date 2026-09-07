@@ -103,6 +103,10 @@ Future<void> _pump(
   DateTime? latestHighlightAt,
   List<FavoriteClip>? favorites,
   List<EnclosureSet> sets = const [],
+  // false면 기간 미선택(자동) — crecamResolvedDayProvider가 최근 클립
+  // 날짜([latestClipAt])로 해석한다(2026-09-07).
+  bool pickedDay = true,
+  DateTime? latestClipAt,
 }) async {
   pushedClipId = null;
   pushedPlaylist = null;
@@ -115,7 +119,9 @@ Future<void> _pump(
         // 실피어 연결 차단 심 — _CameraPane이 이 빌더로 라이브 자리를 그린다.
         liveViewBuilderProvider.overrideWithValue(
             (uuid) => Text('live-view-$uuid')),
-        crecamDayProvider.overrideWith((ref) => _day),
+        crecamDayProvider.overrideWith((ref) => pickedDay ? _day : null),
+        latestMotionClipAtProvider
+            .overrideWith((ref, cameraId) async => latestClipAt),
         motionClipsProvider
             .overrideWith((ref, key) async => clips ?? _clips),
         motionThumbnailProvider.overrideWith((ref, clipId) async => null),
@@ -287,8 +293,33 @@ void main() {
     expect(find.text('2026. 8. 31'), findsNWidgets(2));
   });
 
-  testWidgets('클립 0건 날짜 → 빈 상태 문구', (tester) async {
+  testWidgets('클립 0건 날짜 → 빈 상태 문구 (명시 선택은 자동으로 안 갈아탄다)',
+      (tester) async {
     await _pump(tester, clips: const []);
+    expect(find.text('crecam_home_empty_day'), findsOneWidget);
+  });
+
+  // ── 기간 미선택(자동) — 최근 영상 날짜 해석 (2026-09-07) ─────────────────
+
+  testWidgets('기간 미선택 → 최근 클립 날짜로 자동 해석 — 라벨·그리드 일치',
+      (tester) async {
+    // 오늘 클립이 없는 카메라(관식이 제보)가 "이 날짜에는 영상이 없어요"로
+    // 열리면 안 된다 — 가장 최근 영상이 있는 날짜부터 보여준다.
+    await _pump(
+      tester,
+      pickedDay: false,
+      latestClipAt: DateTime(2026, 8, 31, 10, 15),
+    );
+    // 기간 버튼 라벨 + 첫 시간 그룹 날짜 라벨 — 해석된 같은 날짜.
+    expect(find.text('2026. 8. 31'), findsNWidgets(2));
+    expect(find.text('time_am_fmt'), findsNWidgets(2));
+    expect(find.text('crecam_home_empty_day'), findsNothing);
+  });
+
+  testWidgets('기간 미선택 + 클립 0건 카메라 → 오늘(기본 라벨) + 빈 상태',
+      (tester) async {
+    await _pump(tester, pickedDay: false, latestClipAt: null, clips: const []);
+    expect(find.text('crecam_home_period'), findsOneWidget);
     expect(find.text('crecam_home_empty_day'), findsOneWidget);
   });
 

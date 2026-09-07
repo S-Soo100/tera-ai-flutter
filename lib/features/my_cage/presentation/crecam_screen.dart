@@ -82,6 +82,8 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
     ref.invalidate(crecamHourGroupsProvider);
     ref.invalidate(highlightGroupsProvider);
     ref.invalidate(allFavoriteClipsProvider);
+    // 미선택(자동) 날짜의 근거 — 새 클립이 오면 "가장 최근 날짜"도 바뀐다.
+    ref.invalidate(latestMotionClipAtProvider);
     await ref.read(camerasProvider.future);
   }
 
@@ -294,12 +296,15 @@ class _PeriodButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
-    final day = ref.watch(crecamDayProvider);
+    // 라벨은 **실제 표시 날짜**(해석 결과)를 따른다 — 미선택(자동)으로 최근
+    // 영상 날짜를 그리는 중이면 그 날짜가 라벨이어야 그리드와 어긋나지 않는다.
+    final day = ref.watch(crecamResolvedDayProvider).valueOrNull;
     final now = DateTime.now();
-    final isToday = day.year == now.year &&
+    final isToday = day != null &&
+        day.year == now.year &&
         day.month == now.month &&
         day.day == now.day;
-    final label = isToday
+    final label = day == null || isToday
         ? 'crecam_home_period'.tr()
         : DateFormat('yyyy. M. d').format(day);
 
@@ -313,7 +318,7 @@ class _PeriodButton extends ConsumerWidget {
       child: InkWell(
         key: CrecamScreen.periodButtonKey,
         borderRadius: BorderRadius.circular(8),
-        onTap: () => _pick(context, ref, day),
+        onTap: () => _pick(context, ref, day ?? now),
         child: SizedBox(
           height: 40,
           child: Padding(
@@ -361,7 +366,10 @@ class _HourClipSections extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
     final groupsAsync = ref.watch(crecamHourGroupsProvider);
-    final day = ref.watch(crecamDayProvider);
+    // 그리드가 실제로 그린 날짜(해석 결과). 그룹이 있을 때만 라벨에 쓰이므로
+    // 로딩 중 폴백(오늘)은 화면에 나갈 일이 없다.
+    final day = ref.watch(crecamResolvedDayProvider).valueOrNull ??
+        DateTime.now();
 
     return groupsAsync.when(
       loading: () => const _SectionsSkeleton(),

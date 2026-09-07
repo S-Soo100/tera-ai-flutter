@@ -196,6 +196,24 @@ class MotionClipRepository {
     }
   }
 
+  /// 카메라의 가장 최근 클립 시각(started_at). 클립이 하나도 없으면 null.
+  ///
+  /// 카메라 탭 기간 미선택(자동) 시 "가장 최근 영상이 있는 날짜"를 찾는 데
+  /// 쓴다(2026-09-07) — 오늘 클립이 없는 카메라가 "이 날짜에는 영상이
+  /// 없어요"로 열리지 않게.
+  Future<DateTime?> latestClipAt(String cameraId) async {
+    final rows = await _supabase
+        .from('motion_clips')
+        .select('started_at')
+        .eq('camera_id', cameraId)
+        .order('started_at', ascending: false)
+        .limit(1);
+    final list = rows as List;
+    if (list.isEmpty) return null;
+    final raw = (list.first as Map)['started_at'];
+    return DateTime.tryParse('$raw')?.toLocal();
+  }
+
   /// 단일 모션 클립 조회(즐겨찾기 메타용). 없으면 null. RLS 본인 것만.
   Future<MotionClip?> getById(String clipId) async {
     final rows =

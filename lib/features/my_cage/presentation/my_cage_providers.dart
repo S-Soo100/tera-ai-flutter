@@ -434,15 +434,17 @@ final nightlyReportProvider =
 /// 파일이 import하면 home_set_providers ↔ my_cage_providers 순환이 된다.
 final selectedCrecamCameraProvider = StateProvider<String?>((ref) => null);
 
-/// 기간 설정 날짜(자정 정규화). 기본 = 오늘.
+/// 기간 설정 날짜(자정 정규화). **null = 미선택(자동)** — 실제 표시 날짜는
+/// [crecamResolvedDayProvider]가 "가장 최근 영상이 있는 날짜"로 해석한다
+/// (2026-09-07 사용자 지시 — 오늘 클립이 없는 카메라가 "이 날짜에는 영상이
+/// 없어요"로 열리지 않게). 사용자가 피커로 고르면 그 날짜가 그대로 쓰이고,
+/// 빈 날짜여도 자동으로 갈아타지 않는다(명시 선택 존중).
 ///
 /// **자정을 넘기면 스스로 리셋한다**(리뷰 2026-09-04) — non-autoDispose +
-/// IndexedStack 탭이라 안 그러면 첫 read 시점의 "오늘"이 프로세스 수명 내내
-/// 고정돼, 자정 후 그리드가 어제에 갇히고 기간 버튼 라벨이 어제 날짜로
-/// 바뀐다(env_detail의 `_todayProvider` 선례). 사용자가 고른 과거 날짜도
-/// 자정에 오늘로 돌아온다 — 날짜가 바뀌었는데 어제 선택을 유지하는 것보다
-/// 덜 놀랍다.
-final crecamDayProvider = StateProvider<DateTime>((ref) {
+/// IndexedStack 탭이라 안 그러면 선택이 프로세스 수명 내내 고정된다
+/// (env_detail의 `_todayProvider` 선례). 자정 리셋은 미선택(자동)으로
+/// 돌아간다.
+final crecamDayProvider = StateProvider<DateTime?>((ref) {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   final timer = Timer(
@@ -450,7 +452,38 @@ final crecamDayProvider = StateProvider<DateTime>((ref) {
     ref.invalidateSelf,
   );
   ref.onDispose(timer.cancel);
-  return today;
+  return null;
+});
+
+/// 현재 라이브 카메라의 가장 최근 클립 시각. 클립 0건이면 null.
+final latestMotionClipAtProvider = FutureProvider.autoDispose
+    .family<DateTime?, String>((ref, cameraId) {
+  ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 격리
+  return ref.watch(motionClipRepositoryProvider).latestClipAt(cameraId);
+});
+
+/// 카메라 탭이 실제로 그릴 날짜.
+///
+/// 선택([crecamDayProvider])이 있으면 그대로, 미선택(null)이면 현재 카메라의
+/// **가장 최근 클립 날짜**, 그것도 없으면(클립 0건) 오늘. 클립 그리드·기간
+/// 버튼 라벨·재생목록이 전부 이 값을 본다 — 선택 상태와 표시 날짜를 섞으면
+/// 라벨과 그리드가 다른 날을 가리킨다.
+final crecamResolvedDayProvider =
+    FutureProvider.autoDispose<DateTime>((ref) async {
+  // watch는 await 앞에서(home_set_providers의 currentSetProvider 주석이 SOT).
+  final picked = ref.watch(crecamDayProvider);
+  if (picked != null) return picked;
+  final id = ref.watch(selectedCrecamCameraProvider);
+  final cameras = await ref.watch(camerasProvider.future);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  if (cameras.isEmpty) return today;
+  final camera =
+      cameras.firstWhere((c) => c.id == id, orElse: () => cameras.first);
+  final latest =
+      await ref.watch(latestMotionClipAtProvider(camera.id).future);
+  if (latest == null) return today;
+  return DateTime(latest.year, latest.month, latest.day);
 });
 
 /// 하이라이트 최신 도착 시각 — [highlightGroupsProvider]에서 파생(리뷰
@@ -517,8 +550,9 @@ final crecamHourGroupsProvider =
   // watch는 await 앞에서 — 뒤에서 하면 의존 등록이 늦어 선택 변경이 반영
   // 안 될 수 있다(home_set_providers의 currentSetProvider 주석이 SOT).
   final id = ref.watch(selectedCrecamCameraProvider);
-  final day = ref.watch(crecamDayProvider);
+  final dayFuture = ref.watch(crecamResolvedDayProvider.future);
   final cameras = await ref.watch(camerasProvider.future);
+  final day = await dayFuture;
   if (cameras.isEmpty) return const [];
   // 센티넬(null)·목록에서 사라진 id는 첫 카메라 폴백 — CameraLiveArea가
   // 첫 데이터 프레임에 홈 세트 카메라로 해석해 저장하면 그때 다시 돈다.
