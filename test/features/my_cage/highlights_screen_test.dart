@@ -13,9 +13,8 @@ import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
 NightlyHighlight _h(String id, DateTime at) => NightlyHighlight(
       clipId: id,
       startedAt: at,
-      vlmAction: 'motion',
-      confidence: 0.9,
-      careLevel: 'care',
+      source: 'rule',
+      reason: '움직임 3.0초',
     );
 
 class _FakeBannerStore implements HighlightBannerStore {

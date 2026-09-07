@@ -395,11 +395,13 @@ final showFavoritesTabProvider =
 final videoExportServiceProvider =
     Provider<VideoExportService>((ref) => VideoExportService());
 
-// ── 어젯밤 리포트 (terra-api, 보기 전용) ──────────────────────────────────────
+// ── 어젯밤 리포트 (petcam-api /highlights, 보기 전용) ─────────────────────────
+// 2026-09-08: 자동 1차 판정 규칙 + 사람 확정. terra-server /clips/highlights는
+// 앱이 더 이상 호출하지 않는다.
 
 final highlightRepositoryProvider = Provider<HighlightRepository>((ref) {
   return HighlightRepository(
-    terraApiUrl: EnvConfig.terraServerUrl,
+    baseUrl: EnvConfig.backendUrl,
     tokenProvider: ref.watch(_tokenProviderProvider),
   );
 });

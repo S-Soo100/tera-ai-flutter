@@ -16,13 +16,6 @@ import 'highlights_controller.dart';
 import 'my_cage_providers.dart';
 import 'widgets/favorite_toggle_button.dart';
 
-/// vlm_action 라벨(clip_action_* 키, 없으면 원문 폴백).
-String reportActionLabel(String action) {
-  final key = 'clip_action_$action';
-  final t = key.tr();
-  return t == key ? action : t;
-}
-
 /// 마이 크레 > 리포트 탭 내용. 어젯밤 요약 + 하이라이트(보기/재생).
 class NightlyReportView extends ConsumerWidget {
   const NightlyReportView({super.key});
@@ -64,7 +57,8 @@ class NightlyReportView extends ConsumerWidget {
   }
 }
 
-/// 어젯밤 요약 카드 — B안 **활동/휴식 비율 진행 바**(2026-08-18) + 행동 카운트.
+/// 어젯밤 요약 카드 — B안 **활동/휴식 비율 진행 바**(2026-08-18) + 하이라이트 개수.
+/// (행동별 물/밥/탈피 카운트는 2026-09-08 자동 규칙 전환으로 제거.)
 ///
 /// 비율의 분모는 [nightlyReportProvider]와 같은 창([lastNightSince]~
 /// [lastNightEnd], 22~06시 — 06시 이전이면 지금까지)이다. 분모를 8시간으로
@@ -88,21 +82,11 @@ class _SummaryCard extends StatelessWidget {
 
     final stats = <(String, String, String)>[
       (
-        '💧',
-        'nightly_count_drink'.tr(),
-        'nightly_count_unit'.tr(namedArgs: {'n': '${report.drinkCount}'})
+        '✨',
+        'nightly_count_highlight'.tr(),
+        'nightly_highlight_count'
+            .tr(namedArgs: {'n': '${report.highlightCount}'})
       ),
-      (
-        '🍽️',
-        'nightly_count_eat'.tr(),
-        'nightly_count_unit'.tr(namedArgs: {'n': '${report.eatCount}'})
-      ),
-      if (report.shedCount > 0)
-        (
-          '🐍',
-          'nightly_count_shed'.tr(),
-          'nightly_count_unit'.tr(namedArgs: {'n': '${report.shedCount}'})
-        ),
     ];
     return GlassCard(
       padding: const EdgeInsets.all(16),
@@ -224,12 +208,18 @@ class _HighlightCard extends ConsumerWidget {
   const _HighlightCard({required this.highlight});
   final NightlyHighlight highlight;
 
+  /// 사람 확정 체크 아이콘(테스트 훅).
+  static const confirmedKey = Key('nightly_highlight_confirmed');
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final careColor =
-        highlight.careLevel == 'enrichment' ? cs.secondary : cs.primary;
+    // 배지 = 규칙 판정 사유(없으면 "하이라이트"). 사람 확정이면 체크 표시.
+    final badgeColor = cs.primary;
+    final badgeText = highlight.reason.isNotEmpty
+        ? highlight.reason
+        : 'highlight_badge_auto'.tr();
     final thumb = ref.watch(motionThumbnailProvider(highlight.clipId));
     // A안 유리 카드. onTap을 주면 GlassCard가 InkWell로 감싼다 —
     // 재생 이동·즐겨찾기 로직은 불변.
@@ -264,17 +254,29 @@ class _HighlightCard extends ConsumerWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: careColor.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(8),
+                Flexible(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: badgeColor.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(badgeText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                            color: badgeColor, fontWeight: FontWeight.w700)),
                   ),
-                  child: Text(reportActionLabel(highlight.vlmAction),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                          color: careColor, fontWeight: FontWeight.w700)),
                 ),
+                if (highlight.isHumanConfirmed) ...[
+                  const SizedBox(width: 6),
+                  Icon(Icons.check_circle,
+                      key: _HighlightCard.confirmedKey,
+                      size: 16,
+                      color: badgeColor,
+                      semanticLabel: 'highlight_badge_confirmed'.tr()),
+                ],
                 const SizedBox(width: 8),
                 Text(
                   DateFormat('MM.dd HH:mm')

@@ -1,7 +1,8 @@
 import 'nightly_highlight.dart';
 
-/// 어젯밤(22~06시) 요약 = 활동 시간 + 하이라이트 목록 + 행동 카운트(파생).
-/// 카운트는 AI 샘플 감지분(전수 아님).
+/// 어젯밤(22~06시) 요약 = 활동 시간 + 하이라이트 목록.
+/// 행동별 카운트(물/밥/탈피)는 하이라이트가 자동 규칙+사람 확정으로 바뀌면서
+/// (2026-09-08) 제거됐다 — 이제 행동 라벨이 없다. 하이라이트 개수만 센다.
 class NightlyReport {
   final int activitySeconds; // 밤 구간 motion_clips duration 합(전 카메라)
   final List<NightlyHighlight> highlights;
@@ -9,13 +10,7 @@ class NightlyReport {
   const NightlyReport(
       {required this.activitySeconds, required this.highlights});
 
-  static const _eat = {'hand_feeding', 'eating_paste', 'eating_prey'};
-
   int get activityMinutes => (activitySeconds / 60).round();
-  int _count(bool Function(String) f) =>
-      highlights.where((h) => f(h.vlmAction)).length;
-  int get drinkCount => _count((a) => a == 'drinking');
-  int get eatCount => _count(_eat.contains);
-  int get shedCount => _count((a) => a == 'shedding');
+  int get highlightCount => highlights.length;
   bool get isQuiet => highlights.isEmpty;
 }

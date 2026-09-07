@@ -2,21 +2,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/features/my_cage/domain/nightly_highlight.dart';
 import 'package:vivnanaut/features/my_cage/domain/nightly_report.dart';
 
-NightlyHighlight h(String a) => NightlyHighlight(
-    clipId: a, startedAt: DateTime(2026, 7, 7, 23), vlmAction: a,
-    confidence: 0.7, careLevel: 'care');
+NightlyHighlight h(String id, {String source = 'rule'}) => NightlyHighlight(
+    clipId: id, startedAt: DateTime(2026, 7, 7, 23), source: source);
 
 void main() {
-  test('행동 카운트 분류', () {
+  test('하이라이트 개수 + 활동 분', () {
     final r = NightlyReport(activitySeconds: 3600, highlights: [
-      h('drinking'), h('drinking'),
-      h('hand_feeding'), h('eating_paste'), h('eating_prey'),
-      h('shedding'),
-      h('unseen'),
+      h('a'),
+      h('b', source: 'human'),
+      h('c'),
     ]);
-    expect(r.drinkCount, 2);
-    expect(r.eatCount, 3); // hand_feeding+eating_paste+eating_prey
-    expect(r.shedCount, 1);
+    expect(r.highlightCount, 3);
+    expect(r.isQuiet, isFalse);
     expect(r.activityMinutes, 60);
+  });
+  test('하이라이트 없음 → 조용한 밤', () {
+    const r = NightlyReport(activitySeconds: 90, highlights: []);
+    expect(r.highlightCount, 0);
+    expect(r.isQuiet, isTrue);
+    expect(r.activityMinutes, 2);
   });
 }
