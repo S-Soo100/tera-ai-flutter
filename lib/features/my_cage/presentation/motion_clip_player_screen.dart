@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -45,6 +46,33 @@ class _MotionClipPlayerScreenState
   bool _initialized = false;
   bool _busy = false; // 저장/공유/즐겨찾기 진행 중
   String? _cachedUrl;
+
+  /// 컨트롤(상단 바+하단 VideoControls) 표시 여부 — 상시 표시하면 하단
+  /// 그라디언트+3줄 컨트롤이 영상 하단을 계속 가린다(사용자 피드백
+  /// 2026-09-08). 재생 중 3초 무조작이면 숨기고, 영상 탭으로 토글한다.
+  /// 일시정지 중에는 숨기지 않는다(타이머 콜백에서 isPlaying 확인).
+  bool _controlsVisible = true;
+  Timer? _hideTimer;
+
+  void _scheduleHide() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      if (_controller?.value.isPlaying ?? false) {
+        setState(() => _controlsVisible = false);
+      }
+    });
+  }
+
+  void _toggleControls() {
+    if (_controlsVisible) {
+      _hideTimer?.cancel();
+      setState(() => _controlsVisible = false);
+    } else {
+      setState(() => _controlsVisible = true);
+      _scheduleHide();
+    }
+  }
 
   @override
   void initState() {
@@ -96,6 +124,7 @@ class _MotionClipPlayerScreenState
         _initialized = true;
       });
       controller.play();
+      _scheduleHide();
     } catch (e) {
       await controller?.dispose();
       if (!isRetry && mounted) {
@@ -108,6 +137,7 @@ class _MotionClipPlayerScreenState
 
   @override
   void dispose() {
+    _hideTimer?.cancel();
     _controller?.dispose();
     // 되돌리지 않으면 이 화면을 닫은 뒤에도 앱 전체가 가로로 남는다.
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -238,34 +268,39 @@ class _MotionClipPlayerScreenState
         // 가로에서는 영상이 화면을 꽉 채우고 바가 그 위에 뜬다. 바가 자리를
         // 차지하면 영상이 그만큼 작아진다.
         extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          leadingWidth: 56,
-          leading: _GlassIconButton(
-            icon: Icons.arrow_back,
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: () => context.pop(),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: _fadeWithControls(
+            AppBar(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              leadingWidth: 56,
+              leading: _GlassIconButton(
+                icon: Icons.arrow_back,
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: () => context.pop(),
+              ),
+              actions: [
+                _GlassIconButton(
+                  icon: isFav ? Icons.favorite : Icons.favorite_border,
+                  color: isFav ? Colors.redAccent : Colors.white,
+                  tooltip: 'clip_favorite_add'.tr(),
+                  onPressed: _busy ? null : () => _toggleFavorite(clip),
+                ),
+                _GlassIconButton(
+                  icon: Icons.download_outlined,
+                  tooltip: 'clip_save'.tr(),
+                  onPressed: _busy ? null : _save,
+                ),
+                _GlassIconButton(
+                  icon: Icons.ios_share,
+                  tooltip: 'clip_share'.tr(),
+                  onPressed: _busy ? null : _share,
+                ),
+              ],
+            ),
           ),
-          actions: [
-            _GlassIconButton(
-              icon: isFav ? Icons.favorite : Icons.favorite_border,
-              color: isFav ? Colors.redAccent : Colors.white,
-              tooltip: 'clip_favorite_add'.tr(),
-              onPressed: _busy ? null : () => _toggleFavorite(clip),
-            ),
-            _GlassIconButton(
-              icon: Icons.download_outlined,
-              tooltip: 'clip_save'.tr(),
-              onPressed: _busy ? null : _save,
-            ),
-            _GlassIconButton(
-              icon: Icons.ios_share,
-              tooltip: 'clip_share'.tr(),
-              onPressed: _busy ? null : _share,
-            ),
-          ],
         ),
         backgroundColor: Colors.black,
         body: Stack(
@@ -273,17 +308,44 @@ class _MotionClipPlayerScreenState
             // 남는 공간에 비율을 유지한 채 가장 크게 — 가로에서는 좌우가,
             // 세로에서는 위아래가 꽉 찬다.
             Positioned.fill(child: Center(child: _video(startedAt))),
+            // 영상(빈 여백 포함) 탭 → 컨트롤 토글. 컨트롤 위 탭은 아래
+            // 컨트롤 레이어가 먼저 받으므로 여기 안 닿는다.
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _toggleControls,
+              ),
+            ),
             if (_initialized && _controller != null)
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: SafeArea(
-                  top: false,
-                  child: VideoControls(controller: _controller!),
+                child: _fadeWithControls(
+                  SafeArea(
+                    top: false,
+                    child: VideoControls(controller: _controller!),
+                  ),
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 컨트롤 표시 상태에 따라 페이드+터치 차단. 보이는 동안의 조작
+  /// (시크·버튼)은 Listener가 숨김 타이머를 되감는다 — 숨김 상태에서는
+  /// IgnorePointer라 탭이 아래 토글 레이어로 떨어져 다시 나타난다.
+  Widget _fadeWithControls(Widget child) {
+    return AnimatedOpacity(
+      opacity: _controlsVisible ? 1 : 0,
+      duration: const Duration(milliseconds: 200),
+      child: IgnorePointer(
+        ignoring: !_controlsVisible,
+        child: Listener(
+          onPointerDown: (_) => _scheduleHide(),
+          child: child,
         ),
       ),
     );
