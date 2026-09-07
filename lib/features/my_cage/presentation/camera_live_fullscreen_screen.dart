@@ -74,32 +74,38 @@ class _CameraLiveFullscreenScreenState
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: Colors.black,
+        // expand 필수 — 비-positioned 자식(닫기 버튼)만 있으면 Stack이 그
+        // 크기로 수축해 Positioned.fill 영상이 좌상단에 조그맣게 갇힌다
+        // (2026-09-07 실제 발생 버그).
         body: Stack(
+          fit: StackFit.expand,
           children: [
             // contain(기본) — 확대해서 보는 화면이라 프레임 전체를 보여준다.
             // cover면 가로 화면에서 상하가 크롭된다.
-            Positioned.fill(
-              child: WebRtcLiveView(cameraUuid: widget.cameraId),
-            ),
-            // 좌상단 닫기 — 노치/펀치홀을 피해 SafeArea 안쪽.
+            WebRtcLiveView(cameraUuid: widget.cameraId),
+            // 좌상단 닫기 — 노치/펀치홀을 피해 SafeArea 안쪽. expand된
+            // Stack에서 버튼이 늘어나지 않게 Align으로 좌상단 고정.
             SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Tooltip(
-                  message:
-                      MaterialLocalizations.of(context).closeButtonTooltip,
-                  child: Material(
-                    color: AppTheme.liveScrim,
-                    shape: const CircleBorder(),
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      key: CameraLiveFullscreenScreen.closeButtonKey,
-                      onTap: () => context.pop(),
-                      child: const SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: Icon(Icons.close,
-                            size: 20, color: AppTheme.liveOnDark),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Tooltip(
+                    message:
+                        MaterialLocalizations.of(context).closeButtonTooltip,
+                    child: Material(
+                      color: AppTheme.liveScrim,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        key: CameraLiveFullscreenScreen.closeButtonKey,
+                        onTap: () => context.pop(),
+                        child: const SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: Icon(Icons.close,
+                              size: 20, color: AppTheme.liveOnDark),
+                        ),
                       ),
                     ),
                   ),

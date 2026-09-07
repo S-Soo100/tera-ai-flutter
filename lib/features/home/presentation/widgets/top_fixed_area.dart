@@ -142,17 +142,23 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
     );
 
     final cam = current.camera;
-    if (cam == null) return surface;
     // Figma 668:859 — 우하단 전체보기 → 라이브 전체화면(가로, 영상만).
     // 구 목적지 카메라 상세는 "확대" 기대와 어긋났다(2026-09-07 사용자 결정).
+    //
+    // ⚠️ 캠 없는 세트여도 **Stack 루트를 유지**하고 버튼만 뺀다. 예전처럼
+    // `if (cam == null) return surface;`로 루트 타입을 바꾸면(LiveSurface↔
+    // Stack) PageView 서브트리가 통째로 재생성돼 컨트롤러가 initialPage로
+    // 튄다 — 캠 없는 세트로 스와이프하는 순간 상태는 그 세트인데 화면은 첫
+    // 세트 영상이 되는 탈동기화(2026-09-07 시뮬 실증).
     return Stack(
       children: [
         surface,
-        Positioned(
-          right: 12,
-          bottom: 12,
-          child: _ExpandButton(cameraId: cam.id),
-        ),
+        if (cam != null)
+          Positioned(
+            right: 12,
+            bottom: 12,
+            child: _ExpandButton(cameraId: cam.id),
+          ),
       ],
     );
   }
