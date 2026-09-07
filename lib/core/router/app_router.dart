@@ -132,13 +132,9 @@ GoRouter buildAppRouter({
                     path: 'add',
                     builder: (context, state) => const PetAddScreen(),
                   ),
-                  // 정적 경로 'clips/:clipId'를 ':petId'보다 먼저 등록 —
-                  // 'clips'가 petId로 오인 매칭되는 것을 방지 (리포트 카드 → 재생).
-                  GoRoute(
-                    path: 'clips/:clipId',
-                    builder: (context, state) => MotionClipPlayerScreen(
-                        clipId: state.pathParameters['clipId']!),
-                  ),
+                  // 리포트 카드 → 클립 재생은 셸 밖 `/crecam/motion-clips/:clipId`를
+                  // 쓴다 — 셸 안에 두면 가로 전체화면 위에 탭바가 옆으로 그려져
+                  // 영상을 잠식한다(2026-09-08 시뮬 실측, 구 'clips/:clipId' 삭제).
                   GoRoute(
                     path: ':petId',
                     builder: (context, state) {

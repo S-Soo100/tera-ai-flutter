@@ -224,7 +224,9 @@ class _HighlightCard extends ConsumerWidget {
     // A안 유리 카드. onTap을 주면 GlassCard가 InkWell로 감싼다 —
     // 재생 이동·즐겨찾기 로직은 불변.
     return GlassCard(
-      onTap: () => context.push('/my-pets/clips/${highlight.clipId}'),
+      // 셸 밖 최상위 플레이어 — 셸 안 경로면 가로 전체화면에 탭바가 옆으로
+      // 노출된다(2026-09-08).
+      onTap: () => context.push('/crecam/motion-clips/${highlight.clipId}'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
