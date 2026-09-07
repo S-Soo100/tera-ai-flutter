@@ -161,6 +161,15 @@ class _EntryCards extends ConsumerWidget {
             (list) => list.isEmpty ? null : list.first.favoritedAt),
       ),
     );
+    // 어젯밤 활동(밤 22~06시, PRD §3.1) 병기 — PRD 미결 S의 자리(2026-09-07
+    // 사용자 결정). 로딩/에러/0초는 병기 생략 — 요약이 없다고 카드가 죽으면
+    // 안 된다(마이크레 리포트가 상세를 전담).
+    final nightSec = ref.watch(
+        nightlyReportProvider.select((v) => v.valueOrNull?.activitySeconds));
+    final nightExtra = nightSec == null || nightSec <= 0
+        ? null
+        : 'crecam_home_night_activity'
+            .tr(args: ['${(nightSec / 60).ceil()}']);
     return Row(
       children: [
         Expanded(
@@ -169,6 +178,7 @@ class _EntryCards extends ConsumerWidget {
             icon: Icons.star,
             title: 'crecam_home_highlights'.tr(),
             latestAt: highlightAt,
+            extra: nightExtra,
             onTap: () => context.push('/crecam/highlights'),
           ),
         ),
@@ -196,6 +206,7 @@ class _EntryCard extends StatelessWidget {
     required this.title,
     required this.latestAt,
     required this.onTap,
+    this.extra,
   });
 
   final IconData icon;
@@ -204,6 +215,9 @@ class _EntryCard extends StatelessWidget {
   /// 최신 항목 시각. data(null) = 항목 없음("아직 없어요").
   final AsyncValue<DateTime?> latestAt;
   final VoidCallback onTap;
+
+  /// 서브타이틀 앞에 병기할 부가 정보(예: 어젯밤 활동). null = 없음.
+  final String? extra;
 
   @override
   Widget build(BuildContext context) {
@@ -276,14 +290,20 @@ class _EntryCard extends StatelessWidget {
       // 단정하면 상세 화면(에러+재시도)과 모순된다(리뷰 2026-09-04).
       error: (_, __) => Text('crecam_home_load_failed'.tr(),
           maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
-      data: (at) => Text(
-        at == null
+      data: (at) {
+        final base = at == null
             ? 'crecam_home_no_updates'.tr()
-            : 'crecam_home_updated'.tr(args: [timeAgo(at)]),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: style,
-      ),
+            : 'crecam_home_updated'.tr(args: [timeAgo(at)]);
+        // 병기: "어젯밤 활동 N분 · 업데이트 …". 항목이 없으면 병기만 —
+        // "활동 N분 · 아직 없어요"는 서로 부정하는 문장이 된다.
+        final text = extra == null ? base : (at == null ? extra! : '$extra · $base');
+        return Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        );
+      },
     );
   }
 }

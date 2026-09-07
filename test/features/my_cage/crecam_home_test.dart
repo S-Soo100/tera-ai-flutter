@@ -8,6 +8,7 @@ import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivnanaut/features/my_cage/domain/favorite_clip.dart';
 import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
+import 'package:vivnanaut/features/my_cage/domain/nightly_report.dart';
 import 'package:vivnanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivnanaut/features/my_cage/presentation/crecam_screen.dart';
 import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
@@ -116,6 +117,7 @@ Future<void> _pump(
   // 날짜([latestClipAt])로 해석한다(2026-09-07).
   bool pickedDay = true,
   DateTime? latestClipAt,
+  int nightActivitySec = 0,
 }) async {
   pushedClipId = null;
   pushedPlaylist = null;
@@ -138,6 +140,9 @@ Future<void> _pump(
             .overrideWith((ref) async => latestHighlightAt),
         allFavoriteClipsProvider
             .overrideWith((ref) async => favorites ?? const []),
+        // 어젯밤 활동 병기(미결 S, 2026-09-07) — 기본 0(병기 없음).
+        nightlyReportProvider.overrideWith((ref) async => NightlyReport(
+            activitySeconds: nightActivitySec, highlights: const [])),
       ],
       child: MaterialApp.router(routerConfig: _router()),
     ),
@@ -342,6 +347,13 @@ void main() {
     expect(find.text('player-screen'), findsOneWidget);
     expect(pushedClipId, 'c3');
     expect(pushedPlaylist, ['c1', 'c2', 'c3']);
+  });
+
+  testWidgets('어젯밤 활동이 있으면 하이라이트 카드에 병기 (미결 S)',
+      (tester) async {
+    await _pump(tester, nightActivitySec: 300); // 5분
+    // tr()는 키 원문 반환(namedArgs 미치환).
+    expect(find.textContaining('crecam_home_night_activity'), findsOneWidget);
   });
 
   testWidgets('최신 즐겨찾기 시각 → 북마크 카드 "업데이트" 서브타이틀',
