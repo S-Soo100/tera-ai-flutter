@@ -6,6 +6,7 @@ import '../../../../core/theme/glass_palette.dart';
 import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/domain/telemetry_reading.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
+import '../../../../shared/widgets/figma_icon.dart';
 import '../cage_control_actions.dart';
 import '../../domain/mist_duration.dart' show MistDuration;
 import '../home_control_providers.dart';
@@ -59,12 +60,14 @@ class CageControlGrid extends ConsumerWidget {
         t?.heaterState == ActuatorState.on || (t?.heaterLocked ?? false);
 
     final tiles = <Widget>[
-      // ① 환기팬 — 기존 fan_* 절대 명령 배선.
+      // ① 환기팬 — 기존 fan_* 절대 명령 배선. 글리프는 Figma 원본
+      // mode_fan_2(글리프만 20 — 원 40 안 실측 20).
       _DeviceTile(
         key: ventFanKey,
         name: 'device_vent_fan'.tr(),
         status: _stateLabel(t?.fan),
-        icon: Icons.wind_power,
+        glyph: FigmaIcon.tinted(FigmaIcons.modeFan,
+            size: 20, color: glass.deviceGlyph),
         active: fanOn,
         tileColor: fanOn ? glass.deviceFanBg : glass.surfaceTint,
         iconCircleColor: fanOn ? glass.deviceFan : glass.deviceOff,
@@ -79,7 +82,10 @@ class CageControlGrid extends ConsumerWidget {
         status: mistOn
             ? 'device_state_on'.tr()
             : 'device_state_off'.tr(),
-        icon: Icons.water_drop,
+        // Figma 원본 format_color_reset — export가 원 40 프레임 기준(패딩
+        // 포함)이라 40으로 그려야 글리프가 실측 크기가 된다.
+        glyph: FigmaIcon.tinted(FigmaIcons.formatColorReset,
+            size: 40, color: glass.deviceGlyph),
         active: mistOn,
         tileColor: mistOn ? glass.deviceMistBg : glass.surfaceTint,
         iconCircleColor: mistOn ? glass.deviceMist : glass.deviceOff,
@@ -88,12 +94,14 @@ class CageControlGrid extends ConsumerWidget {
                 context, ref, deviceId, MistDuration.threeSeconds)
             : null,
       ),
-      // ③ 냉각팬 — API 없음, 미배선(UI만).
+      // ③ 냉각팬 — API 없음, 미배선(UI만). 글리프는 Figma 원본 mode_cool —
+      // export가 28 마커 기준(패딩 포함)이라 40으로 키우면 실측 비율이 된다.
       _DeviceTile(
         key: coolFanKey,
         name: 'device_cool_fan'.tr(),
         status: 'device_status_pending'.tr(),
-        icon: Icons.ac_unit,
+        glyph: FigmaIcon.tinted(FigmaIcons.modeCool,
+            size: 40, color: glass.deviceGlyph),
         active: false,
         tileColor: glass.surfaceTint,
         iconCircleColor: glass.deviceOff,
@@ -105,7 +113,8 @@ class CageControlGrid extends ConsumerWidget {
         key: ledKey,
         name: 'device_led'.tr(),
         status: _ledLabel(t),
-        icon: Icons.lightbulb,
+        // Figma도 lightbulb — Material 동형이라 SVG 교체 불필요.
+        glyph: Icon(Icons.lightbulb, size: 20, color: glass.deviceGlyph),
         active: ledOn,
         tileColor: ledOn ? glass.deviceLedBg : glass.surfaceTint,
         iconCircleColor: ledOn ? glass.deviceLed : glass.deviceOff,
@@ -164,7 +173,9 @@ class CageControlGrid extends ConsumerWidget {
       key: heatFanKey,
       name: 'device_heat_fan'.tr(),
       status: _stateLabel(t?.heaterState),
-      icon: Icons.local_fire_department,
+      // 조건부 타일이라 Figma에 원본 없음 — Material 유지.
+      glyph: Icon(Icons.local_fire_department,
+          size: 20, color: glass.deviceGlyph),
       active: heaterOn,
       tileColor: heaterOn ? glass.deviceHeatBg : glass.surfaceTint,
       iconCircleColor: heaterOn ? glass.deviceHeat : glass.deviceOff,
@@ -210,7 +221,7 @@ class _DeviceTile extends StatelessWidget {
     super.key,
     required this.name,
     required this.status,
-    required this.icon,
+    required this.glyph,
     required this.active,
     required this.tileColor,
     required this.iconCircleColor,
@@ -221,7 +232,10 @@ class _DeviceTile extends StatelessWidget {
 
   final String name;
   final String status;
-  final IconData icon;
+
+  /// 원 안 글리프 — Figma 원본 SVG([FigmaIcon.tinted]) 또는 Material 근사.
+  /// 색은 호출부가 `deviceGlyph`로 칠해 넘긴다.
+  final Widget glyph;
   final bool active;
   final Color tileColor;
   final Color iconCircleColor;
@@ -263,9 +277,7 @@ class _DeviceTile extends StatelessWidget {
                         color: iconCircleColor,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      // 원 안 글리프(Figma Asset) — 토큰으로(하드코딩 금지).
-                      child: Icon(icon,
-                          size: 20, color: context.glass.deviceGlyph),
+                      child: Center(child: glyph),
                     ),
                     // Figma 668:872 실측 8 (아이콘끝 247 → 텍스트 255).
                     const SizedBox(width: 8),
