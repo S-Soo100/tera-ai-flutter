@@ -1,323 +1,93 @@
-import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_styles.dart';
-import '../../../shared/widgets/skeleton_loading.dart';
-import '../../my_cage/domain/cage_activity.dart';
-import '../../my_cage/domain/terra_camera.dart';
-import '../../my_cage/presentation/activity_format.dart';
-import '../../my_cage/presentation/my_cage_providers.dart';
-import '../../my_cage/presentation/widgets/hourly_activity_chart.dart';
-import '../../my_pets/domain/pet.dart';
-import '../../my_pets/presentation/my_pets_providers.dart';
-import 'widgets/nightly_report_badge.dart';
 
-class HomeScreen extends ConsumerWidget {
+import '../../../core/theme/glass_palette.dart';
+import '../../../shared/widgets/glass_dock.dart';
+import '../../../shared/widgets/glass_tab_shell.dart';
+import '../../my_cage/presentation/widgets/lcd_setting_tile.dart';
+import 'home_set_providers.dart';
+import 'widgets/cage_control_grid.dart';
+import 'widgets/device_offline_notice.dart';
+import 'widgets/env_summary_card.dart';
+import 'widgets/home_header_bar.dart';
+import 'widgets/running_timer_chip.dart';
+import 'widgets/top_fixed_area.dart';
+
+/// 홈 탭 — Figma `vivanaut app` Home (668:833) **단일 스크롤**.
+///
+/// PRD 재설계 1단계(2026-09-02, §4.1): 서브탭·타임라인·개체 프로필 분기 폐기.
+/// 위→아래(마진 12, 섹션 간격 12):
+/// 헤더(44) → 라이브(369×271) → 온습도 요약 카드(탭→`/env-detail`) →
+/// 제어 그리드 5타일 → 일정 설정.
+///
+/// 스크롤은 [SingleChildScrollView] + Column이다 — ListView는 스크롤 아웃된
+/// 자식을 dispose하는데, 최상단 라이브([TopFixedArea]/WebRtcLiveView)가
+/// dispose되면 재연결(수초)이 걸린다. 홈 콘텐츠는 한 화면 남짓이라 전체
+/// keep-alive 비용이 없다.
+///
+/// [RunningTimerChip]·[DeviceOfflineNotice]는 **그리드 위**에 남긴다 — 타이머
+/// 진행·오프라인 사유 고지는 안전 기능이다(회색 버튼만 두면 고장으로 읽힌다).
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final pets = ref.watch(petListProvider);
-    final theme = Theme.of(context);
+  static const scheduleRowKey = Key('home_schedule_row');
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        elevation: 0,
-        title: const SizedBox.shrink(),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.monitor_heart_outlined),
-            tooltip: 'home_activity_tooltip'.tr(),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            tooltip: 'profile_title'.tr(),
-            onPressed: () => context.push('/profile'),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'home_welcome'.tr(),
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: AppStyles.spacing24),
-            _LiveSection(pets: pets),
-            const SizedBox(height: AppStyles.spacing24),
-            const NightlyReportBadge(),
-            _ActivitySection(),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── 내 개체 (라이브) ───────────────────────────────────────────────────────────
-
-class _LiveSection extends StatelessWidget {
-  const _LiveSection({required this.pets});
-
-  final List<Pet> pets;
+  /// Figma A.4 좌우 마진·섹션 간격.
+  static const double _margin = 12;
+  static const double _gap = 12;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primaryPet = pets.isNotEmpty ? pets.first : null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'home_live_section'.tr(),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const Spacer(),
-            _ConnectedBadge(connected: primaryPet != null),
-          ],
-        ),
-        const SizedBox(height: AppStyles.spacing12),
-        if (primaryPet == null)
-          _EmptyLiveCard()
-        else
-          _LiveCard(pet: primaryPet),
-      ],
-    );
-  }
-}
-
-class _ConnectedBadge extends StatelessWidget {
-  const _ConnectedBadge({required this.connected});
-  final bool connected;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = connected
-        ? const Color(0xFF2E7D32)
-        : Theme.of(context).colorScheme.outline;
-    final bg = connected
-        ? const Color(0xFFE8F5E9)
-        : Theme.of(context).colorScheme.surfaceContainerHighest;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        connected
-            ? 'home_live_connected'.tr()
-            : 'home_live_disconnected'.tr(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-      ),
-    );
-  }
-}
-
-class _LiveCard extends StatelessWidget {
-  const _LiveCard({required this.pet});
-  final Pet pet;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(20),
-      elevation: 0,
-      shadowColor: Colors.black.withValues(alpha: 0.04),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => context.go('/crecam'),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(AppStyles.spacing16),
-          child: Row(
-            children: [
-              _PetAvatarWithPlay(pet: pet),
-              const SizedBox(width: AppStyles.spacing16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${pet.name} ${pet.speciesName}',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.thermostat,
-                            size: 16,
-                            color: theme.colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 4),
-                        Text(
-                          '24.5°C',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        const SizedBox(width: 16),
-                        Icon(Icons.water_drop_outlined,
-                            size: 16,
-                            color: theme.colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 4),
-                        Text('68%', style: theme.textTheme.bodyMedium),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PetAvatarWithPlay extends StatelessWidget {
-  const _PetAvatarWithPlay({required this.pet});
-  final Pet pet;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasPhoto = pet.photoPath != null && pet.photoPath!.isNotEmpty;
-    final isNetwork = hasPhoto && pet.photoPath!.startsWith('http');
-    return SizedBox(
-      width: 56,
-      height: 56,
-      child: Stack(
-        alignment: Alignment.center,
+    return GlassTabShell(
+      child: Column(
         children: [
-          ClipOval(
-            child: SizedBox(
-              width: 56,
-              height: 56,
-              child: hasPhoto
-                  ? (isNetwork
-                      ? CachedNetworkImage(
-                          imageUrl: pet.photoPath!,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHigh,
-                          ),
-                          errorWidget: (_, __, ___) => _fallback(context),
-                        )
-                      : Image.file(
-                          File(pet.photoPath!),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _fallback(context),
-                        ))
-                  : _fallback(context),
-            ),
+          const Padding(
+            // top 0 — Figma 668:833은 헤더가 status bar 바로 아래 선다
+            // (Frame 56 y=62 = status bar 끝, 추가 여백 없음).
+            padding: EdgeInsets.fromLTRB(_margin, 0, _margin, _gap),
+            child: HomeHeaderBar(),
           ),
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.55),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.play_arrow_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _fallback(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-      child: Center(
-        child: Image.asset('assets/images/logo.png', width: 28, height: 28),
-      ),
-    );
-  }
-}
-
-class _EmptyLiveCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(AppStyles.spacing16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHigh,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.pets, color: theme.colorScheme.outline),
-          ),
-          const SizedBox(width: AppStyles.spacing16),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'home_live_empty_title'.tr(),
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                // 플로팅 독 높이만큼 비워야 마지막 섹션이 안 가려진다.
+                bottom: glassDockListPadding(context).bottom,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: _margin),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                      child: TopFixedArea(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'home_live_empty_subtitle'.tr(),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.outline,
+                  const SizedBox(height: _gap),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: _margin),
+                    child: EnvSummaryCard(),
                   ),
-                ),
-              ],
+                  const SizedBox(height: _gap),
+                  // 칩·오프라인 고지는 자체 패딩(16)을 가진 기존 위젯 그대로다.
+                  const RunningTimerChip(),
+                  const DeviceOfflineNotice(),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: _margin),
+                    child: CageControlGrid(),
+                  ),
+                  // Figma 실측 22 — 그리드끝(634)→일정 로우(683) 49에서
+                  // 라벨 19·라벨-로우 갭 8을 뺀 값.
+                  const SizedBox(height: 22),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: _margin),
+                    child: _ScheduleSection(),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ],
@@ -326,153 +96,122 @@ class _EmptyLiveCard extends StatelessWidget {
   }
 }
 
-// ── 활동량 분석 요약 ───────────────────────────────────────────────────────────
+/// 일정 설정 — Figma A.4 ⑤ (라벨 14 Medium + 로우 h51 surfaceTint radius 12).
+class _ScheduleSection extends StatelessWidget {
+  const _ScheduleSection();
 
-/// 홈 대시보드 활동량 카드. 대표(활성=최근 모션) 카메라 1대의 실측 활동량을
-/// 요약한다. 카메라가 없거나 조회 실패면 섹션 자체를 숨겨 가짜 수치를 안 띄운다.
-class _ActivitySection extends ConsumerWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final camAsync = ref.watch(representativeCameraProvider);
-    return camAsync.when(
-      loading: () => _card(
-        context,
-        const SkeletonLoading(width: double.infinity, height: 128),
-      ),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (cam) {
-        if (cam == null) return const SizedBox.shrink();
-        return _card(context, _ActivityContent(camera: cam));
-      },
-    );
-  }
-
-  Widget _card(BuildContext context, Widget child) {
-    final theme = Theme.of(context);
+  Widget build(BuildContext context) {
+    final glass = context.glass;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'home_activity_section'.tr(),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+          'home_schedule_settings'.tr(),
+          style: TextStyle(
+            fontFamily: 'Pretendard',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 14 * -0.02,
+            color: glass.textTertiary,
           ),
         ),
-        const SizedBox(height: AppStyles.spacing12),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 2),
+        const SizedBox(height: 8),
+        Material(
+          color: glass.surfaceTint,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            key: HomeScreen.scheduleRowKey,
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => context.push('/home/routines'),
+            child: SizedBox(
+              height: 51,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'home_routine_settings'.tr(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Pretendard',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 16 * -0.02,
+                          color: glass.textSecondary,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 18,
+                      color: glass.textSecondary,
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
-          child: child,
         ),
+        const SizedBox(height: 8),
+        const HomeLcdRow(),
       ],
     );
   }
 }
 
-/// 대표 카메라의 '어제'(완결된 지난 하루, 07:00~07:00) 활동량 —
-/// 총합 + 시간대별 그래프. 카드에 카메라 이름을 명시해 어느 카메라 데이터인지 밝힌다.
-class _ActivityContent extends ConsumerWidget {
-  const _ActivityContent({required this.camera});
+/// LCD 문구 로우 — 사육장 설정에서 이동(2026-09-07 사용자 지시). 일정 로우와
+/// 같은 문법(h51 surfaceTint radius 12). 대상은 현재 세트의 제어 기기 —
+/// 기기가 없는 세트에서는 로우를 그리지 않는다(회색 버튼만 두면 고장으로
+/// 읽힌다는 기존 규칙).
+class HomeLcdRow extends ConsumerWidget {
+  const HomeLcdRow({super.key});
 
-  final TerraCamera camera;
-
-  static const _range = ActivityRange.yesterday;
+  static const rowKey = Key('home_lcd_row');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
-    final totalAsync = ref
-        .watch(motionActivityProvider((cameraId: camera.id, range: _range)));
-    final hourlyAsync = ref
-        .watch(hourlyActivityProvider((cameraId: camera.id, range: _range)));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.videocam_outlined,
-                size: 14, color: theme.colorScheme.outline),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                camera.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'home_activity_total_label'.tr(),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: primary.withValues(alpha: 0.8),
+    final device = ref.watch(currentSetProvider).valueOrNull?.device;
+    if (device == null) return const SizedBox.shrink();
+    final glass = context.glass;
+    return Material(
+      color: glass.surfaceTint,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        key: rowKey,
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => showLcdSheet(context, ref, device.id),
+        child: SizedBox(
+          height: 51,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'lcd_tile_title'.tr(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 16 * -0.02,
+                      color: glass.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  totalAsync.when(
-                    loading: () => const SkeletonLoading(width: 96, height: 30),
-                    error: (_, __) => _totalText(theme, primary, '—'),
-                    data: (seconds) => _totalText(
-                        theme, primary, formatMotionDuration(seconds)),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.monitor_heart_outlined, size: 28, color: primary),
-          ],
-        ),
-        const SizedBox(height: 16),
-        hourlyAsync.when(
-          loading: () =>
-              const SkeletonLoading(width: double.infinity, height: 100),
-          error: (_, __) => const SizedBox(height: 100),
-          data: (hourly) => HourlyActivityChart(
-            hourlySeconds: hourly,
-            dayStartHour: kCageDayStartHour,
-            height: 80,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Center(
-          child: Text(
-            'home_activity_range'.tr(),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.outline,
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 18,
+                  color: glass.textSecondary,
+                ),
+              ],
             ),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _totalText(ThemeData theme, Color color, String text) {
-    return Text(
-      text,
-      style: theme.textTheme.headlineMedium?.copyWith(
-        color: color,
-        fontWeight: FontWeight.bold,
       ),
     );
   }

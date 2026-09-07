@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_theme.dart';
+
 /// 디자인 토큰 — 앱 전체에서 일관된 스타일을 유지하기 위한 중앙 정의
 class AppStyles {
   AppStyles._();
@@ -15,31 +17,33 @@ class AppStyles {
   static const pagePadding = EdgeInsets.all(spacing16);
 
   // ── 태그 색상 ──
+  // Figma `Asset` 서브컬러 5종에서 고른다(`AppTheme.sub*`).
+  // 태그 종류가 6개인데 서브컬러는 5개라 일부는 색을 공유한다 — Figma가 준
+  // 팔레트를 벗어나 색을 새로 만들지 않기 위한 선택이다.
   static Color tagColor(String tag) {
     switch (tag) {
       case '입문':
-        return const Color(0xFF2E7D32);
-      case '인기':
-        return const Color(0xFFE65100);
-      case '야행성':
-        return const Color(0xFF4527A0);
-      case '수목성':
-        return const Color(0xFF00838F);
-      case '합법':
-        return const Color(0xFF1565C0);
       case '상세 정보':
-        return const Color(0xFF2E7D32);
+        return AppTheme.subGreen;
+      case '인기':
+        return AppTheme.subRed;
+      case '야행성':
+        return AppTheme.subPurple;
+      case '수목성':
+      case '합법':
+        return AppTheme.subBlue;
       default:
-        return const Color(0xFF546E7A);
+        return AppTheme.subGray;
     }
   }
 
-  // ── 상태 색상 ──
-  static const feedingColor = Color(0xFF2E7D32);
-  static const sheddingColor = Color(0xFFE65100);
-  static const weightColor = Color(0xFF1565C0);
-  static const healthColor = Color(0xFFC62828);
-  static const noteColor = Color(0xFF546E7A);
+  // ── 개체 이벤트 색상 ──
+  // 5종이 Figma 서브컬러 5종과 1:1로 맞아떨어진다.
+  static const feedingColor = AppTheme.subGreen;
+  static const sheddingColor = AppTheme.subPurple;
+  static const weightColor = AppTheme.subBlue;
+  static const healthColor = AppTheme.subRed;
+  static const noteColor = AppTheme.subGray;
 
   // ── 섹션 타이틀 스타일 ──
   static TextStyle sectionTitle(BuildContext context) {

@@ -1,6 +1,6 @@
 ---
 name: flutter-dev
-description: Tera AI Flutter 앱 코드 구현, 버그 수정, 코드 리뷰 전용. "구현해줘", "버그", "코드", "위젯", "수정해줘", "화면 추가" 등의 요청에 자동 매칭.
+description: 비바나트 Flutter 앱 코드 구현, 버그 수정, 코드 리뷰 전용. "구현해줘", "버그", "코드", "위젯", "수정해줘", "화면 추가" 등의 요청에 자동 매칭.
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 
@@ -52,7 +52,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 - 이미지 에셋 생성
 - P1/P2 placeholder feature 구현
 
-## 코딩 규칙 (Tera AI 특화)
+## 코딩 규칙 (비바나트 특화)
 
 ### 상태 관리
 - Riverpod만. Provider는 features/{name}/presentation/{name}_providers.dart

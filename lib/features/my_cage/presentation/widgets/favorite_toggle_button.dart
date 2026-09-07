@@ -32,6 +32,9 @@ class _FavoriteToggleButtonState extends ConsumerState<FavoriteToggleButton> {
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         if (cameraId != null) ref.invalidate(favoriteClipsProvider(cameraId));
+        // non-autoDispose 전역 목록(북마크 상세·엔트리 카드) 동기화 —
+        // 리뷰 2026-09-04.
+        ref.invalidate(allFavoriteClipsProvider);
         messenger.showSnackBar(
             SnackBar(content: Text('clip_favorite_removed'.tr())));
       } else {
@@ -51,6 +54,7 @@ class _FavoriteToggleButtonState extends ConsumerState<FavoriteToggleButton> {
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         ref.invalidate(favoriteClipsProvider(clip.cameraId));
+        ref.invalidate(allFavoriteClipsProvider);
         messenger.showSnackBar(
             SnackBar(content: Text('clip_favorite_added'.tr())));
       }

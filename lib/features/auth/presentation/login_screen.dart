@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/theme/app_theme.dart';
 import '../data/auth_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -75,17 +76,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 로고
-                  Image.asset('assets/images/logo.png', width: 80, height: 80),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Tera AI',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  // 심볼 단독 + 현행 브랜드명 텍스트 (구 logo_stacked에는
+                  // "terra ai" 워드마크가 박혀 있어 교체 — 2026-08-14 리브랜딩)
+                  Center(
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: 104,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
+                  Text(
+                    'app_name'.tr(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.brandRed,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     'auth_login_subtitle'.tr(),
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -167,6 +177,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onPressed: () => context.go('/home'),
                     child: Text(
                       'auth_browse'.tr(),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
+                    ),
+                  ),
+
+                  // 디자인 미리보기 — 테스트 유저용 A/B/C 체험(비로그인 공개).
+                  // 테스트 종료 시 이 버튼 + kPublicPaths '/design-test' 제거:
+                  // docs/design-test-rollout-plan.md §2.4
+                  TextButton(
+                    onPressed: () => context.push('/design-test'),
+                    child: Text(
+                      'login_design_preview'.tr(),
                       style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                   ),

@@ -1,7 +1,7 @@
-name: tera_ai
+name: vivnanaut
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.21.0+36
+version: 0.85.1+160
 
 environment:
   sdk: ^3.5.0
@@ -35,6 +35,11 @@ dependencies:
   connectivity_plus: ^7.2.0
   fl_chart: ^1.2.0
   chart_sparkline: ^1.1.2
+  flutter_svg: ^2.3.0
+  flutter_local_notifications: ^22.3.0
+  timezone: ^0.11.1
+  flutter_timezone: ^5.1.0
+  visibility_detector: ^0.4.0+2
 
 dev_dependencies:
   flutter_test:
@@ -54,6 +59,8 @@ flutter:
     - assets/data/care_info/
     - assets/data/morphs/
     - assets/images/
+    - assets/icons/
+    - assets/videos/
   fonts:
     - family: Pretendard
       fonts:
@@ -69,13 +76,17 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo.png"
-  adaptive_icon_background: "#1B5E20"
-  adaptive_icon_foreground: "assets/images/logo.png"
+  # iOS 아이콘은 알파를 못 쓴다 → 흰 배경으로 합성한 전용 마스터를 쓴다.
+  image_path: "assets/images/app_icon.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#FFFFFF"
+  # adaptive 안전영역(중앙 66%)을 고려해 심볼을 더 작게 넣은 전용 파일.
+  adaptive_icon_foreground: "assets/images/app_icon_foreground.png"
 
 flutter_native_splash:
-  color: "#1B5E20"
-  image: assets/images/logo.png
+  # 빨간 로고라 기존 진초록(#1B5E20) 배경은 대비가 나빠 흰색으로 바꾼다.
+  color: "#FFFFFF"
+  image: assets/images/logo_stacked.png
   android_12:
-    color: "#1B5E20"
+    color: "#FFFFFF"
     image: assets/images/logo.png

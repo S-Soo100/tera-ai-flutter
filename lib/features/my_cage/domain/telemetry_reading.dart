@@ -1,3 +1,4 @@
+import '../../../shared/domain/num_format.dart';
 import 'actuator_state.dart';
 
 /// Supabase `telemetry` row 매핑.
@@ -14,6 +15,15 @@ class TelemetryReading {
   final ActuatorState fan;
   final ActuatorState heaterState;
   final bool heaterLocked;
+
+  /// LED 상태 (`telemetry.led`, 2026-08-18 백엔드 회신 §4). 구 펌웨어는 컬럼을
+  /// 안 보내 [ActuatorState.unavailable]로 온다 — 그때는 "모른다"이지 "꺼짐"이
+  /// 아니다.
+  final ActuatorState led;
+
+  /// LED 밝기 0~100 (`telemetry.led_brightness`). MOSFET 보드만 값이 있고
+  /// 릴레이 보드·구 펌웨어는 null.
+  final int? ledBrightness;
   final DateTime? ts;
 
   const TelemetryReading({
@@ -29,22 +39,26 @@ class TelemetryReading {
     required this.heaterState,
     required this.heaterLocked,
     required this.ts,
+    this.led = ActuatorState.unavailable,
+    this.ledBrightness,
   });
 
   factory TelemetryReading.fromJson(Map<String, dynamic> j) {
     return TelemetryReading(
       deviceId: j['device_id'] as String? ?? '',
-      tA: _parseDouble(j['t_a']),
-      hA: _parseDouble(j['h_a']),
+      tA: parseDouble(j['t_a']),
+      hA: parseDouble(j['h_a']),
       aOk: j['a_ok'] as bool? ?? false,
-      tB: _parseDouble(j['t_b']),
-      hB: _parseDouble(j['h_b']),
+      tB: parseDouble(j['t_b']),
+      hB: parseDouble(j['h_b']),
       bOk: j['b_ok'] as bool? ?? false,
       relay: _parseActuator(j['relay']),
       fan: _parseActuator(j['fan']),
       heaterState: _parseActuator(j['heater_state']),
       heaterLocked: j['heater_locked'] as bool? ?? false,
-      ts: j['ts'] != null ? DateTime.tryParse(j['ts'].toString()) : null,
+      led: _parseActuator(j['led']),
+      ledBrightness: parseDouble(j['led_brightness'])?.round(),
+      ts: parseLocalDateTime(j['ts']),
     );
   }
 
@@ -61,12 +75,5 @@ class TelemetryReading {
       return actuatorFromString(v);
     }
     return ActuatorState.unavailable;
-  }
-
-  static double? _parseDouble(Object? v) {
-    if (v == null) return null;
-    if (v is num) return v.toDouble();
-    if (v is String) return double.tryParse(v);
-    return null;
   }
 }

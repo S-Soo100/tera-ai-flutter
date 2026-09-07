@@ -1,10 +1,16 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../shared/widgets/skeleton_loading.dart';
+import '../../../../shared/domain/num_format.dart';
+import '../../domain/device_settings.dart';
 import '../../domain/telemetry_reading.dart';
+import '../device_settings_providers.dart';
 import '../supabase_module_providers.dart';
+import 'setpoint_setting_tile.dart' show showSetpointSheet;
 
 /// 환경 모니터링 카드.
 ///
@@ -18,9 +24,9 @@ class ModuleStatusCard extends ConsumerWidget {
 
   final bool embedded;
 
-  static const _green = Color(0xFF2E7D32);
+  static const _green = AppTheme.success;
   static const _greenBg = Color(0xFFE8F5E9);
-  static const _orange = Color(0xFFFF8F00);
+  static const _orange = AppTheme.warning;
   static const _faultBg = Color(0xFFFFF3E0);
 
   @override
@@ -43,6 +49,11 @@ class ModuleStatusCard extends ConsumerWidget {
     }
 
     final telemetryAsync = ref.watch(telemetryStreamProvider(device.id));
+    // 목표 환경(setpoint) — REST(2026-08-18 회신 §5). 로딩·실패 중엔 목표
+    // 줄만 비운다(하드코딩 상수로 메우지 않는다 — 틀린 목표는 해롭다).
+    // "미설정"은 서버가 null을 **돌려줬을 때만** — 로딩/에러를 미설정이라고
+    // 단정하면 설정해 둔 사용자가 다시 입력한다.
+    final settingsAsync = ref.watch(deviceSettingsProvider(device.id));
 
     // 첫 telemetry 미도착: shimmer
     if (!telemetryAsync.hasValue) {
@@ -106,7 +117,10 @@ class ModuleStatusCard extends ConsumerWidget {
                 value: telemetry.aOk && telemetry.tA != null
                     ? '${telemetry.tA!.toStringAsFixed(1)}°'
                     : '—',
-                targetLabel: 'smart_cage_target_temp'.tr(),
+                targetLabel: _targetTempLabel(settingsAsync),
+                // 목표 줄을 누르면 **이 카드의 기기**로 편집한다 — 사육장 설정
+                // 타일은 홈 세트의 기기를 가리켜 여기 기기와 다를 수 있다.
+                onTargetTap: () => showSetpointSheet(context, ref, device.id),
                 status: telemetry.aOk,
                 okBg: _greenBg,
                 okFg: _green,
@@ -122,7 +136,8 @@ class ModuleStatusCard extends ConsumerWidget {
                 value: telemetry.aOk && telemetry.hA != null
                     ? '${telemetry.hA!.toStringAsFixed(0)}%'
                     : '—',
-                targetLabel: 'smart_cage_target_humidity'.tr(),
+                targetLabel: _targetHumidityLabel(settingsAsync),
+                onTargetTap: () => showSetpointSheet(context, ref, device.id),
                 status: telemetry.aOk,
                 okBg: _greenBg,
                 okFg: _green,
@@ -236,8 +251,8 @@ class _ConnectionBadge extends StatelessWidget {
 
   final bool offline;
 
-  static const _green = Color(0xFF2E7D32);
-  static const _orange = Color(0xFFFF8F00);
+  static const _green = AppTheme.success;
+  static const _orange = AppTheme.warning;
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +322,7 @@ class _DisconnectedLabel extends StatelessWidget {
       '$prefix · $reconnecting',
       style: const TextStyle(
         fontSize: 11,
-        color: Color(0xFFFF8F00),
+        color: AppTheme.warning,
         fontWeight: FontWeight.w500,
       ),
     );
@@ -315,6 +330,21 @@ class _DisconnectedLabel extends StatelessWidget {
 }
 
 // ── 센서 박스 ─────────────────────────────────────────────────────────────────
+
+/// `목표 28°` / 서버가 null이면 `목표 미설정` / 로딩·에러면 빈 줄.
+String _targetTempLabel(AsyncValue<DeviceSettings> s) {
+  if (!s.hasValue) return '';
+  final v = s.value?.targetTempC;
+  if (v == null) return 'smart_cage_target_unset'.tr();
+  return 'smart_cage_target_temp_fmt'.tr(args: [formatCompact(v)]);
+}
+
+String _targetHumidityLabel(AsyncValue<DeviceSettings> s) {
+  if (!s.hasValue) return '';
+  final v = s.value?.targetHumidityPct;
+  if (v == null) return 'smart_cage_target_unset'.tr();
+  return 'smart_cage_target_humidity_fmt'.tr(args: [formatCompact(v)]);
+}
 
 class _SensorBox extends StatelessWidget {
   const _SensorBox({
@@ -327,12 +357,14 @@ class _SensorBox extends StatelessWidget {
     required this.okFg,
     required this.faultBg,
     required this.faultFg,
+    this.onTargetTap,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final String targetLabel;
+  final VoidCallback? onTargetTap;
   final bool status;
   final Color okBg;
   final Color okFg;
@@ -382,12 +414,28 @@ class _SensorBox extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          // 목표값 라인 (하드코딩 상수 표시만 — setpoint 연동은 별도 후속)
-          Text(
-            targetLabel,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: fg.withValues(alpha: 0.7),
-              fontWeight: FontWeight.w500,
+          // 목표값 라인 — device_settings(REST) 값. 미설정이면 "목표 미설정".
+          // 탭하면 이 기기의 목표를 편집한다.
+          GestureDetector(
+            key: const Key('sensor_target_tap'),
+            behavior: HitTestBehavior.opaque,
+            onTap: onTargetTap,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  targetLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: fg.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (onTargetTap != null && targetLabel.isNotEmpty) ...[
+                  const SizedBox(width: 2),
+                  Icon(Icons.edit_outlined,
+                      size: 11, color: fg.withValues(alpha: 0.7)),
+                ],
+              ],
             ),
           ),
         ],
@@ -427,7 +475,7 @@ class _SecondaryRow extends StatelessWidget {
           const Icon(
             Icons.warning_amber_rounded,
             size: 11,
-            color: Color(0xFFFF8F00),
+            color: AppTheme.warning,
           ),
         ],
       ],

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/cage_activity.dart';
 import '../domain/motion_clip.dart';
 import 'camera_exceptions.dart';
+import '../../../shared/domain/num_format.dart';
 
 /// 활동시간 집계용 row 로더 seam. 테스트가 네트워크 없이 주입할 수 있게 분리한다.
 /// 기본 구현은 Supabase에서 [table]/[columns]를 camera_id·started_at 범위로 조회한다.
@@ -86,6 +88,35 @@ class MotionClipRepository {
     ];
   }
 
+  /// [from](inclusive)~[to](exclusive) 구간의 모션 클립 (최신순).
+  ///
+  /// `listByCamera(day:)`는 로컬 00:00~24:00 기준이라 PRD의 07:00 하루 경계에
+  /// 못 쓴다 — 새벽 활동이 엉뚱한 날짜에 붙는다.
+  Future<List<MotionClip>> listByCameraInWindow(
+    String cameraId, {
+    required DateTime from,
+    required DateTime to,
+    int limit = 200,
+  }) async {
+    final rows = await _supabase
+        .from('motion_clips')
+        .select()
+        .eq('camera_id', cameraId)
+        .gte('started_at', from.toUtc().toIso8601String())
+        .lt('started_at', to.toUtc().toIso8601String())
+        .order('started_at', ascending: false)
+        .limit(limit);
+    final clips = (rows as List)
+        .map((r) => MotionClip.fromJson(r as Map<String, dynamic>))
+        .toList();
+    if (!kClipClassificationEnabled || clips.isEmpty) return clips;
+    final labels = await _fetchLabels(clips.map((c) => c.id).toList());
+    return [
+      for (final c in clips)
+        labels.containsKey(c.id) ? c.copyWith(action: labels[c.id]) : c,
+    ];
+  }
+
   /// clip_id → 대표 행동 라벨(verified/human 우선 > vlm). `behavior_logs` 직결이라
   /// RLS가 열린 뒤에만 유효(kClipClassificationEnabled). 실패/차단 시 빈 맵.
   Future<Map<String, String>> _fetchLabels(List<String> clipIds) async {
@@ -114,6 +145,12 @@ class MotionClipRepository {
     }
   }
 
+  /// 단일 클립의 대표 행동 라벨(게시 스냅샷용). 없거나 실패 시 null.
+  Future<String?> labelFor(String clipId) async {
+    final labels = await _fetchLabels([clipId]);
+    return labels[clipId];
+  }
+
   /// 재생용 presigned URL (terra-api GET /clips/{id}/url). TTL 1h.
   Future<String> getPlaybackUrl(String clipId) async {
     final token = await _tokenProvider();
@@ -130,20 +167,51 @@ class MotionClipRepository {
     throw BackendException(resp.statusCode, resp.body);
   }
 
+  /// 썸네일 presign 동시 요청 상한 — 시간대 그리드는 하루 최대 200셀이
+  /// 한 번에 빌드돼(SingleChildScrollView — 라이브 dispose 방지 구조),
+  /// 게이트가 없으면 진입 순간 presign GET 수백 개가 모바일 커넥션 풀을
+  /// 포화시켜 같은 화면의 WebRTC config/offer까지 밀린다(리뷰 2026-09-04).
+  /// 뷰포트 게이팅(visibility_detector) 대신 여기서 조이는 이유: UI·테스트
+  /// 무접촉이고, 총량은 clipId cacheKey 디스크 캐시가 1회로 눌러준다.
+  static final _thumbGate = _Semaphore(4);
+
   /// 썸네일 presigned URL (terra-api GET /clips/{id}/thumbnail/url).
   /// 응답 {url, expires_in}. 썸네일 없으면(404) null → 카드 아이콘 폴백.
   Future<String?> getThumbnailUrl(String clipId) async {
-    final token = await _tokenProvider();
-    final resp = await http.get(
-      Uri.parse('$_terraApiUrl/clips/$clipId/thumbnail/url'),
-      headers: {if (token != null) 'Authorization': 'Bearer $token'},
-    );
-    if (resp.statusCode == 200) {
-      final body = jsonDecode(resp.body) as Map<String, dynamic>;
-      return body['url'] as String?;
+    await _thumbGate.acquire();
+    try {
+      final token = await _tokenProvider();
+      final resp = await http.get(
+        Uri.parse('$_terraApiUrl/clips/$clipId/thumbnail/url'),
+        headers: {if (token != null) 'Authorization': 'Bearer $token'},
+      );
+      if (resp.statusCode == 200) {
+        final body = jsonDecode(resp.body) as Map<String, dynamic>;
+        return body['url'] as String?;
+      }
+      if (resp.statusCode == 404) return null;
+      throw BackendException(resp.statusCode, resp.body);
+    } finally {
+      _thumbGate.release();
     }
-    if (resp.statusCode == 404) return null;
-    throw BackendException(resp.statusCode, resp.body);
+  }
+
+  /// 카메라의 가장 최근 클립 시각(started_at). 클립이 하나도 없으면 null.
+  ///
+  /// 카메라 탭 기간 미선택(자동) 시 "가장 최근 영상이 있는 날짜"를 찾는 데
+  /// 쓴다(2026-09-07) — 오늘 클립이 없는 카메라가 "이 날짜에는 영상이
+  /// 없어요"로 열리지 않게.
+  Future<DateTime?> latestClipAt(String cameraId) async {
+    final rows = await _supabase
+        .from('motion_clips')
+        .select('started_at')
+        .eq('camera_id', cameraId)
+        .order('started_at', ascending: false)
+        .limit(1);
+    final list = rows as List;
+    if (list.isEmpty) return null;
+    final raw = (list.first as Map)['started_at'];
+    return DateTime.tryParse('$raw')?.toLocal();
   }
 
   /// 단일 모션 클립 조회(즐겨찾기 메타용). 없으면 null. RLS 본인 것만.
@@ -200,7 +268,7 @@ class MotionClipRepository {
     final rows = await _loadActivityRows(cameraId, from, to);
     final clips = <({DateTime startedAt, double durationSec})>[];
     for (final row in rows) {
-      final startedAt = DateTime.tryParse(row['started_at']?.toString() ?? '');
+      final startedAt = parseLocalDateTime(row['started_at']);
       if (startedAt == null) continue;
       clips.add((
         startedAt: startedAt,
@@ -236,6 +304,32 @@ class MotionClipRepository {
     final list = rows as List;
     if (list.isEmpty) return null;
     final ts = (list.first as Map<String, dynamic>)['started_at'];
-    return DateTime.tryParse(ts?.toString() ?? '');
+    return parseLocalDateTime(ts);
+  }
+}
+
+/// 최소 카운팅 세마포어 — 썸네일 presign 동시성 제한 전용.
+class _Semaphore {
+  _Semaphore(this._permits);
+
+  int _permits;
+  final _waiters = <Completer<void>>[];
+
+  Future<void> acquire() {
+    if (_permits > 0) {
+      _permits--;
+      return Future.value();
+    }
+    final c = Completer<void>();
+    _waiters.add(c);
+    return c.future;
+  }
+
+  void release() {
+    if (_waiters.isNotEmpty) {
+      _waiters.removeAt(0).complete();
+    } else {
+      _permits++;
+    }
   }
 }

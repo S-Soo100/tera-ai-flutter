@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/theme/app_styles.dart';
+import '../../../shared/widgets/glass_dock.dart';
+import '../../../shared/widgets/glass_page_shell.dart';
 import '../../wiki/data/care_info_repository.dart';
 import '../../wiki/presentation/wiki_providers.dart';
 import '../domain/pet.dart';
@@ -101,7 +104,8 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
       }
       final ext = _selectedPhoto!.path.split('.').last;
       final fileName = '${const Uuid().v4()}.$ext';
-      final savedFile = await _selectedPhoto!.copy('${petPhotosDir.path}/$fileName');
+      final savedFile =
+          await _selectedPhoto!.copy('${petPhotosDir.path}/$fileName');
       photoPath = savedFile.path;
     }
 
@@ -127,14 +131,19 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 폼 로직 불변.
+    return GlassPageShell(
+        child: Scaffold(
       appBar: AppBar(
         title: const Text('개체 등록'),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          // 하단은 플로팅 독 높이까지 비운다 — 안 그러면 저장 버튼이 독에 가려진다.
+          padding: glassDockListPadding(context,
+              base: const EdgeInsets.fromLTRB(AppStyles.spacing16,
+                  AppStyles.spacing16, AppStyles.spacing16, 0)),
           children: [
             // 사진
             PhotoPickerButton(
@@ -181,7 +190,8 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
               },
               validator: (v) {
                 if (v == null) return '종을 선택해주세요';
-                if (v == 'custom' && _customSpeciesController.text.trim().isEmpty) {
+                if (v == 'custom' &&
+                    _customSpeciesController.text.trim().isEmpty) {
                   return '종 이름을 입력해주세요';
                 }
                 return null;
@@ -350,6 +360,6 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

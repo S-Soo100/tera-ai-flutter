@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/network/connectivity_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
+import 'features/home/presentation/fan_timer_resync_observer.dart';
 import 'shared/widgets/offline_overlay.dart';
 
 class App extends ConsumerWidget {
@@ -16,25 +18,32 @@ class App extends ConsumerWidget {
     return MaterialApp.router(
       title: 'app_name'.tr(),
       debugShowCheckedModeBanner: false,
+      // 다크/라이트 2벌(2026-08-14 오후 — 오전의 전역 다크 고정을 철회).
+      // 솔리드 문법은 같고 값만 반전한다(`GlassPalette`). 모드는 프로필의
+      // "화면 모드"(시스템/라이트/다크)로 고르고 Hive에 남는다.
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: ref.watch(themeModeProvider),
       routerConfig: router,
       builder: (context, child) {
         final mq = MediaQuery.of(context);
         final online = ref.watch(connectivityProvider).valueOrNull ?? true;
         return MediaQuery(
           data: mq.copyWith(textScaler: const TextScaler.linear(1.15)),
-          child: Stack(
-            children: [
-              child!,
-              if (!online)
-                Positioned.fill(
-                  child: OfflineOverlay(
-                    onRetry: () => ref.invalidate(connectivityProvider),
+          // 앱 열 때(콜드 스타트·복귀) 팬 타이머 알림을 commands 이력과
+          // 재동기화 — 다른 폰에서 취소된 타이머의 유령 알림을 내린다.
+          child: FanTimerResyncObserver(
+            child: Stack(
+              children: [
+                child!,
+                if (!online)
+                  Positioned.fill(
+                    child: OfflineOverlay(
+                      onRetry: () => ref.invalidate(connectivityProvider),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         );
       },

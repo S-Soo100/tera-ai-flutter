@@ -1,7 +1,7 @@
 # Supabase DB Schema Design v1
 
 ## Overview
-Tera AI Flutter 앱의 전체 데이터를 Supabase로 이관하기 위한 스키마 설계.
+비바나트 Flutter 앱의 전체 데이터를 Supabase로 이관하기 위한 스키마 설계.
 레퍼런스 데이터 + 유저 데이터 모두 포함 (방안 B).
 
 > 아래 **Tables (15개)** 는 메인 앱 소유 테이블이다. 사육장 IoT 제어용 terra-server 테이블(`devices`/`telemetry`/`commands` 등)은 동일 Supabase 프로젝트를 공유하며 별도 섹션 [terra-server IoT 테이블](#terra-server-iot-테이블-사육장-제어--동일-프로젝트-공유)에 정리.
@@ -356,6 +356,21 @@ CREATE TABLE commands (
 - 제어: `commands` INSERT(편의 메서드 `toggleFan`/`toggleRelay`/`toggleHeater`/`clearHeater`/`ledOn`/`ledUp`/`ledDown`) + `commands` UPDATE Realtime 로 ack 추적.
 - 페어링: BLE(`flutter_blue_plus` + `permission_handler`) 로 SSID/PASS/NAME/JWT 전달 → ESP32 가 `POST /devices/pair`. 프로토콜 §6은 `APP_INTEGRATION.md` 참조.
 
+#### IoT-4. motion_clips — R2 저장 경로 형식 (2026-08-31 실측)
+
+앱 의존 컬럼: `id` / `camera_id` / `started_at` / `duration_sec` / `motion_score` / `thumbnail_key` (매핑: `lib/features/my_cage/domain/motion_clip.dart`). 재생·썸네일은 terra-api presigned(`GET /clips/{id}/url`, `/clips/{id}/thumbnail/url`)만 사용 — **앱은 `r2_key` 경로를 절대 직접 조립·파싱하지 않는다.**
+
+`r2_key`는 백엔드 개편 이력으로 **4가지 형식이 마이그레이션 없이 영구 혼재**한다 (버킷 `petcam-clips`, 2026-08-31 DB 전수 집계 25,320건):
+
+| 형식 | 예시 | 건수 | 기간 |
+|---|---|---|---|
+| **현행** — 카메라/날짜 폴더 | `terra-clips/clips/p4cam-{id}/{YYYY-MM-DD}/HHMMSS_{uuid}.mp4` | 1,972 | **2026-08-20~** |
+| 구형(평평) | `terra-clips/clips/p4cam-{id}/{YYYYMMDD-HHMMSS}_{uuid}.mp4` | 20,729 | 06-17~08-04 |
+| 과도기 test 프리픽스 | `test/p4cam-{id}/{YYYY-MM-DD}/...` | 2,615 | 06-30~08-20 |
+| 초기 날짜-먼저 | `terra-clips/clips/{YYYY}/{MM}/{DD}/p4cam-{id}/{uuid}.mp4` | 4 | 06-17 |
+
+⚠️ **경로 형식이 하나라고 가정하거나 r2_key에서 날짜를 파싱하는 코드 금지** — 날짜별 조회는 `started_at` 컬럼으로 한다. 신형 클립 일부(16건)는 `thumbnail_key`가 null이므로 썸네일 부재는 정상 케이스로 처리.
+
 ## Indexes
 ```sql
 CREATE INDEX idx_species_category ON species(category_id);
@@ -386,3 +401,13 @@ CREATE INDEX idx_camera_clips_motion
 - guide: `assets/data/guide.json`
 - citations: `assets/data/citations.json`
 - graph: `assets/data/graph.json`
+
+---
+
+## 커뮤니티 클립 피드 테이블 (앱 팀 소유, 2026-08-31 적용)
+
+`community_posts` / `community_comments` / `community_likes` / `community_notices` / `community_reports` / `community_blocks` + `public_profiles`(뷰, SECURITY DEFINER — 노출 3컬럼) + `community_is_admin()`(함수, anon 실행권 회수) + Storage `community-media`(비공개 버킷) + `user_profiles.is_admin`(컬럼).
+
+- **DDL 원본(실행 사본): `supabase/migrations/2026-08-31_community_clip_feed.sql`** — 이 문서에는 중복 전사하지 않는다
+- 설계 근거·RLS 요약: `docs/backend-handoff-2026-08-29-community-clip-feed.md` §3, 백엔드 회신: `docs/backend-reply-2026-08-31-community-clip-feed.md`
+- 게시물 영상·썸네일·크레 사진은 **스냅샷 복사**(`community-media`) — `motion_clips`/R2 원본과 무관 (원본은 30일 lifecycle 만료 가능, row 잔존)

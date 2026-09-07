@@ -1,33 +1,51 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_styles.dart';
+import '../../../core/theme/glass_palette.dart';
+import '../../../shared/domain/am_pm_time.dart';
+import '../../../shared/domain/time_ago.dart';
+import '../../../shared/widgets/glass_dock.dart';
+import '../../../shared/widgets/glass_tab_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
-import '../domain/camera_presence.dart';
-import '../domain/terra_camera.dart';
+import '../../home/presentation/widgets/home_header_bar.dart';
+import '../domain/motion_clip.dart';
 import 'my_cage_providers.dart';
-import 'widgets/wifi_reconfigure_menu.dart';
+import 'widgets/camera_live_area.dart';
+import 'widgets/clip_grid.dart';
+import 'widgets/crecam_detail_top_bar.dart';
+import 'widgets/crecam_states.dart';
+import 'widgets/motion_clip_thumb.dart';
 
-enum _CrecamView { grid, list }
-
-/// last_seen 상대 시각 ("방금 전"/"N분 전"/...). 기존 time_* 키 재사용.
-String _timeAgo(DateTime t) {
-  final diff = DateTime.now().toUtc().difference(t.toUtc());
-  if (diff.inMinutes < 1) return 'time_just_now'.tr();
-  if (diff.inMinutes < 60) {
-    return 'time_minutes_ago'.tr(namedArgs: {'n': '${diff.inMinutes}'});
-  }
-  if (diff.inHours < 24) {
-    return 'time_hours_ago'.tr(namedArgs: {'n': '${diff.inHours}'});
-  }
-  return 'time_days_ago'.tr(namedArgs: {'n': '${diff.inDays}'});
-}
-
+/// 카메라 탭 Camera Home — Figma 668:427 (2026-09-04 재설계 T2, 전면 재작성).
+///
+/// 구 카메라 그리드/리스트/뷰 토글/FAB는 폐기됐다 — 카메라 전환은 라이브
+/// PageView([CameraLiveArea])가, 페어링 진입은 헤더 `[+]` 메뉴(카메라 추가)와
+/// 빈 상태 카드가 맡는다.
+///
+/// 세로 단일 스크롤(홈과 같은 마진 12·갭 12 리듬):
+/// 헤더([HomeHeaderBar]) → 라이브 → 엔트리 카드 2개(하이라이트/북마크) →
+/// 기간 설정 버튼 → 시간대별 클립 그리드.
+///
+/// 스크롤은 SingleChildScrollView — ListView는 스크롤 아웃된 라이브를
+/// dispose해 WebRTC 재연결(수초)이 걸린다(홈 선례).
 class CrecamScreen extends ConsumerStatefulWidget {
   const CrecamScreen({super.key});
+
+  static const highlightCardKey = Key('crecam_entry_highlights');
+  static const bookmarkCardKey = Key('crecam_entry_bookmarks');
+  static const periodButtonKey = Key('crecam_period_button');
+
+  /// Figma 좌우 마진(홈 리듬 동일).
+  static const double _margin = 12;
+
+  /// 헤더→라이브·기간설정→그리드 간격(Figma 668:427 실측 12).
+  static const double _gap = 12;
+
+  /// 라이브→엔트리 카드·엔트리→기간 설정·시간 그룹 간 간격(실측 16 —
+  /// 4536−4520, 4624−4608, 4947.8−4931.8. 12로 두면 전 구간이 1단씩 좁다).
+  static const double _sectionGap = 16;
 
   @override
   ConsumerState<CrecamScreen> createState() => _CrecamScreenState();
@@ -35,8 +53,6 @@ class CrecamScreen extends ConsumerStatefulWidget {
 
 class _CrecamScreenState extends ConsumerState<CrecamScreen>
     with WidgetsBindingObserver {
-  _CrecamView _view = _CrecamView.grid;
-
   @override
   void initState() {
     super.initState();
@@ -58,583 +74,469 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
     }
   }
 
-  void _openPairing() {
-    context.push('/crecam/cameras/pair');
-  }
-
   Future<void> _refresh() async {
     ref.invalidate(camerasProvider);
+    // 부모 invalidate는 자식을 재실행시키지 않는다(리뷰 2026-09-04) —
+    // 클립 목록 family를 직접 깨워야 새 클립이 온다.
+    ref.invalidate(motionClipsProvider);
+    ref.invalidate(crecamHourGroupsProvider);
+    ref.invalidate(highlightGroupsProvider);
+    ref.invalidate(allFavoriteClipsProvider);
+    // 미선택(자동) 날짜의 근거 — 새 클립이 오면 "가장 최근 날짜"도 바뀐다.
+    ref.invalidate(latestMotionClipAtProvider);
     await ref.read(camerasProvider.future);
   }
 
   @override
   Widget build(BuildContext context) {
-    final camerasAsync = ref.watch(camerasProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        title: Text(
-          'crecam_title'.tr(),
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: _ViewToggle(
-              view: _view,
-              onChanged: (v) => setState(() => _view = v),
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
-        onPressed: _openPairing,
-        tooltip: 'my_cage_add_camera'.tr(),
-        child: const Icon(Icons.add),
-      ),
-      body: camerasAsync.when(
-        loading: () => const _CrecamSkeleton(),
-        error: (err, _) => _ErrorBody(
-          message: err.toString(),
-          onRetry: () => ref.invalidate(camerasProvider),
-        ),
-        data: (cameras) {
-          if (cameras.isEmpty) {
-            return _EmptyBody(onAdd: _openPairing);
-          }
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: _view == _CrecamView.grid
-                ? _CameraGrid(
-                    cameras: cameras,
-                    onAddTap: _openPairing,
-                  )
-                : _CameraList(cameras: cameras),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ── 그리드/리스트 토글 ─────────────────────────────────────────────────────────
-
-class _ViewToggle extends StatelessWidget {
-  const _ViewToggle({required this.view, required this.onChanged});
-
-  final _CrecamView view;
-  final ValueChanged<_CrecamView> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    return GlassTabShell(
+      child: Column(
         children: [
-          _toggleButton(
-            context: context,
-            icon: Icons.grid_view_rounded,
-            active: view == _CrecamView.grid,
-            onTap: () => onChanged(_CrecamView.grid),
+          const Padding(
+            // top 0 — Figma 668:427은 헤더가 status bar 바로 아래 선다(홈 동일).
+            padding: EdgeInsets.fromLTRB(
+                CrecamScreen._margin, 0, CrecamScreen._margin, CrecamScreen._gap),
+            child: HomeHeaderBar(),
           ),
-          _toggleButton(
-            context: context,
-            icon: Icons.view_list_rounded,
-            active: view == _CrecamView.list,
-            onTap: () => onChanged(_CrecamView.list),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _refresh,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.only(
+                  // 플로팅 독 높이만큼 비워야 마지막 그리드가 안 가려진다.
+                  bottom: glassDockListPadding(context).bottom,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: const [
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: CrecamScreen._margin),
+                      child: CameraLiveArea(),
+                    ),
+                    SizedBox(height: CrecamScreen._sectionGap),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: CrecamScreen._margin),
+                      child: _EntryCards(),
+                    ),
+                    SizedBox(height: CrecamScreen._sectionGap),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: CrecamScreen._margin),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: _PeriodButton(),
+                      ),
+                    ),
+                    SizedBox(height: CrecamScreen._gap),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: CrecamScreen._margin),
+                      child: _HourClipSections(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
-
-  Widget _toggleButton({
-    required BuildContext context,
-    required IconData icon,
-    required bool active,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(6),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: active ? Theme.of(context).colorScheme.surface : null,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: active
-              ? Theme.of(context).colorScheme.onSurface
-              : Theme.of(context).colorScheme.outline,
-        ),
-      ),
-    );
-  }
 }
 
-// ── 그리드 뷰 ──────────────────────────────────────────────────────────────────
+// ── 엔트리 카드 (하이라이트 / 북마크) ─────────────────────────────────────────
 
-class _CameraGrid extends StatelessWidget {
-  const _CameraGrid({required this.cameras, required this.onAddTap});
-
-  final List<TerraCamera> cameras;
-  final VoidCallback onAddTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.85,
-      ),
-      itemCount: cameras.length + 1,
-      itemBuilder: (context, index) {
-        if (index == cameras.length) {
-          return _AddCameraCard(onTap: onAddTap);
-        }
-        return _CameraGridCard(camera: cameras[index]);
-      },
-    );
-  }
-}
-
-class _CameraGridCard extends StatelessWidget {
-  const _CameraGridCard({required this.camera});
-  final TerraCamera camera;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () => context.push('/crecam/cameras/${camera.id}'),
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: _CameraThumbnail(camera: camera),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          camera.name,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Builder(builder: (context) {
-                          final scheme = Theme.of(context).colorScheme;
-                          final presence = cameraPresence(
-                            isOnline: camera.isOnline,
-                            lastSeenAt: camera.lastSeenAt,
-                            now: DateTime.now(),
-                          );
-                          final (label, color) = switch (presence) {
-                            CameraPresence.online => (
-                                camera.lastSeenAt == null
-                                    ? 'crecam_camera_online'.tr()
-                                    : '${'crecam_camera_online'.tr()} · '
-                                        '${_timeAgo(camera.lastSeenAt!)}',
-                                scheme.primary,
-                              ),
-                            CameraPresence.stale => (
-                                'crecam_camera_stale'.tr(),
-                                scheme.secondary,
-                              ),
-                            CameraPresence.offline => (
-                                'crecam_camera_offline'.tr(),
-                                scheme.outline,
-                              ),
-                          };
-                          return Text(
-                            label,
-                            style: theme.textTheme.labelSmall
-                                ?.copyWith(color: color),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
-                  WifiReconfigureMenu(
-                    icon: Icons.more_horiz,
-                    iconSize: 18,
-                    onSelected: () => context.push('/crecam/cameras/pair'),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── 카메라 썸네일 (상태별) ─────────────────────────────────────────────────────
-//  온라인 → 최근 클립 썸네일을 포스터로 표시 / 오프라인 → "연결 안 됨" 표시.
-class _CameraThumbnail extends ConsumerWidget {
-  const _CameraThumbnail({required this.camera});
-  final TerraCamera camera;
+class _EntryCards extends ConsumerWidget {
+  const _EntryCards();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!camera.isOnline) {
-      return const _ThumbnailState(
-        icon: Icons.videocam_off_rounded,
-        labelKey: 'crecam_thumbnail_offline',
-      );
-    }
-
-    // 클립은 cameras.id(UUID)로 연결됨 — camera.cameraId(text) 아님.
-    final latest = ref.watch(latestMotionClipProvider(camera.id));
-    return latest.when(
-      loading: () => const SkeletonLoading(
-        width: double.infinity,
-        height: double.infinity,
+    final highlightAt = ref.watch(latestHighlightAtProvider);
+    final bookmarkAt = ref.watch(
+      allFavoriteClipsProvider.select(
+        (v) => v.whenData(
+            (list) => list.isEmpty ? null : list.first.favoritedAt),
       ),
-      error: (_, __) => const _ThumbnailState(
-        icon: Icons.videocam_rounded,
-        labelKey: 'crecam_thumbnail_no_preview',
-        online: true,
-      ),
-      data: (clip) {
-        if (clip == null) {
-          return const _ThumbnailState(
-            icon: Icons.videocam_rounded,
-            labelKey: 'crecam_thumbnail_no_preview',
-            online: true,
-          );
-        }
-        // 온라인 + 최근 모션 클립 → 썸네일을 포스터로, 좌상단 온라인 점.
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            _MotionClipPoster(clipId: clip.id),
-            const Positioned(top: 8, left: 8, child: _OnlineDot()),
-          ],
-        );
-      },
+    );
+    return Row(
+      children: [
+        Expanded(
+          child: _EntryCard(
+            key: CrecamScreen.highlightCardKey,
+            icon: Icons.star,
+            title: 'crecam_home_highlights'.tr(),
+            latestAt: highlightAt,
+            onTap: () => context.push('/crecam/highlights'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _EntryCard(
+            key: CrecamScreen.bookmarkCardKey,
+            icon: Icons.bookmarks,
+            title: 'crecam_home_bookmarks'.tr(),
+            latestAt: bookmarkAt,
+            onTap: () => context.push('/crecam/bookmarks'),
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// motion_clips 썸네일 포스터 (terra-api presigned). 없음(404→null)/실패 시
-/// 온라인 톤 placeholder 폴백.
-class _MotionClipPoster extends ConsumerWidget {
-  const _MotionClipPoster({required this.clipId});
-  final String clipId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final thumbAsync = ref.watch(motionThumbnailProvider(clipId));
-    const noPreview = _ThumbnailState(
-      icon: Icons.videocam_rounded,
-      labelKey: 'crecam_thumbnail_no_preview',
-      online: true,
-    );
-    return thumbAsync.when(
-      data: (url) => url != null
-          ? CachedNetworkImage(
-              imageUrl: url,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => const SkeletonLoading(
-                width: double.infinity,
-                height: double.infinity,
-              ),
-              errorWidget: (_, __, ___) => noPreview,
-            )
-          : noPreview,
-      loading: () => const SkeletonLoading(
-        width: double.infinity,
-        height: double.infinity,
-      ),
-      error: (_, __) => noPreview,
-    );
-  }
-}
-
-/// 썸네일 placeholder (오프라인 / 미리보기 없음 공용). online이면 녹색 톤.
-class _ThumbnailState extends StatelessWidget {
-  const _ThumbnailState({
+/// 엔트리 카드 한 장 — 홈 제어 타일(_DeviceTile)과 같은 문법: h72, bg
+/// surfaceTint radius 12, 패딩 16, 좌 40 원(deviceOff) 안 아이콘 24.
+class _EntryCard extends StatelessWidget {
+  const _EntryCard({
+    super.key,
     required this.icon,
-    required this.labelKey,
-    this.online = false,
+    required this.title,
+    required this.latestAt,
+    required this.onTap,
   });
 
   final IconData icon;
-  final String labelKey;
-  final bool online;
+  final String title;
 
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final fg = online ? const Color(0xFF2E7D32) : scheme.outline;
-    return Container(
-      color: scheme.surfaceContainerHighest,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: fg, size: 30),
-          const SizedBox(height: 6),
-          Text(
-            labelKey.tr(),
-            style:
-                Theme.of(context).textTheme.labelMedium?.copyWith(color: fg),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 온라인 표시용 초록 점.
-class _OnlineDot extends StatelessWidget {
-  const _OnlineDot();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(
-        color: const Color(0xFF2E7D32),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 1.5),
-      ),
-    );
-  }
-}
-
-class _AddCameraCard extends StatelessWidget {
-  const _AddCameraCard({required this.onTap});
+  /// 최신 항목 시각. data(null) = 항목 없음("아직 없어요").
+  final AsyncValue<DateTime?> latestAt;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant,
-            width: 1.5,
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.videocam_outlined,
-                size: 36,
-                color: theme.colorScheme.outline,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'crecam_find_new'.tr(),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.outline,
+    final glass = context.glass;
+    return Material(
+      color: glass.surfaceTint,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: SizedBox(
+          height: 72,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: glass.deviceOff,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(icon, size: 24, color: glass.deviceGlyph),
                 ),
-              ),
-            ],
+                // Figma 실측 갭 8(668:450 — 아이콘 x+40 → 텍스트 x, 906.89-898.89).
+                // 12로 두면 "업데이트 4일 전"이 말줄임된다(시뮬 실측).
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Pretendard',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 16 * -0.02,
+                          color: glass.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      _subtitle(glass),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  Widget _subtitle(GlassPalette glass) {
+    final style = TextStyle(
+      fontFamily: 'Pretendard',
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 14 * -0.02,
+      color: glass.textTertiary,
+    );
+    return latestAt.when(
+      loading: () => const SkeletonLoading(width: 72, height: 14),
+      // "없음"과 구분되는 문구 — 오프라인/서버 장애를 "아직 없어요"로
+      // 단정하면 상세 화면(에러+재시도)과 모순된다(리뷰 2026-09-04).
+      error: (_, __) => Text('crecam_home_load_failed'.tr(),
+          maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
+      data: (at) => Text(
+        at == null
+            ? 'crecam_home_no_updates'.tr()
+            : 'crecam_home_updated'.tr(args: [timeAgo(at)]),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      ),
+    );
+  }
 }
 
-// ── 리스트 뷰 ──────────────────────────────────────────────────────────────────
+// ── 기간 설정 ──────────────────────────────────────────────────────────────────
 
-class _CameraList extends StatelessWidget {
-  const _CameraList({required this.cameras});
-  final List<TerraCamera> cameras;
+class _PeriodButton extends ConsumerWidget {
+  const _PeriodButton();
 
   @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(
-        top: AppStyles.spacing8,
-        bottom: AppStyles.spacing32 * 3,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final glass = context.glass;
+    // 라벨은 **실제 표시 날짜**(해석 결과)를 따른다 — 미선택(자동)으로 최근
+    // 영상 날짜를 그리는 중이면 그 날짜가 라벨이어야 그리드와 어긋나지 않는다.
+    final day = ref.watch(crecamResolvedDayProvider).valueOrNull;
+    final now = DateTime.now();
+    final isToday = day != null &&
+        day.year == now.year &&
+        day.month == now.month &&
+        day.day == now.day;
+    final label = day == null || isToday
+        ? 'crecam_home_period'.tr()
+        : DateFormat('yyyy. M. d').format(day);
+
+    return Material(
+      // 라이트=흰 바닥 위 흰 버튼(스트로크로만 선다), 다크=바닥색 + 스트로크.
+      color: glass.wallpaper,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: glass.outline),
       ),
-      itemCount: cameras.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final camera = cameras[index];
-        return ListTile(
-          leading: Icon(
-            camera.isOnline ? Icons.videocam : Icons.videocam_off_outlined,
-            color: camera.isOnline
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.outline,
+      child: InkWell(
+        key: CrecamScreen.periodButtonKey,
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => _pick(context, ref, day ?? now),
+        child: SizedBox(
+          height: 40,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.calendar_today,
+                    size: 16, color: glass.textSecondary),
+                // Figma 실측 갭 4 (958.39 − 954.39).
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 14 * -0.02,
+                    color: glass.textSecondary,
+                  ),
+                ),
+              ],
+            ),
           ),
-          title: Text(camera.name),
-          subtitle: Text(
-            camera.isOnline && camera.lastSeenAt != null
-                ? '${camera.model ?? camera.cameraId} · '
-                    '${_timeAgo(camera.lastSeenAt!)}'
-                : (camera.model ?? camera.cameraId),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          trailing: WifiReconfigureMenu(
-            onSelected: () => context.push('/crecam/cameras/pair'),
-          ),
-          onTap: () => context.push('/crecam/cameras/${camera.id}'),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pick(
+      BuildContext context, WidgetRef ref, DateTime current) async {
+    // 상세 화면들과 같은 공용 피커(자정 정규화 포함) — 정책 2벌 방지.
+    final picked = await showCrecamDayPicker(context, current);
+    if (picked == null || !context.mounted) return;
+    ref.read(crecamDayProvider.notifier).state = picked;
+  }
+}
+
+// ── 시간대별 클립 그리드 ───────────────────────────────────────────────────────
+
+class _HourClipSections extends ConsumerWidget {
+  const _HourClipSections();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final glass = context.glass;
+    final groupsAsync = ref.watch(crecamHourGroupsProvider);
+    // 그리드가 실제로 그린 날짜(해석 결과). 그룹이 있을 때만 라벨에 쓰이므로
+    // 로딩 중 폴백(오늘)은 화면에 나갈 일이 없다.
+    final day = ref.watch(crecamResolvedDayProvider).valueOrNull ??
+        DateTime.now();
+
+    return groupsAsync.when(
+      loading: () => const _SectionsSkeleton(),
+      error: (_, __) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: CrecamErrorRetry(
+          onRetry: () {
+            // 하위 클립 family까지 — 부모만 깨우면 캐시가 그대로다.
+            ref.invalidate(motionClipsProvider);
+            ref.invalidate(crecamHourGroupsProvider);
+          },
+        ),
+      ),
+      data: (groups) {
+        if (groups.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Text(
+                'crecam_home_empty_day'.tr(),
+                style: TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 14 * -0.02,
+                  color: glass.textTertiary,
+                ),
+              ),
+            ),
+          );
+        }
+        // 재생목록 = 그 날짜 전체 클립(시간 내림차순 — 그룹·그룹 내 정렬 그대로).
+        final playlist = [
+          for (final g in groups)
+            for (final c in g.clips) c.id,
+        ];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < groups.length; i++) ...[
+              if (i > 0) const SizedBox(height: CrecamScreen._sectionGap),
+              _HourSection(
+                group: groups[i],
+                // 날짜는 첫 그룹만(Figma) — 아래로는 같은 날짜의 반복이다.
+                dateLabel:
+                    i == 0 ? DateFormat('yyyy. M. d').format(day) : null,
+                playlist: playlist,
+              ),
+            ],
+          ],
         );
       },
     );
   }
 }
 
-// ── 빈 상태 / 에러 / 스켈레톤 ─────────────────────────────────────────────────
+class _HourSection extends StatelessWidget {
+  const _HourSection({
+    required this.group,
+    required this.dateLabel,
+    required this.playlist,
+  });
 
-class _EmptyBody extends StatelessWidget {
-  const _EmptyBody({required this.onAdd});
-  final VoidCallback onAdd;
+  final CrecamHourGroup group;
+  final String? dateLabel;
+  final List<String> playlist;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: AppStyles.pagePadding,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    final glass = context.glass;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           children: [
-            Icon(Icons.videocam_outlined, size: 64, color: scheme.outline),
-            const SizedBox(height: AppStyles.spacing16),
-            Text(
-              'my_cage_empty_title'.tr(),
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
+            Expanded(
+              child: Text(
+                formatAmPmTime(group.hour),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 16 * -0.02,
+                  color: glass.textSecondary,
+                ),
+              ),
             ),
-            const SizedBox(height: AppStyles.spacing8),
-            Text(
-              'my_cage_empty_subtitle'.tr(),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: scheme.outline,
+            if (dateLabel != null)
+              Text(
+                dateLabel!,
+                style: TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 14 * -0.02,
+                  color: glass.textTertiary,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipGrid<MotionClip>(
+          items: group.clips,
+          cellBuilder: (clip) => _ClipCell(clip: clip, playlist: playlist),
+        ),
+      ],
+    );
+  }
+
+}
+
+/// 썸네일 셀 — terra-api presigned 썸네일(없으면 회색 폴백). 탭 → 세로
+/// 플레이어(재생목록 = 그 날짜 전체, 시간 내림차순).
+class _ClipCell extends ConsumerWidget {
+  const _ClipCell({required this.clip, required this.playlist});
+
+  final MotionClip clip;
+  final List<String> playlist;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      key: ValueKey('crecam_clip_${clip.id}'),
+      behavior: HitTestBehavior.opaque,
+      onTap: () =>
+          context.push('/crecam/player/${clip.id}', extra: playlist),
+      child: MotionClipThumb(
+        clipId: clip.id,
+        fallbackIcon: Icons.videocam_rounded,
+        fallbackColor: context.glass.overlayFaint,
+      ),
+    );
+  }
+}
+
+/// 로딩 스켈레톤 — 헤더 줄 + 3열 셀 한 그룹(shimmer, CPI 금지).
+class _SectionsSkeleton extends StatelessWidget {
+  const _SectionsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SkeletonLoading(width: 96, height: 16),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            for (var c = 0; c < 3; c++) ...[
+              if (c > 0) const SizedBox(width: ClipGrid.cellGap),
+              const Expanded(
+                child: AspectRatio(
+                  aspectRatio: ClipGrid.cellAspect,
+                  child: SkeletonLoading(
+                    width: double.infinity,
+                    height: double.infinity,
+                    borderRadius: 0,
                   ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppStyles.spacing24),
-            FilledButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add),
-              label: Text('my_cage_add_camera'.tr()),
-            ),
+                ),
+              ),
+            ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ErrorBody extends StatelessWidget {
-  const _ErrorBody({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: AppStyles.pagePadding,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: AppStyles.spacing12),
-            Text(
-              'error_generic'.tr(),
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: AppStyles.spacing8),
-            Text(
-              message,
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppStyles.spacing16),
-            OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: Text('retry'.tr()),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CrecamSkeleton extends StatelessWidget {
-  const _CrecamSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.85,
-      ),
-      itemCount: 4,
-      itemBuilder: (_, __) => const SkeletonCard(lineCount: 2, height: 180),
+      ],
     );
   }
 }

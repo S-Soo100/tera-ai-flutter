@@ -1,3 +1,5 @@
+import '../../../shared/domain/num_format.dart';
+
 /// Supabase `telemetry_30m` row 매핑 (30분 집계, 영구 보관).
 ///
 /// 장기 온습도 추이 그래프의 데이터 소스. 메인 센서 A(`t_a_*`, `h_a_*`)만
@@ -38,12 +40,12 @@ class TelemetryBucket {
     return TelemetryBucket(
       bucket: DateTime.parse(j['bucket'].toString()),
       sampleCount: _parseInt(j['sample_count']),
-      tAvg: _parseDouble(j['t_a_avg']),
-      tMin: _parseDouble(j['t_a_min']),
-      tMax: _parseDouble(j['t_a_max']),
-      hAvg: _parseDouble(j['h_a_avg']),
-      hMin: _parseDouble(j['h_a_min']),
-      hMax: _parseDouble(j['h_a_max']),
+      tAvg: parseDouble(j['t_a_avg']),
+      tMin: parseDouble(j['t_a_min']),
+      tMax: parseDouble(j['t_a_max']),
+      hAvg: parseDouble(j['h_a_avg']),
+      hMin: parseDouble(j['h_a_min']),
+      hMax: parseDouble(j['h_a_max']),
     );
   }
 
@@ -55,10 +57,4 @@ class TelemetryBucket {
     return 0;
   }
 
-  static double? _parseDouble(Object? v) {
-    if (v == null) return null;
-    if (v is num) return v.toDouble();
-    if (v is String) return double.tryParse(v);
-    return null;
-  }
 }

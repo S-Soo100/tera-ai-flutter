@@ -1,0 +1,6 @@
+# 골든 프리뷰는 회귀 검사가 아니라 "사람이 눈으로 보는" 용도다.
+# 실제 위젯 렌더 PNG를 남기는 것이 목적이라 기본 실행에서 제외한다.
+# 갱신: flutter test <파일> --update-goldens --plain-name "라이트"
+tags:
+  golden:
+    skip: "프리뷰 전용 — --tags golden 으로 명시 실행"

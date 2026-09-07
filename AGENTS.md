@@ -1,4 +1,4 @@
-# AGENTS.md — AI 에이전트 공용 진입점 (Tera AI Flutter)
+# AGENTS.md — AI 에이전트 공용 진입점 (비바나트 Flutter)
 
 > **규칙의 단일 출처는 [`CLAUDE.md`](CLAUDE.md)다.** 이 파일은 진입 안내만 한다.
 > (2026-06-13: CLAUDE.md 복사본 → 포인터로 전환. 이전 복사본은 "P0 로컬 전용·인증 없음" 같은 폐기된 상태 정보를 담고 있었음 — 복사본 드리프트의 실사례)
@@ -14,7 +14,7 @@
 - **Codex / ChatGPT (codex CLI)** → [`CLAUDE.md`](CLAUDE.md)를 읽고 그대로 따른다. 특히:
   - 코딩 규칙 (Riverpod만 / Repository 패턴 / 하드코딩 색상·문자열 금지)
   - 금지 사항 섹션 (dio 금지, 새 패키지는 사용자 승인, CircularProgressIndicator 금지 등)
-  - CAOF 트랙 규칙 + 상세 라우팅: [`.claude/rules/tera-ai-caof.md`](.claude/rules/tera-ai-caof.md)
+  - CAOF 트랙 규칙 + 상세 라우팅: [`.claude/rules/vivnanaut-caof.md`](.claude/rules/vivnanaut-caof.md)
   - 검증 기준: `flutter analyze` 에러 0
 - **기타 도구** → CLAUDE.md + `docs/spec.md`.
 

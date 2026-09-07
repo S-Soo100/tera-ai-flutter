@@ -1,11 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/actuator_state.dart';
 import '../../domain/device.dart';
 import '../../domain/device_command.dart';
 import '../../domain/telemetry_reading.dart';
+import '../../../../shared/services/fan_timer_notification_service.dart';
 import '../supabase_module_providers.dart';
 import 'heater_lock_dialog.dart';
 
@@ -33,9 +36,10 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
   // LED 전원 버튼 시각 피드백
   bool _ledPulsing = false;
 
-  // LED 로컬 on/off 상태 — telemetry에 LED 상태 없으므로 세션 내 추적.
-  // 앱 재시작 시 false로 초기화됨 (정상 동작).
-  bool _ledOn = false;
+  // LED 상태는 **`telemetry.led`만** 본다(2026-08-18 회신 §4). 구 펌웨어가
+  // 컬럼을 안 보내면 `unavailable`이고, 그때는 "모른다"를 그대로 그린다 —
+  // 켜기/끄기 버튼을 둘 다 내놓고 어느 쪽으로도 칠하지 않는다. 홈의
+  // `CageControlGrid`도 같은 규칙이라 두 화면이 한 기기를 다르게 말하지 않는다.
 
   @override
   void initState() {
@@ -159,11 +163,16 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
                 icon: Icons.air,
                 state: telemetry.fan,
                 isBusy: hasPending,
-                accentColor: const Color(0xFF2E7D32),
+                accentColor: AppTheme.success,
+                // 뒤집기가 아니라 절대 상태로 보낸다 — 홈 퀵 제어와 같은
+                // 규칙이다(백엔드 회신 2026-08-12). telemetry가 어긋나 있어도
+                // 사용자가 의도한 방향으로 간다.
                 onTap: () => _sendCommand(
                   context,
                   device,
-                  CommandAction.fanToggle,
+                  telemetry.fan == ActuatorState.on
+                      ? CommandAction.fanOff
+                      : CommandAction.fanOn,
                 ),
               ),
             ),
@@ -180,7 +189,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
         const SizedBox(height: 12),
         // ── 행 2: LED 통합 타일 (전폭) ────────────────────────────
         _LedTile(
-          ledOn: _ledOn,
+          ledState: telemetry.led,
           pulsing: _ledPulsing,
           isBusy: hasPending,
           onTurnOn: () => _ledTurnOn(context, device),
@@ -193,11 +202,13 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
           icon: Icons.water_drop_outlined,
           state: telemetry.relay,
           isBusy: hasPending,
-          accentColor: const Color(0xFF2E7D32),
+          accentColor: AppTheme.success,
           onTap: () => _sendCommand(
             context,
             device,
-            CommandAction.relayToggle,
+            telemetry.relay == ActuatorState.on
+                ? CommandAction.relayOff
+                : CommandAction.relayOn,
           ),
         ),
       ],
@@ -258,6 +269,8 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
       _showOfflineBlockedOn(messenger);
       return;
     }
+    // await 전에 잡는다 — 전송 중 unmount돼도 팬 타이머 알림 정리는 해야 한다.
+    final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
     try {
       final cmd = await ref
           .read(moduleCommandSenderProvider.notifier)
@@ -265,6 +278,9 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
       if (mounted) {
         setState(() => _pendingIds.add(cmd.id));
       }
+      // 여기의 fan_on(항상 duration 없음)·fan_off는 진행 중 타이머를 소멸시킨다
+      // — 홈에서 걸어 둔 완료 알림을 내린다. 팬 무관 명령은 서비스가 무시한다.
+      await timerNotifs.onFanCommandSent(device.id, action.toWire(), null);
     } catch (_) {
       if (!mounted) return;
       _showErrorOn(messenger);
@@ -284,12 +300,16 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
       return;
     }
 
-    // 히터 토글은 위험 액션 — 확인 다이얼로그
+    // 히터 조작은 위험 액션 — 확인 다이얼로그
+    final isOn = telemetry.heater == ActuatorState.on;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('module_heater_confirm_title'.tr()),
-        content: Text('module_heater_confirm_body'.tr()),
+        content: Text((isOn
+                ? 'module_heater_confirm_body_off'
+                : 'module_heater_confirm_body_on')
+            .tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -298,7 +318,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF8F00),
+              backgroundColor: AppTheme.warning,
               foregroundColor: Colors.white,
             ),
             child: Text('module_heater_confirm_yes'.tr()),
@@ -309,8 +329,11 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     if (confirmed != true) return;
     if (!mounted) return;
 
+    // 절대 상태 명령. 뒤집기는 기기 상태를 전제하는데, 그 전제가 어긋나면
+    // 끄려던 조작이 켠다 — 히터에서는 과열이다.
     // ignore: use_build_context_synchronously
-    await _sendCommand(context, device, CommandAction.heaterToggle);
+    await _sendCommand(context, device,
+        isOn ? CommandAction.heaterOff : CommandAction.heaterOn);
     // 명령 결과는 commandUpdatesProvider listen에서 처리됨.
     // rejected_locked 응답 시 _handleCommandResult → 잠금 다이얼로그.
   }
@@ -319,10 +342,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
 
   Future<void> _ledTurnOn(BuildContext context, Device device) async {
     if (_ledPulsing) return;
-    setState(() {
-      _ledPulsing = true;
-      _ledOn = true; // 낙관적 업데이트
-    });
+    setState(() => _ledPulsing = true);
     await _sendCommand(context, device, CommandAction.ledOn);
     if (mounted) {
       await Future.delayed(const Duration(milliseconds: 200));
@@ -331,12 +351,10 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
   }
 
   // ── LED 전원 끄기 ────────────────────────────────────────────────────────────
-  // 낙관적 업데이트: 끄기 명령 발행 즉시 _ledOn = false.
-  // 펌웨어가 led_off 미지원 시 rejected_unknown_action → _handleCommandResult가
-  // 스낵바를 표시하고 _ledOn을 다시 true로 롤백한다.
+  // 펌웨어가 led_off 미지원이면 rejected_unknown_action → _handleCommandResult가
+  // 스낵바를 띄운다. 상태는 telemetry가 말한다.
 
   Future<void> _ledTurnOff(BuildContext context, Device device) async {
-    setState(() => _ledOn = false); // 낙관적 업데이트
     await _sendCommand(context, device, CommandAction.ledOff);
   }
 
@@ -354,27 +372,30 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
       return;
     }
 
-    // led_off 거부 시 낙관적 업데이트 롤백
-    if (cmd.action == CommandAction.ledOff &&
-        result == CommandResult.rejectedUnknownAction) {
-      setState(() => _ledOn = true);
-    }
-
     String message;
     Color? bgColor;
 
-    if (result == CommandResult.rejectedLocked) {
+    if (result == CommandResult.locked) {
       message = 'module_cmd_rejected_locked'.tr();
-      bgColor = const Color(0xFFFF8F00);
+      bgColor = AppTheme.warning;
       // 잠금 해제 다이얼로그는 heaterState telemetry로 자동 감지됨
-    } else if (result == CommandResult.rejectedTtlExpired ||
+    } else if (result == CommandResult.busy) {
+      // 실패가 아니라 "이미 도는 중"이다. 빨강으로 칠하면 고장으로 읽힌다.
+      message = 'module_cmd_busy'.tr();
+    } else if (result == CommandResult.ttlExpired ||
         status == CommandStatus.expired) {
       message = 'module_cmd_rejected_ttl'.tr();
       bgColor = Colors.red;
-    } else if (result == CommandResult.rejectedUnknownAction) {
+    } else if (result == CommandResult.unknownAction) {
       message = 'module_cmd_rejected_unknown'.tr();
       bgColor = Colors.red;
-    } else if (result == CommandResult.rejectedDuplicateMsgId) {
+    } else if (result == CommandResult.badRequest) {
+      message = 'module_cmd_bad_request'.tr();
+      bgColor = Colors.red;
+    } else if (result == CommandResult.error) {
+      message = 'module_cmd_error'.tr();
+      bgColor = Colors.red;
+    } else if (result == CommandResult.duplicateMsgId) {
       message = 'module_cmd_rejected_duplicate'.tr();
     } else if (status == CommandStatus.rejected) {
       message = 'module_cmd_rejected_generic'.tr();
@@ -397,7 +418,7 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
     messenger.showSnackBar(
       SnackBar(
         content: Text('module_control_offline_blocked'.tr()),
-        backgroundColor: const Color(0xFFFF8F00),
+        backgroundColor: AppTheme.warning,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -589,7 +610,7 @@ class _HeaterTile extends StatelessWidget {
   final bool isBusy;
   final VoidCallback onTap;
 
-  static const _amber = Color(0xFFFF8F00);
+  static const _amber = AppTheme.warning;
   static const _amberBg = Color(0xFFFFF3E0);
 
   @override
@@ -707,26 +728,29 @@ class _HeaterTile extends StatelessWidget {
 
 // ── iOS 제어센터 스타일: LED 통합 타일 (전폭, 켜기/끄기 토글) ─────────────────
 //
-// _ledOn == false: [아이콘] LED (Spacer) [켜기]
-// _ledOn == true:  [아이콘] LED (Spacer) [끄기]
+// off:         [아이콘] LED (Spacer) [켜기]
+// on:          [아이콘] LED (Spacer) [끄기]
+// unavailable: [아이콘] LED (Spacer) [켜기] [끄기]  ← 상태를 모르니 둘 다
 
 class _LedTile extends StatelessWidget {
   const _LedTile({
-    required this.ledOn,
+    required this.ledState,
     required this.pulsing,
     required this.isBusy,
     required this.onTurnOn,
     required this.onTurnOff,
   });
 
-  final bool ledOn;
+  final ActuatorState ledState;
+  bool get ledOn => ledState == ActuatorState.on;
+  bool get unknown => ledState == ActuatorState.unavailable;
   final bool pulsing;
   final bool isBusy;
   final VoidCallback onTurnOn;
   final VoidCallback onTurnOff;
 
   // LED 강조색: Green 계열 (기존 프라이머리 컬러 유지)
-  static const _ledAccent = Color(0xFF2E7D32);
+  static const _ledAccent = AppTheme.success;
 
   @override
   Widget build(BuildContext context) {
@@ -784,16 +808,33 @@ class _LedTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // 우측 컨트롤 — 켜기 / 끄기 토글
-          _LedActionBtn(
-            label: ledOn
-                ? 'module_actuator_power_off'.tr()
-                : 'module_actuator_power_on'.tr(),
-            color: labelColor,
-            tileBg: tileBg,
-            dimmed: dimmed,
-            onTap: dimmed ? null : (ledOn ? onTurnOff : onTurnOn),
-          ),
+          // 우측 컨트롤 — 상태를 알면 반대 동작 하나, 모르면 둘 다
+          if (unknown) ...[
+            _LedActionBtn(
+              label: 'module_actuator_power_on'.tr(),
+              color: labelColor,
+              tileBg: tileBg,
+              dimmed: dimmed,
+              onTap: dimmed ? null : onTurnOn,
+            ),
+            const SizedBox(width: 6),
+            _LedActionBtn(
+              label: 'module_actuator_power_off'.tr(),
+              color: labelColor,
+              tileBg: tileBg,
+              dimmed: dimmed,
+              onTap: dimmed ? null : onTurnOff,
+            ),
+          ] else
+            _LedActionBtn(
+              label: ledOn
+                  ? 'module_actuator_power_off'.tr()
+                  : 'module_actuator_power_on'.tr(),
+              color: labelColor,
+              tileBg: tileBg,
+              dimmed: dimmed,
+              onTap: dimmed ? null : (ledOn ? onTurnOff : onTurnOn),
+            ),
           if (isBusy) ...[
             const SizedBox(width: 4),
             _BusyDot(color: labelColor),

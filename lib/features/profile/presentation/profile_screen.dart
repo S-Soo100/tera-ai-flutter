@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/theme/theme_mode_provider.dart';
+import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../notification/presentation/notification_providers.dart';
 import '../domain/user_profile.dart';
 import 'profile_providers.dart';
 
@@ -50,7 +53,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     setState(() => _isUploading = true);
     try {
-      await ref.read(profileNotifierProvider.notifier).uploadAvatar(File(image.path));
+      await ref
+          .read(profileNotifierProvider.notifier)
+          .uploadAvatar(File(image.path));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('profile_avatar_updated'.tr())),
@@ -98,10 +103,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(profileNotifierProvider);
+    // GlassPageShell **위** 컨텍스트 캡처지만, 전역이 다크 고정이라(app.dart)
+    // 셸 안팎의 팔레트가 같다 — 셸이 바꾸는 건 배경 투명뿐이다.
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
+    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 프로필/로그아웃 로직 불변.
+    return GlassPageShell(
+        child: Scaffold(
       appBar: AppBar(title: Text('profile_title'.tr())),
       body: profileAsync.when(
         loading: () => const SkeletonPageLoading(cardCount: 3),
@@ -125,7 +134,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ? CachedNetworkImageProvider(profile!.avatarUrl!)
                             : null,
                         child: profile?.avatarUrl == null
-                            ? Icon(Icons.person, size: 48, color: colorScheme.onSurfaceVariant)
+                            ? Icon(Icons.person,
+                                size: 48, color: colorScheme.onSurfaceVariant)
                             : null,
                       ),
                       Positioned(
@@ -135,8 +145,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           radius: 18,
                           backgroundColor: colorScheme.primary,
                           child: _isUploading
-                              ? const SkeletonLoading(width: 16, height: 16, borderRadius: 8)
-                              : Icon(Icons.camera_alt, size: 18, color: colorScheme.onPrimary),
+                              ? const SkeletonLoading(
+                                  width: 16, height: 16, borderRadius: 8)
+                              : Icon(Icons.camera_alt,
+                                  size: 18, color: colorScheme.onPrimary),
                         ),
                       ),
                     ],
@@ -157,17 +169,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // 경험 레벨
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('profile_experience'.tr(), style: theme.textTheme.labelLarge),
+                  child: Text('profile_experience'.tr(),
+                      style: theme.textTheme.labelLarge),
                 ),
                 const SizedBox(height: 8),
                 SegmentedButton<String>(
                   segments: [
-                    ButtonSegment(value: 'beginner', label: Text('profile_exp_beginner'.tr())),
-                    ButtonSegment(value: 'intermediate', label: Text('profile_exp_intermediate'.tr())),
-                    ButtonSegment(value: 'expert', label: Text('profile_exp_expert'.tr())),
+                    ButtonSegment(
+                        value: 'beginner',
+                        label: Text('profile_exp_beginner'.tr())),
+                    ButtonSegment(
+                        value: 'intermediate',
+                        label: Text('profile_exp_intermediate'.tr())),
+                    ButtonSegment(
+                        value: 'expert',
+                        label: Text('profile_exp_expert'.tr())),
                   ],
                   selected: {_experience},
-                  onSelectionChanged: (v) => setState(() => _experience = v.first),
+                  onSelectionChanged: (v) =>
+                      setState(() => _experience = v.first),
                 ),
                 const SizedBox(height: 24),
 
@@ -177,25 +197,120 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: FilledButton(
                     onPressed: _isSaving ? null : _saveProfile,
                     child: _isSaving
-                        ? const SkeletonLoading(width: 20, height: 20, borderRadius: 10)
+                        ? const SkeletonLoading(
+                            width: 20, height: 20, borderRadius: 10)
                         : Text('profile_save'.tr()),
                   ),
                 ),
                 const SizedBox(height: 32),
 
                 const Divider(),
+                const SizedBox(height: 16),
+
+                // 화면 모드 (시스템/라이트/다크). 프로필 저장과 무관하게 즉시
+                // 적용·저장된다(Hive `app_settings/theme_mode`).
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('profile_theme_mode'.tr(),
+                      style: theme.textTheme.labelLarge),
+                ),
                 const SizedBox(height: 8),
+                SegmentedButton<ThemeMode>(
+                  segments: [
+                    ButtonSegment(
+                        value: ThemeMode.system,
+                        icon: const Icon(Icons.brightness_auto_outlined),
+                        label: Text('profile_theme_system'.tr())),
+                    ButtonSegment(
+                        value: ThemeMode.light,
+                        icon: const Icon(Icons.light_mode_outlined),
+                        label: Text('profile_theme_light'.tr())),
+                    ButtonSegment(
+                        value: ThemeMode.dark,
+                        icon: const Icon(Icons.dark_mode_outlined),
+                        label: Text('profile_theme_dark'.tr())),
+                  ],
+                  selected: {ref.watch(themeModeProvider)},
+                  onSelectionChanged: (v) =>
+                      ref.read(themeModeProvider.notifier).set(v.first),
+                ),
+                const SizedBox(height: 24),
+
+                const Divider(),
+                const SizedBox(height: 8),
+
+                // 알림 — 홈 헤더 🔔이 PRD 재설계(2026-09-02)로 빠지면서
+                // 진입점이 여기로 왔다. 미읽음 뱃지도 같이 이사.
+                ListTile(
+                  key: const Key('profile_notifications_tile'),
+                  leading: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(Icons.notifications_none,
+                          color: colorScheme.onSurfaceVariant),
+                      if (ref.watch(unreadNotificationCountProvider) > 0)
+                        Positioned(
+                          right: -1,
+                          top: -1,
+                          child: Container(
+                            key: const Key('profile_notifications_dot'),
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: colorScheme.error,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  title: Text('home_notifications'.tr()),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/notifications'),
+                ),
+
+                // 커뮤니티에서 차단한 사용자 관리 (Task 12)
+                ListTile(
+                  leading: Icon(Icons.block,
+                      color: colorScheme.onSurfaceVariant),
+                  title: Text('community_blocked_users'.tr()),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/profile/blocked'),
+                ),
+
+                // 디자인 검토용. 실사용 기능이 아니라 로그아웃 위에 조용히 둔다.
+                ListTile(
+                  leading: Icon(Icons.palette_outlined,
+                      color: colorScheme.onSurfaceVariant),
+                  title: Text('dev_chart_lab_title'.tr()),
+                  subtitle: Text('dev_chart_lab_entry_desc'.tr()),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/dev/chart-lab'),
+                ),
+
+                // 디자인 비교(A/B 랩) — 로그인 후에도 볼 수 있게(2026-08-14 저녁,
+                // B안 프로덕션 채택 결정 (2)). 롤백 위치:
+                // docs/design-test-rollout-plan.md §2.4
+                ListTile(
+                  leading: Icon(Icons.compare_outlined,
+                      color: colorScheme.onSurfaceVariant),
+                  title: Text('login_design_preview'.tr()),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/design-test'),
+                ),
 
                 // 로그아웃
                 ListTile(
                   leading: Icon(Icons.logout, color: colorScheme.error),
-                  title: Text('auth_logout'.tr(), style: TextStyle(color: colorScheme.error)),
+                  title: Text('auth_logout'.tr(),
+                      style: TextStyle(color: colorScheme.error)),
                   onTap: _logout,
                 ),
 
                 // 앱 버전
                 ListTile(
-                  leading: Icon(Icons.info_outlined, color: colorScheme.onSurfaceVariant),
+                  leading: Icon(Icons.info_outlined,
+                      color: colorScheme.onSurfaceVariant),
                   title: Text('profile_app_version'.tr()),
                   subtitle: Text(
                     ref.watch(appVersionProvider).when(
@@ -210,6 +325,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
         },
       ),
-    );
+    ));
   }
 }

@@ -28,7 +28,7 @@ class VideoExportService {
     if (!await Gal.hasAccess()) {
       await Gal.requestAccess();
     }
-    await Gal.putVideo(file.path, album: 'Tera AI');
+    await Gal.putVideo(file.path, album: '비바나트');
   }
 
   /// OS 공유 시트로 영상 공유.

@@ -1,0 +1,182 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/theme/app_styles.dart';
+import '../../../../shared/domain/num_format.dart';
+import '../../domain/device_settings.dart';
+import '../device_settings_providers.dart';
+import 'device_setting_sheet.dart';
+
+/// 사육장 설정의 목표 온습도(setpoint) 진입점 (2026-08-18 회신 §5).
+///
+/// 대상은 **현재 세트의 제어 기기**(홈이 보고 있는 세트 — LCD·예약과 같은
+/// 기준, 껍데기는 [DeviceSettingTile]). 사육장 탭의 카드는 자기 기기
+/// (`currentDeviceProvider`)를 따로 고르므로 두 축이 다를 수 있다 — 그래서
+/// 여기서는 **대상 기기 이름을 title에 밝히고**, 카드 쪽에는
+/// [showSetpointSheet]로 그 카드의 기기를 바로 고치는 진입점을 따로 둔다.
+/// 어느 화면에서 고치든 "지금 보고 있는 기기"가 대상이다.
+class SetpointSettingTile extends StatelessWidget {
+  const SetpointSettingTile({super.key});
+
+  static const tileKey = Key('setpoint_setting_tile');
+
+  @override
+  Widget build(BuildContext context) {
+    return DeviceSettingTile(
+      key: tileKey,
+      icon: Icons.thermostat_outlined,
+      title: (d) {
+        final name = d?.name;
+        return name == null || name.isEmpty
+            ? 'setpoint_tile_title'.tr()
+            : 'setpoint_tile_title_for'.tr(args: [name]);
+      },
+      subtitle: (ref, d) =>
+          _subtitle(ref.watch(deviceSettingsProvider(d.id)).valueOrNull),
+      onTap: (context, ref, d) => showSetpointSheet(context, ref, d.id),
+    );
+  }
+
+  static String _subtitle(DeviceSettings? s) {
+    if (s == null || !s.hasTarget) return 'setpoint_tile_subtitle'.tr();
+    return 'setpoint_tile_value'.tr(args: [
+      s.targetTempC == null
+          ? 'setpoint_unset'.tr()
+          : formatCompact(s.targetTempC!),
+      s.targetHumidityPct == null
+          ? 'setpoint_unset'.tr()
+          : formatCompact(s.targetHumidityPct!),
+    ]);
+  }
+}
+
+/// 목표 온습도 편집 시트. **[deviceId]가 대상이다** — 호출한 화면이 보여주고
+/// 있는 기기를 넘겨야 편집기와 표시가 어긋나지 않는다. 현재값은 provider에서
+/// 읽는다(호출부가 stale한 값을 넘길 일이 없게).
+Future<void> showSetpointSheet(
+    BuildContext context, WidgetRef ref, String deviceId) async {
+  final current = ref.read(deviceSettingsProvider(deviceId)).valueOrNull;
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => _SetpointSheet(
+      initial: current,
+      onSave: (t, h) => ref
+          .read(deviceSettingsProvider(deviceId).notifier)
+          .save(targetTempC: t, targetHumidityPct: h),
+    ),
+  );
+}
+
+class _SetpointSheet extends StatefulWidget {
+  const _SetpointSheet({required this.initial, required this.onSave});
+
+  final DeviceSettings? initial;
+  final Future<void> Function(double? temp, double? humidity) onSave;
+
+  @override
+  State<_SetpointSheet> createState() => _SetpointSheetState();
+}
+
+class _SetpointSheetState extends State<_SetpointSheet> {
+  late final TextEditingController _temp = TextEditingController(
+      text: _init(widget.initial?.targetTempC));
+  late final TextEditingController _humid = TextEditingController(
+      text: _init(widget.initial?.targetHumidityPct));
+  bool _sending = false;
+
+  // 되채움은 소수 2자리까지 — 저장값이 편집기 왕복에서 바뀌지 않게.
+  static String _init(double? v) =>
+      v == null ? '' : formatCompact(v, maxFractionDigits: 2);
+
+  @override
+  void dispose() {
+    _temp.dispose();
+    _humid.dispose();
+    super.dispose();
+  }
+
+  double? get _tempValue => double.tryParse(_temp.text.trim());
+  double? get _humidValue => double.tryParse(_humid.text.trim());
+
+  /// 비운 칸은 "안 바꿈"(PATCH에 키 생략). 채운 칸은 서버와 같은 범위 검사.
+  bool get _valid {
+    final t = _temp.text.trim();
+    final h = _humid.text.trim();
+    if (t.isEmpty && h.isEmpty) return false;
+    if (t.isNotEmpty &&
+        (_tempValue == null || !DeviceSettings.validateTemp(_tempValue!))) {
+      return false;
+    }
+    if (h.isNotEmpty &&
+        (_humidValue == null ||
+            !DeviceSettings.validateHumidity(_humidValue!))) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DeviceSettingSheet(
+      title: 'setpoint_sheet_title'.tr(),
+      children: [
+        TextField(
+          key: const Key('setpoint_temp_field'),
+          controller: _temp,
+          keyboardType: const TextInputType.numberWithOptions(
+              decimal: true, signed: true),
+          decoration: InputDecoration(
+            labelText: 'setpoint_temp_label'.tr(),
+            isDense: true,
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: AppStyles.spacing8),
+        TextField(
+          key: const Key('setpoint_humidity_field'),
+          controller: _humid,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: 'setpoint_humidity_label'.tr(),
+            helperText: 'setpoint_range_hint'.tr(),
+            isDense: true,
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: AppStyles.spacing12),
+        FilledButton(
+          key: const Key('setpoint_apply'),
+          onPressed: _valid && !_sending ? _save : null,
+          child: Text('setpoint_apply'.tr()),
+        ),
+        if (!_valid && (_temp.text.isNotEmpty || _humid.text.isNotEmpty)) ...[
+          const SizedBox(height: AppStyles.spacing4),
+          Text(
+            'setpoint_invalid'.tr(),
+            key: const Key('setpoint_invalid'),
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall
+                ?.copyWith(color: Theme.of(context).colorScheme.error),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    setState(() => _sending = true);
+    final ok = await submitAndClose(
+      context,
+      () => widget.onSave(
+        _temp.text.trim().isEmpty ? null : _tempValue,
+        _humid.text.trim().isEmpty ? null : _humidValue,
+      ),
+      successKey: 'setpoint_saved',
+      failureKey: 'setpoint_failed',
+    );
+    if (!ok && mounted) setState(() => _sending = false);
+  }
+}

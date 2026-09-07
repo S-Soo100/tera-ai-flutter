@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,13 +47,25 @@ class WebRtcLiveState {
 
 class WebRtcLiveController
     extends StateNotifier<WebRtcLiveState> {
+  /// **생성자는 아무것도 시작하지 않는다**(2026-09-07, 리뷰 잔여 A2).
+  /// 실피어 연결은 provider가 [startConnection]으로 켠다 — 예전엔 생성자가
+  /// 곧장 시그널링을 시작해, 위젯 테스트마다 우회(빌더 심·'마지막 페이지'
+  /// 관례)가 필요했다. 테스트는 provider를 **시작하지 않은 컨트롤러**로
+  /// 오버라이드하면 된다(connectingConfig 스켈레톤으로 멈춘다).
   WebRtcLiveController(this.ref, this.cameraUuid)
-      : super(const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig)) {
-    _start();
-  }
+      : super(const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig));
 
   final Ref ref;
   final String cameraUuid;
+
+  bool _started = false;
+
+  /// 연결 시퀀스 시작. 멱등 — provider가 생성 직후 1회 부른다.
+  void startConnection() {
+    if (_started) return;
+    _started = true;
+    _start();
+  }
 
   RTCPeerConnection? _pc;
   RTCVideoRenderer? _renderer;
@@ -65,6 +78,39 @@ class WebRtcLiveController
   // 504(카메라 무응답) 자동 재시도 1회 가드. 수동 retry()가 리셋한다.
   bool _autoRetried = false;
 
+  // ── 자동 재연결 (2026-09-07) ──────────────────────────────────────────────
+  // 라이브가 ~20분 뒤 소리 없이 죽는 일이 관측됐다(핸드오프
+  // backend-handoff-2026-09-07-mist-blackout.md §3). 사육장 감시 화면이
+  // 수동 "다시 시도"만 갖고 있으면 안 보는 사이 끊긴 채 방치된다.
+  // failed에 들어올 때마다 지수 백오프(3s→60s 상한, 무제한)로 재연결한다 —
+  // 컨트롤러가 autoDispose라 라이브 뷰가 화면에 있는 동안만 돈다.
+  int _reconnectAttempt = 0;
+  Timer? _reconnectTimer;
+
+  // disconnected는 일시 장애일 수 있어 WebRTC가 스스로 복구하기도 한다.
+  // 유예(10초) 후에도 그대로면 failed 취급 — 안 하면 마지막 프레임이 얼어붙은
+  // 채 "LIVE"로 남는다.
+  Timer? _disconnectGrace;
+
+  void _scheduleReconnect() {
+    if (!mounted) return;
+    _reconnectTimer?.cancel();
+    // 3·6·12·24·48·60초 — 지수는 5에서 멈춘다(상한 60초에 이미 도달;
+    // 무한 증가시키면 pow가 언젠가 inf로 넘친다).
+    final delay = Duration(
+        seconds: math.min(
+            60, 3 * math.pow(2, math.min(5, _reconnectAttempt)).toInt()));
+    _reconnectAttempt++;
+    debugPrint(
+      '[webrtc-timing] cam=$cameraUuid auto-reconnect in ${delay.inSeconds}s '
+      '(attempt $_reconnectAttempt)',
+    );
+    _reconnectTimer = Timer(delay, () {
+      if (!mounted) return;
+      unawaited(_restart());
+    });
+  }
+
   // ICE gathering 대기 중 srflx 후보 감지용 probe (조기 진행).
   void Function(String raw)? _iceWaitProbe;
 
@@ -75,9 +121,12 @@ class WebRtcLiveController
 
   // ── 공개 API ────────────────────────────────────────────────────────────────
 
-  /// 수동 재시도 (실패 화면 버튼). 자동 재시도 가드와 config 캐시를 리셋한다.
+  /// 수동 재시도 (실패 화면 버튼). 자동 재시도 가드와 config 캐시를 리셋하고,
+  /// 걸려 있던 자동 재연결 백오프도 즉시 실행으로 대체한다.
   Future<void> retry() async {
     _autoRetried = false;
+    _reconnectAttempt = 0;
+    _reconnectTimer?.cancel();
     ref.invalidate(webrtcConfigProvider);
     await _restart();
   }
@@ -93,6 +142,8 @@ class WebRtcLiveController
   @override
   void dispose() {
     _active = false;
+    _reconnectTimer?.cancel();
+    _disconnectGrace?.cancel();
     _cleanup(closeRemote: true);
     super.dispose();
   }
@@ -118,6 +169,7 @@ class WebRtcLiveController
         phase: WebRtcLivePhase.failed,
         errorKey: 'crecam_live_error_unresponsive',
       );
+      _scheduleReconnect();
     } catch (_) {
       if (!_active) return;
       debugPrint(
@@ -129,6 +181,7 @@ class WebRtcLiveController
         phase: WebRtcLivePhase.failed,
         errorKey: 'crecam_live_error_failed',
       );
+      _scheduleReconnect();
     }
   }
 
@@ -215,6 +268,10 @@ class WebRtcLiveController
           '[webrtc-timing] cam=$cameraUuid config=${_msConfig}ms '
           'answer=${_msAnswer}ms connected=${_timing.elapsedMilliseconds}ms',
         );
+        // 연결 성공 — 재연결 백오프 리셋.
+        _reconnectAttempt = 0;
+        _reconnectTimer?.cancel();
+        _disconnectGrace?.cancel();
         this.state = this.state.copyWith(
               phase: WebRtcLivePhase.streaming,
               clearError: true,
@@ -226,6 +283,25 @@ class WebRtcLiveController
           errorKey: 'crecam_live_error_failed',
           renderer: renderer,
         );
+        _scheduleReconnect();
+      } else if (state ==
+          RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+        // 일시 장애면 WebRTC가 스스로 돌아온다 — 10초 유예 후에도 그대로면
+        // failed 취급해 재연결 루프에 태운다(마지막 프레임이 얼어붙은 채
+        // "LIVE"로 남는 것 방지).
+        _disconnectGrace?.cancel();
+        _disconnectGrace = Timer(const Duration(seconds: 10), () {
+          if (!mounted || !_active) return;
+          if (_pc?.connectionState ==
+              RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+            this.state = WebRtcLiveState(
+              phase: WebRtcLivePhase.failed,
+              errorKey: 'crecam_live_error_failed',
+              renderer: renderer,
+            );
+            _scheduleReconnect();
+          }
+        });
       }
     };
 
@@ -385,5 +461,7 @@ class WebRtcLiveController
 
 final webrtcLiveControllerProvider = StateNotifierProvider.autoDispose
     .family<WebRtcLiveController, WebRtcLiveState, String>(
-  (ref, cameraUuid) => WebRtcLiveController(ref, cameraUuid),
+  // 시작은 여기서 — 위젯 테스트는 startConnection() 없이 생성만 하는
+  // 오버라이드로 실피어를 차단한다(클래스 doc).
+  (ref, cameraUuid) => WebRtcLiveController(ref, cameraUuid)..startConnection(),
 );

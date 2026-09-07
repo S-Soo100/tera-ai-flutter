@@ -15,6 +15,16 @@
 
 > **주의**: 이 키들은 클라이언트용(anon/publishable)이므로 코드에 포함 가능. `service_role` 키는 절대 클라이언트에 노출하지 않는다.
 
+### 테스트 계정 (2026-08-14 박제)
+
+| 항목 | 값 |
+|------|-----|
+| ID (email) | `leegawnhun@gmail.com` |
+| PW | `123456` |
+
+> 개발·시뮬레이터 검증용 테스트 계정. 이 계정에 실 카메라 클립(`motion_clips`)·사육장 데이터가 물려 있다(메모리 `project_petcam_clip_verify` 참조).
+> **테스트 전용** — 실사용자 데이터 계정으로 승격하지 말 것. 저장소에 평문 기록되어 있으므로 이 비밀번호를 다른 서비스에서 재사용하지 않는다.
+
 ## 테이블 구조 (메인 앱 15개 + terra-server IoT)
 
 스키마 원본: [`docs/supabase-schema.md`](./supabase-schema.md)
@@ -275,3 +285,18 @@ supabase.channel('telemetry-$deviceId')
 | P2 2차 | Google + Apple 소셜 로그인 |
 | P2 3차 | Kakao 소셜 로그인 (OIDC Custom Provider) |
 | **현재** | Supabase 인증 + 유저 CRUD + 게코캠(`camera_clips`) + **terra-server 사육장 IoT 실연동**(디바이스/명령/텔레메트리 Realtime). 캠 라이브/소셜 로그인은 후속 |
+
+### 커뮤니티 테이블 (2026-08-31, 앱 팀 소유)
+
+| 정책 | 조건 |
+|------|------|
+| `community_posts`/`comments`/`likes`/`notices` SELECT | `TO authenticated USING (true)` — 로그인 유저 전체 열람 |
+| posts/comments INSERT·UPDATE | 본인(`author_id = auth.uid()`) |
+| posts/comments DELETE | 본인 **또는 운영자**(`community_is_admin()` — `user_profiles.is_admin`, anon 실행권 회수) |
+| `community_notices` 쓰기 | 운영자만 (앱은 읽기 전용 배너, 작성은 대시보드) |
+| `community_reports` | INSERT 본인 / SELECT 본인 신고건+운영자 / UPDATE 운영자 |
+| `community_blocks` | 본인 행만 CRUD — 피드 숨김은 앱 필터 |
+| Storage `community-media` | 읽기 authenticated 전체 / 쓰기·삭제 본인 폴더 `{user_id}/` |
+| `public_profiles` 뷰 | SECURITY DEFINER(의도적) — `user_profiles`의 id·display_name·avatar_url 3컬럼만 노출 |
+
+DDL 원본: `supabase/migrations/2026-08-31_community_clip_feed.sql`. **커뮤니티 쓰기 API는 uid 없으면 throw** — 비로그인 열람(kPublicPaths)과 구분된다.

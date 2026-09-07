@@ -3,8 +3,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../wiki/data/care_info_repository.dart';
-import '../../wiki/presentation/wiki_providers.dart';
+import '../../../core/theme/app_styles.dart';
+import '../../../shared/widgets/glass_dock.dart';
+import '../../../shared/widgets/glass_page_shell.dart';
 import '../domain/pet.dart';
 import 'my_pets_providers.dart';
 import 'widgets/event_timeline.dart';
@@ -15,10 +16,6 @@ class PetDetailScreen extends ConsumerWidget {
 
   const PetDetailScreen({super.key, required this.petId});
 
-  bool _hasCareInfo(String speciesId) {
-    return CareInfoRepository.featuredSpeciesIds.contains(speciesId);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pet = ref.watch(petDetailProvider(petId));
@@ -26,13 +23,17 @@ class PetDetailScreen extends ConsumerWidget {
     ref.watch(petListProvider);
 
     if (pet == null) {
-      return Scaffold(
-        appBar: AppBar(),
-        body: const Center(child: Text('개체를 찾을 수 없습니다')),
+      return GlassPageShell(
+        child: Scaffold(
+          appBar: AppBar(),
+          body: const Center(child: Text('개체를 찾을 수 없습니다')),
+        ),
       );
     }
 
-    return Scaffold(
+    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 상세/삭제 로직 불변.
+    return GlassPageShell(
+        child: Scaffold(
       appBar: AppBar(
         title: Text(pet.name),
         actions: [
@@ -48,34 +49,19 @@ class PetDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.small(
-        heroTag: 'pet_detail_chat_fab',
-        onPressed: () => context.push(
-            '/chat/new?petId=${pet.id}&speciesId=${pet.speciesId}'),
-        tooltip: 'AI에게 물어보기',
-        child: const Icon(Icons.chat),
-      ),
+      // 챗 FAB는 제거했다 — /chat 라우트가 없고(챗 기능은 PRD D3 폐기),
+      // 누르면 라우터 에러로 떨어지는 죽은 문이었다.
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        // 하단은 플로팅 독 높이까지 비운다 — 마지막 카드가 독에 가려지지 않게.
+        padding: glassDockListPadding(context,
+            base: const EdgeInsets.fromLTRB(AppStyles.spacing16,
+                AppStyles.spacing16, AppStyles.spacing16, 0)),
         children: [
           // 프로필 섹션
           _ProfileSection(pet: pet),
           const SizedBox(height: 16),
 
-          // 위키 바로가기
-          if (_hasCareInfo(pet.speciesId))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  ref.read(selectedWikiSpeciesProvider.notifier).state =
-                      pet.speciesId;
-                  context.go('/wiki');
-                },
-                icon: const Icon(Icons.menu_book_outlined),
-                label: const Text('이 종의 사육 위키 보기'),
-              ),
-            ),
+          // 위키 바로가기 버튼은 2026-09-02 PRD 재설계로 제거(위키 라우트 폐지).
 
           // 이벤트 타임라인
           EventTimeline(petId: petId),
@@ -93,7 +79,7 @@ class PetDetailScreen extends ConsumerWidget {
           const SizedBox(height: 16),
         ],
       ),
-    );
+    ));
   }
 
   Future<void> _confirmDelete(
@@ -287,4 +273,3 @@ class _MemoSection extends StatelessWidget {
     );
   }
 }
-

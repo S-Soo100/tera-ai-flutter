@@ -2,393 +2,333 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
+import '../../../core/theme/app_styles.dart';
+import '../../../core/theme/glass_palette.dart';
+import '../../../shared/widgets/account_avatar.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/glass_dock.dart';
+import '../../../shared/widgets/glass_tab_header.dart';
+import '../../../shared/widgets/glass_tab_shell.dart';
+import '../../auth/presentation/auth_providers.dart';
+import '../../my_cage/presentation/supabase_module_providers.dart'
+    show nowTickProvider;
+import '../../profile/presentation/profile_providers.dart';
 import '../domain/community_post.dart';
 import 'community_providers.dart';
+import 'widgets/comments_sheet.dart';
+import 'widgets/post_card.dart';
 
-class CommunityScreen extends ConsumerWidget {
+/// 커뮤니티 탭 = 크레캠 클립 공유 피드 (2026-08-29 리뉴얼).
+/// 구 카테고리 게시판(공지/QnA/자유)은 폐기 — 위키 진입 카드만 유지(§4.5).
+class CommunityScreen extends ConsumerStatefulWidget {
   const CommunityScreen({super.key});
 
   @override
+  ConsumerState<CommunityScreen> createState() => _CommunityScreenState();
+}
+
+class _CommunityScreenState extends ConsumerState<CommunityScreen> {
+  final _scroll = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(() {
+      if (_scroll.position.pixels > _scroll.position.maxScrollExtent * 0.8) {
+        ref.read(communityFeedProvider.notifier).loadMore();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final feed = ref.watch(communityFeedProvider);
+    final imageUrls = ref.watch(feedImageUrlsProvider).valueOrNull ?? const {};
+    final profile = ref.watch(profileNotifierProvider).valueOrNull;
+    final myId = ref.watch(currentUserProvider.select((u) => u?.id));
+    // 1분 틱 — 카드의 "N분 전"이 멈춰 있지 않게 리빌드를 건다(time_ago.dart).
+    final now = ref.watch(nowTickProvider).valueOrNull;
+    final glass = context.glass;
+
+    return GlassTabShell(
+      child: Stack(children: [
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          GlassTabHeader(
+            title: 'community_title'.tr(),
+            actions: [
+              AccountAvatar(
+                tooltip: 'home_account'.tr(),
+                imageUrl: profile?.avatarUrl,
+                displayName: profile?.displayName,
+                onPressed: () => context.push('/profile'),
+              ),
+            ],
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(communityFeedProvider.notifier).refresh(),
+              child: feed.when(
+                loading: () => _FeedSkeleton(glass: glass),
+                error: (e, _) => _ErrorState(
+                    onRetry: () =>
+                        ref.read(communityFeedProvider.notifier).refresh()),
+                data: (posts) => ListView(
+                  controller: _scroll,
+                  padding: glassDockListPadding(context),
+                  children: [
+                    const _NoticeBanner(),
+                    if (posts.isEmpty)
+                      _EmptyFeed()
+                    else
+                      for (final post in posts)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                              AppStyles.spacing16,
+                              AppStyles.spacing12,
+                              AppStyles.spacing16,
+                              0),
+                          child: PostCard(
+                            post: post,
+                            now: now,
+                            thumbnailUrl: post.thumbnailPath == null
+                                ? null
+                                : imageUrls[post.thumbnailPath],
+                            petPhotoUrl: post.petPhotoPath == null
+                                ? null
+                                : imageUrls[post.petPhotoPath],
+                            onPlay: () =>
+                                context.push('/community-player/${post.id}'),
+                            onToggleLike: () => ref
+                                .read(communityFeedProvider.notifier)
+                                .toggleLike(post.id),
+                            onOpenComments: () =>
+                                showCommentsSheet(context, ref, post),
+                            isMine: post.authorId == myId,
+                            onDelete: post.authorId == myId
+                                ? () => _confirmDelete(post)
+                                : null,
+                            onReport: (reason) => _reportPost(post, reason),
+                            onBlock: () => _confirmBlock(post),
+                            onOpenAuthor: () => context
+                                .push('/community-user/${post.authorId}'),
+                          ),
+                        ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ]),
+        Positioned(
+          right: 16,
+          bottom: glassDockListPadding(context).bottom + 8,
+          child: FloatingActionButton(
+            backgroundColor: glass.activeTile,
+            foregroundColor: glass.textOnActive,
+            onPressed: () => context.push('/community-share'),
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _reportPost(CommunityPost post, String reason) async {
+    // async gap 전에 캡처 — 신고 완료 시점엔 context가 죽어 있을 수 있다.
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(communityRepositoryProvider).report(
+          targetKind: 'post', targetId: post.id, reason: reason);
+      messenger.showSnackBar(
+          SnackBar(content: Text('community_report_done'.tr())));
+    } catch (_) {
+      messenger.showSnackBar(
+          SnackBar(content: Text('community_report_failed'.tr())));
+    }
+  }
+
+  Future<void> _confirmBlock(CommunityPost post) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('community_block_user'.tr()),
+        content: Text('community_block_confirm'.tr()),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('common_cancel'.tr())),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('community_block_user'.tr())),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      final messenger = ScaffoldMessenger.of(context); // async gap 전에 캡처
+      try {
+        await ref
+            .read(communityFeedProvider.notifier)
+            .blockUser(post.authorId);
+      } catch (_) {
+        // 실패를 삼키면 카드가 남아 있는 이유를 알 길이 없다 — 신고와 동일 문법.
+        messenger.showSnackBar(
+            SnackBar(content: Text('community_block_failed'.tr())));
+      }
+    }
+  }
+
+  Future<void> _confirmDelete(CommunityPost post) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('community_delete_post'.tr()),
+        content: Text('community_delete_confirm'.tr()),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('common_cancel'.tr())),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('common_delete'.tr())),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      final messenger = ScaffoldMessenger.of(context); // async gap 전에 캡처
+      try {
+        await ref.read(communityFeedProvider.notifier).deletePost(post);
+      } catch (_) {
+        messenger.showSnackBar(
+            SnackBar(content: Text('community_delete_failed'.tr())));
+      }
+    }
+  }
+}
+
+/// 운영자 공지 배너 — 최신 1건, 0건이면 아무것도 그리지 않는다 (Task 10).
+/// 탭하면 본문 다이얼로그(본문 없는 공지는 탭 불가).
+class _NoticeBanner extends ConsumerWidget {
+  const _NoticeBanner();
+
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selected = ref.watch(selectedCommunityCategoryProvider);
-    final posts = ref.watch(communityPostsProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        title: Text(
-          'community_title'.tr(),
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF222222),
-        foregroundColor: Colors.white,
-        onPressed: () => _showComingSoon(context),
-        tooltip: 'community_new_post'.tr(),
-        child: const Icon(Icons.add),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _CategoryChips(
-            selected: selected,
-            onChanged: (cat) =>
-                ref.read(selectedCommunityCategoryProvider.notifier).state = cat,
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: _PostsList(
-              posts: posts,
-              showWikiShortcut: selected == CommunityCategory.wiki,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('community_new_post_coming_soon'.tr()),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-}
-
-// ── 카테고리 칩 ───────────────────────────────────────────────────────────────
-
-class _CategoryChips extends StatelessWidget {
-  const _CategoryChips({required this.selected, required this.onChanged});
-
-  final CommunityCategory selected;
-  final ValueChanged<CommunityCategory> onChanged;
-
-  String _label(CommunityCategory cat) {
-    switch (cat) {
-      case CommunityCategory.all:
-        return 'community_cat_all'.tr();
-      case CommunityCategory.notice:
-        return 'community_cat_notice'.tr();
-      case CommunityCategory.wiki:
-        return 'community_cat_wiki'.tr();
-      case CommunityCategory.qna:
-        return 'community_cat_qna'.tr();
-      case CommunityCategory.free:
-        return 'community_cat_free'.tr();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: CommunityCategory.values.map((cat) {
-          final isSelected = selected == cat;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _Chip(
-              label: _label(cat),
-              selected: isSelected,
-              onTap: () => onChanged(cat),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    const blackColor = Color(0xFF222222);
-    final bg = selected
-        ? blackColor
-        : Theme.of(context).colorScheme.surfaceContainerHigh;
-    final fg = selected
-        ? Colors.white
-        : Theme.of(context).colorScheme.onSurfaceVariant;
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: fg,
-            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── 게시글 리스트 ────────────────────────────────────────────────────────────
-
-class _PostsList extends StatelessWidget {
-  const _PostsList({required this.posts, required this.showWikiShortcut});
-  final List<CommunityPost> posts;
-  final bool showWikiShortcut;
-
-  @override
-  Widget build(BuildContext context) {
-    if (posts.isEmpty && !showWikiShortcut) {
-      return Center(
-        child: Text(
-          'community_empty'.tr(),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
-        ),
-      );
-    }
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-      children: [
-        if (showWikiShortcut) ...[
-          _WikiShortcutCard(),
-          const SizedBox(height: 12),
-        ],
-        ...posts.map((post) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _PostCard(post: post),
-            )),
-      ],
-    );
-  }
-}
-
-class _PostCard extends StatelessWidget {
-  const _PostCard({required this.post});
-  final CommunityPost post;
-
-  String _categoryLabel(CommunityCategory cat) {
-    switch (cat) {
-      case CommunityCategory.notice:
-        return 'community_cat_notice'.tr();
-      case CommunityCategory.wiki:
-        return 'community_cat_wiki'.tr();
-      case CommunityCategory.qna:
-        return 'community_cat_qna'.tr();
-      case CommunityCategory.free:
-        return 'community_cat_free'.tr();
-      case CommunityCategory.all:
-        return '';
-    }
-  }
-
-  String _relativeTime(DateTime t) {
-    final diff = DateTime.now().difference(t);
-    if (diff.inMinutes < 1) return 'time_just_now'.tr();
-    if (diff.inMinutes < 60) {
-      return 'time_minutes_ago'.tr(namedArgs: {'n': '${diff.inMinutes}'});
-    }
-    if (diff.inHours < 24) {
-      return 'time_hours_ago'.tr(namedArgs: {'n': '${diff.inHours}'});
-    }
-    return 'time_days_ago'.tr(namedArgs: {'n': '${diff.inDays}'});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    _categoryLabel(post.category),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+    final notice = ref.watch(latestNoticeProvider).valueOrNull;
+    if (notice == null) return const SizedBox.shrink();
+    final glass = context.glass;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppStyles.spacing16, 0,
+          AppStyles.spacing16, AppStyles.spacing12),
+      child: GlassCard(
+        padding: const EdgeInsets.all(12),
+        child: InkWell(
+          onTap: notice.body == null
+              ? null
+              : () => showDialog<void>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text(notice.title),
+                      content: Text(notice.body!),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  post.title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 2,
+          child: Row(children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle, color: glass.activeTile),
+            ),
+            const SizedBox(width: 10),
+            Text('community_notice_label'.tr(), style: glass.labelCaps),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(notice.title,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${post.authorName} · ${_relativeTime(post.createdAt)}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
-                ),
-              ],
+                  style: glass.tileTitle.copyWith(fontSize: 12.5)),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 12, top: 28),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.chat_bubble_outline,
-                  size: 16,
-                  color: theme.colorScheme.outline,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${post.commentCount}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+            Icon(Icons.chevron_right, size: 16, color: glass.textTertiary),
+          ]),
+        ),
       ),
     );
   }
 }
 
-// ── 사육위키 카테고리 진입 카드 (wiki 기능 통합) ──────────────────────────────
-
-class _WikiShortcutCard extends StatelessWidget {
+/// 빈 피드 — "준비 중"이 아니라 첫 공유 유도 (시안 확정).
+class _EmptyFeed extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final glass = context.glass;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 64, 32, 0),
+      child: Column(children: [
+        Icon(Icons.video_library_outlined, size: 40, color: glass.textTertiary),
+        const SizedBox(height: 12),
+        Text('community_empty_title'.tr(),
+            style: glass.tileTitle, textAlign: TextAlign.center),
+        const SizedBox(height: 6),
+        Text('community_empty_body'.tr(),
+            style: glass.tileStatus, textAlign: TextAlign.center),
+      ]),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.onRetry});
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text('community_feed_error'.tr(), style: context.glass.tileStatus),
+        const SizedBox(height: 8),
+        TextButton(onPressed: onRetry, child: Text('common_retry'.tr())),
+      ]),
+    );
+  }
+}
+
+/// 로딩 스켈레톤 — CircularProgressIndicator 금지 규칙.
+class _FeedSkeleton extends StatelessWidget {
+  const _FeedSkeleton({required this.glass});
+  final GlassPalette glass;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: glass.skeletonBase,
+      highlightColor: glass.skeletonHighlight,
+      child: ListView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppStyles.spacing16),
         children: [
-          Row(
-            children: [
-              Icon(Icons.menu_book_rounded,
-                  color: theme.colorScheme.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'community_wiki_shortcut_title'.tr(),
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+          for (var i = 0; i < 3; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppStyles.spacing12),
+              child: Container(
+                height: 280,
+                decoration: BoxDecoration(
+                  color: glass.overlay,
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _ShortcutChip(
-                icon: Icons.search,
-                label: 'community_wiki_action_search'.tr(),
-                onTap: () => context.push('/search'),
-              ),
-              _ShortcutChip(
-                icon: Icons.auto_stories_rounded,
-                label: 'community_wiki_action_info'.tr(),
-                onTap: () => context.push('/wiki'),
-              ),
-              _ShortcutChip(
-                icon: Icons.biotech_rounded,
-                label: 'community_wiki_action_morph_calc'.tr(),
-                onTap: () => context.push('/wiki/crested-gecko/morph-calc'),
-              ),
-            ],
-          ),
+            ),
         ],
       ),
     );
   }
 }
 
-class _ShortcutChip extends StatelessWidget {
-  const _ShortcutChip({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: theme.colorScheme.primary),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// 위키 진입 카드(_WikiShortcutCard)는 2026-09-02 PRD 재설계로 제거 —
+// 위키 라우트·진입점 폐지(계획서 Task 2).

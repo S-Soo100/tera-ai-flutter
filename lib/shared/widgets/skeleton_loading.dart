@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../core/theme/glass_palette.dart';
+
 /// Shimmer 기반 스켈레톤 위젯 공통 라이브러리.
 ///
-/// 다크모드 대응: brightness 체크 후 색상 분기.
+/// 다크/라이트 대응: 색은 팔레트([GlassPalette.skeletonBase]·
+/// [GlassPalette.skeletonHighlight])에서 온다.
 /// 용도:
 ///   - [SkeletonLoading] : 임의 크기 회색 박스
 ///   - [SkeletonCard]    : 카드 형태 (여러 줄 placeholder)
@@ -23,9 +26,8 @@ class SkeletonLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final baseColor = context.glass.skeletonBase;
+    final highlightColor = context.glass.skeletonHighlight;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -56,9 +58,8 @@ class SkeletonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final baseColor = context.glass.skeletonBase;
+    final highlightColor = context.glass.skeletonHighlight;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -113,9 +114,8 @@ class SkeletonListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final baseColor = context.glass.skeletonBase;
+    final highlightColor = context.glass.skeletonHighlight;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
