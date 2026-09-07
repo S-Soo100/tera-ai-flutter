@@ -1,10 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
+import '../../my_cage/presentation/widgets/lcd_setting_tile.dart';
+import 'home_set_providers.dart';
 import 'widgets/cage_control_grid.dart';
 import 'widgets/device_offline_notice.dart';
 import 'widgets/env_summary_card.dart';
@@ -152,7 +155,64 @@ class _ScheduleSection extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 8),
+        const HomeLcdRow(),
       ],
+    );
+  }
+}
+
+/// LCD 문구 로우 — 사육장 설정에서 이동(2026-09-07 사용자 지시). 일정 로우와
+/// 같은 문법(h51 surfaceTint radius 12). 대상은 현재 세트의 제어 기기 —
+/// 기기가 없는 세트에서는 로우를 그리지 않는다(회색 버튼만 두면 고장으로
+/// 읽힌다는 기존 규칙).
+class HomeLcdRow extends ConsumerWidget {
+  const HomeLcdRow({super.key});
+
+  static const rowKey = Key('home_lcd_row');
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final device = ref.watch(currentSetProvider).valueOrNull?.device;
+    if (device == null) return const SizedBox.shrink();
+    final glass = context.glass;
+    return Material(
+      color: glass.surfaceTint,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        key: rowKey,
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => showLcdSheet(context, ref, device.id),
+        child: SizedBox(
+          height: 51,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'lcd_tile_title'.tr(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 16 * -0.02,
+                      color: glass.textSecondary,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 18,
+                  color: glass.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

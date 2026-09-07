@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivnanaut/features/home/presentation/home_screen.dart';
 import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivnanaut/features/my_cage/domain/device.dart';
 import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivnanaut/features/my_cage/data/lcd_repository.dart';
 import 'package:vivnanaut/features/my_cage/presentation/widgets/lcd_setting_tile.dart';
 
+/// LCD 문구 진입점(홈 `HomeLcdRow`, 2026-09-07 이동) + 시트([showLcdSheet]).
+///
 /// 네트워크를 타지 않는 대역. 호출 기록으로 "정말 REST로 갔는가"를 본다.
 class _FakeLcdRepo implements LcdRepository {
   _FakeLcdRepo({this.fail = false});
@@ -51,7 +54,7 @@ Future<void> _pump(WidgetTester tester, _FakeLcdRepo repo,
               )),
       ],
       child: const MaterialApp(
-        home: Scaffold(body: LcdSettingTile()),
+        home: Scaffold(body: HomeLcdRow()),
       ),
     ),
   );
@@ -63,7 +66,7 @@ void main() {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo);
 
-    await tester.tap(find.byKey(LcdSettingTile.tileKey));
+    await tester.tap(find.byKey(HomeLcdRow.rowKey));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '밥 6시');
@@ -78,7 +81,7 @@ void main() {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo);
 
-    await tester.tap(find.byKey(LcdSettingTile.tileKey));
+    await tester.tap(find.byKey(HomeLcdRow.rowKey));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('lcd_reset')));
     await tester.pumpAndSettle();
@@ -90,7 +93,7 @@ void main() {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo);
 
-    await tester.tap(find.byKey(LcdSettingTile.tileKey));
+    await tester.tap(find.byKey(HomeLcdRow.rowKey));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -104,7 +107,7 @@ void main() {
     final repo = _FakeLcdRepo(fail: true);
     await _pump(tester, repo);
 
-    await tester.tap(find.byKey(LcdSettingTile.tileKey));
+    await tester.tap(find.byKey(HomeLcdRow.rowKey));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('lcd_apply')));
     await tester.pumpAndSettle();
@@ -114,13 +117,10 @@ void main() {
     expect(find.byType(SnackBar), findsOneWidget);
   });
 
-  testWidgets('기기가 없으면 타일이 비활성 + 이유를 밝힌다', (tester) async {
+  testWidgets('기기가 없는 세트에서는 로우를 그리지 않는다', (tester) async {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo, deviceId: null);
 
-    final tile = tester.widget<ListTile>(find.descendant(
-        of: find.byKey(LcdSettingTile.tileKey), matching: find.byType(ListTile)));
-    expect(tile.enabled, isFalse);
-    expect(find.text('lcd_no_device'), findsOneWidget);
+    expect(find.byKey(HomeLcdRow.rowKey), findsNothing);
   });
 }

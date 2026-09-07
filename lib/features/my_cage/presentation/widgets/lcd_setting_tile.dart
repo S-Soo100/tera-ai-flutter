@@ -1,34 +1,28 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../data/lcd_repository.dart';
 import 'device_setting_sheet.dart';
 
-/// 사육장 설정의 LCD 문구 진입점 (2026-08-14 핸드오프 §3).
+/// LCD 문구 입력 시트 열기 (2026-08-14 핸드오프 §3).
 ///
-/// 대상은 **현재 세트의 제어 기기**(예약·목표 온습도와 같은 기준) —
-/// 껍데기는 [DeviceSettingTile]이 맡는다.
-class LcdSettingTile extends StatelessWidget {
-  const LcdSettingTile({super.key});
-
-  static const tileKey = Key('lcd_setting_tile');
-
-  @override
-  Widget build(BuildContext context) {
-    return DeviceSettingTile(
-      key: tileKey,
-      icon: Icons.smart_display_outlined,
-      title: (_) => 'lcd_tile_title'.tr(),
-      subtitle: (_, __) => 'lcd_tile_subtitle'.tr(),
-      onTap: (context, ref, device) => showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        builder: (ctx) => _LcdSheet(
-            deviceId: device.id, repo: ref.read(lcdRepositoryProvider)),
-      ),
-    );
-  }
+/// 진입점은 홈 '일정 설정' 섹션의 LCD 로우다(2026-09-07 사용자 지시로
+/// 사육장 설정에서 이동). 대상은 **현재 세트의 제어 기기**(예약·목표
+/// 온습도와 같은 기준). `lcd_bitmap/lcd_clear`가 차트 마커에서 제외되는
+/// 규칙은 그대로다(액추에이터 동작이 아님).
+Future<void> showLcdSheet(
+  BuildContext context,
+  WidgetRef ref,
+  String deviceId,
+) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) =>
+        _LcdSheet(deviceId: deviceId, repo: ref.read(lcdRepositoryProvider)),
+  );
 }
 
 class _LcdSheet extends StatefulWidget {
