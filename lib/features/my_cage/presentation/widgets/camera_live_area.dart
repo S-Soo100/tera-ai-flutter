@@ -242,7 +242,7 @@ class _CameraNameBadge extends StatelessWidget {
   }
 }
 
-/// 우하단 확장 — 32pt 원형(black 30%), 카메라 상세로(홈 _ExpandButton 문법).
+/// 우하단 확장 — 32pt 원형(black 30%), 라이브 전체화면으로(홈 _ExpandButton 문법).
 class _ExpandButton extends StatelessWidget {
   const _ExpandButton({super.key, required this.cameraId});
 
@@ -255,7 +255,7 @@ class _ExpandButton extends StatelessWidget {
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/crecam/cameras/$cameraId'),
+        onTap: () => context.push('/crecam/cameras/$cameraId/live'),
         child: const SizedBox(
           width: 32,
           height: 32,

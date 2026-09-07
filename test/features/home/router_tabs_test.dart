@@ -61,6 +61,7 @@ void main() {
       for (final path in [
         '/crecam/cameras/pair',
         '/crecam/cameras/abc',
+        '/crecam/cameras/abc/live',
         '/crecam/clips/abc',
         '/crecam/motion-clips/abc',
       ]) {

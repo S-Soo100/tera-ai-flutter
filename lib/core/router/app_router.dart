@@ -11,6 +11,7 @@ import '../../features/my_pets/presentation/pet_edit_screen.dart';
 import '../../features/my_cage/presentation/crecam_screen.dart';
 import '../../features/my_cage/presentation/smart_cage_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
+import '../../features/my_cage/presentation/camera_live_fullscreen_screen.dart';
 import '../../features/my_cage/presentation/clip_player_screen.dart';
 import '../../features/my_cage/presentation/motion_clip_player_screen.dart';
 import '../../features/my_cage/presentation/clip_playlist_player_screen.dart';
@@ -210,6 +211,14 @@ GoRouter buildAppRouter({
         builder: (context, state) {
           final id = state.pathParameters['cameraId']!;
           return CameraDetailScreen(cameraId: id);
+        },
+      ),
+      // 라이브 전체화면(가로, 영상만) — 홈·카메라 탭 확대 버튼의 목적지.
+      GoRoute(
+        path: '/crecam/cameras/:cameraId/live',
+        builder: (context, state) {
+          final id = state.pathParameters['cameraId']!;
+          return CameraLiveFullscreenScreen(cameraId: id);
         },
       ),
       GoRoute(

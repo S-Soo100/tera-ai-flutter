@@ -75,6 +75,15 @@ GoRouter _router() => GoRouter(
               const Scaffold(body: Center(child: Text('bookmarks-screen'))),
         ),
         GoRoute(
+          path: '/crecam/cameras/:cameraId/live',
+          builder: (_, state) => Scaffold(
+            body: Center(
+              child: Text(
+                  'live-fullscreen-${state.pathParameters['cameraId']}'),
+            ),
+          ),
+        ),
+        GoRoute(
           path: '/crecam/cameras/pair',
           builder: (_, __) =>
               const Scaffold(body: Center(child: Text('pair-screen'))),
@@ -167,6 +176,16 @@ void main() {
     // 어느 카메라인지 이름 배지로 밝힌다(리뷰 2026-09-04 — 구 그리드가 주던
     // 식별 정보의 복원).
     expect(find.text('테스트캠'), findsOneWidget);
+  });
+
+  testWidgets('확장 버튼 탭 → 라이브 전체화면(가로, 영상만) 라우트',
+      (tester) async {
+    // 구 목적지는 카메라 상세였다 — "확대" 기대와 어긋나 라이브 전용
+    // 전체화면으로 교체(2026-09-07 사용자 결정).
+    await _pump(tester);
+    await tester.tap(find.byKey(CameraLiveArea.expandButtonKey));
+    await tester.pumpAndSettle();
+    expect(find.text('live-fullscreen-$_cameraId'), findsOneWidget);
   });
 
   testWidgets('최초 진입은 홈 세트의 카메라에서 시작 — 목록 첫 카메라가 아니다',

@@ -143,8 +143,8 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
 
     final cam = current.camera;
     if (cam == null) return surface;
-    // Figma 668:859 — 우하단 전체보기. 라이브 전용 전체화면이 없어
-    // 카메라 상세(라이브 크게 보기)로 보낸다.
+    // Figma 668:859 — 우하단 전체보기 → 라이브 전체화면(가로, 영상만).
+    // 구 목적지 카메라 상세는 "확대" 기대와 어긋났다(2026-09-07 사용자 결정).
     return Stack(
       children: [
         surface,
@@ -171,7 +171,7 @@ class _ExpandButton extends StatelessWidget {
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/crecam/cameras/$cameraId'),
+        onTap: () => context.push('/crecam/cameras/$cameraId/live'),
         child: const SizedBox(
           width: 32,
           height: 32,
