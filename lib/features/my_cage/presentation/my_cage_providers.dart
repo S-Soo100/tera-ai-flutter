@@ -421,16 +421,18 @@ final nightlyReportProvider =
 
 // ── 카메라 탭 Camera Home (2026-09-04 재설계 T2) ───────────────────────────────
 
-/// 카메라 탭 라이브 PageView의 현재 인덱스 — 아래 클립 그리드의 기준 카메라.
-/// 카메라 목록이 줄어들 수 있으니 소비처는 반드시 clamp해서 쓴다.
+/// 카메라 탭 라이브 PageView의 현재 카메라 **id** — 아래 클립 그리드의 기준
+/// 카메라. 목록에서 사라진 id일 수 있으니 소비처는 폴백을 갖고 쓴다.
 ///
-/// **-1 = 아직 사용자가 고른 적 없음(센티넬).** CameraLiveArea가 첫 데이터
-/// 프레임에 **홈이 보고 있는 세트의 카메라** 인덱스로 해석해 저장한다 —
+/// **null = 아직 사용자가 고른 적 없음(센티넬).** CameraLiveArea가 첫 데이터
+/// 프레임에 **홈이 보고 있는 세트의 카메라**로 해석해 저장한다 —
 /// 안 그러면 카메라 탭이 항상 목록 첫 카메라(무응답일 수 있음)로 열려
 /// "홈에선 보이는데 카메라 탭은 안 보임"으로 읽힌다(2026-09-04 사용자 제보).
+/// 인덱스가 아니라 id인 이유: 카메라 탭은 세트 순서로 재정렬해 돌므로
+/// (2026-09-07 홈↔카메라 슬라이드 동기화) 인덱스는 목록 재조립에 흔들린다.
 /// 해석 로직이 여기 없고 위젯에 있는 이유: currentSetProvider(home)를 이
 /// 파일이 import하면 home_set_providers ↔ my_cage_providers 순환이 된다.
-final selectedCrecamCameraProvider = StateProvider<int>((ref) => -1);
+final selectedCrecamCameraProvider = StateProvider<String?>((ref) => null);
 
 /// 기간 설정 날짜(자정 정규화). 기본 = 오늘.
 ///
@@ -512,13 +514,18 @@ typedef CrecamHourGroup = ({DateTime hour, List<MotionClip> clips});
 /// 카메라가 없으면 빈 목록.
 final crecamHourGroupsProvider =
     FutureProvider.autoDispose<List<CrecamHourGroup>>((ref) async {
+  // watch는 await 앞에서 — 뒤에서 하면 의존 등록이 늦어 선택 변경이 반영
+  // 안 될 수 있다(home_set_providers의 currentSetProvider 주석이 SOT).
+  final id = ref.watch(selectedCrecamCameraProvider);
+  final day = ref.watch(crecamDayProvider);
   final cameras = await ref.watch(camerasProvider.future);
   if (cameras.isEmpty) return const [];
-  final index =
-      ref.watch(selectedCrecamCameraProvider).clamp(0, cameras.length - 1);
-  final day = ref.watch(crecamDayProvider);
+  // 센티넬(null)·목록에서 사라진 id는 첫 카메라 폴백 — CameraLiveArea가
+  // 첫 데이터 프레임에 홈 세트 카메라로 해석해 저장하면 그때 다시 돈다.
+  final camera =
+      cameras.firstWhere((c) => c.id == id, orElse: () => cameras.first);
   final clips = await ref.watch(
-    motionClipsProvider((cameraId: cameras[index].id, day: day)).future,
+    motionClipsProvider((cameraId: camera.id, day: day)).future,
   );
 
   final byHour = <DateTime, List<MotionClip>>{};

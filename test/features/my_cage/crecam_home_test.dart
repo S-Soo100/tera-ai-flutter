@@ -202,6 +202,82 @@ void main() {
     expect(find.text('live-view-other'), findsNothing);
   });
 
+  // ── 홈 ↔ 카메라 탭 슬라이드 동기화 (2026-09-07 사용자 제보) ──────────────
+
+  testWidgets('카메라 스와이프 → 홈 세트 선택이 따라온다 + 순서는 세트 순서',
+      (tester) async {
+    // raw 목록은 [camB, camA]로 뒤섞어 둔다 — 세트 순서([camA, camB])로
+    // 재정렬돼야 페이지 1 스와이프가 camB다.
+    await _pump(
+      tester,
+      cameras: [_offlineCamera(id: 'camB'), _offlineCamera(id: 'camA')],
+      sets: [_setWithCamera('camA'), _setWithCamera('camB')],
+    );
+    await tester.pumpAndSettle();
+    // 홈 세트(index 0)의 camA에서 시작 — 정렬이 raw 순서였다면 camB.
+    expect(find.text('live-view-camA'), findsOneWidget);
+
+    await tester.fling(
+        find.byKey(CameraLiveArea.pageViewKey), const Offset(-400, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(find.text('live-view-camB'), findsOneWidget);
+
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(CrecamScreen)),
+        listen: false);
+    expect(container.read(selectedSetIndexProvider), 1);
+    expect(container.read(selectedCrecamCameraProvider), 'camB');
+  });
+
+  testWidgets('홈에서 세트 변경 → 카메라 탭 현재 슬라이드가 따라간다',
+      (tester) async {
+    await _pump(
+      tester,
+      cameras: [_offlineCamera(id: 'camB'), _offlineCamera(id: 'camA')],
+      sets: [_setWithCamera('camA'), _setWithCamera('camB')],
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('live-view-camA'), findsOneWidget);
+
+    // 홈 헤더 드롭다운/스와이프에 해당하는 상태 변경.
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(CrecamScreen)),
+        listen: false);
+    container.read(selectedSetIndexProvider.notifier).state = 1;
+    await tester.pumpAndSettle();
+
+    expect(find.text('live-view-camB'), findsOneWidget);
+    expect(find.text('live-view-camA'), findsNothing);
+    expect(container.read(selectedCrecamCameraProvider), 'camB');
+  });
+
+  group('orderCamerasBySets — 카메라 탭 슬라이드 순서', () {
+    final camA = _offlineCamera(id: 'a');
+    final camB = _offlineCamera(id: 'b');
+    final free = _offlineCamera(id: 'free'); // 세트 밖
+
+    test('세트 순서 먼저, 세트 밖 카메라는 뒤에 원래 순서대로', () {
+      final ordered = orderCamerasBySets(
+        [free, camB, camA],
+        [_setWithCamera('a'), _setWithCamera('b')],
+      );
+      expect(ordered.map((c) => c.id), ['a', 'b', 'free']);
+    });
+
+    test('세트에만 있고 목록엔 없는 stale 카메라는 건너뛴다', () {
+      final ordered = orderCamerasBySets(
+        [camA],
+        [_setWithCamera('ghost'), _setWithCamera('a')],
+      );
+      expect(ordered.map((c) => c.id), ['a']);
+    });
+
+    test('세트가 비어 있으면 원래 순서 그대로', () {
+      final ordered = orderCamerasBySets([camB, camA], const []);
+      expect(ordered.map((c) => c.id), ['b', 'a']);
+    });
+  });
+
   testWidgets('시간 그룹 헤더 — 최신 시간부터, 날짜는 첫 그룹만', (tester) async {
     await _pump(tester);
     // EasyLocalization 없이 tr()는 키 원문을 돌려준다(namedArgs 미치환) —
