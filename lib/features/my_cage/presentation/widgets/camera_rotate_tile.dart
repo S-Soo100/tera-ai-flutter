@@ -63,10 +63,12 @@ class _CameraRotateTileState extends ConsumerState<CameraRotateTile> {
     return SwitchListTile(
       key: CameraRotateTile.tileKey,
       secondary: const Icon(Icons.flip_camera_android_outlined),
-      title: Text('camera_rotate_title'.tr(args: [camera.name])),
+      // 카메라명은 부제로 — 제목에 붙이면 긴 이름이 어색하게 꺾인다
+      // (2026-09-08 사용성 리뷰 2번).
+      title: Text('camera_rotate_title'.tr()),
       // 적용 시점 안내는 회신 §6 권장 문구 그대로 — Bayer 검증 결과로
       // "즉시"가 "재시작 후"로 바뀌어도 문구가 버티게 "잠시 후"로 둔다.
-      subtitle: Text('camera_rotate_subtitle'.tr()),
+      subtitle: Text('camera_rotate_subtitle'.tr(args: [camera.name])),
       value: _pending ?? camera.rotate180,
       onChanged: _busy ? null : (v) => _toggle(camera.id, v),
     );

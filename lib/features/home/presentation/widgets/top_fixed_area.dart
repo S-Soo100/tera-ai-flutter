@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/live_surface.dart';
+import '../../../my_cage/presentation/widgets/camera_name_badge.dart';
 import '../../../my_cage/presentation/widgets/live_connection_badge.dart';
 import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
 import '../../domain/enclosure_set.dart';
@@ -159,6 +160,14 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
             right: 20,
             bottom: 12,
             child: _ExpandButton(cameraId: cam.id),
+          ),
+        // 어느 캠인지 — 카메라 탭 라이브와 같은 좌하단 이름 배지
+        // (2026-09-08 사용성 리뷰 7번: 점 인디케이터만으론 알 수 없다).
+        if (cam != null)
+          Positioned(
+            left: 12,
+            bottom: 12,
+            child: CameraNameBadge(name: cam.name),
           ),
       ],
     );

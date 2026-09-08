@@ -12,6 +12,7 @@ import '../../../home/presentation/home_set_providers.dart';
 import '../../../home/presentation/widgets/live_clock_overlay.dart';
 import '../../domain/terra_camera.dart';
 import '../my_cage_providers.dart';
+import 'camera_name_badge.dart';
 import 'live_connection_badge.dart';
 import 'webrtc_live_view.dart';
 
@@ -267,7 +268,7 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
           Positioned(
             left: 12,
             bottom: 12,
-            child: _CameraNameBadge(name: current.name),
+            child: CameraNameBadge(name: current.name),
           ),
         ],
       ),
@@ -294,39 +295,8 @@ class _CameraPane extends ConsumerWidget {
   }
 }
 
-/// 좌하단 카메라 이름 배지 — 확장 버튼과 같은 스크림 캡슐.
-class _CameraNameBadge extends StatelessWidget {
-  const _CameraNameBadge({required this.name});
-
-  final String name;
-
-  static const badgeKey = Key('crecam_live_camera_name');
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      key: badgeKey,
-      constraints: const BoxConstraints(maxWidth: 180),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppTheme.liveScrim,
-        borderRadius: BorderRadius.circular(11),
-      ),
-      child: Text(
-        name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          fontFamily: 'Pretendard',
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 12 * -0.02,
-          color: AppTheme.liveOnDark,
-        ),
-      ),
-    );
-  }
-}
+// 좌하단 카메라 이름 배지는 CameraNameBadge로 공용화됐다(2026-09-08 —
+// 홈 TopFixedArea에도 같은 배지가 달린다). camera_name_badge.dart 참조.
 
 /// 우하단 확장 — 32pt 원형(black 30%), 라이브 전체화면으로(홈 _ExpandButton 문법).
 class _ExpandButton extends StatelessWidget {
