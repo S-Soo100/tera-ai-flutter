@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/config/env_config.dart';
+import '../../../core/network/terra_rest_client.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/camera_repository.dart';
 import '../data/enclosure_repository.dart';
@@ -63,6 +64,7 @@ final _tokenProviderProvider = Provider<Future<String?> Function()>(
 final cameraRepositoryProvider = Provider<CameraRepository>((ref) {
   return CameraRepository(
     supabase: ref.watch(_supabaseClientProvider),
+    rest: ref.watch(terraRestClientProvider),
   );
 });
 

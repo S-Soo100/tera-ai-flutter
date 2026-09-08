@@ -10,6 +10,7 @@ import '../../home/domain/enclosure_set.dart';
 import '../../home/presentation/home_set_providers.dart';
 import '../../my_pets/domain/pet.dart';
 import '../../my_pets/presentation/my_pets_providers.dart';
+import 'widgets/camera_rotate_tile.dart';
 import 'widgets/setpoint_setting_tile.dart';
 
 /// 개체 배정 UI 노출 스위치.
@@ -56,6 +57,9 @@ class EnclosureSettingsScreen extends StatelessWidget {
               onTap: () => context.push('/smart-cage/enclosures'),
             ),
             const SetpointSettingTile(),
+            // 카메라 180° 회전(설치 방향 보정) — capabilities 보고 카메라만
+            // 노출(회신 2026-09-08). 구 펌웨어면 타일이 통째로 사라진다.
+            const CameraRotateTile(),
             // LCD 문구 진입점은 홈 '일정 설정' 하단으로 이동(2026-09-07 지시).
           ],
         ),
