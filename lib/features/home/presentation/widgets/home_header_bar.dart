@@ -7,23 +7,25 @@ import '../../../../core/theme/glass_palette.dart';
 import '../../domain/enclosure_set.dart';
 import '../home_set_providers.dart';
 
-/// 홈 헤더 — Figma A.4 ① (h44, 좌 세트 드롭다운 필 + 우 원형 버튼 2개).
+/// 홈 헤더 — Figma A.4 ① 기반 (h44, 좌 세트 드롭다운 필 + 우 원형 버튼 3개).
 ///
 /// 좌: 세트 드롭다운 필(bg surfaceTint, radius 12, 텍스트 16 SemiBold +
 /// `keyboard_arrow_down` 24 — 세트 1개면 화살표 숨김, PRD §3.1 예외).
-/// 우: 44×44 흰 원형 버튼 ×2 — `[+]`(기기/개체/사육세트 추가 메뉴),
-/// `[person]`(→ `/profile`).
+/// 우: 44×44 흰 원형 버튼 ×3 — `[+]`(기기/개체 추가·사육장 연동 메뉴),
+/// `[⚙️]`(→ `/env-settings` 환경설정), `[person]`(→ `/profile`).
 ///
-/// 🔔·⚙️은 PRD 재설계(2026-09-02)로 빠졌다 — 알림 진입은 프로필 화면 안,
-/// 사육장 설정 진입은 `[+]` 메뉴의 사육세트 추가(`/enclosure-settings`)가
-/// 겸한다. 미읽음 provider는 `notification/presentation/notification_providers`
-/// 로 이사했다.
+/// 🔔은 PRD 재설계(2026-09-02)로 빠졌다 — 알림 진입은 프로필 화면 안.
+/// ⚙️도 그때 함께 뺐다가 **2026-09-08 사용자 결정으로 부활** — 목표 온습도·
+/// 화면 뒤집기 같은 실사용 설정이 생겨 "추가" 메뉴에 설정을 얹어두는 구조가
+/// 더는 안 맞는다(연동/설정 분리). 미읽음 provider는
+/// `notification/presentation/notification_providers`로 이사했다.
 class HomeHeaderBar extends ConsumerWidget {
   const HomeHeaderBar({super.key});
 
   static const dropdownArrowKey = Key('home_header_dropdown_arrow');
   static const setPillKey = Key('home_header_set_pill');
   static const addButtonKey = Key('home_header_add_button');
+  static const settingsButtonKey = Key('home_header_settings_button');
   static const personButtonKey = Key('home_header_person_button');
 
   /// Figma 실측 헤더 높이.
@@ -107,6 +109,13 @@ class HomeHeaderBar extends ConsumerWidget {
           _AddMenuButton(key: addButtonKey),
           const SizedBox(width: 12),
           _CircleButton(
+            key: settingsButtonKey,
+            icon: Icons.settings_outlined,
+            tooltip: 'home_env_settings'.tr(),
+            onTap: () => context.push('/env-settings'),
+          ),
+          const SizedBox(width: 12),
+          _CircleButton(
             key: personButtonKey,
             icon: Icons.person_outline,
             tooltip: 'home_account'.tr(),
@@ -142,14 +151,14 @@ class HomeHeaderBar extends ConsumerWidget {
   }
 }
 
-/// `[+]` 메뉴 — 기기 추가 / 카메라 추가 / 개체 추가 / 사육세트 추가.
+/// `[+]` 메뉴 — 기기 추가 / 카메라 추가 / 개체 추가 / 사육장 연동.
 class _AddMenuButton extends StatelessWidget {
   const _AddMenuButton({super.key});
 
   static const deviceItemKey = Key('home_header_add_device');
   static const cameraItemKey = Key('home_header_add_camera');
   static const petItemKey = Key('home_header_add_pet');
-  static const setItemKey = Key('home_header_add_set');
+  static const setItemKey = Key('home_header_link_enclosure');
 
   @override
   Widget build(BuildContext context) {
@@ -178,10 +187,12 @@ class _AddMenuButton extends StatelessWidget {
           value: '/pet-add',
           child: Text('home_add_pet'.tr()),
         ),
+        // "사육세트 추가" → "사육장 연동"으로 개명(2026-09-08) — 이 화면은
+        // 배정·페어링·관리이지 '추가' 한 동작이 아니었다. 설정은 헤더 ⚙️로.
         PopupMenuItem(
           key: setItemKey,
           value: '/enclosure-settings',
-          child: Text('home_add_set'.tr()),
+          child: Text('home_enclosure_link'.tr()),
         ),
       ],
       child: _CircleSurface(

@@ -39,6 +39,7 @@ import '../../features/dev/design_lab/variant_b_shell.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/notification/presentation/notification_center_screen.dart';
 import '../../features/my_cage/presentation/enclosure_settings_screen.dart';
+import '../../features/my_cage/presentation/env_settings_screen.dart';
 import '../../features/home/presentation/routine_settings_screen.dart';
 import '../../features/home/presentation/env_detail_screen.dart';
 import '../../shared/widgets/glass_dock.dart';
@@ -362,6 +363,11 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/enclosure-settings',
         builder: (context, state) => const EnclosureSettingsScreen(),
+      ),
+      // 환경설정(기기·카메라 설정) — 사육장 연동에서 분리(2026-09-08).
+      GoRoute(
+        path: '/env-settings',
+        builder: (context, state) => const EnvSettingsScreen(),
       ),
     ],
   );

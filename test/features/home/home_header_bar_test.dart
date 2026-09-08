@@ -72,7 +72,12 @@ GoRouter _router() => GoRouter(
         GoRoute(
           path: '/enclosure-settings',
           builder: (_, __) => const Scaffold(
-              body: Center(child: Text('enclosure-settings-screen'))),
+              body: Center(child: Text('enclosure-link-screen'))),
+        ),
+        GoRoute(
+          path: '/env-settings',
+          builder: (_, __) => const Scaffold(
+              body: Center(child: Text('env-settings-screen'))),
         ),
       ],
     );
@@ -140,15 +145,24 @@ void main() {
     expect(find.text('profile-screen'), findsOneWidget);
   });
 
+  testWidgets('⚙️ 버튼 → /env-settings — 연동/설정 분리(2026-09-08)',
+      (tester) async {
+    await _pump(tester, [_set('e1', 'A')]);
+    await tester.tap(find.byKey(HomeHeaderBar.settingsButtonKey));
+    await tester.pumpAndSettle();
+    expect(find.text('env-settings-screen'), findsOneWidget);
+  });
+
   group('[+] 메뉴', () {
-    testWidgets('탭하면 기기/카메라/개체/사육세트 추가 4항목이 뜬다', (tester) async {
+    testWidgets('탭하면 기기/카메라/개체 추가 + 사육장 연동 4항목이 뜬다',
+        (tester) async {
       await _pump(tester, [_set('e1', 'A')]);
       await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
       await tester.pumpAndSettle();
       expect(find.text('home_add_device'), findsOneWidget);
       expect(find.text('home_add_camera'), findsOneWidget);
       expect(find.text('home_add_pet'), findsOneWidget);
-      expect(find.text('home_add_set'), findsOneWidget);
+      expect(find.text('home_enclosure_link'), findsOneWidget);
     });
 
     testWidgets('카메라 추가 → /crecam/cameras/pair (카메라 탭 재설계 T2)',
@@ -179,13 +193,13 @@ void main() {
       expect(find.text('pet-add-screen'), findsOneWidget);
     });
 
-    testWidgets('사육세트 추가 → /enclosure-settings', (tester) async {
+    testWidgets('사육장 연동 → /enclosure-settings', (tester) async {
       await _pump(tester, [_set('e1', 'A')]);
       await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('home_add_set'));
+      await tester.tap(find.text('home_enclosure_link'));
       await tester.pumpAndSettle();
-      expect(find.text('enclosure-settings-screen'), findsOneWidget);
+      expect(find.text('enclosure-link-screen'), findsOneWidget);
     });
   });
 }

@@ -10,8 +10,6 @@ import '../../home/domain/enclosure_set.dart';
 import '../../home/presentation/home_set_providers.dart';
 import '../../my_pets/domain/pet.dart';
 import '../../my_pets/presentation/my_pets_providers.dart';
-import 'widgets/camera_rotate_tile.dart';
-import 'widgets/setpoint_setting_tile.dart';
 
 /// 개체 배정 UI 노출 스위치.
 ///
@@ -20,7 +18,10 @@ import 'widgets/setpoint_setting_tile.dart';
 /// 2026-08-06 petcam-lab 적용 완료 → on.
 const bool kPetEnclosureAssignmentEnabled = true;
 
-/// PRD §3.1 사육장 설정.
+/// 사육장 연동 (구 "사육장 설정", PRD §3.1) — 무엇을 무엇에 **잇는** 화면만
+/// 남겼다: 개체 배정·기기/카메라 페어링·사육장 관리. 기기·카메라 **설정**
+/// (목표 온습도·화면 뒤집기)은 `EnvSettingsScreen`(환경설정, 홈 헤더 ⚙️)으로
+/// 분리(2026-09-08 사용자 결정 — "추가" 메뉴에서 설정이 열리는 어색함 해소).
 class EnclosureSettingsScreen extends StatelessWidget {
   const EnclosureSettingsScreen({super.key});
 
@@ -29,7 +30,7 @@ class EnclosureSettingsScreen extends StatelessWidget {
     // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 배정/페어링 로직 불변.
     return GlassPageShell(
       child: Scaffold(
-        appBar: AppBar(title: Text('home_enclosure_settings'.tr())),
+        appBar: AppBar(title: Text('home_enclosure_link'.tr())),
         body: ListView(
           children: [
             if (kPetEnclosureAssignmentEnabled) ...[
@@ -56,11 +57,8 @@ class EnclosureSettingsScreen extends StatelessWidget {
               title: Text('enclosure_settings_manage'.tr()),
               onTap: () => context.push('/smart-cage/enclosures'),
             ),
-            const SetpointSettingTile(),
-            // 카메라 180° 회전(설치 방향 보정) — capabilities 보고 카메라만
-            // 노출(회신 2026-09-08). 구 펌웨어면 타일이 통째로 사라진다.
-            const CameraRotateTile(),
-            // LCD 문구 진입점은 홈 '일정 설정' 하단으로 이동(2026-09-07 지시).
+            // 목표 온습도·화면 뒤집기는 환경설정(EnvSettingsScreen)으로 이동
+            // (2026-09-08). LCD 문구 진입점은 홈 '일정 설정' 하단(2026-09-07).
           ],
         ),
       ),
