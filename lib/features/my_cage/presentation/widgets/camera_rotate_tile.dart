@@ -42,13 +42,20 @@ class _CameraRotateTileState extends ConsumerState<CameraRotateTile> {
       _busy = true;
       _pending = next;
     });
+    final started = DateTime.now();
     try {
       await ref.read(cameraRepositoryProvider).setRotate180(cameraUuid, next);
+      // 진단 로그(2026-09-09) — PATCH 응답 소요를 남긴다. 계약상 응답은
+      // DB 반영 즉시지만, 실측에서 지연이 보이면 이 로그로 특정한다.
+      debugPrint('[rotate] PATCH ok rotate_180=$next '
+          'in ${DateTime.now().difference(started).inMilliseconds}ms');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('camera_rotate_applying'.tr())),
       );
     } catch (e) {
+      debugPrint('[rotate] PATCH failed '
+          'in ${DateTime.now().difference(started).inMilliseconds}ms: $e');
       if (!mounted) return;
       setState(() => _pending = null); // 실패 — 서버 값으로 되돌림
       ScaffoldMessenger.of(context).showSnackBar(
