@@ -30,6 +30,40 @@ class CameraRotateTile extends ConsumerStatefulWidget {
   ConsumerState<CameraRotateTile> createState() => _CameraRotateTileState();
 }
 
+/// 회전 PATCH + 결과 스낵바 공용 실행부 — 환경설정 타일과 라이브 전체화면
+/// 버튼([CameraLiveFullscreenScreen])이 공유한다. 성공 시 재부팅 예고
+/// 스낵바(후속 통보 09-09 §1), 실패 시 사유 스낵바. 반환은 성공 여부.
+///
+/// 메신저는 await **전에** 잡는다 — 응답 사이 화면이 pop돼도 스낵바는
+/// 남은 화면에 뜬다(`submitAndClose` 문법).
+Future<bool> submitRotate180(
+  BuildContext context,
+  WidgetRef ref, {
+  required String cameraUuid,
+  required bool next,
+}) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final started = DateTime.now();
+  try {
+    await ref.read(cameraRepositoryProvider).setRotate180(cameraUuid, next);
+    // 진단 로그(2026-09-09) — PATCH 응답 소요를 남긴다. 계약상 응답은
+    // DB 반영 즉시지만, 실측에서 지연이 보이면 이 로그로 특정한다.
+    debugPrint('[rotate] PATCH ok rotate_180=$next '
+        'in ${DateTime.now().difference(started).inMilliseconds}ms');
+    messenger.showSnackBar(
+      SnackBar(content: Text('camera_rotate_applying'.tr())),
+    );
+    return true;
+  } catch (e) {
+    debugPrint('[rotate] PATCH failed '
+        'in ${DateTime.now().difference(started).inMilliseconds}ms: $e');
+    messenger.showSnackBar(
+      SnackBar(content: Text('camera_rotate_failed'.tr(args: ['$e']))),
+    );
+    return false;
+  }
+}
+
 class _CameraRotateTileState extends ConsumerState<CameraRotateTile> {
   bool _busy = false;
 
@@ -42,28 +76,13 @@ class _CameraRotateTileState extends ConsumerState<CameraRotateTile> {
       _busy = true;
       _pending = next;
     });
-    final started = DateTime.now();
-    try {
-      await ref.read(cameraRepositoryProvider).setRotate180(cameraUuid, next);
-      // 진단 로그(2026-09-09) — PATCH 응답 소요를 남긴다. 계약상 응답은
-      // DB 반영 즉시지만, 실측에서 지연이 보이면 이 로그로 특정한다.
-      debugPrint('[rotate] PATCH ok rotate_180=$next '
-          'in ${DateTime.now().difference(started).inMilliseconds}ms');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('camera_rotate_applying'.tr())),
-      );
-    } catch (e) {
-      debugPrint('[rotate] PATCH failed '
-          'in ${DateTime.now().difference(started).inMilliseconds}ms: $e');
-      if (!mounted) return;
-      setState(() => _pending = null); // 실패 — 서버 값으로 되돌림
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('camera_rotate_failed'.tr(args: ['$e']))),
-      );
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    final ok = await submitRotate180(context, ref,
+        cameraUuid: cameraUuid, next: next);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      if (!ok) _pending = null; // 실패 — 서버 값으로 되돌림
+    });
   }
 
   @override
