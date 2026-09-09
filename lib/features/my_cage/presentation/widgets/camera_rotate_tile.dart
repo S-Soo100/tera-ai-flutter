@@ -16,6 +16,11 @@ import '../my_cage_providers.dart';
 /// 쓰기는 REST `PATCH /cameras/{id}` 하나 — 서버가 MQTT 발행·재연결 동기화를
 /// 책임지므로 앱은 ack를 기다리지 않는다. 반영은 cameras Realtime UPDATE →
 /// [camerasProvider] → [currentSetProvider] 캐스케이드로 돌아온다.
+///
+/// 적용 시점(R6, 09-09 개정): 토글 시 **카메라가 재부팅**해 약 20초 뒤
+/// 적용된다(Bayer 재설정이 스트리밍 중 불가). 라이브 시청 중이면 끊겼다
+/// 자동 재연결 — 그동안 오프라인처럼 보이는 게 고장으로 읽히지 않게
+/// 성공 스낵바로 예고한다(후속 통보 §1 검토 항목 수용).
 class CameraRotateTile extends ConsumerStatefulWidget {
   const CameraRotateTile({super.key});
 
@@ -39,6 +44,10 @@ class _CameraRotateTileState extends ConsumerState<CameraRotateTile> {
     });
     try {
       await ref.read(cameraRepositoryProvider).setRotate180(cameraUuid, next);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('camera_rotate_applying'.tr())),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _pending = null); // 실패 — 서버 값으로 되돌림

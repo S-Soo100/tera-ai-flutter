@@ -221,6 +221,7 @@
   "camera_delete_confirm_no": "취소",
   "camera_rotate_title": "화면 뒤집기 (180°)",
   "camera_rotate_subtitle": "{} — 잠시 후 적용돼요. 카메라가 꺼져 있으면 다시 켜질 때 적용돼요.",
+  "camera_rotate_applying": "적용 중이에요 — 카메라가 다시 시작되면서 라이브가 잠시 끊겼다 돌아와요.",
   "camera_rotate_failed": "화면 뒤집기 설정에 실패했어요 ({})",
   "camera_detail_clips_empty": "아직 녹화된 영상이 없어요",
   "clip_save": "저장",

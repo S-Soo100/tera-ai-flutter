@@ -118,6 +118,12 @@ void main() {
       await tester.tap(find.byKey(CameraRotateTile.tileKey));
       await tester.pumpAndSettle();
       expect(repo.calls, [('cam-uuid-1', true)]);
+      // 성공 시 재부팅 예고 스낵바(후속 통보 09-09 §1 — 토글 후 ~20초
+      // 오프라인이 고장으로 읽히지 않게).
+      expect(find.text('camera_rotate_applying'), findsOneWidget);
+      // 스낵바 타이머 소진 — 남기면 pending timer로 테스트가 실패한다.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
     });
 
     testWidgets('구 펌웨어(미보고) → 타일째 숨김(회신 §4)', (tester) async {
