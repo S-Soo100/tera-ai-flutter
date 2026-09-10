@@ -32,6 +32,15 @@ class HighlightRepository {
   /// 계약을 아는 계층이 지킨다: 넘겨받은 limit은 여기서 클램프된다.
   static const maxLimit = 100;
 
+  /// `/highlights/featured` days 상한(서버 le=31 — 초과분은 422).
+  static const maxFeaturedDays = 31;
+
+  /// 앱 기본값 한 곳(하드코딩 산개 금지 — 2026-09-11 지시). 하이라이트
+  /// 화면은 [defaultFeaturedDays]일치를 tier=all로 받아 day_key로 묶는다.
+  /// [defaultTopN]은 서버 기본(응답 `featured.top_n`)과 같은 3.
+  static const defaultFeaturedDays = 30;
+  static const defaultTopN = 3;
+
   /// [since] 이후 하이라이트 목록(최신순 가정, 서버 규칙+사람 확정 적용본).
   Future<List<NightlyHighlight>> list(
       {required DateTime since, int limit = 50}) async {
@@ -41,6 +50,39 @@ class HighlightRepository {
       queryParameters: {
         'since': since.toUtc().toIso8601String(),
         'limit': '$limit',
+      },
+    );
+    final resp = await _client.get(uri,
+        headers: {if (token != null) 'Authorization': 'Bearer $token'});
+    if (resp.statusCode == 200) {
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      final list = (body['highlights'] as List? ?? const []);
+      return list
+          .map((e) => NightlyHighlight.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    if (resp.statusCode == 404) return const [];
+    throw BackendException(resp.statusCode, resp.body);
+  }
+
+  /// 하루(20:00 KST 경계) 단위 ⭐ 대표+후보 — GET /highlights/featured
+  /// (계약 2026-09-11). [days]는 오늘 day_key 기준 최근 N개 하루(서버 1..31,
+  /// 여기서 클램프), [tier]는 'featured'(대표만)|'all'(후보 포함).
+  ///
+  /// 저장값이 아니라 조회 시 계산 — 진행 중인 하루는 새 클립에, 지난 하루는
+  /// 라벨러 X/✨ 변경에 결과가 바뀐다. 호출부는 화면 진입마다 재조회한다.
+  Future<List<NightlyHighlight>> listFeatured({
+    int days = defaultFeaturedDays,
+    String tier = 'all',
+    int topN = defaultTopN,
+  }) async {
+    days = days.clamp(1, maxFeaturedDays);
+    final token = await _tokenProvider();
+    final uri = Uri.parse('$_baseUrl/highlights/featured').replace(
+      queryParameters: {
+        'days': '$days',
+        'tier': tier,
+        'top_n': '$topN',
       },
     );
     final resp = await _client.get(uri,

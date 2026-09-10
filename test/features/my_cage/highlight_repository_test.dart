@@ -104,4 +104,95 @@ void main() {
           .having((e) => e.statusCode, 'statusCode', 503)),
     );
   });
+
+  group('listFeatured (GET /highlights/featured, 계약 2026-09-11)', () {
+    test('경로·쿼리(days/tier/top_n)·Bearer + tier/day_key/episode 파싱',
+        () async {
+      http.Request? captured;
+      final client = MockClient((req) async {
+        captured = req;
+        return http.Response(
+          jsonEncode({
+            'highlights': [
+              {
+                'clip_id': 'c1',
+                'camera_id': 'cam1',
+                'camera_name': '거실',
+                'started_at': '2026-09-08T21:00:00Z',
+                'duration_sec': 30,
+                'media_ready': true,
+                'source': 'human',
+                'reason': '움직임 84.0초',
+                'rule_version': 'hl-rule-v0',
+                'tier': 'featured',
+                'day_key': '2026-09-08',
+                'activity_sec': 84.0,
+                'behavior_flagged': false,
+                'episode': {
+                  'rank': 1,
+                  'clip_count': 6,
+                  'activity_sec': 84.0,
+                  'started_at': '2026-09-08T20:58:00Z',
+                  'ended_at': '2026-09-08T21:10:00Z',
+                },
+              },
+            ],
+            'count': 1,
+            'rule_version': 'hl-rule-v0',
+            'featured': {
+              'top_n': 3,
+              'gap_sec': 1800,
+              'day_start_hour': 20,
+              'time_zone': 'Asia/Seoul',
+              'days': 7,
+            },
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+
+      final list =
+          await repo(client).listFeatured(days: 7, tier: 'featured', topN: 3);
+
+      expect(captured!.method, 'GET');
+      expect(captured!.url.path, '/highlights/featured');
+      expect(captured!.url.queryParameters['days'], '7');
+      expect(captured!.url.queryParameters['tier'], 'featured');
+      expect(captured!.url.queryParameters['top_n'], '3');
+      expect(captured!.headers['Authorization'], 'Bearer jwt');
+
+      expect(list, hasLength(1));
+      expect(list.single.isFeatured, isTrue);
+      expect(list.single.dayKey, '2026-09-08');
+      expect(list.single.episodeRank, 1);
+      expect(list.single.episodeClipCount, 6);
+      expect(list.single.isHumanConfirmed, isTrue);
+      expect(list.single.decidedAt, isNull); // 이 응답에는 decided_at이 없다
+    });
+
+    test('days는 1..maxFeaturedDays로 클램프 (서버 le=31 → 422 예방)', () async {
+      final days = <String?>[];
+      final client = MockClient((req) async {
+        days.add(req.url.queryParameters['days']);
+        return http.Response('{"highlights": []}', 200);
+      });
+      final r = repo(client);
+      await r.listFeatured(days: 32);
+      await r.listFeatured(days: 0);
+      expect(days, ['${HighlightRepository.maxFeaturedDays}', '1']);
+    });
+
+    test('404 → 빈 목록, 500 → BackendException', () async {
+      final notFound = MockClient((_) async => http.Response('nope', 404));
+      expect(await repo(notFound).listFeatured(), isEmpty);
+
+      final boom = MockClient((_) async => http.Response('down', 500));
+      await expectLater(
+        repo(boom).listFeatured(),
+        throwsA(isA<BackendException>()
+            .having((e) => e.statusCode, 'statusCode', 500)),
+      );
+    });
+  });
 }

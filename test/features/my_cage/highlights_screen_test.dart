@@ -6,15 +6,29 @@ import 'package:vivnanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivnanaut/features/my_cage/data/highlight_banner_store.dart';
 import 'package:vivnanaut/features/my_cage/domain/highlight_group.dart';
 import 'package:vivnanaut/features/my_cage/domain/nightly_highlight.dart';
+import 'package:vivnanaut/features/my_cage/presentation/highlights_controller.dart';
 import 'package:vivnanaut/features/my_cage/presentation/highlights_screen.dart';
 import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
 
-/// 하이라이트 상세(카메라 탭 재설계 T4) — 72h 그룹핑 단위 + 배너 위젯 테스트.
-NightlyHighlight _h(String id, DateTime at) => NightlyHighlight(
+/// 하이라이트 상세 — /highlights/featured 전환(2026-09-11): day_key 묶음
+/// (groupByDay) 단위 + 대표/후보 화면 위젯 테스트.
+NightlyHighlight _h(
+  String id,
+  DateTime at, {
+  String tier = 'candidate',
+  String dayKey = '',
+  int rank = 0,
+}) =>
+    NightlyHighlight(
       clipId: id,
       startedAt: at,
       source: 'rule',
       reason: '움직임 3.0초',
+      tier: tier,
+      dayKey: dayKey,
+      episodeRank: rank,
+      episodeClipCount: 4,
+      episodeActivitySec: 42,
     );
 
 class _FakeBannerStore implements HighlightBannerStore {
@@ -33,16 +47,18 @@ class _FakeBannerStore implements HighlightBannerStore {
   }
 }
 
-/// 묶음 픽스처 2개 — g1(최신, 8/28~8/31 3건) + g2(8/20 1건).
-final _h1 = _h('h1', DateTime(2026, 8, 31, 10));
-final _h2 = _h('h2', DateTime(2026, 8, 30, 9));
-final _h3 = _h('h3', DateTime(2026, 8, 28, 11));
-final _h4 = _h('h4', DateTime(2026, 8, 20, 22));
+/// 묶음 픽스처 2개 — dayA(최신, 대표 3 + 후보 2) + dayB(대표 1, 후보 0).
+const _dayA = '2026-08-31';
+const _dayB = '2026-08-30';
+final _f1 = _h('f1', DateTime(2026, 8, 31, 23), tier: 'featured', dayKey: _dayA, rank: 1);
+final _f2 = _h('f2', DateTime(2026, 9, 1, 2), tier: 'featured', dayKey: _dayA, rank: 2);
+final _f3 = _h('f3', DateTime(2026, 8, 31, 21), tier: 'featured', dayKey: _dayA, rank: 3);
+final _c1 = _h('c1', DateTime(2026, 8, 31, 22), dayKey: _dayA);
+final _c2 = _h('c2', DateTime(2026, 9, 1, 1), dayKey: _dayA);
+final _f4 = _h('f4', DateTime(2026, 8, 30, 23), tier: 'featured', dayKey: _dayB, rank: 1);
 
-List<HighlightGroup> _groups() => [
-      (from: _h3.startedAt, to: _h1.startedAt, items: [_h1, _h2, _h3]),
-      (from: _h4.startedAt, to: _h4.startedAt, items: [_h4]),
-    ];
+List<DayHighlightGroup> _groups() =>
+    groupByDay([_c1, _f2, _f4, _f1, _c2, _f3]);
 
 String? pushedClipId;
 List<String>? pushedPlaylist;
@@ -64,11 +80,16 @@ GoRouter _router() => GoRouter(
 
 Future<void> _pump(
   WidgetTester tester, {
-  List<HighlightGroup>? groups,
+  List<DayHighlightGroup>? groups,
   required _FakeBannerStore store,
 }) async {
   pushedClipId = null;
   pushedPlaylist = null;
+  // 대표 카드는 전폭 16:9라 기본 600px 뷰포트엔 한 장도 안 담긴다 — lazy
+  // ListView가 아래 위젯을 아예 안 만들어 find가 0을 돌려준다. 길게 편다.
+  tester.view.physicalSize = const Size(800, 4000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -87,88 +108,113 @@ Future<void> _pump(
 }
 
 void main() {
-  group('groupHighlights — 72h 창 그룹핑', () {
-    final base = DateTime(2026, 8, 31, 12);
-
+  group('groupByDay — 서버 day_key 묶음', () {
     test('빈 목록 → 빈 그룹', () {
-      expect(groupHighlights(const []), isEmpty);
+      expect(groupByDay(const []), isEmpty);
     });
 
-    test('앵커에서 71h 이내 → 같은 그룹', () {
-      final a = _h('a', base);
-      final b = _h('b', base.subtract(const Duration(hours: 71)));
-      final groups = groupHighlights([b, a]); // 입력 순서 무관(내부 정렬)
-      expect(groups, hasLength(1));
-      expect(groups.first.items.map((h) => h.clipId), ['a', 'b']); // 내림차순
-      expect(groups.first.to, base);
-      expect(groups.first.from, b.startedAt);
-    });
-
-    test('앵커에서 73h → 다음 그룹(새 앵커)', () {
-      final a = _h('a', base);
-      final b = _h('b', base.subtract(const Duration(hours: 73)));
-      final groups = groupHighlights([a, b]);
+    test('day_key 2개 → 묶음 2개, 최신 day_key 먼저', () {
+      final groups = _groups();
       expect(groups, hasLength(2));
-      expect(groups[0].items.single.clipId, 'a');
-      expect(groups[1].items.single.clipId, 'b');
-      // 다음 그룹의 앵커는 b — from=to=b.
-      expect(groups[1].from, b.startedAt);
-      expect(groups[1].to, b.startedAt);
+      expect(groups[0].dayKey, _dayA);
+      expect(groups[1].dayKey, _dayB);
     });
 
-    test('연쇄 — 창을 벗어난 항목이 새 앵커가 되어 다시 71h를 담는다', () {
-      final a = _h('a', base);
-      final b = _h('b', base.subtract(const Duration(hours: 73)));
-      final c = _h('c',
-          base.subtract(const Duration(hours: 73 + 71))); // b 앵커에서 71h
-      final groups = groupHighlights([c, a, b]);
-      expect(groups, hasLength(2));
-      expect(groups[0].items.map((h) => h.clipId), ['a']);
-      expect(groups[1].items.map((h) => h.clipId), ['b', 'c']);
+    test('묶음 안 대표는 episode.rank 오름차순, 후보는 startedAt 내림차순', () {
+      final g = _groups().first;
+      expect(g.featured.map((h) => h.clipId), ['f1', 'f2', 'f3']);
+      // c2(9/1 01:00)가 c1(8/31 22:00)보다 최신.
+      expect(g.candidates.map((h) => h.clipId), ['c2', 'c1']);
     });
 
-    test('그룹 key = to(최신 항목) ISO 문자열 — 새 항목이 오면 키가 바뀐다', () {
-      final a = _h('a', base);
-      final groups = groupHighlights([a]);
-      expect(highlightGroupKey(groups.single), base.toIso8601String());
+    test('그룹 key = 가장 최신 대표 startedAt ISO — 새 대표가 오면 바뀐다', () {
+      final g = _groups().first;
+      // 대표 중 최신은 f2(9/1 02:00) — rank 1위(f1)가 아니다.
+      expect(highlightGroupKey(g), _f2.startedAt.toIso8601String());
+      expect(latestFeaturedAt(g), _f2.startedAt);
+    });
+
+    test('대표가 없는 묶음(방어) → key는 후보 최신 startedAt', () {
+      final groups = groupByDay([_c1, _c2]);
+      expect(highlightGroupKey(groups.single), _c2.startedAt.toIso8601String());
+    });
+  });
+
+  group('parseDayKey', () {
+    test('YYYY-MM-DD → 로컬 자정', () {
+      expect(parseDayKey('2026-09-08'), DateTime(2026, 9, 8));
+    });
+    test('계약 밖 형식 → null', () {
+      expect(parseDayKey('2026/09/08'), isNull);
+      expect(parseDayKey(''), isNull);
     });
   });
 
   group('HighlightsScreen', () {
-    testWidgets('도착 배너(미dismiss) + 묶음 섹션 헤더', (tester) async {
-      await _pump(tester, store: _FakeBannerStore());
-      expect(find.byKey(HighlightsScreen.bannerKey), findsOneWidget);
-      expect(find.text('crecam_highlights_banner_title'), findsOneWidget);
-      // 배너 기간(패딩 표기) + 섹션 헤더(비패딩 표기).
-      expect(find.text('2026. 08. 28 - 08. 31'), findsOneWidget);
-      expect(find.text('2026. 8. 28 - 8. 31'), findsOneWidget);
-      // 단일 날짜 묶음은 날짜 하나만 — ListView 지연 빌드라 스크롤해서 확인.
-      await tester.scrollUntilVisible(find.text('2026. 8. 20'), 200,
-          scrollable: find.byType(Scrollable).first);
-      expect(find.text('2026. 8. 20'), findsOneWidget);
+    testWidgets('대표 카드 3장 + "후보 N개 더 보기"(후보 있는 묶음만)',
+        (tester) async {
+      // 배너를 dismiss된 상태로 시작해 섹션이 화면 안에 오게 한다.
+      final store = _FakeBannerStore(highlightGroupKey(_groups().first));
+      await _pump(tester, store: store);
+      expect(find.byKey(const ValueKey('highlight_featured_f1')),
+          findsOneWidget);
+      // 후보 셀은 접혀 있어 아직 없다.
+      expect(find.byKey(const ValueKey('highlight_cell_c1')), findsNothing);
+      // dayA에만 후보가 있다 — 더 보기 버튼은 1개.
+      expect(find.byKey(HighlightsScreen.moreCandidatesKey(_dayA)),
+          findsOneWidget);
+      expect(find.byKey(HighlightsScreen.moreCandidatesKey(_dayB)),
+          findsNothing);
+      // 지난 날짜 묶음 헤더는 "M월 d일 밤" 서식 키(테스트는 미번역 키 노출).
+      expect(find.text('crecam_highlights_night_of'), findsWidgets);
     });
 
-    testWidgets('배너 X → 숨김 + 스토어에 그룹 key 저장', (tester) async {
+    testWidgets('더 보기 탭 → 후보(시간 내림차순) 펼침, 재탭 → 접힘',
+        (tester) async {
+      final store = _FakeBannerStore(highlightGroupKey(_groups().first));
+      await _pump(tester, store: store);
+      final button = find.byKey(HighlightsScreen.moreCandidatesKey(_dayA));
+      await tester.scrollUntilVisible(button, 200,
+          scrollable: find.byType(Scrollable).first);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('highlight_cell_c2')), findsOneWidget);
+      expect(find.text('crecam_highlights_less_candidates'), findsOneWidget);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('highlight_cell_c2')), findsNothing);
+    });
+
+    testWidgets('어젯밤 day_key 묶음 → "어젯밤" 헤더', (tester) async {
+      final dayKey = lastNightDayKey(DateTime.now());
+      final groups = groupByDay([
+        _h('x1', DateTime.now(), tier: 'featured', dayKey: dayKey, rank: 1),
+      ]);
+      final store = _FakeBannerStore(highlightGroupKey(groups.first));
+      await _pump(tester, groups: groups, store: store);
+      expect(find.text('crecam_highlights_last_night'), findsOneWidget);
+    });
+
+    testWidgets('도착 배너(미dismiss) — X → 숨김 + 스토어에 최신 대표 ISO 저장',
+        (tester) async {
       final store = _FakeBannerStore();
       await _pump(tester, store: store);
+      expect(find.byKey(HighlightsScreen.bannerKey), findsOneWidget);
       await tester.tap(find.byKey(HighlightsScreen.bannerCloseKey));
       await tester.pumpAndSettle();
       expect(find.byKey(HighlightsScreen.bannerKey), findsNothing);
-      expect(store.value, _h1.startedAt.toIso8601String()); // key = to ISO
-      // 섹션은 그대로 남는다.
-      expect(find.text('2026. 8. 28 - 8. 31'), findsOneWidget);
+      expect(store.value, _f2.startedAt.toIso8601String()); // 최신 대표 = f2
     });
 
     testWidgets('같은 그룹 key가 이미 dismiss → 재방문에도 배너 숨김',
         (tester) async {
-      final store = _FakeBannerStore(_h1.startedAt.toIso8601String());
+      final store = _FakeBannerStore(_f2.startedAt.toIso8601String());
       await _pump(tester, store: store);
       expect(find.byKey(HighlightsScreen.bannerKey), findsNothing);
     });
 
-    testWidgets('다른(옛) 그룹 key dismiss → 새 그룹 배너는 다시 표시',
-        (tester) async {
-      final store = _FakeBannerStore(_h4.startedAt.toIso8601String());
+    testWidgets('옛 key dismiss(새 대표 도착) → 배너 다시 표시', (tester) async {
+      final store = _FakeBannerStore(_f1.startedAt.toIso8601String());
       await _pump(tester, store: store);
       expect(find.byKey(HighlightsScreen.bannerKey), findsOneWidget);
     });
@@ -179,26 +225,43 @@ void main() {
       expect(find.byKey(HighlightsScreen.bannerKey), findsNothing);
     });
 
-    testWidgets('셀 탭 → 세로 플레이어 + 그 묶음 재생목록(내림차순)',
+    testWidgets('대표 카드 탭 → 플레이어(재생목록 = 그 묶음 대표, rank 순)',
         (tester) async {
-      // 배너를 dismiss된 상태로 시작해 셀이 화면 안에 오게 한다.
-      final store = _FakeBannerStore(_h1.startedAt.toIso8601String());
+      final store = _FakeBannerStore(highlightGroupKey(_groups().first));
       await _pump(tester, store: store);
-      final cell = find.byKey(const ValueKey('highlight_cell_h2'));
+      final card = find.byKey(const ValueKey('highlight_featured_f2'));
+      await tester.scrollUntilVisible(card, 200,
+          scrollable: find.byType(Scrollable).first);
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+      expect(find.text('player-screen'), findsOneWidget);
+      expect(pushedClipId, 'f2');
+      expect(pushedPlaylist, ['f1', 'f2', 'f3']);
+    });
+
+    testWidgets('후보 셀 탭 → 플레이어(재생목록 = 그 묶음 후보, 시간순)',
+        (tester) async {
+      final store = _FakeBannerStore(highlightGroupKey(_groups().first));
+      await _pump(tester, store: store);
+      final button = find.byKey(HighlightsScreen.moreCandidatesKey(_dayA));
+      await tester.scrollUntilVisible(button, 200,
+          scrollable: find.byType(Scrollable).first);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      final cell = find.byKey(const ValueKey('highlight_cell_c1'));
       await tester.ensureVisible(cell);
       await tester.tap(cell);
       await tester.pumpAndSettle();
-      expect(find.text('player-screen'), findsOneWidget);
-      expect(pushedClipId, 'h2');
-      expect(pushedPlaylist, ['h1', 'h2', 'h3']);
+      expect(pushedClipId, 'c1');
+      expect(pushedPlaylist, ['c2', 'c1']);
     });
 
-    testWidgets('배너 탭(X 제외) → 그 묶음 재생목록으로 플레이어', (tester) async {
+    testWidgets('배너 탭(X 제외) → 대표 1위부터 대표 재생목록', (tester) async {
       await _pump(tester, store: _FakeBannerStore());
       await tester.tap(find.text('crecam_highlights_banner_title'));
       await tester.pumpAndSettle();
-      expect(pushedClipId, 'h1'); // 대표 = 그룹 첫(최신) 클립
-      expect(pushedPlaylist, ['h1', 'h2', 'h3']);
+      expect(pushedClipId, 'f1'); // 배너 얼굴 = rank 1위
+      expect(pushedPlaylist, ['f1', 'f2', 'f3']);
     });
   });
 }

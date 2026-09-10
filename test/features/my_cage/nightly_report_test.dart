@@ -21,5 +21,12 @@ void main() {
     expect(r.highlightCount, 0);
     expect(r.isQuiet, isTrue);
     expect(r.activityMinutes, 2);
+    expect(r.candidateCount, 0); // 기본값
+  });
+  test('대표 + 후보 수 (featured 전환 2026-09-11)', () {
+    final r = NightlyReport(
+        activitySeconds: 600, highlights: [h('a')], candidateCount: 12);
+    expect(r.highlightCount, 1);
+    expect(r.candidateCount, 12);
   });
 }
