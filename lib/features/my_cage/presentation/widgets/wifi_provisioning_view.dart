@@ -9,6 +9,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../data/ble_pairing_repository.dart';
 import '../../data/ble_pairing_repository_demo.dart';
+import '../../data/wifi_credentials_store.dart';
 import '../../domain/pair_target_kind.dart';
 import '../../domain/wifi_access_point.dart';
 
@@ -131,8 +132,15 @@ class WifiProvisioningView extends ConsumerStatefulWidget {
 class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
   final BlePairingRepository _repo =
       kBleDemoMode ? DemoBlePairingRepository() : BlePairingRepository();
+  final WifiCredentialsStore _credStore = WifiCredentialsStore();
 
   _ProvState _state = const _ProvState();
+
+  /// 과거 연결 성공 이력의 SSID→비밀번호 캐시(보안 저장소 미러).
+  Map<String, String> _savedCredentials = const {};
+
+  /// 현재 credentials 단계의 비밀번호가 저장값으로 자동 채워졌는지.
+  bool _passwordAutofilled = false;
 
   final _ssidController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -145,6 +153,10 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
   @override
   void initState() {
     super.initState();
+    _credStore.readAll().then((saved) {
+      if (!mounted || saved.isEmpty) return;
+      setState(() => _savedCredentials = saved);
+    });
     _checkAdapterAndScan();
   }
 
@@ -355,8 +367,12 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
 
   void _onApSelected(WifiAccessPoint ap) {
     if (!mounted) return;
+    final saved = _savedCredentials[ap.ssid];
     _ssidController.text = ap.ssid;
+    // 다른 AP를 골랐을 때 이전 입력이 남지 않도록 항상 덮어쓴다.
+    _passwordController.text = saved ?? '';
     setState(() {
+      _passwordAutofilled = saved != null;
       _state = _state.copyWith(
         step: _Step.credentials,
         selectedAp: ap,
@@ -368,12 +384,23 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
   void _onManualSsid() {
     if (!mounted) return;
     _ssidController.clear();
+    _passwordController.clear();
     setState(() {
+      _passwordAutofilled = false;
       _state = _state.copyWith(
         step: _Step.credentials,
         manualSsid: true,
       );
     });
+  }
+
+  /// 수동 SSID 입력 중 저장된 네트워크명과 일치하면 비밀번호를 채워준다.
+  /// 사용자가 이미 뭔가 입력했다면 덮어쓰지 않는다.
+  void _onManualSsidChanged(String value) {
+    final saved = _savedCredentials[value.trim()];
+    if (saved == null || _passwordController.text.isNotEmpty) return;
+    _passwordController.text = saved;
+    setState(() => _passwordAutofilled = true);
   }
 
   // ── 자격증명 전송 ────────────────────────────────────────────────────────────
@@ -449,6 +476,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
         });
 
       case BleWifiOk():
+        _saveCredentialsOnSuccess();
         setState(() {
           _state = _state.copyWith(step: _Step.done);
         });
@@ -476,6 +504,16 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
     }
   }
 
+  /// WIFI_OK 시점의 자격증명을 보안 저장소에 남긴다(다음 페어링 자동채움용).
+  /// 연결에 성공한 값만 저장하므로 틀린 비밀번호가 쌓이지 않는다.
+  void _saveCredentialsOnSuccess() {
+    final ssid = _ssidController.text.trim();
+    final password = _passwordController.text;
+    if (ssid.isEmpty || password.isEmpty) return;
+    _savedCredentials = {..._savedCredentials, ssid: password};
+    unawaited(_credStore.save(ssid, password));
+  }
+
   // ── 재시도 ────────────────────────────────────────────────────────────────────
 
   void _retry() {
@@ -484,6 +522,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
     _ssidController.clear();
     _passwordController.clear();
     setState(() {
+      _passwordAutofilled = false;
       _state = const _ProvState();
     });
     _startBleScan();
@@ -506,6 +545,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
       _Step.wifiScan => _WifiScanBody(
           deviceName: _state.selectedDeviceName ?? '',
           accessPoints: _state.accessPoints,
+          savedSsids: _savedCredentials.keys.toSet(),
           errorMessage: _state.errorMessage,
           onApSelected: _onApSelected,
           onManualSsid: _onManualSsid,
@@ -517,6 +557,8 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
           formKey: _formKey,
           manualSsid: _state.manualSsid,
           selectedAp: _state.selectedAp,
+          passwordAutofilled: _passwordAutofilled,
+          onSsidChanged: _onManualSsidChanged,
           onSubmit: _submitCredentials,
           onBack: _rescanWifi,
         ),
@@ -675,6 +717,7 @@ class _WifiScanBody extends StatelessWidget {
   const _WifiScanBody({
     required this.deviceName,
     required this.accessPoints,
+    required this.savedSsids,
     required this.errorMessage,
     required this.onApSelected,
     required this.onManualSsid,
@@ -683,6 +726,7 @@ class _WifiScanBody extends StatelessWidget {
 
   final String deviceName;
   final List<WifiAccessPoint> accessPoints;
+  final Set<String> savedSsids;
   final String? errorMessage;
   final ValueChanged<WifiAccessPoint> onApSelected;
   final VoidCallback onManualSsid;
@@ -729,7 +773,11 @@ class _WifiScanBody extends StatelessWidget {
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (context, i) {
                   final ap = accessPoints[i];
-                  return _ApTile(ap: ap, onTap: () => onApSelected(ap));
+                  return _ApTile(
+                    ap: ap,
+                    saved: savedSsids.contains(ap.ssid),
+                    onTap: () => onApSelected(ap),
+                  );
                 },
               ),
             ),
@@ -761,9 +809,12 @@ class _WifiScanBody extends StatelessWidget {
 }
 
 class _ApTile extends StatelessWidget {
-  const _ApTile({required this.ap, required this.onTap});
+  const _ApTile({required this.ap, required this.saved, required this.onTap});
 
   final WifiAccessPoint ap;
+
+  /// 과거 연결 성공으로 비밀번호가 저장된 네트워크 — "저장됨" 배지 표시.
+  final bool saved;
   final VoidCallback onTap;
 
   IconData get _signalIcon {
@@ -810,12 +861,22 @@ class _ApTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
-          _signalLabelKey.tr(),
+          saved
+              ? '${_signalLabelKey.tr()} · ${'ble_saved_network'.tr()}'
+              : _signalLabelKey.tr(),
           style: theme.textTheme.bodySmall?.copyWith(
             color: cs.onSurface.withValues(alpha: 0.5),
           ),
         ),
-        trailing: const Icon(Icons.chevron_right_rounded),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (saved)
+              Icon(Icons.key_rounded,
+                  size: 16, color: cs.onSurface.withValues(alpha: 0.4)),
+            const Icon(Icons.chevron_right_rounded),
+          ],
+        ),
         onTap: onTap,
       ),
     );
@@ -831,6 +892,8 @@ class _CredentialsBody extends StatefulWidget {
     required this.formKey,
     required this.manualSsid,
     required this.selectedAp,
+    required this.passwordAutofilled,
+    required this.onSsidChanged,
     required this.onSubmit,
     required this.onBack,
   });
@@ -840,6 +903,12 @@ class _CredentialsBody extends StatefulWidget {
   final GlobalKey<FormState> formKey;
   final bool manualSsid;
   final WifiAccessPoint? selectedAp;
+
+  /// 비밀번호가 저장값으로 자동 채워졌는지 — 안내 문구 표시용.
+  final bool passwordAutofilled;
+
+  /// 수동 SSID 입력 변경 콜백(저장된 네트워크명 매칭 시 자동채움).
+  final ValueChanged<String> onSsidChanged;
   final VoidCallback onSubmit;
   final VoidCallback onBack;
 
@@ -849,6 +918,46 @@ class _CredentialsBody extends StatefulWidget {
 
 class _CredentialsBodyState extends State<_CredentialsBody> {
   bool _showPassword = false;
+
+  /// 자동 채워진 원본 값 — 사용자가 손대면 안내 문구를 거둔다.
+  String? _autofilledValue;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.passwordAutofilled) {
+      _autofilledValue = widget.passwordController.text;
+    }
+    widget.passwordController.addListener(_onPasswordChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _CredentialsBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 수동 SSID 매칭으로 뒤늦게 자동채움된 경우(부모 setState 후 도착)를 반영.
+    if (widget.passwordAutofilled &&
+        !oldWidget.passwordAutofilled &&
+        widget.passwordController.text.isNotEmpty) {
+      _autofilledValue = widget.passwordController.text;
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.passwordController.removeListener(_onPasswordChanged);
+    super.dispose();
+  }
+
+  void _onPasswordChanged() {
+    if (_autofilledValue == null) return;
+    if (widget.passwordController.text != _autofilledValue) {
+      setState(() => _autofilledValue = null);
+    }
+  }
+
+  bool get _showAutofillHint =>
+      _autofilledValue != null &&
+      widget.passwordController.text == _autofilledValue;
 
   @override
   Widget build(BuildContext context) {
@@ -899,6 +1008,7 @@ class _CredentialsBodyState extends State<_CredentialsBody> {
                 ),
                 maxLength: 32,
                 textInputAction: TextInputAction.next,
+                onChanged: widget.onSsidChanged,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
                     return 'ble_form_ssid_required'.tr();
@@ -922,6 +1032,8 @@ class _CredentialsBodyState extends State<_CredentialsBody> {
               maxLength: 64,
               decoration: InputDecoration(
                 hintText: 'ble_form_password_hint'.tr(),
+                helperText:
+                    _showAutofillHint ? 'ble_password_autofilled'.tr() : null,
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.lock_outline_rounded),
                 suffixIcon: IconButton(

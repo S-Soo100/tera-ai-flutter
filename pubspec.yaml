@@ -1,7 +1,7 @@
 name: vivnanaut
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.94.3+183
+version: 0.95.0+184
 
 environment:
   sdk: ^3.5.0
@@ -40,6 +40,7 @@ dependencies:
   timezone: ^0.11.1
   flutter_timezone: ^5.1.0
   visibility_detector: ^0.4.0+2
+  flutter_secure_storage: ^11.1.0
 
 dev_dependencies:
   flutter_test:
