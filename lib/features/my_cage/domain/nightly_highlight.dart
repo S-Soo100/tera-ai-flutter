@@ -44,6 +44,10 @@ class NightlyHighlight {
   /// 에피소드(연속 움직임 묶음) 메타 — 그 하루·카메라 안 순위 등.
   /// 구 응답에는 없다 → 0/null.
   final int episodeRank;
+
+  /// 같은 시간대(KST 시) 안 순위(기준 개정 2026-09-11: 하루 상한 없음,
+  /// 시간대당 최대 3개). 구 응답·미배포 서버엔 없다 → [episodeRank]로 대체.
+  final int episodeHourRank;
   final int episodeClipCount;
   final double episodeActivitySec;
   final DateTime? episodeStartedAt;
@@ -64,11 +68,12 @@ class NightlyHighlight {
     this.activitySec = 0,
     this.behaviorFlagged = false,
     this.episodeRank = 0,
+    int? episodeHourRank,
     this.episodeClipCount = 0,
     this.episodeActivitySec = 0,
     this.episodeStartedAt,
     this.episodeEndedAt,
-  });
+  }) : episodeHourRank = episodeHourRank ?? episodeRank;
 
   bool get isHumanConfirmed => source == 'human';
   bool get isFeatured => tier == 'featured';
@@ -92,6 +97,7 @@ class NightlyHighlight {
       activitySec: (j['activity_sec'] as num?)?.toDouble() ?? 0,
       behaviorFlagged: j['behavior_flagged'] as bool? ?? false,
       episodeRank: (episode['rank'] as num?)?.toInt() ?? 0,
+      episodeHourRank: (episode['hour_rank'] as num?)?.toInt(),
       episodeClipCount: (episode['clip_count'] as num?)?.toInt() ?? 0,
       episodeActivitySec: (episode['activity_sec'] as num?)?.toDouble() ?? 0,
       episodeStartedAt: parseLocalDateTime(episode['started_at']),

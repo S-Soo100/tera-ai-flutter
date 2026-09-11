@@ -37,9 +37,7 @@ class HighlightRepository {
 
   /// 앱 기본값 한 곳(하드코딩 산개 금지 — 2026-09-11 지시). 하이라이트
   /// 화면은 [defaultFeaturedDays]일치를 tier=all로 받아 day_key로 묶는다.
-  /// [defaultTopN]은 서버 기본(응답 `featured.top_n`)과 같은 3.
   static const defaultFeaturedDays = 30;
-  static const defaultTopN = 3;
 
   /// [since] 이후 하이라이트 목록(최신순 가정, 서버 규칙+사람 확정 적용본).
   Future<List<NightlyHighlight>> list(
@@ -69,12 +67,15 @@ class HighlightRepository {
   /// (계약 2026-09-11). [days]는 오늘 day_key 기준 최근 N개 하루(서버 1..31,
   /// 여기서 클램프), [tier]는 'featured'(대표만)|'all'(후보 포함).
   ///
+  /// **top_n은 보내지 않는다**(기준 개정 2026-09-11 후속): 새 기준은 하루
+  /// 상한 없이 "같은 시간대(KST 시) 안 최대 3개"를 서버가 계산하는데,
+  /// top_n을 보내면 구 방식의 하루 상한이 다시 걸린다.
+  ///
   /// 저장값이 아니라 조회 시 계산 — 진행 중인 하루는 새 클립에, 지난 하루는
   /// 라벨러 X/✨ 변경에 결과가 바뀐다. 호출부는 화면 진입마다 재조회한다.
   Future<List<NightlyHighlight>> listFeatured({
     int days = defaultFeaturedDays,
     String tier = 'all',
-    int topN = defaultTopN,
   }) async {
     days = days.clamp(1, maxFeaturedDays);
     final token = await _tokenProvider();
@@ -82,7 +83,6 @@ class HighlightRepository {
       queryParameters: {
         'days': '$days',
         'tier': tier,
-        'top_n': '$topN',
       },
     );
     final resp = await _client.get(uri,

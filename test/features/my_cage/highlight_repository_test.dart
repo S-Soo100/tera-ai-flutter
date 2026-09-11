@@ -106,7 +106,7 @@ void main() {
   });
 
   group('listFeatured (GET /highlights/featured, 계약 2026-09-11)', () {
-    test('경로·쿼리(days/tier/top_n)·Bearer + tier/day_key/episode 파싱',
+    test('경로·쿼리(days/tier, top_n 없음)·Bearer + tier/day_key/episode 파싱',
         () async {
       http.Request? captured;
       final client = MockClient((req) async {
@@ -130,6 +130,7 @@ void main() {
                 'behavior_flagged': false,
                 'episode': {
                   'rank': 1,
+                  'hour_rank': 2,
                   'clip_count': 6,
                   'activity_sec': 84.0,
                   'started_at': '2026-09-08T20:58:00Z',
@@ -140,8 +141,8 @@ void main() {
             'count': 1,
             'rule_version': 'hl-rule-v0',
             'featured': {
-              'top_n': 3,
-              'gap_sec': 1800,
+              'top_n': null, // 기준 개정(2026-09-11 후속) — 하루 상한 없음
+              'gap_sec': 600,
               'day_start_hour': 20,
               'time_zone': 'Asia/Seoul',
               'days': 7,
@@ -152,20 +153,21 @@ void main() {
         );
       });
 
-      final list =
-          await repo(client).listFeatured(days: 7, tier: 'featured', topN: 3);
+      final list = await repo(client).listFeatured(days: 7, tier: 'featured');
 
       expect(captured!.method, 'GET');
       expect(captured!.url.path, '/highlights/featured');
       expect(captured!.url.queryParameters['days'], '7');
       expect(captured!.url.queryParameters['tier'], 'featured');
-      expect(captured!.url.queryParameters['top_n'], '3');
+      // top_n을 보내면 서버가 구 방식의 하루 상한을 다시 건다 — 절대 금지.
+      expect(captured!.url.queryParameters.containsKey('top_n'), isFalse);
       expect(captured!.headers['Authorization'], 'Bearer jwt');
 
       expect(list, hasLength(1));
       expect(list.single.isFeatured, isTrue);
       expect(list.single.dayKey, '2026-09-08');
       expect(list.single.episodeRank, 1);
+      expect(list.single.episodeHourRank, 2);
       expect(list.single.episodeClipCount, 6);
       expect(list.single.isHumanConfirmed, isTrue);
       expect(list.single.decidedAt, isNull); // 이 응답에는 decided_at이 없다

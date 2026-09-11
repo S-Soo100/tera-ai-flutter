@@ -185,6 +185,25 @@ void main() {
       expect(find.byKey(const ValueKey('highlight_cell_c2')), findsNothing);
     });
 
+    testWidgets('대표 6장 이상(하루 상한 폐지 2026-09-11 후속)도 전부 렌더',
+        (tester) async {
+      // 새 기준: 하루 상한 없음(10개 안팎, 최대 16) — 3장 가정 레이아웃이
+      // 없는지 확인. 7장을 넣고 첫/끝 카드가 스크롤로 모두 닿는지 본다.
+      final many = groupByDay([
+        for (var i = 1; i <= 7; i++)
+          _h('m$i', DateTime(2026, 8, 31, 20 + (i % 4), i),
+              tier: 'featured', dayKey: _dayA, rank: i),
+      ]);
+      final store = _FakeBannerStore(highlightGroupKey(many.first));
+      await _pump(tester, groups: many, store: store);
+      expect(
+          find.byKey(const ValueKey('highlight_featured_m1')), findsOneWidget);
+      final last = find.byKey(const ValueKey('highlight_featured_m7'));
+      await tester.scrollUntilVisible(last, 400,
+          scrollable: find.byType(Scrollable).first);
+      expect(last, findsOneWidget);
+    });
+
     testWidgets('어젯밤 day_key 묶음 → "어젯밤" 헤더', (tester) async {
       final dayKey = lastNightDayKey(DateTime.now());
       final groups = groupByDay([

@@ -78,12 +78,26 @@ void main() {
     expect(h.activitySec, closeTo(84.2, 0.001));
     expect(h.behaviorFlagged, isTrue);
     expect(h.episodeRank, 1);
+    // hour_rank가 없는(미배포 서버) 응답 → rank로 대체.
+    expect(h.episodeHourRank, 1);
     expect(h.episodeClipCount, 6);
     expect(h.episodeActivitySec, closeTo(120.5, 0.001));
     expect(h.episodeStartedAt?.toUtc(), DateTime.utc(2026, 9, 8, 20, 58));
     expect(h.episodeEndedAt?.toUtc(), DateTime.utc(2026, 9, 8, 21, 10));
     // 이 응답에는 decided_at이 없다(계약 2026-09-11) → null.
     expect(h.decidedAt, isNull);
+  });
+
+  test('episode.hour_rank 있음(기준 개정 2026-09-11) → 그대로 파싱', () {
+    final h = NightlyHighlight.fromJson({
+      'clip_id': 'c4',
+      'started_at': '2026-09-08T21:00:00Z',
+      'tier': 'featured',
+      'day_key': '2026-09-08',
+      'episode': {'rank': 5, 'hour_rank': 2, 'clip_count': 3},
+    });
+    expect(h.episodeRank, 5);
+    expect(h.episodeHourRank, 2); // rank로 덮지 않는다
   });
 
   test('구 /highlights 응답(새 키 없음) → featured 기본값 호환', () {
@@ -98,6 +112,7 @@ void main() {
     expect(h.activitySec, 0);
     expect(h.behaviorFlagged, isFalse);
     expect(h.episodeRank, 0);
+    expect(h.episodeHourRank, 0);
     expect(h.episodeClipCount, 0);
     expect(h.episodeActivitySec, 0);
     expect(h.episodeStartedAt, isNull);
