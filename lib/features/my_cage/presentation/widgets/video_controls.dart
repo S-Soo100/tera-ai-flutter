@@ -31,6 +31,11 @@ class VideoControls extends StatefulWidget {
 }
 
 class _VideoControlsState extends State<VideoControls> {
+  /// 트랙을 탭/드래그로 조작 중인지 — 원형 커서(썸)는 이때만 그린다.
+  /// 재생 중 상시 노출하지 않는다(사용자 지시 2026-09-12, 전 플레이어 공통
+  /// 규칙 — 세로 재생목록 플레이어 _SeekBar도 동일).
+  bool _interacting = false;
+
   @override
   void initState() {
     super.initState();
@@ -82,14 +87,17 @@ class _VideoControlsState extends State<VideoControls> {
               trackHeight: 3,
               overlayShape:
                   const RoundSliderOverlayShape(overlayRadius: 14),
-              thumbShape:
-                  const RoundSliderThumbShape(enabledThumbRadius: 7),
+              thumbShape: _interacting
+                  ? const RoundSliderThumbShape(enabledThumbRadius: 7)
+                  : SliderComponentShape.noThumb,
               activeTrackColor: Theme.of(context).colorScheme.primary,
               inactiveTrackColor: Colors.white24,
               thumbColor: Colors.white,
             ),
             child: Slider(
               value: _sliderValue(v),
+              onChangeStart: (_) => setState(() => _interacting = true),
+              onChangeEnd: (_) => setState(() => _interacting = false),
               onChanged: (val) {
                 final dur = v.duration.inMilliseconds;
                 if (dur > 0) {

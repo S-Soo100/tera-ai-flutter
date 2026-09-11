@@ -195,6 +195,34 @@ void main() {
     await _teardown(tester);
   });
 
+  testWidgets('시크바 썸 — 평소엔 숨기고 조작(드래그) 중에만 그린다',
+      (tester) async {
+    // 사용자 지시 2026-09-12: 재생 중 원형 커서 상시 노출 금지, 탭/드래그로
+    // 재생 위치를 옮기는 동안만 표시(전 플레이어 공통 규칙).
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await _pump(tester, clipId: 'a');
+
+    SliderThemeData sliderTheme() => tester
+        .widget<SliderTheme>(find
+            .ancestor(
+                of: find.byType(Slider), matching: find.byType(SliderTheme))
+            .first)
+        .data;
+
+    expect(sliderTheme().thumbShape, SliderComponentShape.noThumb);
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byType(Slider)));
+    await gesture.moveBy(const Offset(30, 0));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(sliderTheme().thumbShape, isA<RoundSliderThumbShape>());
+
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(sliderTheme().thumbShape, SliderComponentShape.noThumb);
+    await _teardown(tester);
+  });
+
   testWidgets('다음 클립으로 넘어가면 그 클립 값으로 다시 1회 seek',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));

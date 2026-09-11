@@ -777,6 +777,11 @@ class _SeekBar extends StatefulWidget {
 }
 
 class _SeekBarState extends State<_SeekBar> {
+  /// 트랙을 탭/드래그로 조작 중인지 — 원형 커서(썸)는 이때만 그린다.
+  /// 재생 중 상시 노출하지 않는다(사용자 지시 2026-09-12, 전 플레이어 공통
+  /// 규칙 — VideoControls도 동일).
+  bool _interacting = false;
+
   @override
   void initState() {
     super.initState();
@@ -817,7 +822,9 @@ class _SeekBarState extends State<_SeekBar> {
       data: SliderThemeData(
         trackHeight: 4,
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+        thumbShape: _interacting
+            ? const RoundSliderThumbShape(enabledThumbRadius: 6)
+            : SliderComponentShape.noThumb,
         activeTrackColor: glass.textPrimary,
         // 연회색 트랙 — #E1E3E4 (T2에서 outline 토큰으로 정착)
         inactiveTrackColor: glass.outline,
@@ -827,6 +834,12 @@ class _SeekBarState extends State<_SeekBar> {
       ),
       child: Slider(
         value: _value(),
+        onChangeStart: widget.controller == null
+            ? null
+            : (_) => setState(() => _interacting = true),
+        onChangeEnd: widget.controller == null
+            ? null
+            : (_) => setState(() => _interacting = false),
         onChanged: widget.controller == null
             ? null
             : (val) {
