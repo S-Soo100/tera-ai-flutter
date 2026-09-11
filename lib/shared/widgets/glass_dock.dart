@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/analytics/analytics_public_label.dart';
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/glass_palette.dart';
 import 'figma_icon.dart';
@@ -30,11 +31,15 @@ class GlassDockItem {
   const GlassDockItem({
     required this.iconAsset,
     required this.label,
+    this.analyticsPublicLabel,
   });
 
   /// `assets/icons/{iconAsset}.svg`의 파일명(확장자 제외).
   final String iconAsset;
   final String label;
+
+  /// Null preserves masking, including arbitrary labels in design previews.
+  final AnalyticsPublicLabelKind? analyticsPublicLabel;
 }
 
 /// 하단 탭바. 디자인 시스템 `Components / GlassDock` (이름은 역사적 — A안
@@ -141,12 +146,20 @@ class _DockButton extends StatelessWidget {
           children: [
             FigmaIcon.tinted(item.iconAsset, size: 24, color: color),
             const SizedBox(height: 4),
-            Text(
-              item.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: glass.dockLabel.copyWith(color: color),
-            ),
+            if (item.analyticsPublicLabel case final kind?)
+              AnalyticsPublicLabel(
+                kind: kind,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: glass.dockLabel.copyWith(color: color),
+              )
+            else
+              Text(
+                item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: glass.dockLabel.copyWith(color: color),
+              ),
           ],
         ),
       ),

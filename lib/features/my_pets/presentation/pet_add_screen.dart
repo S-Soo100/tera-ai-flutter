@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
@@ -80,6 +82,9 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
+    analytics.featureUsed(AnalyticsFeature.pets);
 
     final speciesId = _isCustomSpecies ? 'custom' : _selectedSpeciesId!;
     final speciesName = _isCustomSpecies
@@ -126,6 +131,7 @@ class _PetAddScreenState extends ConsumerState<PetAddScreen> {
     );
 
     await ref.read(petListProvider.notifier).add(pet);
+    analytics.record(AnalyticsEvent.petSaved, epoch: epoch);
     if (mounted) context.pop();
   }
 

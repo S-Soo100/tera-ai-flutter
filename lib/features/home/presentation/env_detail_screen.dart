@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/env_chart_data.dart';
 import '../../../shared/domain/env_day.dart';
@@ -117,7 +119,12 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
         child: GestureDetector(
           key: key,
           behavior: HitTestBehavior.opaque,
-          onTap: onTap,
+          onTap: () {
+            ref
+                .read(analyticsRecorderProvider)
+                .featureUsed(AnalyticsFeature.environment);
+            onTap();
+          },
           child: Container(
             height: 28,
             alignment: Alignment.center,
@@ -194,7 +201,12 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                   data: d,
                   log: log,
                   scrubX: _scrubX,
-                  onScrubChanged: (x) => setState(() => _scrubX = x),
+                  onScrubChanged: (x) {
+                    ref
+                        .read(analyticsRecorderProvider)
+                        .featureUsed(AnalyticsFeature.environment);
+                    setState(() => _scrubX = x);
+                  },
                   initialFraction: _nowFraction(day),
                 ),
         ),
@@ -281,7 +293,12 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
   }) {
     return IconButton(
       key: key,
-      onPressed: onTap,
+      onPressed: () {
+        ref
+            .read(analyticsRecorderProvider)
+            .featureUsed(AnalyticsFeature.environment);
+        onTap();
+      },
       iconSize: 24,
       constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
       icon: Icon(icon, color: glass.textSecondary),

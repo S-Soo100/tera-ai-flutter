@@ -7,6 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../../../core/analytics/analytics_providers.dart';
+import '../pairing_analytics_observer.dart';
+
 import '../../data/ble_pairing_repository.dart';
 import '../../data/ble_pairing_repository_demo.dart';
 import '../../data/wifi_credentials_store.dart';
@@ -135,6 +138,8 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
   final WifiCredentialsStore _credStore = WifiCredentialsStore();
 
   _ProvState _state = const _ProvState();
+  late final _pairObserver =
+      PairingAnalyticsObserver(ref.read(analyticsRecorderProvider));
 
   /// 과거 연결 성공 이력의 SSID→비밀번호 캐시(보안 저장소 미러).
   Map<String, String> _savedCredentials = const {};
@@ -174,9 +179,10 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
   // ── 어댑터 상태 확인 + BLE 스캔 ──────────────────────────────────────────────
 
   Future<void> _checkAdapterAndScan() async {
+    final ticket = _pairObserver.startAttempt();
     if (kBleDemoMode) {
       // 데모 모드 — 시뮬레이터에는 BLE 권한/어댑터가 없어 검사 없이 바로 스캔.
-      _startBleScan();
+      _startBleScan(observationTicket: ticket);
       return;
     }
     final statuses = await [
@@ -185,13 +191,13 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
       Permission.locationWhenInUse,
     ].request();
 
-    final scanGranted =
-        statuses[Permission.bluetoothScan]?.isGranted ?? false;
+    final scanGranted = statuses[Permission.bluetoothScan]?.isGranted ?? false;
     final connectGranted =
         statuses[Permission.bluetoothConnect]?.isGranted ?? false;
     final bleGranted = scanGranted && connectGranted;
 
     if (!bleGranted) {
+      _pairObserver.failed(ticket);
       if (!mounted) return;
       final permanentlyDenied =
           (statuses[Permission.bluetoothScan]?.isPermanentlyDenied ?? false) ||
@@ -214,6 +220,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
     final adapterState = FlutterBluePlus.adapterStateNow;
 
     if (adapterState == BluetoothAdapterState.unauthorized) {
+      _pairObserver.failed(ticket);
       if (!mounted) return;
       setState(() {
         _state = _state.copyWith(
@@ -235,14 +242,14 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
       _adapterSub = FlutterBluePlus.adapterState.listen((s) {
         if (s == BluetoothAdapterState.on) {
           _adapterSub?.cancel();
-          _startBleScan();
+          _startBleScan(observationTicket: ticket);
         }
       });
       _showAdapterOffBanner();
       return;
     }
 
-    _startBleScan();
+    _startBleScan(observationTicket: ticket);
   }
 
   void _showAdapterOffBanner() {
@@ -256,7 +263,8 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
     });
   }
 
-  void _startBleScan() {
+  void _startBleScan({PairingAnalyticsTicket? observationTicket}) {
+    final ticket = observationTicket ?? _pairObserver.current;
     if (!mounted) return;
     setState(() {
       _state = _state.copyWith(
@@ -274,6 +282,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
         });
       },
       onError: (Object e) {
+        _pairObserver.failed(ticket);
         if (!mounted) return;
         setState(() {
           _state = _state.copyWith(
@@ -284,6 +293,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
     );
 
     _repo.startScan(kind: widget.kind).catchError((Object e) {
+      _pairObserver.failed(ticket);
       if (!mounted) return;
       setState(() {
         _state = _state.copyWith(
@@ -296,6 +306,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
   // ── 기기 선택 → 연결 + WiFi 스캔 요청 ────────────────────────────────────────
 
   Future<void> _onDeviceSelected(BleDeviceScanResult result) async {
+    final ticket = _pairObserver.deviceSelected();
     await _repo.stopScan();
     await _scanSub?.cancel();
 
@@ -314,9 +325,10 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
     _eventSub = _repo.events.listen(
       (event) {
         if (!mounted) return;
-        _handleEvent(event);
+        _handleEvent(event, ticket.attempt);
       },
       onError: (Object e) {
+        _pairObserver.bleFailed(ticket.attempt);
         if (!mounted) return;
         setState(() {
           _state = _state.copyWith(
@@ -331,6 +343,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
       await _repo.connect(result.device);
       await _repo.requestWifiScan();
     } catch (e) {
+      _pairObserver.failed(ticket);
       if (!mounted) return;
       setState(() {
         _state = _state.copyWith(
@@ -344,6 +357,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
   // ── WiFi 재스캔 ──────────────────────────────────────────────────────────────
 
   Future<void> _rescanWifi() async {
+    final ticket = _pairObserver.action();
     if (!mounted) return;
     setState(() {
       _state = _state.copyWith(
@@ -354,6 +368,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
     try {
       await _repo.requestWifiScan();
     } catch (e) {
+      _pairObserver.failed(ticket);
       if (!mounted) return;
       setState(() {
         _state = _state.copyWith(
@@ -407,6 +422,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
 
   Future<void> _submitCredentials() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    final ticket = _pairObserver.wifiSubmitted();
 
     if (!mounted) return;
     setState(() {
@@ -419,6 +435,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
         password: _passwordController.text,
       );
     } catch (e) {
+      _pairObserver.failed(ticket);
       if (!mounted) return;
       setState(() {
         _state = _state.copyWith(
@@ -431,7 +448,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
 
   // ── 이벤트 핸들러 ────────────────────────────────────────────────────────────
 
-  void _handleEvent(BlePairingEvent event) {
+  void _handleEvent(BlePairingEvent event, int attempt) {
     switch (event) {
       case BleScanning():
         // 스캔 진행 중 — wifiScan 스켈레톤 유지.
@@ -448,6 +465,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
         });
 
       case BleNoApFound():
+        _pairObserver.bleFailed(attempt);
         setState(() {
           _state = _state.copyWith(
             step: _Step.wifiScan,
@@ -457,6 +475,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
         });
 
       case BleScanFail():
+        _pairObserver.bleFailed(attempt);
         setState(() {
           _state = _state.copyWith(
             step: _Step.wifiScan,
@@ -476,6 +495,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
         });
 
       case BleWifiOk():
+        _pairObserver.wifiSucceeded(attempt);
         _saveCredentialsOnSuccess();
         setState(() {
           _state = _state.copyWith(step: _Step.done);
@@ -483,6 +503,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
         widget.onProvisioned?.call();
 
       case BleWifiFail():
+        _pairObserver.bleFailed(attempt);
         setState(() {
           _state = _state.copyWith(
             step: _Step.failed,
@@ -491,6 +512,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
         });
 
       case BlePairingErr(:final code):
+        _pairObserver.bleFailed(attempt);
         setState(() {
           _state = _state.copyWith(
             step: _Step.failed,
@@ -517,6 +539,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
   // ── 재시도 ────────────────────────────────────────────────────────────────────
 
   void _retry() {
+    _pairObserver.startAttempt();
     _eventSub?.cancel();
     _repo.disconnect();
     _ssidController.clear();
@@ -532,48 +555,55 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
 
   @override
   Widget build(BuildContext context) {
-    return switch (_state.step) {
-      _Step.bleScan => _BleScanBody(
-          kind: widget.kind,
-          results: _state.bleResults,
-          errorMessage: _state.errorMessage,
-          errorKind: _state.errorKind,
-          onDeviceSelected: _onDeviceSelected,
-          onRetry: _checkAdapterAndScan,
-          onOpenSettings: openAppSettings,
-        ),
-      _Step.wifiScan => _WifiScanBody(
-          deviceName: _state.selectedDeviceName ?? '',
-          accessPoints: _state.accessPoints,
-          savedSsids: _savedCredentials.keys.toSet(),
-          errorMessage: _state.errorMessage,
-          onApSelected: _onApSelected,
-          onManualSsid: _onManualSsid,
-          onRescan: _rescanWifi,
-        ),
-      _Step.credentials => _CredentialsBody(
-          ssidController: _ssidController,
-          passwordController: _passwordController,
-          formKey: _formKey,
-          manualSsid: _state.manualSsid,
-          selectedAp: _state.selectedAp,
-          passwordAutofilled: _passwordAutofilled,
-          onSsidChanged: _onManualSsidChanged,
-          onSubmit: _submitCredentials,
-          onBack: _rescanWifi,
-        ),
-      _Step.connecting => _ConnectingBody(
-          ssid: _ssidController.text.trim(),
-        ),
-      _Step.done => _DoneBody(
-          subtitleKey: widget.doneSubtitleKey,
-          onFinish: () => Navigator.of(context).maybePop(),
-        ),
-      _Step.failed => _FailedBody(
-          message: _state.errorMessage ?? 'ble_pairing_failed'.tr(),
-          onRetry: _retry,
-        ),
-    };
+    return PopScope<Object?>(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop && _state.step != _Step.done) {
+          _pairObserver.cancelled();
+        }
+      },
+      child: switch (_state.step) {
+        _Step.bleScan => _BleScanBody(
+            kind: widget.kind,
+            results: _state.bleResults,
+            errorMessage: _state.errorMessage,
+            errorKind: _state.errorKind,
+            onDeviceSelected: _onDeviceSelected,
+            onRetry: _checkAdapterAndScan,
+            onOpenSettings: openAppSettings,
+          ),
+        _Step.wifiScan => _WifiScanBody(
+            deviceName: _state.selectedDeviceName ?? '',
+            accessPoints: _state.accessPoints,
+            savedSsids: _savedCredentials.keys.toSet(),
+            errorMessage: _state.errorMessage,
+            onApSelected: _onApSelected,
+            onManualSsid: _onManualSsid,
+            onRescan: _rescanWifi,
+          ),
+        _Step.credentials => _CredentialsBody(
+            ssidController: _ssidController,
+            passwordController: _passwordController,
+            formKey: _formKey,
+            manualSsid: _state.manualSsid,
+            selectedAp: _state.selectedAp,
+            passwordAutofilled: _passwordAutofilled,
+            onSsidChanged: _onManualSsidChanged,
+            onSubmit: _submitCredentials,
+            onBack: _rescanWifi,
+          ),
+        _Step.connecting => _ConnectingBody(
+            ssid: _ssidController.text.trim(),
+          ),
+        _Step.done => _DoneBody(
+            subtitleKey: widget.doneSubtitleKey,
+            onFinish: () => Navigator.of(context).maybePop(),
+          ),
+        _Step.failed => _FailedBody(
+            message: _state.errorMessage ?? 'ble_pairing_failed'.tr(),
+            onRetry: _retry,
+          ),
+      },
+    );
   }
 }
 

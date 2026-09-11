@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/theme_mode_provider.dart';
+import '../../../core/analytics/analytics_consent_tile.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../auth/data/auth_repository.dart';
@@ -113,8 +114,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: Scaffold(
       appBar: AppBar(title: Text('profile_title'.tr())),
       body: profileAsync.when(
-        loading: () => const SkeletonPageLoading(cardCount: 3),
-        error: (e, _) => Center(child: Text('$e')),
+        // Consent controls must remain reachable even when profile data is
+        // unavailable. The successful profile keeps its existing scroll flow.
+        loading: () => const Column(children: [
+          Expanded(child: SkeletonPageLoading(cardCount: 3)),
+          SafeArea(top: false, child: AnalyticsConsentTile()),
+        ]),
+        error: (e, _) => Column(children: [
+          Expanded(child: Center(child: Text('$e'))),
+          const SafeArea(top: false, child: AnalyticsConsentTile()),
+        ]),
         data: (profile) {
           _initFromProfile(profile);
 
@@ -238,6 +247,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                 const Divider(),
                 const SizedBox(height: 8),
+
+                const AnalyticsConsentTile(),
+                const SizedBox(height: 16),
 
                 // 알림 — 홈 헤더 🔔이 PRD 재설계(2026-09-02)로 빠지면서
                 // 진입점이 여기로 왔다. 미읽음 뱃지도 같이 이사.

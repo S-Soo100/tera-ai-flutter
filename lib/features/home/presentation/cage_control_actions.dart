@@ -18,6 +18,10 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
+
+
 import '../../../core/supabase/supabase_provider.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../my_cage/domain/device_command.dart';
@@ -105,14 +109,24 @@ Future<bool> sendCageCommand(
 }) async {
   // await 전에 잡는다 — 전송 중 화면을 떠나면 of(context)를 못 쓴다.
   final messenger = ScaffoldMessenger.of(context);
+  final analytics = ref.read(analyticsRecorderProvider);
+  final epoch = analytics.epoch;
+  analytics.featureUsed(AnalyticsFeature.control, epoch: epoch);
+  analytics.record(AnalyticsEvent.controlRequested, epoch: epoch);
+  var accepted = false;
   try {
     final command = await ref
         .read(moduleCommandSenderProvider.notifier)
         .send(deviceId, action, payload: payload);
+    accepted = true;
+    analytics.record(AnalyticsEvent.controlAccepted, epoch: epoch);
     // 전송 중 화면을 떠났으면 감시 생략 — ref가 죽어 있고, 칩도 이 화면 것이다.
     if (context.mounted) _watchCommandAck(context, ref, messenger, command);
     return true;
   } catch (e, st) {
+    if (!accepted) {
+      analytics.record(AnalyticsEvent.controlFailed, epoch: epoch);
+    }
     debugPrint('[cage-control] $action failed: $e\n$st');
     messenger.showSnackBar(
       SnackBar(content: Text('module_command_failed'.tr())),
@@ -360,12 +374,19 @@ Future<void> mistOnce(
   });
   // await 전에 잡는다 — sendCageCommand와 같은 이유.
   final messenger = ScaffoldMessenger.of(context);
+  final analytics = ref.read(analyticsRecorderProvider);
+  final epoch = analytics.epoch;
+  analytics.featureUsed(AnalyticsFeature.control, epoch: epoch);
+  analytics.record(AnalyticsEvent.controlRequested, epoch: epoch);
+  var accepted = false;
   try {
     final command = await ref.read(moduleCommandSenderProvider.notifier).send(
           deviceId,
           CommandAction.mist,
           payload: duration.payload,
         );
+    accepted = true;
+    analytics.record(AnalyticsEvent.controlAccepted, epoch: epoch);
     // mist 자체도 유실될 수 있다 — 분사가 안 됐는데 "분사했어요"로 끝나면
     // 사육 환경(습도)에 대한 거짓 확신이 된다.
     if (context.mounted) _watchCommandAck(context, ref, messenger, command);
@@ -373,6 +394,9 @@ Future<void> mistOnce(
       SnackBar(content: Text('home_mist_sent'.tr(args: ['${duration.seconds}']))),
     );
   } catch (e, st) {
+    if (!accepted) {
+      analytics.record(AnalyticsEvent.controlFailed, epoch: epoch);
+    }
     debugPrint('[cage-control] mist failed: $e\n$st');
     messenger.showSnackBar(
       SnackBar(content: Text('home_mist_failed'.tr())),

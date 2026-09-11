@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
+
+
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/highlight_group.dart';
@@ -222,7 +226,7 @@ class _ArrivalBanner extends ConsumerWidget {
     return GestureDetector(
       key: HighlightsScreen.bannerKey,
       behavior: HitTestBehavior.opaque,
-      onTap: () => _openPlayer(context, representative.clipId, playlist),
+      onTap: () => _openPlayer(context, ref, representative.clipId, playlist),
       child: Container(
         decoration: BoxDecoration(
           color: glass.surfaceTint,
@@ -364,20 +368,20 @@ class _Section extends StatelessWidget {
 /// (2026-09-11 사용자 지시 — 규칙 진단 정보는 관리자 라벨러 웹 몫, 고객
 /// 화면에는 내부 판정 문구를 노출하지 않는다). 데이터 자체는 도메인에 남아
 /// 정렬(rank)에만 쓰인다.
-class _FeaturedCard extends StatelessWidget {
+class _FeaturedCard extends ConsumerWidget {
   const _FeaturedCard({required this.highlight, required this.playlist});
 
   final NightlyHighlight highlight;
   final List<NightlyHighlight> playlist;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
 
     return GestureDetector(
       key: ValueKey('highlight_featured_${highlight.clipId}'),
       behavior: HitTestBehavior.opaque,
-      onTap: () => _openPlayer(context, highlight.clipId, playlist),
+      onTap: () => _openPlayer(context, ref, highlight.clipId, playlist),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -417,18 +421,18 @@ class _FeaturedCard extends StatelessWidget {
 
 /// 날짜 필터용 소형 썸네일 셀 — 탭 → 세로 플레이어(재생목록 = 그 날짜의
 /// 대표, 시간 내림차순).
-class _Cell extends StatelessWidget {
+class _Cell extends ConsumerWidget {
   const _Cell({required this.highlight, required this.playlist});
 
   final NightlyHighlight highlight;
   final List<NightlyHighlight> playlist;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       key: ValueKey('highlight_cell_${highlight.clipId}'),
       behavior: HitTestBehavior.opaque,
-      onTap: () => _openPlayer(context, highlight.clipId, playlist),
+      onTap: () => _openPlayer(context, ref, highlight.clipId, playlist),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -445,8 +449,9 @@ class _Cell extends StatelessWidget {
   }
 }
 
-void _openPlayer(
-    BuildContext context, String clipId, List<NightlyHighlight> playlist) {
+void _openPlayer(BuildContext context, WidgetRef ref, String clipId,
+    List<NightlyHighlight> playlist) {
+  ref.read(analyticsRecorderProvider).featureUsed(AnalyticsFeature.highlights);
   // 재생목록과 함께 클립별 서버 재생 시작점(play_from_sec)을 넘긴다 —
   // 값이 없는 클립은 0초부터(기존 동작).
   context.push(

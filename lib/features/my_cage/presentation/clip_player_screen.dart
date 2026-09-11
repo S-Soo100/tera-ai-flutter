@@ -5,6 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
+import '../../../core/analytics/analytics_recorder.dart';
+
+
 import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/app_tag.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
@@ -37,13 +42,27 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
     _initPlayer();
   }
 
+  AnalyticsRecorder? _playAnalytics;
+  int? _playEpoch;
+  bool _playingRecorded = false;
+  bool _failureRecorded = false;
+
   Future<void> _initPlayer({bool isRetry = false}) async {
+    if (!isRetry) {
+      _playAnalytics = ref.read(analyticsRecorderProvider);
+      _playEpoch = _playAnalytics!.epoch;
+      _playAnalytics!.featureUsed(AnalyticsFeature.clips, epoch: _playEpoch);
+      _playAnalytics!.record(AnalyticsEvent.clipRequested, epoch: _playEpoch);
+    }
+    final analytics = _playAnalytics!;
+    final epoch = _playEpoch;
     VideoPlayerController? controller;
     try {
       final repo = ref.read(clipRepositoryProvider);
       final cacheRepo = ref.read(videoCacheRepositoryProvider);
       final clip = await repo.getById(widget.clipId);
       if (clip == null) {
+        analytics.record(AnalyticsEvent.clipFailed, epoch: epoch);
         if (mounted) {
           setState(() => _error = 'error_generic'.tr());
         }
@@ -81,6 +100,14 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
       final c = controller; // 클로저 캡처용 non-null 참조
       _errorListener = () {
         final ctrlValue = c.value;
+        if (ctrlValue.isPlaying && !ctrlValue.hasError && !_playingRecorded) {
+          _playingRecorded = true;
+          analytics.record(AnalyticsEvent.clipPlaying, epoch: epoch);
+        }
+        if (ctrlValue.hasError && _didRetryUrl && !_failureRecorded) {
+          _failureRecorded = true;
+          analytics.record(AnalyticsEvent.clipFailed, epoch: epoch);
+        }
         if (ctrlValue.hasError && !_didRetryUrl && mounted) {
           _didRetryUrl = true;
           c.removeListener(_errorListener!);
@@ -107,6 +134,8 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
         await _initPlayer(isRetry: true);
         return;
       }
+      analytics.record(AnalyticsEvent.clipFailed, epoch: epoch);
+      _failureRecorded = true;
       if (mounted) {
         setState(() => _error = e.toString());
       }

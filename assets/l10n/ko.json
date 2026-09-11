@@ -654,5 +654,10 @@
   "nightly_ratio_rest": "REST",
   "crecam_home_load_failed": "불러오기 실패",
   "time_am_fmt": "오전 {h}:{m}",
-  "time_pm_fmt": "오후 {h}:{m}"
+  "time_pm_fmt": "오후 {h}:{m}",
+  "analytics_consent_title": "앱 사용 분석 참여 (선택)",
+  "analytics_consent_description": "사용 중 막히는 곳과 자주 쓰는 기능을 찾기 위해, 글자와 이미지를 가린 화면 재현 및 기능 사용 기록을 Microsoft Clarity로 보냅니다. 동의하지 않아도 앱을 이용할 수 있습니다.",
+  "analytics_consent_preparing": "현재 버전은 분석 수집 준비 중입니다. 이 선택은 저장되며 수집이 활성화된 버전에서 적용됩니다.",
+  "analytics_consent_withdrawal": "언제든 끌 수 있습니다. 끄면 새 이용 기록 수집을 중지하지만, 이미 수집된 기록은 이후 처리될 수 있으며 자동 삭제되지 않습니다.",
+  "analytics_consent_save_failed": "선택을 저장하지 못했습니다. 이번 실행에서는 분석을 중지합니다. 앱을 다시 열기 전에 저장을 다시 시도해 주세요."
 }

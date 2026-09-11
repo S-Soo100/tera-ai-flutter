@@ -2,6 +2,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../shared/domain/num_format.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
@@ -71,8 +73,10 @@ class RoutineSettingsScreen extends ConsumerWidget {
                         if (row case final SchedulePair p)
                           _PairTile(
                             pair: p,
-                            onToggle: (v) => _guard(
-                                context, () => ref
+                            onToggle: (v) => _saveChange(
+                                context,
+                                ref,
+                                () => ref
                                     .read(schedulesProvider.notifier)
                                     .setPairEnabled(p, v)),
                             onDelete: () => _confirmDeletePair(context, ref, p),
@@ -81,8 +85,10 @@ class RoutineSettingsScreen extends ConsumerWidget {
                         else if (row case final Schedule s)
                           _ScheduleTile(
                             schedule: s,
-                            onToggle: (v) => _guard(
-                                context, () => ref
+                            onToggle: (v) => _saveChange(
+                                context,
+                                ref,
+                                () => ref
                                     .read(schedulesProvider.notifier)
                                     .setEnabled(s, v)),
                             onDelete: () => _confirmDelete(context, ref, s),
@@ -105,6 +111,9 @@ class RoutineSettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _add(BuildContext context, WidgetRef ref) async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
+    analytics.featureUsed(AnalyticsFeature.routines);
     final result = await showScheduleEditor(context);
     if (result == null || !context.mounted) return;
     await _guard(
@@ -130,11 +139,15 @@ class RoutineSettingsScreen extends ConsumerWidget {
                 payload: result.payload,
                 guard: result.guard,
               ),
+      onSuccess: () =>
+          analytics.record(AnalyticsEvent.routineSaved, epoch: epoch),
     );
   }
 
-  Future<void> _edit(
-      BuildContext context, WidgetRef ref, Schedule s) async {
+  Future<void> _edit(BuildContext context, WidgetRef ref, Schedule s) async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
+    analytics.featureUsed(AnalyticsFeature.routines);
     // `action`은 서버가 수정을 안 받는다. 편집기는 타이밍·가드만 바꾸게 하고,
     // 동작을 바꾸려면 지우고 새로 만들어야 한다.
     final result = await showScheduleEditor(context, initial: s);
@@ -151,11 +164,16 @@ class RoutineSettingsScreen extends ConsumerWidget {
             guard: result.guard,
             clearGuard: result.clearGuard,
           ),
+      onSuccess: () =>
+          analytics.record(AnalyticsEvent.routineSaved, epoch: epoch),
     );
   }
 
   Future<void> _editPair(
       BuildContext context, WidgetRef ref, SchedulePair p) async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
+    analytics.featureUsed(AnalyticsFeature.routines);
     final result = await showScheduleEditor(context, initialPair: p);
     if (result == null || !context.mounted) return;
     await _guard(
@@ -171,12 +189,16 @@ class RoutineSettingsScreen extends ConsumerWidget {
             guard: result.guard,
             clearGuard: result.clearGuard,
           ),
+      onSuccess: () =>
+          analytics.record(AnalyticsEvent.routineSaved, epoch: epoch),
     );
   }
 
   /// 구간 삭제 — 서버가 짝을 같이 지운다는 걸 확인문에 밝힌다.
   Future<void> _confirmDeletePair(
       BuildContext context, WidgetRef ref, SchedulePair p) async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    analytics.featureUsed(AnalyticsFeature.routines);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -202,6 +224,8 @@ class RoutineSettingsScreen extends ConsumerWidget {
 
   Future<void> _confirmDelete(
       BuildContext context, WidgetRef ref, Schedule s) async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    analytics.featureUsed(AnalyticsFeature.routines);
     // 끄기 예약을 지우는데 짝이 될 켜기 예약이 살아 있으면 경고를 바꾼다 —
     // pair_id 없는 낱개(2026-08-18 이전 구간, 웹 콘솔 생성)는 이 목록 검사로만
     // 잡을 수 있다. 켜기만 남으면 기기가 켜진 채 방치된다(히터면 과열).
@@ -233,16 +257,26 @@ class RoutineSettingsScreen extends ConsumerWidget {
       ),
     );
     if (ok != true || !context.mounted) return;
-    await _guard(
-        context, () => ref.read(schedulesProvider.notifier).remove(s));
+    await _guard(context, () => ref.read(schedulesProvider.notifier).remove(s));
+  }
+
+  Future<void> _saveChange(
+      BuildContext context, WidgetRef ref, Future<void> Function() run) async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
+    analytics.featureUsed(AnalyticsFeature.routines);
+    await _guard(context, run,
+        onSuccess: () =>
+            analytics.record(AnalyticsEvent.routineSaved, epoch: epoch));
   }
 
   /// 실패를 삼키지 않는다. 예약은 "됐겠지"로 넘길 수 있는 동작이 아니다 —
   /// 사용자는 기기가 알아서 돌 거라 믿고 신경을 끈다.
-  static Future<void> _guard(
-      BuildContext context, Future<void> Function() run) async {
+  static Future<void> _guard(BuildContext context, Future<void> Function() run,
+      {VoidCallback? onSuccess}) async {
     try {
       await run();
+      onSuccess?.call();
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

@@ -8,6 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_recorder.dart';
+import '../../../core/analytics/analytics_providers.dart';
+
+
 import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/clip_playback.dart';
@@ -111,7 +116,21 @@ class _MotionClipPlayerScreenState
     return _cachedUrl!;
   }
 
+  AnalyticsRecorder? _playAnalytics;
+  int? _playEpoch;
+  bool _playingRecorded = false;
+  bool _failureRecorded = false;
+  VoidCallback? _analyticsListener;
+
   Future<void> _init({bool isRetry = false}) async {
+    if (!isRetry) {
+      _playAnalytics = ref.read(analyticsRecorderProvider);
+      _playEpoch = _playAnalytics!.epoch;
+      _playAnalytics!.featureUsed(AnalyticsFeature.clips, epoch: _playEpoch);
+      _playAnalytics!.record(AnalyticsEvent.clipRequested, epoch: _playEpoch);
+    }
+    final analytics = _playAnalytics!;
+    final epoch = _playEpoch;
     VideoPlayerController? controller;
     try {
       // 즐겨찾기(로컬 파일) 우선 — 오프라인 재생 가능
@@ -145,6 +164,19 @@ class _MotionClipPlayerScreenState
         _initialized = true;
         _startedMidway = startAt != null;
       });
+      final observedController = controller;
+      _analyticsListener = () {
+        final value = observedController.value;
+        if (value.hasError && !_failureRecorded) {
+          _failureRecorded = true;
+          analytics.record(AnalyticsEvent.clipFailed, epoch: epoch);
+        }
+        if (value.isPlaying && !value.hasError && !_playingRecorded) {
+          _playingRecorded = true;
+          analytics.record(AnalyticsEvent.clipPlaying, epoch: epoch);
+        }
+      };
+      controller.addListener(_analyticsListener!);
       controller.play();
       _scheduleHide();
     } catch (e) {
@@ -153,6 +185,8 @@ class _MotionClipPlayerScreenState
         await _init(isRetry: true);
         return;
       }
+      analytics.record(AnalyticsEvent.clipFailed, epoch: epoch);
+      _failureRecorded = true;
       if (mounted) setState(() => _error = e.toString());
     }
   }
@@ -160,6 +194,9 @@ class _MotionClipPlayerScreenState
   @override
   void dispose() {
     _hideTimer?.cancel();
+    if (_analyticsListener != null) {
+      _controller?.removeListener(_analyticsListener!);
+    }
     _controller?.dispose();
     // 되돌리지 않으면 이 화면을 닫은 뒤에도 앱 전체가 가로로 남는다.
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -205,6 +242,8 @@ class _MotionClipPlayerScreenState
   }
 
   Future<void> _share() async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
     if (_busy) return;
     setState(() => _busy = true);
     try {
@@ -214,6 +253,7 @@ class _MotionClipPlayerScreenState
             localFile: src.file,
             presignedUrl: src.url,
           );
+      analytics.record(AnalyticsEvent.clipShareOpened, epoch: epoch);
     } catch (_) {
       // 공유 취소/실패는 조용히 무시
     } finally {
@@ -222,6 +262,8 @@ class _MotionClipPlayerScreenState
   }
 
   Future<void> _toggleFavorite(MotionClip? clip) async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
     if (_busy) return;
     setState(() => _busy = true);
     final repo = ref.read(favoriteClipRepositoryProvider);
@@ -229,6 +271,7 @@ class _MotionClipPlayerScreenState
     try {
       if (repo.isFavorite(widget.clipId)) {
         final cameraId = await repo.remove(widget.clipId);
+        analytics.record(AnalyticsEvent.bookmarkRemoved, epoch: epoch);
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         if (cameraId != null) ref.invalidate(favoriteClipsProvider(cameraId));
@@ -241,6 +284,7 @@ class _MotionClipPlayerScreenState
             SnackBar(content: Text('clip_favorite_saving'.tr())));
         final url = await _presignedUrl();
         await repo.add(clip, url);
+        analytics.record(AnalyticsEvent.bookmarkAdded, epoch: epoch);
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         ref.invalidate(favoriteClipsProvider(clip.cameraId));

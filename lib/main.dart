@@ -3,7 +3,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:clarity_flutter/clarity_flutter.dart';
-
+import 'core/analytics/analytics_providers.dart';
+import 'core/analytics/clarity_sdk.dart';
 import 'core/analytics/clarity_setup.dart';
 import 'core/theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -85,13 +86,14 @@ Future<void> main() async {
       supportedLocales: const [Locale('ko')],
       path: 'assets/l10n',
       fallbackLocale: const Locale('ko'),
-      // Clarity(세션 리플레이·히트맵)는 MaterialApp 바로 바깥에서 감싼다.
-      // EasyLocalization·ProviderScope 안쪽이라 `App`은 그대로 두 컨텍스트를 본다.
       child: ProviderScope(
-        child: ClarityWidget(
-          app: const App(),
-          clarityConfig: buildClarityConfig(),
-        ),
+        overrides: [
+          analyticsSdkProvider.overrideWithValue(
+            ClarityAnalyticsSdk(ClarityRuntimeConfig.environment),
+          )
+        ],
+        // Permanent protection includes overlays and frames queued by the SDK.
+        child: const ClarityMask(child: App()),
       ),
     ),
   );

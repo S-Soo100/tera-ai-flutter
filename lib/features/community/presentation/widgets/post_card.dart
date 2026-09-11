@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+import '../../../../core/analytics/analytics_events.dart';
+import '../../../../core/analytics/analytics_providers.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/domain/time_ago.dart';
 import '../../../../shared/widgets/account_avatar.dart';
@@ -13,7 +15,7 @@ import '../community_providers.dart';
 import 'pet_tag_row.dart';
 
 /// 피드 카드 — 작성자 / 썸네일(탭=재생) / 행동 칩 / 크레 행 / 캡션 / 좋아요·댓글.
-class PostCard extends StatelessWidget {
+class PostCard extends ConsumerWidget {
   const PostCard({
     super.key,
     required this.post,
@@ -50,7 +52,7 @@ class PostCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
     final authorLabel = post.authorName.isEmpty
         ? 'community_author_unknown'.tr()
@@ -94,7 +96,12 @@ class PostCard extends StatelessWidget {
             ]),
           ),
           GestureDetector(
-            onTap: onPlay,
+            onTap: () {
+              ref
+                  .read(analyticsRecorderProvider)
+                  .featureUsed(AnalyticsFeature.community);
+              onPlay();
+            },
             child: AspectRatio(
               aspectRatio: 16 / 10,
               child: Stack(fit: StackFit.expand, children: [
@@ -179,7 +186,12 @@ class PostCard extends StatelessWidget {
                 icon: Icons.chat_bubble_outline,
                 color: glass.textSecondary,
                 label: '${post.commentCount}',
-                onTap: onOpenComments,
+                onTap: () {
+                  ref
+                      .read(analyticsRecorderProvider)
+                      .featureUsed(AnalyticsFeature.community);
+                  onOpenComments();
+                },
               ),
             ]),
           ),

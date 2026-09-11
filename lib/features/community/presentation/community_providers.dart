@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../my_cage/presentation/my_cage_providers.dart';
 import '../data/community_post_publisher.dart';
@@ -115,6 +117,9 @@ class CommunityFeed extends AsyncNotifier<List<CommunityPost>> {
     if (current == null) return;
     final idx = current.indexWhere((p) => p.id == postId);
     if (idx < 0) return;
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
+    analytics.featureUsed(AnalyticsFeature.community);
     final post = current[idx];
     final liked = !post.likedByMe;
     CommunityPost apply(CommunityPost p, bool v) =>
@@ -122,6 +127,9 @@ class CommunityFeed extends AsyncNotifier<List<CommunityPost>> {
     state = AsyncData([...current]..[idx] = apply(post, liked));
     try {
       await ref.read(communityRepositoryProvider).setLike(postId, liked);
+      if (liked) {
+        analytics.record(AnalyticsEvent.communityLiked, epoch: epoch);
+      }
     } catch (_) {
       final rolled = state.valueOrNull;
       if (rolled == null) return;

@@ -1,8 +1,13 @@
+import 'webrtc_live_controller.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
+
 
 import '../../../core/theme/app_theme.dart';
 import 'my_cage_providers.dart';
@@ -44,6 +49,23 @@ class _CameraLiveFullscreenScreenState
   @override
   void initState() {
     super.initState();
+    // This route is an explicit expansion, unlike automatically visible home live.
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
+    analytics.featureUsed(AnalyticsFeature.live, epoch: epoch);
+    analytics.record(AnalyticsEvent.liveRequested, epoch: epoch);
+    var connectedRecorded = false;
+    var failedRecorded = false;
+    ref.listenManual(webrtcLiveControllerProvider(widget.cameraId), (_, next) {
+      if (next.phase == WebRtcLivePhase.streaming && !connectedRecorded) {
+        connectedRecorded = true;
+        analytics.record(AnalyticsEvent.liveConnected, epoch: epoch);
+      }
+      if (next.phase == WebRtcLivePhase.failed && !failedRecorded) {
+        failedRecorded = true;
+        analytics.record(AnalyticsEvent.liveFailed, epoch: epoch);
+      }
+    }, fireImmediately: true);
     // 좌/우 둘 다 허용 — 어느 쪽으로 눕히든 따라간다.
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,

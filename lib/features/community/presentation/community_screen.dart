@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/account_avatar.dart';
@@ -73,56 +75,70 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
             ],
           ),
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: () =>
-                  ref.read(communityFeedProvider.notifier).refresh(),
-              child: feed.when(
-                loading: () => _FeedSkeleton(glass: glass),
-                error: (e, _) => _ErrorState(
-                    onRetry: () =>
-                        ref.read(communityFeedProvider.notifier).refresh()),
-                data: (posts) => ListView(
-                  controller: _scroll,
-                  padding: glassDockListPadding(context),
-                  children: [
-                    const _NoticeBanner(),
-                    if (posts.isEmpty)
-                      _EmptyFeed()
-                    else
-                      for (final post in posts)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                              AppStyles.spacing16,
-                              AppStyles.spacing12,
-                              AppStyles.spacing16,
-                              0),
-                          child: PostCard(
-                            post: post,
-                            now: now,
-                            thumbnailUrl: post.thumbnailPath == null
-                                ? null
-                                : imageUrls[post.thumbnailPath],
-                            petPhotoUrl: post.petPhotoPath == null
-                                ? null
-                                : imageUrls[post.petPhotoPath],
-                            onPlay: () =>
-                                context.push('/community-player/${post.id}'),
-                            onToggleLike: () => ref
-                                .read(communityFeedProvider.notifier)
-                                .toggleLike(post.id),
-                            onOpenComments: () =>
-                                showCommentsSheet(context, ref, post),
-                            isMine: post.authorId == myId,
-                            onDelete: post.authorId == myId
-                                ? () => _confirmDelete(post)
-                                : null,
-                            onReport: (reason) => _reportPost(post, reason),
-                            onBlock: () => _confirmBlock(post),
-                            onOpenAuthor: () => context
-                                .push('/community-user/${post.authorId}'),
+            child: NotificationListener<ScrollUpdateNotification>(
+              onNotification: (notification) {
+                if (notification.dragDetails != null) {
+                  ref
+                      .read(analyticsRecorderProvider)
+                      .featureUsed(AnalyticsFeature.community);
+                }
+                return false;
+              },
+              child: RefreshIndicator(
+                onRefresh: () {
+                  ref
+                      .read(analyticsRecorderProvider)
+                      .featureUsed(AnalyticsFeature.community);
+                  return ref.read(communityFeedProvider.notifier).refresh();
+                },
+                child: feed.when(
+                  loading: () => _FeedSkeleton(glass: glass),
+                  error: (e, _) => _ErrorState(
+                      onRetry: () =>
+                          ref.read(communityFeedProvider.notifier).refresh()),
+                  data: (posts) => ListView(
+                    controller: _scroll,
+                    padding: glassDockListPadding(context),
+                    children: [
+                      const _NoticeBanner(),
+                      if (posts.isEmpty)
+                        _EmptyFeed()
+                      else
+                        for (final post in posts)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                                AppStyles.spacing16,
+                                AppStyles.spacing12,
+                                AppStyles.spacing16,
+                                0),
+                            child: PostCard(
+                              post: post,
+                              now: now,
+                              thumbnailUrl: post.thumbnailPath == null
+                                  ? null
+                                  : imageUrls[post.thumbnailPath],
+                              petPhotoUrl: post.petPhotoPath == null
+                                  ? null
+                                  : imageUrls[post.petPhotoPath],
+                              onPlay: () =>
+                                  context.push('/community-player/${post.id}'),
+                              onToggleLike: () => ref
+                                  .read(communityFeedProvider.notifier)
+                                  .toggleLike(post.id),
+                              onOpenComments: () =>
+                                  showCommentsSheet(context, ref, post),
+                              isMine: post.authorId == myId,
+                              onDelete: post.authorId == myId
+                                  ? () => _confirmDelete(post)
+                                  : null,
+                              onReport: (reason) => _reportPost(post, reason),
+                              onBlock: () => _confirmBlock(post),
+                              onOpenAuthor: () => context
+                                  .push('/community-user/${post.authorId}'),
+                            ),
                           ),
-                        ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -134,7 +150,12 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
           child: FloatingActionButton(
             backgroundColor: glass.activeTile,
             foregroundColor: glass.textOnActive,
-            onPressed: () => context.push('/community-share'),
+            onPressed: () {
+              ref
+                  .read(analyticsRecorderProvider)
+                  .featureUsed(AnalyticsFeature.community);
+              context.push('/community-share');
+            },
             child: const Icon(Icons.add),
           ),
         ),

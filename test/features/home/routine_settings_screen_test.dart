@@ -1,3 +1,6 @@
+import 'package:vivnanaut/core/analytics/analytics_events.dart';
+import 'package:vivnanaut/core/analytics/analytics_providers.dart';
+import 'analytics_recorder_spy.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -139,10 +142,13 @@ Schedule _schedule({
 /// EasyLocalization을 세우지 않는다 — 이 레포의 다른 위젯 테스트와 같은 방식으로,
 /// `.tr()`이 키를 그대로 돌려주는 상태에서 구조만 본다. 번역 로드는 프레임을
 /// 더 먹어서 여러 테스트가 같은 프로세스에서 돌 때 트리가 비어버린다.
-Future<void> _pump(WidgetTester tester, _FakeRepo repo) async {
+Future<void> _pump(WidgetTester tester, _FakeRepo repo,
+    {AnalyticsRecorderSpy? analytics}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        if (analytics != null)
+          analyticsRecorderProvider.overrideWithValue(analytics),
         scheduleRepositoryProvider.overrideWithValue(repo),
         currentDeviceIdProvider.overrideWith((ref) async => 'd1'),
       ],
@@ -153,6 +159,30 @@ Future<void> _pump(WidgetTester tester, _FakeRepo repo) async {
 }
 
 void main() {
+  testWidgets(
+      'analytics excludes list fetch and observes successful schedule change',
+      (tester) async {
+    final analytics = AnalyticsRecorderSpy();
+    await _pump(tester, _FakeRepo(items: [_schedule(id: 'a')]),
+        analytics: analytics);
+    expect(analytics.features, isEmpty);
+    expect(analytics.events, isEmpty);
+    await tester.tap(find.byKey(const Key('schedule_toggle_a')));
+    await tester.pumpAndSettle();
+    expect(analytics.features, [AnalyticsFeature.routines]);
+    expect(analytics.events, [AnalyticsEvent.routineSaved]);
+  });
+
+  testWidgets('failed schedule change never emits saved', (tester) async {
+    final analytics = AnalyticsRecorderSpy();
+    await _pump(
+        tester, _FakeRepo(items: [_schedule(id: 'a')], failOnPatch: true),
+        analytics: analytics);
+    await tester.tap(find.byKey(const Key('schedule_toggle_a')));
+    await tester.pumpAndSettle();
+    expect(analytics.features, [AnalyticsFeature.routines]);
+    expect(analytics.events, isEmpty);
+  });
 
   testWidgets('예약 목록을 보여준다', (tester) async {
     final repo = _FakeRepo(items: [

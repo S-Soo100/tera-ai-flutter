@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
+
+
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
@@ -138,8 +142,12 @@ class _BookmarkCard extends ConsumerWidget {
     return GestureDetector(
       key: ValueKey('bookmark_card_${clip.clipId}'),
       behavior: HitTestBehavior.opaque,
-      onTap: () =>
-          context.push('/crecam/player/${clip.clipId}', extra: playlist),
+      onTap: () {
+        final analytics = ref.read(analyticsRecorderProvider);
+        analytics.featureUsed(AnalyticsFeature.bookmarks);
+        analytics.record(AnalyticsEvent.bookmarkReplayed);
+        context.push('/crecam/player/${clip.clipId}', extra: playlist);
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

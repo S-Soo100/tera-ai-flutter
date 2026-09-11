@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/glass_palette.dart';
@@ -60,7 +62,12 @@ class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
               HeaderAction(
                 icon: Icons.add,
                 tooltip: 'my_pets_add'.tr(),
-                onPressed: () => context.push('/my-pets/add'),
+                onPressed: () {
+                  ref
+                      .read(analyticsRecorderProvider)
+                      .featureUsed(AnalyticsFeature.pets);
+                  context.push('/my-pets/add');
+                },
               ),
               AccountAvatar(
                 tooltip: 'home_account'.tr(),
@@ -75,7 +82,13 @@ class _MyPetsScreenState extends ConsumerState<MyPetsScreen> {
                 const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
             child: _TabChips(
               selected: _selected,
-              onChanged: (t) => setState(() => _selected = t),
+              onChanged: (t) {
+                ref.read(analyticsRecorderProvider).featureUsed(
+                    t == _MyPetsTab.report
+                        ? AnalyticsFeature.reports
+                        : AnalyticsFeature.pets);
+                setState(() => _selected = t);
+              },
             ),
           ),
           const SizedBox(height: AppStyles.spacing16),
@@ -160,12 +173,12 @@ class _PetListView extends StatelessWidget {
 /// "정보 수정"은 편집 화면. 값이 없는 칸은 `--`(0·가짜 날짜로 위장하지 않는다).
 /// AGE는 생년월이 있을 때 D+N, 없고 입양일만 있으면 라벨을 ADOPTED로 바꿔
 /// 입양 경과일을 보여준다 — 두 날짜를 한 라벨 아래 섞지 않는다.
-class _PetCard extends StatelessWidget {
+class _PetCard extends ConsumerWidget {
   const _PetCard({required this.pet});
   final Pet pet;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
     return GlassCard(
       child: Column(
@@ -174,7 +187,12 @@ class _PetCard extends StatelessWidget {
           // 상단: 사진 + 이름(크게) + 종 + 성별 배지. 탭 → 상세.
           InkWell(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            onTap: () => context.push('/my-pets/${pet.id}'),
+            onTap: () {
+              ref
+                  .read(analyticsRecorderProvider)
+                  .featureUsed(AnalyticsFeature.pets);
+              context.push('/my-pets/${pet.id}');
+            },
             child: Padding(
               padding: const EdgeInsets.all(AppStyles.spacing16),
               child: Row(
@@ -260,7 +278,12 @@ class _PetCard extends StatelessWidget {
                 ),
                 const SizedBox(height: AppStyles.spacing12),
                 OutlinedButton(
-                  onPressed: () => context.push('/my-pets/${pet.id}/edit'),
+                  onPressed: () {
+                    ref
+                        .read(analyticsRecorderProvider)
+                        .featureUsed(AnalyticsFeature.pets);
+                    context.push('/my-pets/${pet.id}/edit');
+                  },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
@@ -477,9 +500,9 @@ class _SexBadge extends StatelessWidget {
   }
 }
 
-class _AddPetCard extends StatelessWidget {
+class _AddPetCard extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     // 채운 유리 카드가 아니라 **빈 틀**이다 — 개체 카드와 같은 모양이면
     // "내용이 있는데 비었다"로 읽힌다. 테두리만 유리 토큰으로 맞춘다.
@@ -489,7 +512,12 @@ class _AddPetCard extends StatelessWidget {
       type: MaterialType.transparency,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push('/my-pets/add'),
+        onTap: () {
+          ref
+              .read(analyticsRecorderProvider)
+              .featureUsed(AnalyticsFeature.pets);
+          context.push('/my-pets/add');
+        },
         child: Container(
           padding: const EdgeInsets.all(AppStyles.spacing24),
           decoration: BoxDecoration(

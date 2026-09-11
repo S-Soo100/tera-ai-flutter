@@ -2,6 +2,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/analytics/analytics_events.dart';
+import '../../../../core/analytics/analytics_providers.dart';
+
+
 import '../my_cage_providers.dart';
 
 /// 클립 즐겨찾기 토글 버튼. 추가 시 motion_clip 메타 + presigned URL을 받아
@@ -22,6 +26,8 @@ class _FavoriteToggleButtonState extends ConsumerState<FavoriteToggleButton> {
   bool _busy = false;
 
   Future<void> _toggle() async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
     if (_busy) return;
     setState(() => _busy = true);
     final repo = ref.read(favoriteClipRepositoryProvider);
@@ -29,6 +35,7 @@ class _FavoriteToggleButtonState extends ConsumerState<FavoriteToggleButton> {
     try {
       if (repo.isFavorite(widget.clipId)) {
         final cameraId = await repo.remove(widget.clipId);
+        analytics.record(AnalyticsEvent.bookmarkRemoved, epoch: epoch);
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         if (cameraId != null) ref.invalidate(favoriteClipsProvider(cameraId));
@@ -51,6 +58,7 @@ class _FavoriteToggleButtonState extends ConsumerState<FavoriteToggleButton> {
         final url =
             await ref.read(motionClipUrlProvider(widget.clipId).future);
         await repo.add(clip, url);
+        analytics.record(AnalyticsEvent.bookmarkAdded, epoch: epoch);
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         ref.invalidate(favoriteClipsProvider(clip.cameraId));

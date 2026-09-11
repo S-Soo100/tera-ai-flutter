@@ -6,16 +6,48 @@ import 'package:flutter/foundation.dart';
 /// 코드 상수로 둔다.
 const String kClarityProjectId = 'ygr536qm34';
 
-/// 앱 진입점(`main.dart`)의 `ClarityWidget`에 넘기는 설정.
+/// 동의와 수집 가능 화면을 확인한 뒤 SDK adapter가 사용하는 설정.
 ///
 /// - 디버그 빌드: `Verbose` — 초기화 실패를 콘솔에서 바로 볼 수 있게.
 /// - 릴리즈 빌드: `None` — SDK도 릴리즈에선 강제로 None이지만 의도를 명시.
 ///
-/// 마스킹 모드(전체 텍스트 마스킹 등)는 코드가 아니라 Clarity 대시보드에서
-/// 정한다. 개별 위젯은 `ClarityMask`/`ClarityUnmask`로 덮어쓴다.
-ClarityConfig buildClarityConfig() {
+/// 앱의 영구 root `ClarityMask`가 대시보드 설정보다 우선한다.
+ClarityConfig buildClarityConfig({String projectId = kClarityProjectId}) {
   return ClarityConfig(
-    projectId: kClarityProjectId,
+    projectId: projectId,
     logLevel: kDebugMode ? LogLevel.Verbose : LogLevel.None,
   );
+}
+
+/// Deployment approval and account consent are independent switches.
+class ClarityRuntimeConfig {
+  const ClarityRuntimeConfig(
+      {this.enabled = false,
+      this.mobile = false,
+      this.release = false,
+      this.projectId = ''});
+
+  final bool enabled;
+  final bool mobile;
+  final bool release;
+  final String projectId;
+
+  String get resolvedProjectId =>
+      projectId.isEmpty && release ? kClarityProjectId : projectId;
+  String get environmentName =>
+      resolvedProjectId == kClarityProjectId ? 'production' : 'qa';
+  bool get canCollect =>
+      enabled &&
+      mobile &&
+      RegExp(r'^[a-zA-Z0-9]+$').hasMatch(resolvedProjectId) &&
+      (release || resolvedProjectId != kClarityProjectId);
+
+  static ClarityRuntimeConfig get environment => ClarityRuntimeConfig(
+        enabled: const bool.fromEnvironment('CLARITY_ENABLED'),
+        mobile: !kIsWeb &&
+            (defaultTargetPlatform == TargetPlatform.android ||
+                defaultTargetPlatform == TargetPlatform.iOS),
+        release: kReleaseMode,
+        projectId: const String.fromEnvironment('CLARITY_PROJECT_ID'),
+      );
 }

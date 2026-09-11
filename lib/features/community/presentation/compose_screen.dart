@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
+import '../../../core/analytics/analytics_recorder.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -68,6 +71,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// 저장=display_name 갱신 후 게시, 건너뛰기=그대로 게시(폴백 "집사" 유지),
   /// 바깥 탭(dismiss)=게시 취소(버튼을 다시 누르면 재시도).
   Future<void> _onPublishPressed() async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
+    analytics.featureUsed(AnalyticsFeature.community);
     final name =
         ref.read(profileNotifierProvider).valueOrNull?.displayName?.trim() ??
             '';
@@ -86,7 +92,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         if (!mounted) return;
       }
     }
-    await _publish();
+    await _publish(analytics, epoch);
   }
 
   /// null = dismiss(취소), '' = 건너뛰기, 그 외 = 저장할 닉네임.
@@ -128,7 +134,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     ).whenComplete(() => controller.dispose());
   }
 
-  Future<void> _publish() async {
+  Future<void> _publish(AnalyticsRecorder analytics, int epoch) async {
     setState(() {
       _progress = 0;
       _error = null;
@@ -142,6 +148,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               if (mounted) setState(() => _progress = v);
             },
           );
+      analytics.record(AnalyticsEvent.communityPublished, epoch: epoch);
       if (!mounted) return;
       await ref.read(communityFeedProvider.notifier).refresh();
       if (mounted) context.go('/community');

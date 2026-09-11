@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../analytics/analytics_public_label.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/my_pets/presentation/my_pets_screen.dart';
@@ -425,6 +426,7 @@ class _ScaffoldWithBottomNav extends StatelessWidget {
             GlassDockItem(
               iconAsset: kHomeTabIconAssets[i],
               label: kHomeTabLabelKeys[i].tr(),
+              analyticsPublicLabel: AnalyticsPublicLabelKind.values[i],
             ),
         ],
       ),

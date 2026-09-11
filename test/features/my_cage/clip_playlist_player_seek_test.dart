@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
+import 'package:vivnanaut/core/analytics/analytics_events.dart';
+import 'package:vivnanaut/core/analytics/analytics_recorder.dart';
+import 'package:vivnanaut/core/analytics/analytics_providers.dart';
 import 'package:vivnanaut/features/my_cage/data/favorite_clip_repository.dart';
 import 'package:vivnanaut/features/my_cage/data/motion_clip_repository.dart';
 import 'package:vivnanaut/features/my_cage/domain/favorite_clip.dart';
@@ -21,7 +24,9 @@ class _FakeVideoPlatform extends VideoPlayerPlatform {
   /// 초기화 이벤트가 보고할 영상 길이(60초 고정 — 테스트 시나리오 기준).
   final Duration duration = const Duration(seconds: 60);
   final List<Duration> seeks = [];
+  final List<StreamController<VideoEvent>> eventStreams = [];
   int playCount = 0;
+  bool delayInitialization = false;
   Duration _position = Duration.zero;
 
   @override
@@ -41,13 +46,18 @@ class _FakeVideoPlatform extends VideoPlayerPlatform {
     // (다음 클립 전환 = 컨트롤러 교체 테스트가 이걸 밟는다).
     late final StreamController<VideoEvent> events;
     events = StreamController<VideoEvent>(
-      onListen: () => events.add(VideoEvent(
-        eventType: VideoEventType.initialized,
-        duration: duration,
-        size: const Size(1920, 1080),
-      )),
+      onListen: () {
+        if (!delayInitialization) {
+          events.add(VideoEvent(
+            eventType: VideoEventType.initialized,
+            duration: duration,
+            size: const Size(1920, 1080),
+          ));
+        }
+      },
       onCancel: () async {},
     );
+    eventStreams.add(events);
     return events.stream;
   }
 
@@ -81,6 +91,8 @@ class _FakeVideoPlatform extends VideoPlayerPlatform {
 }
 
 class _FakeFavoriteRepo implements FavoriteClipRepository {
+  bool failAdd = false;
+
   @override
   bool isFavorite(String clipId) => false;
   @override
@@ -92,7 +104,10 @@ class _FakeFavoriteRepo implements FavoriteClipRepository {
   @override
   List<FavoriteClip> listAll() => const [];
   @override
-  Future<void> add(MotionClip clip, String presignedUrl) async {}
+  Future<void> add(MotionClip clip, String presignedUrl) async {
+    if (failAdd) throw StateError('save failed');
+  }
+
   @override
   Future<String?> remove(String clipId) async => null;
   @override
@@ -111,11 +126,16 @@ Future<void> _pump(
   required String clipId,
   List<String>? playlist,
   Map<String, double> playFromSec = const {},
+  AnalyticsRecorder? analytics,
+  _FakeFavoriteRepo? favorites,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        favoriteClipRepositoryProvider.overrideWithValue(_FakeFavoriteRepo()),
+        if (analytics != null)
+          analyticsRecorderProvider.overrideWithValue(analytics),
+        favoriteClipRepositoryProvider
+            .overrideWithValue(favorites ?? _FakeFavoriteRepo()),
         motionClipProvider.overrideWith((ref, id) async => _clip(id)),
         motionClipUrlProvider
             .overrideWith((ref, id) async => 'https://example.com/$id.mp4'),
@@ -142,6 +162,22 @@ Future<void> _teardown(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 1));
 }
 
+class _RecordingAnalytics extends AnalyticsRecorder {
+  final events = <AnalyticsEvent>[];
+  final features = <AnalyticsFeature>[];
+  @override
+  int epoch = 1;
+  @override
+  void record(AnalyticsEvent event, {int? epoch}) {
+    if (epoch == null || epoch == this.epoch) events.add(event);
+  }
+
+  @override
+  void featureUsed(AnalyticsFeature feature, {int? epoch}) {
+    if (epoch == null || epoch == this.epoch) features.add(feature);
+  }
+}
+
 void main() {
   late _FakeVideoPlatform platform;
 
@@ -150,21 +186,18 @@ void main() {
     VideoPlayerPlatform.instance = platform;
   });
 
-  testWidgets('playFromSec 8.8 · 영상 60초 → 초기 seek 8.8초 후 play',
-      (tester) async {
+  testWidgets('playFromSec 8.8 · 영상 60초 → 초기 seek 8.8초 후 play', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'a', playFromSec: {'a': 8.8});
 
     expect(platform.seeks, [const Duration(milliseconds: 8800)]);
     expect(platform.playCount, 1);
     // 중간 시작 클립 → "처음부터" 컨트롤 노출
-    expect(
-        find.byKey(ClipPlaylistPlayerScreen.fromStartKey), findsOneWidget);
+    expect(find.byKey(ClipPlaylistPlayerScreen.fromStartKey), findsOneWidget);
     await _teardown(tester);
   });
 
-  testWidgets('playFromSec 없음 → seek 없이 0초부터, "처음부터" 미노출',
-      (tester) async {
+  testWidgets('playFromSec 없음 → seek 없이 0초부터, "처음부터" 미노출', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'a');
 
@@ -174,8 +207,7 @@ void main() {
     await _teardown(tester);
   });
 
-  testWidgets('playFromSec 70 · 영상 60초 → seek 없음 (0초부터)',
-      (tester) async {
+  testWidgets('playFromSec 70 · 영상 60초 → seek 없음 (0초부터)', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'a', playFromSec: {'a': 70});
 
@@ -195,8 +227,7 @@ void main() {
     await _teardown(tester);
   });
 
-  testWidgets('시크바 썸 — 평소엔 숨기고 조작(드래그) 중에만 그린다',
-      (tester) async {
+  testWidgets('시크바 썸 — 평소엔 숨기고 조작(드래그) 중에만 그린다', (tester) async {
     // 사용자 지시 2026-09-12: 재생 중 원형 커서 상시 노출 금지, 탭/드래그로
     // 재생 위치를 옮기는 동안만 표시(전 플레이어 공통 규칙).
     await tester.binding.setSurfaceSize(const Size(393, 852));
@@ -223,13 +254,10 @@ void main() {
     await _teardown(tester);
   });
 
-  testWidgets('다음 클립으로 넘어가면 그 클립 값으로 다시 1회 seek',
-      (tester) async {
+  testWidgets('다음 클립으로 넘어가면 그 클립 값으로 다시 1회 seek', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester,
-        clipId: 'a',
-        playlist: ['a', 'b'],
-        playFromSec: {'a': 8.8, 'b': 3});
+        clipId: 'a', playlist: ['a', 'b'], playFromSec: {'a': 8.8, 'b': 3});
 
     expect(platform.seeks, [const Duration(milliseconds: 8800)]);
 
@@ -242,6 +270,72 @@ void main() {
       const Duration(seconds: 3),
     ]);
     expect(platform.playCount, 2);
+    await _teardown(tester);
+  });
+  testWidgets('직접 다음 선택은 요청, 종료 자동 다음은 자동 재생으로만 센다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final analytics = _RecordingAnalytics();
+    await _pump(tester,
+        clipId: 'a', playlist: ['a', 'b', 'c'], analytics: analytics);
+    expect(analytics.events,
+        [AnalyticsEvent.clipRequested, AnalyticsEvent.clipPlaying]);
+    await tester.tap(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(
+        analytics.events.where((e) => e == AnalyticsEvent.clipRequested).length,
+        2);
+    platform.eventStreams.last
+        .add(VideoEvent(eventType: VideoEventType.completed));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(
+        analytics.events.where((e) => e == AnalyticsEvent.clipRequested).length,
+        2);
+    expect(
+        analytics.events
+            .where((e) => e == AnalyticsEvent.clipAutoPlaying)
+            .length,
+        1);
+    expect(analytics.features, [AnalyticsFeature.clips, AnalyticsFeature.clips]);
+    await _teardown(tester);
+  });
+
+  testWidgets('새 분석 세션에서는 이전 클립의 늦은 재생 이벤트를 버린다', (tester) async {
+    final analytics = _RecordingAnalytics();
+    platform.delayInitialization = true;
+    await _pump(tester, clipId: 'a', analytics: analytics);
+    expect(analytics.events, [AnalyticsEvent.clipRequested]);
+    analytics.events.clear();
+    analytics.epoch++;
+    platform.eventStreams.last.add(VideoEvent(
+      eventType: VideoEventType.initialized,
+      duration: platform.duration,
+      size: const Size(1920, 1080),
+    ));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(platform.playCount, 1);
+    expect(analytics.events, isEmpty);
+    await _teardown(tester);
+  });
+  testWidgets('북마크 저장 실패는 선호 성공으로 세지 않고 실제 저장 후에만 센다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final analytics = _RecordingAnalytics();
+    final favorites = _FakeFavoriteRepo()..failAdd = true;
+    await _pump(tester,
+        clipId: 'a', analytics: analytics, favorites: favorites);
+    analytics.events.clear();
+    await tester.tap(find.byTooltip('clip_favorite_add'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(analytics.events, isEmpty);
+    favorites.failAdd = false;
+    await tester.tap(find.byTooltip('clip_favorite_add'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(analytics.events, [AnalyticsEvent.bookmarkAdded]);
     await _teardown(tester);
   });
 }

@@ -7,6 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
+import '../../../core/analytics/analytics_recorder.dart';
+
+
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
@@ -79,6 +84,11 @@ class _ClipPlaylistPlayerScreenState
   String? _error;
   bool _busy = false; // 저장/공유/즐겨찾기 진행 중
   bool _isPlaying = false;
+  AnalyticsRecorder? _playAnalytics;
+  int? _playEpoch;
+  bool _automaticPlayback = false;
+  bool _playingRecorded = false;
+  bool _failureRecorded = false;
   bool _autoAdvanced = false; // 클립당 자동 다음 1회 가드
 
   /// 현재 클립이 서버 시작점(`play_from_sec`)으로 중간에서 시작했는지 —
@@ -138,7 +148,23 @@ class _ClipPlaylistPlayerScreenState
     return cached.url;
   }
 
-  Future<void> _load({bool isRetry = false}) async {
+  Future<void> _load(
+      {bool isRetry = false,
+      bool automatic = false,
+      bool userRetry = false}) async {
+    if (!isRetry || userRetry) {
+      _playAnalytics = ref.read(analyticsRecorderProvider);
+      _playEpoch = _playAnalytics!.epoch;
+      _automaticPlayback = automatic;
+      _playingRecorded = false;
+      _failureRecorded = false;
+      if (!automatic) {
+        _playAnalytics!.featureUsed(AnalyticsFeature.clips, epoch: _playEpoch);
+        _playAnalytics!.record(AnalyticsEvent.clipRequested, epoch: _playEpoch);
+      }
+    }
+    final analytics = _playAnalytics!;
+    final epoch = _playEpoch;
     final seq = ++_loadSeq;
     final clipId = _currentClipId;
     final old = _controller;
@@ -202,6 +228,8 @@ class _ClipPlaylistPlayerScreenState
         await _load(isRetry: true);
         return;
       }
+      analytics.record(AnalyticsEvent.clipFailed, epoch: epoch);
+      _failureRecorded = true;
       setState(() => _error = e.toString());
     }
   }
@@ -211,6 +239,19 @@ class _ClipPlaylistPlayerScreenState
     if (controller == null || !mounted) return;
     final v = controller.value;
     final playing = v.isPlaying;
+    if (v.hasError && !_failureRecorded) {
+      _failureRecorded = true;
+      _playAnalytics?.record(AnalyticsEvent.clipFailed, epoch: _playEpoch);
+    }
+    if (playing && !v.hasError && !_playingRecorded) {
+      _playingRecorded = true;
+      _playAnalytics?.record(
+        _automaticPlayback
+            ? AnalyticsEvent.clipAutoPlaying
+            : AnalyticsEvent.clipPlaying,
+        epoch: _playEpoch,
+      );
+    }
     // 영상 끝 → 자동 다음 (마지막 클립이면 정지 상태 유지)
     if (!_autoAdvanced &&
         v.isInitialized &&
@@ -219,7 +260,7 @@ class _ClipPlaylistPlayerScreenState
         v.position >= v.duration) {
       _autoAdvanced = true;
       if (_index < _playlist.length - 1) {
-        _go(1);
+        _go(1, automatic: true);
         return;
       }
     }
@@ -228,12 +269,12 @@ class _ClipPlaylistPlayerScreenState
     }
   }
 
-  void _go(int delta) {
+  void _go(int delta, {bool automatic = false}) {
     final next = _index + delta;
     if (next < 0 || next >= _playlist.length) return;
     setState(() => _index = next);
     _autoAdvanced = false;
-    _load();
+    _load(automatic: automatic);
   }
 
   void _togglePlay() {
@@ -291,6 +332,8 @@ class _ClipPlaylistPlayerScreenState
   }
 
   Future<void> _share() async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
     if (_busy) return;
     setState(() => _busy = true);
     final clipId = _currentClipId;
@@ -301,6 +344,7 @@ class _ClipPlaylistPlayerScreenState
             localFile: src.file,
             presignedUrl: src.url,
           );
+      analytics.record(AnalyticsEvent.clipShareOpened, epoch: epoch);
     } catch (_) {
       // 공유 취소/실패는 조용히 무시
     } finally {
@@ -309,6 +353,8 @@ class _ClipPlaylistPlayerScreenState
   }
 
   Future<void> _toggleFavorite(MotionClip? clip) async {
+    final analytics = ref.read(analyticsRecorderProvider);
+    final epoch = analytics.epoch;
     if (_busy) return;
     setState(() => _busy = true);
     final clipId = _currentClipId;
@@ -317,6 +363,7 @@ class _ClipPlaylistPlayerScreenState
     try {
       if (repo.isFavorite(clipId)) {
         final cameraId = await repo.remove(clipId);
+        analytics.record(AnalyticsEvent.bookmarkRemoved, epoch: epoch);
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(clipId));
         if (cameraId != null) ref.invalidate(favoriteClipsProvider(cameraId));
@@ -331,6 +378,7 @@ class _ClipPlaylistPlayerScreenState
             .showSnackBar(SnackBar(content: Text('clip_favorite_saving'.tr())));
         final url = await _presignedUrl(clipId);
         await repo.add(clip, url);
+        analytics.record(AnalyticsEvent.bookmarkAdded, epoch: epoch);
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(clipId));
         ref.invalidate(favoriteClipsProvider(clip.cameraId));
@@ -637,7 +685,7 @@ class _ClipPlaylistPlayerScreenState
               style: TextStyle(fontSize: 14, color: glass.textSecondary)),
           const SizedBox(height: 8),
           TextButton(
-            onPressed: () => _load(isRetry: true),
+            onPressed: () => _load(isRetry: true, userRetry: true),
             child: Text('retry'.tr()),
           ),
         ],

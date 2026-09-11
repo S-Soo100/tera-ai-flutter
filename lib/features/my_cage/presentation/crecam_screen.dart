@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/analytics/analytics_events.dart';
+import '../../../core/analytics/analytics_providers.dart';
+
+
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/domain/time_ago.dart';
@@ -181,7 +185,12 @@ class _EntryCards extends ConsumerWidget {
             title: 'crecam_home_highlights'.tr(),
             latestAt: highlightAt,
             extra: nightExtra,
-            onTap: () => context.push('/crecam/highlights'),
+            onTap: () {
+              ref
+                  .read(analyticsRecorderProvider)
+                  .featureUsed(AnalyticsFeature.highlights);
+              context.push('/crecam/highlights');
+            },
           ),
         ),
         const SizedBox(width: 12),
@@ -191,7 +200,12 @@ class _EntryCards extends ConsumerWidget {
             iconAsset: FigmaIcons.bookmarkCheck,
             title: 'crecam_home_bookmarks'.tr(),
             latestAt: bookmarkAt,
-            onTap: () => context.push('/crecam/bookmarks'),
+            onTap: () {
+              ref
+                  .read(analyticsRecorderProvider)
+                  .featureUsed(AnalyticsFeature.bookmarks);
+              context.push('/crecam/bookmarks');
+            },
           ),
         ),
       ],

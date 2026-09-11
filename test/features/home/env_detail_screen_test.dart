@@ -1,3 +1,6 @@
+import 'package:vivnanaut/core/analytics/analytics_events.dart';
+import 'package:vivnanaut/core/analytics/analytics_providers.dart';
+import 'analytics_recorder_spy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -62,12 +65,15 @@ List<ControlLogEntry> _log() => [
 
 Future<void> _pump(
   WidgetTester tester, {
+  AnalyticsRecorderSpy? analytics,
   bool empty = false,
   List<ControlLogEntry>? log,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        if (analytics != null)
+          analyticsRecorderProvider.overrideWithValue(analytics),
         currentDeviceIdProvider.overrideWith((ref) async => null),
         envDayChartDataProvider
             .overrideWith((ref) async => _chartData(empty: empty)),
@@ -91,6 +97,17 @@ Future<void> _pump(
 String _dateLabel(DateTime d) => '${d.year}. ${d.month}. ${d.day}';
 
 void main() {
+  testWidgets(
+      'analytics excludes automatic data display, records direct selection',
+      (tester) async {
+    final analytics = AnalyticsRecorderSpy();
+    await _pump(tester, analytics: analytics);
+    expect(analytics.features, isEmpty);
+    await tester.tap(find.byKey(EnvDetailScreen.segmentWeeklyKey));
+    await tester.pumpAndSettle();
+    expect(analytics.features, [AnalyticsFeature.environment]);
+  });
+
   testWidgets('일간 기본 — 타이틀·오늘 날짜·차트·제어 기록, → 숨김', (tester) async {
     await _pump(tester);
 
