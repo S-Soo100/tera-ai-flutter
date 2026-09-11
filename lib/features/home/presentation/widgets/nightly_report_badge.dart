@@ -19,16 +19,10 @@ class NightlyReportBadge extends ConsumerWidget {
     if (report.highlights.isEmpty && report.activitySeconds == 0) {
       return const SizedBox.shrink();
     }
-    // n = 어젯밤 day_key의 ⭐ 대표 개수(0~top_n), 후보 수는 보조 병기
-    // (2026-09-11 /highlights/featured 전환).
+    // n = 어젯밤 day_key의 ⭐ 대표 개수(2026-09-11 /highlights/featured 전환).
     final n = report.highlights.length;
     final sub = n > 0
-        ? [
-            'nightly_report_badge_sub'.tr(namedArgs: {'n': '$n'}),
-            if (report.candidateCount > 0)
-              'nightly_candidate_count'
-                  .tr(namedArgs: {'m': '${report.candidateCount}'}),
-          ].join(' · ')
+        ? 'nightly_report_badge_sub'.tr(namedArgs: {'n': '$n'})
         : 'nightly_report_badge_quiet'.tr();
     final theme = Theme.of(context);
     final cs = theme.colorScheme;

@@ -151,38 +151,21 @@ void main() {
   });
 
   group('HighlightsScreen', () {
-    testWidgets('대표 카드 3장 + "후보 N개 더 보기"(후보 있는 묶음만)',
+    testWidgets('대표 카드만 렌더 — 후보는 데이터가 있어도 노출 안 함(2026-09-11)',
         (tester) async {
       // 배너를 dismiss된 상태로 시작해 섹션이 화면 안에 오게 한다.
+      // (실 조회는 tier=featured라 후보가 안 오지만, 픽스처에 후보를 섞어
+      // "와도 안 그린다"를 고정한다.)
       final store = _FakeBannerStore(highlightGroupKey(_groups().first));
       await _pump(tester, store: store);
       expect(find.byKey(const ValueKey('highlight_featured_f1')),
           findsOneWidget);
-      // 후보 셀은 접혀 있어 아직 없다.
+      // 후보 셀·더 보기 버튼은 어디에도 없다.
       expect(find.byKey(const ValueKey('highlight_cell_c1')), findsNothing);
-      // dayA에만 후보가 있다 — 더 보기 버튼은 1개.
-      expect(find.byKey(HighlightsScreen.moreCandidatesKey(_dayA)),
-          findsOneWidget);
-      expect(find.byKey(HighlightsScreen.moreCandidatesKey(_dayB)),
-          findsNothing);
+      expect(find.byKey(const ValueKey('highlight_cell_c2')), findsNothing);
+      expect(find.textContaining('후보'), findsNothing);
       // 지난 날짜 묶음 헤더는 "M월 d일 밤" 서식 키(테스트는 미번역 키 노출).
       expect(find.text('crecam_highlights_night_of'), findsWidgets);
-    });
-
-    testWidgets('더 보기 탭 → 후보(시간 내림차순) 펼침, 재탭 → 접힘',
-        (tester) async {
-      final store = _FakeBannerStore(highlightGroupKey(_groups().first));
-      await _pump(tester, store: store);
-      final button = find.byKey(HighlightsScreen.moreCandidatesKey(_dayA));
-      await tester.scrollUntilVisible(button, 200,
-          scrollable: find.byType(Scrollable).first);
-      await tester.tap(button);
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('highlight_cell_c2')), findsOneWidget);
-      expect(find.text('crecam_highlights_less_candidates'), findsOneWidget);
-      await tester.tap(button);
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('highlight_cell_c2')), findsNothing);
     });
 
     testWidgets('대표 6장 이상(하루 상한 폐지 2026-09-11 후속)도 전부 렌더',
@@ -256,23 +239,6 @@ void main() {
       expect(find.text('player-screen'), findsOneWidget);
       expect(pushedClipId, 'f2');
       expect(pushedPlaylist, ['f1', 'f2', 'f3']);
-    });
-
-    testWidgets('후보 셀 탭 → 플레이어(재생목록 = 그 묶음 후보, 시간순)',
-        (tester) async {
-      final store = _FakeBannerStore(highlightGroupKey(_groups().first));
-      await _pump(tester, store: store);
-      final button = find.byKey(HighlightsScreen.moreCandidatesKey(_dayA));
-      await tester.scrollUntilVisible(button, 200,
-          scrollable: find.byType(Scrollable).first);
-      await tester.tap(button);
-      await tester.pumpAndSettle();
-      final cell = find.byKey(const ValueKey('highlight_cell_c1'));
-      await tester.ensureVisible(cell);
-      await tester.tap(cell);
-      await tester.pumpAndSettle();
-      expect(pushedClipId, 'c1');
-      expect(pushedPlaylist, ['c2', 'c1']);
     });
 
     testWidgets('배너 탭(X 제외) → 대표 1위부터 대표 재생목록', (tester) async {

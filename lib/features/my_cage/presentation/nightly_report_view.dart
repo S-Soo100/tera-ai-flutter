@@ -80,15 +80,13 @@ class _SummaryCard extends StatelessWidget {
     final restSec = windowSec - activeSec;
     final ratio = windowSec <= 0 ? 0.0 : activeSec / windowSec;
 
-    // ⭐ 대표 개수(0~top_n) + 후보 수 보조(2026-09-11 featured 전환).
-    final highlightValue = [
-      'nightly_highlight_count'.tr(namedArgs: {'n': '${report.highlightCount}'}),
-      if (report.candidateCount > 0)
-        'nightly_candidate_count'
-            .tr(namedArgs: {'m': '${report.candidateCount}'}),
-    ].join(' · ');
     final stats = <(String, String, String)>[
-      ('✨', 'nightly_count_highlight'.tr(), highlightValue),
+      (
+        '✨',
+        'nightly_count_highlight'.tr(),
+        'nightly_highlight_count'
+            .tr(namedArgs: {'n': '${report.highlightCount}'})
+      ),
     ];
     return GlassCard(
       padding: const EdgeInsets.all(16),

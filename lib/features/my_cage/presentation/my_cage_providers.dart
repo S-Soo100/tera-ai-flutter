@@ -408,13 +408,14 @@ final highlightRepositoryProvider = Provider<HighlightRepository>((ref) {
   );
 });
 
-/// 어젯밤 요약 — 어젯밤 day_key(20:00 경계)의 ⭐ 대표 + 후보 수 + 활동시간
-/// 합(22~06시). 계정 전환 시 재조회.
+/// 어젯밤 요약 — 어젯밤 day_key(20:00 경계)의 ⭐ 대표 + 활동시간 합(22~06시).
+/// 계정 전환 시 재조회.
 ///
 /// 2026-09-11: 하이라이트 소스가 `/highlights`(since 창 필터)에서
 /// `/highlights/featured`(서버 day_key 묶음)로 교체 — days=2로 받아(자정~
 /// 20시 사이엔 어젯밤 day_key가 "어제"라 오늘 것만으론 부족) 어젯밤
-/// day_key만 남긴다.
+/// day_key만 남긴다. 후보는 화면 어디에도 안 보여주므로(사용자 지시)
+/// tier=featured로 대표만 받는다.
 final nightlyReportProvider =
     FutureProvider.autoDispose<NightlyReport>((ref) async {
   ref.watch(currentUserProvider.select((u) => u?.id));
@@ -423,17 +424,14 @@ final nightlyReportProvider =
   final end = lastNightEnd(now);
   final dayKey = lastNightDayKey(now);
   List<NightlyHighlight> highlights;
-  var candidateCount = 0;
   try {
     final all = await ref
         .watch(highlightRepositoryProvider)
-        .listFeatured(days: 2, tier: 'all');
-    final night = all
+        .listFeatured(days: 2, tier: 'featured');
+    highlights = all
         .where((h) => h.clipId.isNotEmpty && h.dayKey == dayKey)
-        .toList();
-    highlights = night.where((h) => h.isFeatured).toList()
+        .toList()
       ..sort((a, b) => a.episodeRank.compareTo(b.episodeRank));
-    candidateCount = night.length - highlights.length;
   } catch (e) {
     // 리포트는 활동시간만으로도 서므로 삼키되, 원인은 로그로 남긴다
     // (2026-09-07 — "불러오기 실패" 원인 특정이 안 됐던 교훈).
@@ -446,11 +444,7 @@ final nightlyReportProvider =
     cameras.map((c) => motionRepo.motionSeconds(c.id, start, end)),
   );
   final sec = secs.fold<int>(0, (a, b) => a + b);
-  return NightlyReport(
-    activitySeconds: sec,
-    highlights: highlights,
-    candidateCount: candidateCount,
-  );
+  return NightlyReport(activitySeconds: sec, highlights: highlights);
 });
 
 // ── 카메라 탭 Camera Home (2026-09-04 재설계 T2) ───────────────────────────────
@@ -542,8 +536,9 @@ final allFavoriteClipsProvider =
 // ── 하이라이트 상세 (2026-09-04 재설계 T4) ─────────────────────────────────────
 
 /// 하이라이트 묶음 — 서버 `/highlights/featured`(최근
-/// [HighlightRepository.defaultFeaturedDays]일, tier=all)를 day_key로 묶는다
-/// ([groupByDay], 2026-09-11 — 구 72h 앱측 그룹핑 대체). 묶음은 최신 day_key
+/// [HighlightRepository.defaultFeaturedDays]일, **tier=featured — 후보는
+/// 화면에 안 보여주므로 받지도 않는다**, 2026-09-11 사용자 지시)를 day_key로
+/// 묶는다([groupByDay], 구 72h 앱측 그룹핑 대체). 묶음은 최신 day_key
 /// 먼저. 에러는 화면이 retry로 처리(삼키지 않음). autoDispose라 화면 진입마다
 /// 재조회 — 서버가 조회 시 계산이라 오래 캐시하면 대표 교체를 놓친다.
 ///
@@ -557,7 +552,7 @@ final highlightGroupsProvider =
   ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 격리
   final repo = ref.watch(highlightRepositoryProvider);
   Future<List<DayHighlightGroup>> fetch() async {
-    final list = await repo.listFeatured();
+    final list = await repo.listFeatured(tier: 'featured');
     return groupByDay(list.where((h) => h.clipId.isNotEmpty).toList());
   }
 

@@ -20,28 +20,21 @@ import 'widgets/crecam_detail_top_bar.dart';
 final highlightsDayFilterProvider =
     StateProvider.autoDispose<DateTime?>((ref) => null);
 
-/// 후보를 펼쳐 둔 day_key 집합. autoDispose — 화면 이탈 시 접힘으로 리셋.
-final expandedCandidateDaysProvider =
-    StateProvider.autoDispose<Set<String>>((ref) => const {});
-
 /// 하이라이트 상세 — 하루(20:00 KST 경계, 서버 day_key) 묶음 보기.
 ///
 /// 2026-09-11 `/highlights/featured` 전환: 묶음([highlightGroupsProvider])은
-/// 서버 day_key 그대로, 기본은 ⭐ 대표 카드만 보이고 후보는 하루마다
-/// "후보 N개 더 보기"로 접는다. 최신 묶음 도착 배너(dismiss는 Hive
-/// `app_settings`에 그룹 key 저장 — 같은 묶음은 재방문에도 숨김)는 유지.
-/// 날짜 필터 중엔 묶음 대신 그 날짜의 하이라이트만 평면 그리드 1섹션.
-/// 행동 필터는 만들지 않는다(Figma 정책 노트 — 이 계약에 행동 이름이 없다).
+/// 서버 day_key 그대로, **⭐ 대표만** 보여준다. 후보는 화면에서 완전히 뺐다
+/// (2026-09-11 사용자 지시 — "후보 더 보기"도 노출하지 않는다. 조회 자체를
+/// tier=featured로 좁혔으므로 후보 데이터는 애초에 받지 않는다). 최신 묶음
+/// 도착 배너(dismiss는 Hive `app_settings`에 그룹 key 저장 — 같은 묶음은
+/// 재방문에도 숨김)는 유지. 날짜 필터 중엔 묶음 대신 그 날짜의 대표만 평면
+/// 그리드 1섹션. 행동 필터는 만들지 않는다(Figma 정책 노트).
 class HighlightsScreen extends ConsumerWidget {
   const HighlightsScreen({super.key});
 
   /// 테스트용 — 도착 배너·닫기 버튼 식별.
   static const bannerKey = Key('crecam_highlight_banner');
   static const bannerCloseKey = Key('crecam_highlight_banner_close');
-
-  /// 테스트용 — 묶음별 "후보 N개 더 보기" 토글.
-  static Key moreCandidatesKey(String dayKey) =>
-      ValueKey('highlight_more_$dayKey');
 
   /// Figma 콘텐츠 좌우 마진·섹션 간격.
   static const double _margin = 12;
@@ -111,12 +104,12 @@ class HighlightsScreen extends ConsumerWidget {
     ref.read(highlightsDayFilterProvider.notifier).state = picked;
   }
 
-  /// 날짜 필터 뷰 — 그 날짜(startedAt 자정 경계)의 대표+후보 평면 그리드 1섹션.
+  /// 날짜 필터 뷰 — 그 날짜(startedAt 자정 경계)의 대표 평면 그리드 1섹션.
   Widget _dayView(
       BuildContext context, List<DayHighlightGroup> groups, DateTime day) {
     final items = [
       for (final g in groups)
-        for (final h in [...g.featured, ...g.candidates])
+        for (final h in g.featured)
           if (_isSameDay(h.startedAt.toLocal(), day)) h,
     ]..sort((a, b) => b.startedAt.compareTo(a.startedAt));
 
@@ -343,19 +336,16 @@ class _BannerThumbStack extends StatelessWidget {
 }
 
 /// day_key 묶음 섹션 — 헤더("어젯밤" 등) + ⭐ 대표 카드(rank 순, 카메라가
-/// 여러 대면 카메라별 top_n) + "후보 N개 더 보기" 토글(후보 0이면 없음).
-class _Section extends ConsumerWidget {
+/// 여러 대면 카메라별 시간대 상한 적용분). 후보는 그리지 않는다(2026-09-11).
+class _Section extends StatelessWidget {
   const _Section({required this.group, required this.now});
 
   final DayHighlightGroup group;
   final DateTime now;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final expanded =
-        ref.watch(expandedCandidateDaysProvider).contains(group.dayKey);
+  Widget build(BuildContext context) {
     final featuredPlaylist = [for (final h in group.featured) h.clipId];
-    final candidatePlaylist = [for (final h in group.candidates) h.clipId];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -366,26 +356,6 @@ class _Section extends ConsumerWidget {
         for (final h in group.featured) ...[
           _FeaturedCard(highlight: h, playlist: featuredPlaylist),
           const SizedBox(height: 12),
-        ],
-        if (group.candidates.isNotEmpty) ...[
-          _MoreCandidatesButton(
-            dayKey: group.dayKey,
-            count: group.candidates.length,
-            expanded: expanded,
-            onTap: () {
-              final s = ref.read(expandedCandidateDaysProvider);
-              ref.read(expandedCandidateDaysProvider.notifier).state =
-                  expanded ? ({...s}..remove(group.dayKey)) : {...s, group.dayKey};
-            },
-          ),
-          if (expanded) ...[
-            const SizedBox(height: 8),
-            ClipGrid<NightlyHighlight>(
-              items: group.candidates,
-              cellBuilder: (h) =>
-                  _Cell(highlight: h, playlist: candidatePlaylist),
-            ),
-          ],
         ],
       ],
     );
@@ -450,64 +420,8 @@ class _FeaturedCard extends StatelessWidget {
   }
 }
 
-/// "후보 N개 더 보기" / "후보 접기" 토글 버튼.
-class _MoreCandidatesButton extends StatelessWidget {
-  const _MoreCandidatesButton({
-    required this.dayKey,
-    required this.count,
-    required this.expanded,
-    required this.onTap,
-  });
-
-  final String dayKey;
-  final int count;
-  final bool expanded;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final glass = context.glass;
-    return GestureDetector(
-      key: HighlightsScreen.moreCandidatesKey(dayKey),
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        height: 40,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: glass.surfaceTint,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              expanded
-                  ? 'crecam_highlights_less_candidates'.tr()
-                  : 'crecam_highlights_more_candidates'
-                      .tr(namedArgs: {'n': '$count'}),
-              style: TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 14 * -0.02,
-                color: glass.textSecondary,
-              ),
-            ),
-            const SizedBox(width: 2),
-            Icon(
-              expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-              size: 18,
-              color: glass.textSecondary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 후보 썸네일 셀 — 탭 → 세로 플레이어(재생목록 = 그 묶음 후보, 시간 내림차순).
+/// 날짜 필터용 소형 썸네일 셀 — 탭 → 세로 플레이어(재생목록 = 그 날짜의
+/// 대표, 시간 내림차순).
 class _Cell extends StatelessWidget {
   const _Cell({required this.highlight, required this.playlist});
 
