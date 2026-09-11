@@ -392,29 +392,22 @@ class _Section extends ConsumerWidget {
   }
 }
 
-/// ⭐ 대표 카드 — 썸네일(16:9) + "⭐ n위 · 움직임 N초 · 클립 N개" 배지(✨
-/// 행동 체크 시 앞에) + 판정 사유(보조)·사람 확정 체크·시각.
+/// ⭐ 대표 카드 — 썸네일(16:9) + 시각.
 /// 탭 → 세로 플레이어(재생목록 = 그 묶음 대표, rank 순).
+///
+/// 순위·움직임·클립 수 배지와 판정 사유·사람 확정 체크는 **표시하지 않는다**
+/// (2026-09-11 사용자 지시 — 규칙 진단 정보는 관리자 라벨러 웹 몫, 고객
+/// 화면에는 내부 판정 문구를 노출하지 않는다). 데이터 자체는 도메인에 남아
+/// 정렬(rank)에만 쓰인다.
 class _FeaturedCard extends StatelessWidget {
   const _FeaturedCard({required this.highlight, required this.playlist});
 
   final NightlyHighlight highlight;
   final List<String> playlist;
 
-  /// 사람 확정 체크 아이콘(테스트 훅).
-  static const confirmedKey = Key('highlight_featured_confirmed');
-
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
-    final badge = (highlight.behaviorFlagged
-            ? 'highlight_featured_badge_flagged'
-            : 'highlight_featured_badge')
-        .tr(namedArgs: {
-      'rank': '${highlight.episodeRank}',
-      'sec': '${highlight.episodeActivitySec.round()}',
-      'n': '${highlight.episodeClipCount}',
-    });
 
     return GestureDetector(
       key: ValueKey('highlight_featured_${highlight.clipId}'),
@@ -442,57 +435,15 @@ class _FeaturedCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Row(
-            children: [
-              Flexible(
-                child: Text(
-                  badge,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Pretendard',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 14 * -0.02,
-                    color: glass.textPrimary,
-                  ),
-                ),
-              ),
-              if (highlight.isHumanConfirmed) ...[
-                const SizedBox(width: 4),
-                Icon(Icons.check_circle,
-                    key: confirmedKey,
-                    size: 14,
-                    color: Theme.of(context).colorScheme.primary,
-                    semanticLabel: 'highlight_badge_confirmed'.tr()),
-              ],
-              const SizedBox(width: 8),
-              Text(
-                DateFormat('HH:mm').format(highlight.startedAt.toLocal()),
-                style: TextStyle(
-                  fontFamily: 'Pretendard',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: glass.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          if (highlight.reason.isNotEmpty) ...[
-            const SizedBox(height: 2),
-            Text(
-              highlight.reason,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 12 * -0.02,
-                color: glass.textSecondary,
-              ),
+          Text(
+            DateFormat('HH:mm').format(highlight.startedAt.toLocal()),
+            style: TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: glass.textSecondary,
             ),
-          ],
+          ),
         ],
       ),
     );

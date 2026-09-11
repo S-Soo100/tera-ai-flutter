@@ -206,22 +206,18 @@ class _QuietBox extends StatelessWidget {
   }
 }
 
+/// 대표 하이라이트 카드 — 썸네일 + 시각 + 즐겨찾기.
+///
+/// 판정 사유 배지·사람 확정 체크는 표시하지 않는다(2026-09-11 사용자 지시 —
+/// 규칙 진단 정보는 관리자 라벨러 웹 몫, 고객 화면에 내부 판정 문구 미노출).
 class _HighlightCard extends ConsumerWidget {
   const _HighlightCard({required this.highlight});
   final NightlyHighlight highlight;
-
-  /// 사람 확정 체크 아이콘(테스트 훅).
-  static const confirmedKey = Key('nightly_highlight_confirmed');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    // 배지 = 규칙 판정 사유(없으면 "하이라이트"). 사람 확정이면 체크 표시.
-    final badgeColor = cs.primary;
-    final badgeText = highlight.reason.isNotEmpty
-        ? highlight.reason
-        : 'highlight_badge_auto'.tr();
     final thumb = ref.watch(motionThumbnailProvider(highlight.clipId));
     // A안 유리 카드. onTap을 주면 GlassCard가 InkWell로 감싼다 —
     // 재생 이동·즐겨찾기 로직은 불변.
@@ -258,30 +254,6 @@ class _HighlightCard extends ConsumerWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Flexible(
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: badgeColor.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(badgeText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                            color: badgeColor, fontWeight: FontWeight.w700)),
-                  ),
-                ),
-                if (highlight.isHumanConfirmed) ...[
-                  const SizedBox(width: 6),
-                  Icon(Icons.check_circle,
-                      key: _HighlightCard.confirmedKey,
-                      size: 16,
-                      color: badgeColor,
-                      semanticLabel: 'highlight_badge_confirmed'.tr()),
-                ],
-                const SizedBox(width: 8),
                 Text(
                   DateFormat('MM.dd HH:mm')
                       .format(highlight.startedAt.toLocal()),
