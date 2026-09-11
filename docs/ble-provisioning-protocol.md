@@ -112,8 +112,11 @@
 | 종류 enum | `PairTargetKind { device, camera }` |
 | 사육장 페어링 화면 | `device_pairing_screen.dart` → 라우트 `/smart-cage/devices/pair` |
 | 카메라 페어링 화면 | `camera_pairing_screen.dart` → 라우트 `/crecam/cameras/pair` |
+| 비밀번호 자동저장·자동채움 | `lib/features/my_cage/data/wifi_credentials_store.dart` (2026-09-11) |
 
 **앱 흐름:** BLE 스캔(이름 필터) → 기기 선택 → BLE 연결 → `SCAN` → AP 목록 표시 → 선택 + 비번 입력 → `SSID`/`PASS`/`CONNECT` → `WIFI_OK` → 기기 목록 provider invalidate(사전 등록된 기기가 뜸).
+
+**비밀번호 자동저장·자동채움 (2026-09-11):** `WifiCredentialsStore`가 SSID→비밀번호 맵을 `flutter_secure_storage`(iOS Keychain / Android Keystore)에 보관한다. 저장 시점은 **`WIFI_OK` 수신 후뿐** — 틀린 비밀번호가 남지 않고, 같은 SSID 재성공 시 최신 값으로 덮어쓴다. AP 선택·수동 SSID 입력 시 저장값을 자동 채우고(사용자가 수정하면 안내 문구 제거), AP 목록에는 "비밀번호 저장됨" 배지가 뜬다. 사육장·카메라가 같은 `WifiProvisioningView`를 쓰므로 한쪽에서 성공한 비밀번호를 다른 쪽 페어링에서 바로 재사용한다. 기기 로컬 저장(계정 무관·동기화 없음), 저장 실패는 조용히 무시(편의 기능이지 페어링 요건이 아님).
 
 ## 7. 실기기 확인 포인트
 
