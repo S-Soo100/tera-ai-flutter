@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -13,9 +14,17 @@ String formatClipPosition(Duration d) {
 /// 영상 재생 컨트롤 — 진행바(스크럽) + 현재/총 시간 + 10초 앞뒤 + 재생/일시정지.
 /// ClipPlayerScreen·MotionClipPlayerScreen 공용.
 class VideoControls extends StatefulWidget {
-  const VideoControls({super.key, required this.controller});
+  const VideoControls(
+      {super.key, required this.controller, this.showFromStart = false});
 
   final VideoPlayerController controller;
+
+  /// true면 "처음부터"(0초로 seek 후 재생) 버튼을 함께 그린다 — 서버
+  /// 시작점(`play_from_sec`)으로 중간에서 시작한 하이라이트 재생용.
+  final bool showFromStart;
+
+  /// 테스트용 — "처음부터" 버튼 식별.
+  static const fromStartKey = Key('video_controls_from_start');
 
   @override
   State<VideoControls> createState() => _VideoControlsState();
@@ -102,6 +111,16 @@ class _VideoControlsState extends State<VideoControls> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              if (widget.showFromStart)
+                IconButton(
+                  key: VideoControls.fromStartKey,
+                  icon: const Icon(Icons.restart_alt, color: Colors.white),
+                  tooltip: 'crecam_player_from_start'.tr(),
+                  onPressed: () {
+                    ctrl.seekTo(Duration.zero);
+                    ctrl.play();
+                  },
+                ),
               IconButton(
                 icon: const Icon(Icons.replay_10, color: Colors.white),
                 onPressed: () {

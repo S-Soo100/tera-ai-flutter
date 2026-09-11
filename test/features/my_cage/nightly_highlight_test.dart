@@ -36,6 +36,35 @@ void main() {
     expect(h.isHumanConfirmed, isFalse);
     expect(h.decidedAt, isNull);
   });
+  group('play_from_sec (재생 시작점, 계약 2026-09-12)', () {
+    Map<String, dynamic> base(Object? playFrom) => {
+          'clip_id': 'c1',
+          'started_at': '2026-07-07T13:07:00Z',
+          'play_from_sec': playFrom,
+        };
+
+    test('숫자 8.8 → 8.8', () {
+      final h = NightlyHighlight.fromJson(base(8.8));
+      expect(h.playFromSec, closeTo(8.8, 0.001));
+    });
+    test('null → null', () {
+      final h = NightlyHighlight.fromJson(base(null));
+      expect(h.playFromSec, isNull);
+    });
+    test('키 없음(구 서버) → null', () {
+      final h = NightlyHighlight.fromJson({
+        'clip_id': 'c1',
+        'started_at': '2026-07-07T13:07:00Z',
+      });
+      expect(h.playFromSec, isNull);
+    });
+    test('정수 3 → 3.0 (double)', () {
+      final h = NightlyHighlight.fromJson(base(3));
+      expect(h.playFromSec, 3.0);
+      expect(h.playFromSec, isA<double>());
+    });
+  });
+
   test('필드 누락 → 방어 기본값', () {
     final h = NightlyHighlight.fromJson(<String, dynamic>{});
     expect(h.clipId, '');

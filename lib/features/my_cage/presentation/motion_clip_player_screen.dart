@@ -10,6 +10,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
+import '../domain/clip_playback.dart';
 import '../domain/motion_clip.dart';
 import 'my_cage_providers.dart';
 import 'widgets/video_controls.dart';
@@ -22,8 +23,13 @@ import 'widgets/video_watermark.dart';
 /// 4분의 1만 쓰고 나머지가 검은 여백이 된다. 들어올 때 가로를 켜고 나갈 때
 /// 세로로 되돌린다 — 앱의 나머지 화면은 세로 폭을 전제로 짜여 있다(`main.dart`).
 class MotionClipPlayerScreen extends ConsumerStatefulWidget {
-  const MotionClipPlayerScreen({super.key, required this.clipId});
+  const MotionClipPlayerScreen(
+      {super.key, required this.clipId, this.playFromSec});
   final String clipId;
+
+  /// 재생 시작점(초) — 하이라이트 `play_from_sec`(서버 계산, 라우트 extra).
+  /// null이면 0초부터(기존 동작).
+  final double? playFromSec;
 
   @override
   ConsumerState<MotionClipPlayerScreen> createState() =>
@@ -46,6 +52,10 @@ class _MotionClipPlayerScreenState
   bool _initialized = false;
   bool _busy = false; // 저장/공유/즐겨찾기 진행 중
   String? _cachedUrl;
+
+  /// 서버 시작점([MotionClipPlayerScreen.playFromSec])으로 중간에서 시작
+  /// 했는지 — "처음부터" 컨트롤 노출 조건. seek은 초기화 뒤 1회만.
+  bool _startedMidway = false;
 
   /// 컨트롤(상단 바+하단 VideoControls) 표시 여부 — 상시 표시하면 하단
   /// 그라디언트+3줄 컨트롤이 영상 하단을 계속 가린다(사용자 피드백
@@ -119,9 +129,21 @@ class _MotionClipPlayerScreenState
         await controller.dispose();
         return;
       }
+      // 서버 시작점(하이라이트 play_from_sec)으로 첫 재생 전에 1회 seek —
+      // setState(스켈레톤 해제) 전에 당겨 0초 프레임이 튀지 않게 한다.
+      final startAt =
+          initialClipSeek(widget.playFromSec, controller.value.duration);
+      if (startAt != null) {
+        await controller.seekTo(startAt);
+        if (!mounted) {
+          await controller.dispose();
+          return;
+        }
+      }
       setState(() {
         _controller = controller;
         _initialized = true;
+        _startedMidway = startAt != null;
       });
       controller.play();
       _scheduleHide();
@@ -324,7 +346,11 @@ class _MotionClipPlayerScreenState
                 child: _fadeWithControls(
                   SafeArea(
                     top: false,
-                    child: VideoControls(controller: _controller!),
+                    child: VideoControls(
+                      controller: _controller!,
+                      // 중간 시작한 클립에서만 "처음부터"를 내놓는다.
+                      showFromStart: _startedMidway,
+                    ),
                   ),
                 ),
               ),

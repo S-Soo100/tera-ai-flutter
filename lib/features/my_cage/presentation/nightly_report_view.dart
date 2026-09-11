@@ -222,7 +222,9 @@ class _HighlightCard extends ConsumerWidget {
     return GlassCard(
       // 셸 밖 최상위 플레이어 — 셸 안 경로면 가로 전체화면에 탭바가 옆으로
       // 노출된다(2026-09-08).
-      onTap: () => context.push('/crecam/motion-clips/${highlight.clipId}'),
+      // extra = 서버 재생 시작점(초, play_from_sec) — null이면 0초부터.
+      onTap: () => context.push('/crecam/motion-clips/${highlight.clipId}',
+          extra: highlight.playFromSec),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

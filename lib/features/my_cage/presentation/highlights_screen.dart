@@ -7,6 +7,7 @@ import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/highlight_group.dart';
 import '../domain/nightly_highlight.dart';
+import 'clip_playlist_player_screen.dart';
 import 'highlights_controller.dart';
 import 'my_cage_providers.dart';
 import 'widgets/clip_grid.dart';
@@ -116,7 +117,6 @@ class HighlightsScreen extends ConsumerWidget {
     if (items.isEmpty) {
       return CrecamEmptyMessage(message: 'crecam_home_empty_day'.tr());
     }
-    final playlist = [for (final h in items) h.clipId];
     return ListView(
       padding: const EdgeInsets.fromLTRB(_margin, 24, _margin, 24),
       children: [
@@ -124,7 +124,7 @@ class HighlightsScreen extends ConsumerWidget {
         const SizedBox(height: 8),
         ClipGrid<NightlyHighlight>(
           items: items,
-          cellBuilder: (h) => _Cell(highlight: h, playlist: playlist),
+          cellBuilder: (h) => _Cell(highlight: h, playlist: items),
         ),
       ],
     );
@@ -215,12 +215,9 @@ class _ArrivalBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
     // 대표 1위(방어: 대표가 없으면 최신 후보)가 배너 얼굴.
-    final representative =
-        group.featured.isNotEmpty ? group.featured.first : group.candidates.first;
-    final playlist = [
-      for (final h in group.featured.isNotEmpty ? group.featured : group.candidates)
-        h.clipId,
-    ];
+    final playlist =
+        group.featured.isNotEmpty ? group.featured : group.candidates;
+    final representative = playlist.first;
 
     return GestureDetector(
       key: HighlightsScreen.bannerKey,
@@ -345,8 +342,6 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final featuredPlaylist = [for (final h in group.featured) h.clipId];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -354,7 +349,7 @@ class _Section extends StatelessWidget {
             context, HighlightsScreen.nightLabel(group.dayKey, now)),
         const SizedBox(height: 8),
         for (final h in group.featured) ...[
-          _FeaturedCard(highlight: h, playlist: featuredPlaylist),
+          _FeaturedCard(highlight: h, playlist: group.featured),
           const SizedBox(height: 12),
         ],
       ],
@@ -373,7 +368,7 @@ class _FeaturedCard extends StatelessWidget {
   const _FeaturedCard({required this.highlight, required this.playlist});
 
   final NightlyHighlight highlight;
-  final List<String> playlist;
+  final List<NightlyHighlight> playlist;
 
   @override
   Widget build(BuildContext context) {
@@ -426,7 +421,7 @@ class _Cell extends StatelessWidget {
   const _Cell({required this.highlight, required this.playlist});
 
   final NightlyHighlight highlight;
-  final List<String> playlist;
+  final List<NightlyHighlight> playlist;
 
   @override
   Widget build(BuildContext context) {
@@ -450,8 +445,20 @@ class _Cell extends StatelessWidget {
   }
 }
 
-void _openPlayer(BuildContext context, String clipId, List<String> playlist) {
-  context.push('/crecam/player/$clipId', extra: playlist);
+void _openPlayer(
+    BuildContext context, String clipId, List<NightlyHighlight> playlist) {
+  // 재생목록과 함께 클립별 서버 재생 시작점(play_from_sec)을 넘긴다 —
+  // 값이 없는 클립은 0초부터(기존 동작).
+  context.push(
+    '/crecam/player/$clipId',
+    extra: ClipPlaylistArgs(
+      playlist: [for (final h in playlist) h.clipId],
+      playFromSec: {
+        for (final h in playlist)
+          if (h.playFromSec != null) h.clipId: h.playFromSec!,
+      },
+    ),
+  );
 }
 
 /// 로딩 스켈레톤 — 배너 면 + 헤더 줄 + 대표 카드 한 장(shimmer, CPI 금지).

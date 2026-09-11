@@ -10,9 +10,24 @@ import 'package:video_player/video_player.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
+import '../domain/clip_playback.dart';
 import '../domain/motion_clip.dart';
 import 'my_cage_providers.dart';
 import 'widgets/crecam_detail_top_bar.dart';
+
+/// `/crecam/player/:clipId` extra — 재생목록 + 클립별 재생 시작점(초).
+///
+/// 시작점은 하이라이트(`play_from_sec`, 서버 계산)에만 있다 — 일반 클립
+/// 그리드·북마크는 기존 `List<String>` extra를 그대로 쓰고 0초부터 재생한다.
+class ClipPlaylistArgs {
+  const ClipPlaylistArgs({required this.playlist, this.playFromSec = const {}});
+
+  /// clip id 순서(재생목록).
+  final List<String> playlist;
+
+  /// clip id → 재생 시작점(초). 값이 없는 클립은 0초부터.
+  final Map<String, double> playFromSec;
+}
 
 /// 세로 재생목록 플레이어 (Figma 668:743, 카메라 탭 재설계 T1).
 ///
@@ -28,10 +43,14 @@ class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
     super.key,
     required this.clipId,
     this.playlist,
+    this.playFromSec = const {},
   });
 
   final String clipId;
   final List<String>? playlist;
+
+  /// clip id → 재생 시작점(초). [ClipPlaylistArgs.playFromSec].
+  final Map<String, double> playFromSec;
 
   /// 테스트용 — 페이지네이션 세그먼트 식별.
   static const paginationKey = Key('crecam_player_pagination');
@@ -41,6 +60,9 @@ class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
   static const prevArrowKey = Key('crecam_player_prev_arrow');
   static const nextArrowKey = Key('crecam_player_next_arrow');
   static const counterKey = Key('crecam_player_counter');
+
+  /// 테스트용 — "처음부터" 컨트롤(중간 시작 클립에서만 노출).
+  static const fromStartKey = Key('crecam_player_from_start');
 
   @override
   ConsumerState<ClipPlaylistPlayerScreen> createState() =>
@@ -58,6 +80,11 @@ class _ClipPlaylistPlayerScreenState
   bool _busy = false; // 저장/공유/즐겨찾기 진행 중
   bool _isPlaying = false;
   bool _autoAdvanced = false; // 클립당 자동 다음 1회 가드
+
+  /// 현재 클립이 서버 시작점(`play_from_sec`)으로 중간에서 시작했는지 —
+  /// "처음부터" 컨트롤 노출 조건. seek은 클립 로드당 1회만이고, 사용자가
+  /// 타임라인을 옮겨도 다시 당기지 않는다.
+  bool _startedMidway = false;
 
   /// 컨트롤러 교체 경합 가드 — 빠르게 이전/다음을 누르면 늦게 끝난 옛
   /// initialize()가 새 컨트롤러를 덮어쓸 수 있다. 시퀀스가 다르면 버린다.
@@ -121,6 +148,7 @@ class _ClipPlaylistPlayerScreenState
       _initialized = false;
       _error = null;
       _isPlaying = false;
+      _startedMidway = false;
     });
     await old?.dispose();
 
@@ -141,10 +169,22 @@ class _ClipPlaylistPlayerScreenState
         await controller.dispose();
         return;
       }
+      // 서버 시작점(하이라이트 play_from_sec)으로 첫 재생 전에 1회 seek —
+      // setState(스켈레톤 해제) 전에 당겨 0초 프레임이 튀지 않게 한다.
+      final startAt =
+          initialClipSeek(widget.playFromSec[clipId], controller.value.duration);
+      if (startAt != null) {
+        await controller.seekTo(startAt);
+        if (!mounted || seq != _loadSeq) {
+          await controller.dispose();
+          return;
+        }
+      }
       controller.addListener(_onTick);
       setState(() {
         _controller = controller;
         _initialized = true;
+        _startedMidway = startAt != null;
       });
       controller.play();
       // 다음 클립 메타 선읽기 — 전환 직후 상단바 날짜가 비고 북마크 버튼이
@@ -210,6 +250,14 @@ class _ClipPlaylistPlayerScreenState
     if (pos < Duration.zero) pos = Duration.zero;
     if (pos > v.duration) pos = v.duration;
     controller.seekTo(pos);
+  }
+
+  /// "처음부터" — 서버 시작점으로 중간에서 시작한 클립을 0초부터 다시 본다.
+  void _restartFromZero() {
+    final controller = _controller;
+    if (controller == null || !_initialized) return;
+    controller.seekTo(Duration.zero);
+    controller.play();
   }
 
   /// 로컬 파일 있으면 그걸, 없으면 presigned URL을 확보해 저장/공유에 넘긴다.
@@ -625,9 +673,11 @@ class _ClipPlaylistPlayerScreenState
       color: color,
     );
     // 라벨은 한 줄 고정 + ellipsis — 번역이 길어져도 로우가 넘치지 않게.
-    Widget seekButton(IconData icon, String label, VoidCallback onTap) {
+    Widget seekButton(IconData icon, String label, VoidCallback onTap,
+        {Key? key}) {
       return Flexible(
         child: GestureDetector(
+          key: key,
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
           child: Column(
@@ -648,6 +698,14 @@ class _ClipPlaylistPlayerScreenState
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        // 서버 시작점으로 중간 시작한 클립에서만 — 0초부터 다시 보기.
+        // 점프한 초 같은 숫자는 표시하지 않는다(owner 원칙).
+        if (_startedMidway) ...[
+          seekButton(Icons.restart_alt, 'crecam_player_from_start'.tr(),
+              _restartFromZero,
+              key: ClipPlaylistPlayerScreen.fromStartKey),
+          const SizedBox(width: 24),
+        ],
         seekButton(Icons.fast_rewind, 'crecam_player_rew10'.tr(),
             () => _seekBy(const Duration(seconds: -10))),
         const SizedBox(width: 46),

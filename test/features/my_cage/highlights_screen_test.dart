@@ -7,6 +7,7 @@ import 'package:vivnanaut/features/my_cage/data/highlight_banner_store.dart';
 import 'package:vivnanaut/features/my_cage/domain/highlight_group.dart';
 import 'package:vivnanaut/features/my_cage/domain/nightly_highlight.dart';
 import 'package:vivnanaut/features/my_cage/presentation/highlights_controller.dart';
+import 'package:vivnanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
 import 'package:vivnanaut/features/my_cage/presentation/highlights_screen.dart';
 import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
 
@@ -18,6 +19,7 @@ NightlyHighlight _h(
   String tier = 'candidate',
   String dayKey = '',
   int rank = 0,
+  double? playFrom,
 }) =>
     NightlyHighlight(
       clipId: id,
@@ -26,6 +28,7 @@ NightlyHighlight _h(
       reason: '움직임 3.0초',
       tier: tier,
       dayKey: dayKey,
+      playFromSec: playFrom,
       episodeRank: rank,
       episodeClipCount: 4,
       episodeActivitySec: 42,
@@ -50,7 +53,7 @@ class _FakeBannerStore implements HighlightBannerStore {
 /// 묶음 픽스처 2개 — dayA(최신, 대표 3 + 후보 2) + dayB(대표 1, 후보 0).
 const _dayA = '2026-08-31';
 const _dayB = '2026-08-30';
-final _f1 = _h('f1', DateTime(2026, 8, 31, 23), tier: 'featured', dayKey: _dayA, rank: 1);
+final _f1 = _h('f1', DateTime(2026, 8, 31, 23), tier: 'featured', dayKey: _dayA, rank: 1, playFrom: 8.8);
 final _f2 = _h('f2', DateTime(2026, 9, 1, 2), tier: 'featured', dayKey: _dayA, rank: 2);
 final _f3 = _h('f3', DateTime(2026, 8, 31, 21), tier: 'featured', dayKey: _dayA, rank: 3);
 final _c1 = _h('c1', DateTime(2026, 8, 31, 22), dayKey: _dayA);
@@ -62,6 +65,7 @@ List<DayHighlightGroup> _groups() =>
 
 String? pushedClipId;
 List<String>? pushedPlaylist;
+Map<String, double>? pushedPlayFromSec;
 
 GoRouter _router() => GoRouter(
       routes: [
@@ -70,8 +74,10 @@ GoRouter _router() => GoRouter(
           path: '/crecam/player/:clipId',
           builder: (_, state) {
             pushedClipId = state.pathParameters['clipId'];
-            pushedPlaylist =
-                (state.extra as List?)?.whereType<String>().toList();
+            // 2026-09-12: extra = ClipPlaylistArgs(재생목록 + 재생 시작점 맵)
+            final args = state.extra as ClipPlaylistArgs?;
+            pushedPlaylist = args?.playlist;
+            pushedPlayFromSec = args?.playFromSec;
             return const Scaffold(body: Center(child: Text('player-screen')));
           },
         ),
@@ -85,6 +91,7 @@ Future<void> _pump(
 }) async {
   pushedClipId = null;
   pushedPlaylist = null;
+  pushedPlayFromSec = null;
   // 대표 카드는 전폭 16:9라 기본 600px 뷰포트엔 한 장도 안 담긴다 — lazy
   // ListView가 아래 위젯을 아예 안 만들어 find가 0을 돌려준다. 길게 편다.
   tester.view.physicalSize = const Size(800, 4000);
@@ -239,6 +246,8 @@ void main() {
       expect(find.text('player-screen'), findsOneWidget);
       expect(pushedClipId, 'f2');
       expect(pushedPlaylist, ['f1', 'f2', 'f3']);
+      // 재생 시작점(play_from_sec)은 값 있는 클립만 맵으로 함께 전달된다.
+      expect(pushedPlayFromSec, {'f1': 8.8});
     });
 
     testWidgets('배너 탭(X 제외) → 대표 1위부터 대표 재생목록', (tester) async {
@@ -247,6 +256,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(pushedClipId, 'f1'); // 배너 얼굴 = rank 1위
       expect(pushedPlaylist, ['f1', 'f2', 'f3']);
+      expect(pushedPlayFromSec, {'f1': 8.8});
     });
   });
 }

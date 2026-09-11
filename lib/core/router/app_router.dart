@@ -229,16 +229,29 @@ GoRouter buildAppRouter({
         path: '/crecam/motion-clips/:clipId',
         builder: (context, state) {
           final id = state.pathParameters['clipId']!;
-          return MotionClipPlayerScreen(clipId: id);
+          // extra = 재생 시작점(초, 하이라이트 play_from_sec). 없으면 0초부터.
+          final extra = state.extra;
+          return MotionClipPlayerScreen(
+            clipId: id,
+            playFromSec: extra is num ? extra.toDouble() : null,
+          );
         },
       ),
-      // 세로 재생목록 플레이어 (카메라 탭 재설계 T1) — extra = 재생목록 clip id.
+      // 세로 재생목록 플레이어 (카메라 탭 재설계 T1) — extra = 재생목록 clip id
+      // (List<String>) 또는 [ClipPlaylistArgs](재생목록 + 클립별 재생 시작점).
       // 딥링크는 extra가 없으니 단일 재생으로 열린다.
       GoRoute(
         path: '/crecam/player/:clipId',
         builder: (context, state) {
           final id = state.pathParameters['clipId']!;
           final extra = state.extra;
+          if (extra is ClipPlaylistArgs) {
+            return ClipPlaylistPlayerScreen(
+              clipId: id,
+              playlist: extra.playlist,
+              playFromSec: extra.playFromSec,
+            );
+          }
           // 호출부가 List<String>을 넘기지만 dynamic 리스트로 와도 안전하게 거른다.
           final playlist = extra is List
               ? extra.whereType<String>().toList()

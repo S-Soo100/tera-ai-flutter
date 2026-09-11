@@ -53,6 +53,12 @@ class NightlyHighlight {
   final DateTime? episodeStartedAt;
   final DateTime? episodeEndedAt;
 
+  /// 서버가 계산한 재생 시작점(초) = max(0, first_moving_sec − 1.5). 첫
+  /// 움직임이 3초 이전이거나 분석 결과가 없으면 null → 0초부터(기존 동작).
+  /// 리드·최소 기준은 서버 상수라 앱은 이 값을 그대로 쓴다(계약 2026-09-12).
+  /// 응답의 `first_moving_sec`은 앱이 쓰지 않아 파싱하지 않는다.
+  final double? playFromSec;
+
   const NightlyHighlight({
     required this.clipId,
     required this.startedAt,
@@ -73,6 +79,7 @@ class NightlyHighlight {
     this.episodeActivitySec = 0,
     this.episodeStartedAt,
     this.episodeEndedAt,
+    this.playFromSec,
   }) : episodeHourRank = episodeHourRank ?? episodeRank;
 
   bool get isHumanConfirmed => source == 'human';
@@ -102,6 +109,7 @@ class NightlyHighlight {
       episodeActivitySec: (episode['activity_sec'] as num?)?.toDouble() ?? 0,
       episodeStartedAt: parseLocalDateTime(episode['started_at']),
       episodeEndedAt: parseLocalDateTime(episode['ended_at']),
+      playFromSec: (j['play_from_sec'] as num?)?.toDouble(),
     );
   }
 }
