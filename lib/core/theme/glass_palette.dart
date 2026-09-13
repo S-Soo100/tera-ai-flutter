@@ -78,6 +78,14 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     required this.surfaceTint,
     required this.segmentTrack,
     required this.surfaceHeader,
+    required this.envTempValue,
+    required this.envHumidValue,
+    required this.envTempPeak,
+    required this.envHumidPeak,
+    required this.envBarNeutral,
+    required this.envBarMinimum,
+    required this.navSelected,
+    required this.navUnselected,
   });
 
   /// 이 팔레트가 어느 밝기용인지. [badgeTone]처럼 값이 아니라 **공식**이
@@ -181,7 +189,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   final Color deviceHeatBg;
   final Color deviceMist; // 분무 = [humidAccent]와 같은 값(의미 분리용 별 필드)
   final Color deviceMistBg; // 분무 잠금(작동 중) 타일 배경 — mistTint(전경)와 역할 분리
-  final Color deviceGlyph; // 기기색/deviceOff 원 **안** 글리프 — 하드코딩 white 금지(리뷰 2026-09-03)
+  final Color
+      deviceGlyph; // 기기색/deviceOff 원 **안** 글리프 — 하드코딩 white 금지(리뷰 2026-09-03)
   final Color deviceOff; // 꺼짐 상태 아이콘 원 배경
 
   // ── 온습도 지표 액센트 (홈 요약·상세 차트 라인) ──
@@ -191,6 +200,14 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   // ── 연회색 면 3종 (Figma Asset) ──
   final Color surfaceTint; // 헤더 필·온습도 카드·꺼짐 타일·탭바 top stroke
   final Color segmentTrack; // 세그먼트 트랙
+  final Color envTempValue;
+  final Color envHumidValue;
+  final Color envTempPeak;
+  final Color envHumidPeak;
+  final Color envBarNeutral;
+  final Color envBarMinimum;
+  final Color navSelected;
+  final Color navUnselected;
   final Color surfaceHeader; // 상세 상단바·제어기록 섹션 배경
 
   // ── 표면 위 타이포 (Pretendard 명시 — 공용 위젯은 테마 밖에서도 쓰인다) ──
@@ -291,6 +308,14 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     surfaceTint: Color(0xFF1A2032),
     segmentTrack: Color(0xFF1E2438),
     surfaceHeader: Color(0xFF0E1322),
+    envTempValue: Color(0xFFF85478),
+    envHumidValue: Color(0xFF768AD6),
+    envTempPeak: Color(0xFFF85478),
+    envHumidPeak: Color(0xFF768AD6),
+    envBarNeutral: Color(0xFF919497),
+    envBarMinimum: Color(0xFF555D70),
+    navSelected: Color(0xFFF85478),
+    navUnselected: Color(0xFF919497),
   );
 
   // ── 라이트 (Figma `Asset` 팔레트 미러 — 기본 모드, 2026-09-02 교체) ──
@@ -299,18 +324,19 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     brightness: Brightness.light,
     wallpaper: Color(0xFFFFFFFF), // 페이지 바닥 흰색
     overlay: Color(0xFFFFFFFF), // 카드 흰색(테두리로 구분)
-    overlayStrong: Color(0xFFFAFBFD), // = surfaceHeader
+    overlayStrong: Color(0xFFFAFAFA), // = surfaceHeader
     overlayFaint: Color(0xFFEAEEF0), // surfaceSubtle — 비활성 칩 배경
-    border: Color(0xFFE1E3E4), // 칩 테두리·상단바 하단선
-    outline: Color(0xFFE1E3E4), // 기간 설정 버튼 stroke (Figma Camera)
+    border: Color(0xFFE3E3E3), // 칩 테두리·상단바 하단선
+    outline: Color(0xFFE3E3E3), // 기간 설정 버튼 stroke (Figma Camera)
     tabBar: Color(0xFFFFFFFF),
     activeTile: Color(0xFFE09A00), // (교체 목록 외 — B 앰버 유지)
-    heaterTint: Color(0xFFE09A00), // 전경(글리프) — 배경은 deviceHeatBg (리뷰 2026-09-03 역할 통일)
+    heaterTint:
+        Color(0xFFE09A00), // 전경(글리프) — 배경은 deviceHeatBg (리뷰 2026-09-03 역할 통일)
     mistTint: Color(0xFF2F7BD1), // 전경(글리프) — 배경은 deviceMistBg
     ledTint: Color(0xFFE8B33A), // 전경(글리프) — 배경은 deviceLedBg
     fanTint: Color(0xFF1FA84A), // 전경(글리프) — 배경은 deviceFanBg
-    signalOk: Color(0xFF00B591),
-    signalWarn: Color(0xFFF5A800),
+    signalOk: Color(0xFF228C73),
+    signalWarn: Color(0xFFE89E00),
     signalAlert: Color(0xFFD61619), // 브랜드 레드 — 위험 상태 예약
     textPrimary: Color(0xFF1E1E1E), // textStrong
     textSecondary: Color(0xFF3C3C3C), // textBody
@@ -319,7 +345,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     textOnActiveSecondary: Color(0x9912151C),
     liveRed: Color(0xFFE5382E),
     weatherBarWarmStart: Color(0xFFFFD54F),
-    weatherBarWarmEnd: Color(0xFFF5A800), // 신 앰버로 근사 조정
+    weatherBarWarmEnd: Color(0xFFE89E00), // 신 앰버로 근사 조정
     weatherBarTrack: Color(0xFFEAEEF0), // surfaceSubtle
     weatherDot: Colors.white,
     weatherDotBorder: Color(0xFF1E1E1E), // 짙은 테두리 — 흰 카드 위 가시성
@@ -334,24 +360,33 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     skeletonBase: Color(0xFFE0E0E0), // grey 300
     skeletonHighlight: Color(0xFFF5F5F5), // grey 100
     // 기기 상태색 (Figma A.1)
-    deviceFan: Color(0xFF00B591),
+    deviceFan: Color(0xFF228C73),
     deviceFanBg: Color(0xFFDCF5E9),
-    deviceCool: Color(0xFF6B7FFF),
+    deviceCool: Color(0xFF636DDB),
     deviceCoolBg: Color(0xFFE0E5FF),
-    deviceLed: Color(0xFFF5A800),
+    deviceLed: Color(0xFFE89E00),
     deviceLedBg: Color(0xFFFFF4D9),
     deviceLedGauge: Color(0xFFFFE2A3),
     deviceHeat: Color(0xFFFF6B57), // 도출값
     deviceHeatBg: Color(0xFFFFE9E4), // 도출값
     deviceMist: Color(0xFF00B2F3),
-    deviceMistBg: Color(0xFFE0F6FE), // 분무 잠금 타일 Bg — humidAccent 12% 도출(Figma 미정의)
+    deviceMistBg:
+        Color(0xFFE0F6FE), // 분무 잠금 타일 Bg — humidAccent 12% 도출(Figma 미정의)
     deviceGlyph: Color(0xFFFFFFFF),
     deviceOff: Color(0xFFA9B3BE),
     tempAccent: Color(0xFFF85478),
     humidAccent: Color(0xFF00B2F3),
-    surfaceTint: Color(0xFFF0F4F9),
+    surfaceTint: Color(0xFFF4F4F4),
     segmentTrack: Color(0xFFEFF2F5),
-    surfaceHeader: Color(0xFFFAFBFD),
+    surfaceHeader: Color(0xFFFAFAFA),
+    envTempValue: Color(0xFFC00306),
+    envHumidValue: Color(0xFF192553),
+    envTempPeak: Color(0xFFD61619),
+    envHumidPeak: Color(0xFF2E408C),
+    envBarNeutral: Color(0xFF626262),
+    envBarMinimum: Color(0xFFB4AEAE),
+    navSelected: Color(0xFFC00306),
+    navUnselected: Color(0xFF626262),
   );
 
   @override
@@ -411,6 +446,14 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     Color? surfaceTint,
     Color? segmentTrack,
     Color? surfaceHeader,
+    Color? envTempValue,
+    Color? envHumidValue,
+    Color? envTempPeak,
+    Color? envHumidPeak,
+    Color? envBarNeutral,
+    Color? envBarMinimum,
+    Color? navSelected,
+    Color? navUnselected,
   }) {
     return GlassPalette(
       brightness: brightness ?? this.brightness,
@@ -469,6 +512,14 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       surfaceTint: surfaceTint ?? this.surfaceTint,
       segmentTrack: segmentTrack ?? this.segmentTrack,
       surfaceHeader: surfaceHeader ?? this.surfaceHeader,
+      envTempValue: envTempValue ?? this.envTempValue,
+      envHumidValue: envHumidValue ?? this.envHumidValue,
+      envTempPeak: envTempPeak ?? this.envTempPeak,
+      envHumidPeak: envHumidPeak ?? this.envHumidPeak,
+      envBarNeutral: envBarNeutral ?? this.envBarNeutral,
+      envBarMinimum: envBarMinimum ?? this.envBarMinimum,
+      navSelected: navSelected ?? this.navSelected,
+      navUnselected: navUnselected ?? this.navUnselected,
     );
   }
 
@@ -535,6 +586,14 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       surfaceTint: c(surfaceTint, other.surfaceTint),
       segmentTrack: c(segmentTrack, other.segmentTrack),
       surfaceHeader: c(surfaceHeader, other.surfaceHeader),
+      envTempValue: c(envTempValue, other.envTempValue),
+      envHumidValue: c(envHumidValue, other.envHumidValue),
+      envTempPeak: c(envTempPeak, other.envTempPeak),
+      envHumidPeak: c(envHumidPeak, other.envHumidPeak),
+      envBarNeutral: c(envBarNeutral, other.envBarNeutral),
+      envBarMinimum: c(envBarMinimum, other.envBarMinimum),
+      navSelected: c(navSelected, other.navSelected),
+      navUnselected: c(navUnselected, other.navUnselected),
     );
   }
 

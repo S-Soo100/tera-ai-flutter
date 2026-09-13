@@ -12,7 +12,8 @@ class FigmaIcon extends StatelessWidget {
   const FigmaIcon.metric(this.name, {super.key, this.size = 20}) : color = null;
 
   /// 단색으로 칠해 쓴다. 배경 대비가 테마마다 달라지는 자리에 쓴다.
-  const FigmaIcon.tinted(this.name, {super.key, required Color this.color, this.size = 20});
+  const FigmaIcon.tinted(this.name,
+      {super.key, required Color this.color, this.size = 20});
 
   /// `assets/icons/{name}.svg`의 파일명(확장자 제외).
   final String name;
@@ -33,6 +34,31 @@ class FigmaIcon extends StatelessWidget {
 
 /// Figma 아이콘 파일명. 오타로 빈 자리가 나지 않게 상수로 묶는다.
 abstract final class FigmaIcons {
+  static const close = 'close';
+  static const arrowPrevious = 'arrow_previous';
+  static const arrowNext = 'arrow_next';
+  static const download = 'download';
+  static const share = 'share';
+  static const bookmark = 'bookmark';
+  static const delete = 'delete';
+  static const play = 'play';
+  static const speed2x = 'speed_2x';
+  static const expand = 'expand';
+  static const calendar = 'calendar';
+  static const bookmarkBadge = 'bookmark_badge';
+  static const dropdown = 'dropdown';
+  static const add = 'add';
+  static const person = 'person';
+  static const liveExpand = 'live_expand';
+  static const fanOn = 'fan_on';
+  static const fanOff = 'fan_off';
+  static const mistOn = 'mist_on';
+  static const mistOff = 'mist_off';
+  static const coolOn = 'cool_on';
+  static const coolOff = 'cool_off';
+  static const ledOn = 'led_on';
+  static const ledOff = 'led_off';
+
   static const thermometer = 'thermometer';
   static const waterDrop = 'water_drop';
   static const shower = 'shower';

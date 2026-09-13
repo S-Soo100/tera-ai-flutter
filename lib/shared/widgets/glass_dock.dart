@@ -90,8 +90,8 @@ class GlassDock extends StatelessWidget {
                     child: _DockButton(
                       item: items[i],
                       selected: i == currentIndex,
-                      selectedColor: Theme.of(context).colorScheme.primary,
-                      unselectedColor: glass.textTertiary,
+                      selectedColor: glass.navSelected,
+                      unselectedColor: glass.navUnselected,
                       onTap: () => onSelected(i),
                     ),
                   ),
