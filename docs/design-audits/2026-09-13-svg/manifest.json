@@ -1,0 +1,220 @@
+{
+  "source": "https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut",
+  "page": "Final Design",
+  "pageId": "0:1",
+  "exportChannel": "ks50dfit",
+  "date": "2026-09-13",
+  "format": "SVG",
+  "items": [
+    {
+      "file": "close.svg",
+      "nodeId": "941:2120",
+      "viewBox": "0 0 24 24",
+      "sha256": "8d352f3940966bc8abb9cc7d8933cea2bd9c3c236e051cbe19fc423ec6a7cdd3",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "arrow_previous.svg",
+      "nodeId": "941:1849",
+      "viewBox": "0 0 24 24",
+      "sha256": "3628f64ee280d060b2cd47f256433a30b23bf8ab8085bc1a23fdbf58dda63a80",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "arrow_next.svg",
+      "nodeId": "941:1861",
+      "viewBox": "0 0 24 24",
+      "sha256": "077208502d69cfd30564db33d08bae18da3df4240535b0164bd17160f365df53",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "download.svg",
+      "nodeId": "941:1853",
+      "viewBox": "0 0 36 36",
+      "sha256": "ded9814be63994b12e59f1b87d4cf4e532dc76baa57c33af77d0f8c49c536fe9",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "share.svg",
+      "nodeId": "941:1855",
+      "viewBox": "0 0 36 36",
+      "sha256": "43517ca5c9eb0e013617c1e20f499cd2e1ce35fb6073404ee928996815699a9b",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "bookmark.svg",
+      "nodeId": "941:1857",
+      "viewBox": "0 0 36 36",
+      "sha256": "ace373b65bc24bf83e3e3d7614fa39aed37d37f5d4f421737e0d63f4bd1daf50",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "delete.svg",
+      "nodeId": "941:1864",
+      "viewBox": "0 0 44 44",
+      "sha256": "8ed5de1a2b9845f0ef7048e7c80cd795db87cf483744bb4ea458092d3d4c0802",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "play.svg",
+      "nodeId": "941:1868",
+      "viewBox": "0 0 36 36",
+      "sha256": "42db2a0e41874178c829df0a0a8fa1245b63ed8d7dd758e1b4c5513302890fa8",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "speed_2x.svg",
+      "nodeId": "941:1910",
+      "viewBox": "0 0 36 36",
+      "sha256": "e5e655b3080a7e720537bbe121c589ee749716066fdeeab9ea9f68150c3d8c17",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "expand.svg",
+      "nodeId": "941:1876",
+      "viewBox": "0 0 36 36",
+      "sha256": "0385438c8b3d6909e20ca5f46ef2e33db42b7bbc9c2d589578ccae7f1b6fc7b2",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "cards_star.svg",
+      "nodeId": "945:4173",
+      "viewBox": "0 0 24 24",
+      "sha256": "eb038d0b8b86c2db0d9c82f12732a0f75d3eb73a44d19143a9a107dfa5fcd887",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "bookmark_check.svg",
+      "nodeId": "945:4181",
+      "viewBox": "0 0 24 24",
+      "sha256": "46c444d6dfdc9ab7df078948813958b203d523b70cb9c9c92d45a199ac628443",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "calendar.svg",
+      "nodeId": "945:4189",
+      "viewBox": "0 0 16 16",
+      "sha256": "b62fbc8741383441b75b7631e97a3ea62245b4fa490306f424c683d646a32c77",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "bookmark_badge.svg",
+      "nodeId": "945:4203",
+      "viewBox": "0 0 32 32",
+      "sha256": "fde764b27839ded504987680fe53df4c55ac6f3a93d99236d5306d2556375416",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "nav_home.svg",
+      "nodeId": "945:4259",
+      "viewBox": "0 0 24 24",
+      "sha256": "e981bb6ba73fc848e43c53c676e73bf39c0fbe268a4a49db9c70dc233aaea869",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "nav_camera.svg",
+      "nodeId": "945:4262",
+      "viewBox": "0 0 24 24",
+      "sha256": "bc377f0f099b4679f5be5f7af6e965dd3a160c010bf5196da91250efe2b3f53c",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "nav_mycre.svg",
+      "nodeId": "945:4265",
+      "viewBox": "0 0 24 24",
+      "sha256": "1ceecd5a630215a61f40bb11fa5a3997c7993c0f153e43009d5c040ea6907b37",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "nav_community.svg",
+      "nodeId": "945:4268",
+      "viewBox": "0 0 24 24",
+      "sha256": "4645e27b84df5ca4af3e8d620b64ba9cf0ed3290c295ae6bbc86c741eae2409b",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "dropdown.svg",
+      "nodeId": "945:4152",
+      "viewBox": "0 0 24 24",
+      "sha256": "49541f876bdc2f36712b32ec3f756f539b8298db19faacf45e2abfae5e41b9bf",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "add.svg",
+      "nodeId": "945:4157",
+      "viewBox": "0 0 24 24",
+      "sha256": "828514f15aebffba7fdc00fb2341b1c4fc3d642898426ee6ffe41d721dfa73ce",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "person.svg",
+      "nodeId": "945:4161",
+      "viewBox": "0 0 24 24",
+      "sha256": "89e5fdc5d8ab061892a96ed076a3c83b1969618e83d9618bd2dd35ce68405246",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "live_expand.svg",
+      "nodeId": "945:4167",
+      "viewBox": "0 0 18 18",
+      "sha256": "a2a059712b65beded953e24984d9714d4a7ae0be9b06b6cb4ab083c92e50ce25",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "fan_on.svg",
+      "nodeId": "934:1058",
+      "viewBox": "0 0 40 40",
+      "sha256": "174903adaa91bdf36d75359215df1349c28c41a3418af743b87cb5067f0a30f1",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "fan_off.svg",
+      "nodeId": "934:1066",
+      "viewBox": "0 0 40 40",
+      "sha256": "b9ef0f285baa08543dfeb793183834b6a57fd79fd9318fff346b8194b9fc9722",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "mist_on.svg",
+      "nodeId": "934:1062",
+      "viewBox": "0 0 40 40",
+      "sha256": "86006669f552633cadd9bc26b9ed02362bfedbefe287b715d5189f0380ad1452",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "mist_off.svg",
+      "nodeId": "934:1072",
+      "viewBox": "0 0 40 40",
+      "sha256": "afef0c766af35c0542cfa1b27992cb5e72a07182ce09579a5ca9f8139e6e307f",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "cool_on.svg",
+      "nodeId": "934:1060",
+      "viewBox": "0 0 40 40",
+      "sha256": "b55b3d31d7ad8cc004487ed3e315569ef7bf12ee2035e7b2f3c651d9cb035119",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "cool_off.svg",
+      "nodeId": "934:1068",
+      "viewBox": "0 0 40 40",
+      "sha256": "b21ed86e0ecdee041c084c46862d1f80e943ff341acfd63fd1aba03439a0e818",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "led_on.svg",
+      "nodeId": "934:1064",
+      "viewBox": "0 0 40 40",
+      "sha256": "2b924f900b335fa15fd9f6973a69237439aac79eda9c1d39291241982368570a",
+      "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "led_off.svg",
+      "nodeId": "934:1070",
+      "viewBox": "0 0 40 40",
+      "sha256": "2852441220339eee2195fc57286c840e8403ef96d2aa0f4640a7bcb1592c4dac",
+      "mimeType": "image/svg+xml"
+    }
+  ]
+}

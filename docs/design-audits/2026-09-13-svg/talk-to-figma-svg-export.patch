@@ -1,0 +1,15 @@
+--- a/code.js
++++ b/code.js
+@@ -1514,3 +1514 @@
+-  const { nodeId, scale = 1 } = params || {};
+-
+-  const format = "PNG";
++  const { nodeId, scale = 1, format = "PNG" } = params || {};
+@@ -1532,4 +1530,3 @@
+-    const settings = {
+-      format: format,
+-      constraint: { type: "SCALE", value: scale },
+-    };
++    const settings = (format === "PNG" || format === "JPG")
++      ? { format, constraint: { type: "SCALE", value: scale } }
++      : { format };
