@@ -36,6 +36,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/.worktrees/
 
 # Kotlin compiler daemon session cache (build artifact)
 **/.kotlin/
