@@ -5,6 +5,7 @@ import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/domain/axis_bounds.dart';
 import '../../../../shared/domain/num_format.dart';
 import '../../../../shared/domain/week_range.dart';
+import '../../../../shared/domain/week_bar_role.dart';
 
 /// 온습도 상세 **주간 범위 바 차트** 섹션 (Figma §A.6) — 온도·습도가 같은
 /// 위젯을 두 번 쓴다(강조색·아이콘·표기만 다르다).
@@ -56,21 +57,6 @@ class WeekRangeChart extends StatelessWidget {
     return (max: hi, min: lo);
   }
 
-  /// 주간 최고값이 나온 요일 인덱스(0=월). 동률이면 먼저 온 요일.
-  /// 유효 표본이 없으면 null — 강조 없음.
-  int? get _peakIndex {
-    int? idx;
-    double? peak;
-    for (var i = 0; i < rows.length; i++) {
-      final m = rows[i].max;
-      if (m != null && (peak == null || m > peak)) {
-        peak = m;
-        idx = i;
-      }
-    }
-    return idx;
-  }
-
   @override
   Widget build(BuildContext context) {
     // 도메인이 7칸을 보장하지만([weekTempRanges]), 어긋난 목록으로 아래
@@ -84,7 +70,7 @@ class WeekRangeChart extends StatelessWidget {
         if (r.max case final v?) v,
       ],
     ]);
-    final peakIndex = _peakIndex;
+    final roles = classifyWeekBars(rows);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,9 +93,9 @@ class WeekRangeChart extends StatelessWidget {
             ),
           )
         else
-          _chart(glass, axis, peakIndex),
+          _chart(glass, axis, roles),
         const SizedBox(height: 4),
-        _weekdayRow(glass, peakIndex),
+        _weekdayRow(glass, roles),
       ],
     );
   }
@@ -164,7 +150,7 @@ class WeekRangeChart extends StatelessWidget {
   double _y(AxisBounds axis, double v) =>
       gridTop + (1 - axis.normalize(v)) * gridSpan;
 
-  Widget _chart(GlassPalette glass, AxisBounds axis, int? peakIndex) {
+  Widget _chart(GlassPalette glass, AxisBounds axis, List<WeekBarRole> roles) {
     final valueStyle = TextStyle(
       fontFamily: 'Pretendard',
       fontSize: 12,
@@ -188,7 +174,7 @@ class WeekRangeChart extends StatelessWidget {
                     ),
                   ),
                   for (var i = 0; i < 7; i++)
-                    _bar(glass, axis, i, c.maxWidth, valueStyle, peakIndex),
+                    _bar(glass, axis, i, c.maxWidth, valueStyle, roles),
                 ],
               ),
             ),
@@ -205,7 +191,7 @@ class WeekRangeChart extends StatelessWidget {
     int i,
     double width,
     TextStyle valueStyle,
-    int? peakIndex,
+    List<WeekBarRole> roles,
   ) {
     final r = rows[i];
     final hi = r.max;
@@ -217,7 +203,11 @@ class WeekRangeChart extends StatelessWidget {
     final bottom = _y(axis, lo);
     // min == max인 날도 캡슐 하나는 보이게 최소 높이를 준다.
     final h = (bottom - top).clamp(barWidth, double.infinity);
-    final color = peakIndex == i ? accent : glass.textSecondary;
+    final color = switch (roles[i]) {
+      WeekBarRole.maximum => accent,
+      WeekBarRole.minimum => glass.envBarMinimum,
+      _ => glass.envBarNeutral,
+    };
 
     return Positioned(
       left: centerX - width / 14,
@@ -277,7 +267,7 @@ class WeekRangeChart extends StatelessWidget {
     );
   }
 
-  Widget _weekdayRow(GlassPalette glass, int? peakIndex) {
+  Widget _weekdayRow(GlassPalette glass, List<WeekBarRole> roles) {
     return Padding(
       padding: const EdgeInsets.only(right: yLabelWidth),
       child: Row(
@@ -291,9 +281,12 @@ class WeekRangeChart extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Pretendard',
                     fontSize: 12,
-                    fontWeight:
-                        peakIndex == i ? FontWeight.w700 : FontWeight.w500,
-                    color: peakIndex == i ? accent : glass.textTertiary,
+                    fontWeight: roles[i] == WeekBarRole.maximum
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                    color: roles[i] == WeekBarRole.maximum
+                        ? accent
+                        : glass.textTertiary,
                   ),
                 ),
               ),

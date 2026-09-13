@@ -316,7 +316,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
           _valueColumn(
             glass: glass,
             icon: Icons.thermostat,
-            accent: glass.tempAccent,
+            accent: glass.envTempValue,
             value: temp == null
                 ? '--'
                 : 'home_live_temp_value'.tr(args: [formatCompact(temp)]),
@@ -326,7 +326,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
           _valueColumn(
             glass: glass,
             icon: Icons.water_drop,
-            accent: glass.humidAccent,
+            accent: glass.envHumidValue,
             value: humid == null
                 ? '--'
                 : 'home_live_humid_value'.tr(args: [formatCompact(humid)]),
@@ -414,8 +414,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
               _skeleton(glass, height: WeekRangeChart.chartHeight),
             ],
           ),
-          error: (_, __) =>
-              _noData(glass, height: WeekRangeChart.chartHeight),
+          error: (_, __) => _noData(glass, height: WeekRangeChart.chartHeight),
           data: (rows) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(
@@ -423,7 +422,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
               children: [
                 WeekRangeChart(
                   rows: rows.temp,
-                  accent: glass.tempAccent,
+                  accent: glass.envTempPeak,
                   icon: Icons.thermostat,
                   headerFormat: (v) =>
                       'env_detail_temp_value'.tr(args: [formatCompact(v)]),
@@ -433,7 +432,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                 const SizedBox(height: 32),
                 WeekRangeChart(
                   rows: rows.humid,
-                  accent: glass.humidAccent,
+                  accent: glass.envHumidPeak,
                   icon: Icons.water_drop,
                   headerFormat: (v) =>
                       'env_detail_humid_value'.tr(args: [formatCompact(v)]),
@@ -480,8 +479,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                 key: EnvDetailScreen.weekNextKey,
                 icon: Icons.chevron_right,
                 glass: glass,
-                onTap: () => ref.read(envDetailWeekProvider.notifier).state =
-                    week.next,
+                onTap: () =>
+                    ref.read(envDetailWeekProvider.notifier).state = week.next,
               ),
           ],
         ),
