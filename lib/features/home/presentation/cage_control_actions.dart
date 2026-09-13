@@ -32,6 +32,8 @@ import '../domain/mist_duration.dart';
 import '../domain/mist_lock.dart';
 import '../domain/running_timer.dart';
 import 'widgets/running_timer_chip.dart';
+import 'widgets/fan_duration_sheet.dart';
+import 'home_control_providers.dart';
 
 /// 분무 중복 클릭 락. **기기별로 분리한다** — 전역이면 A 사육장에서 분무한 뒤
 /// B 사육장으로 스와이프해도 B의 버튼이 잠긴다.
@@ -42,7 +44,6 @@ final mistLockProvider = StateProvider.family<MistLock, String>(
 /// 환기팬 직전 설정 저장소(원탭 재실행용) — [handleFanTap]·[openFanSheet]가 쓴다.
 final fanChoiceStoreProvider =
     Provider<FanChoiceStore>((_) => const HiveFanChoiceStore());
-
 
 /// 발행한 명령이 [kCommandAckGrace] 안에 ACK되는지 지켜본다.
 ///
@@ -179,16 +180,8 @@ Future<void> handleHeaterTap(
   );
 }
 
-/// 팬 제어 — **탭 한 번이면 직전 설정 그대로 켜지고**(초기 기본 30분 타이머),
-/// 켜져 있으면 바로 끈다. 방식 선택 시트는 [openFanSheet](타일 꾹 누르기 +
-/// 켜짐 스낵바 '변경')로 옮겼다(2026-09-08 UX 개편 — 분무 원탭과 같은 문법).
-///
-/// 끄기에 시트를 안 두는 이유: 끄기는 망설일 게 없고, **타이머 취소도
-/// `fan_off`다**(2026-08-14 핸드오프 §1.3). 타이머는 `fan_on` +
-/// `payload.duration_ms`로 걸고 **펌웨어가 스스로 끈다** — 분무와 같은 이유로
-/// 앱이 지연 OFF를 흉내내지 않는다. 히터와 달리 안전 확인은 없지만 명령은
-/// 똑같이 절대 상태로 보낸다. 잘못 켜져도 탭 한 번으로 꺼지는 저위험
-/// 액추에이터라 원탭이 안전하다(히터에는 이 문법을 옮기지 말 것).
+/// 꺼짐은 시간 선택 후 시작, 켜짐은 즉시 fan_off.
+/// 타이머 만료 OFF는 펌웨어가 책임진다.
 Future<void> handleFanTap(
   BuildContext context,
   WidgetRef ref,
@@ -214,69 +207,48 @@ Future<void> handleFanTap(
     return;
   }
 
-  // 꺼짐 → 직전 설정 즉시 실행. 스낵바 '변경'이 시트로 가는 뒷문이다 —
-  // "30분이 아니라 계속 켜고 싶었는데"를 한 탭 안에서 수습한다.
-  final choice = ref.read(fanChoiceStoreProvider).load(deviceId);
-  await _startFan(context, ref, deviceId, choice, offerChange: true);
+  await openFanSheet(context, ref, deviceId);
 }
 
-/// 환기팬 켜기 방식 시트(계속 켜기 / 10분~2h) — 타일 **꾹 누르기**와 켜짐
-/// 스낵바 '변경'이 연다. 선택은 저장돼 다음 원탭의 값이 된다. 팬이 이미
-/// 켜져 있어도 유효하다 — 새 `fan_on`(+duration)이 기존 타이머를 대체한다.
+final _fanInteractionProvider =
+    StateProvider.family<bool, String>((ref, id) => false);
+
+/// 직전 값은 선택 제안일 뿐이며 명시적 시작 전에는 명령을 보내지 않는다.
 Future<void> openFanSheet(
   BuildContext context,
   WidgetRef ref,
   String deviceId,
 ) async {
+  final lock = ref.read(_fanInteractionProvider(deviceId).notifier);
+  if (lock.state) return;
+  lock.state = true;
   final store = ref.read(fanChoiceStoreProvider);
-
-  // (FanTimerDuration?,) — null이면 '계속 켜기', 값이 있으면 일회성 타이머.
-  // 시트 닫힘(null 반환)과 '계속 켜기'를 구분하려고 레코드로 감싼다.
-  final picked = await showModalBottomSheet<(FanTimerDuration?,)>(
-    context: context,
-    builder: (ctx) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppStyles.spacing16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('home_fan_pick_title'.tr(),
-                style: AppStyles.subsectionTitle(ctx)),
-            const SizedBox(height: AppStyles.spacing12),
-            OutlinedButton(
-              key: const Key('fan_steady_on'),
-              onPressed: () => Navigator.of(ctx).pop((null,)),
-              child: Text('home_fan_steady_on'.tr()),
-            ),
-            const SizedBox(height: AppStyles.spacing8),
-            Row(
-              children: [
-                for (final d in FanTimerDuration.values) ...[
-                  Expanded(
-                    child: OutlinedButton(
-                      key: Key('fan_timer_${d.minutes}'),
-                      onPressed: () => Navigator.of(ctx).pop((d,)),
-                      child: Text(d.labelKey.tr()),
-                    ),
-                  ),
-                  if (d != FanTimerDuration.values.last)
-                    const SizedBox(width: AppStyles.spacing8),
-                ],
-              ],
-            ),
-          ],
-        ),
+  try {
+    final picked = await showModalBottomSheet<(FanTimerDuration?,)>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => ProviderScope(
+        overrides: [
+          fanDurationSelectionProvider
+              .overrideWith((ref) => store.load(deviceId))
+        ],
+        child: const FanDurationSheet(),
       ),
-    ),
-  );
-  if (picked == null || !context.mounted) return;
-
-  final duration = picked.$1;
-  // 선택 = 새 습관 — 다음 원탭이 이 값을 재실행한다.
-  await store.save(deviceId, duration);
-  if (!context.mounted) return;
-  await _startFan(context, ref, deviceId, duration, offerChange: false);
+    );
+    if (picked == null || !context.mounted) return;
+    if (ref.read(currentDeviceIdProvider).valueOrNull != deviceId ||
+        !ref.read(moduleOnlineProvider(deviceId))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('home_fan_target_changed'.tr())),
+      );
+      return;
+    }
+    // No awaited settings write between the final target check and dispatch.
+    await _startFan(context, ref, deviceId, picked.$1, offerChange: false);
+    await store.save(deviceId, picked.$1);
+  } finally {
+    if (lock.mounted) lock.state = false;
+  }
 }
 
 /// `fan_on`(+타이머) 전송 + 완료 알림 예약 + 칩 갱신 + 켜짐 스낵바.
@@ -370,7 +342,8 @@ Future<void> mistOnce(
     // 사육 환경(습도)에 대한 거짓 확신이 된다.
     if (context.mounted) _watchCommandAck(context, ref, messenger, command);
     messenger.showSnackBar(
-      SnackBar(content: Text('home_mist_sent'.tr(args: ['${duration.seconds}']))),
+      SnackBar(
+          content: Text('home_mist_sent'.tr(args: ['${duration.seconds}']))),
     );
   } catch (e, st) {
     debugPrint('[cage-control] mist failed: $e\n$st');
@@ -448,8 +421,7 @@ class _LedSheet extends StatefulWidget {
 }
 
 class _LedSheetState extends State<_LedSheet> {
-  late double _brightness =
-      widget.initialBrightness.clamp(1, 100).toDouble();
+  late double _brightness = widget.initialBrightness.clamp(1, 100).toDouble();
 
   @override
   Widget build(BuildContext context) {
