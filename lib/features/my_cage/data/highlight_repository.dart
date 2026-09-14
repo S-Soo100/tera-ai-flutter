@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 
 import '../domain/nightly_highlight.dart';
@@ -36,16 +37,20 @@ class HighlightRepository {
   static const maxFeaturedDays = 31;
 
   /// 앱 기본값 한 곳(하드코딩 산개 금지 — 2026-09-11 지시). 하이라이트
-  /// 화면은 [defaultFeaturedDays]일치를 tier=all로 받아 day_key로 묶는다.
+  /// 화면은 [defaultFeaturedDays]일치를 받아 day_key로 묶는다.
   static const defaultFeaturedDays = 30;
 
   /// [since] 이후 하이라이트 목록(최신순 가정, 서버 규칙+사람 확정 적용본).
-  Future<List<NightlyHighlight>> list(
-      {required DateTime since, int limit = 50}) async {
+  Future<List<NightlyHighlight>> list({
+    required String cameraId,
+    required DateTime since,
+    int limit = 50,
+  }) async {
     limit = limit.clamp(1, maxLimit);
     final token = await _tokenProvider();
     final uri = Uri.parse('$_baseUrl/highlights').replace(
       queryParameters: {
+        'camera_id': cameraId,
         'since': since.toUtc().toIso8601String(),
         'limit': '$limit',
       },
@@ -54,10 +59,7 @@ class HighlightRepository {
         headers: {if (token != null) 'Authorization': 'Bearer $token'});
     if (resp.statusCode == 200) {
       final body = jsonDecode(resp.body) as Map<String, dynamic>;
-      final list = (body['highlights'] as List? ?? const []);
-      return list
-          .map((e) => NightlyHighlight.fromJson(e as Map<String, dynamic>))
-          .toList();
+      return _highlightsForCamera(body, cameraId, '/highlights');
     }
     if (resp.statusCode == 404) return const [];
     throw BackendException(resp.statusCode, resp.body);
@@ -74,6 +76,7 @@ class HighlightRepository {
   /// 저장값이 아니라 조회 시 계산 — 진행 중인 하루는 새 클립에, 지난 하루는
   /// 라벨러 X/✨ 변경에 결과가 바뀐다. 호출부는 화면 진입마다 재조회한다.
   Future<List<NightlyHighlight>> listFeatured({
+    required String cameraId,
     int days = defaultFeaturedDays,
     String tier = 'all',
   }) async {
@@ -81,6 +84,7 @@ class HighlightRepository {
     final token = await _tokenProvider();
     final uri = Uri.parse('$_baseUrl/highlights/featured').replace(
       queryParameters: {
+        'camera_id': cameraId,
         'days': '$days',
         'tier': tier,
       },
@@ -89,12 +93,36 @@ class HighlightRepository {
         headers: {if (token != null) 'Authorization': 'Bearer $token'});
     if (resp.statusCode == 200) {
       final body = jsonDecode(resp.body) as Map<String, dynamic>;
-      final list = (body['highlights'] as List? ?? const []);
-      return list
-          .map((e) => NightlyHighlight.fromJson(e as Map<String, dynamic>))
-          .toList();
+      return _highlightsForCamera(body, cameraId, '/highlights/featured');
     }
     if (resp.statusCode == 404) return const [];
     throw BackendException(resp.statusCode, resp.body);
+  }
+
+  /// 배포 전 서버는 최상단 `camera_id`가 null이고 소유 카메라 전체를 돌려줄
+  /// 수 있다. 그때만 앱에서 한 번 더 거른다. 값이 있는데 요청과 다르면
+  /// 카메라 전환 중 도착한 잘못된 응답이므로 전체를 버린다.
+  List<NightlyHighlight> _highlightsForCamera(
+    Map<String, dynamic> body,
+    String requestedCameraId,
+    String endpoint,
+  ) {
+    final responseCameraId = body['camera_id'];
+    if (responseCameraId != null && responseCameraId != requestedCameraId) {
+      debugPrint(
+        '[highlights] discarded mismatched $endpoint response: '
+        'requested=$requestedCameraId, response=$responseCameraId',
+      );
+      return const [];
+    }
+
+    final highlights = (body['highlights'] as List? ?? const [])
+        .map((e) => NightlyHighlight.fromJson(e as Map<String, dynamic>));
+    if (responseCameraId == null) {
+      return highlights
+          .where((highlight) => highlight.cameraId == requestedCameraId)
+          .toList();
+    }
+    return highlights.toList();
   }
 }
