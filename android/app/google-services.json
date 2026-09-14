@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "204097603991",
+    "project_id": "vivanaut-app",
+    "storage_bucket": "vivanaut-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:204097603991:android:d544b5eee8e1e6235e9cd2",
+        "android_client_info": {
+          "package_name": "com.vivanaut.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGpip8B2N2GBIgHT-M_RcejoUvdLsgzQg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
