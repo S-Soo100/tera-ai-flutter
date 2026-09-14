@@ -437,7 +437,7 @@ void main() {
     expect(find.textContaining('crecam_home_night_activity'), findsNothing);
   });
 
-  testWidgets('최신 즐겨찾기 시각 → 북마크 카드 "업데이트" 서브타이틀', (tester) async {
+  testWidgets('최신 즐겨찾기 시각 → 북마크 카드에 접두어 없는 날짜만 표시', (tester) async {
     await _pump(tester, favorites: [
       FavoriteClip(
         clipId: 'c1',
@@ -446,11 +446,11 @@ void main() {
         durationSec: 8,
         filePath: '/tmp/c1.mp4',
         sizeBytes: 1,
-        favoritedAt: DateTime.now().subtract(const Duration(minutes: 3)),
+        favoritedAt: DateTime.now().subtract(const Duration(days: 14)),
         ownerId: 'u1',
       ),
     ]);
-    // timeAgo → "time_minutes_ago" 키 → crecam_home_updated 조합.
-    expect(find.text('crecam_updated_today'), findsOneWidget);
+    expect(find.text('time_days_ago'), findsOneWidget);
+    expect(find.text('crecam_updated_days'), findsNothing);
   });
 }
