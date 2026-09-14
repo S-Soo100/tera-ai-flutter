@@ -193,6 +193,7 @@ class _EntryCards extends ConsumerWidget {
             iconAsset: FigmaIcons.bookmarkCheck,
             title: 'crecam_home_bookmarks'.tr(),
             latestAt: bookmarkAt,
+            dateOnly: true,
             onTap: () => context.push('/crecam/bookmarks'),
           ),
         ),
@@ -210,6 +211,7 @@ class _EntryCard extends StatelessWidget {
     required this.title,
     required this.latestAt,
     this.emptyLabel,
+    this.dateOnly = false,
     required this.onTap,
   });
 
@@ -217,6 +219,7 @@ class _EntryCard extends StatelessWidget {
   final String iconAsset;
   final String title;
   final String? emptyLabel;
+  final bool dateOnly;
 
   /// 최신 항목 시각. data(null) = 항목 없음("아직 없어요").
   final AsyncValue<DateTime?> latestAt;
@@ -306,7 +309,7 @@ class _EntryCard extends StatelessWidget {
       data: (at) {
         final base = at == null
             ? emptyLabel ?? 'crecam_home_no_updates'.tr()
-            : _updateLabel(at);
+            : _updateLabel(at, dateOnly: dateOnly);
         return FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
@@ -317,8 +320,15 @@ class _EntryCard extends StatelessWidget {
   }
 }
 
-String _updateLabel(DateTime at) {
+String _updateLabel(DateTime at, {required bool dateOnly}) {
   final days = calendarDaysAgo(at, DateTime.now());
+  if (dateOnly) {
+    return days <= 0
+        ? 'clip_date_today'.tr()
+        : days == 1
+            ? 'clip_date_yesterday'.tr()
+            : 'time_days_ago'.tr(namedArgs: {'n': '$days'});
+  }
   return days <= 0
       ? 'crecam_updated_today'.tr()
       : days == 1

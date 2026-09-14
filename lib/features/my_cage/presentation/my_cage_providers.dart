@@ -514,17 +514,15 @@ final crecamResolvedDayProvider =
   return DateTime(latest.year, latest.month, latest.day);
 });
 
-/// 하이라이트 최신 도착 시각(= 최신 묶음의 가장 최신 ⭐ 대표) —
+/// 하이라이트 상세에 표시된 최신 대표 영상 시각 —
 /// [highlightGroupsProvider]에서 파생(리뷰 2026-09-04: 같은 API를 limit만
 /// 다르게 2회 치던 것을 1회로, 에러를 null("아직 없어요")로 뭉개던 것을
-/// 에러로 전파).
+/// 에러로 전파). 선택 대상인 하이라이트가 있는데 서버의 optional
+/// publication이 없다는 이유로 빈 상태를 보이지 않는다.
 final latestHighlightAtProvider =
     FutureProvider.autoDispose<DateTime?>((ref) async {
   final groups = await ref.watch(highlightGroupsProvider.future);
-  final times = [for (final group in groups) for (final h in group.featured)
-    if (h.publication?.availableAt(DateTime.now()) == true) h.publication!.publishedAt]
-    ..sort((a,b) => b.compareTo(a));
-  return times.firstOrNull;
+  return groups.isEmpty ? null : latestFeaturedAt(groups.first);
 });
 
 /// 전체 즐겨찾기(favoritedAt desc — repository가 정렬). 엔트리 카드 최신
