@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
 import 'package:vivnanaut/features/my_cage/presentation/webrtc_live_controller.dart';
+import 'package:vivnanaut/shared/widgets/live_surface.dart';
 
 import '../../helpers/inert_live_controller.dart';
 import 'package:vivnanaut/features/home/presentation/widgets/top_fixed_area.dart';
@@ -40,8 +42,10 @@ Future<ProviderContainer> _pump(
   final c = ProviderContainer(overrides: [
     enclosureSetsProvider.overrideWith((ref) async => sets),
     // 실피어 차단 — startConnection()을 부르지 않은 inert 컨트롤러(A2).
-    webrtcLiveControllerProvider.overrideWith(
-        (ref, uuid) => InertLiveController(ref, uuid)),
+    webrtcLiveControllerProvider
+        .overrideWith((ref, uuid) => InertLiveController(ref, uuid)),
+    nowTickProvider
+        .overrideWith((ref) => Stream.value(DateTime(2026, 9, 14, 12))),
   ]);
   addTearDown(c.dispose);
   await tester.pumpWidget(
@@ -65,8 +69,7 @@ void main() {
     expect(find.byType(AspectRatio), findsNothing);
   });
 
-  testWidgets('캠이 하나라도 있으면 면이 서고, 캠 없는 세트 페이지는 안내 한 줄',
-      (tester) async {
+  testWidgets('캠이 하나라도 있으면 면이 서고, 캠 없는 세트 페이지는 안내 한 줄', (tester) async {
     await _pump(tester, [_set('e1', dev: true), _set('e2', cam: true)]);
     expect(find.byKey(TopFixedArea.pageViewKey), findsOneWidget);
     expect(find.byKey(TopFixedArea.noCameraPaneKey), findsOneWidget);
@@ -101,6 +104,16 @@ void main() {
         .first);
     expect(ar.aspectRatio, closeTo(TopFixedArea.aspectRatio, 0.001));
     expect(TopFixedArea.aspectRatio, closeTo(369 / 271, 0.001));
+  });
+
+  testWidgets('라이브 영상에는 LIVE·연결 상태 배지를 표시하지 않는다', (tester) async {
+    await _pump(tester, [_set('e1', cam: true)]);
+
+    final surface = tester.widget<LiveSurface>(find.byType(LiveSurface));
+    expect(surface.status, isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
   });
 
   testWidgets('세트 없음 → 한 줄 안내로 죽지 않는다', (tester) async {

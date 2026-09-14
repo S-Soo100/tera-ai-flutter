@@ -7,7 +7,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../my_cage/presentation/widgets/camera_name_badge.dart';
-import '../../../my_cage/presentation/widgets/live_connection_badge.dart';
 import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
 import '../../domain/enclosure_set.dart';
 import '../home_set_providers.dart';
@@ -16,8 +15,7 @@ import 'live_clock_overlay.dart';
 /// 홈 라이브 영역 — Figma A.4 ② (369×271, radius 12는 홈이 ClipRRect로 감쌈).
 ///
 /// PRD 재설계(2026-09-02)로 **라이브 전용**이 됐다 — 개체 프로필 카드 분기는
-/// 폐기(단일 스크롤 홈, §4.1). 좌/우 스와이프 세트 전환·LIVE/OFFLINE 뱃지·
-/// 재연결은 유지.
+/// 폐기(단일 스크롤 홈, §4.1). 좌/우 스와이프 세트 전환과 재연결은 유지.
 ///
 /// 캠 배치에 따라 세 갈래다:
 /// - 세트 없음 → 한 줄 안내(`home_no_set`)로 접힌다
@@ -118,9 +116,7 @@ class _TopFixedAreaState extends ConsumerState<TopFixedArea> {
     // 바로 아래 온습도 요약 카드에 있다(2026-09-02). 시계 오버레이는 유지.
     final surface = LiveSurface(
       aspectRatio: TopFixedArea.aspectRatio,
-      status: current.camera == null
-          ? null
-          : LiveConnectionBadge(cameraId: current.camera!.id),
+      status: null,
       corner: current.camera == null ? null : const LiveClockOverlay(),
       footer: sets.length > 1
           ? _PageDots(
@@ -223,9 +219,6 @@ class _InlineNotice extends StatelessWidget {
   }
 }
 
-// 연결 상태 배지(_ConnectionStatus)는 LiveConnectionBadge로 공용화됐다
-// (2026-09-07 A3 — 카메라 탭 라이브 면에도 같은 배지가 달린다).
-
 class _SetPane extends StatelessWidget {
   const _SetPane({required this.set});
 
@@ -272,9 +265,8 @@ class _PageDots extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               // 어두운 라이브 면 위라 테마 색을 쓰면 안 보인다.
-              color: i == current
-                  ? AppTheme.liveOnDark
-                  : AppTheme.liveOnDarkFaint,
+              color:
+                  i == current ? AppTheme.liveOnDark : AppTheme.liveOnDarkFaint,
             ),
           ),
       ],
