@@ -30,8 +30,23 @@ export function buildFirebaseMessage({
   };
 }
 
-export function classifyFcmFailure(status, code) {
-  if (code === 'UNREGISTERED' || code === 'INVALID_ARGUMENT') {
+const maxRetryDelaySeconds = 60 * 60;
+
+export function extractFcmFailure(payload) {
+  const error = payload?.error;
+  const details = Array.isArray(error?.details) ? error.details : [];
+  const fcmDetail = details.find((detail) => (
+    detail?.['@type'] === 'type.googleapis.com/google.firebase.fcm.v1.FcmError'
+      && typeof detail.errorCode === 'string'
+  ));
+  return {
+    status: typeof error?.status === 'string' ? error.status : undefined,
+    fcmErrorCode: fcmDetail?.errorCode,
+  };
+}
+
+export function classifyFcmFailure(status, failure = {}) {
+  if (failure?.fcmErrorCode === 'UNREGISTERED') {
     return 'disable-token';
   }
   if (status === 429 || status >= 500) {
@@ -41,4 +56,16 @@ export function classifyFcmFailure(status, code) {
     return 'fail';
   }
   return 'retry';
+}
+
+export function retryDelaySeconds(attempts, retryAfterSeconds = 0, status = 0) {
+  const exponential = Math.min(
+    maxRetryDelaySeconds,
+    30 * (2 ** Math.max(0, attempts - 1)),
+  );
+  const firstQuotaRetry = attempts <= 1 && (status === 429 || status === 503) ? 60 : 0;
+  const retryAfter = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+    ? Math.ceil(retryAfterSeconds)
+    : 0;
+  return Math.max(exponential, firstQuotaRetry, retryAfter);
 }

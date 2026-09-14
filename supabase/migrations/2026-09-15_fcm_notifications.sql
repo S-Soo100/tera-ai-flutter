@@ -74,6 +74,7 @@ CREATE TABLE public.notification_outbox (
   scheduled_at    TIMESTAMPTZ NOT NULL,
   attempts        INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
   locked_at       TIMESTAMPTZ,
+  lock_token      UUID,
   sent_at         TIMESTAMPTZ,
   last_error      TEXT,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -84,10 +85,34 @@ CREATE INDEX notification_outbox_dispatch_idx
   ON public.notification_outbox (status, scheduled_at)
   WHERE status = 'pending';
 
+-- Delivery state is per installation. A retry can therefore claim only an
+-- unfinished installation without duplicating a push to one already sent.
+CREATE TABLE public.notification_deliveries (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  outbox_id       UUID NOT NULL REFERENCES public.notification_outbox(id)
+                    ON DELETE CASCADE,
+  push_device_id  UUID NOT NULL REFERENCES public.push_devices(id)
+                    ON DELETE CASCADE,
+  status          TEXT NOT NULL DEFAULT 'pending'
+                    CHECK (status IN ('pending', 'processing', 'sent', 'failed', 'cancelled')),
+  scheduled_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  attempts        INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+  locked_at       TIMESTAMPTZ,
+  lock_token      UUID,
+  sent_at         TIMESTAMPTZ,
+  last_error      TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (outbox_id, push_device_id)
+);
+CREATE INDEX notification_deliveries_dispatch_idx
+  ON public.notification_deliveries (outbox_id, status, scheduled_at);
+
 ALTER TABLE public.push_devices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notification_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notification_outbox ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notification_deliveries ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY push_devices_select_own ON public.push_devices
   FOR SELECT TO authenticated USING (user_id = auth.uid());
@@ -106,7 +131,8 @@ CREATE POLICY app_notifications_update_own ON public.app_notifications
   USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 REVOKE ALL ON TABLE public.push_devices, public.app_notifications,
-  public.notification_events, public.notification_outbox FROM PUBLIC, anon, authenticated;
+  public.notification_events, public.notification_outbox, public.notification_deliveries
+  FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.push_devices TO authenticated;
 GRANT SELECT ON TABLE public.app_notifications TO authenticated;
 GRANT UPDATE (read_at) ON TABLE public.app_notifications TO authenticated;
@@ -286,6 +312,7 @@ RETURNS TABLE (
   notification_id UUID,
   user_id UUID,
   attempts INTEGER,
+  lock_token UUID,
   kind TEXT,
   title TEXT,
   body TEXT,
@@ -304,8 +331,9 @@ BEGIN
   WITH due AS (
     SELECT o.id
     FROM public.notification_outbox AS o
-    WHERE o.status = 'pending'
-      AND o.scheduled_at <= now()
+    WHERE (o.status = 'pending' AND o.scheduled_at <= now())
+      OR (o.status = 'processing'
+          AND o.locked_at < now() - interval '10 minutes')
     ORDER BY o.scheduled_at, o.created_at
     LIMIT p_limit
     FOR UPDATE SKIP LOCKED
@@ -314,22 +342,200 @@ BEGIN
     SET status = 'processing',
         attempts = o.attempts + 1,
         locked_at = now(),
+        lock_token = gen_random_uuid(),
         updated_at = now()
     FROM due
     WHERE o.id = due.id
-    RETURNING o.id, o.notification_id, o.user_id, o.attempts
+    RETURNING o.id, o.notification_id, o.user_id, o.attempts, o.lock_token
   )
   SELECT
     c.id,
     c.notification_id,
     c.user_id,
     c.attempts,
+    c.lock_token,
     n.kind,
     n.title,
     n.body,
     n.route
   FROM claimed AS c
   JOIN public.app_notifications AS n ON n.id = c.notification_id;
+END;
+$$;
+
+-- The outbox fence is checked before any delivery claim. Both leases are ten
+-- minutes; dispatch network calls time out after fifteen seconds, leaving room
+-- for a bounded batch without a second worker taking over a live claim.
+CREATE OR REPLACE FUNCTION public.claim_notification_deliveries(
+  p_outbox_id UUID,
+  p_lock_token UUID,
+  p_limit INTEGER
+)
+RETURNS TABLE (
+  id UUID,
+  push_device_id UUID,
+  fcm_token TEXT,
+  attempts INTEGER,
+  lock_token UUID
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF p_outbox_id IS NULL OR p_lock_token IS NULL OR p_limit IS NULL OR p_limit <= 0 THEN
+    RAISE EXCEPTION 'outbox id, lock token, and positive limit are required' USING ERRCODE = '22023';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.notification_outbox AS o
+    WHERE o.id = p_outbox_id
+      AND o.status = 'processing'
+      AND o.lock_token = p_lock_token
+  ) THEN
+    RAISE EXCEPTION 'outbox lease is no longer held' USING ERRCODE = '55000';
+  END IF;
+
+  INSERT INTO public.notification_deliveries (outbox_id, push_device_id, scheduled_at)
+  SELECT p_outbox_id, d.id, now()
+  FROM public.push_devices AS d
+  WHERE d.enabled = true
+    AND d.user_id = (SELECT o.user_id FROM public.notification_outbox AS o WHERE o.id = p_outbox_id)
+  ON CONFLICT (outbox_id, push_device_id) DO NOTHING;
+
+  RETURN QUERY
+  WITH due AS (
+    SELECT d.id
+    FROM public.notification_deliveries AS d
+    JOIN public.push_devices AS p ON p.id = d.push_device_id AND p.enabled = true
+    WHERE d.outbox_id = p_outbox_id
+      AND ((d.status = 'pending' AND d.scheduled_at <= now())
+        OR (d.status = 'processing'
+            AND d.locked_at < now() - interval '10 minutes'))
+    ORDER BY d.scheduled_at, d.created_at
+    LIMIT p_limit
+    FOR UPDATE OF d SKIP LOCKED
+  ), claimed AS (
+    UPDATE public.notification_deliveries AS d
+    SET status = 'processing',
+        attempts = d.attempts + 1,
+        locked_at = now(),
+        lock_token = gen_random_uuid(),
+        updated_at = now()
+    FROM due
+    WHERE d.id = due.id
+    RETURNING d.id, d.push_device_id, d.attempts, d.lock_token
+  )
+  SELECT c.id, c.push_device_id, p.fcm_token, c.attempts, c.lock_token
+  FROM claimed AS c
+  JOIN public.push_devices AS p ON p.id = c.push_device_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.complete_notification_delivery(
+  p_delivery_id UUID,
+  p_lock_token UUID,
+  p_status TEXT,
+  p_scheduled_at TIMESTAMPTZ DEFAULT NULL,
+  p_last_error TEXT DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF p_status NOT IN ('pending', 'sent', 'failed', 'cancelled') THEN
+    RAISE EXCEPTION 'invalid delivery status' USING ERRCODE = '22023';
+  END IF;
+  IF p_status = 'pending' AND p_scheduled_at IS NULL THEN
+    RAISE EXCEPTION 'pending delivery needs scheduled_at' USING ERRCODE = '22023';
+  END IF;
+
+  UPDATE public.notification_deliveries AS d
+  SET status = p_status,
+      scheduled_at = COALESCE(p_scheduled_at, d.scheduled_at),
+      locked_at = NULL,
+      lock_token = NULL,
+      sent_at = CASE WHEN p_status = 'sent' THEN now() ELSE d.sent_at END,
+      last_error = p_last_error,
+      updated_at = now()
+  WHERE d.id = p_delivery_id
+    AND d.status = 'processing'
+    AND d.lock_token = p_lock_token;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'delivery lease is no longer held' USING ERRCODE = '55000';
+  END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.finalize_notification_outbox(
+  p_outbox_id UUID,
+  p_lock_token UUID
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_next_scheduled_at TIMESTAMPTZ;
+  v_has_pending BOOLEAN;
+  v_has_sent BOOLEAN;
+  v_has_active_failed BOOLEAN;
+  v_error TEXT;
+  v_status TEXT;
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.notification_outbox AS o
+    WHERE o.id = p_outbox_id
+      AND o.status = 'processing'
+      AND o.lock_token = p_lock_token
+  ) THEN
+    RAISE EXCEPTION 'outbox lease is no longer held' USING ERRCODE = '55000';
+  END IF;
+
+  UPDATE public.notification_deliveries AS d
+  SET status = 'cancelled', locked_at = NULL, lock_token = NULL, updated_at = now()
+  FROM public.push_devices AS p
+  WHERE d.outbox_id = p_outbox_id
+    AND d.push_device_id = p.id
+    AND p.enabled = false
+    AND d.status IN ('pending', 'processing');
+
+  SELECT
+    COALESCE(bool_or(d.status = 'pending' AND p.enabled), false),
+    COALESCE(bool_or(d.status = 'sent'), false),
+    COALESCE(bool_or(d.status = 'failed' AND p.enabled), false),
+    min(d.scheduled_at) FILTER (WHERE d.status = 'pending' AND p.enabled),
+    max(d.last_error) FILTER (WHERE d.status = 'failed' AND p.enabled)
+  INTO v_has_pending, v_has_sent, v_has_active_failed, v_next_scheduled_at, v_error
+  FROM public.notification_deliveries AS d
+  JOIN public.push_devices AS p ON p.id = d.push_device_id
+  WHERE d.outbox_id = p_outbox_id;
+
+  IF v_has_pending THEN
+    v_status := 'pending';
+  ELSIF v_has_sent OR NOT v_has_active_failed THEN
+    v_status := 'sent';
+  ELSE
+    v_status := 'failed';
+  END IF;
+
+  UPDATE public.notification_outbox AS o
+  SET status = v_status,
+      scheduled_at = CASE WHEN v_status = 'pending' THEN v_next_scheduled_at ELSE o.scheduled_at END,
+      locked_at = NULL,
+      lock_token = NULL,
+      sent_at = CASE WHEN v_status = 'sent' THEN now() ELSE o.sent_at END,
+      last_error = CASE WHEN v_status = 'failed' THEN v_error ELSE NULL END,
+      updated_at = now()
+  WHERE o.id = p_outbox_id
+    AND o.status = 'processing'
+    AND o.lock_token = p_lock_token;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'outbox lease is no longer held' USING ERRCODE = '55000';
+  END IF;
+  RETURN v_status;
 END;
 $$;
 
@@ -502,6 +708,9 @@ REVOKE EXECUTE ON FUNCTION public.notification_event_after_insert() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.register_push_device(UUID, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.deactivate_push_device(UUID) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.claim_notification_outbox(INTEGER) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.claim_notification_deliveries(UUID, UUID, INTEGER) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.complete_notification_delivery(UUID, UUID, TEXT, TIMESTAMPTZ, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.finalize_notification_outbox(UUID, UUID) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.notify_community_comment() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.notify_community_like_digest() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.notify_community_notice() FROM PUBLIC;
@@ -510,3 +719,6 @@ GRANT EXECUTE ON FUNCTION public.register_push_device(UUID, TEXT, TEXT, TEXT, TE
 GRANT EXECUTE ON FUNCTION public.deactivate_push_device(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.schedule_water_tank_notification(TIMESTAMPTZ, UUID, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_notification_outbox(INTEGER) TO service_role;
+GRANT EXECUTE ON FUNCTION public.claim_notification_deliveries(UUID, UUID, INTEGER) TO service_role;
+GRANT EXECUTE ON FUNCTION public.complete_notification_delivery(UUID, UUID, TEXT, TIMESTAMPTZ, TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION public.finalize_notification_outbox(UUID, UUID) TO service_role;

@@ -315,6 +315,7 @@ Supabase Edge Function secret으로만 설정한다.
 | `app_notifications` | 알림 센터의 단일 기록 | 자신의 행 SELECT와 `read_at` UPDATE만 가능하다. INSERT/DELETE는 생산 경로 전용이다. |
 | `notification_events` | 외부·DB 생산자의 idempotent 입력 | 클라이언트 직접 접근 불가. `(source, source_event_id)` 중복은 하나의 알림으로 수렴한다. |
 | `notification_outbox` | 실제 FCM 발송 대기·시도 이력 | 클라이언트 직접 접근 불가. `pending`, `processing`, `sent`, `failed`, `cancelled` 상태만 허용한다. |
+| `notification_deliveries` | outbox별 설치 단위 FCM 결과 | 클라이언트 직접 접근 불가. 성공한 설치는 재시도에서 다시 claim하지 않는다. |
 
 `notification_events` INSERT 트리거는 `(user_id, source || ':' || source_event_id)`를
 `dedupe_key`로 사용해 `app_notifications` 한 건과 `notification_outbox` 한 건을 만든다.
@@ -323,24 +324,34 @@ Supabase Edge Function secret으로만 설정한다.
 
 ### FCM outbox 발송 계약
 
-`dispatch-push` Edge Function은 service-role 호출로만 실행한다(기본 JWT 검증 유지).
-따라서 `supabase/config.toml`에서 `verify_jwt = false`로 열면 안 되며, 공개 HTTP 호출이나
-클라이언트가 outbox를 직접 처리하는 경로도 없다. 배포 환경에는 아래 secret을 설정한다.
+`dispatch-push` Edge Function은 service-role 호출로만 실행한다. gateway의 기본 JWT 검증을
+유지하는 것에 더해, 함수가 `Authorization: Bearer {SUPABASE_SERVICE_ROLE_KEY}`를 정확히
+대조한 뒤에만 OAuth 또는 outbox claim을 시작한다. 따라서 `supabase/config.toml`에서
+`verify_jwt = false`로 열면 안 되며, 공개 HTTP 호출이나 클라이언트가 outbox를 직접 처리하는
+경로도 없다. 배포 환경에는 아래 secret을 설정한다.
 
 ```sh
 supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON='{"client_email":"...","private_key":"..."}'
 ```
 
-함수는 `claim_notification_outbox(p_limit)` RPC로 예약 시각이 지난 `pending` 행을
-`FOR UPDATE SKIP LOCKED`로 원자적으로 `processing` 상태로 바꿔 가져온다. Firebase HTTP
-v1은 `vivanaut-app` 프로젝트로만 전송하며, `safety.*`는 Android
-`vivanaut_safety`, 그 외는 `vivanaut_default` 채널을 쓴다. 알림 data는
-`notification_id`, `kind`, `route`의 문자열만 포함한다.
+함수는 `claim_notification_outbox(p_limit)` RPC로 예약 시각이 지난 `pending` 행과 10분을
+넘긴 `processing` lease를 `FOR UPDATE SKIP LOCKED`로 원자적으로 `processing`으로 가져온다.
+각 claim은 새 `lock_token`을 받고, delivery claim·결과 기록·outbox roll-up은 모두 이 token을
+요구한다. 늦게 끝난 worker는 새 worker의 상태를 덮어쓸 수 없다. 네트워크 요청은 15초에
+중단되고 한 실행은 최대 10개의 outbox/설치를 처리하므로 10분 lease보다 충분히 짧다.
 
-FCM `UNREGISTERED` 또는 invalid token 응답은 해당 설치를 비활성화한다. 429와 5xx는
-최대 1시간의 지수 backoff로 outbox를 재예약하고, 그 밖의 4xx는 token·credential을
-기록하지 않는 안전한 오류 코드와 함께 영구 실패로 처리한다. 모든 활성 설치가 처리되면
-outbox는 `sent`가 된다.
+`notification_deliveries`는 설치별 `sent`/`failed`/재시도 상태와 fence를 보존한다. 따라서 한
+설치가 성공한 뒤 다른 설치만 429/5xx로 재시도되어도 성공 설치에는 같은 push를 다시 보내지
+않는다. Firebase HTTP v1은 `vivanaut-app` 프로젝트로만 전송하며, `safety.*`는 Android
+`vivanaut_safety`, 그 외는 `vivanaut_default` 채널을 쓴다. 알림 data는 `notification_id`,
+`kind`, `route`의 문자열만 포함한다.
+
+FCM 응답의 `error.details[]`에서 typed `google.firebase.fcm.v1.FcmError`의
+`UNREGISTERED`만 해당 설치를 비활성화한다. top-level `INVALID_ARGUMENT` 및 형식이 깨진
+오류 payload는 token을 건드리지 않는 영구 실패다. 429와 5xx는 `Retry-After`를 우선하고,
+첫 quota/503 재시도는 최소 60초이며 이후 지수 backoff로 delivery만 재예약한다. 그 밖의
+4xx는 token·credential을 기록하지 않는 안전한 오류 코드와 함께 영구 실패로 처리한다.
+모든 활성 설치가 처리되면 outbox는 `sent`가 된다.
 
 ### 외부 이벤트 ingest 계약
 

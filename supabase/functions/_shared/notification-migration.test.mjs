@@ -33,3 +33,15 @@ test('like digests wait for their next epoch bucket boundary while pending', () 
 test('ingest persists validated highlight scheduled_for as event scheduled_at', () => {
   assert.match(ingest, /scheduled_at: event\.payload\.scheduled_for/);
 });
+
+test('dispatcher claims have stale-lease recovery, fencing, and delivery rows', () => {
+  assert.match(migration, /CREATE TABLE public\.notification_deliveries/);
+  assert.match(migration, /lock_token\s+UUID/);
+  assert.match(migration, /o\.status = 'processing'\s+AND o\.locked_at < now\(\) - interval '10 minutes'/);
+  assert.match(migration, /FOR UPDATE SKIP LOCKED/);
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.claim_notification_deliveries/);
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.complete_notification_delivery/);
+  assert.match(migration, /p_lock_token/);
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.finalize_notification_outbox/);
+  assert.match(migration, /UNIQUE \(outbox_id, push_device_id\)/);
+});

@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildFirebaseMessage, classifyFcmFailure } from './firebase-message.mjs';
+import {
+  buildFirebaseMessage,
+  classifyFcmFailure,
+  extractFcmFailure,
+  retryDelaySeconds,
+} from './firebase-message.mjs';
 
 test('builds string-only data and safety channel', () => {
   const message = buildFirebaseMessage({
@@ -20,6 +25,31 @@ test('builds string-only data and safety channel', () => {
   });
 });
 
-test('classifies unregistered token as terminal', () => {
-  assert.equal(classifyFcmFailure(404, 'UNREGISTERED'), 'disable-token');
+test('classifies typed unregistered token as terminal', () => {
+  assert.equal(classifyFcmFailure(404, { fcmErrorCode: 'UNREGISTERED' }), 'disable-token');
+});
+
+test('extracts typed FCM errors from Google envelopes', () => {
+  assert.deepEqual(extractFcmFailure({
+    error: {
+      status: 'NOT_FOUND',
+      details: [{
+        '@type': 'type.googleapis.com/google.firebase.fcm.v1.FcmError',
+        errorCode: 'UNREGISTERED',
+      }],
+    },
+  }), {
+    status: 'NOT_FOUND',
+    fcmErrorCode: 'UNREGISTERED',
+  });
+});
+
+test('does not disable tokens for generic invalid arguments or malformed envelopes', () => {
+  assert.equal(classifyFcmFailure(400, { status: 'INVALID_ARGUMENT' }), 'fail');
+  assert.equal(classifyFcmFailure(400, {}), 'fail');
+});
+
+test('honors Retry-After and waits at least one minute before the first quota retry', () => {
+  assert.equal(retryDelaySeconds(1, 0, 429), 60);
+  assert.equal(retryDelaySeconds(1, 120, 503), 120);
 });
