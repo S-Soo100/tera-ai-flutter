@@ -8,6 +8,7 @@ import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../home/presentation/widgets/home_header_bar.dart';
+import 'highlights_screen.dart';
 import 'my_cage_providers.dart';
 import 'clip_feed_controller.dart';
 import '../domain/update_day_label.dart';
@@ -183,6 +184,7 @@ class _EntryCards extends ConsumerWidget {
             title: 'crecam_home_highlights'.tr(),
             latestAt: highlightAt,
             emptyLabel: 'crecam_update_unknown'.tr(),
+            dateStyle: _EntryDateStyle.highlightNight,
             onTap: () => context.push('/crecam/highlights'),
           ),
         ),
@@ -193,7 +195,7 @@ class _EntryCards extends ConsumerWidget {
             iconAsset: FigmaIcons.bookmarkCheck,
             title: 'crecam_home_bookmarks'.tr(),
             latestAt: bookmarkAt,
-            dateOnly: true,
+            dateStyle: _EntryDateStyle.dateOnly,
             onTap: () => context.push('/crecam/bookmarks'),
           ),
         ),
@@ -204,6 +206,8 @@ class _EntryCards extends ConsumerWidget {
 
 /// Figma 945:4171/4179: 최소 높이 72, 40px 진회색 아이콘 배경.
 /// 긴 업데이트 문구는 가용 폭에 맞춰 축소해 한 줄로 전부 표시한다.
+enum _EntryDateStyle { update, dateOnly, highlightNight }
+
 class _EntryCard extends StatelessWidget {
   const _EntryCard({
     super.key,
@@ -211,7 +215,7 @@ class _EntryCard extends StatelessWidget {
     required this.title,
     required this.latestAt,
     this.emptyLabel,
-    this.dateOnly = false,
+    this.dateStyle = _EntryDateStyle.update,
     required this.onTap,
   });
 
@@ -219,7 +223,7 @@ class _EntryCard extends StatelessWidget {
   final String iconAsset;
   final String title;
   final String? emptyLabel;
-  final bool dateOnly;
+  final _EntryDateStyle dateStyle;
 
   /// 최신 항목 시각. data(null) = 항목 없음("아직 없어요").
   final AsyncValue<DateTime?> latestAt;
@@ -309,7 +313,7 @@ class _EntryCard extends StatelessWidget {
       data: (at) {
         final base = at == null
             ? emptyLabel ?? 'crecam_home_no_updates'.tr()
-            : _updateLabel(at, dateOnly: dateOnly);
+            : _updateLabel(at, style: dateStyle);
         return FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
@@ -320,9 +324,13 @@ class _EntryCard extends StatelessWidget {
   }
 }
 
-String _updateLabel(DateTime at, {required bool dateOnly}) {
+String _updateLabel(DateTime at, {required _EntryDateStyle style}) {
+  if (style == _EntryDateStyle.highlightNight) {
+    return HighlightsScreen.nightLabel(
+        DateFormat('yyyy-MM-dd').format(at), DateTime.now());
+  }
   final days = calendarDaysAgo(at, DateTime.now());
-  if (dateOnly) {
+  if (style == _EntryDateStyle.dateOnly) {
     return days <= 0
         ? 'clip_date_today'.tr()
         : days == 1

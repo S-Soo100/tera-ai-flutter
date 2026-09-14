@@ -13,10 +13,12 @@ import 'package:vivnanaut/features/home/presentation/widgets/home_header_bar.dar
 import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivnanaut/features/my_cage/domain/favorite_clip.dart';
+import 'package:vivnanaut/features/my_cage/domain/highlight_group.dart';
 import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivnanaut/features/my_cage/domain/nightly_report.dart';
 import 'package:vivnanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivnanaut/features/my_cage/presentation/crecam_screen.dart';
+import 'package:vivnanaut/features/my_cage/presentation/highlights_controller.dart';
 import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivnanaut/features/my_cage/presentation/widgets/camera_live_area.dart';
 import 'package:vivnanaut/features/my_cage/presentation/webrtc_live_controller.dart';
@@ -435,6 +437,15 @@ void main() {
     await _pump(tester, nightActivitySec: 300); // 5분
     // tr()는 키 원문 반환(namedArgs 미치환).
     expect(find.textContaining('crecam_home_night_activity'), findsNothing);
+  });
+
+  testWidgets('최신 하이라이트 밤 묶음 → 오늘 새벽 영상이 있어도 어젯밤 표시', (tester) async {
+    final lastNight = parseDayKey(lastNightDayKey(DateTime.now()));
+    await _pump(tester, latestHighlightAt: lastNight);
+
+    expect(find.text('crecam_highlights_last_night'), findsOneWidget);
+    expect(find.text('crecam_updated_today'), findsNothing);
+    expect(find.text('crecam_updated_yesterday'), findsNothing);
   });
 
   testWidgets('최신 즐겨찾기 시각 → 북마크 카드에 접두어 없는 날짜만 표시', (tester) async {
