@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 
 import 'glass_palette.dart';
+import 'viva_colors.dart';
 
 class AppTheme {
   AppTheme._();
 
   // ══════════════════════════════════════════════════════════════════════════
-  // Figma `Asset` 섹션 컬러 팔레트
+  // VIVA 원본 토큰 별칭 + 기존 Asset 전용 팔레트
   // 출처: `docs/figma-final-design-transcript.md` §4.1 (라벨된 색상 칩)
-  // Figma에 발행된 스타일이 0개라 노드 fill에서 직접 읽어 수동 매핑한 값이다.
+  // 공통색은 VivaColors 참조. Asset 전용색은 기존 노드 실측값 유지.
   // ══════════════════════════════════════════════════════════════════════════
 
   /// **메인컬러**. 버튼 Primary·Chip Enabled·Tabs Selected·Toast 아이콘이 전부 이 색.
   /// (2026-08-08 이전 Green 800 `#2E7D32`에서 교체 — PRD 결정 로그 D2)
-  static const brandNavy = Color(0xFF192553);
+  static const brandNavy = VivaColors.subDark;
 
-  /// **브랜드컬러**. 원문 주석 "어디에 쓸지 좀고민~" — **용도 미정이라 아직 어디에도
-  /// 배정하지 않는다.** 쓸 곳이 정해지면 그때 연결할 것.
-  static const brandRed = Color(0xFFD61619);
+  /// VIVA Color/Main_light. Material primary는 기존 버튼 역할인 Sub_dark 유지.
+  static const brandRed = VivaColors.mainLight;
 
   /// Primary 계열 Disabled 배경.
   static const neutralDisabled = Color(0xFF9DA3BA);
@@ -25,17 +25,17 @@ class AppTheme {
   /// 쿨그레이 — Outlined 계열 Disabled 전경.
   static const neutralCoolGray = Color(0xFFA9B3BE);
 
-  static const textTitle = Color(0xFF1E1E1E); // 폰트 타이틀
-  static const textBody = Color(0xFF3C3C3C); // 폰트 본문
-  static const textMuted = Color(0xFF919497); // 중요도 낮은 텍스트
-  static const lineColor = Color(0xFFE1E3E4); // 라인컬러
+  static const textTitle = VivaColors.labelPrimary; // 폰트 타이틀
+  static const textBody = VivaColors.labelSecondary; // 폰트 본문
+  static const textMuted = VivaColors.labelQuaternary; // 중요도 낮은 텍스트
+  static const lineColor = VivaColors.fillLine; // 라인컬러
 
   // ── 라이브 면(항상 어두운 영상 위) 고정색 — 테마 불변이라 팔레트 밖.
   //    Colors.white/black 리터럴 산재를 토큰으로(리뷰 2026-09-04).
   static const liveOnDark = Color(0xFFFFFFFF); // 어두운 면 위 글리프·활성 점
   static const liveOnDarkFaint = Color(0x59FFFFFF); // 비활성 점(white 35%)
   static const liveScrim = Color(0x4D000000); // 확장 버튼 원판(black 30%)
-  static const surfaceMuted = Color(0xFFEAEEF0); // Chip Disabled 배경·Tabs 보더
+  static const surfaceMuted = VivaColors.fillButton; // Chip Disabled 배경·Tabs 보더
 
   // ── 서브컬러 (Figma: "여기는 위에있는 컬러 아니고 서브컬러들") ──
   // Tag의 배경/전경 쌍으로만 정의돼 있다. 의미는 지정돼 있지 않다.
@@ -48,7 +48,7 @@ class AppTheme {
   static const subRedBg = Color(0xFFFFF0F0);
   static const subRed = Color(0xFFF94245);
   static const subGrayBg = Color(0xFFEAEEF0);
-  static const subGray = Color(0xFF3C3C3C);
+  static const subGray = VivaColors.labelSecondary;
 
   // ── 의미색 — ⚠️ Figma에 정의가 없어 이 앱이 정한 값 ──
 

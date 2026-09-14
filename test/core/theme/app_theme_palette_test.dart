@@ -5,8 +5,8 @@ import 'package:vivnanaut/core/theme/app_theme.dart';
 import 'package:vivnanaut/core/theme/glass_palette.dart';
 import 'package:vivnanaut/shared/widgets/glass_card.dart';
 
-/// Figma `Asset` 섹션 팔레트가 코드와 어긋나지 않게 고정한다.
-/// 값 출처: `docs/figma-final-design-transcript.md` §4.1
+/// VIVA 공통색 + 기존 Asset 전용색이 테마에서 어긋나지 않게 고정한다.
+/// 값 출처: `docs/design-system-viva-colors.md`
 void main() {
   group('Figma 팔레트 원본값', () {
     test('메인컬러는 #192553 — 구 Green 800(#2E7D32)으로 되돌아가면 안 된다', () {
@@ -25,9 +25,9 @@ void main() {
       expect(AppTheme.neutralCoolGray, const Color(0xFFA9B3BE));
       expect(AppTheme.textTitle, const Color(0xFF1E1E1E));
       expect(AppTheme.textBody, const Color(0xFF3C3C3C));
-      expect(AppTheme.textMuted, const Color(0xFF919497));
-      expect(AppTheme.lineColor, const Color(0xFFE1E3E4));
-      expect(AppTheme.surfaceMuted, const Color(0xFFEAEEF0));
+      expect(AppTheme.textMuted, const Color(0xFF949090));
+      expect(AppTheme.lineColor, const Color(0xFFE3E3E3));
+      expect(AppTheme.surfaceMuted, const Color(0xFFF4F4F4));
     });
 
     test('서브컬러 5쌍', () {

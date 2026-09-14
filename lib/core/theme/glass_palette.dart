@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'viva_colors.dart';
+
 /// 디자인 시스템 팔레트 — **다크/라이트 2벌**을 `ThemeExtension`으로 든다.
+///
+/// **2026-09-14: 라이트 공통색은 [VivaColors]의 VIVA 변수 참조.**
+/// 다크는 Figma 미제공으로 기존 도출값 유지. 아래 B안 설명은 구조의 이력이다.
 ///
 /// **2026-08-14 저녁: B안(Flighty 전광판) 프로덕션 채택.** 값은
 /// `features/dev/design_lab/tokens/variant_b_tokens.dart`의 미러다 — 랩 토큰은
@@ -129,7 +134,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   // ── 표면 위 텍스트 위계 ──
   final Color textPrimary;
   final Color textSecondary;
-  final Color textTertiary; // 비활성
+  final Color textTertiary; // VIVA Labels/Quaternary — 기존 소비처 이름 유지
   final Color textOnActive; // 활성(앰버) 타일 위
   final Color textOnActiveSecondary;
 
@@ -168,7 +173,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   /// 밤 띠(22:00~06:00). 미도래 밴드(중성)와 **색상**으로 갈리도록 블루 기.
   final Color nightBand;
 
-  /// 본문 보조 텍스트 — 축 눈금보다 한 단 진하다.
+  /// 본문 보조 텍스트 — VIVA Labels/Tertiary에 대응한다.
   final Color bodySecondary;
 
   // ── shimmer 스켈레톤 ──
@@ -318,45 +323,45 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     navUnselected: Color(0xFF919497),
   );
 
-  // ── 라이트 (Figma `Asset` 팔레트 미러 — 기본 모드, 2026-09-02 교체) ──
-  // 값 출처: docs/plans/2026-09-02-prd-redesign-phase1-home.md §A.1
+  // ── 라이트 (VIVA 공통색 + 기존 Asset의 기기·차트 전용색) ──
+  // 매핑: docs/design-system-viva-colors.md
   static const light = GlassPalette(
     brightness: Brightness.light,
-    wallpaper: Color(0xFFFFFFFF), // 페이지 바닥 흰색
+    wallpaper: VivaColors.fillBack, // VIVA Fill/Back
     overlay: Color(0xFFFFFFFF), // 카드 흰색(테두리로 구분)
-    overlayStrong: Color(0xFFFAFAFA), // = surfaceHeader
-    overlayFaint: Color(0xFFEAEEF0), // surfaceSubtle — 비활성 칩 배경
-    border: Color(0xFFE3E3E3), // 칩 테두리·상단바 하단선
-    outline: Color(0xFFE3E3E3), // 기간 설정 버튼 stroke (Figma Camera)
+    overlayStrong: VivaColors.fillBack, // = surfaceHeader
+    overlayFaint: VivaColors.fillButton, // surfaceSubtle — 비활성 칩 배경
+    border: VivaColors.fillLine, // 칩 테두리·상단바 하단선
+    outline: VivaColors.fillLine, // 기간 설정 버튼 stroke (Figma Camera)
     tabBar: Color(0xFFFFFFFF),
-    activeTile: Color(0xFFE09A00), // (교체 목록 외 — B 앰버 유지)
+    activeTile: VivaColors.yellow, // 활성 앰버 역할 → VIVA Yellow
     heaterTint:
-        Color(0xFFE09A00), // 전경(글리프) — 배경은 deviceHeatBg (리뷰 2026-09-03 역할 통일)
+        VivaColors.yellow, // 전경(글리프) — 배경은 deviceHeatBg (리뷰 2026-09-03 역할 통일)
     mistTint: Color(0xFF2F7BD1), // 전경(글리프) — 배경은 deviceMistBg
     ledTint: Color(0xFFE8B33A), // 전경(글리프) — 배경은 deviceLedBg
     fanTint: Color(0xFF1FA84A), // 전경(글리프) — 배경은 deviceFanBg
     signalOk: Color(0xFF228C73),
-    signalWarn: Color(0xFFE89E00),
-    signalAlert: Color(0xFFD61619), // 브랜드 레드 — 위험 상태 예약
-    textPrimary: Color(0xFF1E1E1E), // textStrong
-    textSecondary: Color(0xFF3C3C3C), // textBody
-    textTertiary: Color(0xFF949090), // textMuted
+    signalWarn: VivaColors.yellow,
+    signalAlert: VivaColors.mainLight, // 브랜드 레드 — 위험 상태 예약
+    textPrimary: VivaColors.labelPrimary, // textStrong
+    textSecondary: VivaColors.labelSecondary, // textBody
+    textTertiary: VivaColors.labelQuaternary, // textMuted
     textOnActive: Color(0xFF12151C),
     textOnActiveSecondary: Color(0x9912151C),
     liveRed: Color(0xFFE5382E),
     weatherBarWarmStart: Color(0xFFFFD54F),
-    weatherBarWarmEnd: Color(0xFFE89E00), // 신 앰버로 근사 조정
-    weatherBarTrack: Color(0xFFEAEEF0), // surfaceSubtle
+    weatherBarWarmEnd: VivaColors.yellow, // 신 앰버로 근사 조정
+    weatherBarTrack: VivaColors.fillButton, // surfaceSubtle
     weatherDot: Colors.white,
-    weatherDotBorder: Color(0xFF1E1E1E), // 짙은 테두리 — 흰 카드 위 가시성
+    weatherDotBorder: VivaColors.labelPrimary, // 짙은 테두리 — 흰 카드 위 가시성
     weatherRowDivider: Color(0x0F000000), // 검정 6%
     chartFutureBand: Color(0x0A000000), // 검정 4%
     chartNowLine: Color(0x611E1E1E), // 38%
-    chartMarkerChip: Color(0xFFEAEEF0), // surfaceSubtle
+    chartMarkerChip: VivaColors.fillButton, // surfaceSubtle
     chartGridLine: Color(0x14000000), // 검정 8%
-    chartMarkerGlyph: Color(0xFF3C3C3C), // textBody
+    chartMarkerGlyph: VivaColors.labelSecondary, // textBody
     nightBand: Color(0x1A00B2F3), // 신 습도 블루 10%
-    bodySecondary: Color(0xFF626262), // textMid
+    bodySecondary: VivaColors.labelTertiary, // textMid
     skeletonBase: Color(0xFFE0E0E0), // grey 300
     skeletonHighlight: Color(0xFFF5F5F5), // grey 100
     // 기기 상태색 (Figma A.1)
@@ -364,7 +369,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     deviceFanBg: Color(0xFFDCF5E9),
     deviceCool: Color(0xFF636DDB),
     deviceCoolBg: Color(0xFFE0E5FF),
-    deviceLed: Color(0xFFE89E00),
+    deviceLed: VivaColors.yellow,
     deviceLedBg: Color(0xFFFFF4D9),
     deviceLedGauge: Color(0xFFFFE2A3),
     deviceHeat: Color(0xFFFF6B57), // 도출값
@@ -373,20 +378,20 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     deviceMistBg:
         Color(0xFFE0F6FE), // 분무 잠금 타일 Bg — humidAccent 12% 도출(Figma 미정의)
     deviceGlyph: Color(0xFFFFFFFF),
-    deviceOff: Color(0xFFB4AEAE),
+    deviceOff: VivaColors.fillIcon,
     tempAccent: Color(0xFFF85478),
     humidAccent: Color(0xFF00B2F3),
-    surfaceTint: Color(0xFFF4F4F4),
-    segmentTrack: Color(0xFFF4F4F4),
-    surfaceHeader: Color(0xFFFAFAFA),
-    envTempValue: Color(0xFFC00306),
-    envHumidValue: Color(0xFF192553),
-    envTempPeak: Color(0xFFD61619),
-    envHumidPeak: Color(0xFF2E408C),
-    envBarNeutral: Color(0xFF626262),
-    envBarMinimum: Color(0xFFB4AEAE),
-    navSelected: Color(0xFFC00306),
-    navUnselected: Color(0xFF626262),
+    surfaceTint: VivaColors.fillButton,
+    segmentTrack: VivaColors.fillButton,
+    surfaceHeader: VivaColors.fillBack,
+    envTempValue: VivaColors.mainDark,
+    envHumidValue: VivaColors.subDark,
+    envTempPeak: VivaColors.mainLight,
+    envHumidPeak: VivaColors.subLight,
+    envBarNeutral: VivaColors.labelTertiary,
+    envBarMinimum: VivaColors.fillIcon,
+    navSelected: VivaColors.mainDark,
+    navUnselected: VivaColors.labelTertiary,
   );
 
   @override
