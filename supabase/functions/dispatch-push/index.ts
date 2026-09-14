@@ -36,6 +36,8 @@ type ClaimedDelivery = {
   attempts: number;
   lock_token: string;
 };
+
+type SendBudget = { sends: number };
 type DeliveryToken = { fcm_token: string };
 
 function response(status: number, body: Record<string, unknown>) {
@@ -197,9 +199,10 @@ async function dispatchRow(
   client: ReturnType<typeof createClient>,
   accessToken: string,
   row: ClaimedOutboxRow,
-  remainingSends: number,
+  budget: SendBudget,
   deadline: number,
 ) {
+  const remainingSends = maxFcmSends - budget.sends;
   if (remainingSends <= 0) return 0;
   const { data, error } = await withTimeout((signal) => client.rpc('claim_notification_deliveries', {
     p_outbox_id: row.id,
@@ -208,13 +211,12 @@ async function dispatchRow(
   }).abortSignal(signal));
   if (error) throw new Error('delivery_claim_failed');
 
-  let sends = 0;
   for (const delivery of (data ?? []) as ClaimedDelivery[]) {
     if (!canRetryDelivery(delivery.attempts)) {
       await completeDelivery(client, delivery, 'failed', null, 'retry_exhausted');
       continue;
     }
-    if (Date.now() >= deadline || sends >= remainingSends) {
+    if (Date.now() >= deadline || budget.sends >= maxFcmSends) {
       await completeDelivery(
         client, delivery, 'pending', new Date().toISOString(), 'budget_exhausted',
       );
@@ -226,7 +228,7 @@ async function dispatchRow(
         await completeDelivery(client, delivery, 'cancelled', null, 'delivery_ineligible');
         continue;
       }
-      sends += 1;
+      budget.sends += 1;
       const result = await sendFirebaseMessage(accessToken, buildFirebaseMessage({
         token,
         notificationId: row.notification_id,
@@ -274,7 +276,6 @@ async function dispatchRow(
     p_lock_token: row.lock_token,
   }).abortSignal(signal));
   if (finalizeError) throw new Error('outbox_finalize_failed');
-  return sends;
 }
 
 Deno.serve(async (request) => {
@@ -313,10 +314,10 @@ Deno.serve(async (request) => {
   }
 
   let processed = 0;
-  let sends = 0;
+  const budget: SendBudget = { sends: 0 };
   for (
     let outboxCount = 0;
-    outboxCount < maxOutboxRows && sends < maxFcmSends && Date.now() < deadline;
+    outboxCount < maxOutboxRows && budget.sends < maxFcmSends && Date.now() < deadline;
     outboxCount += 1
   ) {
     const { data, error } = await withTimeout((signal) => client
@@ -329,7 +330,7 @@ Deno.serve(async (request) => {
     const row = (data ?? []) as ClaimedOutboxRow[];
     if (row.length === 0) break;
     try {
-      sends += await dispatchRow(client, accessToken, row[0], maxFcmSends - sends, deadline);
+      await dispatchRow(client, accessToken, row[0], budget, deadline);
       processed += 1;
     } catch (_) {
       // A stale fence is deliberately left for lease recovery; no older worker
@@ -337,5 +338,5 @@ Deno.serve(async (request) => {
       console.error('push dispatcher could not finish an outbox row');
     }
   }
-  return response(200, { processed, sends });
+  return response(200, { processed, sends: budget.sends });
 });

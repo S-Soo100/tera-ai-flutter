@@ -348,7 +348,8 @@ supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON='{"client_email":"...","priva
 
 네트워크 요청과 Supabase RPC/update는 모두 15초 abort signal을 사용한다. 한 실행은 3분
 wall-clock budget 안에서 한 번에 outbox 한 건씩 최대 10건을 claim하고 실제 FCM 전송도 최대
-10건으로 제한한다. 아직 claim하지 않은 행은 다음 실행에 남는다. due 정렬은 `safety.*`,
+10건으로 제한한다. 각 FCM 호출 직전에 공유 전송 예산을 차감하므로 이후 delivery/finalize
+RPC가 실패해도 이 상한은 유지된다. 아직 claim하지 않은 행은 다음 실행에 남는다. due 정렬은 `safety.*`,
 `device.action.*`, 그 밖의 종류 순서이므로 notice fan-out이 긴급 알림을 막지 않는다.
 
 `notification_deliveries`는 설치별 `sent`/`failed`/재시도 상태와 fence를 보존한다. 따라서 한

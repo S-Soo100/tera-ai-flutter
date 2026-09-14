@@ -136,3 +136,14 @@ test('dispatcher bounds queue draining and prioritizes urgent due rows', () => {
   assert.match(migration, /WHEN n\.kind LIKE 'safety\.%' THEN 0/);
   assert.match(migration, /WHEN n\.kind LIKE 'device\.action\.%' THEN 1/);
 });
+
+test('dispatcher charges the global send budget before a send can later throw', () => {
+  assert.match(dispatch, /type SendBudget = \{ sends: number \};/);
+  assert.match(dispatch, /const budget: SendBudget = \{ sends: 0 \};/);
+  assert.match(dispatch, /budget\.sends \+= 1;/);
+  assert.doesNotMatch(dispatch, /sends \+= await dispatchRow/);
+  assert.ok(
+    dispatch.indexOf('budget.sends += 1;') < dispatch.indexOf('await sendFirebaseMessage'),
+    'a send attempt must consume budget before subsequent RPC/finalize failures',
+  );
+});
