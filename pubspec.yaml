@@ -1,7 +1,7 @@
 name: vivanaut
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.102.1+204
+version: 0.103.0+205
 
 environment:
   sdk: ^3.5.0
@@ -43,6 +43,8 @@ dependencies:
   visibility_detector: ^0.4.0+2
   flutter_secure_storage: ^11.1.0
   clarity_flutter: ^1.10.0
+  firebase_core: ^4.15.0
+  firebase_messaging: ^16.7.0
 
 dev_dependencies:
   # Diagnostic capture locale setup uses the existing transitive plugin directly.

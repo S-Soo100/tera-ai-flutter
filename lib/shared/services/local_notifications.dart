@@ -6,6 +6,7 @@
 library;
 
 import 'package:flutter/foundation.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
@@ -19,11 +20,19 @@ class LocalNotifications {
   final FlutterLocalNotificationsPlugin plugin =
       FlutterLocalNotificationsPlugin();
   bool _initialized = false;
+  Future<void>? _initializing;
+  bool _initialTapDelivered = false;
+  void Function(String payload)? onTap;
 
   /// 지연 초기화 — 알림을 처음 쓸 때 한 번. 앱 기동을 안 건드리고, 알림을 한
   /// 번도 안 쓰는 사용자는 timezone DB 파싱 비용도 안 낸다.
-  Future<void> ensureInitialized() async {
-    if (_initialized) return;
+  Future<void> ensureInitialized() {
+    if (_initialized) return Future.value();
+    return _initializing ??=
+        _initialize().whenComplete(() => _initializing = null);
+  }
+
+  Future<void> _initialize() async {
     tzdata.initializeTimeZones();
     try {
       // 시각 반복 알림(daily 09:15 등)은 tz.local의 벽시계 성분으로 반복된다
@@ -46,8 +55,63 @@ class LocalNotifications {
           requestSoundPermission: false,
         ),
       ),
+      onDidReceiveNotificationResponse: (response) {
+        final payload = response.payload;
+        if (payload != null && payload.isNotEmpty) onTap?.call(payload);
+      },
     );
+    final android = plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await android?.createNotificationChannel(AndroidNotificationChannel(
+      'vivanaut_default',
+      'push_channel_default_name'.tr(),
+      description: 'push_channel_default_description'.tr(),
+      importance: Importance.defaultImportance,
+    ));
+    await android?.createNotificationChannel(AndroidNotificationChannel(
+      'vivanaut_safety',
+      'push_channel_safety_name'.tr(),
+      description: 'push_channel_safety_description'.tr(),
+      importance: Importance.high,
+    ));
     _initialized = true;
+  }
+
+  Future<void> deliverInitialTap() async {
+    if (_initialTapDelivered || onTap == null) return;
+    await ensureInitialized();
+    final launch = await plugin.getNotificationAppLaunchDetails();
+    if (_initialTapDelivered) return;
+    _initialTapDelivered = true;
+    final payload = launch?.notificationResponse?.payload;
+    if (launch?.didNotificationLaunchApp == true &&
+        payload != null &&
+        payload.isNotEmpty) {
+      onTap?.call(payload);
+    }
+  }
+
+  Future<void> showRemote(
+      {required int id,
+      required String title,
+      required String body,
+      required bool safety,
+      required String payload}) async {
+    await ensureInitialized();
+    await plugin.show(
+      id: id,
+      title: title,
+      body: body,
+      payload: payload,
+      notificationDetails: NotificationDetails(
+          android: AndroidNotificationDetails(
+        safety ? 'vivanaut_safety' : 'vivanaut_default',
+        (safety ? 'push_channel_safety_name' : 'push_channel_default_name')
+            .tr(),
+        importance: safety ? Importance.high : Importance.defaultImportance,
+        priority: safety ? Priority.high : Priority.defaultPriority,
+      )),
+    );
   }
 
   /// 거부돼도 던지지 않는다 — 예약 자체는 걸어두고, OS가 표시만 막는다.

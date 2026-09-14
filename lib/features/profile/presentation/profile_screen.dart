@@ -10,6 +10,7 @@ import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../notification/presentation/notification_providers.dart';
+import '../../notification/presentation/push_providers.dart';
 import '../domain/user_profile.dart';
 import 'profile_providers.dart';
 
@@ -26,6 +27,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isUploading = false;
   bool _isSaving = false;
   String? _initializedForId;
+  bool _isLoggingOut = false;
 
   @override
   void dispose() {
@@ -96,8 +98,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _logout() async {
-    await ref.read(authRepositoryProvider).signOut();
-    if (mounted) context.go('/login');
+    if (_isLoggingOut) return;
+    _isLoggingOut = true;
+    final auth = ref.read(authRepositoryProvider);
+    try {
+      await ref.read(pushLifecycleControllerProvider).logout(auth.signOut);
+      if (mounted) context.go('/login');
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('auth_logout_error'.tr())));
+      }
+    } finally {
+      _isLoggingOut = false;
+    }
   }
 
   @override

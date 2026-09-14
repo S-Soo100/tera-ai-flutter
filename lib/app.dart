@@ -6,6 +6,8 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
 import 'features/home/presentation/fan_timer_resync_observer.dart';
+import 'features/notification/presentation/push_lifecycle_observer.dart';
+import 'features/notification/presentation/push_permission_prompt.dart';
 import 'shared/widgets/offline_overlay.dart';
 
 class App extends ConsumerWidget {
@@ -32,17 +34,23 @@ class App extends ConsumerWidget {
           data: mq.copyWith(textScaler: const TextScaler.linear(1.15)),
           // 앱 열 때(콜드 스타트·복귀) 팬 타이머 알림을 commands 이력과
           // 재동기화 — 다른 폰에서 취소된 타이머의 유령 알림을 내린다.
-          child: FanTimerResyncObserver(
-            child: Stack(
-              children: [
-                child!,
-                if (!online)
-                  Positioned.fill(
-                    child: OfflineOverlay(
-                      onRetry: () => ref.invalidate(connectivityProvider),
-                    ),
-                  ),
-              ],
+          child: PushLifecycleObserver(
+            router: router,
+            child: PushPermissionPrompt(
+              navigatorKey: router.routerDelegate.navigatorKey,
+              child: FanTimerResyncObserver(
+                child: Stack(
+                  children: [
+                    child!,
+                    if (!online)
+                      Positioned.fill(
+                        child: OfflineOverlay(
+                          onRetry: () => ref.invalidate(connectivityProvider),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
         );

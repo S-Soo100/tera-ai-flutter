@@ -1,8 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/supabase/supabase_provider.dart';
+import '../../auth/presentation/auth_providers.dart';
+import '../data/notification_repository.dart';
+import '../domain/app_notification.dart';
 
-/// 미읽음 알림 개수. 알림 저장소가 생기기 전까지 0 고정 —
-/// 뱃지 표시 로직 자체는 지금 검증 가능해야 하므로 provider로 뺀다.
-///
-/// 원래 `home_header_bar.dart`에 있었다 — PRD 재설계 1단계(2026-09-02)로
-/// 홈 헤더에서 🔔이 빠지고 진입점이 프로필 화면으로 옮겨지면서 여기로 왔다.
-final unreadNotificationCountProvider = Provider<int>((ref) => 0);
+final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
+  final client = ref.watch(supabaseClientProvider);
+  return NotificationRepository(SupabaseNotificationStore(client),
+      currentUserId: () => client.auth.currentUser?.id);
+});
+
+final userNotificationsProvider = StreamProvider.autoDispose
+    .family<List<AppNotification>, String>((ref, userId) =>
+        ref.watch(notificationRepositoryProvider).watchNotifications(userId));
+
+/// A new family instance cannot carry the previous account's cached AsyncData.
+final notificationsProvider =
+    Provider<AsyncValue<List<AppNotification>>>((ref) {
+  final userId = ref.watch(currentUserProvider.select((u) => u?.id));
+  if (userId == null) return const AsyncData([]);
+  return ref.watch(userNotificationsProvider(userId));
+});
+
+final unreadNotificationCountProvider = Provider<int>((ref) =>
+    ref
+        .watch(notificationsProvider)
+        .valueOrNull
+        ?.where((item) => !item.isRead)
+        .length ??
+    0);
