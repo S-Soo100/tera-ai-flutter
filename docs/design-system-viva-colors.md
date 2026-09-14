@@ -11,16 +11,25 @@
 | Labels/Secondary | #3C3C3C | labelSecondary | textSecondary / textBody |
 | Labels/Tertiary | #626262 | labelTertiary | bodySecondary / navUnselected / envBarNeutral |
 | Labels/Quaternary | #949090 | labelQuaternary | textTertiary / textMuted |
-| Fill/Icon | #B4AEAE | fillIcon | deviceOff / envBarMinimum |
+| Fill/Icon | #B4AEAE | fillIcon | deviceOff |
 | Fill/Line | #E3E3E3 | fillLine | border / outline / lineColor |
 | Fill/Button | #F4F4F4 | fillButton | surfaceTint / segmentTrack / overlayFaint / surfaceMuted |
 | Fill/Back | #FAFAFA | fillBack | wallpaper / overlayStrong / surfaceHeader |
-| Color/Main_Dark | #C00306 | mainDark | envTempValue / navSelected |
-| Color/Main_light | #D61619 | mainLight | envTempPeak / signalAlert / brandRed |
-| Color/Sub_dark | #192553 | subDark | envHumidValue / brandNavy / Material primary |
-| Color/Sub_light | #2E408C | subLight | envHumidPeak |
+| Color/Main_Dark | #C00306 | mainDark | navSelected |
+| Color/Main_light | #D61619 | mainLight | signalAlert / brandRed |
+| Color/Sub_dark | #192553 | subDark | brandNavy / Material primary |
+| Color/Sub_light | #2E408C | subLight | 브랜드 보조색 |
 | Color/Pink | #DA4A6A | pink | 원본색 등록, 화면 용도 미확인 |
 | Color/Yellow | #E89E00 | yellow | signalWarn / deviceLed / activeTile / heaterTint |
+
+온습도 상세는 VIVA 브랜드색과 별도로 Figma 프레임의 지표색을 그대로 쓴다.
+
+| 상세 역할 | HEX | 팔레트 역할 |
+|---|---|---|
+| 온도 대표값·최고 막대·아이콘 | #F85478 | envTempValue / envTempPeak / tempAccent |
+| 습도 대표값·최고 막대·아이콘 | #00B2F3 | envHumidValue / envHumidPeak / humidAccent |
+| 일반 막대 | #626262 | envBarNeutral |
+| 최저 막대 | #A9B3BE | envBarMinimum |
 
 ## 적용 원칙
 
@@ -30,10 +39,10 @@
 - 기존 `textTertiary`는 가장 흐린 보조 글자 역할이므로 Labels/Quaternary에 연결한다.
   Labels/Tertiary는 기존 `bodySecondary`다. 기존 소비처의 위계를 보존한다.
 - 카드·탭바는 흰색을 유지하고 페이지 바닥은 Fill/Back을 사용한다.
-- 브랜드 원본 이름이 Material 역할을 자동 결정하지 않는다. 기존 남색 버튼,
-  빨강 선택 탭, 온습도 대표값·최고값의 배정을 유지한다.
-- Pink의 사용처가 확인되지 않아 온도 차트의 기존 Asset 핑크 `#F85478`에 대입하지 않는다.
-  스크린샷 밖의 기기색·차트색·배지색과 다크 도출값도 기존 정의를 유지한다.
+- 브랜드 원본 이름이 Material 역할을 자동 결정하지 않는다. 기존 남색 버튼과
+  빨강 선택 탭은 유지하고, 온습도 상세는 별도 지표색을 사용한다.
+- VIVA 변수의 Pink `#DA4A6A`와 온도 지표색 `#F85478`은 다른 색이다.
+  스크린샷 밖의 기기색·배지색과 다크 도출값은 기존 정의를 유지한다.
 - `/design-test`의 A/B 비교용 토큰은 독립된 과거 디자인이므로 수정하지 않는다.
 
 ## 유저 체험 확인
