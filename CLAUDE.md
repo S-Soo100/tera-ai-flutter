@@ -14,6 +14,12 @@
 >
 > 아직 옛 브랜드가 남은 곳: `assets/images/logo_wordmark.png`(영상 워터마크에 `terra.ai`), 앱 아이콘, 저장소명 `tera-ai-flutter`, git 원격.
 
+## Figma 재설계 사용자 확정 (2026-09-15, 구현 대기)
+
+- 새 디자인·동작의 확정 기준은 [`docs/superpowers/specs/2026-09-15-figma-redesign-approved-design.md`](docs/superpowers/specs/2026-09-15-figma-redesign-approved-design.md)다. 해당 재설계 구현에서는 아래 과거 결정과 충돌할 경우 이 확정 기획을 우선한다.
+- [7단계 구현계획](docs/superpowers/plans/2026-09-15-figma-redesign-implementation.md), [서버 담당·직접 수행 구분](docs/handoffs/2026-09-15-redesign-server-work-split.md)을 함께 읽는다.
+- 현재 승인·완료 범위는 원본 에셋 보관과 기획·계획 문서 저장이다. 문서의 후속 앱 구현·DB 변경·외부 요청은 실행 완료된 것으로 취급하지 않는다.
+
 ## Final Design 사용자 변경 결정 (2026-09-14)
 
 이번 결정이 아래 과거 회전 금지/팬 원탭/하루 조회 정책보다 우선한다. 브랜치 `codex/final-design-implementation`; 결과는 `docs/design-audits/2026-09-14-implementation-results.md`.
