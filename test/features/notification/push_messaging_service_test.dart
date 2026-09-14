@@ -22,6 +22,7 @@ void main() {
       expect(await service.getPermission(), PushPermission.unavailable);
       expect(await service.requestPermission(), PushPermission.unavailable);
       expect(await service.getToken(), isNull);
+      await service.deleteToken();
       expect(await service.getInitialMessage(), isNull);
       expect(await service.onMessage.toList(), isEmpty);
     }

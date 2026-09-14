@@ -37,6 +37,7 @@ class PushLifecycleController {
   final _displayed = <String>{};
   final _opened = <String>{};
   Future<void> _registrations = Future.value();
+  Future<void>? _transportDeletion;
   String? _userId;
   int _generation = 0;
   bool _disposed = false;
@@ -68,12 +69,26 @@ class PushLifecycleController {
 
   Future<void> setUser(String? userId) async {
     if (_disposed) return;
+    final previousUserId = _userId;
     if (_userId != userId) {
       _generation++;
       _displayed.clear();
       _opened.clear();
       _userId = userId;
-      if (userId != null && !_logoutInProgress) _loggingOut = false;
+      if (userId == null && previousUserId != null && !_logoutInProgress) {
+        // Auth has already disappeared (for example a REST/WebRTC 401). The
+        // remote RPC no longer has a session, but the transport can be revoked.
+        _loggingOut = true;
+        _pendingTap = null;
+        await _deleteTransport();
+        return;
+      }
+      if (userId != null && !_logoutInProgress) {
+        final generation = _generation;
+        await _transportDeletion;
+        if (_disposed || _generation != generation || _logoutInProgress) return;
+        _loggingOut = false;
+      }
     }
     await synchronize();
     final pending = _pendingTap;
@@ -147,6 +162,7 @@ class PushLifecycleController {
           await devices.deactivate(await preferences.installationId());
         }
       }, 'deactivation');
+      await _deleteTransport();
       await signOut();
       _userId = null;
     } catch (_) {
@@ -157,6 +173,12 @@ class PushLifecycleController {
       _logoutInProgress = false;
     }
   }
+
+  Future<void> _deleteTransport() => _transportDeletion ??= _registrations
+      .then((_) => _guard(() async {
+            if (messaging.supported) await messaging.deleteToken();
+          }, 'transport_deletion'))
+      .whenComplete(() => _transportDeletion = null);
 
   Future<void> foreground(PushMessage message) async {
     final userId = _userId;

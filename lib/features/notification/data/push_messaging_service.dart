@@ -36,6 +36,7 @@ abstract interface class PushMessagingPort {
   Future<PushPermission> getPermission();
   Future<PushPermission> requestPermission();
   Future<String?> getToken();
+  Future<void> deleteToken();
   Stream<String> get onTokenRefresh;
   Stream<PushMessage> get onMessage;
   Stream<PushMessage> get onMessageOpenedApp;
@@ -88,6 +89,11 @@ class PushMessagingService implements PushMessagingPort {
   @override
   Future<String?> getToken() async =>
       supported ? await _messaging.getToken() : null;
+  @override
+  Future<void> deleteToken() async {
+    if (supported) await _messaging.deleteToken();
+  }
+
   @override
   Stream<String> get onTokenRefresh =>
       supported ? _messaging.onTokenRefresh : const Stream.empty();

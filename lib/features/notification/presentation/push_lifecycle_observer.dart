@@ -98,9 +98,16 @@ class _PushLifecycleObserverState extends ConsumerState<PushLifecycleObserver> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(currentUserProvider.select((u) => u?.id), (_, __) {
-      // Auth can update during build; defer state provider writes until the frame ends.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _routeChanged());
+    ref.listen(currentUserProvider.select((u) => u?.id), (_, userId) {
+      final controller = _controller;
+      if (_ready && controller != null) {
+        // Preserve every auth transition, including a direct signOut followed
+        // by sign-in within one frame. Controller provider writes are async.
+        _lastUser = userId;
+        unawaited(controller.setUser(userId));
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _routeChanged());
+      }
     });
     return widget.child;
   }

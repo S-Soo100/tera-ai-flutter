@@ -41,8 +41,8 @@ void main() {
     final store = MemoryNotificationStore()
       ..rows.add(notificationRow('n1', 'a', '2026-09-15T00:00:00Z'));
     final repo = NotificationRepository(store, currentUserId: () => 'a');
-    final messaging = FakePushMessaging();
     final devices = RecordingPushDevices();
+    final messaging = FakePushMessaging()..lifecycleEvents = devices.operations;
     final controller = PushLifecycleController(
         messaging: messaging,
         devices: devices,
@@ -83,7 +83,7 @@ void main() {
     expect(find.byKey(const Key('profile_notifications_dot')), findsNothing);
     await tester.tap(find.text('auth_logout'));
     await tester.pumpAndSettle();
-    expect(devices.operations, ['deactivate', 'signout']);
+    expect(devices.operations, ['deactivate', 'deleteToken', 'signout']);
     expect(find.text('login'), findsOneWidget);
   });
 }

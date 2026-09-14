@@ -11,6 +11,10 @@ class FakePushMessaging implements PushMessagingPort {
   int requests = 0;
   String? token = 'test-token';
   Completer<String?>? pendingToken;
+  int deletes = 0;
+  bool failDelete = false;
+  List<String>? lifecycleEvents;
+  Completer<void>? pendingDeletion;
   PushMessage? initial;
   final tokens = StreamController<String>.broadcast();
   final messages = StreamController<PushMessage>.broadcast();
@@ -26,7 +30,17 @@ class FakePushMessaging implements PushMessagingPort {
   }
 
   @override
-  Future<String?> getToken() => pendingToken?.future ?? Future.value(token);
+  Future<String?> getToken() =>
+      pendingToken?.future ?? Future.value(token ??= 'new-login-token');
+  @override
+  Future<void> deleteToken() async {
+    deletes++;
+    lifecycleEvents?.add('deleteToken');
+    await pendingDeletion?.future;
+    if (failDelete) throw StateError('offline');
+    token = null;
+  }
+
   @override
   Stream<String> get onTokenRefresh => tokens.stream;
   @override
@@ -153,6 +167,99 @@ void main() {
     await controller.start();
     await controller.setUser('a');
     expect(devices.operations, isEmpty);
+  });
+
+  test(
+      'logout deactivates then deletes transport before signout and next login gets a new token',
+      () async {
+    messaging.lifecycleEvents = devices.operations;
+    await controller.setUser('a');
+    devices.operations.clear();
+    await controller.logout(() async {
+      devices.operations.add('signout');
+    });
+    expect(devices.operations, ['deactivate', 'deleteToken', 'signout']);
+    await controller.setUser('b');
+    expect(devices.operations.last,
+        'register:b:4da7f48b-0000-4000-8000-111111111111:new-login-token:0.103.0+205:ko');
+  });
+
+  test('remote deactivation failure still deletes transport and signs out',
+      () async {
+    messaging.lifecycleEvents = devices.operations;
+    devices.failDeactivation = true;
+    await controller.setUser('a');
+    devices.operations.clear();
+    await controller.logout(() async {
+      devices.operations.add('signout');
+    });
+    expect(devices.operations, ['deactivate', 'deleteToken', 'signout']);
+  });
+
+  test('transport delete failure does not stop signout', () async {
+    messaging.lifecycleEvents = devices.operations;
+    messaging.failDelete = true;
+    await controller.setUser('a');
+    devices.operations.clear();
+    await controller.logout(() async {
+      devices.operations.add('signout');
+    });
+    expect(devices.operations, ['deactivate', 'deleteToken', 'signout']);
+  });
+
+  test('forced auth loss deletes transport once without remote calls',
+      () async {
+    messaging.lifecycleEvents = devices.operations;
+    await controller.setUser('a');
+    devices.operations.clear();
+    await controller.setUser(null);
+    await controller.setUser(null);
+    expect(devices.operations, ['deleteToken']);
+    expect(messaging.deletes, 1);
+  });
+
+  test('refresh during explicit logout transport deletion never registers',
+      () async {
+    messaging.lifecycleEvents = devices.operations;
+    await controller.start();
+    await controller.setUser('a');
+    devices.operations.clear();
+    messaging.pendingDeletion = Completer<void>();
+    final logout = controller.logout(() async {
+      devices.operations.add('signout');
+    });
+    await Future<void>.delayed(Duration.zero);
+    await controller.setUser('a');
+    messaging.tokens.add('late-token');
+    await Future<void>.delayed(Duration.zero);
+    final duringDelete = List<String>.of(devices.operations);
+    messaging.pendingDeletion!.complete();
+    await logout;
+    expect(duringDelete, ['deactivate', 'deleteToken']);
+    expect(devices.operations, ['deactivate', 'deleteToken', 'signout']);
+  });
+
+  test(
+      'new login waits for forced deletion and cannot register a refresh from the old transport',
+      () async {
+    messaging.lifecycleEvents = devices.operations;
+    await controller.start();
+    await controller.setUser('a');
+    devices.operations.clear();
+    messaging.pendingDeletion = Completer<void>();
+    final forcedLogout = controller.setUser(null);
+    await Future<void>.delayed(Duration.zero);
+    final newLogin = controller.setUser('b');
+    messaging.tokens.add('stale-refresh');
+    await Future<void>.delayed(Duration.zero);
+    final duringDelete = List<String>.of(devices.operations);
+    messaging.pendingDeletion!.complete();
+    await Future.wait([forcedLogout, newLogin]);
+    expect(duringDelete, ['deleteToken']);
+    expect(devices.operations, [
+      'deleteToken',
+      'register:b:4da7f48b-0000-4000-8000-111111111111:new-login-token:0.103.0+205:ko'
+    ]);
   });
 
   test('resume and token refresh during delayed deactivation cannot register',
