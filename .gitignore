@@ -37,6 +37,7 @@ migrate_working_dir/
 /build/
 /coverage/
 /.worktrees/
+/supabase/.temp/
 
 # Kotlin compiler daemon session cache (build artifact)
 **/.kotlin/
