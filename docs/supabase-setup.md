@@ -342,9 +342,14 @@ supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON='{"client_email":"...","priva
 함수는 `claim_notification_outbox(p_limit)` RPC로 예약 시각이 지난 `pending` 행과 10분을
 넘긴 `processing` lease를 `FOR UPDATE SKIP LOCKED`로 원자적으로 `processing`으로 가져온다.
 각 claim은 새 `lock_token`을 받고, delivery claim·결과 기록·outbox roll-up은 모두 이 token을
-요구한다. 늦게 끝난 worker는 새 worker의 상태를 덮어쓸 수 없다. 네트워크 요청과 Supabase
-RPC/update는 모두 15초 abort signal을 사용하며, 한 실행은 outbox 1건과 FCM 전송 최대 10건만
-처리하므로 10분 lease보다 충분히 짧다.
+요구한다. 늦게 끝난 worker는 새 worker의 상태를 덮어쓸 수 없다. delivery claim은 token을
+반환하지 않으며, send 직전에 별도 service-role RPC가 delivery/outbox fence, enabled 상태,
+현재 기기 소유자와 outbox 사용자 일치를 다시 확인한 뒤에만 최신 token을 반환한다.
+
+네트워크 요청과 Supabase RPC/update는 모두 15초 abort signal을 사용한다. 한 실행은 3분
+wall-clock budget 안에서 한 번에 outbox 한 건씩 최대 10건을 claim하고 실제 FCM 전송도 최대
+10건으로 제한한다. 아직 claim하지 않은 행은 다음 실행에 남는다. due 정렬은 `safety.*`,
+`device.action.*`, 그 밖의 종류 순서이므로 notice fan-out이 긴급 알림을 막지 않는다.
 
 `notification_deliveries`는 설치별 `sent`/`failed`/재시도 상태와 fence를 보존한다. 따라서 한
 설치가 성공한 뒤 다른 설치만 429/5xx로 재시도되어도 성공 설치에는 같은 push를 다시 보내지
@@ -357,7 +362,13 @@ FCM 응답의 `error.details[]`에서 typed `google.firebase.fcm.v1.FcmError`의
 `INVALID_ARGUMENT` 및 형식이 깨진 오류 payload는 token을 건드리지 않는 영구 실패다. 429와 5xx는 `Retry-After`를 우선하고,
 첫 quota/503 재시도는 최소 60초이며 이후 지수 backoff로 delivery만 재예약한다. 그 밖의
 4xx는 token·credential을 기록하지 않는 안전한 오류 코드와 함께 영구 실패로 처리한다.
-모든 활성 설치가 처리되면 outbox는 `sent`가 된다.
+delivery attempt는 최대 8회(네트워크 catch 포함)이며, 8번째 claim은 `retry_exhausted`로
+영구 실패한다. 모든 활성 설치가 처리되면 outbox는 `sent`가 된다.
+
+모든 notification security-definer 함수는 `PUBLIC`, `anon`, `authenticated`의 EXECUTE를
+명시적으로 revoke한 뒤 최소 권한만 grant한다. 기기 등록/해제·물통 일정 RPC만
+`authenticated`에 열리고, outbox claim·delivery claim·token eligibility·완료·finalize RPC는
+`service_role`만 호출할 수 있다.
 
 ### 외부 이벤트 ingest 계약
 

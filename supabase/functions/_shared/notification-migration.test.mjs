@@ -78,10 +78,61 @@ test('delivery recovery keeps active processing work unfinished and fences expli
 });
 
 test('dispatcher caps work at one outbox and ten deliveries with abortable database calls', () => {
-  assert.match(dispatch, /const outboxClaimLimit = 1/);
   assert.match(dispatch, /const deliveryClaimLimit = 10/);
-  assert.match(dispatch, /p_limit: outboxClaimLimit/);
-  assert.match(dispatch, /p_limit: deliveryClaimLimit/);
+  assert.match(dispatch, /p_limit: 1/);
+  assert.match(dispatch, /p_limit: Math\.min\(deliveryClaimLimit, remainingSends\)/);
   assert.match(dispatch, /\.abortSignal\(signal\)/);
   assert.match(dispatch, /return await consume\(response\)/);
+});
+
+test('notification security-definer functions revoke every client role before narrow grants', () => {
+  const internalFunctions = [
+    'notification_event_after_insert()',
+    'register_push_device(UUID, TEXT, TEXT, TEXT, TEXT)',
+    'deactivate_push_device(UUID)',
+    'claim_notification_outbox(INTEGER)',
+    'claim_notification_deliveries(UUID, UUID, INTEGER)',
+    'get_notification_delivery_token(UUID, UUID, UUID)',
+    'complete_notification_delivery(UUID, UUID, TEXT, TIMESTAMPTZ, TEXT)',
+    'finalize_notification_outbox(UUID, UUID)',
+    'notify_community_comment()',
+    'notify_community_like_digest()',
+    'notify_community_notice()',
+    'schedule_water_tank_notification(TIMESTAMPTZ, UUID, TEXT)',
+  ];
+  for (const signature of internalFunctions) {
+    const escaped = signature.replace(/[()]/g, '\\$&').replace(/ /g, '\\s+');
+    assert.match(
+      migration,
+      new RegExp(`REVOKE EXECUTE ON FUNCTION public\\.${escaped} FROM PUBLIC, anon, authenticated;`),
+    );
+  }
+  assert.doesNotMatch(
+    migration,
+    /GRANT EXECUTE ON FUNCTION public\.(claim_notification_outbox|claim_notification_deliveries|get_notification_delivery_token|complete_notification_delivery|finalize_notification_outbox)[\s\S]*?TO (?:anon|authenticated|PUBLIC)/,
+  );
+});
+
+test('delivery claim omits tokens and eligibility checks the current fenced account', () => {
+  const claim = migration.match(
+    /CREATE OR REPLACE FUNCTION public\.claim_notification_deliveries\([\s\S]*?\n\$\$;/,
+  )?.[0];
+  const eligibility = migration.match(
+    /CREATE OR REPLACE FUNCTION public\.get_notification_delivery_token\([\s\S]*?\n\$\$;/,
+  )?.[0];
+  assert.ok(claim && eligibility, 'claim and eligibility functions must exist');
+  assert.doesNotMatch(claim, /fcm_token/);
+  assert.match(eligibility, /p\.enabled = true/);
+  assert.match(eligibility, /p\.user_id = o\.user_id/);
+  assert.match(eligibility, /d\.lock_token = p_delivery_lock_token/);
+});
+
+test('dispatcher bounds queue draining and prioritizes urgent due rows', () => {
+  assert.match(dispatch, /const maxOutboxRows = 10/);
+  assert.match(dispatch, /const maxFcmSends = 10/);
+  assert.match(dispatch, /const invocationBudgetMs = 180_000/);
+  assert.match(dispatch, /for\s*\(\s*let outboxCount = 0;\s*outboxCount < maxOutboxRows/);
+  assert.match(dispatch, /remainingSends/);
+  assert.match(migration, /WHEN n\.kind LIKE 'safety\.%' THEN 0/);
+  assert.match(migration, /WHEN n\.kind LIKE 'device\.action\.%' THEN 1/);
 });

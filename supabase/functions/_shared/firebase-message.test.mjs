@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildFirebaseMessage,
   classifyFcmFailure,
+  canRetryDelivery,
   extractFcmFailure,
   retryDelaySeconds,
 } from './firebase-message.mjs';
@@ -69,4 +70,9 @@ test('does not disable tokens for generic invalid arguments or malformed envelop
 test('honors Retry-After and waits at least one minute before the first quota retry', () => {
   assert.equal(retryDelaySeconds(1, 0, 429), 60);
   assert.equal(retryDelaySeconds(1, 120, 503), 120);
+});
+
+test('retries through attempt seven and terminates attempt eight', () => {
+  assert.equal(canRetryDelivery(7), true);
+  assert.equal(canRetryDelivery(8), false);
 });

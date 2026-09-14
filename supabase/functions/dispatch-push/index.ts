@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   buildFirebaseMessage,
+  canRetryDelivery,
   classifyFcmFailure,
   extractFcmFailure,
   retryDelaySeconds,
@@ -10,8 +11,10 @@ import { isServiceRoleRequest } from '../_shared/dispatch-push-auth.mjs';
 const firebaseScope = 'https://www.googleapis.com/auth/firebase.messaging';
 const firebaseTokenUrl = 'https://oauth2.googleapis.com/token';
 const firebaseProjectId = 'vivanaut-app';
-const outboxClaimLimit = 1;
 const deliveryClaimLimit = 10;
+const maxOutboxRows = 10;
+const maxFcmSends = 10;
+const invocationBudgetMs = 180_000;
 const requestTimeoutMs = 15_000;
 const jsonHeaders = { 'content-type': 'application/json; charset=utf-8' };
 
@@ -30,10 +33,10 @@ type ClaimedOutboxRow = {
 type ClaimedDelivery = {
   id: string;
   push_device_id: string;
-  fcm_token: string;
   attempts: number;
   lock_token: string;
 };
+type DeliveryToken = { fcm_token: string };
 
 function response(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), { status, headers: jsonHeaders });
@@ -162,7 +165,7 @@ async function sendFirebaseMessage(accessToken: string, message: unknown) {
 async function completeDelivery(
   client: ReturnType<typeof createClient>,
   delivery: ClaimedDelivery,
-  status: 'pending' | 'sent' | 'failed',
+  status: 'pending' | 'sent' | 'failed' | 'cancelled',
   scheduledAt: string | null,
   errorCode: string | null,
 ) {
@@ -176,22 +179,56 @@ async function completeDelivery(
   if (error) throw new Error('delivery_update_failed');
 }
 
+async function eligibleDeliveryToken(
+  client: ReturnType<typeof createClient>,
+  row: ClaimedOutboxRow,
+  delivery: ClaimedDelivery,
+) {
+  const { data, error } = await withTimeout((signal) => client.rpc('get_notification_delivery_token', {
+    p_delivery_id: delivery.id,
+    p_delivery_lock_token: delivery.lock_token,
+    p_outbox_lock_token: row.lock_token,
+  }).abortSignal(signal));
+  if (error) throw new Error('delivery_eligibility_failed');
+  return ((data ?? []) as DeliveryToken[])[0]?.fcm_token;
+}
+
 async function dispatchRow(
   client: ReturnType<typeof createClient>,
   accessToken: string,
   row: ClaimedOutboxRow,
+  remainingSends: number,
+  deadline: number,
 ) {
+  if (remainingSends <= 0) return 0;
   const { data, error } = await withTimeout((signal) => client.rpc('claim_notification_deliveries', {
     p_outbox_id: row.id,
     p_lock_token: row.lock_token,
-    p_limit: deliveryClaimLimit,
+    p_limit: Math.min(deliveryClaimLimit, remainingSends),
   }).abortSignal(signal));
   if (error) throw new Error('delivery_claim_failed');
 
+  let sends = 0;
   for (const delivery of (data ?? []) as ClaimedDelivery[]) {
+    if (!canRetryDelivery(delivery.attempts)) {
+      await completeDelivery(client, delivery, 'failed', null, 'retry_exhausted');
+      continue;
+    }
+    if (Date.now() >= deadline || sends >= remainingSends) {
+      await completeDelivery(
+        client, delivery, 'pending', new Date().toISOString(), 'budget_exhausted',
+      );
+      continue;
+    }
     try {
+      const token = await eligibleDeliveryToken(client, row, delivery);
+      if (!token) {
+        await completeDelivery(client, delivery, 'cancelled', null, 'delivery_ineligible');
+        continue;
+      }
+      sends += 1;
       const result = await sendFirebaseMessage(accessToken, buildFirebaseMessage({
-        token: delivery.fcm_token,
+        token,
         notificationId: row.notification_id,
         kind: row.kind,
         title: row.title,
@@ -210,7 +247,7 @@ async function dispatchRow(
           .from('push_devices')
           .update({ enabled: false, updated_at: new Date().toISOString() })
           .eq('id', delivery.push_device_id)
-          .eq('fcm_token', delivery.fcm_token)
+          .eq('fcm_token', token)
           .abortSignal(signal));
         if (disableError) throw new Error('push_device_disable_failed');
         await completeDelivery(client, delivery, 'failed', null, errorCode);
@@ -237,10 +274,12 @@ async function dispatchRow(
     p_lock_token: row.lock_token,
   }).abortSignal(signal));
   if (finalizeError) throw new Error('outbox_finalize_failed');
+  return sends;
 }
 
 Deno.serve(async (request) => {
   if (request.method !== 'POST') return response(400, { error: 'POST is required' });
+  const deadline = Date.now() + invocationBudgetMs;
 
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!serviceRoleKey || !isServiceRoleRequest(request.headers, serviceRoleKey)) {
@@ -273,18 +312,24 @@ Deno.serve(async (request) => {
     return response(502, { error: 'push dispatcher is unavailable' });
   }
 
-  const { data, error } = await withTimeout((signal) => client
-    .rpc('claim_notification_outbox', { p_limit: outboxClaimLimit })
-    .abortSignal(signal));
-  if (error) {
-    console.error('push dispatcher could not claim outbox rows', { code: error.code });
-    return response(500, { error: 'push dispatcher is unavailable' });
-  }
-
   let processed = 0;
-  for (const row of (data ?? []) as ClaimedOutboxRow[]) {
+  let sends = 0;
+  for (
+    let outboxCount = 0;
+    outboxCount < maxOutboxRows && sends < maxFcmSends && Date.now() < deadline;
+    outboxCount += 1
+  ) {
+    const { data, error } = await withTimeout((signal) => client
+      .rpc('claim_notification_outbox', { p_limit: 1 })
+      .abortSignal(signal));
+    if (error) {
+      console.error('push dispatcher could not claim outbox rows', { code: error.code });
+      return response(500, { error: 'push dispatcher is unavailable' });
+    }
+    const row = (data ?? []) as ClaimedOutboxRow[];
+    if (row.length === 0) break;
     try {
-      await dispatchRow(client, accessToken, row);
+      sends += await dispatchRow(client, accessToken, row[0], maxFcmSends - sends, deadline);
       processed += 1;
     } catch (_) {
       // A stale fence is deliberately left for lease recovery; no older worker
@@ -292,5 +337,5 @@ Deno.serve(async (request) => {
       console.error('push dispatcher could not finish an outbox row');
     }
   }
-  return response(200, { processed });
+  return response(200, { processed, sends });
 });

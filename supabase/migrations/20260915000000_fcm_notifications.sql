@@ -350,10 +350,15 @@ BEGIN
   WITH due AS (
     SELECT o.id
     FROM public.notification_outbox AS o
+    JOIN public.app_notifications AS n ON n.id = o.notification_id
     WHERE (o.status = 'pending' AND o.scheduled_at <= now())
       OR (o.status = 'processing'
           AND o.locked_at < now() - interval '10 minutes')
-    ORDER BY o.scheduled_at, o.created_at
+    ORDER BY CASE
+      WHEN n.kind LIKE 'safety.%' THEN 0
+      WHEN n.kind LIKE 'device.action.%' THEN 1
+      ELSE 2
+    END, o.scheduled_at, o.created_at
     LIMIT p_limit
     FOR UPDATE SKIP LOCKED
   ), claimed AS (
@@ -393,7 +398,6 @@ CREATE OR REPLACE FUNCTION public.claim_notification_deliveries(
 RETURNS TABLE (
   id UUID,
   push_device_id UUID,
-  fcm_token TEXT,
   attempts INTEGER,
   lock_token UUID
 )
@@ -444,9 +448,38 @@ BEGIN
     WHERE d.id = due.id
     RETURNING d.id, d.push_device_id, d.attempts, d.lock_token
   )
-  SELECT c.id, c.push_device_id, p.fcm_token, c.attempts, c.lock_token
+  SELECT c.id, c.push_device_id, c.attempts, c.lock_token
   FROM claimed AS c
   JOIN public.push_devices AS p ON p.id = c.push_device_id;
+END;
+$$;
+
+-- A delivery's device may have been reassigned or refreshed after claim. Read
+-- the token only immediately before send, while both delivery and outbox locks
+-- are still held and the device still belongs to the intended account.
+CREATE OR REPLACE FUNCTION public.get_notification_delivery_token(
+  p_delivery_id UUID,
+  p_delivery_lock_token UUID,
+  p_outbox_lock_token UUID
+)
+RETURNS TABLE (fcm_token TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT p.fcm_token
+  FROM public.notification_deliveries AS d
+  JOIN public.notification_outbox AS o ON o.id = d.outbox_id
+  JOIN public.push_devices AS p ON p.id = d.push_device_id
+  WHERE d.id = p_delivery_id
+    AND d.status = 'processing'
+    AND d.lock_token = p_delivery_lock_token
+    AND o.status = 'processing'
+    AND o.lock_token = p_outbox_lock_token
+    AND p.enabled = true
+    AND p.user_id = o.user_id;
 END;
 $$;
 
@@ -724,21 +757,23 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.notification_event_after_insert() FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.register_push_device(UUID, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.deactivate_push_device(UUID) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.claim_notification_outbox(INTEGER) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.claim_notification_deliveries(UUID, UUID, INTEGER) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.complete_notification_delivery(UUID, UUID, TEXT, TIMESTAMPTZ, TEXT) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.finalize_notification_outbox(UUID, UUID) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.notify_community_comment() FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.notify_community_like_digest() FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.notify_community_notice() FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION public.schedule_water_tank_notification(TIMESTAMPTZ, UUID, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.notification_event_after_insert() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.register_push_device(UUID, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.deactivate_push_device(UUID) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.claim_notification_outbox(INTEGER) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.claim_notification_deliveries(UUID, UUID, INTEGER) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.get_notification_delivery_token(UUID, UUID, UUID) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.complete_notification_delivery(UUID, UUID, TEXT, TIMESTAMPTZ, TEXT) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.finalize_notification_outbox(UUID, UUID) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.notify_community_comment() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.notify_community_like_digest() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.notify_community_notice() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.schedule_water_tank_notification(TIMESTAMPTZ, UUID, TEXT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.register_push_device(UUID, TEXT, TEXT, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.deactivate_push_device(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.schedule_water_tank_notification(TIMESTAMPTZ, UUID, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_notification_outbox(INTEGER) TO service_role;
 GRANT EXECUTE ON FUNCTION public.claim_notification_deliveries(UUID, UUID, INTEGER) TO service_role;
+GRANT EXECUTE ON FUNCTION public.get_notification_delivery_token(UUID, UUID, UUID) TO service_role;
 GRANT EXECUTE ON FUNCTION public.complete_notification_delivery(UUID, UUID, TEXT, TIMESTAMPTZ, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.finalize_notification_outbox(UUID, UUID) TO service_role;

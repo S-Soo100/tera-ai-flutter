@@ -31,6 +31,11 @@ export function buildFirebaseMessage({
 }
 
 const maxRetryDelaySeconds = 60 * 60;
+const maxDeliveryAttempts = 8;
+
+export function canRetryDelivery(attempts) {
+  return Number.isInteger(attempts) && attempts < maxDeliveryAttempts;
+}
 
 export function extractFcmFailure(payload) {
   const error = payload?.error;
