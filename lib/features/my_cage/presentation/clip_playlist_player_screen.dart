@@ -43,15 +43,19 @@ class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
     this.playFromSec = const {},
     this.source = ClipPlaybackSource.single,
     this.cameraId,
-    this.hourStart,
-    this.hourEndExclusive,
+    this.rangeStart,
+    this.rangeEndExclusive,
+    this.nextCursor,
+    this.hasMore = false,
     this.highlightBatchId,
   });
 
   final String clipId;
   final ClipPlaybackSource source;
   final String? cameraId, highlightBatchId;
-  final DateTime? hourStart, hourEndExclusive;
+  final DateTime? rangeStart, rangeEndExclusive;
+  final MotionClipCursor? nextCursor;
+  final bool hasMore;
   final List<String>? playlist;
 
   /// clip id → 재생 시작점(초). [ClipPlaylistArgs.playFromSec].
@@ -98,6 +102,10 @@ class _ClipPlaylistPlayerScreenState
   bool _busy = false; // 저장/공유/즐겨찾기 진행 중
   bool _isPlaying = false;
   bool _autoAdvanced = false; // 클립당 자동 다음 1회 가드
+  MotionClipCursor? _nextCursor;
+  late bool _hasMore;
+
+  static const _prefetchThreshold = 12;
 
   /// 현재 클립이 서버 시작점(`play_from_sec`)으로 중간에서 시작했는지 —
   Future<void> _seekTo(Duration position) async {
@@ -144,13 +152,15 @@ class _ClipPlaylistPlayerScreenState
     _playlistSeed =
         (route: _orientationKey, ids: ids, index: ids.indexOf(widget.clipId));
     final initialIndex = ids.indexOf(widget.clipId);
+    _nextCursor = widget.nextCursor;
+    _hasMore = widget.hasMore;
     _filmstripSeed = (route: _orientationKey, initialIndex: initialIndex);
     _filmstripController = ScrollController(
       initialScrollOffset: ClipFilmstrip.offsetForIndex(initialIndex),
     );
     _load();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(_completeHourPlaylist());
+      if (mounted) _loadMoreIfNearEnd(initialIndex);
     });
   }
 
@@ -162,44 +172,55 @@ class _ClipPlaylistPlayerScreenState
     super.dispose();
   }
 
-  Future<void> _completeHourPlaylist() async {
+  void _loadMoreIfNearEnd(int index) {
+    if (_hasMore && _playlist.length - index <= _prefetchThreshold) {
+      unawaited(_loadMoreFeedPlaylist());
+    }
+  }
+
+  /// 사진 앱처럼 필름스트립 끝에 가까워졌을 때 다음 페이지를 붙인다.
+  /// 기간 미선택은 전체 기간, 기간 선택은 그 범위 전체다.
+  Future<void> _loadMoreFeedPlaylist() async {
     final owner = ref.read(currentUserProvider)?.id;
     final cameraId = widget.cameraId;
-    final start = widget.hourStart;
-    final end = widget.hourEndExclusive;
-    if (widget.source != ClipPlaybackSource.hour ||
+    if (widget.source != ClipPlaybackSource.feed ||
         owner == null ||
         cameraId == null ||
-        start == null ||
-        end == null) {
+        !_hasMore ||
+        _nextCursor == null) {
       return;
     }
     if (ref.read(playerPlaylistLoadingProvider(_orientationKey))) return;
-    final repository = ref.read(motionClipRepositoryProvider);
     ref.read(playerPlaylistLoadingProvider(_orientationKey).notifier).state =
         true;
     ref.read(playerPlaylistErrorProvider(_orientationKey).notifier).state =
         false;
-    MotionClipCursor? cursor;
-    final ids = <String>[];
     try {
-      do {
-        final page = await repository.listPage((
-          ownerId: owner,
-          cameraId: cameraId,
-          range: (start: start, endExclusive: end)
-        ), before: cursor);
-        if (!mounted || ref.read(currentUserProvider)?.id != owner) return;
-        ids.addAll(page.items.map((clip) => clip.id));
-        final current = _currentClipId;
-        final expanded = {...ids, ..._playlist}.toList(growable: false);
-        _playlist = expanded;
-        _index = expanded.indexOf(current);
-        _setFilmstripPreview(_index);
-        _centerFilmstrip(_index, animate: false);
-        cursor = page.nextCursor;
-        if (!page.hasMore) break;
-      } while (cursor != null);
+      final query = (
+        ownerId: owner,
+        cameraId: cameraId,
+        range: widget.rangeStart != null && widget.rangeEndExclusive != null
+            ? (
+                start: widget.rangeStart!,
+                endExclusive: widget.rangeEndExclusive!
+              )
+            : null
+      );
+      final page = await ref.read(playerFeedPageLoaderProvider(query))(
+        _nextCursor,
+      );
+      if (!mounted || ref.read(currentUserProvider)?.id != owner) return;
+      final current = _currentClipId;
+      final expanded = {
+        ..._playlist,
+        ...page.items.map((clip) => clip.id),
+      }.toList(growable: false);
+      _playlist = expanded;
+      _index = expanded.indexOf(current);
+      _nextCursor = page.nextCursor;
+      _hasMore = page.hasMore;
+      _setFilmstripPreview(_index);
+      _centerFilmstrip(_index, animate: false);
     } catch (_) {
       if (mounted) {
         ref.read(playerPlaylistErrorProvider(_orientationKey).notifier).state =
@@ -353,6 +374,7 @@ class _ClipPlaylistPlayerScreenState
   void _selectClip(int next, {bool centerFilmstrip = true}) {
     if (next < 0 || next >= _playlist.length) return;
     _setFilmstripPreview(next);
+    _loadMoreIfNearEnd(next);
     if (centerFilmstrip) _centerFilmstrip(next);
     if (next == _index) return;
     _index = next;
@@ -394,6 +416,7 @@ class _ClipPlaylistPlayerScreenState
   void _previewFilmstrip(int index) {
     if (_filmstripProgrammatic) return;
     _setFilmstripPreview(index);
+    _loadMoreIfNearEnd(index);
   }
 
   Future<void> _settleFilmstrip(int index) async {
@@ -660,13 +683,13 @@ class _ClipPlaylistPlayerScreenState
       );
 
   Widget _playlistRetry() => TextButton(
-      onPressed: _completeHourPlaylist,
+      onPressed: _loadMoreFeedPlaylist,
       child: Text('crecam_playlist_retry'.tr()));
 
   Widget _thumbnailStrip() => Semantics(
         key: ClipPlaylistPlayerScreen.counterKey,
         label:
-            '${_index + 1} / ${_playlist.length}${(ref.watch(playerPlaylistLoadingProvider(_orientationKey)) || ref.watch(playerPlaylistErrorProvider(_orientationKey))) ? '+' : ''}',
+            '${_index + 1} / ${_playlist.length}${(_hasMore || ref.watch(playerPlaylistLoadingProvider(_orientationKey)) || ref.watch(playerPlaylistErrorProvider(_orientationKey))) ? '+' : ''}',
         child: ClipFilmstrip(
           listKey: ClipPlaylistPlayerScreen.paginationKey,
           controller: _filmstripController,

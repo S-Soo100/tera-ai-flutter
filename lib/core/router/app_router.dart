@@ -85,9 +85,7 @@ GoRouter buildAppRouter({
         return '/login';
       }
       if (isAuthenticated() &&
-          (path == '/login' ||
-              path == '/signup' ||
-              path == '/verify-email')) {
+          (path == '/login' || path == '/signup' || path == '/verify-email')) {
         return '/home';
       }
       return null;
@@ -250,17 +248,18 @@ GoRouter buildAppRouter({
               clipId: id,
               playlist: extra.playlist,
               playFromSec: extra.playFromSec,
-              source:extra.source,
-              cameraId:extra.cameraId,
-              hourStart:extra.hourStart,
-              hourEndExclusive:extra.hourEndExclusive,
-              highlightBatchId:extra.highlightBatchId,
+              source: extra.source,
+              cameraId: extra.cameraId,
+              rangeStart: extra.rangeStart,
+              rangeEndExclusive: extra.rangeEndExclusive,
+              nextCursor: extra.nextCursor,
+              hasMore: extra.hasMore,
+              highlightBatchId: extra.highlightBatchId,
             );
           }
           // 호출부가 List<String>을 넘기지만 dynamic 리스트로 와도 안전하게 거른다.
-          final playlist = extra is List
-              ? extra.whereType<String>().toList()
-              : null;
+          final playlist =
+              extra is List ? extra.whereType<String>().toList() : null;
           return ClipPlaylistPlayerScreen(clipId: id, playlist: playlist);
         },
       ),
@@ -390,7 +389,6 @@ GoRouter buildAppRouter({
     ],
   );
 }
-
 
 /// 4탭 셸 — B안(Flighty 전광판) 하단 고정 탭바(2026-08-14 저녁, A안 플로팅
 /// 독 교체).

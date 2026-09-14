@@ -49,6 +49,9 @@ class ClipFeedSlivers extends ConsumerWidget {
       final hour = DateTime(time.year, time.month, time.day, time.hour);
       groups.putIfAbsent(hour, () => []).add(clip);
     }
+    // 시간 헤더는 피드를 읽기 쉽게 나누는 시각적 그룹이다. 플레이어는
+    // 현재 카메라·현재 기간의 전체 피드를 사진 앱처럼 하나로 탐색한다.
+    final playlist = state.items.map((clip) => clip.id).toList(growable: false);
     final rows = <WidgetBuilder>[];
     DateTime? previousDate;
     for (final group in groups.entries) {
@@ -74,8 +77,6 @@ class ClipFeedSlivers extends ConsumerWidget {
                         color: context.glass.textTertiary)),
             ]),
           ));
-      final playlist =
-          group.value.map((clip) => clip.id).toList(growable: false);
       for (var start = 0; start < group.value.length; start += 3) {
         final rowOffset = start ~/ 3;
         final clips = group.value.skip(start).take(3).toList(growable: false);
@@ -92,11 +93,12 @@ class ClipFeedSlivers extends ConsumerWidget {
                         onTap: () => context.push('/crecam/player/${clip.id}',
                             extra: ClipPlaylistArgs(
                                 playlist: playlist,
-                                source: ClipPlaybackSource.hour,
+                                source: ClipPlaybackSource.feed,
                                 cameraId: clip.cameraId,
-                                hourStart: group.key,
-                                hourEndExclusive:
-                                    group.key.add(const Duration(hours: 1)))),
+                                rangeStart: key.range?.start,
+                                rangeEndExclusive: key.range?.endExclusive,
+                                nextCursor: state.nextCursor,
+                                hasMore: state.hasMore)),
                         child: Stack(fit: StackFit.expand, children: [
                           MotionClipThumb(
                               clipId: clip.id,

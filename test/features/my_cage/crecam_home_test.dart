@@ -65,6 +65,7 @@ final _clips = [_clip('c2', 10, 5), _clip('c3', 8, 30), _clip('c1', 10, 15)];
 
 String? pushedClipId;
 List<String>? pushedPlaylist;
+ClipPlaylistArgs? pushedArgs;
 
 /// 정착(활성) 페인의 라이브 뷰 — 비활성 페인은 SizedBox라 카메라당 최대 1개.
 Finder _liveFor(String cameraId) => find
@@ -77,8 +78,11 @@ GoRouter _router() => GoRouter(
           path: '/crecam/player/:clipId',
           builder: (_, state) {
             pushedClipId = state.pathParameters['clipId'];
-            pushedPlaylist = state.extra is ClipPlaylistArgs
-                ? (state.extra as ClipPlaylistArgs).playlist
+            pushedArgs = state.extra is ClipPlaylistArgs
+                ? state.extra as ClipPlaylistArgs
+                : null;
+            pushedPlaylist = pushedArgs != null
+                ? pushedArgs!.playlist
                 : (state.extra as List?)?.whereType<String>().toList();
             return const Scaffold(body: Center(child: Text('player-screen')));
           },
@@ -137,6 +141,7 @@ Future<void> _pump(
   addTearDown(tester.view.resetDevicePixelRatio);
   pushedClipId = null;
   pushedPlaylist = null;
+  pushedArgs = null;
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -410,9 +415,9 @@ void main() {
     expect(find.text('crecam_home_empty_all'), findsOneWidget);
   });
 
-  testWidgets('셀 탭 → 세로 플레이어 + **그 시간대** 재생목록(2026-09-07 지시)', (tester) async {
-    // 09시 영상을 열면 09시 영상들만 하나의 재생목록 — 그날 전체(구 동작)가
-    // 아니다. c3(08:30)은 단독 그룹, c1(10:15) 그룹은 [c1, c2(10:05)].
+  testWidgets('셀 탭 → 현재 피드 전체를 같은 순서로 플레이어에 전달한다', (tester) async {
+    // 시간 헤더는 목록을 읽기 위한 시각적 그룹일 뿐 재생목록 경계가 아니다.
+    // 08:30 영상을 열어도 현재 기간의 10시 영상까지 필름스트립에 이어진다.
     await _pump(tester);
     final cell = find.byKey(const ValueKey('crecam_clip_c3'));
     await tester.ensureVisible(cell);
@@ -420,17 +425,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('player-screen'), findsOneWidget);
     expect(pushedClipId, 'c3');
-    expect(pushedPlaylist, ['c3']);
+    expect(pushedPlaylist, ['c1', 'c2', 'c3']);
+    expect(pushedArgs?.source, ClipPlaybackSource.feed);
+    expect(pushedArgs?.cameraId, _cameraId);
+    expect(pushedArgs?.rangeStart, _day);
+    expect(pushedArgs?.rangeEndExclusive, DateTime(2026, 9, 1));
+    expect(pushedArgs?.hasMore, isFalse);
+    expect(pushedArgs?.nextCursor, isNull);
   });
 
-  testWidgets('같은 시간대 클립들은 하나의 재생목록(내림차순)', (tester) async {
+  testWidgets('어느 시간대에서 열어도 전체 피드 재생목록은 최신순으로 같다', (tester) async {
     await _pump(tester);
     final cell = find.byKey(const ValueKey('crecam_clip_c2'));
     await tester.ensureVisible(cell);
     await tester.tap(cell);
     await tester.pumpAndSettle();
     expect(pushedClipId, 'c2');
-    expect(pushedPlaylist, ['c1', 'c2']);
+    expect(pushedPlaylist, ['c1', 'c2', 'c3']);
   });
 
   testWidgets('업데이트 날짜 한 줄에 활동 시간을 덧붙이지 않는다', (tester) async {

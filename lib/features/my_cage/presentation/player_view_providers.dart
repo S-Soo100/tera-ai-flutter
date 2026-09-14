@@ -2,6 +2,20 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../domain/motion_clip_page.dart';
+import 'my_cage_providers.dart';
+
+typedef PlayerFeedPageLoader = Future<MotionClipPage> Function(
+    MotionClipCursor? before);
+
+/// 플레이어의 필름스트립 다음 페이지 로더. family 키에 카메라·기간·계정을
+/// 모두 포함해 다른 피드 결과가 섞이지 않게 한다.
+final playerFeedPageLoaderProvider = Provider.autoDispose
+    .family<PlayerFeedPageLoader, ClipFeedQuery>((ref, query) {
+  final repository = ref.watch(motionClipRepositoryProvider);
+  return (before) => repository.listPage(query, before: before);
+});
+
 final playerOrientationProvider = StateNotifierProvider.autoDispose
     .family<PlayerOrientationController, bool, Object>(
         (ref, key) => PlayerOrientationController());

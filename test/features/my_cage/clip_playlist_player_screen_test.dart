@@ -9,10 +9,14 @@ import 'package:vivnanaut/features/my_cage/data/favorite_clip_repository.dart';
 import 'package:vivnanaut/features/my_cage/data/motion_clip_repository.dart';
 import 'package:vivnanaut/features/my_cage/domain/favorite_clip.dart';
 import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
+import 'package:vivnanaut/features/my_cage/domain/motion_clip_page.dart';
+import 'package:vivnanaut/features/my_cage/presentation/bookmark_controller.dart';
 import 'package:vivnanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
 import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivnanaut/features/my_cage/presentation/player_view_providers.dart';
 import 'package:vivnanaut/features/my_cage/presentation/widgets/motion_clip_thumb.dart';
 import 'package:vivnanaut/shared/widgets/figma_icon.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Hive/Supabase를 타지 않는 대역 — 즐겨찾기 없음, 로컬 파일 없음.
 class _FakeFavoriteRepo implements FavoriteClipRepository {
@@ -52,11 +56,30 @@ Future<void> _pump(
   WidgetTester tester, {
   required String clipId,
   List<String>? playlist,
+  ClipPlaybackSource source = ClipPlaybackSource.single,
+  String? cameraId,
+  DateTime? rangeStart,
+  DateTime? rangeEndExclusive,
+  MotionClipCursor? nextCursor,
+  bool hasMore = false,
+  PlayerFeedPageLoader? feedLoader,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        currentUserProvider.overrideWithValue(null),
+        currentUserProvider.overrideWithValue(feedLoader == null
+            ? null
+            : User(
+                id: 'owner-1',
+                appMetadata: const {},
+                userMetadata: const {},
+                aud: 'authenticated',
+                createdAt: '2026-01-01')),
+        if (feedLoader != null)
+          playerFeedPageLoaderProvider.overrideWith((ref, query) => feedLoader),
+        if (feedLoader != null)
+          bookmarkControllerProvider.overrideWith((ref, key) =>
+              BookmarkController(initial: false, persist: (_) async {})),
         motionThumbnailFileProvider.overrideWith((ref, key) async => null),
         favoriteClipRepositoryProvider.overrideWithValue(_FakeFavoriteRepo()),
         motionClipProvider.overrideWith((ref, id) async => _clip(id)),
@@ -66,7 +89,16 @@ Future<void> _pump(
             (ref, id) => Future<String>.error(Exception('offline test'))),
       ],
       child: MaterialApp(
-        home: ClipPlaylistPlayerScreen(clipId: clipId, playlist: playlist),
+        home: ClipPlaylistPlayerScreen(
+          clipId: clipId,
+          playlist: playlist,
+          source: source,
+          cameraId: cameraId,
+          rangeStart: rangeStart,
+          rangeEndExclusive: rangeEndExclusive,
+          nextCursor: nextCursor,
+          hasMore: hasMore,
+        ),
       ),
     ),
   );
@@ -74,6 +106,73 @@ Future<void> _pump(
 }
 
 void main() {
+  testWidgets('전체 피드는 현재 위치가 끝에서 멀면 다음 페이지를 미리 받지 않는다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final ids = [for (var i = 1; i <= 60; i++) 'c$i'];
+    var calls = 0;
+    await _pump(
+      tester,
+      clipId: 'c1',
+      playlist: ids,
+      source: ClipPlaybackSource.feed,
+      cameraId: 'cam-1',
+      nextCursor: (startedAt: DateTime(2026, 8, 28), id: 'c60'),
+      hasMore: true,
+      feedLoader: (cursor) async {
+        calls++;
+        return (items: <MotionClip>[], nextCursor: null, hasMore: false);
+      },
+    );
+
+    expect(calls, 0);
+    expect(
+        tester
+            .widget<Semantics>(find.byKey(ClipPlaylistPlayerScreen.counterKey))
+            .properties
+            .label,
+        '1 / 60+');
+  });
+
+  testWidgets('전체 피드 끝에 가까우면 커서 다음 영상을 기존 목록 뒤에 붙인다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final cursor = (startedAt: DateTime(2026, 8, 28), id: 'c3');
+    MotionClipCursor? receivedCursor;
+    var calls = 0;
+    await _pump(
+      tester,
+      clipId: 'c3',
+      playlist: const ['c1', 'c2', 'c3'],
+      source: ClipPlaybackSource.feed,
+      cameraId: 'cam-1',
+      rangeStart: DateTime(2026, 8, 28),
+      rangeEndExclusive: DateTime(2026, 8, 29),
+      nextCursor: cursor,
+      hasMore: true,
+      feedLoader: (value) async {
+        calls++;
+        receivedCursor = value;
+        return (
+          items: [_clip('c4'), _clip('c5')],
+          nextCursor: null,
+          hasMore: false
+        );
+      },
+    );
+
+    expect(calls, 1);
+    expect(receivedCursor, cursor);
+    expect(
+        tester
+            .widget<Semantics>(find.byKey(ClipPlaylistPlayerScreen.counterKey))
+            .properties
+            .label,
+        '3 / 5');
+    expect(
+        find.byWidgetPredicate(
+            (widget) => widget is MotionClipThumb && widget.clipId == 'c5'),
+        findsWidgets);
+  });
+
   testWidgets('중간 영상은 308pt 중앙 배치와 48pt 버튼·24pt SVG를 쓴다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester,
