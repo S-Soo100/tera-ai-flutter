@@ -3,6 +3,7 @@
 > 작성일: 2026-09-15
 > 범위: Android 우선, iOS/APNs 보류
 > 설계 SOT: `docs/superpowers/specs/2026-09-15-android-fcm-notifications-design.md`
+> 재개 체크포인트: `docs/handoffs/2026-09-15-fcm-session-checkpoint.md`
 
 ## 배포 상태 (2026-09-15)
 
