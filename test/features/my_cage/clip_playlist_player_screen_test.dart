@@ -11,6 +11,7 @@ import 'package:vivnanaut/features/my_cage/domain/favorite_clip.dart';
 import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivnanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
 import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivnanaut/features/my_cage/presentation/widgets/motion_clip_thumb.dart';
 
 /// Hive/Supabase를 타지 않는 대역 — 즐겨찾기 없음, 로컬 파일 없음.
 class _FakeFavoriteRepo implements FavoriteClipRepository {
@@ -72,16 +73,18 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('재생목록은 하단 가로 썸네일 스트립으로 탐색한다', (tester) async {
+  testWidgets('현재 영상은 필름스트립 중앙에 있고 이전·다음 화살표는 없다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
-    await _pump(tester, clipId: 'b', playlist: ['a', 'b', 'c']);
+    await _pump(tester,
+        clipId: 'c6', playlist: [for (var i = 1; i <= 11; i++) 'c$i']);
 
     final pagination = find.byKey(ClipPlaylistPlayerScreen.paginationKey);
     expect(pagination, findsOneWidget);
-    // 균등 바 3개
-    final strip = tester.widget<ListView>(pagination);
-    expect(strip.scrollDirection, Axis.horizontal);
-    expect(strip.childrenDelegate.estimatedChildCount, 5);
+    final current = find.byWidgetPredicate(
+        (widget) => widget is MotionClipThumb && widget.clipId == 'c6');
+    expect(tester.getCenter(current).dx, closeTo(393 / 2, 0.5));
+    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsNothing);
+    expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsNothing);
   });
 
   testWidgets('재생목록 없음(단일 클립) — 페이지네이션을 그리지 않는다', (tester) async {
@@ -106,18 +109,52 @@ void main() {
         Axis.horizontal);
   });
 
-  testWidgets('이전/다음 화살표 — 중간 클립은 양쪽, 첫/끝 클립은 한쪽만', (tester) async {
-    // 사용자 피드백 2026-09-08: 투명 탭 존만으로는 이전/다음이 인지 안 됨.
+  testWidgets('썸네일을 누르면 영상이 바뀌고 선택 항목이 중앙으로 이동한다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
-    await _pump(tester, clipId: 'b', playlist: ['a', 'b', 'c']);
-    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsOneWidget);
-    expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsOneWidget);
+    await _pump(tester,
+        clipId: 'c6', playlist: [for (var i = 1; i <= 11; i++) 'c$i']);
 
-    // 끝으로 이동 → 다음 화살표가 사라진다("여기가 끝" 전달).
-    await tester.tap(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey));
+    final target = find.byWidgetPredicate(
+        (widget) => widget is MotionClipThumb && widget.clipId == 'c7');
+    await tester.tap(target);
     await tester.pumpAndSettle();
-    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsOneWidget);
-    expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsNothing);
+    expect(
+        tester
+            .widget<Semantics>(find.byKey(ClipPlaylistPlayerScreen.counterKey))
+            .properties
+            .label,
+        '7 / 11');
+    expect(tester.getCenter(target).dx, closeTo(393 / 2, 0.5));
+  });
+
+  testWidgets('필름스트립 드래그 중에는 영상을 유지하고 손을 떼면 한 번 이동한다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await _pump(tester,
+        clipId: 'c6', playlist: [for (var i = 1; i <= 11; i++) 'c$i']);
+
+    final strip = find.byKey(ClipPlaylistPlayerScreen.paginationKey);
+    final gesture = await tester.startGesture(tester.getCenter(strip));
+    // 첫 이동은 Flutter의 가로 드래그 판정 거리로 소비된다. 손가락을 계속
+    // 움직이는 실제 조작처럼 다음 프레임에서 한 썸네일 폭만큼 더 이동한다.
+    await gesture.moveBy(const Offset(-20, 0));
+    await tester.pump();
+    await gesture.moveBy(const Offset(-34, 0));
+    await tester.pump();
+    expect(
+        tester
+            .widget<Semantics>(find.byKey(ClipPlaylistPlayerScreen.counterKey))
+            .properties
+            .label,
+        '6 / 11');
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .widget<Semantics>(find.byKey(ClipPlaylistPlayerScreen.counterKey))
+            .properties
+            .label,
+        '7 / 11');
   });
 
   testWidgets('위치 카운터 — "n / N"이 그려지고 이동하면 바뀐다', (tester) async {
@@ -130,9 +167,9 @@ void main() {
             .properties
             .label,
         '1 / 3');
-    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsNothing);
-
-    await tester.tap(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey));
+    final second = find.byWidgetPredicate(
+        (widget) => widget is MotionClipThumb && widget.clipId == 'b');
+    await tester.tap(second);
     await tester.pumpAndSettle();
     expect(
         tester
@@ -142,11 +179,10 @@ void main() {
         '2 / 3');
   });
 
-  testWidgets('단일 클립 — 화살표·카운터를 그리지 않는다', (tester) async {
+  testWidgets('단일 클립 — 필름스트립·카운터를 그리지 않는다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'a');
-    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsNothing);
-    expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsNothing);
+    expect(find.byKey(ClipPlaylistPlayerScreen.paginationKey), findsNothing);
     expect(find.byKey(ClipPlaylistPlayerScreen.counterKey), findsNothing);
   });
 

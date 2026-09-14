@@ -15,7 +15,7 @@ import 'player_view_providers.dart';
 import '../domain/clip_playlist_args.dart';
 import '../domain/motion_clip_page.dart';
 export '../domain/clip_playlist_args.dart';
-import 'widgets/motion_clip_thumb.dart';
+import 'widgets/clip_filmstrip.dart';
 import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/clip_playback.dart';
@@ -32,7 +32,8 @@ import 'widgets/crecam_detail_top_bar.dart';
 /// GoRouter extra로 재생목록(`List<String>` clip id 순서)을 받고, 없으면
 /// (딥링크 등) 단일 클립만 재생한다.
 ///
-/// 이전/다음은 스와이프·화살표, 단일 탭은 조작계 표시, 양쪽 더블탭은 ±10초.
+/// 이전/다음은 스와이프·중앙 필름스트립, 단일 탭은 조작계 표시,
+/// 양쪽 더블탭은 ±10초.
 /// 하이라이트만 끝에서 자동으로 다음 클립(마지막이면 정지 상태 유지).
 class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
   const ClipPlaylistPlayerScreen({
@@ -59,8 +60,8 @@ class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
   /// 테스트용 — 페이지네이션 세그먼트 식별.
   static const paginationKey = Key('crecam_player_pagination');
 
-  /// 테스트용 — 이전/다음 화살표·위치 카운터(사용자 피드백 2026-09-08:
-  /// 투명 탭 존만으로는 이전/다음 동작이 인지되지 않는다).
+  /// 테스트용 — 제거된 이전/다음 화살표가 되돌아오지 않는지와 위치 카운터를
+  /// 검증한다.
   static const prevArrowKey = Key('crecam_player_prev_arrow');
   static const nextArrowKey = Key('crecam_player_next_arrow');
   static const counterKey = Key('crecam_player_counter');
@@ -80,6 +81,9 @@ class _ClipPlaylistPlayerScreenState
   String? _readOwner;
   int _seekOperations = 0;
   late final PlayerPlaylistSeed _playlistSeed;
+  late final PlayerFilmstripSeed _filmstripSeed;
+  late final ScrollController _filmstripController;
+  bool _filmstripProgrammatic = false;
   List<String> get _playlist => ref.read(playerPlaylistProvider(_playlistSeed));
   set _playlist(List<String> value) =>
       ref.read(playerPlaylistProvider(_playlistSeed).notifier).state = value;
@@ -138,6 +142,11 @@ class _ClipPlaylistPlayerScreenState
         : List<String>.unmodifiable(list);
     _playlistSeed =
         (route: _orientationKey, ids: ids, index: ids.indexOf(widget.clipId));
+    final initialIndex = ids.indexOf(widget.clipId);
+    _filmstripSeed = (route: _orientationKey, initialIndex: initialIndex);
+    _filmstripController = ScrollController(
+      initialScrollOffset: ClipFilmstrip.offsetForIndex(initialIndex),
+    );
     _load();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_completeHourPlaylist());
@@ -148,6 +157,7 @@ class _ClipPlaylistPlayerScreenState
   void dispose() {
     _controller?.removeListener(_onTick);
     _controller?.dispose();
+    _filmstripController.dispose();
     super.dispose();
   }
 
@@ -184,6 +194,8 @@ class _ClipPlaylistPlayerScreenState
         final expanded = {...ids, ..._playlist}.toList(growable: false);
         _playlist = expanded;
         _index = expanded.indexOf(current);
+        _setFilmstripPreview(_index);
+        _centerFilmstrip(_index, animate: false);
         cursor = page.nextCursor;
         if (!page.hasMore) break;
       } while (cursor != null);
@@ -334,9 +346,60 @@ class _ClipPlaylistPlayerScreenState
   void _go(int delta) {
     final next = _index + delta;
     if (next < 0 || next >= _playlist.length) return;
+    _selectClip(next);
+  }
+
+  void _selectClip(int next, {bool centerFilmstrip = true}) {
+    if (next < 0 || next >= _playlist.length) return;
+    _setFilmstripPreview(next);
+    if (centerFilmstrip) _centerFilmstrip(next);
+    if (next == _index) return;
     _index = next;
     _autoAdvanced = false;
     _load();
+  }
+
+  void _setFilmstripPreview(int index) {
+    final provider = playerFilmstripPreviewIndexProvider(_filmstripSeed);
+    if (ref.read(provider) == index) return;
+    ref.read(provider.notifier).state = index;
+  }
+
+  Future<void> _centerFilmstrip(int index, {bool animate = true}) async {
+    if (!_filmstripController.hasClients) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_centerFilmstrip(index, animate: animate));
+      });
+      return;
+    }
+    final target = ClipFilmstrip.offsetForIndex(index)
+        .clamp(0.0, _filmstripController.position.maxScrollExtent);
+    _filmstripProgrammatic = true;
+    try {
+      if (animate) {
+        await _filmstripController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _filmstripController.jumpTo(target);
+      }
+    } finally {
+      _filmstripProgrammatic = false;
+    }
+  }
+
+  void _previewFilmstrip(int index) {
+    if (_filmstripProgrammatic) return;
+    _setFilmstripPreview(index);
+  }
+
+  Future<void> _settleFilmstrip(int index) async {
+    if (_filmstripProgrammatic) return;
+    await _centerFilmstrip(index);
+    if (!mounted) return;
+    _selectClip(index, centerFilmstrip: false);
   }
 
   void _togglePlay() {
@@ -513,46 +576,21 @@ class _ClipPlaylistPlayerScreenState
   }
 
   Widget _navigationActions(GlassPalette glass, MotionClip? clip, bool isFav) =>
-      Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (_playlist.length > 1) ...[
-            if (_index > 0)
-              _navArrow(
-                  key: ClipPlaylistPlayerScreen.prevArrowKey,
-                  icon: Icons.chevron_left,
-                  onTap: () => _go(-1))
-            else
-              const SizedBox(width: 44),
-            const SizedBox(width: 20),
-          ],
-          Column(mainAxisSize: MainAxisSize.min, children: [
-            _actionPill(glass, clip, isFav),
-            if (ref.watch(currentUserProvider)?.id case final owner?)
-              if (ref
-                      .watch(bookmarkControllerProvider(
-                          (ownerId: owner, clipId: _currentClipId)))
-                      .error !=
-                  null)
-                TextButton(
-                    onPressed: () => ref
-                        .read(bookmarkControllerProvider(
-                            (ownerId: owner, clipId: _currentClipId)).notifier)
-                        .retry(),
-                    child: Text('retry'.tr())),
-          ]),
-          if (_playlist.length > 1) ...[
-            const SizedBox(width: 20),
-            if (_index < _playlist.length - 1)
-              _navArrow(
-                  key: ClipPlaylistPlayerScreen.nextArrowKey,
-                  icon: Icons.chevron_right,
-                  onTap: () => _go(1))
-            else
-              const SizedBox(width: 44),
-          ],
-        ],
-      );
+      Column(mainAxisSize: MainAxisSize.min, children: [
+        _actionPill(glass, clip, isFav),
+        if (ref.watch(currentUserProvider)?.id case final owner?)
+          if (ref
+                  .watch(bookmarkControllerProvider(
+                      (ownerId: owner, clipId: _currentClipId)))
+                  .error !=
+              null)
+            TextButton(
+                onPressed: () => ref
+                    .read(bookmarkControllerProvider(
+                        (ownerId: owner, clipId: _currentClipId)).notifier)
+                    .retry(),
+                child: Text('retry'.tr())),
+      ]);
 
   Widget _playlistRetry() => TextButton(
       onPressed: _completeHourPlaylist,
@@ -562,30 +600,17 @@ class _ClipPlaylistPlayerScreenState
         key: ClipPlaylistPlayerScreen.counterKey,
         label:
             '${_index + 1} / ${_playlist.length}${(ref.watch(playerPlaylistLoadingProvider(_orientationKey)) || ref.watch(playerPlaylistErrorProvider(_orientationKey))) ? '+' : ''}',
-        child: SizedBox(
-            height: 44,
-            child: ListView.separated(
-              key: ClipPlaylistPlayerScreen.paginationKey,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              scrollDirection: Axis.horizontal,
-              itemCount: _playlist.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 4),
-              itemBuilder: (context, index) => GestureDetector(
-                onTap: () => _go(index - _index),
-                child: Container(
-                    width: 52,
-                    clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4),
-                        border: index == _index
-                            ? Border.all(
-                                color: context.glass.navSelected, width: 2)
-                            : null),
-                    child: MotionClipThumb(
-                        clipId: _playlist[index],
-                        cameraId: widget.cameraId ?? '')),
-              ),
-            )),
+        child: ClipFilmstrip(
+          listKey: ClipPlaylistPlayerScreen.paginationKey,
+          controller: _filmstripController,
+          clipIds: _playlist,
+          cameraId: widget.cameraId ?? '',
+          previewIndex:
+              ref.watch(playerFilmstripPreviewIndexProvider(_filmstripSeed)),
+          onPreviewChanged: _previewFilmstrip,
+          onSettled: (index) => unawaited(_settleFilmstrip(index)),
+          onSelected: _selectClip,
+        ),
       );
 
   Widget _topBar(GlassPalette glass, DateTime? startedAt) {
@@ -680,33 +705,6 @@ class _ClipPlaylistPlayerScreenState
               ]),
           ]),
         ));
-  }
-
-  Widget _navArrow({
-    required Key key,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      key: key,
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: context.glass.surfaceTint,
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-            child: FigmaIcon.tinted(
-                icon == Icons.chevron_left
-                    ? FigmaIcons.arrowPrevious
-                    : FigmaIcons.arrowNext,
-                size: 24,
-                color: context.glass.textPrimary)),
-      ),
-    );
   }
 
   Widget _video(GlassPalette glass) {

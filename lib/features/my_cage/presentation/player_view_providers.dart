@@ -56,3 +56,6 @@ final playerPlaylistLoadingProvider =
     StateProvider.autoDispose.family<bool, Object>((ref, key) => false);
 final playerPlaylistErrorProvider =
     StateProvider.autoDispose.family<bool, Object>((ref, key) => false);
+typedef PlayerFilmstripSeed = ({Object route, int initialIndex});
+final playerFilmstripPreviewIndexProvider = StateProvider.autoDispose
+    .family<int, PlayerFilmstripSeed>((ref, seed) => seed.initialIndex);

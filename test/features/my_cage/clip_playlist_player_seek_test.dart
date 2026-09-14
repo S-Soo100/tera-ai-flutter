@@ -13,6 +13,7 @@ import 'package:vivnanaut/features/my_cage/domain/favorite_clip.dart';
 import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivnanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
 import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivnanaut/features/my_cage/presentation/widgets/motion_clip_thumb.dart';
 
 /// 재생 시작점(서버 play_from_sec) seek 검증 — 가짜 비디오 플랫폼으로
 /// 초기화(duration 확보)까지 실제 흐름을 태우고 seek/play 호출을 기록한다.
@@ -229,7 +230,8 @@ void main() {
 
     expect(platform.seeks, [const Duration(milliseconds: 8800)]);
 
-    await tester.tap(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey));
+    await tester.tap(find.byWidgetPredicate(
+        (widget) => widget is MotionClipThumb && widget.clipId == 'b'));
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }
