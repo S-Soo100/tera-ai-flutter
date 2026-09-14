@@ -74,7 +74,7 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('현재 영상 양옆에 44pt 버튼과 24pt Figma 화살표가 있다', (tester) async {
+  testWidgets('중간 영상은 308pt 중앙 배치와 48pt 버튼·24pt SVG를 쓴다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester,
         clipId: 'c6', playlist: [for (var i = 1; i <= 11; i++) 'c$i']);
@@ -87,10 +87,18 @@ void main() {
 
     final previous = find.byKey(ClipPlaylistPlayerScreen.prevArrowKey);
     final next = find.byKey(ClipPlaylistPlayerScreen.nextArrowKey);
+    final navigation =
+        find.byKey(ClipPlaylistPlayerScreen.navigationActionsKey);
+    final actionPill = find.byKey(ClipPlaylistPlayerScreen.actionPillKey);
     expect(previous, findsOneWidget);
     expect(next, findsOneWidget);
-    expect(tester.getSize(previous), const Size.square(44));
-    expect(tester.getSize(next), const Size.square(44));
+    expect(tester.getSize(navigation), const Size(308, 48));
+    expect(tester.getCenter(navigation).dx, closeTo(393 / 2, 0.5));
+    expect(tester.getSize(actionPill), const Size(164, 48));
+    expect(tester.getSize(previous), const Size.square(48));
+    expect(tester.getSize(next), const Size.square(48));
+    expect(tester.getCenter(previous).dx, closeTo(66.5, 0.5));
+    expect(tester.getCenter(next).dx, closeTo(326.5, 0.5));
 
     final previousIcon = tester.widget<FigmaIcon>(
       find.descendant(of: previous, matching: find.byType(FigmaIcon)),
@@ -102,6 +110,8 @@ void main() {
     expect(nextIcon.name, FigmaIcons.arrowNext);
     expect(previousIcon.size, 24);
     expect(nextIcon.size, 24);
+    expect(previousIcon.color, const Color(0xFF3C3C3C));
+    expect(nextIcon.color, const Color(0xFF3C3C3C));
 
     await tester.tap(next);
     await tester.pumpAndSettle();
@@ -111,6 +121,30 @@ void main() {
             .properties
             .label,
         '7 / 11');
+  });
+
+  testWidgets('첫·끝 영상에서 화살표가 한쪽만 보여도 308pt 배치는 유지한다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await _pump(tester, clipId: 'a', playlist: ['a', 'b']);
+
+    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsNothing);
+    final next = find.byKey(ClipPlaylistPlayerScreen.nextArrowKey);
+    final navigation =
+        find.byKey(ClipPlaylistPlayerScreen.navigationActionsKey);
+    expect(next, findsOneWidget);
+    expect(tester.getSize(navigation), const Size(308, 48));
+    expect(tester.getCenter(navigation).dx, closeTo(393 / 2, 0.5));
+    expect(tester.getCenter(next).dx, closeTo(326.5, 0.5));
+
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+
+    final previous = find.byKey(ClipPlaylistPlayerScreen.prevArrowKey);
+    expect(previous, findsOneWidget);
+    expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsNothing);
+    expect(tester.getSize(navigation), const Size(308, 48));
+    expect(tester.getCenter(navigation).dx, closeTo(393 / 2, 0.5));
+    expect(tester.getCenter(previous).dx, closeTo(66.5, 0.5));
   });
 
   testWidgets('재생목록 없음(단일 클립) — 페이지네이션을 그리지 않는다', (tester) async {
