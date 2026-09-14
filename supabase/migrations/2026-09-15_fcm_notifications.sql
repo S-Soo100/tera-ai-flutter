@@ -109,6 +109,24 @@ CREATE TABLE public.notification_deliveries (
 CREATE INDEX notification_deliveries_dispatch_idx
   ON public.notification_deliveries (outbox_id, status, scheduled_at);
 
+-- The notification center listens for read-state changes. Keep operational
+-- tables off Realtime: only the client-visible notification records publish.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'app_notifications'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.app_notifications;
+  END IF;
+END;
+$$;
+
 ALTER TABLE public.push_devices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notification_events ENABLE ROW LEVEL SECURITY;

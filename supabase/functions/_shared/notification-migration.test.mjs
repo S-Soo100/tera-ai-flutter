@@ -38,6 +38,19 @@ test('ingest persists validated highlight scheduled_for as event scheduled_at', 
   assert.match(ingest, /scheduled_at: event\.payload\.scheduled_for/);
 });
 
+test('publishes only app_notifications to realtime when the publication needs it', () => {
+  const publicationBlock = migration.match(
+    /DO \$\$[\s\S]*?ALTER PUBLICATION supabase_realtime ADD TABLE public\.app_notifications;[\s\S]*?\$\$;/,
+  )?.[0];
+  assert.ok(publicationBlock, 'app_notifications must be added to supabase_realtime');
+  assert.match(publicationBlock, /FROM pg_publication/);
+  assert.match(publicationBlock, /FROM pg_publication_tables/);
+  assert.doesNotMatch(
+    publicationBlock,
+    /push_devices|notification_events|notification_outbox|notification_deliveries/,
+  );
+});
+
 test('dispatcher claims have stale-lease recovery, fencing, and delivery rows', () => {
   assert.match(migration, /CREATE TABLE public\.notification_deliveries/);
   assert.match(migration, /lock_token\s+UUID/);

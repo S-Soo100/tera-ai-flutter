@@ -322,6 +322,11 @@ Supabase Edge Function secret으로만 설정한다.
 알 수 없는 종류는 ingest 단계에서 422로 거절하며, DB가 만드는 route는 승인된 내부
 경로만 사용한다.
 
+알림 센터의 목록·읽음 상태는 `app_notifications`만 `supabase_realtime` publication에
+포함한다. 마이그레이션은 publication이 존재하고 아직 이 테이블이 포함되지 않은 경우에만
+idempotent하게 추가한다. token, 원본 event, outbox, delivery 같은 운영 테이블은 Realtime에
+공개하지 않는다.
+
 ### FCM outbox 발송 계약
 
 `dispatch-push` Edge Function은 service-role 호출로만 실행한다. gateway의 기본 JWT 검증을
