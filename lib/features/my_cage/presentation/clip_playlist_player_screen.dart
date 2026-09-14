@@ -63,6 +63,8 @@ class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
   /// 테스트용 — 이전/다음 화살표와 위치 카운터를 검증한다.
   static const prevArrowKey = Key('crecam_player_prev_arrow');
   static const nextArrowKey = Key('crecam_player_next_arrow');
+  static const navigationActionsKey = Key('crecam_player_navigation_actions');
+  static const actionPillKey = Key('crecam_player_action_pill');
   static const counterKey = Key('crecam_player_counter');
 
   /// 테스트용 — "처음부터" 컨트롤(중간 시작 클립에서만 노출).
@@ -575,48 +577,58 @@ class _ClipPlaylistPlayerScreenState
   }
 
   Widget _navigationActions(GlassPalette glass, MotionClip? clip, bool isFav,
-          {bool showArrows = true}) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (showArrows) ...[
-          if (_index > 0)
-            _navArrow(
-              key: ClipPlaylistPlayerScreen.prevArrowKey,
-              asset: FigmaIcons.arrowPrevious,
-              tooltip: MaterialLocalizations.of(context).previousPageTooltip,
-              onTap: () => _go(-1),
-            )
-          else
-            const SizedBox(width: 44, height: 44),
-          const SizedBox(width: 24),
-        ],
-        Column(mainAxisSize: MainAxisSize.min, children: [
-          _actionPill(glass, clip, isFav),
-          if (ref.watch(currentUserProvider)?.id case final owner?)
-            if (ref
-                    .watch(bookmarkControllerProvider(
-                        (ownerId: owner, clipId: _currentClipId)))
-                    .error !=
-                null)
-              TextButton(
-                  onPressed: () => ref
-                      .read(bookmarkControllerProvider(
-                          (ownerId: owner, clipId: _currentClipId)).notifier)
-                      .retry(),
-                  child: Text('retry'.tr())),
-        ]),
-        if (showArrows) ...[
-          const SizedBox(width: 24),
-          if (_index < _playlist.length - 1)
-            _navArrow(
-              key: ClipPlaylistPlayerScreen.nextArrowKey,
-              asset: FigmaIcons.arrowNext,
-              tooltip: MaterialLocalizations.of(context).nextPageTooltip,
-              onTap: () => _go(1),
-            )
-          else
-            const SizedBox(width: 44, height: 44),
-        ],
-      ]);
+      {bool showArrows = true}) {
+    final hasNavigation = showArrows && _playlist.length > 1;
+    return Align(
+      alignment: Alignment.center,
+      child: Row(
+          key: ClipPlaylistPlayerScreen.navigationActionsKey,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasNavigation) ...[
+              if (_index > 0)
+                _navArrow(
+                  key: ClipPlaylistPlayerScreen.prevArrowKey,
+                  asset: FigmaIcons.arrowPrevious,
+                  tooltip:
+                      MaterialLocalizations.of(context).previousPageTooltip,
+                  onTap: () => _go(-1),
+                )
+              else
+                const SizedBox.square(dimension: 48),
+              const SizedBox(width: 24),
+            ],
+            Column(mainAxisSize: MainAxisSize.min, children: [
+              _actionPill(glass, clip, isFav),
+              if (ref.watch(currentUserProvider)?.id case final owner?)
+                if (ref
+                        .watch(bookmarkControllerProvider(
+                            (ownerId: owner, clipId: _currentClipId)))
+                        .error !=
+                    null)
+                  TextButton(
+                      onPressed: () => ref
+                          .read(bookmarkControllerProvider(
+                                  (ownerId: owner, clipId: _currentClipId))
+                              .notifier)
+                          .retry(),
+                      child: Text('retry'.tr())),
+            ]),
+            if (hasNavigation) ...[
+              const SizedBox(width: 24),
+              if (_index < _playlist.length - 1)
+                _navArrow(
+                  key: ClipPlaylistPlayerScreen.nextArrowKey,
+                  asset: FigmaIcons.arrowNext,
+                  tooltip: MaterialLocalizations.of(context).nextPageTooltip,
+                  onTap: () => _go(1),
+                )
+              else
+                const SizedBox.square(dimension: 48),
+            ],
+          ]),
+    );
+  }
 
   Widget _navArrow({
     required Key key,
@@ -628,7 +640,7 @@ class _ClipPlaylistPlayerScreenState
         message: tooltip,
         child: SizedBox.square(
           key: key,
-          dimension: 44,
+          dimension: 48,
           child: Material(
             color: context.glass.surfaceTint,
             shape: const CircleBorder(),
@@ -877,13 +889,14 @@ class _ClipPlaylistPlayerScreenState
     }
 
     return Container(
-      width: 172,
+      key: ClipPlaylistPlayerScreen.actionPillKey,
+      width: 164,
       height: 48,
       decoration: BoxDecoration(
         color: glass.surfaceTint,
         borderRadius: BorderRadius.circular(24),
       ),
-      // Figma 668:766 — 좌우 패딩 12, 아이콘 간 갭 20 (2187/2243/2299).
+      // Figma 941:1834 — 좌우 패딩 8, 44pt 동작면 사이 간격 8.
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
