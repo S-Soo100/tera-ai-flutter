@@ -11,7 +11,6 @@ import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/highlight_group.dart';
 import '../domain/nightly_highlight.dart';
 import 'clip_playlist_player_screen.dart';
-import 'highlights_controller.dart';
 import 'my_cage_providers.dart';
 import 'widgets/clip_grid.dart';
 import 'widgets/crecam_states.dart';
@@ -200,15 +199,19 @@ class HighlightsScreen extends ConsumerWidget {
   static bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  /// 묶음 헤더 라벨 — 어젯밤 day_key([lastNightDayKey])면 "어젯밤", 그 전날이면
-  /// "그저께 밤", 나머지는 "9월 8일 밤"(20:00 경계라 "밤"이 맞다).
+  /// 묶음 헤더 라벨 — 전날 시작한 밤 묶음은 도착 당일 내내 "어젯밤",
+  /// 이틀 전은 "그저께 밤", 나머지는 "9월 8일 밤"으로 표시한다.
+  /// 서버 day_key는 20:00 기준의 **밤 시작 날짜**지만, 표시 기준까지 20시에
+  /// 넘기면 같은 묶음이 저녁에 갑자기 "그저께 밤"으로 바뀐다.
   static String nightLabel(String dayKey, DateTime now) {
-    final lastKey = lastNightDayKey(now);
-    if (dayKey == lastKey) return 'crecam_highlights_last_night'.tr();
     final date = parseDayKey(dayKey);
     if (date == null) return dayKey; // 방어 — 서버 계약 밖 형식은 원문 표시
-    final last = parseDayKey(lastKey)!;
-    if (date == last.subtract(const Duration(days: 1))) {
+    final today = DateTime(now.year, now.month, now.day);
+    final lastNight = today.subtract(const Duration(days: 1));
+    if (_isSameDay(date, lastNight)) {
+      return 'crecam_highlights_last_night'.tr();
+    }
+    if (_isSameDay(date, lastNight.subtract(const Duration(days: 1)))) {
       return 'crecam_highlights_prev_night'.tr();
     }
     return 'crecam_highlights_night_of'

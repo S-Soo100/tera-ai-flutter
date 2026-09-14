@@ -8,7 +8,6 @@ import 'package:vivnanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivnanaut/features/my_cage/data/highlight_banner_store.dart';
 import 'package:vivnanaut/features/my_cage/domain/highlight_group.dart';
 import 'package:vivnanaut/features/my_cage/domain/nightly_highlight.dart';
-import 'package:vivnanaut/features/my_cage/presentation/highlights_controller.dart';
 import 'package:vivnanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
 import 'package:vivnanaut/features/my_cage/presentation/highlights_screen.dart';
 import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
@@ -62,6 +61,8 @@ class _FakeBannerStore implements HighlightBannerStore {
 /// 묶음 픽스처 2개 — dayA(최신, 대표 3 + 후보 2) + dayB(대표 1, 후보 0).
 const _dayA = '2026-08-31';
 const _dayB = '2026-08-30';
+String _dayKey(DateTime date) =>
+    '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 final _f1 = _h('f1', DateTime(2026, 8, 31, 23), tier: 'featured', dayKey: _dayA, rank: 1, playFrom: 8.8);
 final _f2 = _h('f2', DateTime(2026, 9, 1, 2), tier: 'featured', dayKey: _dayA, rank: 2);
 final _f3 = _h('f3', DateTime(2026, 8, 31, 21), tier: 'featured', dayKey: _dayA, rank: 3);
@@ -204,13 +205,23 @@ void main() {
     });
 
     testWidgets('어젯밤 day_key 묶음 → "어젯밤" 헤더', (tester) async {
-      final dayKey = lastNightDayKey(DateTime.now());
+      final now = DateTime.now();
+      final dayKey = _dayKey(DateTime(now.year, now.month, now.day)
+          .subtract(const Duration(days: 1)));
       final groups = groupByDay([
         _h('x1', DateTime.now(), tier: 'featured', dayKey: dayKey, rank: 1),
       ]);
       final store = _FakeBannerStore('cam/$dayKey');
       await _pump(tester, groups: groups, store: store);
       expect(find.text('crecam_highlights_last_night'), findsOneWidget);
+    });
+
+    test('밤 8시가 지나도 전날 day_key는 어젯밤으로 유지', () {
+      expect(
+        HighlightsScreen.nightLabel(
+            '2026-09-13', DateTime(2026, 9, 14, 21)),
+        'crecam_highlights_last_night',
+      );
     });
 
     testWidgets('도착 배너(미dismiss) — X → 숨김 + 스토어에 공개 배치 key 저장',

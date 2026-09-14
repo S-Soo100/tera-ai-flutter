@@ -484,8 +484,8 @@ final crecamDayProvider = StateProvider<DateTime?>((ref) {
 });
 
 /// 현재 라이브 카메라의 가장 최근 클립 시각. 클립 0건이면 null.
-final latestMotionClipAtProvider = FutureProvider.autoDispose
-    .family<DateTime?, String>((ref, cameraId) {
+final latestMotionClipAtProvider =
+    FutureProvider.autoDispose.family<DateTime?, String>((ref, cameraId) {
   ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 격리
   return ref.watch(motionClipRepositoryProvider).latestClipAt(cameraId);
 });
@@ -508,21 +508,20 @@ final crecamResolvedDayProvider =
   if (cameras.isEmpty) return today;
   final camera =
       cameras.firstWhere((c) => c.id == id, orElse: () => cameras.first);
-  final latest =
-      await ref.watch(latestMotionClipAtProvider(camera.id).future);
+  final latest = await ref.watch(latestMotionClipAtProvider(camera.id).future);
   if (latest == null) return today;
   return DateTime(latest.year, latest.month, latest.day);
 });
 
-/// 하이라이트 상세에 표시된 최신 대표 영상 시각 —
+/// 하이라이트 상세의 최신 **밤 묶음 날짜** —
 /// [highlightGroupsProvider]에서 파생(리뷰 2026-09-04: 같은 API를 limit만
 /// 다르게 2회 치던 것을 1회로, 에러를 null("아직 없어요")로 뭉개던 것을
-/// 에러로 전파). 선택 대상인 하이라이트가 있는데 서버의 optional
-/// publication이 없다는 이유로 빈 상태를 보이지 않는다.
+/// 에러로 전파). 개별 대표 영상의 [NightlyHighlight.startedAt]을 쓰면 오늘
+/// 새벽 영상 때문에 전날 밤 묶음이 "오늘"로 보이므로 서버 day_key를 쓴다.
 final latestHighlightAtProvider =
     FutureProvider.autoDispose<DateTime?>((ref) async {
   final groups = await ref.watch(highlightGroupsProvider.future);
-  return groups.isEmpty ? null : latestFeaturedAt(groups.first);
+  return groups.isEmpty ? null : parseDayKey(groups.first.dayKey);
 });
 
 /// 전체 즐겨찾기(favoritedAt desc — repository가 정렬). 엔트리 카드 최신
