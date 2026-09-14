@@ -169,7 +169,8 @@ class PetAssignmentSection extends ConsumerWidget {
       }
     }
 
-    await _assign(context, ref, petId: target?.id ?? set.pet!.id,
+    await _assign(context, ref,
+        petId: target?.id ?? set.pet!.id,
         enclosureId: target == null ? null : set.id);
   }
 

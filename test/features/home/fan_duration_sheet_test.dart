@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/fan_timer_duration.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/fan_duration_sheet.dart';
+import 'package:vivanaut/features/home/domain/fan_timer_duration.dart';
+import 'package:vivanaut/features/home/presentation/widgets/fan_duration_sheet.dart';
 
 void main() {
   testWidgets('시간 선택은 시트를 유지하고 시작 연타는 결과 한 번만 반환한다', (tester) async {
     var completions = 0;
     (FanTimerDuration?,)? result;
-    await tester.pumpWidget(ProviderScope(child: MaterialApp(home: Scaffold(
-      body: Builder(builder: (context) => TextButton(
-        onPressed: () async {
-          result = await showModalBottomSheet<(FanTimerDuration?,)>(
-            context: context, builder: (_) => const FanDurationSheet());
-          completions++;
-        }, child: const Text('open'))),
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(
+      body: Builder(
+          builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showModalBottomSheet<(FanTimerDuration?,)>(
+                    context: context, builder: (_) => const FanDurationSheet());
+                completions++;
+              },
+              child: const Text('open'))),
     ))));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
@@ -32,13 +36,17 @@ void main() {
   testWidgets('시간을 선택한 뒤 닫으면 실행 결과가 없다', (tester) async {
     (FanTimerDuration?,)? result;
     var completed = false;
-    await tester.pumpWidget(ProviderScope(child: MaterialApp(home: Scaffold(
-      body: Builder(builder: (context) => TextButton(
-        onPressed: () async {
-          result = await showModalBottomSheet<(FanTimerDuration?,)>(
-            context: context, builder: (_) => const FanDurationSheet());
-          completed = true;
-        }, child: const Text('open'))),
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(
+      body: Builder(
+          builder: (context) => TextButton(
+              onPressed: () async {
+                result = await showModalBottomSheet<(FanTimerDuration?,)>(
+                    context: context, builder: (_) => const FanDurationSheet());
+                completed = true;
+              },
+              child: const Text('open'))),
     ))));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();

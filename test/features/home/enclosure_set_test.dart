@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/device_mode.dart';
-import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
-import 'package:vivnanaut/features/my_cage/domain/device.dart';
-import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
-import 'package:vivnanaut/features/my_cage/domain/terra_camera.dart';
-import 'package:vivnanaut/features/my_pets/domain/pet.dart';
+import 'package:vivanaut/features/home/domain/device_mode.dart';
+import 'package:vivanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
+import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
+import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
+import 'package:vivanaut/features/my_pets/domain/pet.dart';
 
 Enclosure _enc() => Enclosure(
       id: 'enc-1',

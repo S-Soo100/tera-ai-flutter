@@ -63,8 +63,7 @@ class MotionClipCard extends ConsumerWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child:
-                        Text(timeLabel, style: theme.textTheme.bodySmall),
+                    child: Text(timeLabel, style: theme.textTheme.bodySmall),
                   ),
                   if (clip.action != null) ...[
                     _AiActionChip(action: clip.action!, color: cs.secondary),
@@ -72,8 +71,8 @@ class MotionClipCard extends ConsumerWidget {
                   ],
                   Text(
                     durationLabel,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: cs.outline),
+                    style:
+                        theme.textTheme.bodySmall?.copyWith(color: cs.outline),
                   ),
                 ],
               ),

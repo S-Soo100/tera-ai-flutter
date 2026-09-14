@@ -95,7 +95,7 @@ G0는 첫 작업으로 확인하되, 계약이 부족하면 H1의 과거 평균 
 
 ## V1: 통합 검증·화면별 결과 보고
 
-**Files:** 생성 `docs/design-audits/2026-09-14-implementation-results.md`, 비교 캡처는 `docs/design-audits/2026-09-14-implementation/`; 갱신 `CLAUDE.md`, `docs/prd-vivnanaut-app.md`, `docs/prd-implementation-gap.md`의 이번 변경과 충돌하는 항목만 수정.
+**Files:** 생성 `docs/design-audits/2026-09-14-implementation-results.md`, 비교 캡처는 `docs/design-audits/2026-09-14-implementation/`; 갱신 `CLAUDE.md`, `docs/prd-vivanaut-app.md`, `docs/prd-implementation-gap.md`의 이번 변경과 충돌하는 항목만 수정.
 
 - [ ] 각 세부 계획 테스트를 실행하고 마지막 변경 후 `flutter analyze --no-pub`, `flutter test`, `flutter build apk --debug`를 실행한다. iOS 재생·회전·BLE는 실제 iOS 실행 검증도 별도로 기록한다.
 - [ ] 393pt 기준 및 작은 화면/큰 글자에서 홈·환경 일/주간·카메라 다일 목록·하이라이트·북마크·플레이어 세로/가로를 캡처해 감사 프레임과 비교한다. 치수·간격·폰트·색·SVG·safe area·컨트롤 상태를 항목별 판정한다.

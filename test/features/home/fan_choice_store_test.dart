@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
-import 'package:vivnanaut/features/home/data/fan_choice_store.dart';
-import 'package:vivnanaut/features/home/domain/fan_timer_duration.dart';
+import 'package:vivanaut/features/home/data/fan_choice_store.dart';
+import 'package:vivanaut/features/home/domain/fan_timer_duration.dart';
 
 void main() {
   late Directory dir;

@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/live_clock_overlay.dart';
-import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivanaut/features/home/presentation/widgets/live_clock_overlay.dart';
+import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
 
 Future<void> _pump(WidgetTester tester, Stream<DateTime> ticks) async {
   await tester.pumpWidget(
@@ -24,8 +24,7 @@ void main() {
     expect(find.text('2026.08.05 18:33'), findsOneWidget);
   });
 
-  testWidgets('tick이 갱신되면 시각도 따라 바뀐다 — 시계가 멈추지 않는다',
-      (tester) async {
+  testWidgets('tick이 갱신되면 시각도 따라 바뀐다 — 시계가 멈추지 않는다', (tester) async {
     final controller = StreamController<DateTime>();
     addTearDown(controller.close);
 

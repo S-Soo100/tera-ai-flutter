@@ -104,9 +104,11 @@ class _MediaTile extends ConsumerWidget {
             child: CachedNetworkImage(
               imageUrl: item.url,
               placeholder: (_, __) => const Center(
-                child: SkeletonLoading(width: 200, height: 200, borderRadius: 8),
+                child:
+                    SkeletonLoading(width: 200, height: 200, borderRadius: 8),
               ),
-              errorWidget: (_, __, ___) => const Icon(Icons.broken_image, size: 64, color: Colors.white),
+              errorWidget: (_, __, ___) =>
+                  const Icon(Icons.broken_image, size: 64, color: Colors.white),
             ),
           ),
         ),

@@ -18,15 +18,13 @@ class EnclosureDetailScreen extends ConsumerWidget {
     final enclosureAsync = ref.watch(enclosureProvider(enclosureId));
     final cameras = ref.watch(camerasProvider).valueOrNull ?? const [];
     final devices = ref.watch(deviceListProvider).valueOrNull ?? const [];
-    final myCams =
-        cameras.where((c) => c.enclosureId == enclosureId).toList();
-    final myDevs =
-        devices.where((d) => d.enclosureId == enclosureId).toList();
+    final myCams = cameras.where((c) => c.enclosureId == enclosureId).toList();
+    final myDevs = devices.where((d) => d.enclosureId == enclosureId).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(enclosureAsync.valueOrNull?.name ??
-            'enclosure_manage_title'.tr()),
+        title: Text(
+            enclosureAsync.valueOrNull?.name ?? 'enclosure_manage_title'.tr()),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

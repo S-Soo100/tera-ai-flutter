@@ -63,8 +63,7 @@ class CommunityFeed extends AsyncNotifier<List<CommunityPost>> {
   /// refresh를 부르면 loadMore로 쌓은 페이지가 전부 폐기되고 스크롤이
   /// 점프한다 — 그 자리를 이걸로 대신한다. 삭제된 글이면 목록에서 뺀다.
   Future<void> refreshPost(String postId) async {
-    final updated =
-        await ref.read(communityRepositoryProvider).getPost(postId);
+    final updated = await ref.read(communityRepositoryProvider).getPost(postId);
     final current = state.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((p) => p.id == postId);
@@ -95,8 +94,8 @@ class CommunityFeed extends AsyncNotifier<List<CommunityPost>> {
       final existing = {for (final p in current) p.id};
       state = AsyncData([
         ...current,
-        ...next.where((p) =>
-            !_blocked.contains(p.authorId) && !existing.contains(p.id)),
+        ...next.where(
+            (p) => !_blocked.contains(p.authorId) && !existing.contains(p.id)),
       ]);
     } finally {
       _loadingMore = false;
@@ -142,7 +141,8 @@ class CommunityFeed extends AsyncNotifier<List<CommunityPost>> {
 }
 
 final communityFeedProvider =
-    AsyncNotifierProvider<CommunityFeed, List<CommunityPost>>(CommunityFeed.new);
+    AsyncNotifierProvider<CommunityFeed, List<CommunityPost>>(
+        CommunityFeed.new);
 
 /// 피드 이미지(썸네일·크레 사진) signed URL — **경로 집합에만 종속**한다.
 /// `communityFeedProvider.future`를 통째로 watch하면 좋아요 토글·삭제의

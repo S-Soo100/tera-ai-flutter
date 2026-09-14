@@ -759,9 +759,7 @@ class _LedTile extends StatelessWidget {
 
     final dimmed = pulsing || isBusy;
 
-    final Color tileBg = ledOn
-        ? _ledAccent
-        : cs.surfaceContainerHighest;
+    final Color tileBg = ledOn ? _ledAccent : cs.surfaceContainerHighest;
 
     final Color iconBgColor = ledOn
         ? Colors.white.withValues(alpha: 0.25)

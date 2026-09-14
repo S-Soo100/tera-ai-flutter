@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/shared/domain/fan_timer_notification_plan.dart';
+import 'package:vivanaut/shared/domain/fan_timer_notification_plan.dart';
 
 void main() {
   group('FanTimerNotificationPlan.of', () {
@@ -14,7 +14,8 @@ void main() {
     });
 
     test('fan_off → 취소', () {
-      expect(FanTimerNotificationPlan.of('fan_off', null), isA<CancelFanDone>());
+      expect(
+          FanTimerNotificationPlan.of('fan_off', null), isA<CancelFanDone>());
       // 방어: off에 duration이 실려 와도 취소다.
       expect(
           FanTimerNotificationPlan.of('fan_off', 60000), isA<CancelFanDone>());
@@ -55,8 +56,8 @@ void main() {
     });
 
     test('다른 기기는 다른 id', () {
-      expect(notificationIdFor('device-1'),
-          isNot(notificationIdFor('device-2')));
+      expect(
+          notificationIdFor('device-1'), isNot(notificationIdFor('device-2')));
     });
   });
 }

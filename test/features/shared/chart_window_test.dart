@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/shared/domain/chart_window.dart';
+import 'package:vivanaut/shared/domain/chart_window.dart';
 
 void main() {
   group('창 끝 — 다음 6시간 눈금', () {
@@ -149,7 +149,6 @@ void main() {
       expect(w.elapsed, 1.0);
     });
   });
-
 
   group('queryEnd — 조회 끝은 창이 스스로 안다', () {
     test('진행 중인 창(일간)은 now — 없는 시간을 물어보지 않는다', () {

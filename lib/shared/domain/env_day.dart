@@ -28,8 +28,7 @@ class EnvDay {
   EnvDay get next => EnvDay(DateTime(date.year, date.month, date.day + 1));
 
   /// [now]가 이 하루 안인가. 시작 포함, 끝 제외 — 자정은 **그 날**이다.
-  bool containsNow(DateTime now) =>
-      !now.isBefore(start) && now.isBefore(end);
+  bool containsNow(DateTime now) => !now.isBefore(start) && now.isBefore(end);
 
   // StateProvider 상태로 쓰므로 값 동등성이 필요하다 — 없으면 같은 날로
   // 갱신해도 다른 인스턴스라 리빌드가 돈다.

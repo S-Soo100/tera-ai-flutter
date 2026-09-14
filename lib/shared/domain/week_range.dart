@@ -19,8 +19,7 @@ class WeekRange {
   DateTime get start => monday;
 
   /// 주의 끝(제외) = 다음 월요일 자정. 달력 연산이라 월말·서머타임에도 안전.
-  DateTime get end =>
-      DateTime(monday.year, monday.month, monday.day + 7);
+  DateTime get end => DateTime(monday.year, monday.month, monday.day + 7);
 
   WeekRange get previous =>
       WeekRange(DateTime(monday.year, monday.month, monday.day - 7));
@@ -36,7 +35,8 @@ class WeekRange {
 
   // StateProvider 상태로 쓰므로 값 동등성이 필요하다 (EnvDay와 같은 이유).
   @override
-  bool operator ==(Object other) => other is WeekRange && other.monday == monday;
+  bool operator ==(Object other) =>
+      other is WeekRange && other.monday == monday;
 
   @override
   int get hashCode => monday.hashCode;

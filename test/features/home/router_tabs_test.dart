@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:vivnanaut/core/router/tab_branches.dart';
-import 'package:vivnanaut/core/router/app_router.dart';
+import 'package:vivanaut/core/router/tab_branches.dart';
+import 'package:vivanaut/core/router/app_router.dart';
 
 void main() {
   group('4탭 IA (PRD §2.1 2026-09-02 개정 — 홈/카메라/마이크레/커뮤니티)', () {

@@ -2,7 +2,8 @@ class MorphGene {
   final String id;
   final String name;
   final String nameEn;
-  final String inheritance; // recessive, dominant, incomplete_dominant, codominant
+  final String
+      inheritance; // recessive, dominant, incomplete_dominant, codominant
   final String? alleleGroup;
   final String description;
   final bool homozygousLethal;
@@ -39,7 +40,8 @@ class MorphGene {
       healthWarning: json['health_warning'] as String?,
       discoveredBy: json['discovered_by'] as String?,
       discoveredYear: json['discovered_year'] as int?,
-      lines: (json['lines'] as List?)?.map((e) => e as String).toList() ?? const [],
+      lines: (json['lines'] as List?)?.map((e) => e as String).toList() ??
+          const [],
       linesCompatible: json['lines_compatible'] as bool? ?? true,
     );
   }
@@ -128,7 +130,8 @@ class LineBredTrait {
       type: json['type'] as String,
       description: json['description'] as String,
       group: json['group'] as String?,
-      variants: (json['variants'] as List?)?.map((e) => e as String).toList() ?? const [],
+      variants: (json['variants'] as List?)?.map((e) => e as String).toList() ??
+          const [],
     );
   }
 }
@@ -146,7 +149,8 @@ class AlleleGroupCrossResult {
     this.note,
   });
 
-  factory AlleleGroupCrossResult.fromJson(String key, Map<String, dynamic> json) {
+  factory AlleleGroupCrossResult.fromJson(
+      String key, Map<String, dynamic> json) {
     return AlleleGroupCrossResult(
       key: key,
       name: json['name'] as String,
@@ -184,7 +188,8 @@ class AlleleGroup {
       description: json['description'] as String,
       members: (json['members'] as List).map((e) => e as String).toList(),
       crossResults: crossMap.entries
-          .map((e) => AlleleGroupCrossResult.fromJson(e.key, e.value as Map<String, dynamic>))
+          .map((e) => AlleleGroupCrossResult.fromJson(
+              e.key, e.value as Map<String, dynamic>))
           .toList(),
       superHealth: (json['super_health'] as Map<String, dynamic>?)
               ?.map((k, v) => MapEntry(k, v as String)) ??
@@ -248,8 +253,10 @@ class MorphGeneticsData {
   });
 
   factory MorphGeneticsData.fromJson(Map<String, dynamic> json) {
-    final alleleGroupsMap = json['allele_groups'] as Map<String, dynamic>? ?? {};
-    final patternGroupsMap = json['pattern_groups'] as Map<String, dynamic>? ?? {};
+    final alleleGroupsMap =
+        json['allele_groups'] as Map<String, dynamic>? ?? {};
+    final patternGroupsMap =
+        json['pattern_groups'] as Map<String, dynamic>? ?? {};
 
     return MorphGeneticsData(
       speciesId: json['species_id'] as String,
@@ -270,14 +277,17 @@ class MorphGeneticsData {
               ?.map((k, v) => MapEntry(k, v as String)) ??
           {},
       alleleGroups: alleleGroupsMap.entries
-          .map((e) => AlleleGroup.fromJson(e.key, e.value as Map<String, dynamic>))
+          .map((e) =>
+              AlleleGroup.fromJson(e.key, e.value as Map<String, dynamic>))
           .toList(),
       patternGroups: patternGroupsMap.entries
-          .map((e) => PatternGroup.fromJson(e.key, e.value as Map<String, dynamic>))
+          .map((e) =>
+              PatternGroup.fromJson(e.key, e.value as Map<String, dynamic>))
           .toList(),
       speciesNameEn: json['species_name_en'] as String?,
       scientificName: json['scientific_name'] as String?,
-      sources: (json['sources'] as List?)?.map((e) => e as String).toList() ?? const [],
+      sources: (json['sources'] as List?)?.map((e) => e as String).toList() ??
+          const [],
     );
   }
 

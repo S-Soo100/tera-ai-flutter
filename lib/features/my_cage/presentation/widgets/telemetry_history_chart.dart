@@ -21,8 +21,7 @@ extension _MetricX on _Metric {
   bool get isTemp => this == _Metric.temperature;
 
   /// 30분 버킷의 평균값(온도=tAvg, 습도=hAvg).
-  double? avg(TelemetryBucket b) =>
-      isTemp ? b.tAvg : b.hAvg;
+  double? avg(TelemetryBucket b) => isTemp ? b.tAvg : b.hAvg;
 
   /// 실시간 현재값(온도=tA, 습도=hA).
   double? current(TelemetryReading r) => isTemp ? r.tA : r.hA;
@@ -37,14 +36,12 @@ extension _MetricX on _Metric {
 
   String get labelKey =>
       isTemp ? 'telemetry_chart_temp' : 'telemetry_chart_humidity';
-  String get unitKey => isTemp
-      ? 'telemetry_chart_temp_unit'
-      : 'telemetry_chart_humidity_unit';
+  String get unitKey =>
+      isTemp ? 'telemetry_chart_temp_unit' : 'telemetry_chart_humidity_unit';
 
   /// 최고/최저 마커용 짧은 단위(°/%).
   String get shortUnit => isTemp ? '°' : '%';
-  IconData get icon =>
-      isTemp ? Icons.thermostat : Icons.water_drop_outlined;
+  IconData get icon => isTemp ? Icons.thermostat : Icons.water_drop_outlined;
 }
 
 /// 유효한 실측값인가 — null이 아니고 **양수**.
@@ -385,12 +382,10 @@ class _Spark extends StatelessWidget {
         final n = values.length;
         // Sparkline 내부 매핑과 동일한 좌표 공식(min/max 고정이라 정확히 일치).
         double y(double v) =>
-            (h - _lineWidth) *
-                (1 - (v - sparkMin) / (sparkMax - sparkMin)) +
+            (h - _lineWidth) * (1 - (v - sparkMin) / (sparkMax - sparkMin)) +
             _lineWidth / 2;
-        double x(int i) => n <= 1
-            ? w / 2
-            : i * (w - _lineWidth) / (n - 1) + _lineWidth / 2;
+        double x(int i) =>
+            n <= 1 ? w / 2 : i * (w - _lineWidth) / (n - 1) + _lineWidth / 2;
 
         // 최고/최저 지점 마커(점 + 값) — 곡선 위 실제 좌표에 얹는다.
         List<Widget> extreme(int idx, double val, {required bool above}) {

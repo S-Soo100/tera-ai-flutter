@@ -3,5 +3,6 @@ int calendarDaysAgo(DateTime timestamp, DateTime now) {
   final date = timestamp.toLocal();
   final today = now.toLocal();
   return DateTime.utc(today.year, today.month, today.day)
-      .difference(DateTime.utc(date.year, date.month, date.day)).inDays;
+      .difference(DateTime.utc(date.year, date.month, date.day))
+      .inDays;
 }

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/fan_timer_duration.dart';
+import 'package:vivanaut/features/home/domain/fan_timer_duration.dart';
 
 void main() {
   test('payload는 duration_ms(밀리초)를 담는다', () {

@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 /// 텍스트 렌더인 이유(2026-09-07 A7): 구 이미지(`logo_wordmark.png`)에 옛
 /// 브랜드 `terra.ai`가 박혀 있었다. 새 로고 에셋이 나올 때까지 워드마크를
 /// 폰트로 그린다 — 저장/공유되는 영상에 옛 브랜드가 찍혀 나가면 안 된다.
-/// 브랜드 문자열은 SOT가 Figma 파일명 `vivnanaut`(CLAUDE.md 이름 표)이고
+/// 브랜드 문자열 SOT는 2026-09-14 사용자 직접 결정 `vivanaut`(CLAUDE.md 이름 표)이며
 /// 사용자 노출 언어와 무관한 고유명사라 l10n 키를 쓰지 않는다.
 class VideoWatermark extends StatelessWidget {
   const VideoWatermark({super.key});
 
-  static const brand = 'vivnanaut';
+  static const brand = 'vivanaut';
 
   @override
   Widget build(BuildContext context) {

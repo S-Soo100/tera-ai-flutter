@@ -41,7 +41,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             displayName: _displayNameController.text.trim(),
           );
       if (mounted) {
-        context.go('/verify-email?email=${Uri.encodeComponent(_emailController.text.trim())}');
+        context.go(
+            '/verify-email?email=${Uri.encodeComponent(_emailController.text.trim())}');
       }
     } on AuthException catch (e) {
       if (mounted) {

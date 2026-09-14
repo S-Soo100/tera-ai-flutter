@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/community/data/community_repository.dart';
-import 'package:vivnanaut/features/community/domain/community_post.dart';
+import 'package:vivanaut/features/community/data/community_repository.dart';
+import 'package:vivanaut/features/community/domain/community_post.dart';
 
 void main() {
   final base = CommunityPost(

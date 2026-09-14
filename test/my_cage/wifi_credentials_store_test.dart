@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/data/wifi_credentials_store.dart';
+import 'package:vivanaut/features/my_cage/data/wifi_credentials_store.dart';
 
 void main() {
   group('WifiCredentialsStore.decode', () {

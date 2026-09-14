@@ -30,11 +30,7 @@ class SupabaseModuleControlRepository {
       if (payload != null) 'payload': payload,
       if (ttlSec != null) 'ttl_sec': ttlSec,
     };
-    final row = await _supabase
-        .from('commands')
-        .insert(body)
-        .select()
-        .single();
+    final row = await _supabase.from('commands').insert(body).select().single();
     return DeviceCommand.fromJson(row);
   }
 
@@ -73,8 +69,7 @@ class SupabaseModuleControlRepository {
   Future<void> assignEnclosure(String deviceId, String? enclosureId) async {
     await _supabase
         .from('devices')
-        .update({'enclosure_id': enclosureId})
-        .eq('id', deviceId);
+        .update({'enclosure_id': enclosureId}).eq('id', deviceId);
   }
 
   // ── 텔레메트리 최신값 ──────────────────────────────────────────────────────

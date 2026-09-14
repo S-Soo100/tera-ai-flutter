@@ -27,9 +27,8 @@ class BehaviorLabel {
       clipId: json['clip_id'] as String,
       labeledBy: json['labeled_by'] as String,
       action: ActionType.fromWire(json['action'] as String),
-      lickTarget: lickTargetRaw != null
-          ? LickTargetType.fromWire(lickTargetRaw)
-          : null,
+      lickTarget:
+          lickTargetRaw != null ? LickTargetType.fromWire(lickTargetRaw) : null,
       note: json['note'] as String?,
       labeledAt: DateTime.parse(json['labeled_at'] as String),
     );

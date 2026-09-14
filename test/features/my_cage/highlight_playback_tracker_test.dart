@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
-import 'package:vivnanaut/features/my_cage/domain/highlight_publication.dart';
-import 'package:vivnanaut/features/my_cage/data/highlight_read_store.dart';
+import 'package:vivanaut/features/my_cage/domain/highlight_publication.dart';
+import 'package:vivanaut/features/my_cage/data/highlight_read_store.dart';
 
 void main() {
   test('진입 초기화 버퍼링 시크로는 읽지 않고 실제 재생 진전 1회만 읽는다', () {

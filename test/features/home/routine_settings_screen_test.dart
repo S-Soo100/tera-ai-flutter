@@ -2,11 +2,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/data/schedule_repository.dart';
-import 'package:vivnanaut/features/home/domain/schedule.dart';
-import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
-import 'package:vivnanaut/features/home/presentation/routine_settings_screen.dart';
-import 'package:vivnanaut/features/home/presentation/schedule_providers.dart';
+import 'package:vivanaut/features/home/data/schedule_repository.dart';
+import 'package:vivanaut/features/home/domain/schedule.dart';
+import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart';
+import 'package:vivanaut/features/home/presentation/schedule_providers.dart';
 
 /// 네트워크를 타지 않는 대역. 호출 기록을 남겨 "정말 서버에 갔는가"를 본다.
 class _FakeRepo implements ScheduleRepository {
@@ -52,8 +52,8 @@ class _FakeRepo implements ScheduleRepository {
       id: s.id,
       deviceId: s.deviceId,
       action: s.action,
-      payload: (changes['payload'] as Map?)?.cast<String, dynamic>() ??
-          s.payload,
+      payload:
+          (changes['payload'] as Map?)?.cast<String, dynamic>() ?? s.payload,
       kind: changes.containsKey('kind')
           ? ScheduleKind.fromWire(changes['kind'] as String?)
           : s.kind,
@@ -70,7 +70,10 @@ class _FakeRepo implements ScheduleRepository {
       nextRunAt: s.nextRunAt,
       lastRunAt: s.lastRunAt,
     );
-    items = [for (final e in items) if (e.id == id) updated else e];
+    items = [
+      for (final e in items)
+        if (e.id == id) updated else e
+    ];
     return updated;
   }
 
@@ -153,7 +156,6 @@ Future<void> _pump(WidgetTester tester, _FakeRepo repo) async {
 }
 
 void main() {
-
   testWidgets('예약 목록을 보여준다', (tester) async {
     final repo = _FakeRepo(items: [
       _schedule(id: 'a'),
@@ -166,14 +168,12 @@ void main() {
     expect(repo.calls, contains('list'));
   });
 
-  testWidgets('예약이 없으면 비어 있다고 밝힌다 — 빈 화면은 고장으로 읽힌다',
-      (tester) async {
+  testWidgets('예약이 없으면 비어 있다고 밝힌다 — 빈 화면은 고장으로 읽힌다', (tester) async {
     await _pump(tester, _FakeRepo());
     expect(find.text('routine_schedule_empty'.tr()), findsOneWidget);
   });
 
-  testWidgets('펌웨어 대기(정지형 가드·히터 타이머)는 각주로 이유를 밝힌다',
-      (tester) async {
+  testWidgets('펌웨어 대기(정지형 가드·히터 타이머)는 각주로 이유를 밝힌다', (tester) async {
     await _pump(tester, _FakeRepo());
     expect(
         find.byKey(RoutineSettingsScreen.pendingFootnoteKey), findsOneWidget);
@@ -188,8 +188,8 @@ void main() {
 
     await tester.ensureVisible(
         find.byKey(const Key('routine_guard_skip_when_humidity_above')));
-    await tester.tap(
-        find.byKey(const Key('routine_guard_skip_when_humidity_above')));
+    await tester
+        .tap(find.byKey(const Key('routine_guard_skip_when_humidity_above')));
     await tester.pumpAndSettle();
     // 종류를 고르면 유효한 출발값(70)이 채워져 저장이 열려야 한다.
     await tester.ensureVisible(find.byKey(const Key('routine_save')));
@@ -197,8 +197,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      repo.calls.any(
-          (c) => c.startsWith('create:mist') && c.contains('guard=skip_when_humidity_above>70')),
+      repo.calls.any((c) =>
+          c.startsWith('create:mist') &&
+          c.contains('guard=skip_when_humidity_above>70')),
       isTrue,
       reason: '실제 호출: ${repo.calls}',
     );
@@ -240,8 +241,10 @@ void main() {
 
   testWidgets('같은 pair_id의 on/off는 목록에 한 줄로 묶인다', (tester) async {
     final repo = _FakeRepo(items: [
-      _schedule(id: 'on', action: ScheduleAction.heaterOn, hour: 20, pairId: 'p1'),
-      _schedule(id: 'off', action: ScheduleAction.heaterOff, hour: 6, pairId: 'p1'),
+      _schedule(
+          id: 'on', action: ScheduleAction.heaterOn, hour: 20, pairId: 'p1'),
+      _schedule(
+          id: 'off', action: ScheduleAction.heaterOff, hour: 6, pairId: 'p1'),
       _schedule(id: 'solo'),
     ]);
     await _pump(tester, repo);
@@ -284,7 +287,8 @@ void main() {
   testWidgets('구간 편집은 시작·종료를 다 고치고 두 행을 PATCH한다', (tester) async {
     final repo = _FakeRepo(items: [
       _schedule(id: 'on', action: ScheduleAction.fanOn, hour: 8, pairId: 'p1'),
-      _schedule(id: 'off', action: ScheduleAction.fanOff, hour: 20, pairId: 'p1'),
+      _schedule(
+          id: 'off', action: ScheduleAction.fanOff, hour: 20, pairId: 'p1'),
     ]);
     await _pump(tester, repo);
     await tester.tap(find.byKey(const Key('schedule_pair_p1')));
@@ -318,8 +322,7 @@ void main() {
     expect(find.byKey(const Key('routine_span_heater_warn')), findsOneWidget);
   });
 
-  testWidgets('수정에서는 구간 탭이 없다 — 서버가 action 수정을 안 받고 쌍 개념도 없다',
-      (tester) async {
+  testWidgets('수정에서는 구간 탭이 없다 — 서버가 action 수정을 안 받고 쌍 개념도 없다', (tester) async {
     final repo = _FakeRepo(items: [_schedule(id: 'a')]);
     await _pump(tester, repo);
 
@@ -341,15 +344,15 @@ void main() {
     await container.read(schedulesProvider.future);
 
     await container.read(schedulesProvider.notifier).addSpan(
-          onAction: ScheduleAction.heaterOn,
-          offAction: ScheduleAction.heaterOff,
-          kind: ScheduleKind.weekly,
-          startHour: 22,
-          startMinute: 0,
-          endHour: 6,
-          endMinute: 0,
-          daysOfWeek: const [1, 7],
-        );
+      onAction: ScheduleAction.heaterOn,
+      offAction: ScheduleAction.heaterOff,
+      kind: ScheduleKind.weekly,
+      startHour: 22,
+      startMinute: 0,
+      endHour: 6,
+      endMinute: 0,
+      daysOfWeek: const [1, 7],
+    );
 
     final creates = repo.calls.where((c) => c.startsWith('create:')).toList();
     expect(creates, hasLength(2));
@@ -370,15 +373,15 @@ void main() {
     await container.read(schedulesProvider.future);
 
     await container.read(schedulesProvider.notifier).addSpan(
-          onAction: ScheduleAction.fanOn,
-          offAction: ScheduleAction.fanOff,
-          kind: ScheduleKind.weekly,
-          startHour: 8,
-          startMinute: 0,
-          endHour: 20,
-          endMinute: 0,
-          daysOfWeek: const [3],
-        );
+      onAction: ScheduleAction.fanOn,
+      offAction: ScheduleAction.fanOff,
+      kind: ScheduleKind.weekly,
+      startHour: 8,
+      startMinute: 0,
+      endHour: 20,
+      endMinute: 0,
+      daysOfWeek: const [3],
+    );
 
     final creates = repo.calls.where((c) => c.startsWith('create:')).toList();
     expect(creates[1], contains('fan_off:20:00:d=3'));
@@ -394,8 +397,7 @@ void main() {
     await tester.tap(find.byKey(const Key('schedule_delete_off1')));
     await tester.pumpAndSettle();
 
-    expect(
-        find.byKey(const Key('routine_delete_off_warning')), findsOneWidget);
+    expect(find.byKey(const Key('routine_delete_off_warning')), findsOneWidget);
   });
 
   testWidgets('켜기 예약 삭제는 평범한 확인 문구다', (tester) async {
@@ -411,8 +413,7 @@ void main() {
     expect(find.text('routine_delete_body'.tr()), findsOneWidget);
   });
 
-  testWidgets('끄기 예약 수정에는 가드 섹션이 없다 — off는 무조건 꺼져야 안전',
-      (tester) async {
+  testWidgets('끄기 예약 수정에는 가드 섹션이 없다 — off는 무조건 꺼져야 안전', (tester) async {
     final repo = _FakeRepo(items: [
       _schedule(id: 'off1', action: ScheduleAction.heaterOff),
     ]);
@@ -421,8 +422,7 @@ void main() {
     await tester.tap(find.byKey(const Key('schedule_off1')));
     await tester.pumpAndSettle();
 
-    expect(
-        find.byKey(const Key('routine_guard_not_for_off')), findsOneWidget);
+    expect(find.byKey(const Key('routine_guard_not_for_off')), findsOneWidget);
     expect(find.byKey(const Key('routine_guard_off')), findsNothing);
   });
 
@@ -457,11 +457,11 @@ void main() {
 
     await tester.ensureVisible(
         find.byKey(const Key('routine_guard_skip_when_humidity_above')));
-    await tester.tap(
-        find.byKey(const Key('routine_guard_skip_when_humidity_above')));
+    await tester
+        .tap(find.byKey(const Key('routine_guard_skip_when_humidity_above')));
     await tester.pumpAndSettle();
-    await tester.tap(
-        find.byKey(const Key('routine_guard_skip_when_temp_above')));
+    await tester
+        .tap(find.byKey(const Key('routine_guard_skip_when_temp_above')));
     await tester.pumpAndSettle();
 
     final field =
@@ -478,8 +478,8 @@ void main() {
     await tester.tap(find.byKey(const Key('schedule_a')));
     await tester.pumpAndSettle();
 
-    final chip = tester.widget<ChoiceChip>(
-        find.byKey(const Key('routine_action_fan_toggle')));
+    final chip = tester
+        .widget<ChoiceChip>(find.byKey(const Key('routine_action_fan_toggle')));
     expect(chip.selected, isTrue);
     expect(chip.onSelected, isNull, reason: '수정 중엔 잠긴다');
   });
@@ -494,8 +494,7 @@ void main() {
     expect(repo.calls.any((c) => c.startsWith('patch:a')), isTrue);
   });
 
-  testWidgets('토글이 실패하면 켜진 것처럼 두지 않는다 — 안 도는 예약을 믿게 하면 안 된다',
-      (tester) async {
+  testWidgets('토글이 실패하면 켜진 것처럼 두지 않는다 — 안 도는 예약을 믿게 하면 안 된다', (tester) async {
     final repo = _FakeRepo(
       items: [_schedule(id: 'a', enabled: false)],
       failOnPatch: true,
@@ -505,7 +504,8 @@ void main() {
     await tester.tap(find.byKey(const Key('schedule_toggle_a')));
     await tester.pumpAndSettle();
 
-    final sw = tester.widget<Switch>(find.byKey(const Key('schedule_toggle_a')));
+    final sw =
+        tester.widget<Switch>(find.byKey(const Key('schedule_toggle_a')));
     expect(sw.value, isFalse, reason: '실패했으므로 꺼진 채여야 한다');
     expect(find.byType(SnackBar), findsOneWidget);
   });
@@ -524,8 +524,7 @@ void main() {
     expect(repo.calls.any((c) => c.startsWith('delete')), isFalse);
   });
 
-  testWidgets('구간 삭제: 서버가 짝을 안 지우면(구버전) off 낱개가 그대로 보인다',
-      (tester) async {
+  testWidgets('구간 삭제: 서버가 짝을 안 지우면(구버전) off 낱개가 그대로 보인다', (tester) async {
     final repo = _FakeRepo(cascadeDelete: false, items: [
       _schedule(id: 'on', action: ScheduleAction.fanOn, pairId: 'p1'),
       _schedule(id: 'off', action: ScheduleAction.fanOff, pairId: 'p1'),
@@ -541,9 +540,13 @@ void main() {
   });
 
   testWidgets('구간 편집: off PATCH 실패 시 on을 원래 타이밍으로 되돌린다', (tester) async {
-    final repo = _FakeRepo(failPatchIds: {'off'}, items: [
-      _schedule(id: 'on', action: ScheduleAction.heaterOn, hour: 8, pairId: 'p1'),
-      _schedule(id: 'off', action: ScheduleAction.heaterOff, hour: 20, pairId: 'p1'),
+    final repo = _FakeRepo(failPatchIds: {
+      'off'
+    }, items: [
+      _schedule(
+          id: 'on', action: ScheduleAction.heaterOn, hour: 8, pairId: 'p1'),
+      _schedule(
+          id: 'off', action: ScheduleAction.heaterOff, hour: 20, pairId: 'p1'),
     ]);
     await _pump(tester, repo);
     await tester.tap(find.byKey(const Key('schedule_pair_p1')));
@@ -567,7 +570,9 @@ void main() {
   });
 
   testWidgets('구간 토글: off PATCH 실패 시 on을 원래 값으로 되돌린다', (tester) async {
-    final repo = _FakeRepo(failPatchIds: {'off'}, items: [
+    final repo = _FakeRepo(failPatchIds: {
+      'off'
+    }, items: [
       _schedule(id: 'on', action: ScheduleAction.fanOn, pairId: 'p1'),
       _schedule(id: 'off', action: ScheduleAction.fanOff, pairId: 'p1'),
     ]);
@@ -580,13 +585,12 @@ void main() {
       'patch:on:{enabled: true}',
     ]);
     // 화면도 되돌아온다.
-    final sw = tester.widget<Switch>(
-        find.byKey(const Key('schedule_pair_toggle_p1')));
+    final sw =
+        tester.widget<Switch>(find.byKey(const Key('schedule_pair_toggle_p1')));
     expect(sw.value, isTrue);
   });
 
-  testWidgets('반쪽 켜짐(on만 enabled)은 OFF로 숨기지 않고 켜짐+경고로 보인다',
-      (tester) async {
+  testWidgets('반쪽 켜짐(on만 enabled)은 OFF로 숨기지 않고 켜짐+경고로 보인다', (tester) async {
     final repo = _FakeRepo(items: [
       _schedule(id: 'on', action: ScheduleAction.heaterOn, pairId: 'p1'),
       _schedule(
@@ -596,8 +600,8 @@ void main() {
           enabled: false),
     ]);
     await _pump(tester, repo);
-    final sw = tester.widget<Switch>(
-        find.byKey(const Key('schedule_pair_toggle_p1')));
+    final sw =
+        tester.widget<Switch>(find.byKey(const Key('schedule_pair_toggle_p1')));
     expect(sw.value, isTrue);
     expect(find.textContaining('routine_pair_skewed'), findsOneWidget);
   });

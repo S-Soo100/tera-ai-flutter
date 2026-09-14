@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/dev/presentation/chart_lab_fixtures.dart';
-import 'package:vivnanaut/shared/domain/chart_window.dart';
-import 'package:vivnanaut/shared/domain/env_chart_data.dart';
+import 'package:vivanaut/features/dev/presentation/chart_lab_fixtures.dart';
+import 'package:vivanaut/shared/domain/chart_window.dart';
+import 'package:vivanaut/shared/domain/env_chart_data.dart';
 
 final _window = ChartWindow.of(DateTime(2026, 8, 10, 16, 40));
 

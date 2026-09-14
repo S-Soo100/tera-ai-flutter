@@ -105,10 +105,9 @@ class WebRtcSignalingRepository {
 
     final body = jsonDecode(resp.body) as Map<String, dynamic>;
     final rawList = body['candidates'] as List? ?? [];
-    final candidates = rawList
-        .map((c) => c as Map<String, dynamic>)
-        .toList();
-    final nextIndex = body['next_index'] as int? ?? (sinceIndex + rawList.length);
+    final candidates = rawList.map((c) => c as Map<String, dynamic>).toList();
+    final nextIndex =
+        body['next_index'] as int? ?? (sinceIndex + rawList.length);
 
     return (candidates: candidates, nextIndex: nextIndex);
   }
@@ -133,8 +132,7 @@ class WebRtcSignalingRepository {
     Future<http.Response> Function() send, {
     int timeoutSec = 15,
   }) async {
-    final resp =
-        await send().timeout(Duration(seconds: timeoutSec));
+    final resp = await send().timeout(Duration(seconds: timeoutSec));
     if (resp.statusCode == 401) {
       await _supabase.auth.signOut();
     }

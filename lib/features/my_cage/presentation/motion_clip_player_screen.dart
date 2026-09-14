@@ -106,8 +106,7 @@ class _MotionClipPlayerScreenState
   }
 
   Future<String> _presignedUrl() async {
-    _cachedUrl ??=
-        await ref.read(motionClipUrlProvider(widget.clipId).future);
+    _cachedUrl ??= await ref.read(motionClipUrlProvider(widget.clipId).future);
     return _cachedUrl!;
   }
 
@@ -177,7 +176,8 @@ class _MotionClipPlayerScreenState
 
   /// 로컬 파일 있으면 그걸, 없으면 presigned URL을 확보해 저장/공유에 넘긴다.
   Future<({File? file, String? url})> _source() async {
-    final f = ref.read(favoriteClipRepositoryProvider).getLocalFile(widget.clipId);
+    final f =
+        ref.read(favoriteClipRepositoryProvider).getLocalFile(widget.clipId);
     if (f != null) return (file: f, url: null);
     final url = await _presignedUrl();
     return (file: null, url: url);
@@ -195,8 +195,8 @@ class _MotionClipPlayerScreenState
             localFile: src.file,
             presignedUrl: src.url,
           );
-      messenger.showSnackBar(
-          SnackBar(content: Text('clip_saved_to_gallery'.tr())));
+      messenger
+          .showSnackBar(SnackBar(content: Text('clip_saved_to_gallery'.tr())));
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text('clip_save_failed'.tr())));
     } finally {
@@ -237,16 +237,16 @@ class _MotionClipPlayerScreenState
             SnackBar(content: Text('clip_favorite_removed'.tr())));
       } else {
         if (clip == null) return; // 오프라인 등 메타 없음 → 추가 불가
-        messenger.showSnackBar(
-            SnackBar(content: Text('clip_favorite_saving'.tr())));
+        messenger
+            .showSnackBar(SnackBar(content: Text('clip_favorite_saving'.tr())));
         final url = await _presignedUrl();
         await repo.add(clip, url);
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         ref.invalidate(favoriteClipsProvider(clip.cameraId));
         ref.invalidate(allFavoriteClipsProvider);
-        messenger.showSnackBar(
-            SnackBar(content: Text('clip_favorite_added'.tr())));
+        messenger
+            .showSnackBar(SnackBar(content: Text('clip_favorite_added'.tr())));
       }
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text('clip_save_failed'.tr())));
@@ -419,9 +419,8 @@ class _GlassIconButton extends StatelessWidget {
         shape: const CircleBorder(),
         child: IconButton(
           icon: Icon(icon,
-              color: onPressed == null
-                  ? Colors.white38
-                  : (color ?? Colors.white)),
+              color:
+                  onPressed == null ? Colors.white38 : (color ?? Colors.white)),
           tooltip: tooltip,
           onPressed: onPressed,
         ),

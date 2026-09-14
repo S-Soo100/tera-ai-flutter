@@ -5,11 +5,11 @@
 | 용도 | 값 |
 |---|---|
 | 한글 표시명 | **비바나트** |
-| 영문 | **vivnanaut** (Figma 파일명 기준 = SOT) |
-| Dart 패키지 | `vivnanaut` |
-| 번들 ID (iOS·Android 공통) | `com.vivnanaut.app` |
+| 영문 | **vivanaut** (2026-09-14 사용자 직접 결정 = SOT) |
+| Dart 패키지 | `vivanaut` |
+| 번들 ID (iOS·Android 공통) | `com.vivanaut.app` |
 
-> ⚠️ **철자를 추측하지 말 것.** 한때 `vivananunt`(오타)·`vivanart`(구 문서명)가 섞여 있었고, 번들 ID까지 오타로 들어갔다가 되돌렸다. **Figma 파일명 `vivnanaut`이 유일한 근거다.**
+> ⚠️ **철자를 추측하지 말 것.** 한때 `vivnanaut`·`vivananunt`(오타)·`vivanart`(구 문서명)가 섞여 있었다. 영문명·패키지·번들 ID의 유일한 근거는 2026-09-14 사용자 직접 결정 `vivanaut`이다. Figma URL의 `/vivnanaut` 경로는 외부 원본의 과거 파일명으로 보존한다.
 > 번들 ID는 스토어 출시 후 변경 불가 — 출시 전에만 손댈 수 있다.
 >
 > 아직 옛 브랜드가 남은 곳: `assets/images/logo_wordmark.png`(영상 워터마크에 `terra.ai`), 앱 아이콘, 저장소명 `tera-ai-flutter`, git 원격.
@@ -30,12 +30,12 @@
 - **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브) + video_player/gal/share_plus(크레캠 영상 재생·기기저장·공유) + fl_chart(홈·통계 공용 온습도 차트)
 - **현재 상태(2026-08-09)**: P2 상당 구현 — Supabase 인증/유저 CRUD + **terra-server 사육장 IoT 실연동**(디바이스/명령/온습도 Realtime + BLE) + **크레캠 영상 개편**(motion_clips 썸네일·저장/공유·즐겨찾기 클라우드·AI분류칩·시크) + **어젯밤 리포트**(마이 크레 탭). **PRD 재설계(`feat/prd-redesign`) — 2026-09-02 전면 개정 + 1단계 구현 완료**: 4탭 IA(홈/카메라/마이크레/커뮤니티, 통계 탭 폐지), 홈 단일 스크롤, 온습도 상세(`/env-detail`), Asset 팔레트 교체, 위키·검색 폐기. 2단계(카메라 탭 재설계)는 미착수. 챗·지식그래프·종비교는 폐기(D3).
   - (P0 "로컬 전용/인증 없음/백엔드 없음"은 초기 설계 — 더 이상 유효하지 않음. 신규 작업은 아래 Phase 경계/CAOF 규칙을 따른다.)
-- **기획안 (현행 SOT)**: `docs/prd-vivnanaut-app.md` — **2026-08-08 전면 재작성.** 기존 구현을 전제하지 않고 노션 기획서·PRD만으로 정리한 기획안이다. **구현이 기획안과 다르면 기획안이 맞다.**
+- **기획안 (현행 SOT)**: `docs/prd-vivanaut-app.md` — **2026-08-08 전면 재작성.** 기존 구현을 전제하지 않고 노션 기획서·PRD만으로 정리한 기획안이다. **구현이 기획안과 다르면 기획안이 맞다.**
   - **기획 ↔ 구현 대조표**: `docs/prd-implementation-gap.md` — 어디가 맞고 어디가 비었는지. 기획안 본문은 구현을 안 다루므로(§0.2) 대조는 이 문서가 맡는다
   - 원문 전사본 + 구 결정 로그 D1~D6: `docs/archive-prd-transcript-and-decisions.md` (보관용, **신규 작업의 근거로 쓰지 말 것**)
   - `docs/spec.md`는 구 기획서(5탭 시절) 열람용.
 - **기획 원문 (Notion)**: https://app.notion.com/p/3ab16a5cfa948082864ec59be6b6f532?source=copy_link — **브라우저로 바로 열린다(로그인 불필요).** Notion MCP 인증을 기다릴 필요 없음
-- **디자인 원본 (Figma)**: https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut?node-id=0-1 — **talk-to-figma MCP로만 접근**(설치·등록 완료). 다른 Figma MCP로 대체하지 않는다. 소켓 서버(`bunx cursor-talk-to-figma-socket`)는 **세션마다 수동 기동** 필요. 전사본: `docs/figma-final-design-transcript.md`
+- **디자인 원본 (Figma)**: https://www.figma.com/design/EMAYOZxHOyeDLZdIahvDkL/vivnanaut?node-id=0-1 — URL의 `/vivnanaut`은 외부 원본의 과거 파일명이며 앱 영문명 SOT가 아니다. **talk-to-figma MCP로만 접근**(설치·등록 완료). 다른 Figma MCP로 대체하지 않는다. 소켓 서버(`bunx cursor-talk-to-figma-socket`)는 **세션마다 수동 기동** 필요. 전사본: `docs/figma-final-design-transcript.md`
 - **자진신고**: ~~2026-06-13 기한~~ — **기한 경과 + 기능 제거됨**(`cbdad94`에서 자진신고 탭 → 내 사육장으로 교체). 코드·ko.json에 잔재 없음. 신규 작업에서 이 기능을 전제하지 말 것.
 
 ### Supabase / 백엔드 관련 문서
@@ -56,7 +56,7 @@
 | P1 | OnboardingScreen, ProfileScreen(내 사육장), 로컬 알림(D-day 리마인더), en 다국어, Pretendard 폰트 | 부분 (알림/en 미완) |
 | P2 | Supabase 도입, 인증(이메일+소셜), 클라우드 동기화, FCM 푸시, 거래 기록 | 상당 구현 (Email 인증·유저 CRUD 완료, 소셜/FCM 후속) |
 | C/D | 게코캠 클라우드 마이그레이션(petcam-lab) + 5탭 UI 개편 + **사육장 IoT(terra-server)** | 진행 중 — `docs/flutter-cloud-migration-plan.md` |
-| PRD 재설계 | 비바나트 4탭 IA — 홈·통계 구현, 컬러 시스템 교체 | ⚠️ **2026-08-08 기획 리셋.** 구현 디자인이 기획 의도를 못 맞춰 기획안을 새로 썼다(`docs/prd-vivnanaut-app.md`). 기존 구현은 **재검토 대상**이고, 신규 작업은 새 기획안을 따른다. **1:N은 1:1로 확정**(§1.3). **활동 집계는 밤 22:00~06:00, 날짜 경계는 07:00**(§3.1). **클립 재생은 전체화면 가로**(§6-B, 2026-08-09). 미결 해소(2026-09-07 사용자 결정): §6-D 통계=폐지+`/env-detail` 확정 · §6-N 캠+제어=홈 세로 배치로 충분(전체화면은 관람 전용) · 미결 R=플레이어 회전 금지 확정 · 미결 S=카메라 탭 하이라이트 카드에 어젯밤 활동 병기 · 다크모드=현행 유지 · 히터 켜기 진입점=사용자 지시까지 보류. **큰 공백: §4.2 타이머&일정이 통째로 미구현** — 대조표 `docs/prd-implementation-gap.md` |
+| PRD 재설계 | 비바나트 4탭 IA — 홈·통계 구현, 컬러 시스템 교체 | ⚠️ **2026-08-08 기획 리셋.** 구현 디자인이 기획 의도를 못 맞춰 기획안을 새로 썼다(`docs/prd-vivanaut-app.md`). 기존 구현은 **재검토 대상**이고, 신규 작업은 새 기획안을 따른다. **1:N은 1:1로 확정**(§1.3). **활동 집계는 밤 22:00~06:00, 날짜 경계는 07:00**(§3.1). **클립 재생은 전체화면 가로**(§6-B, 2026-08-09). 미결 해소(2026-09-07 사용자 결정): §6-D 통계=폐지+`/env-detail` 확정 · §6-N 캠+제어=홈 세로 배치로 충분(전체화면은 관람 전용) · 미결 R=플레이어 회전 금지 확정 · 미결 S=카메라 탭 하이라이트 카드에 어젯밤 활동 병기 · 다크모드=현행 유지 · 히터 켜기 진입점=사용자 지시까지 보류. **큰 공백: §4.2 타이머&일정이 통째로 미구현** — 대조표 `docs/prd-implementation-gap.md` |
 
 ## 아키텍처
 
@@ -189,7 +189,7 @@ CAOF 트랙: [Trivial / Standard / Critical]
 | Critical | 새 feature, Phase 전환 (패키지 도입 제외 — 자유 재량) | 풀 GATE (에이전트 분리) |
 
 **판단 기준은 줄 수가 아니라 "실패 시 되돌리기 비용"이다.**
-상세 라우팅 트리: `.claude/rules/vivnanaut-caof.md`
+상세 라우팅 트리: `.claude/rules/vivanaut-caof.md`
 
 ### 에이전트 폭주 방지
 

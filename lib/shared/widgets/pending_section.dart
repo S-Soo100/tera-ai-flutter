@@ -65,7 +65,8 @@ class PendingSection extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppStyles.spacing12),
                   ),
                   child: Text('common_pending'.tr(),
-                      style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+                      style:
+                          theme.textTheme.labelSmall?.copyWith(color: muted)),
                 ),
               ],
             ),

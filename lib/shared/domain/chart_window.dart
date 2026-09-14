@@ -107,7 +107,6 @@ class ChartWindow {
     );
   }
 
-
   /// [now] **이전**(정각이면 그 시각)의 마지막 하루 경계(07:00).
   static DateTime lastDayBoundaryOnOrBefore(DateTime now) {
     final today = DateTime(now.year, now.month, now.day, dayBoundaryHour);

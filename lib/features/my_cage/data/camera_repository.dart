@@ -26,8 +26,7 @@ class CameraRepository {
   }
 
   Future<TerraCamera?> getById(String id) async {
-    final rows =
-        await _supabase.from('cameras').select().eq('id', id).limit(1);
+    final rows = await _supabase.from('cameras').select().eq('id', id).limit(1);
     final list = rows as List;
     if (list.isEmpty) return null;
     return TerraCamera.fromJson(list.first as Map<String, dynamic>);
@@ -42,8 +41,7 @@ class CameraRepository {
   Future<void> assignEnclosure(String cameraId, String? enclosureId) async {
     await _supabase
         .from('cameras')
-        .update({'enclosure_id': enclosureId})
-        .eq('id', cameraId);
+        .update({'enclosure_id': enclosureId}).eq('id', cameraId);
   }
 
   // ── terra-server REST ──────────────────────────────────────────────────────

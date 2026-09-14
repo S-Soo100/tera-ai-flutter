@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/schedule.dart';
-import 'package:vivnanaut/features/home/domain/schedule_notification_plan.dart';
-import 'package:vivnanaut/shared/domain/fan_timer_notification_plan.dart';
+import 'package:vivanaut/features/home/domain/schedule.dart';
+import 'package:vivanaut/features/home/domain/schedule_notification_plan.dart';
+import 'package:vivanaut/shared/domain/fan_timer_notification_plan.dart';
 
 Schedule _sched({
   String id = 's1',
@@ -80,7 +80,8 @@ void main() {
     final mon0900 = DateTime(2026, 8, 24, 9, 0); // 2026-08-24 = 월요일
 
     test('daily — 오늘 시각이 아직 안 지났으면 오늘', () {
-      expect(nextOccurrence(mon0900, 9, 15, null), DateTime(2026, 8, 24, 9, 15));
+      expect(
+          nextOccurrence(mon0900, 9, 15, null), DateTime(2026, 8, 24, 9, 15));
     });
 
     test('daily — 이미 지났으면 내일', () {

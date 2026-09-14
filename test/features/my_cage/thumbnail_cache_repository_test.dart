@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:vivnanaut/features/my_cage/data/thumbnail_cache_repository.dart';
+import 'package:vivanaut/features/my_cage/data/thumbnail_cache_repository.dart';
 
 void main() {
   late Directory root;

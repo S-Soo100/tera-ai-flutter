@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:vivnanaut/features/home/presentation/env_detail_providers.dart';
-import 'package:vivnanaut/features/home/presentation/env_detail_screen.dart';
-import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/control_log_list.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/env_day_chart.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/week_range_chart.dart';
-import 'package:vivnanaut/shared/domain/actuator_marker.dart';
-import 'package:vivnanaut/shared/domain/axis_bounds.dart';
-import 'package:vivnanaut/shared/domain/control_log.dart';
-import 'package:vivnanaut/shared/domain/env_chart_data.dart';
-import 'package:vivnanaut/shared/domain/env_extremes.dart';
-import 'package:vivnanaut/shared/domain/week_range.dart';
+import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
+import 'package:vivanaut/features/home/presentation/env_detail_screen.dart';
+import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivanaut/features/home/presentation/widgets/control_log_list.dart';
+import 'package:vivanaut/features/home/presentation/widgets/env_day_chart.dart';
+import 'package:vivanaut/features/home/presentation/widgets/week_range_chart.dart';
+import 'package:vivanaut/shared/domain/actuator_marker.dart';
+import 'package:vivanaut/shared/domain/axis_bounds.dart';
+import 'package:vivanaut/shared/domain/control_log.dart';
+import 'package:vivanaut/shared/domain/env_chart_data.dart';
+import 'package:vivanaut/shared/domain/env_extremes.dart';
+import 'package:vivanaut/shared/domain/week_range.dart';
 
 EnvChartData _chartData({bool empty = false}) {
   final today = DateTime.now();
@@ -26,8 +26,7 @@ EnvChartData _chartData({bool empty = false}) {
     tempPoints: empty
         ? const []
         : const [(x: 0.1, y: 0.3), (x: 0.2, y: 0.6), (x: 0.4, y: 0.8)],
-    humidPoints:
-        empty ? const [] : const [(x: 0.1, y: 0.5), (x: 0.4, y: 0.4)],
+    humidPoints: empty ? const [] : const [(x: 0.1, y: 0.5), (x: 0.4, y: 0.4)],
   );
 }
 
@@ -69,12 +68,12 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         currentDeviceIdProvider.overrideWith((ref) async => null),
-        envDailyAverageProvider.overrideWith((ref) async => (temperature:27.5, humidity:55.0, countUnavailable:false)),
+        envDailyAverageProvider.overrideWith((ref) async =>
+            (temperature: 27.5, humidity: 55.0, countUnavailable: false)),
         envDayChartDataProvider
             .overrideWith((ref) async => _chartData(empty: empty)),
         envDayExtremesProvider.overrideWith((ref) async => _extremes),
-        envDayControlLogProvider
-            .overrideWith((ref) async => log ?? _log()),
+        envDayControlLogProvider.overrideWith((ref) async => log ?? _log()),
         envWeekRowsProvider.overrideWith((ref) async => _weekRows()),
       ],
       child: MaterialApp.router(
@@ -104,8 +103,7 @@ void main() {
     expect(find.byKey(EnvDetailScreen.dayPrevKey), findsOneWidget);
   });
 
-  testWidgets('날짜 페이저 — ← 어제로, → 다시 오늘로(도착하면 → 숨김)',
-      (tester) async {
+  testWidgets('날짜 페이저 — ← 어제로, → 다시 오늘로(도착하면 → 숨김)', (tester) async {
     await _pump(tester);
     final now = DateTime.now();
     final yesterday = DateTime(now.year, now.month, now.day - 1);
@@ -121,8 +119,7 @@ void main() {
     expect(find.byKey(EnvDetailScreen.dayNextKey), findsNothing);
   });
 
-  testWidgets('세그먼트 — 주간 전환 시 범위 바 2개 + 주 페이저(이번 주 → 숨김)',
-      (tester) async {
+  testWidgets('세그먼트 — 주간 전환 시 범위 바 2개 + 주 페이저(이번 주 → 숨김)', (tester) async {
     await _pump(tester);
 
     await tester.tap(find.byKey(EnvDetailScreen.segmentWeeklyKey));

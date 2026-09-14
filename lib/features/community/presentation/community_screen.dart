@@ -146,10 +146,11 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
     // async gap 전에 캡처 — 신고 완료 시점엔 context가 죽어 있을 수 있다.
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(communityRepositoryProvider).report(
-          targetKind: 'post', targetId: post.id, reason: reason);
-      messenger.showSnackBar(
-          SnackBar(content: Text('community_report_done'.tr())));
+      await ref
+          .read(communityRepositoryProvider)
+          .report(targetKind: 'post', targetId: post.id, reason: reason);
+      messenger
+          .showSnackBar(SnackBar(content: Text('community_report_done'.tr())));
     } catch (_) {
       messenger.showSnackBar(
           SnackBar(content: Text('community_report_failed'.tr())));
@@ -175,9 +176,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
     if (ok == true && mounted) {
       final messenger = ScaffoldMessenger.of(context); // async gap 전에 캡처
       try {
-        await ref
-            .read(communityFeedProvider.notifier)
-            .blockUser(post.authorId);
+        await ref.read(communityFeedProvider.notifier).blockUser(post.authorId);
       } catch (_) {
         // 실패를 삼키면 카드가 남아 있는 이유를 알 길이 없다 — 신고와 동일 문법.
         messenger.showSnackBar(
@@ -225,8 +224,8 @@ class _NoticeBanner extends ConsumerWidget {
     if (notice == null) return const SizedBox.shrink();
     final glass = context.glass;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppStyles.spacing16, 0,
-          AppStyles.spacing16, AppStyles.spacing12),
+      padding: const EdgeInsets.fromLTRB(
+          AppStyles.spacing16, 0, AppStyles.spacing16, AppStyles.spacing12),
       child: GlassCard(
         padding: const EdgeInsets.all(12),
         child: InkWell(

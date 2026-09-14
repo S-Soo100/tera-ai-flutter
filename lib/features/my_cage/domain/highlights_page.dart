@@ -41,8 +41,7 @@ class HighlightItem {
   factory HighlightItem.fromJson(Map<String, dynamic> json) {
     return HighlightItem(
       clip: Clip.fromJson(json),
-      highlightAction:
-          ActionType.fromWire(json['highlight_action'] as String),
+      highlightAction: ActionType.fromWire(json['highlight_action'] as String),
       highlightSource:
           HighlightSource.fromWire(json['highlight_source'] as String),
     );
@@ -69,8 +68,7 @@ class HighlightsPage {
       items: itemsRaw
           .map((e) => HighlightItem.fromJson(e as Map<String, dynamic>))
           .toList(),
-      nextCursor:
-          nextCursorRaw != null ? DateTime.parse(nextCursorRaw) : null,
+      nextCursor: nextCursorRaw != null ? DateTime.parse(nextCursorRaw) : null,
     );
   }
 }

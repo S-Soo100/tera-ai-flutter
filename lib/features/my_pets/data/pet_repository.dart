@@ -79,9 +79,7 @@ class PetRepository {
 
   // Weight Log CRUD
   List<WeightLog> getWeightLogs(String petId) {
-    return _weightLogsBox.values
-        .where((l) => l.petId == petId)
-        .toList()
+    return _weightLogsBox.values.where((l) => l.petId == petId).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
   }
 

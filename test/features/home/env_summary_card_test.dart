@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:vivnanaut/features/home/presentation/env_detail_providers.dart';
-import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/env_summary_card.dart';
-import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
-import 'package:vivnanaut/features/my_cage/domain/telemetry_reading.dart';
-import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
-import 'package:vivnanaut/shared/domain/env_extremes.dart';
+import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
+import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivanaut/features/home/presentation/widgets/env_summary_card.dart';
+import 'package:vivanaut/features/my_cage/domain/actuator_state.dart';
+import 'package:vivanaut/features/my_cage/domain/telemetry_reading.dart';
+import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivanaut/shared/domain/env_extremes.dart';
 
 const _deviceId = 'd1';
 
@@ -83,8 +83,7 @@ void main() {
     expect(find.text('--'), findsNWidgets(2));
   });
 
-  testWidgets('카드 탭 → /env-detail push (온습도 상세, Task 5 라우트)',
-      (tester) async {
+  testWidgets('카드 탭 → /env-detail push (온습도 상세, Task 5 라우트)', (tester) async {
     await _pump(tester);
     await tester.tap(find.byKey(EnvSummaryCard.cardKey));
     await tester.pumpAndSettle();

@@ -69,10 +69,11 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
     // async gap 전에 캡처.
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(communityRepositoryProvider).report(
-          targetKind: 'comment', targetId: commentId, reason: reason);
-      messenger.showSnackBar(
-          SnackBar(content: Text('community_report_done'.tr())));
+      await ref
+          .read(communityRepositoryProvider)
+          .report(targetKind: 'comment', targetId: commentId, reason: reason);
+      messenger
+          .showSnackBar(SnackBar(content: Text('community_report_done'.tr())));
     } catch (_) {
       messenger.showSnackBar(
           SnackBar(content: Text('community_report_failed'.tr())));
@@ -135,8 +136,8 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                           // 타인 댓글은 길게 눌러 신고 (Apple 1.2, Task 11).
                           onLongPress: c.authorId == myId
                               ? null
-                              : () => showReportReasonsSheet(
-                                  context, (reason) => _reportComment(c.id, reason)),
+                              : () => showReportReasonsSheet(context,
+                                  (reason) => _reportComment(c.id, reason)),
                           // AccountAvatar는 onPressed·tooltip 필수 시그니처 —
                           // 댓글 아바타는 눌러도 갈 곳이 없어 no-op로 둔다.
                           leading: AccountAvatar(

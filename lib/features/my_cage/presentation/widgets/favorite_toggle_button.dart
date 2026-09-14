@@ -41,22 +41,21 @@ class _FavoriteToggleButtonState extends ConsumerState<FavoriteToggleButton> {
         final clip = await ref.read(motionClipProvider(widget.clipId).future);
         if (clip == null) {
           if (mounted) {
-            messenger.showSnackBar(
-                SnackBar(content: Text('clip_save_failed'.tr())));
+            messenger
+                .showSnackBar(SnackBar(content: Text('clip_save_failed'.tr())));
           }
           return;
         }
-        messenger.showSnackBar(
-            SnackBar(content: Text('clip_favorite_saving'.tr())));
-        final url =
-            await ref.read(motionClipUrlProvider(widget.clipId).future);
+        messenger
+            .showSnackBar(SnackBar(content: Text('clip_favorite_saving'.tr())));
+        final url = await ref.read(motionClipUrlProvider(widget.clipId).future);
         await repo.add(clip, url);
         if (!mounted) return;
         ref.invalidate(isFavoriteProvider(widget.clipId));
         ref.invalidate(favoriteClipsProvider(clip.cameraId));
         ref.invalidate(allFavoriteClipsProvider);
-        messenger.showSnackBar(
-            SnackBar(content: Text('clip_favorite_added'.tr())));
+        messenger
+            .showSnackBar(SnackBar(content: Text('clip_favorite_added'.tr())));
       }
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text('clip_save_failed'.tr())));

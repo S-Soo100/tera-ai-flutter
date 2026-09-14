@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
-import 'package:vivnanaut/shared/domain/env_chart_data.dart';
+import 'package:vivanaut/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivanaut/shared/domain/env_chart_data.dart';
 
 final _from = DateTime(2026, 8, 4, 19);
 final _to = DateTime(2026, 8, 5, 7); // 12시간
@@ -76,8 +76,8 @@ void main() {
         _b(_from, t: 24),
         _b(DateTime(2026, 8, 4, 22), t: 25),
       ]);
-      expect(d.tempPoints.map((p) => p.x).toList(),
-          [0, closeTo(0.25, 1e-9), 1]);
+      expect(
+          d.tempPoints.map((p) => p.x).toList(), [0, closeTo(0.25, 1e-9), 1]);
     });
   });
 

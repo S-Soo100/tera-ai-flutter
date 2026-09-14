@@ -271,8 +271,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                 // 커뮤니티에서 차단한 사용자 관리 (Task 12)
                 ListTile(
-                  leading: Icon(Icons.block,
-                      color: colorScheme.onSurfaceVariant),
+                  leading:
+                      Icon(Icons.block, color: colorScheme.onSurfaceVariant),
                   title: Text('community_blocked_users'.tr()),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/profile/blocked'),

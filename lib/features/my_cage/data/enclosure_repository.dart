@@ -42,12 +42,16 @@ class EnclosureRepository {
     if (userId == null) {
       throw StateError('사육장 생성 실패: 로그인 세션이 없습니다.');
     }
-    final row = await _supabase.from('enclosures').insert({
-      'owner_id': userId,
-      'name': name,
-      if (species != null) 'species': species,
-      if (note != null) 'note': note,
-    }).select().single();
+    final row = await _supabase
+        .from('enclosures')
+        .insert({
+          'owner_id': userId,
+          'name': name,
+          if (species != null) 'species': species,
+          if (note != null) 'note': note,
+        })
+        .select()
+        .single();
     return Enclosure.fromJson(row);
   }
 }

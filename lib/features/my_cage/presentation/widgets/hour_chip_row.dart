@@ -56,8 +56,8 @@ class _HourChipRowState extends State<HourChipRow> {
     if (!_scrollController.hasClients) return;
     final viewportWidth = _scrollController.position.viewportDimension;
     // 선택 칩의 중심 x 좌표
-    final chipCenter = widget.selectedHour * (_chipWidth + _separatorWidth) +
-        _chipWidth / 2;
+    final chipCenter =
+        widget.selectedHour * (_chipWidth + _separatorWidth) + _chipWidth / 2;
     // 뷰포트 중앙에 오도록 offset 계산
     final targetOffset = chipCenter - viewportWidth / 2;
     final maxExtent = _scrollController.position.maxScrollExtent;
@@ -81,8 +81,7 @@ class _HourChipRowState extends State<HourChipRow> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         itemCount: 24,
-        separatorBuilder: (_, __) =>
-            const SizedBox(width: _separatorWidth),
+        separatorBuilder: (_, __) => const SizedBox(width: _separatorWidth),
         itemBuilder: (context, hour) {
           final count = widget.counts[hour] ?? 0;
           final isSelected = hour == widget.selectedHour;
@@ -91,9 +90,8 @@ class _HourChipRowState extends State<HourChipRow> {
           final bgColor = isSelected
               ? colorScheme.primary
               : colorScheme.surfaceContainerHigh;
-          final textColor = isSelected
-              ? colorScheme.onPrimary
-              : colorScheme.onSurface;
+          final textColor =
+              isSelected ? colorScheme.onPrimary : colorScheme.onSurface;
           final opacity = isDisabled && !isSelected ? 0.4 : 1.0;
 
           return Opacity(
@@ -114,9 +112,8 @@ class _HourChipRowState extends State<HourChipRow> {
                       '$hour시',
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w400,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w400,
                         color: textColor,
                       ),
                     ),

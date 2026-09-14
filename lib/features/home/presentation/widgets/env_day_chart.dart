@@ -220,12 +220,10 @@ class _EnvDayChartState extends State<EnvDayChart> {
               humidColor: glass.humidAccent,
               gridColor: glass.chartGridLine,
               scrubX: scrubX,
-              scrubTempY: scrubX == null
-                  ? null
-                  : widget.data.tempNormAt(scrubX),
-              scrubHumidY: scrubX == null
-                  ? null
-                  : widget.data.humidNormAt(scrubX),
+              scrubTempY:
+                  scrubX == null ? null : widget.data.tempNormAt(scrubX),
+              scrubHumidY:
+                  scrubX == null ? null : widget.data.humidNormAt(scrubX),
               scrubLineColor: glass.textSecondary,
               scrubDotFill: glass.overlay,
             ),
@@ -455,8 +453,7 @@ class _DayPlotPainter extends CustomPainter {
 
     void drawLinePath(List<({double x, double y})> pts, Color color) {
       if (pts.length < 2) return; // 점 하나짜리 선은 보이지 않는다.
-      final path = Path()
-        ..moveTo(pts.first.x * size.width, _dy(pts.first.y));
+      final path = Path()..moveTo(pts.first.x * size.width, _dy(pts.first.y));
       for (final p in pts.skip(1)) {
         path.lineTo(p.x * size.width, _dy(p.y));
       }

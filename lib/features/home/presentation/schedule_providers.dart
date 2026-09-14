@@ -45,8 +45,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
   void _syncNotifications(List<Schedule> list) {
     final deviceId = _deviceId;
     if (deviceId == null) return;
-    unawaited(
-        ref.read(scheduleNotificationSyncProvider).sync(deviceId, list));
+    unawaited(ref.read(scheduleNotificationSyncProvider).sync(deviceId, list));
   }
 
   /// 상태 교체 + 알림 동기화. `state =` 직접 대입 대신 이걸 쓸 것.
@@ -283,11 +282,15 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
       'time_of_day':
           '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
       // daily로 바꾸면 요일을 비워야 서버가 next_run_at을 다시 계산한다.
-      'days_of_week': kind == ScheduleKind.weekly ? ([...daysOfWeek]..sort()) : null,
+      'days_of_week':
+          kind == ScheduleKind.weekly ? ([...daysOfWeek]..sort()) : null,
       if (payload != null) 'payload': payload,
       // 가드 해제는 명시적 null, 유지는 키 생략 — PATCH에서 "안 바꿈"과
       // "비움"을 구분해야 한다(createBody 주석과 같은 원칙).
-      if (clearGuard) 'guard': null else if (guard != null) 'guard': guard.toJson(),
+      if (clearGuard)
+        'guard': null
+      else if (guard != null)
+        'guard': guard.toJson(),
     });
     _replace(updated);
   }

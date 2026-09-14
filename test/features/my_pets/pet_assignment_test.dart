@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/presentation/enclosure_settings_screen.dart';
-import 'package:vivnanaut/features/my_pets/data/pet_assignment_service.dart';
-import 'package:vivnanaut/features/my_pets/data/supabase_pet_repository.dart';
+import 'package:vivanaut/features/my_cage/presentation/enclosure_settings_screen.dart';
+import 'package:vivanaut/features/my_pets/data/pet_assignment_service.dart';
+import 'package:vivanaut/features/my_pets/data/supabase_pet_repository.dart';
 
 Map<String, dynamic> _row({
   Object? enclosureId = _absent,
@@ -79,8 +79,7 @@ void main() {
       expect(sync.calls, 1);
     });
 
-    test('RPC가 실패하면 재동기화하지 않고 예외를 전파한다 — 로컬 선반영 금지',
-        () async {
+    test('RPC가 실패하면 재동기화하지 않고 예외를 전파한다 — 로컬 선반영 금지', () async {
       final sync = _FakeSync();
       final svc = PetAssignmentService(
         rpc: ({required petId, required enclosureId}) async {

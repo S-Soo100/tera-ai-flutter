@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
-import 'package:vivnanaut/shared/domain/week_range.dart';
+import 'package:vivanaut/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivanaut/shared/domain/week_range.dart';
 
 TelemetryBucket bucket(
   DateTime at, {

@@ -33,8 +33,7 @@ class BehaviorInference {
           confidenceRaw != null ? (confidenceRaw as num).toDouble() : null,
       reasoning: json['reasoning'] as String?,
       vlmModel: json['vlm_model'] as String?,
-      createdAt:
-          createdAtRaw != null ? DateTime.parse(createdAtRaw) : null,
+      createdAt: createdAtRaw != null ? DateTime.parse(createdAtRaw) : null,
     );
   }
 }

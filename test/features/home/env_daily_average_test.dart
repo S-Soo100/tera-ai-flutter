@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/env_daily_average.dart';
+import 'package:vivanaut/features/home/domain/env_daily_average.dart';
 
 void main() {
   test('불균등 표본은 가중 평균, 센티넬과 무효 표본은 제외', () {

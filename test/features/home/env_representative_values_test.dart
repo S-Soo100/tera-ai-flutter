@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vivnanaut/features/home/domain/env_realtime_values.dart';
-import 'package:vivnanaut/features/home/presentation/env_detail_providers.dart';
-import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
-import 'package:vivnanaut/features/my_cage/domain/telemetry_reading.dart';
+import 'package:vivanaut/features/home/domain/env_realtime_values.dart';
+import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
+import 'package:vivanaut/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivanaut/features/my_cage/domain/telemetry_reading.dart';
 
 void main() {
   test('오늘 최신 센서만 표시하고 오래된 값/다른 기기/센티넬을 배제한다', () {

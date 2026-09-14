@@ -2699,7 +2699,7 @@ Consumer(builder: (context, ref, _) {
 - Must know: PRD는 SOT — 구현이 끝나면 §4.5를 클립 피드 기획으로 **사용자 승인 하에** 갱신(임의 수정 금지, 초안 제시 → 승인 → 반영)
 - Acceptance: 문서-코드 불일치 0 (doc-sync 스킬 기준)
 
-- [ ] **Step 1:** `docs/prd-vivnanaut-app.md` §4.5 개정 초안 제시 → 사용자 승인 → 반영
+- [ ] **Step 1:** `docs/prd-vivanaut-app.md` §4.5 개정 초안 제시 → 사용자 승인 → 반영
 - [ ] **Step 2:** `docs/prd-implementation-gap.md` 커뮤니티 항목 갱신 (🟡 위키만 실물 → 구현 현황)
 - [ ] **Step 3:** `CLAUDE.md` 탭 테이블의 커뮤니티 행 갱신 (로컬 seed 하드코딩 경고 제거 → 클립 피드 + community_* 테이블)
 - [ ] **Step 4:** `docs/supabase-setup.md` RLS 표에 community 정책 추가

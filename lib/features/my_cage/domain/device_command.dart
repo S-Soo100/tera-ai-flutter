@@ -252,9 +252,7 @@ class DeviceCommand {
       deviceId: j['device_id'] as String? ?? '',
       issuedBy: j['issued_by'] as String? ?? '',
       action: CommandActionWire.fromWire(j['action'] as String?),
-      payload: rawPayload is Map
-          ? rawPayload.cast<String, dynamic>()
-          : null,
+      payload: rawPayload is Map ? rawPayload.cast<String, dynamic>() : null,
       status: CommandStatusWire.fromWire(j['status'] as String?),
       result: CommandResultWire.fromWire(j['result'] as String?),
       issuedAt: j['issued_at'] != null

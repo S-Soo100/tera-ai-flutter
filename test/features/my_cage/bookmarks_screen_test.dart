@@ -1,12 +1,12 @@
-import 'package:vivnanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:vivnanaut/features/my_cage/domain/favorite_clip.dart';
-import 'package:vivnanaut/features/my_cage/presentation/bookmarks_screen.dart';
-import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
-import 'package:vivnanaut/features/my_cage/presentation/widgets/crecam_detail_top_bar.dart';
+import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
+import 'package:vivanaut/features/my_cage/presentation/bookmarks_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/crecam_detail_top_bar.dart';
 
 /// 북마크 상세(카메라 탭 재설계 T3) 위젯 테스트.
 ///
@@ -74,8 +74,7 @@ void main() {
     await _pump(tester);
     expect(find.text('crecam_bookmarks_title'), findsOneWidget);
     // 00:50 → 오전 12:50 (0시 = 12시 표기 엣지)
-    expect(
-        find.text('2026. 08. 12 · time_am_fmt'), findsOneWidget);
+    expect(find.text('2026. 08. 12 · time_am_fmt'), findsOneWidget);
     // 14:05 → 오후 2:05
     expect(find.text('2026. 08. 11 · time_pm_fmt'), findsOneWidget);
     expect(find.byKey(CrecamDetailTopBar.calendarButtonKey), findsOneWidget);
@@ -86,8 +85,7 @@ void main() {
     expect(find.text('clip_favorites_empty'), findsOneWidget);
   });
 
-  testWidgets('카드 탭 → 세로 플레이어 + 전체 북마크 재생목록(정렬 순서)',
-      (tester) async {
+  testWidgets('카드 탭 → 세로 플레이어 + 전체 북마크 재생목록(정렬 순서)', (tester) async {
     await _pump(tester);
     // 카드 면적이 커서 카드 중심이 화면 밖일 수 있다 — 헤더 텍스트를 탭한다.
     final header = find.text('2026. 08. 11 · time_pm_fmt');

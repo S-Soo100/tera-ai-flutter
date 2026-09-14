@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
-import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/home_header_bar.dart';
-import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
-import 'package:vivnanaut/features/my_pets/domain/pet.dart';
+import 'package:vivanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivanaut/features/home/presentation/widgets/home_header_bar.dart';
+import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
+import 'package:vivanaut/features/my_pets/domain/pet.dart';
 
 EnclosureSet _set(String id, String encName, {String? petName}) => EnclosureSet(
       enclosure:
@@ -76,28 +76,25 @@ GoRouter _router() => GoRouter(
         ),
         GoRoute(
           path: '/env-settings',
-          builder: (_, __) => const Scaffold(
-              body: Center(child: Text('env-settings-screen'))),
+          builder: (_, __) =>
+              const Scaffold(body: Center(child: Text('env-settings-screen'))),
         ),
       ],
     );
 
 void main() {
-  testWidgets('짧은 세트명에서도 우측 버튼이 헤더 우단에 붙는다 (2026-09-07 회귀)',
-      (tester) async {
+  testWidgets('짧은 세트명에서도 우측 버튼이 헤더 우단에 붙는다 (2026-09-07 회귀)', (tester) async {
     // Flexible(pill)+Spacer 시절: 여유 공간이 1:1 분배돼 loose 필이 할당을
     // 남기면 잔여가 Row 우측에 몰려 버튼들이 화면 끝에서 ~40pt 떠 보였다.
     // 짧은 라벨(긴 라벨은 할당을 다 써 재현 불가)로 고정한다.
     await _pump(tester, [_set('e1', '집', petName: '크')]);
     final header = tester.getRect(find.byType(HomeHeaderBar));
-    final person =
-        tester.getRect(find.byKey(HomeHeaderBar.personButtonKey));
+    final person = tester.getRect(find.byKey(HomeHeaderBar.personButtonKey));
     expect(person.right, header.right);
     // 필은 h44를 꽉 채운다(Figma 668:430) — 텍스트 높이로 수축 금지.
     final pill = tester.getRect(find.byKey(HomeHeaderBar.setPillKey));
     expect(pill.height, HomeHeaderBar.height);
   });
-
 
   testWidgets('필 라벨 = 개체명(있으면), 사육장명과 합치지 않는다', (tester) async {
     await _pump(tester, [_set('e1', '1번 사육장', petName: '젤리')]);
@@ -137,16 +134,14 @@ void main() {
     expect(find.text('home_no_set'), findsOneWidget);
   });
 
-  testWidgets('person 버튼 → 프로필 화면 — 계정으로 가는 유일한 문이다',
-      (tester) async {
+  testWidgets('person 버튼 → 프로필 화면 — 계정으로 가는 유일한 문이다', (tester) async {
     await _pump(tester, [_set('e1', 'A')]);
     await tester.tap(find.byKey(HomeHeaderBar.personButtonKey));
     await tester.pumpAndSettle();
     expect(find.text('profile-screen'), findsOneWidget);
   });
 
-  testWidgets('⚙️ 버튼 → /env-settings — 연동/설정 분리(2026-09-08)',
-      (tester) async {
+  testWidgets('⚙️ 버튼 → /env-settings — 연동/설정 분리(2026-09-08)', (tester) async {
     await _pump(tester, [_set('e1', 'A')]);
     await tester.tap(find.byKey(HomeHeaderBar.settingsButtonKey));
     await tester.pumpAndSettle();
@@ -154,8 +149,7 @@ void main() {
   });
 
   group('[+] 메뉴', () {
-    testWidgets('탭하면 기기/카메라/개체 추가 + 사육장 연동 4항목이 뜬다',
-        (tester) async {
+    testWidgets('탭하면 기기/카메라/개체 추가 + 사육장 연동 4항목이 뜬다', (tester) async {
       await _pump(tester, [_set('e1', 'A')]);
       await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
       await tester.pumpAndSettle();
@@ -165,8 +159,7 @@ void main() {
       expect(find.text('home_enclosure_link'), findsOneWidget);
     });
 
-    testWidgets('카메라 추가 → /crecam/cameras/pair (카메라 탭 재설계 T2)',
-        (tester) async {
+    testWidgets('카메라 추가 → /crecam/cameras/pair (카메라 탭 재설계 T2)', (tester) async {
       await _pump(tester, [_set('e1', 'A')]);
       await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
       await tester.pumpAndSettle();

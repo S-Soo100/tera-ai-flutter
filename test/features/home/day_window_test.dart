@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/day_window.dart';
+import 'package:vivanaut/features/home/domain/day_window.dart';
 
 void main() {
   group('DayWindow.of — 07:00 경계', () {
@@ -52,8 +52,7 @@ void main() {
 
     test('창 종료 정각도 24시간', () {
       final w = DayWindow.forDate(DateTime(2026, 8, 5));
-      expect(
-          w.elapsed(DateTime(2026, 8, 6, 7)), const Duration(hours: 24));
+      expect(w.elapsed(DateTime(2026, 8, 6, 7)), const Duration(hours: 24));
     });
 
     test('창 시작 전(미래 날짜)이면 0 — 음수로 안 간다', () {
@@ -61,5 +60,4 @@ void main() {
       expect(w.elapsed(DateTime(2026, 8, 5, 12)), Duration.zero);
     });
   });
-
 }

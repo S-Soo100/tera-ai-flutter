@@ -31,8 +31,7 @@ class HourlyActivityChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final maxVal =
-        hourlySeconds.isEmpty ? 0 : hourlySeconds.reduce(math.max);
+    final maxVal = hourlySeconds.isEmpty ? 0 : hourlySeconds.reduce(math.max);
 
     if (maxVal <= 0) {
       return SizedBox(
@@ -68,8 +67,8 @@ class HourlyActivityChart extends StatelessWidget {
                   if (isFuture) {
                     // 아직 도래 안 한 시각 → 무활동(0.4)보다 더 흐린 2px '예정' 스텁.
                     h = 2.0;
-                    color =
-                        theme.colorScheme.outlineVariant.withValues(alpha: 0.15);
+                    color = theme.colorScheme.outlineVariant
+                        .withValues(alpha: 0.15);
                   } else if (v <= 0) {
                     // 0 → 흐린 스텁(3px)으로 무활동 표시.
                     h = 3.0;

@@ -29,9 +29,7 @@ List<DayHighlightGroup> groupByDay(List<NightlyHighlight> highlights) {
           byDay[key]!.where((h) => h.isFeatured).toList()
             ..sort((a, b) {
               final byRank = a.episodeRank.compareTo(b.episodeRank);
-              return byRank != 0
-                  ? byRank
-                  : b.startedAt.compareTo(a.startedAt);
+              return byRank != 0 ? byRank : b.startedAt.compareTo(a.startedAt);
             }),
         ),
         candidates: List.unmodifiable(
@@ -46,7 +44,8 @@ List<DayHighlightGroup> groupByDay(List<NightlyHighlight> highlights) {
 /// 있는 하루엔 rank 1 대표를 항상 만든다) 후보의 최신 startedAt.
 DateTime? latestFeaturedAt(DayHighlightGroup group) {
   DateTime? latest;
-  for (final h in group.featured.isNotEmpty ? group.featured : group.candidates) {
+  for (final h
+      in group.featured.isNotEmpty ? group.featured : group.candidates) {
     if (latest == null || h.startedAt.isAfter(latest)) latest = h.startedAt;
   }
   return latest;

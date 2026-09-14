@@ -76,8 +76,8 @@ class _CameraRotateTileState extends ConsumerState<CameraRotateTile> {
       _busy = true;
       _pending = next;
     });
-    final ok = await submitRotate180(context, ref,
-        cameraUuid: cameraUuid, next: next);
+    final ok =
+        await submitRotate180(context, ref, cameraUuid: cameraUuid, next: next);
     if (!mounted) return;
     setState(() {
       _busy = false;

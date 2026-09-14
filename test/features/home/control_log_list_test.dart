@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/control_log_list.dart';
-import 'package:vivnanaut/shared/domain/actuator_marker.dart';
-import 'package:vivnanaut/shared/domain/control_log.dart';
+import 'package:vivanaut/features/home/presentation/widgets/control_log_list.dart';
+import 'package:vivanaut/shared/domain/actuator_marker.dart';
+import 'package:vivanaut/shared/domain/control_log.dart';
 
 Future<void> _pump(WidgetTester tester, List<ControlLogEntry> entries) async {
   await tester.pumpWidget(

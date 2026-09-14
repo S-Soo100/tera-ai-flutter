@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/shared/domain/actuator_marker.dart';
+import 'package:vivanaut/shared/domain/actuator_marker.dart';
 
 Map<String, dynamic> _cmd(String action, String issuedAt,
         {String status = 'acked'}) =>
@@ -44,12 +44,10 @@ void main() {
         _cmd('relay_toggle', '2026-08-05T09:00:00Z'),
         _cmd('mist', '2026-08-11T07:41:16Z'),
       ]);
-      expect(m.map((e) => e.kind).toList(),
-          [MarkerKind.mist, MarkerKind.mist]);
+      expect(m.map((e) => e.kind).toList(), [MarkerKind.mist, MarkerKind.mist]);
     });
 
-    test('켜기·끄기·뒤집기가 전부 같은 종류다 — 마커는 방향이 아니라 "돌았다"는 뜻',
-        () {
+    test('켜기·끄기·뒤집기가 전부 같은 종류다 — 마커는 방향이 아니라 "돌았다"는 뜻', () {
       // 절대 명령(fan_on/heater_off/…)은 펌웨어에 처음부터 있었는데 계약
       // 문서에 빠져 있었다(백엔드 회신 2026-08-12). 수동 제어를 이쪽으로
       // 옮기면서 매핑을 안 늘리면 그 시각 동작이 차트에서 통째로 사라진다.

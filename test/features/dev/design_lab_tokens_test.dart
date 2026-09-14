@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/dev/design_lab/lab_mode_toggle.dart';
-import 'package:vivnanaut/features/dev/design_lab/tokens/variant_a_tokens.dart';
-import 'package:vivnanaut/features/dev/design_lab/tokens/variant_b_tokens.dart';
+import 'package:vivanaut/features/dev/design_lab/lab_mode_toggle.dart';
+import 'package:vivanaut/features/dev/design_lab/tokens/variant_a_tokens.dart';
+import 'package:vivanaut/features/dev/design_lab/tokens/variant_b_tokens.dart';
 
 /// 랩 토큰 2벌(다크/라이트)이 InheritedWidget으로 내려가고, 셸 밖에서는
 /// 시스템 밝기를 따르는지.

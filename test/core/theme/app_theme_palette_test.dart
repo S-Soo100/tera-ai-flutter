@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/core/theme/app_styles.dart';
-import 'package:vivnanaut/core/theme/app_theme.dart';
-import 'package:vivnanaut/core/theme/glass_palette.dart';
-import 'package:vivnanaut/core/theme/viva_colors.dart';
-import 'package:vivnanaut/shared/widgets/glass_card.dart';
-import 'package:vivnanaut/shared/widgets/glass_dock.dart';
+import 'package:vivanaut/core/theme/app_styles.dart';
+import 'package:vivanaut/core/theme/app_theme.dart';
+import 'package:vivanaut/core/theme/glass_palette.dart';
+import 'package:vivanaut/core/theme/viva_colors.dart';
+import 'package:vivanaut/shared/widgets/glass_card.dart';
+import 'package:vivanaut/shared/widgets/glass_dock.dart';
 
 /// VIVA 공통색 + 기존 Asset 전용색이 테마에서 어긋나지 않게 고정한다.
 /// 값 출처: `docs/design-system-viva-colors.md`

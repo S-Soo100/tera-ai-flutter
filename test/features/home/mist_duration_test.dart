@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/mist_duration.dart';
+import 'package:vivanaut/features/home/domain/mist_duration.dart';
 
 void main() {
   group('MistDuration', () {

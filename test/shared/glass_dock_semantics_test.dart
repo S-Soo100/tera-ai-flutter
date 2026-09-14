@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/shared/widgets/glass_dock.dart';
+import 'package:vivanaut/shared/widgets/glass_dock.dart';
 
 void main() {
-  testWidgets('독 버튼 semantics 노드에 tap 액션이 있다 — 스크린리더 활성화 보장',
-      (tester) async {
+  testWidgets('독 버튼 semantics 노드에 tap 액션이 있다 — 스크린리더 활성화 보장', (tester) async {
     // excludeSemantics는 자식 InkWell의 tap 액션까지 지운다. Semantics 노드에
     // onTap을 직접 달지 않으면 스크린리더가 라벨은 읽되 탭을 못 한다.
     final handle = tester.ensureSemantics();

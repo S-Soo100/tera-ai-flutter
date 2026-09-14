@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
-import 'package:vivnanaut/features/home/domain/running_timer.dart';
-import 'package:vivnanaut/features/home/presentation/env_detail_providers.dart';
-import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
-import 'package:vivnanaut/features/home/presentation/home_screen.dart';
-import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/cage_control_grid.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/env_summary_card.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/home_header_bar.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/running_timer_chip.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/top_fixed_area.dart';
-import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
-import 'package:vivnanaut/features/my_cage/domain/device.dart';
-import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
-import 'package:vivnanaut/features/my_cage/domain/telemetry_reading.dart';
-import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
-import 'package:vivnanaut/shared/domain/env_extremes.dart';
+import 'package:vivanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivanaut/features/home/domain/running_timer.dart';
+import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
+import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivanaut/features/home/presentation/home_screen.dart';
+import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivanaut/features/home/presentation/widgets/cage_control_grid.dart';
+import 'package:vivanaut/features/home/presentation/widgets/env_summary_card.dart';
+import 'package:vivanaut/features/home/presentation/widgets/home_header_bar.dart';
+import 'package:vivanaut/features/home/presentation/widgets/running_timer_chip.dart';
+import 'package:vivanaut/features/home/presentation/widgets/top_fixed_area.dart';
+import 'package:vivanaut/features/my_cage/domain/actuator_state.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
+import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
+import 'package:vivanaut/features/my_cage/domain/telemetry_reading.dart';
+import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivanaut/shared/domain/env_extremes.dart';
 
 const _deviceId = 'd-e1';
 
@@ -102,8 +102,7 @@ GoRouter _router() => GoRouter(
     );
 
 void main() {
-  testWidgets('단일 스크롤 구성 — 헤더/라이브 자리/요약 카드/그리드/일정 설정',
-      (tester) async {
+  testWidgets('단일 스크롤 구성 — 헤더/라이브 자리/요약 카드/그리드/일정 설정', (tester) async {
     await _pump(tester);
     expect(find.byType(HomeHeaderBar), findsOneWidget);
     // 캠 없는 세트 → 라이브 자리는 안내 한 줄로 접힌다.

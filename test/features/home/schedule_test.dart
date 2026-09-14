@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/schedule.dart';
+import 'package:vivanaut/features/home/domain/schedule.dart';
 
 /// 서버가 실제로 내려주는 모양(`APP_TIMER_MIST.md` §2.1 응답 예시).
 Map<String, dynamic> _daily() => {
@@ -135,12 +135,21 @@ void main() {
     test('고를 수 있는 것 — mist + 절대 상태 명령 (2026-08-14 화이트리스트 확장)', () {
       expect(
         ScheduleAction.selectable.map((a) => a.wire).toList(),
-        ['mist', 'fan_on', 'fan_off', 'heater_on', 'heater_off', 'led_on', 'led_off'],
+        [
+          'mist',
+          'fan_on',
+          'fan_off',
+          'heater_on',
+          'heater_off',
+          'led_on',
+          'led_off'
+        ],
       );
     });
 
     test('unknown은 고를 수 없다 — 서버가 받지 않는 값이다', () {
-      expect(ScheduleAction.selectable, isNot(contains(ScheduleAction.unknown)));
+      expect(
+          ScheduleAction.selectable, isNot(contains(ScheduleAction.unknown)));
     });
 
     test('toggle 계열은 못 고른다 — 무인 실행에서 상태가 어긋나면 반대로 동작한다', () {
@@ -249,13 +258,15 @@ void main() {
       // 켜기만 살아 있는 반쪽 상태를 OFF로 그리면 켜지고 안 꺼지는 히터를 숨긴다.
       final p = SchedulePair(
         on: s('on', ScheduleAction.fanOn, pair: 'p'),
-        off: s('off', ScheduleAction.fanOff, pair: 'p').copyWith(enabled: false),
+        off:
+            s('off', ScheduleAction.fanOff, pair: 'p').copyWith(enabled: false),
       );
       expect(p.enabled, isTrue);
       expect(p.isSkewed, isTrue);
       final both = SchedulePair(
         on: s('on', ScheduleAction.fanOn, pair: 'p').copyWith(enabled: false),
-        off: s('off', ScheduleAction.fanOff, pair: 'p').copyWith(enabled: false),
+        off:
+            s('off', ScheduleAction.fanOff, pair: 'p').copyWith(enabled: false),
       );
       expect(both.enabled, isFalse);
       expect(both.isSkewed, isFalse);
@@ -333,8 +344,8 @@ void main() {
     });
 
     test('enabled 기본값은 true', () {
-      final g = ScheduleGuard.fromJson(
-          {'type': 'skip_when_temp_below', 'value': 20});
+      final g =
+          ScheduleGuard.fromJson({'type': 'skip_when_temp_below', 'value': 20});
       expect(g!.enabled, isTrue);
     });
 
@@ -348,7 +359,11 @@ void main() {
     test('Schedule.fromJson이 guard를 읽는다', () {
       final s = Schedule.fromJson({
         ..._daily(),
-        'guard': {'type': 'skip_when_humidity_above', 'value': 70, 'enabled': true},
+        'guard': {
+          'type': 'skip_when_humidity_above',
+          'value': 70,
+          'enabled': true
+        },
       });
       expect(s.guard, isNotNull);
       expect(s.guard!.type, GuardType.humidityAbove);

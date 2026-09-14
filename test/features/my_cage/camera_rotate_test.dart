@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
-import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
-import 'package:vivnanaut/features/my_cage/data/camera_repository.dart';
-import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
-import 'package:vivnanaut/features/my_cage/domain/terra_camera.dart';
-import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
-import 'package:vivnanaut/features/my_cage/presentation/widgets/camera_rotate_tile.dart';
+import 'package:vivanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivanaut/features/my_cage/data/camera_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
+import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/camera_rotate_tile.dart';
 
 /// 회전 계약(회신 2026-09-08) — 모델 파싱 + 토글 노출/호출.
 
@@ -60,8 +60,7 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         currentSetProvider.overrideWith((ref) async => _set(camera)),
-        cameraRepositoryProvider
-            .overrideWithValue(repo ?? _FakeCameraRepo()),
+        cameraRepositoryProvider.overrideWithValue(repo ?? _FakeCameraRepo()),
       ],
       child: const MaterialApp(
         home: Scaffold(body: CameraRotateTile()),

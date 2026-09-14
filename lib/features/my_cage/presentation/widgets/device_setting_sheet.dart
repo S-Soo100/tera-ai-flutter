@@ -38,8 +38,8 @@ class DeviceSettingTile extends ConsumerWidget {
     return ListTile(
       leading: Icon(icon),
       title: Text(title(device)),
-      subtitle: Text(
-          device == null ? 'lcd_no_device'.tr() : subtitle(ref, device)),
+      subtitle:
+          Text(device == null ? 'lcd_no_device'.tr() : subtitle(ref, device)),
       enabled: device != null,
       onTap: device == null ? null : () => onTap(context, ref, device),
     );
@@ -102,8 +102,8 @@ Future<bool> submitAndClose(
     return true;
   } catch (e) {
     if (!context.mounted) return false;
-    messenger?.showSnackBar(
-        SnackBar(content: Text(failureKey.tr(args: ['$e']))));
+    messenger
+        ?.showSnackBar(SnackBar(content: Text(failureKey.tr(args: ['$e']))));
     return false;
   }
 }

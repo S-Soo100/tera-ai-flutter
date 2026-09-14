@@ -133,7 +133,8 @@ class _BookmarkCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
-    final thumb = MotionClipThumb(clipId: clip.clipId, cameraId: clip.cameraId, fallbackIconSize: 28);
+    final thumb = MotionClipThumb(
+        clipId: clip.clipId, cameraId: clip.cameraId, fallbackIconSize: 28);
 
     return GestureDetector(
       key: ValueKey('bookmark_card_${clip.clipId}'),

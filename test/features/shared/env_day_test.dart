@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/shared/domain/env_day.dart';
+import 'package:vivanaut/shared/domain/env_day.dart';
 
 void main() {
   group('EnvDay.of', () {

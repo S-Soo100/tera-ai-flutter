@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
-import 'package:vivnanaut/features/auth/presentation/auth_providers.dart';
-import 'package:vivnanaut/features/my_cage/data/highlight_repository.dart';
-import 'package:vivnanaut/features/my_cage/domain/nightly_highlight.dart';
-import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivanaut/features/my_cage/data/highlight_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/nightly_highlight.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 
 class _PendingHighlightRepository extends HighlightRepository {
   _PendingHighlightRepository()

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/domain/highlight_group.dart';
-import 'package:vivnanaut/features/my_cage/domain/nightly_highlight.dart';
-import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/domain/highlight_group.dart';
+import 'package:vivanaut/features/my_cage/domain/nightly_highlight.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 
 void main() {
   test('오늘 새벽 영상도 개별 촬영시각 대신 밤 묶음 날짜를 제공한다', () async {

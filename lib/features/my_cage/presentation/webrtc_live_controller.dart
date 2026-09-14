@@ -45,8 +45,7 @@ class WebRtcLiveState {
 
 // ── 컨트롤러 ─────────────────────────────────────────────────────────────────
 
-class WebRtcLiveController
-    extends StateNotifier<WebRtcLiveState> {
+class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// **생성자는 아무것도 시작하지 않는다**(2026-09-07, 리뷰 잔여 A2).
   /// 실피어 연결은 provider가 [startConnection]으로 켠다 — 예전엔 생성자가
   /// 곧장 시그널링을 시작해, 위젯 테스트마다 우회(빌더 심·'마지막 페이지'

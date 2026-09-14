@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/presentation/bookmark_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/bookmark_controller.dart';
 
 void main() {
   test('아이콘은 즉시 바뀌고 추가 중 해제는 마지막 의도로 저장한다', () async {

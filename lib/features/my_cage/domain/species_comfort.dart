@@ -60,7 +60,9 @@ extension ComfortLevelX on ComfortLevel {
 ComfortLevel classifyComfort(double v, double lo, double hi, double margin) {
   if (v >= lo && v <= hi) return ComfortLevel.good;
   if (v > hi) {
-    return (v - hi) <= margin ? ComfortLevel.cautionHigh : ComfortLevel.dangerHigh;
+    return (v - hi) <= margin
+        ? ComfortLevel.cautionHigh
+        : ComfortLevel.dangerHigh;
   }
   return (lo - v) <= margin ? ComfortLevel.cautionLow : ComfortLevel.dangerLow;
 }

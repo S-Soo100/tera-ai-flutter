@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/presentation/widgets/video_controls.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/video_controls.dart';
 
 void main() {
   group('formatClipPosition', () {

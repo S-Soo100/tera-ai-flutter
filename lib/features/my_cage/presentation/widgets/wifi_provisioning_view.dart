@@ -185,8 +185,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
       Permission.locationWhenInUse,
     ].request();
 
-    final scanGranted =
-        statuses[Permission.bluetoothScan]?.isGranted ?? false;
+    final scanGranted = statuses[Permission.bluetoothScan]?.isGranted ?? false;
     final connectGranted =
         statuses[Permission.bluetoothConnect]?.isGranted ?? false;
     final bleGranted = scanGranted && connectGranted;

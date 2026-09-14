@@ -382,9 +382,8 @@ class _SensorBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(12),
-        border: status
-            ? null
-            : Border.all(color: faultFg.withValues(alpha: 0.4)),
+        border:
+            status ? null : Border.all(color: faultFg.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

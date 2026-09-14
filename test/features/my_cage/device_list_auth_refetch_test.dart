@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:vivnanaut/features/auth/presentation/auth_providers.dart';
-import 'package:vivnanaut/features/my_cage/data/supabase_module_control_repository.dart';
-import 'package:vivnanaut/features/my_cage/domain/device.dart';
-import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivanaut/features/my_cage/data/supabase_module_control_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
+import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
 
 /// 로그인 직후 기기 목록 빈 캐시 회귀 테스트 (2026-08-14 실기기 발견).
 ///
@@ -66,9 +66,7 @@ void main() {
 
     // 계정이 바뀌었으니 재조회돼 기기가 보여야 한다.
     final after = await container.read(deviceListProvider.future);
-    expect(after, hasLength(1),
-        reason: '로그인 후에도 게스트 빈 캐시가 재사용되면 이 버그의 재발');
-    expect(repo.calls, greaterThanOrEqualTo(2),
-        reason: '재조회가 실제로 발생해야 한다');
+    expect(after, hasLength(1), reason: '로그인 후에도 게스트 빈 캐시가 재사용되면 이 버그의 재발');
+    expect(repo.calls, greaterThanOrEqualTo(2), reason: '재조회가 실제로 발생해야 한다');
   });
 }

@@ -139,11 +139,8 @@ class ClipRepository {
   }
 
   Future<Clip?> getById(String id) async {
-    final rows = await _supabase
-        .from('camera_clips')
-        .select()
-        .eq('id', id)
-        .limit(1);
+    final rows =
+        await _supabase.from('camera_clips').select().eq('id', id).limit(1);
     final list = rows as List;
     if (list.isEmpty) return null;
     return Clip.fromJson(list.first as Map<String, dynamic>);

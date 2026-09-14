@@ -103,8 +103,7 @@ List<ActuatorMarker> buildLabMarkers(ChartWindow w) {
   final span = w.now.difference(w.start);
   ActuatorMarker at(double fraction, MarkerKind kind) => ActuatorMarker(
         kind: kind,
-        at: w.start
-            .add(Duration(minutes: (span.inMinutes * fraction).round())),
+        at: w.start.add(Duration(minutes: (span.inMinutes * fraction).round())),
       );
   return [
     at(0.12, MarkerKind.fan),

@@ -1,4 +1,4 @@
-package com.vivnanaut.app
+package com.vivanaut.app
 
 import io.flutter.embedding.android.FlutterActivity
 

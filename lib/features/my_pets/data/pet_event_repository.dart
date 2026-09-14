@@ -19,16 +19,12 @@ class PetEventRepository {
   }
 
   List<PetEvent> getEvents(String petId) {
-    return _box.values
-        .where((e) => e.petId == petId)
-        .toList()
+    return _box.values.where((e) => e.petId == petId).toList()
       ..sort((a, b) => b.eventDate.compareTo(a.eventDate));
   }
 
   List<PetEvent> getEventsByType(String petId, String type) {
-    return _box.values
-        .where((e) => e.petId == petId && e.type == type)
-        .toList()
+    return _box.values.where((e) => e.petId == petId && e.type == type).toList()
       ..sort((a, b) => b.eventDate.compareTo(a.eventDate));
   }
 

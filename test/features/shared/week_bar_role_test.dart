@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/shared/domain/week_range.dart';
-import 'package:vivnanaut/shared/domain/week_bar_role.dart';
+import 'package:vivanaut/shared/domain/week_range.dart';
+import 'package:vivanaut/shared/domain/week_bar_role.dart';
 
 void main() {
   DayMinMax row(int day, double? min, double? max) =>

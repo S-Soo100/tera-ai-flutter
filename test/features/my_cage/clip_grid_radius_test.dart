@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/presentation/widgets/clip_grid_radius.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/clip_grid_radius.dart';
 
 /// 3열 클립 그리드 셀별 모서리 규칙(2026-09-04 사용자 지시) —
 /// 노출된 바깥 모서리만 둥글린다. 이웃이 있는 변의 모서리를 둥글리면

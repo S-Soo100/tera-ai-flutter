@@ -85,8 +85,8 @@ class _ChartLabScreenState extends State<ChartLabScreen> {
           const SizedBox(height: AppStyles.spacing16),
           if (data.hasData)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: EnvChart.outerPadding),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: EnvChart.outerPadding),
               child: EnvChart(
                 data: data,
                 window: w,
@@ -101,8 +101,8 @@ class _ChartLabScreenState extends State<ChartLabScreen> {
             )
           else
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: EnvChart.outerPadding),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: EnvChart.outerPadding),
               child: Text(
                 'dev_chart_lab_no_data'.tr(),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(

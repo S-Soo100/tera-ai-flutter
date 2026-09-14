@@ -19,5 +19,4 @@ class AppConstants {
     'crested-gecko': '크레스티드 게코',
     'fat-tailed-gecko': '펫테일 게코',
   };
-
 }

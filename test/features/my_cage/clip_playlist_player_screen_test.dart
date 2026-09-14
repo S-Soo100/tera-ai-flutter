@@ -1,21 +1,21 @@
-import 'package:vivnanaut/features/auth/presentation/auth_providers.dart';
-import 'package:vivnanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/data/favorite_clip_repository.dart';
-import 'package:vivnanaut/features/my_cage/data/motion_clip_repository.dart';
-import 'package:vivnanaut/features/my_cage/domain/favorite_clip.dart';
-import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
-import 'package:vivnanaut/features/my_cage/domain/motion_clip_page.dart';
-import 'package:vivnanaut/features/my_cage/presentation/bookmark_controller.dart';
-import 'package:vivnanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
-import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
-import 'package:vivnanaut/features/my_cage/presentation/player_view_providers.dart';
-import 'package:vivnanaut/features/my_cage/presentation/widgets/motion_clip_thumb.dart';
-import 'package:vivnanaut/shared/widgets/figma_icon.dart';
+import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
+import 'package:vivanaut/features/my_cage/data/motion_clip_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
+import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
+import 'package:vivanaut/features/my_cage/domain/motion_clip_page.dart';
+import 'package:vivanaut/features/my_cage/presentation/bookmark_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/player_view_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/motion_clip_thumb.dart';
+import 'package:vivanaut/shared/widgets/figma_icon.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Hive/Supabase를 타지 않는 대역 — 즐겨찾기 없음, 로컬 파일 없음.

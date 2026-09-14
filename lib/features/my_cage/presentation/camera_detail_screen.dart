@@ -308,7 +308,8 @@ class _SimpleActivityCard extends ConsumerWidget {
     // '어제'(완결일)는 24칸 모두 실제 데이터라 null.
     final activeHours = range == ActivityRange.today
         ? (DateTime.now()
-                    .difference(activityRangeBounds(range, DateTime.now()).start)
+                    .difference(
+                        activityRangeBounds(range, DateTime.now()).start)
                     .inHours +
                 1)
             .clamp(1, 24)
@@ -356,8 +357,7 @@ class _SimpleActivityCard extends ConsumerWidget {
               onRetry: () => ref.invalidate(
                   motionActivityProvider((cameraId: cameraId, range: range))),
             ),
-            data: (seconds) =>
-                _statsRow(motion: formatMotionDuration(seconds)),
+            data: (seconds) => _statsRow(motion: formatMotionDuration(seconds)),
           ),
           const SizedBox(height: 18),
           Text(
@@ -826,8 +826,7 @@ class _VideoTabToggle extends ConsumerWidget {
     final theme = Theme.of(context);
     Widget chip(String label, bool selected, bool value) {
       return GestureDetector(
-        onTap: () =>
-            ref.read(showFavoritesTabProvider.notifier).state = value,
+        onTap: () => ref.read(showFavoritesTabProvider.notifier).state = value,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),

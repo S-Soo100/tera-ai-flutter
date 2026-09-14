@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/device_offline_notice.dart';
-import 'package:vivnanaut/features/my_cage/domain/device.dart';
-import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivanaut/features/home/presentation/widgets/device_offline_notice.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
+import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
 
 const _deviceId = 'dev-1';
 
@@ -42,21 +42,17 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('오프라인이면 왜 못 누르는지 밝힌다 — 회색 버튼만 두면 고장으로 읽힌다',
-      (tester) async {
-    await _pump(tester,
-        online: false, lastSeen: DateTime(2026, 8, 12, 2));
+  testWidgets('오프라인이면 왜 못 누르는지 밝힌다 — 회색 버튼만 두면 고장으로 읽힌다', (tester) async {
+    await _pump(tester, online: false, lastSeen: DateTime(2026, 8, 12, 2));
     expect(find.byKey(DeviceOfflineNotice.noticeKey), findsOneWidget);
   });
 
-  testWidgets('온라인이면 아무것도 그리지 않는다 — 늘 떠 있는 배너는 곧 안 읽힌다',
-      (tester) async {
+  testWidgets('온라인이면 아무것도 그리지 않는다 — 늘 떠 있는 배너는 곧 안 읽힌다', (tester) async {
     await _pump(tester, online: true, lastSeen: DateTime(2026, 8, 12, 9, 59));
     expect(find.byKey(DeviceOfflineNotice.noticeKey), findsNothing);
   });
 
-  testWidgets('마지막 신호 시각을 몰라도 뜬다 — 시각이 없다고 침묵하면 안 된다',
-      (tester) async {
+  testWidgets('마지막 신호 시각을 몰라도 뜬다 — 시각이 없다고 침묵하면 안 된다', (tester) async {
     await _pump(tester, online: false, lastSeen: null);
     expect(find.byKey(DeviceOfflineNotice.noticeKey), findsOneWidget);
   });

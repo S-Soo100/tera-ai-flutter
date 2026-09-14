@@ -105,8 +105,7 @@ class _EnclosureCard extends ConsumerWidget {
           namedArgs: {'cams': '$camCount', 'devs': '$devCount'},
         )),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () =>
-            context.push('/smart-cage/enclosures/${enclosure.id}'),
+        onTap: () => context.push('/smart-cage/enclosures/${enclosure.id}'),
       ),
     );
   }

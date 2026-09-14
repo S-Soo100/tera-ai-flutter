@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/domain/species_comfort.dart';
+import 'package:vivanaut/features/my_cage/domain/species_comfort.dart';
 
 void main() {
   group('speciesIdFromText', () {
@@ -57,7 +57,8 @@ void main() {
 
   group('comfortVerdict 매핑', () {
     test('good은 지표 무관 딱 좋아요', () {
-      expect(comfortVerdict(ComfortLevel.good, isTemp: true).key, 'comfort_good');
+      expect(
+          comfortVerdict(ComfortLevel.good, isTemp: true).key, 'comfort_good');
       expect(
           comfortVerdict(ComfortLevel.good, isTemp: false).key, 'comfort_good');
     });

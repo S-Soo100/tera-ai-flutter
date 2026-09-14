@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
-import 'package:vivnanaut/features/home/presentation/home_screen.dart';
-import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
-import 'package:vivnanaut/features/my_cage/domain/device.dart';
-import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
-import 'package:vivnanaut/features/my_cage/data/lcd_repository.dart';
-import 'package:vivnanaut/features/my_cage/presentation/widgets/lcd_setting_tile.dart';
+import 'package:vivanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivanaut/features/home/presentation/home_screen.dart';
+import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
+import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
+import 'package:vivanaut/features/my_cage/data/lcd_repository.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/lcd_setting_tile.dart';
 
 /// LCD 문구 진입점(홈 `HomeLcdRow`, 2026-09-07 이동) + 시트([showLcdSheet]).
 ///
@@ -96,10 +96,9 @@ void main() {
     await tester.tap(find.byKey(HomeLcdRow.rowKey));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-        find.byKey(const Key('lcd_text_field')), 'a' * 80);
-    final field = tester
-        .widget<TextField>(find.byKey(const Key('lcd_text_field')));
+    await tester.enterText(find.byKey(const Key('lcd_text_field')), 'a' * 80);
+    final field =
+        tester.widget<TextField>(find.byKey(const Key('lcd_text_field')));
     expect(field.controller!.text.length, 64);
   });
 

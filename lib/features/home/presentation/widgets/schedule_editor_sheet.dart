@@ -186,7 +186,8 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
 
   ScheduleGuard? get _guard => _guardType == null
       ? null
-      : ScheduleGuard(type: _guardType!, value: _parsedGuardValue!, enabled: true);
+      : ScheduleGuard(
+          type: _guardType!, value: _parsedGuardValue!, enabled: true);
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +197,8 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
           left: AppStyles.spacing16,
           right: AppStyles.spacing16,
           top: AppStyles.spacing16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + AppStyles.spacing16,
+          bottom:
+              MediaQuery.of(context).viewInsets.bottom + AppStyles.spacing16,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -258,8 +260,7 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                   // 보여주지 못한다(잠긴 칩이 선택된 채 보이는 게 원래 약속).
                   for (final a in [
                     ...ScheduleAction.selectable,
-                    if (_isEdit &&
-                        !ScheduleAction.selectable.contains(_action))
+                    if (_isEdit && !ScheduleAction.selectable.contains(_action))
                       _action,
                   ])
                     ChoiceChip(
@@ -305,8 +306,8 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                   for (final d in MistDuration.values)
                     ChoiceChip(
                       key: Key('routine_duration_${d.seconds}'),
-                      label: Text('home_mist_seconds'
-                          .tr(args: ['${d.seconds}'])),
+                      label:
+                          Text('home_mist_seconds'.tr(args: ['${d.seconds}'])),
                       selected: _duration == d,
                       onSelected: (_) => setState(() => _duration = d),
                     ),
@@ -344,8 +345,8 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
                       key: Key('routine_day_$d'),
                       label: Text('routine_day_$d'.tr()),
                       selected: _days.contains(d),
-                      onSelected: (v) => setState(
-                          () => v ? _days.add(d) : _days.remove(d)),
+                      onSelected: (v) =>
+                          setState(() => v ? _days.add(d) : _days.remove(d)),
                     ),
                 ],
               ),
@@ -449,9 +450,8 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
             FilledButton(
               key: const Key('routine_save'),
               onPressed: _valid ? _save : null,
-              child: Text(_isEdit
-                  ? 'routine_save_edit'.tr()
-                  : 'routine_save_add'.tr()),
+              child: Text(
+                  _isEdit ? 'routine_save_edit'.tr() : 'routine_save_add'.tr()),
             ),
             if (!_valid) ...[
               const SizedBox(height: AppStyles.spacing4),
@@ -474,8 +474,7 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
     );
   }
 
-  static String _hhmm(TimeOfDay t) =>
-      '${t.hour.toString().padLeft(2, '0')}:'
+  static String _hhmm(TimeOfDay t) => '${t.hour.toString().padLeft(2, '0')}:'
       '${t.minute.toString().padLeft(2, '0')}';
 
   Future<void> _pickTime({required bool start}) async {

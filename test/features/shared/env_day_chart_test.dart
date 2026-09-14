@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/env_day_chart.dart';
-import 'package:vivnanaut/shared/domain/actuator_marker.dart';
-import 'package:vivnanaut/shared/domain/axis_bounds.dart';
-import 'package:vivnanaut/shared/domain/control_log.dart';
-import 'package:vivnanaut/shared/domain/env_chart_data.dart';
+import 'package:vivanaut/features/home/presentation/widgets/env_day_chart.dart';
+import 'package:vivanaut/shared/domain/actuator_marker.dart';
+import 'package:vivanaut/shared/domain/axis_bounds.dart';
+import 'package:vivanaut/shared/domain/control_log.dart';
+import 'package:vivanaut/shared/domain/env_chart_data.dart';
 
 EnvChartData _data({bool empty = false}) {
   final tempAxis = AxisBounds.forValues([20, 30]);
@@ -17,8 +17,7 @@ EnvChartData _data({bool empty = false}) {
     tempPoints: empty
         ? const []
         : const [(x: 0.1, y: 0.2), (x: 0.3, y: 0.5), (x: 0.5, y: 0.9)],
-    humidPoints:
-        empty ? const [] : const [(x: 0.1, y: 0.4), (x: 0.5, y: 0.6)],
+    humidPoints: empty ? const [] : const [(x: 0.1, y: 0.4), (x: 0.5, y: 0.6)],
   );
 }
 

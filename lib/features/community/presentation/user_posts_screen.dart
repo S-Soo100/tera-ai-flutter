@@ -28,8 +28,7 @@ class UserPostsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            'community_user_posts_title'.tr(namedArgs: {'name': name})),
+        title: Text('community_user_posts_title'.tr(namedArgs: {'name': name})),
       ),
       body: page.when(
         loading: () => Shimmer.fromColors(
@@ -64,16 +63,14 @@ class UserPostsScreen extends ConsumerWidget {
                       ? null
                       : urls[post.thumbnailPath];
                   return InkWell(
-                    onTap: () =>
-                        context.push('/community-player/${post.id}'),
+                    onTap: () => context.push('/community-player/${post.id}'),
                     borderRadius: BorderRadius.circular(8),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: thumb != null
                           ? Image.network(thumb,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  _fallback(glass))
+                              errorBuilder: (_, __, ___) => _fallback(glass))
                           : _fallback(glass),
                     ),
                   );

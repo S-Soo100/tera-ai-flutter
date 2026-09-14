@@ -165,5 +165,3 @@ final actuatorMarkersProvider =
   if (deviceId == null) return const [];
   return fetchActuatorMarkers(client, deviceId, from: w.start, to: w.now);
 });
-
-

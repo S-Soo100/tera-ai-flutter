@@ -41,8 +41,7 @@ final selectedDeviceIdProvider = StateProvider<String?>((ref) => null);
 
 // ── 현재 디바이스 (selectedDeviceIdProvider 우선, fallback = list.first) ────────
 
-final currentDeviceProvider =
-    FutureProvider.autoDispose<Device?>((ref) async {
+final currentDeviceProvider = FutureProvider.autoDispose<Device?>((ref) async {
   final list = await ref.watch(deviceListProvider.future);
   if (list.isEmpty) return null;
   final selectedId = ref.watch(selectedDeviceIdProvider);
@@ -164,8 +163,7 @@ final nowTickProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
 // ── 명령 상태 업데이트 Realtime 스트림 ─────────────────────────────────────────
 
 /// commands 테이블 UPDATE를 수신. RLS가 본인 발행 명령만 노출.
-final commandUpdatesProvider =
-    StreamProvider.autoDispose<DeviceCommand>((ref) {
+final commandUpdatesProvider = StreamProvider.autoDispose<DeviceCommand>((ref) {
   final supabase = ref.watch(supabaseClientProvider);
   final controller = StreamController<DeviceCommand>();
 

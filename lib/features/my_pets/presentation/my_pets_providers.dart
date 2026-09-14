@@ -13,7 +13,8 @@ import '../domain/weight_log.dart';
 final myPetsTabProvider = StateProvider<int>((ref) => 0);
 
 /// Pet 목록 — 인증 시 Supabase, 미인증 시 Hive
-final petListProvider = StateNotifierProvider<PetListNotifier, List<Pet>>((ref) {
+final petListProvider =
+    StateNotifierProvider<PetListNotifier, List<Pet>>((ref) {
   final localRepo = ref.watch(petRepositoryProvider);
   final supabaseRepo = ref.watch(supabasePetRepositoryProvider);
   return PetListNotifier(localRepo, supabaseRepo);
@@ -110,7 +111,8 @@ class PetListNotifier extends StateNotifier<List<Pet>> {
 
 /// 단일 Pet 조회 (family provider)
 final petDetailProvider = Provider.family<Pet?, String>((ref, petId) {
-  ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 전환 시 재평가 (detail/edit stale 방지)
+  ref.watch(currentUserProvider
+      .select((u) => u?.id)); // 계정 전환 시 재평가 (detail/edit stale 방지)
   final repo = ref.watch(petRepositoryProvider);
   return repo.getPet(petId);
 });

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/domain/telemetry_bucket.dart';
-import 'package:vivnanaut/shared/domain/actuator_marker.dart';
-import 'package:vivnanaut/shared/domain/control_log.dart';
+import 'package:vivanaut/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivanaut/shared/domain/actuator_marker.dart';
+import 'package:vivanaut/shared/domain/control_log.dart';
 
 Map<String, dynamic> row(
   String action,

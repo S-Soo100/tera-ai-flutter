@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/domain/device_command.dart';
+import 'package:vivanaut/features/my_cage/domain/device_command.dart';
 
 /// 실DB(`commands` 576행, 2026-06-08~08-11)에서 실제로 관측된 값들.
 ///
@@ -41,8 +41,8 @@ void main() {
     });
 
     test('카메라 펌웨어의 rejected_ 접두사형도 같은 뜻으로 본다', () {
-      expect(CommandResultWire.fromWire('rejected_locked'),
-          CommandResult.locked);
+      expect(
+          CommandResultWire.fromWire('rejected_locked'), CommandResult.locked);
       expect(CommandResultWire.fromWire('rejected_unknown_action'),
           CommandResult.unknownAction);
       expect(CommandResultWire.fromWire('rejected_ttl_expired'),

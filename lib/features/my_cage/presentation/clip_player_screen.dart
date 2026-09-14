@@ -160,8 +160,8 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: clip != null
-            ? Text(DateFormat('yyyy.MM.dd HH:mm')
-                .format(clip.startedAt.toLocal()))
+            ? Text(
+                DateFormat('yyyy.MM.dd HH:mm').format(clip.startedAt.toLocal()))
             : const SizedBox.shrink(),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,

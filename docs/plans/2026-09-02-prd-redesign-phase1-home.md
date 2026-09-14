@@ -8,7 +8,7 @@
 
 **Tech Stack:** Flutter + Riverpod + GoRouter + fl_chart(기존 EnvChart는 커스텀 페인트) + easy_localization + Supabase(telemetry_30m·commands).
 
-**근거 문서:** `docs/prd-vivnanaut-app.md` (2026-09-02 개정) — §2.1(4탭), §4.1(홈), §4.3(온습도 상세). Figma `vivanaut app` 페이지 (SOT).
+**근거 문서:** `docs/prd-vivanaut-app.md` (2026-09-02 개정) — §2.1(4탭), §4.1(홈), §4.3(온습도 상세). Figma `vivanaut app` 페이지 (SOT).
 
 ---
 

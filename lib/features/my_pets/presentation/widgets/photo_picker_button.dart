@@ -103,7 +103,8 @@ class PhotoPickerButton extends StatelessWidget {
             child: CachedNetworkImage(
               imageUrl: currentPhotoUrl!,
               fit: BoxFit.cover,
-              placeholder: (_, __) => Container(color: colorScheme.surfaceContainerHigh),
+              placeholder: (_, __) =>
+                  Container(color: colorScheme.surfaceContainerHigh),
               errorWidget: (_, __, ___) => _buildPlaceholder(colorScheme),
             ),
           ),

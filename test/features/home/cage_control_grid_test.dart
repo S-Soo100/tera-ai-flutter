@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/presentation/home_control_providers.dart';
-import 'package:vivnanaut/features/home/presentation/widgets/cage_control_grid.dart';
-import 'package:vivnanaut/features/my_cage/domain/actuator_state.dart';
-import 'package:vivnanaut/features/my_cage/domain/telemetry_reading.dart';
-import 'package:vivnanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivanaut/features/home/presentation/widgets/cage_control_grid.dart';
+import 'package:vivanaut/features/my_cage/domain/actuator_state.dart';
+import 'package:vivanaut/features/my_cage/domain/telemetry_reading.dart';
+import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
 
 const _deviceId = 'd1';
 

@@ -19,9 +19,7 @@ class MediaRepository {
         .select()
         .eq('pet_id', petId)
         .order('created_at', ascending: false);
-    return data
-        .map((e) => MediaItem.fromJson(e))
-        .toList();
+    return data.map((e) => MediaItem.fromJson(e)).toList();
   }
 
   Future<MediaItem> uploadPhoto({
@@ -44,13 +42,17 @@ class MediaRepository {
     final url = _client.storage.from('pet-media').getPublicUrl(path);
     final fileSize = await file.length();
 
-    final data = await _client.from('media').insert({
-      'pet_id': petId,
-      if (eventId != null) 'event_id': eventId,
-      'type': 'image',
-      'url': url,
-      'file_size': fileSize,
-    }).select().single();
+    final data = await _client
+        .from('media')
+        .insert({
+          'pet_id': petId,
+          if (eventId != null) 'event_id': eventId,
+          'type': 'image',
+          'url': url,
+          'file_size': fileSize,
+        })
+        .select()
+        .single();
 
     return MediaItem.fromJson(data);
   }
@@ -71,7 +73,8 @@ class MediaRepository {
     await _client.storage.from('pet-media').upload(
           path,
           file,
-          fileOptions: const FileOptions(upsert: true, contentType: 'image/jpeg'),
+          fileOptions:
+              const FileOptions(upsert: true, contentType: 'image/jpeg'),
         );
 
     return _client.storage.from('pet-media').getPublicUrl(path);

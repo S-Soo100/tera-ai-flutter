@@ -52,8 +52,8 @@ class RoutineSettingsScreen extends ConsumerWidget {
       body: ListView(
         // 하단 96 = FAB 높이 48 + FAB 기본 마진 16 + 여유 32 — 마지막 예약
         // 줄이 FAB에 가려지지 않게. (독은 없다 — 위 라우트 주석 참조)
-        padding: const EdgeInsets.fromLTRB(AppStyles.spacing16,
-            AppStyles.spacing16, AppStyles.spacing16, 96),
+        padding: const EdgeInsets.fromLTRB(
+            AppStyles.spacing16, AppStyles.spacing16, AppStyles.spacing16, 96),
         children: [
           Text('routine_schedule_section'.tr(),
               style: AppStyles.subsectionTitle(context)),
@@ -72,7 +72,8 @@ class RoutineSettingsScreen extends ConsumerWidget {
                           _PairTile(
                             pair: p,
                             onToggle: (v) => _guard(
-                                context, () => ref
+                                context,
+                                () => ref
                                     .read(schedulesProvider.notifier)
                                     .setPairEnabled(p, v)),
                             onDelete: () => _confirmDeletePair(context, ref, p),
@@ -82,7 +83,8 @@ class RoutineSettingsScreen extends ConsumerWidget {
                           _ScheduleTile(
                             schedule: s,
                             onToggle: (v) => _guard(
-                                context, () => ref
+                                context,
+                                () => ref
                                     .read(schedulesProvider.notifier)
                                     .setEnabled(s, v)),
                             onDelete: () => _confirmDelete(context, ref, s),
@@ -133,8 +135,7 @@ class RoutineSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _edit(
-      BuildContext context, WidgetRef ref, Schedule s) async {
+  Future<void> _edit(BuildContext context, WidgetRef ref, Schedule s) async {
     // `action`은 서버가 수정을 안 받는다. 편집기는 타이밍·가드만 바꾸게 하고,
     // 동작을 바꾸려면 지우고 새로 만들어야 한다.
     final result = await showScheduleEditor(context, initial: s);
@@ -214,11 +215,11 @@ class RoutineSettingsScreen extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: Text('routine_delete_title'.tr()),
         content: Text(
-          (leavesOrphanOn ? 'routine_delete_off_warning' : 'routine_delete_body')
+          (leavesOrphanOn
+                  ? 'routine_delete_off_warning'
+                  : 'routine_delete_body')
               .tr(),
-          key: leavesOrphanOn
-              ? const Key('routine_delete_off_warning')
-              : null,
+          key: leavesOrphanOn ? const Key('routine_delete_off_warning') : null,
         ),
         actions: [
           TextButton(
@@ -233,8 +234,7 @@ class RoutineSettingsScreen extends ConsumerWidget {
       ),
     );
     if (ok != true || !context.mounted) return;
-    await _guard(
-        context, () => ref.read(schedulesProvider.notifier).remove(s));
+    await _guard(context, () => ref.read(schedulesProvider.notifier).remove(s));
   }
 
   /// 실패를 삼키지 않는다. 예약은 "됐겠지"로 넘길 수 있는 동작이 아니다 —
@@ -447,8 +447,8 @@ class _ErrorNote extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppStyles.spacing16),
       child: Text(
         'routine_load_failed'.tr(args: [message]),
-        style: theme.textTheme.bodySmall
-            ?.copyWith(color: theme.colorScheme.error),
+        style:
+            theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
       ),
     );
   }

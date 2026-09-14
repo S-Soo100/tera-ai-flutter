@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
-import 'package:vivnanaut/core/theme/theme_mode_provider.dart';
+import 'package:vivanaut/core/theme/theme_mode_provider.dart';
 
 class _MemoryRepo implements ThemeModeRepository {
   ThemeMode stored = ThemeModeRepository.defaultMode;

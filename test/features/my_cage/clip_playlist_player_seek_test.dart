@@ -1,5 +1,5 @@
-import 'package:vivnanaut/features/auth/presentation/auth_providers.dart';
-import 'package:vivnanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -7,13 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
-import 'package:vivnanaut/features/my_cage/data/favorite_clip_repository.dart';
-import 'package:vivnanaut/features/my_cage/data/motion_clip_repository.dart';
-import 'package:vivnanaut/features/my_cage/domain/favorite_clip.dart';
-import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
-import 'package:vivnanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
-import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
-import 'package:vivnanaut/features/my_cage/presentation/widgets/motion_clip_thumb.dart';
+import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
+import 'package:vivanaut/features/my_cage/data/motion_clip_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
+import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/motion_clip_thumb.dart';
 
 /// 재생 시작점(서버 play_from_sec) seek 검증 — 가짜 비디오 플랫폼으로
 /// 초기화(duration 확보)까지 실제 흐름을 태우고 seek/play 호출을 기록한다.

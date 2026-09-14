@@ -1,16 +1,16 @@
-import 'package:vivnanaut/features/my_cage/domain/highlight_publication.dart';
-import 'package:vivnanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
+import 'package:vivanaut/features/my_cage/domain/highlight_publication.dart';
+import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:vivnanaut/features/auth/presentation/auth_providers.dart';
-import 'package:vivnanaut/features/my_cage/data/highlight_banner_store.dart';
-import 'package:vivnanaut/features/my_cage/domain/highlight_group.dart';
-import 'package:vivnanaut/features/my_cage/domain/nightly_highlight.dart';
-import 'package:vivnanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
-import 'package:vivnanaut/features/my_cage/presentation/highlights_screen.dart';
-import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivanaut/features/my_cage/data/highlight_banner_store.dart';
+import 'package:vivanaut/features/my_cage/domain/highlight_group.dart';
+import 'package:vivanaut/features/my_cage/domain/nightly_highlight.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/highlights_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 
 /// 하이라이트 상세 — /highlights/featured 전환(2026-09-11): day_key 묶음
 /// (groupByDay) 단위 + 대표/후보 화면 위젯 테스트.
@@ -26,11 +26,14 @@ NightlyHighlight _h(
     NightlyHighlight(
       clipId: id,
       cameraId: 'cam',
-      publication: !published || parseDayKey(dayKey) == null ? null : HighlightPublication(
-        batchId: dayKey, status:'ready',
-        captureStart:parseDayKey(dayKey)!.add(const Duration(hours:22)),
-        captureEnd:parseDayKey(dayKey)!.add(const Duration(hours:30)),
-        publishedAt:parseDayKey(dayKey)!.add(const Duration(hours:31))),
+      publication: !published || parseDayKey(dayKey) == null
+          ? null
+          : HighlightPublication(
+              batchId: dayKey,
+              status: 'ready',
+              captureStart: parseDayKey(dayKey)!.add(const Duration(hours: 22)),
+              captureEnd: parseDayKey(dayKey)!.add(const Duration(hours: 30)),
+              publishedAt: parseDayKey(dayKey)!.add(const Duration(hours: 31))),
       startedAt: at,
       source: 'rule',
       reason: '움직임 3.0초',
@@ -63,15 +66,18 @@ const _dayA = '2026-08-31';
 const _dayB = '2026-08-30';
 String _dayKey(DateTime date) =>
     '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-final _f1 = _h('f1', DateTime(2026, 8, 31, 23), tier: 'featured', dayKey: _dayA, rank: 1, playFrom: 8.8);
-final _f2 = _h('f2', DateTime(2026, 9, 1, 2), tier: 'featured', dayKey: _dayA, rank: 2);
-final _f3 = _h('f3', DateTime(2026, 8, 31, 21), tier: 'featured', dayKey: _dayA, rank: 3);
+final _f1 = _h('f1', DateTime(2026, 8, 31, 23),
+    tier: 'featured', dayKey: _dayA, rank: 1, playFrom: 8.8);
+final _f2 =
+    _h('f2', DateTime(2026, 9, 1, 2), tier: 'featured', dayKey: _dayA, rank: 2);
+final _f3 = _h('f3', DateTime(2026, 8, 31, 21),
+    tier: 'featured', dayKey: _dayA, rank: 3);
 final _c1 = _h('c1', DateTime(2026, 8, 31, 22), dayKey: _dayA);
 final _c2 = _h('c2', DateTime(2026, 9, 1, 1), dayKey: _dayA);
-final _f4 = _h('f4', DateTime(2026, 8, 30, 23), tier: 'featured', dayKey: _dayB, rank: 1);
+final _f4 = _h('f4', DateTime(2026, 8, 30, 23),
+    tier: 'featured', dayKey: _dayB, rank: 1);
 
-List<DayHighlightGroup> _groups() =>
-    groupByDay([_c1, _f2, _f4, _f1, _c2, _f3]);
+List<DayHighlightGroup> _groups() => groupByDay([_c1, _f2, _f4, _f1, _c2, _f3]);
 
 String? pushedClipId;
 List<String>? pushedPlaylist;
@@ -110,7 +116,8 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        highlightGroupsProvider.overrideWith((ref) async => groups ?? _groups()),
+        highlightGroupsProvider
+            .overrideWith((ref) async => groups ?? _groups()),
         highlightBannerStoreProvider.overrideWith((ref) => store),
         motionThumbnailFileProvider.overrideWith((ref, clipId) async => null),
         isFavoriteProvider.overrideWith((ref, id) => false),
@@ -168,15 +175,14 @@ void main() {
   });
 
   group('HighlightsScreen', () {
-    testWidgets('대표 카드만 렌더 — 후보는 데이터가 있어도 노출 안 함(2026-09-11)',
-        (tester) async {
+    testWidgets('대표 카드만 렌더 — 후보는 데이터가 있어도 노출 안 함(2026-09-11)', (tester) async {
       // 배너를 dismiss된 상태로 시작해 섹션이 화면 안에 오게 한다.
       // (실 조회는 tier=featured라 후보가 안 오지만, 픽스처에 후보를 섞어
       // "와도 안 그린다"를 고정한다.)
       final store = _FakeBannerStore(highlightGroupKey(_groups().first));
       await _pump(tester, store: store);
-      expect(find.byKey(const ValueKey('highlight_featured_f1')),
-          findsOneWidget);
+      expect(
+          find.byKey(const ValueKey('highlight_featured_f1')), findsOneWidget);
       // 후보 셀·더 보기 버튼은 어디에도 없다.
       expect(find.byKey(const ValueKey('highlight_cell_c1')), findsNothing);
       expect(find.byKey(const ValueKey('highlight_cell_c2')), findsNothing);
@@ -185,8 +191,7 @@ void main() {
       expect(find.text('crecam_highlights_night_of'), findsWidgets);
     });
 
-    testWidgets('대표 6장 이상(하루 상한 폐지 2026-09-11 후속)도 전부 렌더',
-        (tester) async {
+    testWidgets('대표 6장 이상(하루 상한 폐지 2026-09-11 후속)도 전부 렌더', (tester) async {
       // 새 기준: 하루 상한 없음(10개 안팎, 최대 16) — 3장 가정 레이아웃이
       // 없는지 확인. 7장을 넣고 첫/끝 카드가 스크롤로 모두 닿는지 본다.
       final many = groupByDay([
@@ -218,14 +223,12 @@ void main() {
 
     test('밤 8시가 지나도 전날 day_key는 어젯밤으로 유지', () {
       expect(
-        HighlightsScreen.nightLabel(
-            '2026-09-13', DateTime(2026, 9, 14, 21)),
+        HighlightsScreen.nightLabel('2026-09-13', DateTime(2026, 9, 14, 21)),
         'crecam_highlights_last_night',
       );
     });
 
-    testWidgets('도착 배너(미dismiss) — X → 숨김 + 스토어에 공개 배치 key 저장',
-        (tester) async {
+    testWidgets('도착 배너(미dismiss) — X → 숨김 + 스토어에 공개 배치 key 저장', (tester) async {
       final store = _FakeBannerStore();
       await _pump(tester, store: store);
       expect(find.byKey(HighlightsScreen.bannerKey), findsOneWidget);
@@ -235,8 +238,7 @@ void main() {
       expect(store.value, 'cam/$_dayA'); // 최신 대표 = f2
     });
 
-    testWidgets('같은 그룹 key가 이미 dismiss → 재방문에도 배너 숨김',
-        (tester) async {
+    testWidgets('같은 그룹 key가 이미 dismiss → 재방문에도 배너 숨김', (tester) async {
       final store = _FakeBannerStore('cam/$_dayA');
       await _pump(tester, store: store);
       expect(find.byKey(HighlightsScreen.bannerKey), findsNothing);
@@ -254,8 +256,7 @@ void main() {
       expect(find.byKey(HighlightsScreen.bannerKey), findsNothing);
     });
 
-    testWidgets('대표 카드 탭 → 플레이어(재생목록 = 그 묶음 대표, rank 순)',
-        (tester) async {
+    testWidgets('대표 카드 탭 → 플레이어(재생목록 = 그 묶음 대표, rank 순)', (tester) async {
       final store = _FakeBannerStore(highlightGroupKey(_groups().first));
       await _pump(tester, store: store);
       final card = find.byKey(const ValueKey('highlight_featured_f2'));

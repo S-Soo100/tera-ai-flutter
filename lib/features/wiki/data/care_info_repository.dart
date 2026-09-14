@@ -27,8 +27,8 @@ class CareInfoRepository {
   Future<CareInfoDetail> getCareInfo(String speciesId) async {
     if (_cache.containsKey(speciesId)) return _cache[speciesId]!;
 
-    final jsonStr = await rootBundle
-        .loadString('assets/data/care_info/$speciesId.json');
+    final jsonStr =
+        await rootBundle.loadString('assets/data/care_info/$speciesId.json');
     final json = jsonDecode(jsonStr) as Map<String, dynamic>;
     final info = CareInfoDetail.fromJson(json);
     _cache[speciesId] = info;
@@ -38,8 +38,8 @@ class CareInfoRepository {
   Future<MorphGeneticsData> getMorphData(String speciesId) async {
     if (_morphCache.containsKey(speciesId)) return _morphCache[speciesId]!;
 
-    final jsonStr = await rootBundle
-        .loadString('assets/data/morphs/$speciesId.json');
+    final jsonStr =
+        await rootBundle.loadString('assets/data/morphs/$speciesId.json');
     final json = jsonDecode(jsonStr) as Map<String, dynamic>;
     final data = MorphGeneticsData.fromJson(json);
     _morphCache[speciesId] = data;

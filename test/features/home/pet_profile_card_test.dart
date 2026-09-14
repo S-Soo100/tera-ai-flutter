@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/pet_dday.dart';
-import 'package:vivnanaut/features/my_cage/domain/species_comfort.dart';
+import 'package:vivanaut/features/home/domain/pet_dday.dart';
+import 'package:vivanaut/features/my_cage/domain/species_comfort.dart';
 
 void main() {
   group('dDayLabel — PRD 목업 문구 형식', () {
@@ -24,8 +24,7 @@ void main() {
 
     test('입양일 없으면 null — 0일로 위장하지 않는다', () {
       expect(
-        dDayLabel(
-            petName: '젤리', adoptionDate: null, now: DateTime(2026, 8, 5)),
+        dDayLabel(petName: '젤리', adoptionDate: null, now: DateTime(2026, 8, 5)),
         isNull,
       );
     });
@@ -51,8 +50,8 @@ void main() {
     );
 
     test('둘 다 안심존 안 → normal', () {
-      expect(envStatus(temp: 24.5, humid: 68, comfort: comfort),
-          EnvStatus.normal);
+      expect(
+          envStatus(temp: 24.5, humid: 68, comfort: comfort), EnvStatus.normal);
     });
 
     test('온도가 범위를 벗어나면 warning', () {

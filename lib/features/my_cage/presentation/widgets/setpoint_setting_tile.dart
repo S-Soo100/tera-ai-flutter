@@ -80,10 +80,10 @@ class _SetpointSheet extends StatefulWidget {
 }
 
 class _SetpointSheetState extends State<_SetpointSheet> {
-  late final TextEditingController _temp = TextEditingController(
-      text: _init(widget.initial?.targetTempC));
-  late final TextEditingController _humid = TextEditingController(
-      text: _init(widget.initial?.targetHumidityPct));
+  late final TextEditingController _temp =
+      TextEditingController(text: _init(widget.initial?.targetTempC));
+  late final TextEditingController _humid =
+      TextEditingController(text: _init(widget.initial?.targetHumidityPct));
   bool _sending = false;
 
   // 되채움은 소수 2자리까지 — 저장값이 편집기 왕복에서 바뀌지 않게.

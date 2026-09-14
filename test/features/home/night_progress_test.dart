@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/night_progress.dart';
+import 'package:vivanaut/features/home/domain/night_progress.dart';
 
 void main() {
   group('NightProgress — 22:00~06:00 밤 창', () {

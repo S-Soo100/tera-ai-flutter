@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/community/domain/community_post.dart';
+import 'package:vivanaut/features/community/domain/community_post.dart';
 
 void main() {
   test('fromJson — 카운트·크레 스냅샷·UTC 변환', () {

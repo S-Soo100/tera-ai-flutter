@@ -5,10 +5,10 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:vivnanaut/features/my_cage/data/favorite_clip_repository.dart';
-import 'package:vivnanaut/features/my_cage/data/motion_clip_repository.dart';
-import 'package:vivnanaut/features/my_cage/domain/favorite_clip.dart';
-import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
+import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
+import 'package:vivanaut/features/my_cage/data/motion_clip_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
+import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
 
 class _UnusedMotion extends Fake implements MotionClipRepository {
   int calls = 0;

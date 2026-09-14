@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
-import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
-import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
+import 'package:vivanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
 
 EnclosureSet _set(String id) => EnclosureSet(
       enclosure: Enclosure(id: id, name: id, createdAt: DateTime(2026, 1, 1)),
@@ -50,5 +50,4 @@ void main() {
     c.read(selectedSetIndexProvider.notifier).state = -3;
     expect((await c.read(currentSetProvider.future))!.id, 'e1');
   });
-
 }

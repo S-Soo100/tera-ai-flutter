@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/domain/nightly_highlight.dart';
-import 'package:vivnanaut/features/my_cage/domain/nightly_report.dart';
+import 'package:vivanaut/features/my_cage/domain/nightly_highlight.dart';
+import 'package:vivanaut/features/my_cage/domain/nightly_report.dart';
 
 NightlyHighlight h(String id, {String source = 'rule'}) => NightlyHighlight(
     clipId: id, startedAt: DateTime(2026, 7, 7, 23), source: source);

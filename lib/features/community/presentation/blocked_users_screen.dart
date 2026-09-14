@@ -16,8 +16,7 @@ class BlockedUsersScreen extends ConsumerStatefulWidget {
   const BlockedUsersScreen({super.key});
 
   @override
-  ConsumerState<BlockedUsersScreen> createState() =>
-      _BlockedUsersScreenState();
+  ConsumerState<BlockedUsersScreen> createState() => _BlockedUsersScreenState();
 }
 
 class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
@@ -46,8 +45,7 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
         // 투명 위젯 + Shimmer 조합은 아무것도 안 그려진다(srcIn) — 공용 스켈레톤.
         loading: () => const SkeletonListLoading(itemCount: 3),
         error: (e, _) => Center(
-            child:
-                Text('community_feed_error'.tr(), style: glass.tileStatus)),
+            child: Text('community_feed_error'.tr(), style: glass.tileStatus)),
         data: (users) => users.isEmpty
             ? Center(
                 child: Text('community_blocked_empty'.tr(),
@@ -56,9 +54,8 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
                 itemCount: users.length,
                 itemBuilder: (context, i) {
                   final u = users[i];
-                  final name = u.name.isEmpty
-                      ? 'community_author_unknown'.tr()
-                      : u.name;
+                  final name =
+                      u.name.isEmpty ? 'community_author_unknown'.tr() : u.name;
                   return ListTile(
                     leading: AccountAvatar(
                       tooltip: name,

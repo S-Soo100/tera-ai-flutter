@@ -153,23 +153,19 @@ class CareInfoDetail {
           (enclosure['essentials'] as List).map((e) => e as String).toList(),
       lighting: enclosure['lighting'] as String?,
       mainDiet: (diet['main'] as List).map((e) => e as String).toList(),
-      treats:
-          (diet['treat'] as List?)?.map((e) => e as String).toList() ?? [],
+      treats: (diet['treat'] as List?)?.map((e) => e as String).toList() ?? [],
       supplements:
           (diet['supplement'] as List).map((e) => e as String).toList(),
       feedingFrequency: diet['frequency'] as String,
       feedingSize: diet['feeding_size'] as String?,
       water: diet['water'] as String?,
       dietNotes: diet['notes'] as String?,
-      commonMistakes: (json['common_mistakes'] as List)
-          .map((e) => e as String)
-          .toList(),
-      sources:
-          (json['sources'] as List).map((e) => e as String).toList(),
-      citationIds: (json['citation_ids'] as List?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const [],
+      commonMistakes:
+          (json['common_mistakes'] as List).map((e) => e as String).toList(),
+      sources: (json['sources'] as List).map((e) => e as String).toList(),
+      citationIds:
+          (json['citation_ids'] as List?)?.map((e) => e as String).toList() ??
+              const [],
     );
   }
 }

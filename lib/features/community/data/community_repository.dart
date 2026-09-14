@@ -44,7 +44,8 @@ class CommunityRepository {
   }
 
   /// 피드 한 페이지 (최신순). offset 기반 range 페이지네이션.
-  Future<List<CommunityPost>> listPosts({int offset = 0, int limit = 20}) async {
+  Future<List<CommunityPost>> listPosts(
+      {int offset = 0, int limit = 20}) async {
     final rows = await _supabase
         .from('community_posts')
         .select('*, community_likes(count), community_comments(count)')
@@ -207,9 +208,7 @@ class CommunityRepository {
           .from('community_blocks')
           .select('blocked_id')
           .eq('blocker_id', uid);
-      return {
-        for (final r in rows as List) (r as Map)['blocked_id'] as String
-      };
+      return {for (final r in rows as List) (r as Map)['blocked_id'] as String};
     } catch (_) {
       return {};
     }

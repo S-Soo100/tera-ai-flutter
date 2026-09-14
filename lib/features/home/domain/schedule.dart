@@ -267,9 +267,9 @@ class Schedule {
   factory Schedule.fromJson(Map<String, dynamic> j) {
     final (h, m) = _parseTime(j['time_of_day'] as String?);
     final days = (j['days_of_week'] as List?)
-            ?.map((e) => (e as num).toInt())
-            .toList()
-        ?..sort();
+        ?.map((e) => (e as num).toInt())
+        .toList()
+      ?..sort();
     return Schedule(
       id: j['id'] as String? ?? '',
       deviceId: j['device_id'] as String? ?? '',
@@ -363,8 +363,7 @@ class Schedule {
     required int endHour,
     required int endMinute,
   }) =>
-      endHour < startHour ||
-      (endHour == startHour && endMinute <= startMinute);
+      endHour < startHour || (endHour == startHour && endMinute <= startMinute);
 
   /// 구간 예약 off쪽의 요일.
   ///

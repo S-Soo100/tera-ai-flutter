@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:vivnanaut/features/my_cage/data/camera_exceptions.dart';
-import 'package:vivnanaut/features/my_cage/data/highlight_repository.dart';
+import 'package:vivanaut/features/my_cage/data/camera_exceptions.dart';
+import 'package:vivanaut/features/my_cage/data/highlight_repository.dart';
 
 /// petcam-api GET /highlights 계약(2026-09-08 자동 규칙 + 사람 확정) 검증.
 void main() {

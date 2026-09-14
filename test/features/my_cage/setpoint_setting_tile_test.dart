@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/home/domain/enclosure_set.dart';
-import 'package:vivnanaut/features/home/presentation/home_set_providers.dart';
-import 'package:vivnanaut/features/my_cage/data/device_settings_repository.dart';
-import 'package:vivnanaut/features/my_cage/domain/device.dart';
-import 'package:vivnanaut/features/my_cage/domain/enclosure.dart';
-import 'package:vivnanaut/features/my_cage/domain/device_settings.dart';
-import 'package:vivnanaut/features/my_cage/presentation/widgets/setpoint_setting_tile.dart';
+import 'package:vivanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivanaut/features/my_cage/data/device_settings_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
+import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
+import 'package:vivanaut/features/my_cage/domain/device_settings.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/setpoint_setting_tile.dart';
 
 /// 2026-08-18 회신 §5 — 목표 온습도(setpoint) REST.
 class _FakeRepo implements DeviceSettingsRepository {
@@ -133,14 +133,14 @@ void main() {
     await tester.enterText(
         find.byKey(const Key('setpoint_humidity_field')), '120');
     await tester.pump();
-    final btn = tester.widget<FilledButton>(find.byKey(const Key('setpoint_apply')));
+    final btn =
+        tester.widget<FilledButton>(find.byKey(const Key('setpoint_apply')));
     expect(btn.onPressed, isNull);
     expect(find.byKey(const Key('setpoint_invalid')), findsOneWidget);
     expect(repo.calls.where((c) => c.startsWith('patch:')), isEmpty);
   });
 
-  testWidgets('현재 목표가 있으면 subtitle에 바로 보인다 + 대상 기기 이름을 밝힌다',
-      (tester) async {
+  testWidgets('현재 목표가 있으면 subtitle에 바로 보인다 + 대상 기기 이름을 밝힌다', (tester) async {
     final repo = _FakeRepo(
         current: const DeviceSettings(
             deviceId: 'd1', targetTempC: 28, targetHumidityPct: 60));
@@ -154,7 +154,8 @@ void main() {
   testWidgets('기기가 없으면 탭이 막히고 이유가 subtitle에 있다', (tester) async {
     await _pump(tester, _FakeRepo(), deviceId: null);
     final tile = tester.widget<ListTile>(find.descendant(
-        of: find.byKey(SetpointSettingTile.tileKey), matching: find.byType(ListTile)));
+        of: find.byKey(SetpointSettingTile.tileKey),
+        matching: find.byType(ListTile)));
     expect(tile.enabled, isFalse);
     expect(find.text('lcd_no_device'), findsOneWidget);
   });

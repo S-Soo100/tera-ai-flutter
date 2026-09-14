@@ -85,8 +85,7 @@ class _VideoControlsState extends State<VideoControls> {
           SliderTheme(
             data: SliderThemeData(
               trackHeight: 3,
-              overlayShape:
-                  const RoundSliderOverlayShape(overlayRadius: 14),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
               thumbShape: _interacting
                   ? const RoundSliderThumbShape(enabledThumbRadius: 7)
                   : SliderComponentShape.noThumb,

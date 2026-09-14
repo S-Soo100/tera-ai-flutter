@@ -1,13 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivnanaut/features/my_cage/domain/clip_playback.dart';
+import 'package:vivanaut/features/my_cage/domain/clip_playback.dart';
 
 void main() {
   const dur60 = Duration(seconds: 60);
 
   group('initialClipSeek — 서버 재생 시작점(play_from_sec) 판정', () {
     test('8.8초 · 영상 60초 → 8.8초로 seek', () {
-      expect(initialClipSeek(8.8, dur60),
-          const Duration(milliseconds: 8800));
+      expect(initialClipSeek(8.8, dur60), const Duration(milliseconds: 8800));
     });
     test('null(분석 없음/구 서버) → seek 없음', () {
       expect(initialClipSeek(null, dur60), isNull);

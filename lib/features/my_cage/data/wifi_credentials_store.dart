@@ -46,7 +46,8 @@ class WifiCredentialsStore {
       if (parsed is! Map) return {};
       return {
         for (final entry in parsed.entries)
-          if (entry.value is String) entry.key.toString(): entry.value as String,
+          if (entry.value is String)
+            entry.key.toString(): entry.value as String,
       };
     } catch (_) {
       return {};

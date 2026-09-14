@@ -1,4 +1,4 @@
-# 비바나트 (vivnanaut)
+# 비바나트 (vivanaut)
 
 A new Flutter project.
 

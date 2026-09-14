@@ -67,7 +67,8 @@ class AccountAvatar extends StatelessWidget {
                         fit: BoxFit.cover,
                         // 로딩·실패 모두 폴백으로 — 깨진 아이콘을 내지 않는다.
                         placeholder: (_, __) => _Fallback(initial: initial),
-                        errorWidget: (_, __, ___) => _Fallback(initial: initial),
+                        errorWidget: (_, __, ___) =>
+                            _Fallback(initial: initial),
                       )
                     : _Fallback(initial: initial),
               ),

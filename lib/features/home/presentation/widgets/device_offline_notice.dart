@@ -49,8 +49,7 @@ class DeviceOfflineNotice extends ConsumerWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.cloud_off_outlined,
-                size: 18, color: AppTheme.warning),
+            Icon(Icons.cloud_off_outlined, size: 18, color: AppTheme.warning),
             const SizedBox(width: AppStyles.spacing8),
             Expanded(
               child: Column(

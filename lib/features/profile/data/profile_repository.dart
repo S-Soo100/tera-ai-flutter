@@ -40,7 +40,8 @@ class ProfileRepository {
     };
     if (displayName != null) updates['display_name'] = displayName;
     if (experience != null) updates['experience'] = experience;
-    if (preferredSpecies != null) updates['preferred_species'] = preferredSpecies;
+    if (preferredSpecies != null)
+      updates['preferred_species'] = preferredSpecies;
     if (timezone != null) updates['timezone'] = timezone;
 
     await _client.from('user_profiles').update(updates).eq('id', userId);
@@ -61,10 +62,10 @@ class ProfileRepository {
     final baseUrl = _client.storage.from('user-avatars').getPublicUrl(path);
     final url = '$baseUrl?v=${DateTime.now().millisecondsSinceEpoch}';
 
-    await _client
-        .from('user_profiles')
-        .update({'avatar_url': url, 'updated_at': DateTime.now().toIso8601String()})
-        .eq('id', userId);
+    await _client.from('user_profiles').update({
+      'avatar_url': url,
+      'updated_at': DateTime.now().toIso8601String()
+    }).eq('id', userId);
 
     return url;
   }
