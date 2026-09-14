@@ -12,7 +12,7 @@ import 'viva_colors.dart';
 /// 비교 페이지용으로 그대로 두고, 실앱은 이 파일 하나만 본다. 라이트가 기본
 /// (`themeModeProvider`), 다크는 같은 문법에 값만 반전한 벌이다.
 ///
-/// 문법(FIDS 위계): 단색 바닥 + 흰/짙은 카드(radius 16, 그림자 없음, 얇은
+/// 문법(FIDS 위계): 단색 바닥 + 토큰 카드(radius 16, 그림자 없음, 얇은
 /// divider 테두리) + 데이터 라벨은 작은 대문자 자간([labelCaps]) + 수치는 큰
 /// tabular Bold([figure]) + 상태 시맨틱 앰버/그린/레드([signalWarn]/[signalOk]/
 /// [signalAlert])는 두 모드 공통. **활성 = 앰버**([activeTile]) — 흰 반전 타일
@@ -47,6 +47,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     required this.textPrimary,
     required this.textSecondary,
     required this.textTertiary,
+    required this.mediaTitle,
+    required this.mediaMeta,
     required this.textOnActive,
     required this.textOnActiveSecondary,
     required this.liveRed,
@@ -135,6 +137,12 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   final Color textPrimary;
   final Color textSecondary;
   final Color textTertiary; // VIVA Labels/Quaternary — 기존 소비처 이름 유지
+
+  /// 하이라이트 도착 배너 제목과 플레이어 시각의 프레임 전용 색.
+  /// VIVA 변수 밖의 실측값이라 일반 본문 역할에 섞지 않는다.
+  final Color mediaTitle;
+  final Color mediaMeta;
+
   final Color textOnActive; // 활성(앰버) 타일 위
   final Color textOnActiveSecondary;
 
@@ -276,6 +284,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     textPrimary: Colors.white,
     textSecondary: Color(0x99FFFFFF), // 60%
     textTertiary: Color(0x5CFFFFFF), // 36%
+    mediaTitle: Colors.white,
+    mediaMeta: Color(0x99FFFFFF),
     textOnActive: Color(0xFF12151C),
     textOnActiveSecondary: Color(0x9912151C),
     liveRed: Color(0xFFFF453A), // B red
@@ -328,24 +338,25 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   static const light = GlassPalette(
     brightness: Brightness.light,
     wallpaper: VivaColors.fillBack, // VIVA Fill/Back
-    overlay: Color(0xFFFFFFFF), // 카드 흰색(테두리로 구분)
+    overlay: VivaColors.fillButton, // Asset_v2/Card + NewHighlight
     overlayStrong: VivaColors.fillBack, // = surfaceHeader
     overlayFaint: VivaColors.fillButton, // surfaceSubtle — 비활성 칩 배경
     border: VivaColors.fillLine, // 칩 테두리·상단바 하단선
     outline: VivaColors.fillLine, // 기간 설정 버튼 stroke (Figma Camera)
     tabBar: Color(0xFFFFFFFF),
     activeTile: VivaColors.yellow, // 활성 앰버 역할 → VIVA Yellow
-    heaterTint:
-        VivaColors.yellow, // 전경(글리프) — 배경은 deviceHeatBg (리뷰 2026-09-03 역할 통일)
-    mistTint: Color(0xFF2F7BD1), // 전경(글리프) — 배경은 deviceMistBg
-    ledTint: Color(0xFFE8B33A), // 전경(글리프) — 배경은 deviceLedBg
-    fanTint: Color(0xFF1FA84A), // 전경(글리프) — 배경은 deviceFanBg
-    signalOk: Color(0xFF228C73),
+    heaterTint: VivaColors.pink,
+    mistTint: VivaColors.blue,
+    ledTint: VivaColors.yellow,
+    fanTint: VivaColors.green,
+    signalOk: VivaColors.green,
     signalWarn: VivaColors.yellow,
     signalAlert: VivaColors.mainLight, // 브랜드 레드 — 위험 상태 예약
     textPrimary: VivaColors.labelPrimary, // textStrong
     textSecondary: VivaColors.labelSecondary, // textBody
     textTertiary: VivaColors.labelQuaternary, // textMuted
+    mediaTitle: Color(0xFF000000), // NewHighlight title
+    mediaMeta: Color(0xFF545454), // NewHighlight date + player time
     textOnActive: Color(0xFF12151C),
     textOnActiveSecondary: Color(0x9912151C),
     liveRed: Color(0xFFE5382E),
@@ -365,18 +376,17 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     skeletonBase: Color(0xFFE0E0E0), // grey 300
     skeletonHighlight: Color(0xFFF5F5F5), // grey 100
     // 기기 상태색 (Figma A.1)
-    deviceFan: Color(0xFF228C73),
-    deviceFanBg: Color(0xFFDCF5E9),
-    deviceCool: Color(0xFF636DDB),
-    deviceCoolBg: Color(0xFFE0E5FF),
+    deviceFan: VivaColors.green,
+    deviceFanBg: VivaColors.fillButton,
+    deviceCool: VivaColors.purple,
+    deviceCoolBg: VivaColors.fillButton,
     deviceLed: VivaColors.yellow,
-    deviceLedBg: Color(0xFFFFF4D9),
-    deviceLedGauge: Color(0xFFFFE2A3),
-    deviceHeat: Color(0xFFFF6B57), // 도출값
-    deviceHeatBg: Color(0xFFFFE9E4), // 도출값
-    deviceMist: Color(0xFF00B2F3),
-    deviceMistBg:
-        Color(0xFFE0F6FE), // 분무 잠금 타일 Bg — humidAccent 12% 도출(Figma 미정의)
+    deviceLedBg: VivaColors.fillButton,
+    deviceLedGauge: VivaColors.fillButton,
+    deviceHeat: VivaColors.pink,
+    deviceHeatBg: VivaColors.fillButton,
+    deviceMist: VivaColors.blue,
+    deviceMistBg: VivaColors.fillButton,
     deviceGlyph: Color(0xFFFFFFFF),
     deviceOff: VivaColors.fillIcon,
     tempAccent: Color(0xFFF85478),
@@ -415,6 +425,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     Color? textPrimary,
     Color? textSecondary,
     Color? textTertiary,
+    Color? mediaTitle,
+    Color? mediaMeta,
     Color? textOnActive,
     Color? textOnActiveSecondary,
     Color? liveRed,
@@ -480,6 +492,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textTertiary: textTertiary ?? this.textTertiary,
+      mediaTitle: mediaTitle ?? this.mediaTitle,
+      mediaMeta: mediaMeta ?? this.mediaMeta,
       textOnActive: textOnActive ?? this.textOnActive,
       textOnActiveSecondary:
           textOnActiveSecondary ?? this.textOnActiveSecondary,
@@ -554,6 +568,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       textPrimary: c(textPrimary, other.textPrimary),
       textSecondary: c(textSecondary, other.textSecondary),
       textTertiary: c(textTertiary, other.textTertiary),
+      mediaTitle: c(mediaTitle, other.mediaTitle),
+      mediaMeta: c(mediaMeta, other.mediaMeta),
       textOnActive: c(textOnActive, other.textOnActive),
       textOnActiveSecondary:
           c(textOnActiveSecondary, other.textOnActiveSecondary),

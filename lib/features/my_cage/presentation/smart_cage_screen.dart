@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../domain/device.dart';
 import 'supabase_module_providers.dart';
@@ -182,10 +183,10 @@ class _DeviceSelector extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedId = ref.watch(selectedDeviceIdProvider);
     // selectedId가 null이거나 목록에 없으면 첫 번째가 실질 선택
-    final effectiveId = (selectedId != null &&
-            devices.any((d) => d.id == selectedId))
-        ? selectedId
-        : devices.first.id;
+    final effectiveId =
+        (selectedId != null && devices.any((d) => d.id == selectedId))
+            ? selectedId
+            : devices.first.id;
 
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -216,12 +217,10 @@ class _DeviceSelector extends ConsumerWidget {
                         : device.id.substring(0, 8),
                   ),
                   avatar: Icon(
-                    device.isOnline
-                        ? Icons.circle
-                        : Icons.circle_outlined,
+                    device.isOnline ? Icons.circle : Icons.circle_outlined,
                     size: 10,
                     color: device.isOnline
-                        ? Colors.green
+                        ? context.glass.signalOk
                         : cs.onSurface.withValues(alpha: 0.4),
                   ),
                   onSelected: (_) {

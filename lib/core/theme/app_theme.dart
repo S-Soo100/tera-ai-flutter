@@ -119,7 +119,7 @@ class AppTheme {
   static TextTheme _buildTextTheme({required Brightness brightness}) {
     final baseColor = brightness == Brightness.dark
         ? const Color(0xFFE0E0E0)
-        : const Color(0xFF1A1A1A);
+        : VivaColors.labelPrimary;
     return TextTheme(
       displayLarge: TextStyle(fontFamily: _pretendard, color: baseColor),
       displayMedium: TextStyle(fontFamily: _pretendard, color: baseColor),

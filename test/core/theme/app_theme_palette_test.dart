@@ -5,12 +5,34 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/core/theme/app_styles.dart';
 import 'package:vivnanaut/core/theme/app_theme.dart';
 import 'package:vivnanaut/core/theme/glass_palette.dart';
+import 'package:vivnanaut/core/theme/viva_colors.dart';
 import 'package:vivnanaut/shared/widgets/glass_card.dart';
+import 'package:vivnanaut/shared/widgets/glass_dock.dart';
 
 /// VIVA 공통색 + 기존 Asset 전용색이 테마에서 어긋나지 않게 고정한다.
 /// 값 출처: `docs/design-system-viva-colors.md`
 void main() {
   group('Figma 팔레트 원본값', () {
+    test('VIVA 컬렉션 17개 원본값', () {
+      expect(VivaColors.labelPrimary, const Color(0xFF1E1E1E));
+      expect(VivaColors.labelSecondary, const Color(0xFF3C3C3C));
+      expect(VivaColors.labelTertiary, const Color(0xFF626262));
+      expect(VivaColors.labelQuaternary, const Color(0xFF949090));
+      expect(VivaColors.fillIcon, const Color(0xFFB4AEAE));
+      expect(VivaColors.fillLine, const Color(0xFFE3E3E3));
+      expect(VivaColors.fillButton, const Color(0xFFF4F4F4));
+      expect(VivaColors.fillBack, const Color(0xFFFAFAFA));
+      expect(VivaColors.mainDark, const Color(0xFFC00306));
+      expect(VivaColors.mainLight, const Color(0xFFD61619));
+      expect(VivaColors.subDark, const Color(0xFF192553));
+      expect(VivaColors.subLight, const Color(0xFF2E408C));
+      expect(VivaColors.pink, const Color(0xFFDA4A6A));
+      expect(VivaColors.yellow, const Color(0xFFE89E00));
+      expect(VivaColors.green, const Color(0xFF228C73));
+      expect(VivaColors.blue, const Color(0xFF2A97DB));
+      expect(VivaColors.purple, const Color(0xFF636DDB));
+    });
+
     test('메인컬러는 #192553 — 구 Green 800(#2E7D32)으로 되돌아가면 안 된다', () {
       expect(AppTheme.brandNavy, const Color(0xFF192553));
       expect(AppTheme.brandNavy, isNot(const Color(0xFF2E7D32)));
@@ -66,6 +88,27 @@ void main() {
       expect(temperature, contains('fill="#F85478"'));
       expect(humidity, contains('fill="#00B2F3"'));
     });
+
+    test('홈 기기색과 카드 면은 최신 Final Design 변수에 연결된다', () {
+      final light = GlassPalette.light;
+      expect(light.overlay, VivaColors.fillButton);
+      expect(light.deviceFan, VivaColors.green);
+      expect(light.deviceMist, VivaColors.blue);
+      expect(light.deviceCool, VivaColors.purple);
+      expect(light.deviceLed, VivaColors.yellow);
+      expect(light.deviceHeat, VivaColors.pink);
+      expect(light.deviceFanBg, VivaColors.fillButton);
+      expect(light.deviceMistBg, VivaColors.fillButton);
+      expect(light.deviceCoolBg, VivaColors.fillButton);
+      expect(light.deviceLedBg, VivaColors.fillButton);
+      expect(light.deviceHeatBg, VivaColors.fillButton);
+    });
+
+    test('하이라이트 배너와 플레이어 시각은 프레임 전용 글자색을 쓴다', () {
+      final light = GlassPalette.light;
+      expect(light.mediaTitle, const Color(0xFF000000));
+      expect(light.mediaMeta, const Color(0xFF545454));
+    });
   });
 
   group('라이트 스킴 — Figma 라이트 팔레트', () {
@@ -77,6 +120,13 @@ void main() {
     test('바닥은 라이트 팔레트 wallpaper와 같다', () {
       expect(
           AppTheme.light.scaffoldBackgroundColor, GlassPalette.light.wallpaper);
+    });
+
+    test('기본 라이트 텍스트는 Labels/Primary다', () {
+      expect(
+          AppTheme.light.textTheme.bodyMedium?.color, VivaColors.labelPrimary);
+      expect(
+          AppTheme.light.textTheme.titleLarge?.color, VivaColors.labelPrimary);
     });
   });
 
@@ -192,6 +242,31 @@ void main() {
 
       expect(await surfaceUnder(AppTheme.light), GlassPalette.light.overlay);
       expect(await surfaceUnder(AppTheme.dark), GlassPalette.dark.overlay);
+    });
+
+    testWidgets('하단 탭바 상단선은 Fill/Line을 사용한다', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: GlassDock(
+              items: const [
+                GlassDockItem(iconAsset: 'nav_home', label: 'Home'),
+              ],
+              currentIndex: 0,
+              onSelected: (_) {},
+            ),
+          ),
+        ),
+      );
+      final box = tester.widget<DecoratedBox>(find
+          .descendant(
+            of: find.byType(GlassDock),
+            matching: find.byType(DecoratedBox),
+          )
+          .first);
+      final decoration = box.decoration as BoxDecoration;
+      expect(decoration.border?.top.color, VivaColors.fillLine);
     });
   });
 

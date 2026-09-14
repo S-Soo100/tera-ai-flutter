@@ -41,8 +41,8 @@ class GlassDockItem {
 /// 플로팅 캡슐 시절의 것).
 ///
 /// **2026-09-02 Figma `vivanaut app` Navigation(668:2485) 스타일**: 흰 바닥
-/// ([GlassPalette.tabBar]) + top stroke [GlassPalette.surfaceTint]. 그림자
-/// 없음. 4항목이 폭을 균등 분할하고, 활성 탭은 **primary(#192553)**,
+/// ([GlassPalette.tabBar]) + top stroke [GlassPalette.border]. 그림자
+/// 없음. 4항목이 폭을 균등 분할하고, 활성 탭은 **Main_Dark(#C00306)**,
 /// 나머지는 [GlassPalette.textTertiary]. 아이콘 24 + 간격 4 + 라벨 12 Medium
 /// ([GlassPalette.dockLabel]).
 ///
@@ -74,7 +74,7 @@ class GlassDock extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: glass.tabBar,
-        border: Border(top: BorderSide(color: glass.surfaceTint)),
+        border: Border(top: BorderSide(color: glass.border)),
       ),
       // 리플이 앉을 면 — 없으면 잉크가 불투명 바 뒤에 그려져 안 보인다.
       child: Material(

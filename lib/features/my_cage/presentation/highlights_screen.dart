@@ -278,7 +278,7 @@ class _ArrivalBanner extends ConsumerWidget {
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 18 * -0.02,
-                      color: glass.textPrimary, // = textStrong(#1E1E1E)
+                      color: glass.mediaTitle,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -289,7 +289,7 @@ class _ArrivalBanner extends ConsumerWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 14 * -0.02,
-                      color: glass.textSecondary,
+                      color: glass.mediaMeta,
                     ),
                   ),
                   // Figma 실측 9 (날짜 줄끝 4312 → 썸네일 4321).
