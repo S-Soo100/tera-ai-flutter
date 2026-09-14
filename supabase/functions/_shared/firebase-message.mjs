@@ -46,7 +46,7 @@ export function extractFcmFailure(payload) {
 }
 
 export function classifyFcmFailure(status, failure = {}) {
-  if (failure?.fcmErrorCode === 'UNREGISTERED') {
+  if (failure?.fcmErrorCode === 'UNREGISTERED' || failure?.fcmErrorCode === 'INVALID_ARGUMENT') {
     return 'disable-token';
   }
   if (status === 429 || status >= 500) {

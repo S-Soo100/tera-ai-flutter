@@ -103,7 +103,8 @@ CREATE TABLE public.notification_deliveries (
   last_error      TEXT,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (outbox_id, push_device_id)
+  CONSTRAINT notification_deliveries_outbox_id_push_device_id_key
+    UNIQUE (outbox_id, push_device_id)
 );
 CREATE INDEX notification_deliveries_dispatch_idx
   ON public.notification_deliveries (outbox_id, status, scheduled_at);
@@ -400,7 +401,7 @@ BEGIN
   FROM public.push_devices AS d
   WHERE d.enabled = true
     AND d.user_id = (SELECT o.user_id FROM public.notification_outbox AS o WHERE o.id = p_outbox_id)
-  ON CONFLICT (outbox_id, push_device_id) DO NOTHING;
+  ON CONFLICT ON CONSTRAINT notification_deliveries_outbox_id_push_device_id_key DO NOTHING;
 
   RETURN QUERY
   WITH due AS (
@@ -479,8 +480,7 @@ SET search_path = public
 AS $$
 DECLARE
   v_next_scheduled_at TIMESTAMPTZ;
-  v_has_pending BOOLEAN;
-  v_has_sent BOOLEAN;
+  v_has_unfinished BOOLEAN;
   v_has_active_failed BOOLEAN;
   v_error TEXT;
   v_status TEXT;
@@ -503,22 +503,24 @@ BEGIN
     AND d.status IN ('pending', 'processing');
 
   SELECT
-    COALESCE(bool_or(d.status = 'pending' AND p.enabled), false),
-    COALESCE(bool_or(d.status = 'sent'), false),
+    COALESCE(bool_or(d.status IN ('pending', 'processing') AND p.enabled), false),
     COALESCE(bool_or(d.status = 'failed' AND p.enabled), false),
-    min(d.scheduled_at) FILTER (WHERE d.status = 'pending' AND p.enabled),
+    min(CASE
+      WHEN d.status = 'pending' THEN d.scheduled_at
+      WHEN d.status = 'processing' THEN d.locked_at + interval '10 minutes'
+    END) FILTER (WHERE d.status IN ('pending', 'processing') AND p.enabled),
     max(d.last_error) FILTER (WHERE d.status = 'failed' AND p.enabled)
-  INTO v_has_pending, v_has_sent, v_has_active_failed, v_next_scheduled_at, v_error
+  INTO v_has_unfinished, v_has_active_failed, v_next_scheduled_at, v_error
   FROM public.notification_deliveries AS d
   JOIN public.push_devices AS p ON p.id = d.push_device_id
   WHERE d.outbox_id = p_outbox_id;
 
-  IF v_has_pending THEN
+  IF v_has_unfinished THEN
     v_status := 'pending';
-  ELSIF v_has_sent OR NOT v_has_active_failed THEN
-    v_status := 'sent';
-  ELSE
+  ELSIF v_has_active_failed THEN
     v_status := 'failed';
+  ELSE
+    v_status := 'sent';
   END IF;
 
   UPDATE public.notification_outbox AS o

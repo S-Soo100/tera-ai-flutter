@@ -44,6 +44,23 @@ test('extracts typed FCM errors from Google envelopes', () => {
   });
 });
 
+test('disables only a typed token-specific invalid argument', () => {
+  const typedInvalidToken = extractFcmFailure({
+    error: {
+      status: 'INVALID_ARGUMENT',
+      details: [{
+        '@type': 'type.googleapis.com/google.firebase.fcm.v1.FcmError',
+        errorCode: 'INVALID_ARGUMENT',
+      }],
+    },
+  });
+  assert.equal(classifyFcmFailure(400, typedInvalidToken), 'disable-token');
+  assert.equal(
+    classifyFcmFailure(400, extractFcmFailure({ error: { status: 'INVALID_ARGUMENT' } })),
+    'fail',
+  );
+});
+
 test('does not disable tokens for generic invalid arguments or malformed envelopes', () => {
   assert.equal(classifyFcmFailure(400, { status: 'INVALID_ARGUMENT' }), 'fail');
   assert.equal(classifyFcmFailure(400, {}), 'fail');

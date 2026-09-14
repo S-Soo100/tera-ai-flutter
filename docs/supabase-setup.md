@@ -337,8 +337,9 @@ supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON='{"client_email":"...","priva
 함수는 `claim_notification_outbox(p_limit)` RPC로 예약 시각이 지난 `pending` 행과 10분을
 넘긴 `processing` lease를 `FOR UPDATE SKIP LOCKED`로 원자적으로 `processing`으로 가져온다.
 각 claim은 새 `lock_token`을 받고, delivery claim·결과 기록·outbox roll-up은 모두 이 token을
-요구한다. 늦게 끝난 worker는 새 worker의 상태를 덮어쓸 수 없다. 네트워크 요청은 15초에
-중단되고 한 실행은 최대 10개의 outbox/설치를 처리하므로 10분 lease보다 충분히 짧다.
+요구한다. 늦게 끝난 worker는 새 worker의 상태를 덮어쓸 수 없다. 네트워크 요청과 Supabase
+RPC/update는 모두 15초 abort signal을 사용하며, 한 실행은 outbox 1건과 FCM 전송 최대 10건만
+처리하므로 10분 lease보다 충분히 짧다.
 
 `notification_deliveries`는 설치별 `sent`/`failed`/재시도 상태와 fence를 보존한다. 따라서 한
 설치가 성공한 뒤 다른 설치만 429/5xx로 재시도되어도 성공 설치에는 같은 push를 다시 보내지
@@ -347,8 +348,8 @@ supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON='{"client_email":"...","priva
 `kind`, `route`의 문자열만 포함한다.
 
 FCM 응답의 `error.details[]`에서 typed `google.firebase.fcm.v1.FcmError`의
-`UNREGISTERED`만 해당 설치를 비활성화한다. top-level `INVALID_ARGUMENT` 및 형식이 깨진
-오류 payload는 token을 건드리지 않는 영구 실패다. 429와 5xx는 `Retry-After`를 우선하고,
+`UNREGISTERED` 또는 typed `INVALID_ARGUMENT`만 해당 설치를 비활성화한다. top-level
+`INVALID_ARGUMENT` 및 형식이 깨진 오류 payload는 token을 건드리지 않는 영구 실패다. 429와 5xx는 `Retry-After`를 우선하고,
 첫 quota/503 재시도는 최소 60초이며 이후 지수 backoff로 delivery만 재예약한다. 그 밖의
 4xx는 token·credential을 기록하지 않는 안전한 오류 코드와 함께 영구 실패로 처리한다.
 모든 활성 설치가 처리되면 outbox는 `sent`가 된다.

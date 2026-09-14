@@ -10,7 +10,8 @@ import { isServiceRoleRequest } from '../_shared/dispatch-push-auth.mjs';
 const firebaseScope = 'https://www.googleapis.com/auth/firebase.messaging';
 const firebaseTokenUrl = 'https://oauth2.googleapis.com/token';
 const firebaseProjectId = 'vivanaut-app';
-const claimLimit = 10;
+const outboxClaimLimit = 1;
+const deliveryClaimLimit = 10;
 const requestTimeoutMs = 15_000;
 const jsonHeaders = { 'content-type': 'application/json; charset=utf-8' };
 
@@ -56,14 +57,25 @@ function privateKeyBytes(pem: string) {
   return bytes.buffer;
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit) {
+async function withTimeout<T>(operation: (signal: AbortSignal) => PromiseLike<T>) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    return await operation(controller.signal);
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function fetchWithTimeout<T>(
+  url: string,
+  init: RequestInit,
+  consume: (response: Response) => Promise<T>,
+) {
+  return withTimeout(async (signal) => {
+    const response = await fetch(url, { ...init, signal });
+    return await consume(response);
+  });
 }
 
 function retryAfterSeconds(value: string | null) {
@@ -93,16 +105,17 @@ async function firebaseAccessToken(account: ServiceAccount) {
   const signature = new Uint8Array(await crypto.subtle.sign(
     'RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsignedToken),
   ));
-  const tokenResponse = await fetchWithTimeout(firebaseTokenUrl, {
+  const token = await fetchWithTimeout(firebaseTokenUrl, {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
       assertion: `${unsignedToken}.${base64Url(signature)}`,
     }),
+  }, async (tokenResponse) => {
+    if (!tokenResponse.ok) throw new Error('firebase_oauth_failed');
+    return tokenResponse.json();
   });
-  if (!tokenResponse.ok) throw new Error('firebase_oauth_failed');
-  const token = await tokenResponse.json();
   if (typeof token.access_token !== 'string' || token.access_token.length === 0) {
     throw new Error('firebase_oauth_invalid_response');
   }
@@ -118,28 +131,32 @@ function safeErrorCode(status: number, failure: { status?: string; fcmErrorCode?
 }
 
 async function sendFirebaseMessage(accessToken: string, message: unknown) {
-  const sendResponse = await fetchWithTimeout(
+  return fetchWithTimeout(
     `https://fcm.googleapis.com/v1/projects/${firebaseProjectId}/messages:send`,
     {
       method: 'POST',
       headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
       body: JSON.stringify(message),
+    }, async (sendResponse) => {
+      if (sendResponse.ok) {
+        await sendResponse.json();
+        return { ok: true as const };
+      }
+
+      let failure = {};
+      try {
+        failure = extractFcmFailure(await sendResponse.json());
+      } catch (_) {
+        // The HTTP status remains sufficient for a safe retry/failure decision.
+      }
+      return {
+        ok: false as const,
+        status: sendResponse.status,
+        failure,
+        retryAfterSeconds: retryAfterSeconds(sendResponse.headers.get('retry-after')),
+      };
     },
   );
-  if (sendResponse.ok) return { ok: true as const };
-
-  let failure = {};
-  try {
-    failure = extractFcmFailure(await sendResponse.json());
-  } catch (_) {
-    // The HTTP status remains sufficient for a safe retry/failure decision.
-  }
-  return {
-    ok: false as const,
-    status: sendResponse.status,
-    failure,
-    retryAfterSeconds: retryAfterSeconds(sendResponse.headers.get('retry-after')),
-  };
 }
 
 async function completeDelivery(
@@ -149,13 +166,13 @@ async function completeDelivery(
   scheduledAt: string | null,
   errorCode: string | null,
 ) {
-  const { error } = await client.rpc('complete_notification_delivery', {
+  const { error } = await withTimeout((signal) => client.rpc('complete_notification_delivery', {
     p_delivery_id: delivery.id,
     p_lock_token: delivery.lock_token,
     p_status: status,
     p_scheduled_at: scheduledAt,
     p_last_error: errorCode,
-  });
+  }).abortSignal(signal));
   if (error) throw new Error('delivery_update_failed');
 }
 
@@ -164,11 +181,11 @@ async function dispatchRow(
   accessToken: string,
   row: ClaimedOutboxRow,
 ) {
-  const { data, error } = await client.rpc('claim_notification_deliveries', {
+  const { data, error } = await withTimeout((signal) => client.rpc('claim_notification_deliveries', {
     p_outbox_id: row.id,
     p_lock_token: row.lock_token,
-    p_limit: claimLimit,
-  });
+    p_limit: deliveryClaimLimit,
+  }).abortSignal(signal));
   if (error) throw new Error('delivery_claim_failed');
 
   for (const delivery of (data ?? []) as ClaimedDelivery[]) {
@@ -189,11 +206,12 @@ async function dispatchRow(
       const outcome = classifyFcmFailure(result.status, result.failure);
       const errorCode = safeErrorCode(result.status, result.failure);
       if (outcome === 'disable-token') {
-        const { error: disableError } = await client
+        const { error: disableError } = await withTimeout((signal) => client
           .from('push_devices')
           .update({ enabled: false, updated_at: new Date().toISOString() })
           .eq('id', delivery.push_device_id)
-          .eq('fcm_token', delivery.fcm_token);
+          .eq('fcm_token', delivery.fcm_token)
+          .abortSignal(signal));
         if (disableError) throw new Error('push_device_disable_failed');
         await completeDelivery(client, delivery, 'failed', null, errorCode);
       } else if (outcome === 'retry') {
@@ -214,10 +232,10 @@ async function dispatchRow(
     }
   }
 
-  const { error: finalizeError } = await client.rpc('finalize_notification_outbox', {
+  const { error: finalizeError } = await withTimeout((signal) => client.rpc('finalize_notification_outbox', {
     p_outbox_id: row.id,
     p_lock_token: row.lock_token,
-  });
+  }).abortSignal(signal));
   if (finalizeError) throw new Error('outbox_finalize_failed');
 }
 
@@ -225,7 +243,7 @@ Deno.serve(async (request) => {
   if (request.method !== 'POST') return response(400, { error: 'POST is required' });
 
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!isServiceRoleRequest(request.headers, serviceRoleKey)) {
+  if (!serviceRoleKey || !isServiceRoleRequest(request.headers, serviceRoleKey)) {
     return response(401, { error: 'unauthorized' });
   }
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -255,7 +273,9 @@ Deno.serve(async (request) => {
     return response(502, { error: 'push dispatcher is unavailable' });
   }
 
-  const { data, error } = await client.rpc('claim_notification_outbox', { p_limit: claimLimit });
+  const { data, error } = await withTimeout((signal) => client
+    .rpc('claim_notification_outbox', { p_limit: outboxClaimLimit })
+    .abortSignal(signal));
   if (error) {
     console.error('push dispatcher could not claim outbox rows', { code: error.code });
     return response(500, { error: 'push dispatcher is unavailable' });
