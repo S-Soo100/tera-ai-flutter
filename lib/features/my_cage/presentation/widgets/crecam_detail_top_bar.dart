@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/glass_palette.dart';
@@ -124,12 +125,17 @@ class CrecamDetailHeaderArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
-    return Container(
-      decoration: BoxDecoration(
-        color: glass.surfaceHeader,
-        border: Border(bottom: BorderSide(color: glass.outline)),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: Theme.of(context).brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
+      child: Container(
+        decoration: BoxDecoration(
+          color: glass.surfaceHeader,
+          border: Border(bottom: BorderSide(color: glass.outline)),
+        ),
+        child: SafeArea(bottom: false, child: child),
       ),
-      child: SafeArea(bottom: false, child: child),
     );
   }
 }

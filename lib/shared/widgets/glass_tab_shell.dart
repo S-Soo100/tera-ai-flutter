@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/theme/glass_palette.dart';
 import 'wallpaper_background.dart';
@@ -25,13 +26,18 @@ class GlassTabShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.glass.wallpaper,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: WallpaperBackground()),
-          SafeArea(bottom: false, child: child),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: Theme.of(context).brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: context.glass.wallpaper,
+        body: Stack(
+          children: [
+            const Positioned.fill(child: WallpaperBackground()),
+            SafeArea(bottom: false, child: child),
+          ],
+        ),
       ),
     );
   }

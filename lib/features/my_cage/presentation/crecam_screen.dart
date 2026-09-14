@@ -186,7 +186,7 @@ class _EntryCards extends ConsumerWidget {
             onTap: () => context.push('/crecam/highlights'),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: _EntryCard(
             key: CrecamScreen.bookmarkCardKey,
@@ -201,8 +201,8 @@ class _EntryCards extends ConsumerWidget {
   }
 }
 
-/// 엔트리 카드 한 장 — 홈 제어 타일(_DeviceTile)과 같은 문법: h72, bg
-/// surfaceTint radius 12, 패딩 16, 좌 40 원(deviceOff) 안 아이콘 24.
+/// Figma 945:4171/4179: 최소 높이 72, 40px 진회색 아이콘 배경.
+/// 긴 업데이트 문구는 가용 폭에 맞춰 축소해 한 줄로 전부 표시한다.
 class _EntryCard extends StatelessWidget {
   const _EntryCard({
     super.key,
@@ -233,17 +233,17 @@ class _EntryCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        child: SizedBox(
-          height: 72,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 72),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
                 Container(
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: glass.deviceOff,
+                    color: glass.textSecondary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Center(
@@ -256,6 +256,7 @@ class _EntryCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -297,17 +298,19 @@ class _EntryCard extends StatelessWidget {
       loading: () => const SkeletonLoading(width: 72, height: 14),
       // "없음"과 구분되는 문구 — 오프라인/서버 장애를 "아직 없어요"로
       // 단정하면 상세 화면(에러+재시도)과 모순된다(리뷰 2026-09-04).
-      error: (_, __) => Text('crecam_home_load_failed'.tr(),
-          maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
+      error: (_, __) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text('crecam_home_load_failed'.tr(), style: style),
+      ),
       data: (at) {
         final base = at == null
             ? emptyLabel ?? 'crecam_home_no_updates'.tr()
             : _updateLabel(at);
-        return Text(
-          base,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: style,
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(base, maxLines: 1, style: style),
         );
       },
     );
