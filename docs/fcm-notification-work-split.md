@@ -4,6 +4,20 @@
 > 범위: Android 우선, iOS/APNs 보류
 > 설계 SOT: `docs/superpowers/specs/2026-09-15-android-fcm-notifications-design.md`
 
+## 배포 상태 (2026-09-15)
+
+| 범위 | 상태 | 남은 운영 조치 |
+|---|---|---|
+| 저장소 구현·Node 테스트 | 준비 완료 (19/19 통과) | 원격 Supabase에 migration/functions를 배포한다. |
+| Flutter·빌드 검증 | 통과 | focused 45개·전체 696개 테스트, analyze 0 errors, Android APK, iOS 14 pod install까지 확인했다. |
+| Supabase schema/functions | 미배포 | CLI access token/login 및 project link 후 `20260915000000_fcm_notifications.sql`를 적용하고 두 함수를 배포한다. |
+| Firebase secret | 미등록·미확인 | `FIREBASE_SERVICE_ACCOUNT_JSON`과 `PUSH_EVENT_INGEST_SECRET`을 운영자가 secret으로 등록한다. |
+| Android 실기기 FCM | 대기 | Android 13+ 권한·수신·탭 이동을 실제 push로 확인한다. |
+| terra-server·petcam-lab | 대기 | ACK/하이라이트 생산자를 ingest 계약에 연결하고 공동 스테이징한다. |
+
+상세한 안전 배포 명령과 scheduler 인증 방식은
+[`2026-09-15-fcm-deployment-checklist.md`](handoffs/2026-09-15-fcm-deployment-checklist.md)를 따른다. 현재 `supabase projects list`는 access token 부재로 실패했고, FCM migration은 Local/file에는 인식되지만 Remote/applied에는 아직 없다. 로컬 `db lint`의 schema-error 없음은 원격 적용 증거가 아니다.
+
 ## 책임 구분
 
 | 담당 | 해야 할 일 | 하지 않는 일 |
