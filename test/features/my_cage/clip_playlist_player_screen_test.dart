@@ -12,6 +12,7 @@ import 'package:vivnanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivnanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
 import 'package:vivnanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivnanaut/features/my_cage/presentation/widgets/motion_clip_thumb.dart';
+import 'package:vivnanaut/shared/widgets/figma_icon.dart';
 
 /// Hive/Supabase를 타지 않는 대역 — 즐겨찾기 없음, 로컬 파일 없음.
 class _FakeFavoriteRepo implements FavoriteClipRepository {
@@ -73,7 +74,7 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('현재 영상은 필름스트립 중앙에 있고 이전·다음 화살표는 없다', (tester) async {
+  testWidgets('현재 영상 양옆에 44pt 버튼과 24pt Figma 화살표가 있다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester,
         clipId: 'c6', playlist: [for (var i = 1; i <= 11; i++) 'c$i']);
@@ -83,8 +84,33 @@ void main() {
     final current = find.byWidgetPredicate(
         (widget) => widget is MotionClipThumb && widget.clipId == 'c6');
     expect(tester.getCenter(current).dx, closeTo(393 / 2, 0.5));
-    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsNothing);
-    expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsNothing);
+
+    final previous = find.byKey(ClipPlaylistPlayerScreen.prevArrowKey);
+    final next = find.byKey(ClipPlaylistPlayerScreen.nextArrowKey);
+    expect(previous, findsOneWidget);
+    expect(next, findsOneWidget);
+    expect(tester.getSize(previous), const Size.square(44));
+    expect(tester.getSize(next), const Size.square(44));
+
+    final previousIcon = tester.widget<FigmaIcon>(
+      find.descendant(of: previous, matching: find.byType(FigmaIcon)),
+    );
+    final nextIcon = tester.widget<FigmaIcon>(
+      find.descendant(of: next, matching: find.byType(FigmaIcon)),
+    );
+    expect(previousIcon.name, FigmaIcons.arrowPrevious);
+    expect(nextIcon.name, FigmaIcons.arrowNext);
+    expect(previousIcon.size, 24);
+    expect(nextIcon.size, 24);
+
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .widget<Semantics>(find.byKey(ClipPlaylistPlayerScreen.counterKey))
+            .properties
+            .label,
+        '7 / 11');
   });
 
   testWidgets('재생목록 없음(단일 클립) — 페이지네이션을 그리지 않는다', (tester) async {
@@ -184,6 +210,8 @@ void main() {
     await _pump(tester, clipId: 'a');
     expect(find.byKey(ClipPlaylistPlayerScreen.paginationKey), findsNothing);
     expect(find.byKey(ClipPlaylistPlayerScreen.counterKey), findsNothing);
+    expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsNothing);
+    expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsNothing);
   });
 
   testWidgets('상단바 — 현재 클립 startedAt으로 날짜·시각을 그린다', (tester) async {
