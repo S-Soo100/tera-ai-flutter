@@ -38,7 +38,7 @@ Authorization: Bearer {PUSH_EVENT_INGEST_SECRET}
 Content-Type: application/json
 ```
 
-endpoint와 secret 실제 값은 배포 후 별도 보안 채널로 전달하겠습니다. Supabase service-role key와 Firebase 자격 증명은 terra-server에 전달하지 않습니다.
+`PUSH_EVENT_INGEST_SECRET`은 이미 Supabase Edge Function Secret에 등록하고 앱 팀 Vault에도 보관했습니다. endpoint와 실제 값은 안전한 전달 채널로 별도 전달하겠습니다. Firebase 서비스 계정 JSON도 `FIREBASE_SERVICE_ACCOUNT_JSON` 이름으로 Supabase Edge Function Secret에 등록되어 있으므로 이관훈님이 등록하거나 보관하실 작업은 없습니다. dispatcher용 Supabase secret API key 역시 앱 팀 내부에서 Vault로 관리합니다. Firebase 자격 증명, dispatcher key, Supabase service-role key는 terra-server에 전달하지 않습니다.
 
 ## 3. 공통 필드
 
@@ -135,6 +135,7 @@ type/phase/result 조합은 서로 일치해야 합니다. 예를 들어 `device
 - 종료가 시작보다 먼저 수신돼도 삭제하지 않고 각 이벤트를 독립 처리합니다.
 - 전송 실패가 실제 기기 명령 결과를 실패로 바꾸거나 명령 처리를 rollback해서는 안 됩니다.
 - bearer secret과 전체 요청 본문을 로그에 남기지 않습니다. `event_id`, HTTP status, 재시도 횟수만 기록합니다.
+- `PUSH_EVENT_INGEST_SECRET` 외의 Firebase·Supabase 자격 증명을 요청하거나 저장하지 않습니다.
 
 ## 7. 앱 팀이 담당하는 부분
 

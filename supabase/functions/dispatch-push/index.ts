@@ -6,11 +6,15 @@ import {
   extractFcmFailure,
   retryDelaySeconds,
 } from '../_shared/firebase-message.mjs';
-import { isServiceRoleRequest } from '../_shared/dispatch-push-auth.mjs';
+import {
+  isSecretKeyRequest,
+  secretKeyFromEnvironment,
+} from '../_shared/dispatch-push-auth.mjs';
 
 const firebaseScope = 'https://www.googleapis.com/auth/firebase.messaging';
 const firebaseTokenUrl = 'https://oauth2.googleapis.com/token';
 const firebaseProjectId = 'vivanaut-app';
+const dispatchSecretKeyName = 'dispatch_push';
 const deliveryClaimLimit = 10;
 const maxOutboxRows = 10;
 const maxFcmSends = 10;
@@ -282,8 +286,11 @@ Deno.serve(async (request) => {
   if (request.method !== 'POST') return response(400, { error: 'POST is required' });
   const deadline = Date.now() + invocationBudgetMs;
 
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!serviceRoleKey || !isServiceRoleRequest(request.headers, serviceRoleKey)) {
+  const secretKey = secretKeyFromEnvironment(
+    Deno.env.get('SUPABASE_SECRET_KEYS'),
+    dispatchSecretKeyName,
+  );
+  if (!secretKey || !isSecretKeyRequest(request.headers, secretKey)) {
     return response(401, { error: 'unauthorized' });
   }
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -302,7 +309,7 @@ Deno.serve(async (request) => {
     return response(500, { error: 'push dispatcher is unavailable' });
   }
 
-  const client = createClient(supabaseUrl, serviceRoleKey, {
+  const client = createClient(supabaseUrl, secretKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   let accessToken: string;

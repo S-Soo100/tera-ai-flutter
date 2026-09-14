@@ -8,15 +8,17 @@
 
 | 범위 | 상태 | 남은 운영 조치 |
 |---|---|---|
-| 저장소 구현·Node 테스트 | 준비 완료 (24/24 통과) | production migration/function 상태를 인증 후 확인한다. 이 작업에서는 원격 배포를 수행하지 않았다. |
+| 저장소 구현·Node 테스트 | 준비 완료 (27/27 통과) | 운영과 동일한 dispatcher secret API key 인증을 포함해 검증했다. |
 | Flutter·빌드 검증 | 통과 | focused 56개·전체 707개 테스트(선택형 1개 제외), analyze 오류·경고 0(기존 info 10개), Android APK, iOS 14 pod install까지 확인했다. |
-| Supabase schema/functions | 운영 상태 미확인 | CLI access token/login 및 project link 후 일반 `supabase migration list`로 production applied history를 확인한다. FCM version이 없을 때만 적용·배포한다. |
-| Firebase secret | 미확인 | `FIREBASE_SERVICE_ACCOUNT_JSON`과 `PUSH_EVENT_INGEST_SECRET`의 운영 등록 여부를 권한자가 확인한다. |
+| Supabase schema/functions | 운영 배포 완료 | FCM migration과 두 Edge Function을 production에 반영하고 RLS/RPC/Realtime 접근을 확인했다. |
+| Firebase secret | 등록 완료 | `FIREBASE_SERVICE_ACCOUNT_JSON`은 Supabase Edge Function Secret에 등록됐다. 이관훈님에게 전달하지 않는다. |
+| dispatcher scheduler | 가동 중 | `dispatch_push` secret API key를 Vault에 보관하고 1분 주기 cron을 활성화했다. 수동 호출은 HTTP 200으로 통과했다. |
+| ingest secret | 등록·인증 확인 완료 | `PUSH_EVENT_INGEST_SECRET`은 Supabase Secret에 등록하고 Vault에도 보관했다. 이관훈님에게 실제 값을 보낼 안전한 전달만 남았다. |
 | Android 실기기 FCM | 대기 | Android 13+ 권한·수신·탭 이동을 실제 push로 확인한다. |
 | terra-server·petcam-lab | 대기 | ACK/하이라이트 생산자를 ingest 계약에 연결하고 공동 스테이징한다. |
 
 상세한 안전 배포 명령과 scheduler 인증 방식은
-[`2026-09-15-fcm-deployment-checklist.md`](handoffs/2026-09-15-fcm-deployment-checklist.md)를 따른다. 현재 `supabase projects list`는 access token 부재로 실패했다. `supabase migration list --local`은 filesystem과 선택된 로컬 DB history만 비교하므로 production 상태를 말해 주지 않는다. 2026-09-15의 `supabase db lint --local`은 필요한 로컬 네트워크 권한으로 `127.0.0.1:54322`의 당시 실행 schema를 검사해 `No schema errors found`를 반환했지만, 새 FCM migration을 실행하거나 검증하지는 않았다.
+[`2026-09-15-fcm-deployment-checklist.md`](handoffs/2026-09-15-fcm-deployment-checklist.md)를 따른다. 2026-09-15에 project ref `slxjvzzfisxqwnghvrit`의 production 적용과 함수 호출을 확인했다. `supabase migration list --local`은 filesystem과 선택된 로컬 DB history만 비교하므로 production 상태 근거로 사용하지 않는다.
 
 ## 책임 구분
 
@@ -39,7 +41,7 @@
 
 - **우리**: Supabase에 `push_devices`, `app_notifications`, `notification_events`, `notification_outbox`와 RLS/RPC를 만든다.
 - **우리**: 외부 생산자용 `notification-ingest`와 FCM 발송용 `dispatch-push` 계약을 구현한다.
-- **계정 소유자**: Firebase 서비스 계정 값과 ingest secret을 Supabase secret으로 등록한다. 비밀값은 Git·Slack 평문에 남기지 않는다.
+- **계정 소유자**: Firebase 서비스 계정과 ingest secret은 Supabase Secret 등록을 완료했다. ingest secret 실제 값은 안전한 전달 경로로만 공유한다. 비밀값은 Git·Slack 평문에 남기지 않는다.
 - **이관훈님에게 요청**: 1차 요청서를 보내 ACK 코드 위치, 식별자 확보 가능 여부, outbox 위치, payload 용어, 스테이징 가능 시점을 회신받는다.
 - **완료 기준**: 같은 `event_id`를 여러 번 보내도 알림 한 건만 생성된다.
 

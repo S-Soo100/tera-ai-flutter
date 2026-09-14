@@ -329,15 +329,19 @@ idempotent하게 추가한다. token, 원본 event, outbox, delivery 같은 운�
 
 ### FCM outbox 발송 계약
 
-`dispatch-push` Edge Function은 service-role 호출로만 실행한다. gateway의 기본 JWT 검증을
-유지하는 것에 더해, 함수가 `Authorization: Bearer {SUPABASE_SERVICE_ROLE_KEY}`를 정확히
-대조한 뒤에만 OAuth 또는 outbox claim을 시작한다. 따라서 `supabase/config.toml`에서
-`verify_jwt = false`로 열면 안 되며, 공개 HTTP 호출이나 클라이언트가 outbox를 직접 처리하는
-경로도 없다. 배포 환경에는 아래 secret을 설정한다.
+`dispatch-push` Edge Function은 Supabase Dashboard에서 이름을 `dispatch_push`로 발급한
+secret API key 호출로만 실행한다. 새 secret key는 legacy JWT가 아니므로 gateway의
+`verify_jwt`는 비활성화하고, 함수가 `SUPABASE_SECRET_KEYS` 환경 map의 같은 이름을 읽어
+`apikey` 헤더와 정확히 대조한 뒤에만 OAuth 또는 outbox claim을 시작한다. 공개 HTTP 호출이나
+클라이언트가 outbox를 직접 처리하는 경로는 없다. 배포 환경에는 아래 secret을 설정한다.
 
 ```sh
 supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON='{"client_email":"...","private_key":"..."}'
 ```
+
+운영 scheduler는 `dispatch_push` key를 Vault의 `dispatch_push_api_key`에 저장하고 `pg_cron`과
+`pg_net`으로 1분마다 호출한다. 이 key는 `apikey` 헤더로만 전달하며 Firebase 자격 증명,
+service-role key, 외부 생산자용 `PUSH_EVENT_INGEST_SECRET`과 혼용하거나 외부에 공유하지 않는다.
 
 함수는 `claim_notification_outbox(p_limit)` RPC로 예약 시각이 지난 `pending` 행과 10분을
 넘긴 `processing` lease를 `FOR UPDATE SKIP LOCKED`로 원자적으로 `processing`으로 가져온다.

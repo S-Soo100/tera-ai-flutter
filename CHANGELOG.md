@@ -9,8 +9,16 @@
 
 ## [0.103.2+207] - 2026-09-15
 
+### 변경
+
+- Android FCM 저장소 마이그레이션과 알림 수집·발송 Edge Function을 운영 Supabase에 배포했습니다.
+- 예약된 푸시 발송을 1분 주기로 처리하도록 Supabase Vault, `pg_net`, `pg_cron`을 연결했습니다. Android 실기기 수신 검증은 후속 단계로 남아 있습니다.
+
 ### 보안
 
+- 발송 함수는 전용 Supabase secret API key를 `apikey` 헤더로만 검증하며, 키는 Vault에 보관하도록 변경했습니다.
+- Firebase Admin 서비스 계정은 `FIREBASE_SERVICE_ACCOUNT_JSON` 이름의 Supabase Edge Function Secret에 등록하고 저장소·문서에는 값을 남기지 않았습니다.
+- 외부 알림 생산자용 `PUSH_EVENT_INGEST_SECRET`을 Supabase Secret에 등록하고 안전한 전달을 위해 Vault에도 보관했습니다.
 - 로그아웃 시 서버 알림 연결 해제에 이어 기기의 FCM 토큰도 삭제하도록 보강했습니다. 서버 연결 해제 실패 시에도 토큰 삭제를 시도합니다.
 - 세션 만료 등 강제 로그아웃도 토큰을 삭제하며, 삭제 중 토큰 갱신이나 새 로그인으로 이전 토큰이 다시 등록되지 않도록 처리 순서를 보호했습니다.
 - 같은 프레임의 로그아웃·로그인이 하나의 계정 전환으로 합쳐져도 이전 FCM 토큰을 삭제한 후 새 계정 토큰을 등록하도록 보강했습니다.
