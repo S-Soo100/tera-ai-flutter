@@ -7,15 +7,15 @@
 
 | 항목 | 상태 | 근거 / 다음 조치 |
 |---|---|---|
-| 저장소 구현 | 준비 완료 (로컬) | FCM DDL `supabase/migrations/20260915000000_fcm_notifications.sql`, `notification-ingest`, `dispatch-push`가 저장소에 있다. 원격에는 아직 적용하지 않았다. |
+| 저장소 구현 | 준비 완료 (로컬) | FCM DDL `supabase/migrations/20260915000000_fcm_notifications.sql`, `notification-ingest`, `dispatch-push`가 저장소에 있다. 이 작업에서는 원격 배포를 수행하지 않았다. |
 | Node 공유 테스트 | 통과 | `node --test supabase/functions/_shared/*.test.mjs`: 19/19 통과. |
 | Flutter 검증 | 통과 | focused 45개 및 전체 696개 테스트 통과, `flutter analyze` 0 errors, Android debug APK 생성 통과, iOS 14 `pod install` 통과. |
 | Supabase CLI 인증/연결 | 미완료 | `supabase projects list`는 access token이 없어 실패했다. 로그인 후 project ref `slxjvzzfisxqwnghvrit`에 링크해야 한다. |
-| 마이그레이션 등록 | 원격 미적용 | `supabase migration list --local`에서 `20260915000000`은 Local/file 열에 인식되지만 Remote/applied 열에는 없다. |
-| 로컬 DB lint | 스키마 오류 없음 | `supabase db lint --local`은 schema errors 없음을 보고했다. 이는 새 마이그레이션이 실행되었거나 원격에 배포되었다는 증거는 아니다. |
+| 운영 migration 상태 | 미확인 | 이 작업에서는 원격 배포를 수행하지 않았다. production 상태는 인증 후 link된 project에서 **일반** `supabase migration list`로 확인할 때까지 판단하지 않는다. |
+| 로컬 DB lint | 2026-09-15 증거: schema errors 없음 | controller가 로컬 네트워크 권한으로 실행해 `No schema errors found`를 받았다. 이는 `127.0.0.1:54322`에서 당시 실행 중이던 스키마만 검사했으며 FCM migration을 실행하거나 검증하지 않았다. |
 | 기존 커뮤니티 DDL | 이번 push에서 제외 | `2026-08-31_community_clip_feed.sql`은 구 형식 파일명이라 CLI migration 관리 대상에서 건너뛴다. 이 DDL은 과거 Dashboard SQL Editor에서 실행되었다. |
-| Edge Functions | 원격 미배포 | 인증/링크가 없어 `notification-ingest`, `dispatch-push`의 원격 배포는 아직 하지 않았다. |
-| Firebase 서비스 계정 secret | 미등록·미확인 | `FIREBASE_SERVICE_ACCOUNT_JSON`의 원격 등록은 운영 권한자가 해야 한다. 확인 전에는 발송을 시작하지 않는다. |
+| Edge Functions | 운영 상태 미확인 | 이 작업에서는 원격 배포를 수행하지 않았다. 인증/링크 후 두 함수의 현재 배포 상태를 확인한다. |
+| Firebase 서비스 계정 secret | 미확인 | `FIREBASE_SERVICE_ACCOUNT_JSON`의 운영 등록 여부는 권한자가 확인해야 한다. 확인 전에는 발송을 시작하지 않는다. |
 | Android 실기기 push | 대기 | Android 13+ 기기에서 허용·거절·재시도·탭 딥링크를 실제 FCM으로 확인해야 한다. |
 | terra-server / petcam-lab | 대기 | 실제 ACK 이벤트 및 검수 완료 하이라이트 생산자는 아직 ingest endpoint에 연결하지 않았다. |
 
@@ -37,20 +37,26 @@ supabase link --project-ref slxjvzzfisxqwnghvrit
 supabase migration list
 ```
 
-`supabase migration list`의 Remote 열에서 FCM 버전 `20260915000000`가 아직 없음을 재확인한다. Local/file 열의 인식은 파일 발견 결과일 뿐 적용 결과가 아니다. 구 파일 `2026-08-31_community_clip_feed.sql`은 이름 형식이 달라 CLI가 관리하지 않으므로, 과거 Dashboard 적용 이력을 다시 push하려 하지 않는다.
+이 일반 `supabase migration list`가 link된 **production** project의 applied history를 확인하는 기준이다. 이 작업에서는 원격 배포를 수행하지 않았으므로, 여기서 `20260915000000`의 존재 여부를 확인할 때까지 production 적용 상태를 추정하지 않는다. 반면 `supabase migration list --local`의 Local/Remote 열은 filesystem과 선택된 로컬 DB의 applied history를 비교하는 것이며 production 상태가 아니다. 구 파일 `2026-08-31_community_clip_feed.sql`은 이름 형식이 달라 CLI migration 관리 대상에서 건너뛴다. 과거 Dashboard 적용 이력을 다시 push하려 하지 않는다.
 
-로컬 Supabase stack을 사용할 수 있는 환경에서는 다음도 실행한다.
+2026-09-15에 controller는 로컬 네트워크 권한이 있는 환경에서 다음을 실행하여 `No schema errors found`를 받았다.
 
 ```sh
 supabase db lint --local
 node --test supabase/functions/_shared/*.test.mjs
 ```
 
-lint의 성공은 현재 로컬 DB에 대한 오류 검사다. 새 FCM DDL의 원격 적용 여부는 다음 단계 뒤 `supabase migration list`의 Remote 열로 확인한다.
+이 lint는 당시 `127.0.0.1:54322`에서 실행 중이던 어떤 스키마에 오류가 없음을 검사한 결과다. 새 FCM migration을 실행하지도, 해당 migration이 적용됐는지도 검증하지 않는다. production 적용 여부는 link 뒤 일반 `supabase migration list`로 확인한다.
 
 ## 2. 스키마와 Edge Function 배포
 
-검토가 끝난 뒤에만 다음 명령을 순서대로 실행한다. `db push`는 원격 스키마를 변경한다.
+먼저 link된 production history를 검사한다. 이미 `20260915000000`가 있으면 `db push`를 실행하지 말고, migration 파일·Dashboard 변경 이력·원격 schema를 조사해 상태 차이를 해결한다.
+
+```sh
+supabase migration list
+```
+
+FCM version이 production history에 없는 것이 확인된 경우에만 아래 변경 명령을 실행한다. `db push`는 원격 schema를 변경한다.
 
 ```sh
 supabase db push
@@ -59,7 +65,7 @@ supabase functions deploy notification-ingest
 supabase functions deploy dispatch-push
 ```
 
-성공 조건은 `20260915000000`가 migration list의 Remote 열에 나타나고, 두 함수 배포 명령이 성공하는 것이다. 오류가 나면 부분 성공을 배포 완료로 표시하지 말고, 어떤 단계까지 완료됐는지 운영 기록에 남긴다.
+성공 조건은 일반 `supabase migration list`에서 `20260915000000`가 production applied history에 나타나고, 두 함수 배포 명령이 성공하는 것이다. 오류가 나면 부분 성공을 배포 완료로 표시하지 말고, 어떤 단계까지 완료됐는지 운영 기록에 남긴다.
 
 ## 3. 비밀값 등록
 
