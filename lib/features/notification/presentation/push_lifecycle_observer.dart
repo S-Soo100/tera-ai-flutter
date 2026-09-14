@@ -101,8 +101,8 @@ class _PushLifecycleObserverState extends ConsumerState<PushLifecycleObserver> {
     ref.listen(currentUserProvider.select((u) => u?.id), (_, userId) {
       final controller = _controller;
       if (_ready && controller != null) {
-        // Preserve every auth transition, including a direct signOut followed
-        // by sign-in within one frame. Controller provider writes are async.
+        // Forward observed auth changes without another frame delay. The
+        // controller also rotates transport when Riverpod coalesces A→null→B.
         _lastUser = userId;
         unawaited(controller.setUser(userId));
       } else {

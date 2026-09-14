@@ -72,19 +72,19 @@ class PushLifecycleController {
     final previousUserId = _userId;
     if (_userId != userId) {
       _generation++;
+      final generation = _generation;
       _displayed.clear();
       _opened.clear();
       _userId = userId;
-      if (userId == null && previousUserId != null && !_logoutInProgress) {
-        // Auth has already disappeared (for example a REST/WebRTC 401). The
-        // remote RPC no longer has a session, but the transport can be revoked.
+      if (previousUserId != null && !_logoutInProgress) {
+        // Auth can disappear or switch accounts with a coalesced null event.
+        // The old session cannot deactivate remotely; always rotate transport.
         _loggingOut = true;
         _pendingTap = null;
         await _deleteTransport();
-        return;
+        if (userId == null) return;
       }
       if (userId != null && !_logoutInProgress) {
-        final generation = _generation;
         await _transportDeletion;
         if (_disposed || _generation != generation || _logoutInProgress) return;
         _loggingOut = false;

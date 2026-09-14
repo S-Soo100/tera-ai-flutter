@@ -162,6 +162,28 @@ void main() {
     expect(devices.operations.last, contains(':refreshed:'));
   });
 
+  test('direct account switch rotates transport before new registration',
+      () async {
+    messaging.lifecycleEvents = devices.operations;
+    await controller.start();
+    await controller.setUser('a');
+    devices.operations.clear();
+    messaging.pendingDeletion = Completer<void>();
+    final switchUser = controller.setUser('b');
+    await Future<void>.delayed(Duration.zero);
+    await controller.setUser('b');
+    messaging.tokens.add('old-account-refresh');
+    await Future<void>.delayed(Duration.zero);
+    final duringDeletion = List<String>.of(devices.operations);
+    messaging.pendingDeletion!.complete();
+    await switchUser;
+    expect(duringDeletion, ['deleteToken']);
+    expect(devices.operations, [
+      'deleteToken',
+      'register:b:4da7f48b-0000-4000-8000-111111111111:new-login-token:0.103.0+205:ko'
+    ]);
+  });
+
   test('denied permission never gets registered', () async {
     messaging.permission = PushPermission.denied;
     await controller.start();
