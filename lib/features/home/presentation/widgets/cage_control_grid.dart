@@ -19,9 +19,9 @@ import '../home_control_providers.dart';
 /// 콘솔·펌웨어로 켜진 히터를 앱에서 끌 수(잠금을 풀 수) 있는 유일한
 /// 진입점이라, 이마저 없으면 과열=개체 폐사 경로가 막힌다. 미관 요구(평소
 /// 4타일)와 안전(켜진 히터는 항상 끌 수 있음)을 함께 만족한다.
-/// ON = 기기색 타일(deviceXBg + 아이콘 원 deviceX), OFF = surfaceTint +
-/// 아이콘 원 deviceOff. LED는 켜짐+밝기 보고 시 [GlassPalette.deviceLedGauge]가
-/// 밝기 비율만큼 좌측을 채운다.
+/// 라이트는 ON/OFF 모두 Figma Fill/Button 타일이고 아이콘 원만 기기색/deviceOff로
+/// 상태를 구분한다. 다크는 기기색 배경을 유지한다. LED 밝기 보고 시
+/// [GlassPalette.deviceLedGauge]가 밝기 비율만큼 좌측을 채운다.
 ///
 /// **사육장 제어의 유일한 진입점**이며, 탭 동작은 전부 기존
 /// [cage_control_actions] 경유(히터 2단 안전확인·분무 5초 잠금이 거기 있다).

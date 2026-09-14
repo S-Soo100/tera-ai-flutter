@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_styles.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/glass_palette.dart';
+import '../../../core/theme/viva_colors.dart';
 import '../../../shared/widgets/account_avatar.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/glass_dock.dart';
@@ -446,15 +446,11 @@ class _SexBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     if (sex == 'unknown') return const SizedBox.shrink();
     final isMale = sex == 'male';
-    // 예전엔 `isMale ? 분홍 : 분홍`이라 **암수가 같은 색**이었다 — 배지가
-    // 구분을 못 하고 있었다. 팔레트에 없는 하드코딩 색이기도 했다.
-    //
-    // `*Bg`를 직접 쓰지 않는다. 그 파스텔은 라이트 전용이라 다크에서
-    // **배지가 화면에서 제일 밝은 조각**이 된다(실기기 확인) — 팔레트가
-    // 밝기별로 쌍을 만든다.
+    // Final Design Asset_v2: 수컷=Purple, 암컷=Main_light, 태그 면=흰색.
+    // 다크에는 원본이 없으므로 badgeTone이 같은 전경을 밝기별로 보정한다.
     final t = context.glass.badgeTone(
-      isMale ? AppTheme.subBlue : AppTheme.subRed,
-      lightBg: isMale ? AppTheme.subBlueBg : AppTheme.subRedBg,
+      isMale ? VivaColors.purple : VivaColors.mainLight,
+      lightBg: Theme.of(context).colorScheme.surfaceContainerLowest,
     );
     final color = t.fg;
     final bg = t.bg;

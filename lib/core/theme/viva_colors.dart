@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Figma `vivnanaut` → `VIVA` 컬렉션의 원본 컬러 토큰.
 ///
-/// 출처: 사용자가 제공한 2026-09-14 12:47:35 스크린샷의 보이는 14개 변수.
+/// 출처: Figma `Final Design` 페이지의 VIVA 컬렉션 17개 변수.
 /// 화면에서는 이 상수 대신 Theme.of(context) / context.glass의 역할색을
 /// 사용한다. Main/Sub의 Dark/Light는 색 변형 이름이며 테마 모드가 아니다.
 abstract final class VivaColors {
@@ -25,4 +25,7 @@ abstract final class VivaColors {
   static const subLight = Color(0xFF2E408C);
   static const pink = Color(0xFFDA4A6A);
   static const yellow = Color(0xFFE89E00);
+  static const green = Color(0xFF228C73);
+  static const blue = Color(0xFF2A97DB);
+  static const purple = Color(0xFF636DDB);
 }

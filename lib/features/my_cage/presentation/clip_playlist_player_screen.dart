@@ -646,12 +646,11 @@ class _ClipPlaylistPlayerScreenState
                     style: TextStyle(
                       fontFamily: 'Pretendard',
                       fontSize: 14,
-                      // Figma 668:765 — SemiBold + #545454(토큰 없음, 배너
-                      // 날짜와 같은 매핑으로 textSecondary).
+                      // Figma 668:765 — SemiBold + #545454(배너 날짜와 동일).
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.28, // 14 × -2%
                       height: 17 / 14,
-                      color: glass.textSecondary,
+                      color: glass.mediaMeta,
                     ),
                   ),
                 ],
