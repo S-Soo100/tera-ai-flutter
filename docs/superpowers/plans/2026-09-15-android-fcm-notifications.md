@@ -29,7 +29,7 @@
 ### Task 1: Supabase 알림 저장소와 외부 이벤트 계약
 
 **Files:**
-- Create: `supabase/migrations/2026-09-15_fcm_notifications.sql`
+- Create: `supabase/migrations/20260915000000_fcm_notifications.sql`
 - Create: `supabase/functions/_shared/notification-contract.mjs`
 - Create: `supabase/functions/_shared/notification-contract.test.mjs`
 - Create: `supabase/functions/notification-ingest/index.ts`
@@ -113,7 +113,7 @@ Expected: no output.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add supabase/migrations/2026-09-15_fcm_notifications.sql supabase/functions docs/supabase-setup.md
+git add supabase/migrations/20260915000000_fcm_notifications.sql supabase/functions docs/supabase-setup.md
 git commit -m "feat: add Supabase notification event store"
 ```
 
@@ -123,7 +123,7 @@ git commit -m "feat: add Supabase notification event store"
 - Create: `supabase/functions/_shared/firebase-message.mjs`
 - Create: `supabase/functions/_shared/firebase-message.test.mjs`
 - Create: `supabase/functions/dispatch-push/index.ts`
-- Modify: `supabase/migrations/2026-09-15_fcm_notifications.sql`
+- Modify: `supabase/migrations/20260915000000_fcm_notifications.sql`
 - Modify: `docs/supabase-setup.md`
 
 **Interfaces:**
@@ -175,7 +175,7 @@ Expected: no output.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add supabase/functions supabase/migrations/2026-09-15_fcm_notifications.sql docs/supabase-setup.md
+git add supabase/functions supabase/migrations/20260915000000_fcm_notifications.sql docs/supabase-setup.md
 git commit -m "feat: dispatch notification outbox through FCM"
 ```
 

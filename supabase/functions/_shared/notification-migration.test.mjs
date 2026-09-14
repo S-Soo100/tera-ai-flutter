@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const migration = readFileSync(
-  new URL('../../migrations/2026-09-15_fcm_notifications.sql', import.meta.url),
+  new URL('../../migrations/20260915000000_fcm_notifications.sql', import.meta.url),
   'utf8',
 );
 const ingest = readFileSync(

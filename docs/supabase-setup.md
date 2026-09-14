@@ -272,7 +272,7 @@ supabase.channel('telemetry-$deviceId')
 | 6 | `camera_clips` | 게코캠 영상 메타 테이블 + RLS (petcam-lab Stage C) |
 | 7 | `clip_favorites` | 즐겨찾기 클라우드 동기화 테이블(owner_id, clip_id, created_at) + owner RLS (2026-07-08) |
 | 8 | `behavior_logs_owner_select` | behavior_logs owner SELECT RLS — 앱이 본인 카메라 clip 분류라벨 직접 읽기 (2026-07-08, petcam-lab) |
-| 9 | `2026-09-15_fcm_notifications` | FCM 설치·알림·이벤트·outbox, RLS/RPC, 커뮤니티·공지·물통 생산자 (2026-09-15) |
+| 9 | `20260915000000_fcm_notifications` | FCM 설치·알림·이벤트·outbox, RLS/RPC, 커뮤니티·공지·물통 생산자 (2026-09-15) |
 
 > terra-server IoT 테이블(`devices`/`telemetry`/`commands`/`enclosures`/`alerts` 등)은 **terra-server 백엔드가 자체 관리**한다(본 이력에 미포함). 동일 프로젝트 공유.
 
@@ -304,7 +304,7 @@ DDL 원본: `supabase/migrations/2026-08-31_community_clip_feed.sql`. **커뮤�
 
 ## Android FCM 알림 이벤트 저장소 (2026-09-15)
 
-DDL 원본: `supabase/migrations/2026-09-15_fcm_notifications.sql`. 이 마이그레이션은
+DDL 원본: `supabase/migrations/20260915000000_fcm_notifications.sql`. 이 마이그레이션은
 계정별 FCM 설치, 앱 내 알림, 생산 이벤트, 발송 outbox를 한 트랜잭션 흐름으로
 연결한다. Firebase 서비스 계정과 ingest bearer secret은 DB·Git에 저장하지 않고
 Supabase Edge Function secret으로만 설정한다.
