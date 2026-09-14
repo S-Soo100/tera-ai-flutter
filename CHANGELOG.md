@@ -11,6 +11,7 @@
 
 ### 변경
 
+- 이관훈님과 petcam-lab 담당자에게 각각 전달할 FCM 연동 Slack 스크립트를 분리해 추가했습니다.
 - Android FCM 저장소 마이그레이션과 알림 수집·발송 Edge Function을 운영 Supabase에 배포했습니다.
 - 예약된 푸시 발송을 1분 주기로 처리하도록 Supabase Vault, `pg_net`, `pg_cron`을 연결했습니다. Android 실기기 수신 검증은 후속 단계로 남아 있습니다.
 

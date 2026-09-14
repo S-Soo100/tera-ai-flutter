@@ -76,5 +76,7 @@
 
 ## 지금 보내야 할 문서
 
-- 이관훈님 Slack 1차 요청: `docs/handoffs/2026-09-15-terra-server-notification-events-request.md`
-- petcam-lab 요청은 하이라이트 ingest endpoint와 배포 시각이 고정된 뒤 별도 문서로 보낸다. 이관훈님 요청서에 포함하지 않는다.
+- 이관훈님 Slack 복사본: `docs/handoffs/2026-09-15-terra-server-slack-script.md`
+- 이관훈님 상세 계약: `docs/handoffs/2026-09-15-terra-server-notification-events-request.md`
+- petcam-lab Slack 복사본: `docs/handoffs/2026-09-15-petcam-lab-highlight-slack-script.md`
+- 두 생산자에게 실제 `PUSH_EVENT_INGEST_SECRET`을 문서나 Slack 평문으로 보내지 않고 안전한 채널로 별도 전달한다.

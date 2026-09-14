@@ -33,12 +33,12 @@ terra-server가 예약 또는 타이머 명령의 실제 ACK를 확정한 시점
 앱 팀이 제공할 Supabase Edge Function endpoint로 HTTPS POST합니다.
 
 ```http
-POST {SUPABASE_FUNCTIONS_URL}/notification-ingest
+POST https://slxjvzzfisxqwnghvrit.supabase.co/functions/v1/notification-ingest
 Authorization: Bearer {PUSH_EVENT_INGEST_SECRET}
 Content-Type: application/json
 ```
 
-`PUSH_EVENT_INGEST_SECRET`은 이미 Supabase Edge Function Secret에 등록하고 앱 팀 Vault에도 보관했습니다. endpoint와 실제 값은 안전한 전달 채널로 별도 전달하겠습니다. Firebase 서비스 계정 JSON도 `FIREBASE_SERVICE_ACCOUNT_JSON` 이름으로 Supabase Edge Function Secret에 등록되어 있으므로 이관훈님이 등록하거나 보관하실 작업은 없습니다. dispatcher용 Supabase secret API key 역시 앱 팀 내부에서 Vault로 관리합니다. Firebase 자격 증명, dispatcher key, Supabase service-role key는 terra-server에 전달하지 않습니다.
+`PUSH_EVENT_INGEST_SECRET`은 이미 Supabase Edge Function Secret에 등록하고 앱 팀 Vault에도 보관했습니다. 실제 값은 안전한 전달 채널로 별도 전달하겠습니다. Firebase 서비스 계정 JSON도 `FIREBASE_SERVICE_ACCOUNT_JSON` 이름으로 Supabase Edge Function Secret에 등록되어 있으므로 이관훈님이 등록하거나 보관하실 작업은 없습니다. dispatcher용 Supabase secret API key 역시 앱 팀 내부에서 Vault로 관리합니다. Firebase 자격 증명, dispatcher key, Supabase service-role key는 terra-server에 전달하지 않습니다.
 
 ## 3. 공통 필드
 
