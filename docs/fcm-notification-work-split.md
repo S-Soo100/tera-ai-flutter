@@ -8,8 +8,8 @@
 
 | 범위 | 상태 | 남은 운영 조치 |
 |---|---|---|
-| 저장소 구현·Node 테스트 | 준비 완료 (19/19 통과) | production migration/function 상태를 인증 후 확인한다. 이 작업에서는 원격 배포를 수행하지 않았다. |
-| Flutter·빌드 검증 | 통과 | focused 45개·전체 696개 테스트, analyze 0 errors, Android APK, iOS 14 pod install까지 확인했다. |
+| 저장소 구현·Node 테스트 | 준비 완료 (24/24 통과) | production migration/function 상태를 인증 후 확인한다. 이 작업에서는 원격 배포를 수행하지 않았다. |
+| Flutter·빌드 검증 | 통과 | focused 56개·전체 707개 테스트(선택형 1개 제외), analyze 오류·경고 0(기존 info 10개), Android APK, iOS 14 pod install까지 확인했다. |
 | Supabase schema/functions | 운영 상태 미확인 | CLI access token/login 및 project link 후 일반 `supabase migration list`로 production applied history를 확인한다. FCM version이 없을 때만 적용·배포한다. |
 | Firebase secret | 미확인 | `FIREBASE_SERVICE_ACCOUNT_JSON`과 `PUSH_EVENT_INGEST_SECRET`의 운영 등록 여부를 권한자가 확인한다. |
 | Android 실기기 FCM | 대기 | Android 13+ 권한·수신·탭 이동을 실제 push로 확인한다. |

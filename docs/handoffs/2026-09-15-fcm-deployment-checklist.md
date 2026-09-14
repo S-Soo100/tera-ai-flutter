@@ -8,8 +8,8 @@
 | 항목 | 상태 | 근거 / 다음 조치 |
 |---|---|---|
 | 저장소 구현 | 준비 완료 (로컬) | FCM DDL `supabase/migrations/20260915000000_fcm_notifications.sql`, `notification-ingest`, `dispatch-push`가 저장소에 있다. 이 작업에서는 원격 배포를 수행하지 않았다. |
-| Node 공유 테스트 | 통과 | `node --test supabase/functions/_shared/*.test.mjs`: 19/19 통과. |
-| Flutter 검증 | 통과 | focused 45개 및 전체 696개 테스트 통과, `flutter analyze` 0 errors, Android debug APK 생성 통과, iOS 14 `pod install` 통과. |
+| Node 공유 테스트 | 통과 | `node --test supabase/functions/_shared/*.test.mjs`: 24/24 통과. |
+| Flutter 검증 | 통과 | focused 56개 및 전체 707개 테스트 통과(선택형 1개 제외), `flutter analyze --no-fatal-infos` 오류·경고 0(기존 info 10개), Android debug APK 생성 통과, iOS 14 `pod install` 통과. |
 | Supabase CLI 인증/연결 | 미완료 | `supabase projects list`는 access token이 없어 실패했다. 로그인 후 project ref `slxjvzzfisxqwnghvrit`에 링크해야 한다. |
 | 운영 migration 상태 | 미확인 | 이 작업에서는 원격 배포를 수행하지 않았다. production 상태는 인증 후 link된 project에서 **일반** `supabase migration list`로 확인할 때까지 판단하지 않는다. |
 | 로컬 DB lint | 2026-09-15 증거: schema errors 없음 | controller가 로컬 네트워크 권한으로 실행해 `No schema errors found`를 받았다. 이는 `127.0.0.1:54322`에서 당시 실행 중이던 스키마만 검사했으며 FCM migration을 실행하거나 검증하지 않았다. |
