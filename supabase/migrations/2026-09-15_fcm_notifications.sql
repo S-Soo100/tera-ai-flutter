@@ -331,9 +331,10 @@ BEGIN
   v_source_event_id := 'community-like:' || NEW.post_id::text || ':' || v_bucket_epoch::text;
 
   INSERT INTO public.notification_events (
-    source, source_event_id, user_id, type, occurred_at, payload
+    source, source_event_id, user_id, type, occurred_at, scheduled_at, payload
   ) VALUES (
     'database', v_source_event_id, v_owner_id, 'community.like_digest', NEW.created_at,
+    to_timestamp((v_bucket_epoch + 1) * 600),
     jsonb_build_object('post_id', NEW.post_id, 'like_count', 1, 'bucket_epoch', v_bucket_epoch)
   ) ON CONFLICT (source, source_event_id) DO UPDATE SET
     payload = jsonb_set(

@@ -12,7 +12,7 @@ const notificationTypes = new Set([
 ]);
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const timezoneIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+const timezoneIsoPattern = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 
 function malformed(error) {
   return { ok: false, status: 400, error };
@@ -24,6 +24,35 @@ function hasText(value) {
 
 function hasObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isTimezoneIsoTimestamp(value) {
+  if (!hasText(value)) return false;
+  const match = value.match(timezoneIsoPattern);
+  if (!match) return false;
+
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, offset] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  if (
+    month < 1 || month > 12 || day < 1 || day > daysInMonth ||
+    hour > 23 || minute > 59 || second > 59
+  ) {
+    return false;
+  }
+  if (offset !== 'Z') {
+    const offsetHour = Number(offset.slice(1, 3));
+    const offsetMinute = Number(offset.slice(4, 6));
+    if (offsetHour > 14 || offsetMinute > 59 || (offsetHour === 14 && offsetMinute !== 0)) {
+      return false;
+    }
+  }
+  return !Number.isNaN(Date.parse(value));
 }
 
 function requireText(payload, keys) {
@@ -65,9 +94,12 @@ function validatePayload(type, payload) {
     return validateDeviceEvent(type, payload);
   }
   if (type === 'highlight.ready') {
-    return requireText(payload, ['highlight_batch_id'])
+    if (!requireText(payload, ['highlight_batch_id'])) {
+      return 'highlight payload requires highlight_batch_id';
+    }
+    return isTimezoneIsoTimestamp(payload.scheduled_for)
       ? null
-      : 'highlight payload requires highlight_batch_id';
+      : 'highlight payload requires timezone-valid scheduled_for';
   }
   if (type === 'safety.alert' || type === 'safety.recovered') {
     if (!requireText(payload, ['alert_id', 'device_id', 'metric', 'state'])) {
@@ -111,9 +143,7 @@ export function validateNotificationEvent(value) {
     return malformed('user_id must be a UUID');
   }
   if (
-    !hasText(value.occurred_at) ||
-    !timezoneIsoPattern.test(value.occurred_at) ||
-    Number.isNaN(Date.parse(value.occurred_at))
+    !isTimezoneIsoTimestamp(value.occurred_at)
   ) {
     return malformed('occurred_at must be a timezone-bearing ISO-8601 timestamp');
   }

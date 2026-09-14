@@ -46,6 +46,9 @@ Deno.serve(async (request) => {
     user_id: event.user_id,
     type: event.type,
     occurred_at: event.occurred_at,
+    ...(event.type === 'highlight.ready'
+      ? { scheduled_at: event.payload.scheduled_for }
+      : {}),
     payload: event.payload,
   });
 

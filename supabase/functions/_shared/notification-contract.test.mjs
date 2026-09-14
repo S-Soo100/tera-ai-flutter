@@ -57,3 +57,34 @@ test('requires a UUID user, timezone-bearing timestamp, event id, and object pay
     assert.equal(validateNotificationEvent(invalid).status, 400);
   }
 });
+
+test('requires a timezone-valid scheduled_for for highlight events', () => {
+  const event = {
+    ...validDeviceEvent,
+    type: 'highlight.ready',
+    payload: {
+      highlight_batch_id: 'batch-1',
+      scheduled_for: '2026-09-16T08:00:00+09:00',
+    },
+  };
+  assert.equal(validateNotificationEvent(event).ok, true);
+  assert.equal(validateNotificationEvent({
+    ...event,
+    payload: { highlight_batch_id: 'batch-1' },
+  }).status, 400);
+  assert.equal(validateNotificationEvent({
+    ...event,
+    payload: { highlight_batch_id: 'batch-1', scheduled_for: '2026-09-16T08:00:00' },
+  }).status, 400);
+  assert.equal(validateNotificationEvent({
+    ...event,
+    payload: { highlight_batch_id: 'batch-1', scheduled_for: '2026-02-30T08:00:00Z' },
+  }).status, 400);
+});
+
+test('rejects impossible calendar dates even when Date.parse normalizes them', () => {
+  assert.equal(validateNotificationEvent({
+    ...validDeviceEvent,
+    occurred_at: '2026-02-30T12:00:00Z',
+  }).status, 400);
+});

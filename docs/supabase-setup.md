@@ -327,6 +327,11 @@ Supabase Edge Function secret으로만 설정한다.
 `Authorization: Bearer {PUSH_EVENT_INGEST_SECRET}`만 수락한다. 모든 요청은 아래 필드를
 가져야 한다.
 
+Supabase JWT 검증은 이 함수에 대해 `supabase/config.toml`의
+`[functions.notification-ingest].verify_jwt = false`로 비활성화한다. 이는 외부 생산자가
+Supabase 사용자 JWT를 갖지 않기 때문이며, 함수 내부의 전용 bearer secret 검증을
+대체하지 않는다.
+
 ```json
 {
   "schema_version": 1,
@@ -350,6 +355,8 @@ Supabase Edge Function secret으로만 설정한다.
 `device.action.*`, `safety.alert`, `safety.recovered`와 내부 생산용 커뮤니티·공지·물통
 type이다. device 이벤트는 source가 `schedule` 또는 `timer`이고
 `started/succeeded`, `ended/succeeded`, `failed/failed` 조합과 정확히 일치해야 한다.
+`highlight.ready`는 `highlight_batch_id`와 timezone-valid `scheduled_for`를 반드시
+포함하며, 이 값이 outbox의 예약 발송 시각이 된다.
 
 | HTTP | 의미 |
 |---|---|
