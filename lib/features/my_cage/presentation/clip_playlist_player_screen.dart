@@ -32,7 +32,7 @@ import 'widgets/crecam_detail_top_bar.dart';
 /// GoRouter extra로 재생목록(`List<String>` clip id 순서)을 받고, 없으면
 /// (딥링크 등) 단일 클립만 재생한다.
 ///
-/// 이전/다음은 스와이프·중앙 필름스트립, 단일 탭은 조작계 표시,
+/// 이전/다음은 스와이프·화살표·중앙 필름스트립, 단일 탭은 조작계 표시,
 /// 양쪽 더블탭은 ±10초.
 /// 하이라이트만 끝에서 자동으로 다음 클립(마지막이면 정지 상태 유지).
 class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
@@ -60,8 +60,7 @@ class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
   /// 테스트용 — 페이지네이션 세그먼트 식별.
   static const paginationKey = Key('crecam_player_pagination');
 
-  /// 테스트용 — 제거된 이전/다음 화살표가 되돌아오지 않는지와 위치 카운터를
-  /// 검증한다.
+  /// 테스트용 — 이전/다음 화살표와 위치 카운터를 검증한다.
   static const prevArrowKey = Key('crecam_player_prev_arrow');
   static const nextArrowKey = Key('crecam_player_next_arrow');
   static const counterKey = Key('crecam_player_counter');
@@ -526,7 +525,7 @@ class _ClipPlaylistPlayerScreenState
                           controller: _initialized ? _controller : null,
                           onSeek: _seekTo),
                       _controlRow(glass),
-                      _navigationActions(glass, clip, isFav),
+                      _navigationActions(glass, clip, isFav, showArrows: false),
                       if (_playlist.length > 1) _thumbnailStrip(),
                       if (ref
                           .watch(playerPlaylistErrorProvider(_orientationKey)))
@@ -575,22 +574,78 @@ class _ClipPlaylistPlayerScreenState
     ]));
   }
 
-  Widget _navigationActions(GlassPalette glass, MotionClip? clip, bool isFav) =>
-      Column(mainAxisSize: MainAxisSize.min, children: [
-        _actionPill(glass, clip, isFav),
-        if (ref.watch(currentUserProvider)?.id case final owner?)
-          if (ref
-                  .watch(bookmarkControllerProvider(
-                      (ownerId: owner, clipId: _currentClipId)))
-                  .error !=
-              null)
-            TextButton(
-                onPressed: () => ref
-                    .read(bookmarkControllerProvider(
-                        (ownerId: owner, clipId: _currentClipId)).notifier)
-                    .retry(),
-                child: Text('retry'.tr())),
+  Widget _navigationActions(GlassPalette glass, MotionClip? clip, bool isFav,
+          {bool showArrows = true}) =>
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        if (showArrows) ...[
+          if (_index > 0)
+            _navArrow(
+              key: ClipPlaylistPlayerScreen.prevArrowKey,
+              asset: FigmaIcons.arrowPrevious,
+              tooltip: MaterialLocalizations.of(context).previousPageTooltip,
+              onTap: () => _go(-1),
+            )
+          else
+            const SizedBox(width: 44, height: 44),
+          const SizedBox(width: 24),
+        ],
+        Column(mainAxisSize: MainAxisSize.min, children: [
+          _actionPill(glass, clip, isFav),
+          if (ref.watch(currentUserProvider)?.id case final owner?)
+            if (ref
+                    .watch(bookmarkControllerProvider(
+                        (ownerId: owner, clipId: _currentClipId)))
+                    .error !=
+                null)
+              TextButton(
+                  onPressed: () => ref
+                      .read(bookmarkControllerProvider(
+                          (ownerId: owner, clipId: _currentClipId)).notifier)
+                      .retry(),
+                  child: Text('retry'.tr())),
+        ]),
+        if (showArrows) ...[
+          const SizedBox(width: 24),
+          if (_index < _playlist.length - 1)
+            _navArrow(
+              key: ClipPlaylistPlayerScreen.nextArrowKey,
+              asset: FigmaIcons.arrowNext,
+              tooltip: MaterialLocalizations.of(context).nextPageTooltip,
+              onTap: () => _go(1),
+            )
+          else
+            const SizedBox(width: 44, height: 44),
+        ],
       ]);
+
+  Widget _navArrow({
+    required Key key,
+    required String asset,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) =>
+      Tooltip(
+        message: tooltip,
+        child: SizedBox.square(
+          key: key,
+          dimension: 44,
+          child: Material(
+            color: context.glass.surfaceTint,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onTap,
+              child: Center(
+                child: FigmaIcon.tinted(
+                  asset,
+                  size: 24,
+                  color: context.glass.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 
   Widget _playlistRetry() => TextButton(
       onPressed: _completeHourPlaylist,
