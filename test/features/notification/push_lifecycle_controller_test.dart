@@ -61,6 +61,8 @@ class MemoryPushPreferences implements PushPreferences {
 class RecordingPushDevices implements PushDevicePort {
   final operations = <String>[];
   bool failDeactivation = false;
+  Completer<void>? deactivationStarted;
+  Completer<void>? pendingDeactivation;
   @override
   Future<void> register(
       {required String userId,
@@ -75,6 +77,8 @@ class RecordingPushDevices implements PushDevicePort {
   @override
   Future<void> deactivate(String installationId) async {
     operations.add('deactivate');
+    deactivationStarted?.complete();
+    await pendingDeactivation?.future;
     if (failDeactivation) throw StateError('offline');
   }
 }
@@ -86,29 +90,32 @@ void main() {
   late List<String> displayed;
   late List<String> navigated;
   late List<String> reads;
+  late bool notificationAvailable;
   setUp(() {
     messaging = FakePushMessaging();
     devices = RecordingPushDevices();
     displayed = [];
     navigated = [];
     reads = [];
+    notificationAvailable = true;
     controller = PushLifecycleController(
       messaging: messaging,
       devices: devices,
       preferences: MemoryPushPreferences(),
       appVersion: () async => '0.103.0+205',
       locale: () => 'ko',
-      findNotification: (id, userId) async => id == 'foreign'
-          ? null
-          : AppNotification.fromJson({
-              'id': id,
-              'user_id': userId,
-              'kind': 'safety.alert',
-              'category': 'safety',
-              'route': '/env-detail',
-              'title': '안전',
-              'body': '확인',
-            }),
+      findNotification: (id, userId) async =>
+          id == 'foreign' || !notificationAvailable
+              ? null
+              : AppNotification.fromJson({
+                  'id': id,
+                  'user_id': userId,
+                  'kind': 'safety.alert',
+                  'category': 'safety',
+                  'route': '/env-detail',
+                  'title': '안전',
+                  'body': '확인',
+                }),
       markRead: (id) async {
         reads.add(id);
       },
@@ -146,6 +153,94 @@ void main() {
     await controller.start();
     await controller.setUser('a');
     expect(devices.operations, isEmpty);
+  });
+
+  test('resume and token refresh during delayed deactivation cannot register',
+      () async {
+    await controller.start();
+    await controller.setUser('a');
+    devices.operations.clear();
+    devices.deactivationStarted = Completer<void>();
+    devices.pendingDeactivation = Completer<void>();
+    final logout = controller.logout(() async {
+      devices.operations.add('signout');
+    });
+    await devices.deactivationStarted!.future;
+    await controller.setUser('a');
+    messaging.tokens.add('during-logout');
+    await Future<void>.delayed(Duration.zero);
+    await controller.synchronize();
+    final whileDeactivating = List<String>.of(devices.operations);
+    devices.pendingDeactivation!.complete();
+    await logout;
+    expect(whileDeactivating, ['deactivate']);
+    expect(devices.operations, ['deactivate', 'signout']);
+    await controller.setUser('a');
+    expect(devices.operations.last, startsWith('register:a:'));
+  });
+
+  test(
+      'a different authenticated account cannot register while logout is active',
+      () async {
+    await controller.setUser('a');
+    devices.operations.clear();
+    devices.deactivationStarted = Completer<void>();
+    devices.pendingDeactivation = Completer<void>();
+    final logout = controller.logout(() async {
+      devices.operations.add('signout');
+    });
+    await devices.deactivationStarted!.future;
+    await controller.setUser('b');
+    final whileDeactivating = List<String>.of(devices.operations);
+    devices.pendingDeactivation!.complete();
+    await logout;
+    expect(whileDeactivating, ['deactivate']);
+    expect(devices.operations, ['deactivate', 'signout']);
+    await controller.setUser('b');
+    expect(devices.operations.last, startsWith('register:b:'));
+  });
+
+  test('failed signout remains recoverable for the authenticated account',
+      () async {
+    await controller.setUser('a');
+    devices.operations.clear();
+    await expectLater(controller.logout(() async {
+      throw StateError('offline');
+    }), throwsStateError);
+    await controller.setUser('a');
+    expect(devices.operations.first, 'deactivate');
+    expect(devices.operations.last, startsWith('register:a:'));
+  });
+
+  test(
+      'temporarily absent foreground row can retry but successful display stays deduplicated',
+      () async {
+    await controller.setUser('a');
+    const message = PushMessage(
+        notificationId: 'eventual', kind: 'safety.alert', route: '/env-detail');
+    notificationAvailable = false;
+    await controller.foreground(message);
+    expect(displayed, isEmpty);
+    notificationAvailable = true;
+    await controller.foreground(message);
+    await controller.foreground(message);
+    expect(displayed, ['eventual']);
+  });
+
+  test(
+      'temporarily absent tapped row can retry but successful open stays deduplicated',
+      () async {
+    await controller.setUser('a');
+    const message = PushMessage(
+        notificationId: 'eventual', kind: 'safety.alert', route: '/env-detail');
+    notificationAvailable = false;
+    await controller.open(message);
+    expect(navigated, isEmpty);
+    notificationAvailable = true;
+    await controller.open(message);
+    await controller.open(message);
+    expect(reads, ['eventual']);
+    expect(navigated, ['/env-detail']);
   });
 
   test('logout deactivates before signout even when deactivation fails',

@@ -38,16 +38,8 @@ final pushLifecycleControllerProvider =
     preferences: ref.watch(pushPreferencesProvider),
     appVersion: () => ref.read(appVersionProvider.future),
     locale: () => 'ko',
-    findNotification: (id, userId) async {
-      final items = await notifications
-          .watchNotifications(userId)
-          .first
-          .timeout(const Duration(seconds: 10));
-      for (final item in items) {
-        if (item.id == id) return item;
-      }
-      return null;
-    },
+    findNotification: (id, userId) =>
+        notifications.findById(id, userId).timeout(const Duration(seconds: 10)),
     markRead: notifications.markRead,
     display: (message) => core.showRemote(
       // Negative IDs never cancel/replace the existing positive fan timer IDs.

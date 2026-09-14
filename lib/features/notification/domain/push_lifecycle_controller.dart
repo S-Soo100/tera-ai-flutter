@@ -42,6 +42,7 @@ class PushLifecycleController {
   bool _disposed = false;
   bool _started = false;
   bool _loggingOut = false;
+  bool _logoutInProgress = false;
   PushMessage? _pendingTap;
 
   Future<void> start() async {
@@ -72,8 +73,8 @@ class PushLifecycleController {
       _displayed.clear();
       _opened.clear();
       _userId = userId;
+      if (userId != null && !_logoutInProgress) _loggingOut = false;
     }
-    if (userId != null) _loggingOut = false;
     await synchronize();
     final pending = _pendingTap;
     if (pending != null && _userId != null) {
@@ -91,7 +92,9 @@ class PushLifecycleController {
   Future<void> synchronize({String? token}) {
     final userId = _userId;
     final generation = _generation;
-    if (userId == null || !_current(userId, generation) || !messaging.supported) {
+    if (userId == null ||
+        !_current(userId, generation) ||
+        !messaging.supported) {
       return Future.value();
     }
     return _registrations = _registrations.then((_) => _guard(() async {
@@ -133,21 +136,25 @@ class PushLifecycleController {
   }
 
   Future<void> logout(Future<void> Function() signOut) async {
+    _logoutInProgress = true;
     _loggingOut = true;
     _generation++;
     _pendingTap = null;
-    await _registrations;
-    await _guard(() async {
-      if (messaging.supported) {
-        await devices.deactivate(await preferences.installationId());
-      }
-    }, 'deactivation');
     try {
+      await _registrations;
+      await _guard(() async {
+        if (messaging.supported) {
+          await devices.deactivate(await preferences.installationId());
+        }
+      }, 'deactivation');
       await signOut();
       _userId = null;
     } catch (_) {
+      // Failed signout leaves the session authenticated; allow a later retry.
       _loggingOut = false;
       rethrow;
+    } finally {
+      _logoutInProgress = false;
     }
   }
 
@@ -161,6 +168,7 @@ class PushLifecycleController {
     }
     final key = message.notificationId;
     if (!_displayed.add(key)) return;
+    var delivered = false;
     try {
       final item = await findNotification(message.notificationId, userId);
       if (item == null ||
@@ -179,10 +187,10 @@ class PushLifecycleController {
           route: item.safeRoute,
           title: item.title,
           body: item.body));
+      delivered = true;
       _bound(_displayed);
-    } catch (_) {
-      _displayed.remove(key);
-      rethrow;
+    } finally {
+      if (!delivered && generation == _generation) _displayed.remove(key);
     }
   }
 
@@ -195,6 +203,7 @@ class PushLifecycleController {
     }
     final generation = _generation;
     if (!_opened.add(message.notificationId)) return;
+    var opened = false;
     try {
       final item = await findNotification(message.notificationId, userId);
       if (item == null ||
@@ -209,10 +218,12 @@ class PushLifecycleController {
           ? sanitizeNotificationRoute(message.route)
           : '/notifications';
       navigate(route == item.safeRoute ? route : '/notifications');
+      opened = true;
       _bound(_opened);
-    } catch (_) {
-      _opened.remove(message.notificationId);
-      rethrow;
+    } finally {
+      if (!opened && generation == _generation) {
+        _opened.remove(message.notificationId);
+      }
     }
   }
 

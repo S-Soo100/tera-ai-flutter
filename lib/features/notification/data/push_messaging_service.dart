@@ -72,9 +72,7 @@ class PushMessagingService implements PushMessagingPort {
         AuthorizationStatus.authorized ||
         AuthorizationStatus.provisional =>
           PushPermission.authorized,
-        AuthorizationStatus.denied ||
-        AuthorizationStatus.deniedPermanently =>
-          PushPermission.denied,
+        AuthorizationStatus.denied => PushPermission.denied,
         AuthorizationStatus.notDetermined => PushPermission.notDetermined,
       };
 
