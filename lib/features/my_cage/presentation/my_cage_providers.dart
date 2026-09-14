@@ -419,24 +419,31 @@ final highlightRepositoryProvider = Provider<HighlightRepository>((ref) {
 final nightlyReportProvider =
     FutureProvider.autoDispose<NightlyReport>((ref) async {
   ref.watch(currentUserProvider.select((u) => u?.id));
+  final selectedCameraId = ref.watch(selectedCrecamCameraProvider);
   final now = DateTime.now();
   final start = lastNightSince(now);
   final end = lastNightEnd(now);
   final dayKey = lastNightDayKey(now);
   List<NightlyHighlight> highlights;
-  try {
-    final all = await ref
-        .watch(highlightRepositoryProvider)
-        .listFeatured(days: 2, tier: 'featured');
-    highlights = all
-        .where((h) => h.clipId.isNotEmpty && h.dayKey == dayKey)
-        .toList()
-      ..sort((a, b) => a.episodeRank.compareTo(b.episodeRank));
-  } catch (e) {
-    // 리포트는 활동시간만으로도 서므로 삼키되, 원인은 로그로 남긴다
-    // (2026-09-07 — "불러오기 실패" 원인 특정이 안 됐던 교훈).
-    debugPrint('[nightly-report] highlight fetch failed: $e');
+  if (selectedCameraId == null) {
     highlights = const [];
+  } else {
+    try {
+      final all = await ref.watch(highlightRepositoryProvider).listFeatured(
+            cameraId: selectedCameraId,
+            days: 2,
+            tier: 'featured',
+          );
+      highlights = all
+          .where((h) => h.clipId.isNotEmpty && h.dayKey == dayKey)
+          .toList()
+        ..sort((a, b) => a.episodeRank.compareTo(b.episodeRank));
+    } catch (e) {
+      // 리포트는 활동시간만으로도 서므로 삼키되, 원인은 로그로 남긴다
+      // (2026-09-07 — "불러오기 실패" 원인 특정이 안 됐던 교훈).
+      debugPrint('[nightly-report] highlight fetch failed: $e');
+      highlights = const [];
+    }
   }
   final cameras = await ref.watch(camerasProvider.future);
   final motionRepo = ref.watch(motionClipRepositoryProvider);
@@ -547,12 +554,15 @@ final allFavoriteClipsProvider =
 /// 눌러앉았다(시뮬 실증 — API는 3연속 200인데 카드만 에러). 짧게 쉬고
 /// 한 번 더 시도하고, 두 번째 실패만 화면(retry)으로 보낸다. 상태코드
 /// 특정을 위해 두 실패 모두 로그를 남긴다.
-final highlightGroupsProvider =
-    FutureProvider.autoDispose<List<DayHighlightGroup>>((ref) async {
+final _highlightGroupsForCameraProvider = FutureProvider.autoDispose
+    .family<List<DayHighlightGroup>, String>((ref, cameraId) async {
   ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 격리
   final repo = ref.watch(highlightRepositoryProvider);
   Future<List<DayHighlightGroup>> fetch() async {
-    final list = await repo.listFeatured(tier: 'featured');
+    final list = await repo.listFeatured(
+      cameraId: cameraId,
+      tier: 'featured',
+    );
     return groupByDay(list.where((h) => h.clipId.isNotEmpty).toList());
   }
 
@@ -568,6 +578,16 @@ final highlightGroupsProvider =
       rethrow;
     }
   }
+});
+
+/// 현재 라이브 선택 카메라의 하이라이트만 노출한다. 카메라 id가 family 캐시
+/// 키이므로 전환 시 이전 요청·결과·커서 상태와 분리된다. 아직 선택된 카메라가
+/// 없으면 서버의 전체 카메라 모드를 호출하지 않고 빈 화면을 유지한다.
+final highlightGroupsProvider =
+    FutureProvider.autoDispose<List<DayHighlightGroup>>((ref) async {
+  final cameraId = ref.watch(selectedCrecamCameraProvider);
+  if (cameraId == null) return const [];
+  return ref.watch(_highlightGroupsForCameraProvider(cameraId).future);
 });
 
 /// 도착 배너 dismiss 저장소(Hive `app_settings`).

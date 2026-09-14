@@ -9,6 +9,7 @@ import 'package:vivnanaut/features/my_cage/data/highlight_repository.dart';
 /// petcam-api GET /highlights 계약(2026-09-08 자동 규칙 + 사람 확정) 검증.
 void main() {
   final since = DateTime.utc(2026, 9, 7, 13);
+  const cameraId = 'camera-a';
 
   HighlightRepository repo(MockClient client, {String? token = 'jwt'}) =>
       HighlightRepository(
@@ -23,10 +24,11 @@ void main() {
       captured = req;
       return http.Response(
         jsonEncode({
+          'camera_id': cameraId,
           'highlights': [
             {
               'clip_id': 'c1',
-              'camera_id': 'cam1',
+              'camera_id': cameraId,
               'camera_name': '거실',
               'started_at': '2026-09-07T14:00:00Z',
               'duration_sec': 30,
@@ -37,7 +39,7 @@ void main() {
             },
             {
               'clip_id': 'c2',
-              'camera_id': 'cam1',
+              'camera_id': cameraId,
               'camera_name': '거실',
               'started_at': '2026-09-07T15:00:00Z',
               'duration_sec': 12.5,
@@ -57,11 +59,13 @@ void main() {
       );
     });
 
-    final list = await repo(client).list(since: since, limit: 20);
+    final list =
+        await repo(client).list(cameraId: cameraId, since: since, limit: 20);
 
     expect(captured, isNotNull);
     expect(captured!.method, 'GET');
     expect(captured!.url.path, '/highlights');
+    expect(captured!.url.queryParameters['camera_id'], cameraId);
     expect(captured!.url.queryParameters['since'], '2026-09-07T13:00:00.000Z');
     expect(captured!.url.queryParameters['limit'], '20');
     expect(captured!.headers['Authorization'], 'Bearer jwt');
@@ -87,19 +91,20 @@ void main() {
       return http.Response('{"highlights": []}', 200);
     });
     final r = repo(client, token: null);
-    await r.list(since: since, limit: 500);
-    await r.list(since: since, limit: 0);
+    await r.list(cameraId: cameraId, since: since, limit: 500);
+    await r.list(cameraId: cameraId, since: since, limit: 0);
     expect(limits, ['${HighlightRepository.maxLimit}', '1']);
     expect(auths, [null, null]);
   });
 
   test('404 → 빈 목록, 그 외 오류 → BackendException', () async {
     final notFound = MockClient((_) async => http.Response('nope', 404));
-    expect(await repo(notFound).list(since: since), isEmpty);
+    expect(
+        await repo(notFound).list(cameraId: cameraId, since: since), isEmpty);
 
     final boom = MockClient((_) async => http.Response('down', 503));
     await expectLater(
-      repo(boom).list(since: since),
+      repo(boom).list(cameraId: cameraId, since: since),
       throwsA(isA<BackendException>()
           .having((e) => e.statusCode, 'statusCode', 503)),
     );
@@ -113,10 +118,11 @@ void main() {
         captured = req;
         return http.Response(
           jsonEncode({
+            'camera_id': cameraId,
             'highlights': [
               {
                 'clip_id': 'c1',
-                'camera_id': 'cam1',
+                'camera_id': cameraId,
                 'camera_name': '거실',
                 'started_at': '2026-09-08T21:00:00Z',
                 'duration_sec': 30,
@@ -153,10 +159,12 @@ void main() {
         );
       });
 
-      final list = await repo(client).listFeatured(days: 7, tier: 'featured');
+      final list = await repo(client)
+          .listFeatured(cameraId: cameraId, days: 7, tier: 'featured');
 
       expect(captured!.method, 'GET');
       expect(captured!.url.path, '/highlights/featured');
+      expect(captured!.url.queryParameters['camera_id'], cameraId);
       expect(captured!.url.queryParameters['days'], '7');
       expect(captured!.url.queryParameters['tier'], 'featured');
       // top_n을 보내면 서버가 구 방식의 하루 상한을 다시 건다 — 절대 금지.
@@ -180,21 +188,64 @@ void main() {
         return http.Response('{"highlights": []}', 200);
       });
       final r = repo(client);
-      await r.listFeatured(days: 32);
-      await r.listFeatured(days: 0);
+      await r.listFeatured(cameraId: cameraId, days: 32);
+      await r.listFeatured(cameraId: cameraId, days: 0);
       expect(days, ['${HighlightRepository.maxFeaturedDays}', '1']);
     });
 
     test('404 → 빈 목록, 500 → BackendException', () async {
       final notFound = MockClient((_) async => http.Response('nope', 404));
-      expect(await repo(notFound).listFeatured(), isEmpty);
+      expect(await repo(notFound).listFeatured(cameraId: cameraId), isEmpty);
 
       final boom = MockClient((_) async => http.Response('down', 500));
       await expectLater(
-        repo(boom).listFeatured(),
+        repo(boom).listFeatured(cameraId: cameraId),
         throwsA(isA<BackendException>()
             .having((e) => e.statusCode, 'statusCode', 500)),
       );
+    });
+
+    test('응답 camera_id=null이면 선택 카메라 item만 남긴다', () async {
+      final client = MockClient((_) async => http.Response(
+            jsonEncode({
+              'camera_id': null,
+              'highlights': [
+                {
+                  'clip_id': 'a1',
+                  'camera_id': cameraId,
+                  'started_at': '2026-09-08T21:00:00Z',
+                },
+                {
+                  'clip_id': 'b1',
+                  'camera_id': 'camera-b',
+                  'started_at': '2026-09-08T22:00:00Z',
+                },
+              ],
+            }),
+            200,
+          ));
+
+      final list = await repo(client).listFeatured(cameraId: cameraId);
+
+      expect(list.map((item) => item.clipId), ['a1']);
+    });
+
+    test('응답 camera_id가 요청과 다르면 전체 응답을 버린다', () async {
+      final client = MockClient((_) async => http.Response(
+            jsonEncode({
+              'camera_id': 'camera-b',
+              'highlights': [
+                {
+                  'clip_id': 'b1',
+                  'camera_id': 'camera-b',
+                  'started_at': '2026-09-08T22:00:00Z',
+                },
+              ],
+            }),
+            200,
+          ));
+
+      expect(await repo(client).listFeatured(cameraId: cameraId), isEmpty);
     });
   });
 }
