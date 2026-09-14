@@ -272,6 +272,7 @@ supabase.channel('telemetry-$deviceId')
 | 6 | `camera_clips` | 게코캠 영상 메타 테이블 + RLS (petcam-lab Stage C) |
 | 7 | `clip_favorites` | 즐겨찾기 클라우드 동기화 테이블(owner_id, clip_id, created_at) + owner RLS (2026-07-08) |
 | 8 | `behavior_logs_owner_select` | behavior_logs owner SELECT RLS — 앱이 본인 카메라 clip 분류라벨 직접 읽기 (2026-07-08, petcam-lab) |
+| 9 | `2026-09-15_fcm_notifications` | FCM 설치·알림·이벤트·outbox, RLS/RPC, 커뮤니티·공지·물통 생산자 (2026-09-15) |
 
 > terra-server IoT 테이블(`devices`/`telemetry`/`commands`/`enclosures`/`alerts` 등)은 **terra-server 백엔드가 자체 관리**한다(본 이력에 미포함). 동일 프로젝트 공유.
 
@@ -300,3 +301,66 @@ supabase.channel('telemetry-$deviceId')
 | `public_profiles` 뷰 | SECURITY DEFINER(의도적) — `user_profiles`의 id·display_name·avatar_url 3컬럼만 노출 |
 
 DDL 원본: `supabase/migrations/2026-08-31_community_clip_feed.sql`. **커뮤니티 쓰기 API는 uid 없으면 throw** — 비로그인 열람(kPublicPaths)과 구분된다.
+
+## Android FCM 알림 이벤트 저장소 (2026-09-15)
+
+DDL 원본: `supabase/migrations/2026-09-15_fcm_notifications.sql`. 이 마이그레이션은
+계정별 FCM 설치, 앱 내 알림, 생산 이벤트, 발송 outbox를 한 트랜잭션 흐름으로
+연결한다. Firebase 서비스 계정과 ingest bearer secret은 DB·Git에 저장하지 않고
+Supabase Edge Function secret으로만 설정한다.
+
+| 객체 | 역할 | 클라이언트 권한 |
+|---|---|---|
+| `push_devices` | 설치 ID와 현재 FCM token 연결 | 자신의 행만 CRUD. 앱은 `register_push_device(...)` RPC로 token을 등록하고 `deactivate_push_device(...)`로 로그아웃 전 비활성화한다. |
+| `app_notifications` | 알림 센터의 단일 기록 | 자신의 행 SELECT와 `read_at` UPDATE만 가능하다. INSERT/DELETE는 생산 경로 전용이다. |
+| `notification_events` | 외부·DB 생산자의 idempotent 입력 | 클라이언트 직접 접근 불가. `(source, source_event_id)` 중복은 하나의 알림으로 수렴한다. |
+| `notification_outbox` | 실제 FCM 발송 대기·시도 이력 | 클라이언트 직접 접근 불가. `pending`, `processing`, `sent`, `failed`, `cancelled` 상태만 허용한다. |
+
+`notification_events` INSERT 트리거는 `(user_id, source || ':' || source_event_id)`를
+`dedupe_key`로 사용해 `app_notifications` 한 건과 `notification_outbox` 한 건을 만든다.
+알 수 없는 종류는 ingest 단계에서 422로 거절하며, DB가 만드는 route는 승인된 내부
+경로만 사용한다.
+
+### 외부 이벤트 ingest 계약
+
+`notification-ingest` Edge Function은 `POST`와
+`Authorization: Bearer {PUSH_EVENT_INGEST_SECRET}`만 수락한다. 모든 요청은 아래 필드를
+가져야 한다.
+
+```json
+{
+  "schema_version": 1,
+  "event_id": "command:5ec3b4d1:started",
+  "type": "device.action.started",
+  "occurred_at": "2026-09-15T21:00:03+09:00",
+  "user_id": "supabase-auth-user-uuid",
+  "payload": {
+    "command_id": "5ec3b4d1",
+    "device_id": "terra-device-id",
+    "execution_source": "schedule",
+    "execution_phase": "started",
+    "action": "fan_on",
+    "result": "succeeded"
+  }
+}
+```
+
+`user_id`는 UUID, `occurred_at`은 timezone 포함 ISO-8601, `event_id`는 비어 있지 않은
+문자열, `payload`는 객체여야 한다. 지원 type은 `highlight.ready`, 세 가지
+`device.action.*`, `safety.alert`, `safety.recovered`와 내부 생산용 커뮤니티·공지·물통
+type이다. device 이벤트는 source가 `schedule` 또는 `timer`이고
+`started/succeeded`, `ended/succeeded`, `failed/failed` 조합과 정확히 일치해야 한다.
+
+| HTTP | 의미 |
+|---|---|
+| 202 | 신규 이벤트 또는 같은 `event_id`의 idempotent 재전송 |
+| 400 | JSON/필드/payload 형식 오류 |
+| 401 | bearer secret 불일치 |
+| 422 | 승인되지 않은 type |
+
+### 데이터베이스 생산자
+
+- 다른 사용자의 게시물에 달린 댓글은 즉시 `community.comment`를 만든다. 자기 댓글은 제외한다.
+- 좋아요는 게시물 소유자와 UTC epoch 10분 bucket으로 묶어 `community.like_digest` 한 건을 만들며, outbox가 `pending`인 동안 count·title·body를 갱신한다. KST 변환을 사용하지 않고 자기 좋아요는 제외한다.
+- 새 `community_notices` 행은 모든 `auth.users` 계정에 `notice.published`를 fan-out한다.
+- 미래 설정 UI는 `schedule_water_tank_notification(p_due_at, p_enclosure_id, p_enclosure_name)` RPC만 호출한다. RPC는 `auth.uid()`와 `enclosures.owner_id`를 대조하므로 다른 사용자의 사육장에 알림을 예약할 수 없다.
