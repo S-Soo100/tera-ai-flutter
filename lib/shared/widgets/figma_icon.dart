@@ -7,7 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 /// 색까지 디자인이 정한 것이라 그대로 쓰고([FigmaIcon.metric]), 차트 위 동작
 /// 마커는 배경 위에 얹히므로 테마에 맞춰 색을 갈아끼운다([FigmaIcon.tinted]).
 class FigmaIcon extends StatelessWidget {
-  /// 파일이 가진 색을 그대로 쓴다. 온도 `#ff3752`·습도 `#68a7f6`처럼 **의미가
+  /// 파일이 가진 색을 그대로 쓴다. 온도 `#F85478`·습도 `#00B2F3`처럼 **의미가
   /// 붙은 색**은 라이트/다크가 같아야 해서 건드리지 않는다.
   const FigmaIcon.metric(this.name, {super.key, this.size = 20}) : color = null;
 

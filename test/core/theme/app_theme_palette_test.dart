@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivnanaut/core/theme/app_styles.dart';
@@ -44,6 +46,25 @@ void main() {
       // 팔레트 액센트 토큰과 항상 같은 값이어야 한다.
       expect(AppTheme.chartTemperature, GlassPalette.light.tempAccent);
       expect(AppTheme.chartHumidity, GlassPalette.light.humidAccent);
+    });
+
+    test('온습도 상세는 브랜드색이 아닌 Figma 지표색을 유지한다', () {
+      final light = GlassPalette.light;
+      expect(light.envTempValue, const Color(0xFFF85478));
+      expect(light.envTempPeak, const Color(0xFFF85478));
+      expect(light.envHumidValue, const Color(0xFF00B2F3));
+      expect(light.envHumidPeak, const Color(0xFF00B2F3));
+      expect(light.envBarNeutral, const Color(0xFF626262));
+      expect(light.envBarMinimum, const Color(0xFFA9B3BE));
+    });
+
+    test('온습도 상세 SVG 아이콘도 지표색을 사용한다', () {
+      final temperature =
+          File('assets/icons/final_temperature.svg').readAsStringSync();
+      final humidity =
+          File('assets/icons/final_humidity.svg').readAsStringSync();
+      expect(temperature, contains('fill="#F85478"'));
+      expect(humidity, contains('fill="#00B2F3"'));
     });
   });
 
