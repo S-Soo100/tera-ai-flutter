@@ -1,3 +1,5 @@
+import '../domain/env_realtime_values.dart';
+import '../../../shared/widgets/figma_icon.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,7 +96,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                   iconSize: 24,
                   constraints:
                       const BoxConstraints(minWidth: 44, minHeight: 44),
-                  icon: Icon(Icons.close, color: glass.textSecondary),
+                  icon: FigmaIcon.tinted(FigmaIcons.close,
+                      color: glass.textSecondary, size: 24),
                 ),
               ),
             ],
@@ -199,7 +202,11 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                 ),
         ),
         const SizedBox(height: 16),
-        _valueBar(glass, day, chartAsync.valueOrNull),
+        Semantics(
+            label: (day.isToday ? 'env_value_realtime' : 'env_value_daily_mean')
+                .tr(),
+            child: _valueBar(glass, day, chartAsync.valueOrNull)),
+        if (!day.isToday) _averageStatus(glass),
         const SizedBox(height: 24),
         logAsync.when(
           loading: () => _skeleton(glass, height: 160),
@@ -284,28 +291,67 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
       onPressed: onTap,
       iconSize: 24,
       constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-      icon: Icon(icon, color: glass.textSecondary),
+      icon: FigmaIcon.tinted(
+          icon == Icons.chevron_left
+              ? FigmaIcons.arrowPrevious
+              : FigmaIcons.arrowNext,
+          color: glass.textSecondary,
+          size: 24),
     );
   }
 
-  /// 현재값 바 (§A.5 h54) — 오늘은 실시간 telemetry, 과거일은 그 날 마지막
-  /// 버킷 값(차트 x=1 최근접 점).
+  Widget _averageStatus(GlassPalette glass) {
+    final average = ref.watch(envDailyAverageProvider);
+    if (average.isLoading) return _skeleton(glass, height: 14);
+    if (average.hasError) {
+      return TextButton(
+          onPressed: () => ref.invalidate(envDayBucketsProvider),
+          child: Text('retry'.tr()));
+    }
+    if (average.valueOrNull?.countUnavailable == true) {
+      return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: Text('env_average_unavailable'.tr(),
+              style: TextStyle(fontSize: 12, color: glass.textTertiary)));
+    }
+    return const SizedBox.shrink();
+  }
+
+  /// 오늘은 유효한 실시간 값, 과거는 지표별 유효 개수로 계산한 일평균.
   Widget _valueBar(GlassPalette glass, EnvDay day, EnvChartData? data) {
     final ex = ref.watch(envDayExtremesProvider).valueOrNull;
 
+    final now = ref.watch(envDetailNowProvider).valueOrNull ?? DateTime.now();
+    final today = day.start.year == now.year &&
+        day.start.month == now.month &&
+        day.start.day == now.day;
     double? temp;
     double? humid;
-    if (day.isToday) {
-      final deviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
+    if (today) {
+      final device = ref.watch(currentDeviceIdProvider);
+      final deviceId = device.isLoading ? null : device.valueOrNull;
       if (deviceId != null) {
         final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
-        temp = t?.tA;
-        humid = t?.hA;
+        final stale =
+            ref.watch(telemetryStaleProvider(deviceId)).valueOrNull ?? false;
+        final values = realtimeEnvironment(t,
+            deviceId: deviceId,
+            now: DateTime.now(),
+            freshness: telemetryStaleThreshold,
+            stale: stale);
+        temp = values.temperature;
+        humid = values.humidity;
+      }
+    } else {
+      final average = ref.watch(envDailyAverageProvider);
+      // Do not reuse a previous date's value while a new date/device loads.
+      if (!average.isLoading && !average.hasError) {
+        temp = average.valueOrNull?.temperature;
+        humid = average.valueOrNull?.humidity;
       }
     }
-    // 실시간이 없으면(과거일·오프라인) 그 날 마지막 관측값으로.
-    temp ??= data?.tempAt(1.0);
-    humid ??= data?.humidAt(1.0);
+    if (temp != null && (!temp.isFinite || temp <= 0)) temp = null;
+    if (humid != null && (!humid.isFinite || humid <= 0)) humid = null;
 
     String fmt(double? v) => v == null ? '--' : formatCompact(v);
 
@@ -315,7 +361,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
         children: [
           _valueColumn(
             glass: glass,
-            icon: Icons.thermostat,
+            icon: FigmaIcons.envTemperature,
             accent: glass.envTempValue,
             value: temp == null
                 ? '--'
@@ -325,7 +371,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
           ),
           _valueColumn(
             glass: glass,
-            icon: Icons.water_drop,
+            icon: FigmaIcons.envHumidity,
             accent: glass.envHumidValue,
             value: humid == null
                 ? '--'
@@ -340,7 +386,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
 
   Widget _valueColumn({
     required GlassPalette glass,
-    required IconData icon,
+    required String icon,
     required Color accent,
     required String value,
     required String minMax,
@@ -353,13 +399,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration:
-                    BoxDecoration(color: accent, shape: BoxShape.circle),
-                child: Icon(icon, size: 16, color: glass.deviceGlyph),
-              ),
+              FigmaIcon.metric(icon, size: 28),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -423,7 +463,9 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                 WeekRangeChart(
                   rows: rows.temp,
                   accent: glass.envTempPeak,
+                  valueColor: glass.envTempValue,
                   icon: Icons.thermostat,
+                  iconAsset: FigmaIcons.envTemperature,
                   headerFormat: (v) =>
                       'env_detail_temp_value'.tr(args: [formatCompact(v)]),
                   axisFormat: (v, d) => 'stats_axis_temp'
@@ -433,7 +475,9 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                 WeekRangeChart(
                   rows: rows.humid,
                   accent: glass.envHumidPeak,
+                  valueColor: glass.envHumidValue,
                   icon: Icons.water_drop,
+                  iconAsset: FigmaIcons.envHumidity,
                   headerFormat: (v) =>
                       'env_detail_humid_value'.tr(args: [formatCompact(v)]),
                   axisFormat: (v, d) => 'stats_axis_humid'

@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import '../../../core/theme/glass_palette.dart';
+import 'widgets/crecam_detail_top_bar.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,10 +9,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import 'my_cage_providers.dart';
+import 'player_view_providers.dart';
+import '../../../shared/widgets/figma_icon.dart';
 import 'widgets/camera_rotate_tile.dart';
 import 'widgets/webrtc_live_view.dart';
 
-/// 라이브 전체화면 — **가로 전용, 영상만 크게** (2026-09-07 사용자 결정).
+/// 라이브 전체화면 — 세로 기본, 화면 방향은 전용 버튼으로만 전환한다.
 ///
 /// 홈·카메라 탭 라이브 면의 확대 버튼이 여기로 온다. 구 목적지였던
 /// [CameraDetailScreen]은 활동량·클립 목록까지 딸린 상세 화면이라 "확대"의
@@ -36,21 +41,12 @@ class CameraLiveFullscreenScreen extends ConsumerStatefulWidget {
 
 class _CameraLiveFullscreenScreenState
     extends ConsumerState<CameraLiveFullscreenScreen> {
-  bool _rotateBusy = false;
+  final _orientationKey = Object();
+  final _liveKey = GlobalKey();
+
   /// 나갈 때 되돌릴 상태바 스타일 — 어두운 화면이 상태바를 흰 아이콘으로
   /// 바꾼 채 남기는 문제의 복원(MotionClipPlayerScreen 주석 참조).
   SystemUiOverlayStyle? _restoreOverlayStyle;
-
-  @override
-  void initState() {
-    super.initState();
-    // 좌/우 둘 다 허용 — 어느 쪽으로 눕히든 따라간다.
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  }
 
   @override
   void didChangeDependencies() {
@@ -62,12 +58,6 @@ class _CameraLiveFullscreenScreenState
 
   @override
   void dispose() {
-    // 되돌리지 않으면 이 화면을 닫은 뒤에도 앱 전체가 가로로 남는다.
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    SystemChrome.setEnabledSystemUIMode(
-      SystemUiMode.manual,
-      overlays: SystemUiOverlay.values,
-    );
     if (_restoreOverlayStyle != null) {
       SystemChrome.setSystemUIOverlayStyle(_restoreOverlayStyle!);
     }
@@ -75,11 +65,13 @@ class _CameraLiveFullscreenScreenState
   }
 
   Future<void> _toggleRotate(String cameraUuid, bool next) async {
-    setState(() => _rotateBusy = true);
+    ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state = true;
     await submitRotate180(context, ref, cameraUuid: cameraUuid, next: next);
     // 성공/실패 무관 버튼만 해제 — 표시 상태는 없고(아이콘 버튼), 반영은
     // cameras Realtime → 라이브 재부팅 재연결로 돌아온다.
-    if (mounted) setState(() => _rotateBusy = false);
+    if (mounted) {
+      ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state = false;
+    }
   }
 
   @override
@@ -92,6 +84,64 @@ class _CameraLiveFullscreenScreenState
         ?.where((c) => c.id == widget.cameraId)
         .firstOrNull;
     final rotatable = camera != null && camera.rotate180Capable;
+    final landscape = ref.watch(playerOrientationProvider(_orientationKey));
+    final rotateBusy = ref.watch(_liveRotateBusyProvider(widget.cameraId));
+
+    if (!landscape) {
+      final glass = context.glass;
+      return Scaffold(
+        backgroundColor: glass.wallpaper,
+        body: Column(children: [
+          CrecamDetailHeaderArea(
+              child: CrecamDetailTopBar(
+            closeButton: true,
+            leadingKey: CameraLiveFullscreenScreen.closeButtonKey,
+            title: camera?.name ?? 'camera_live'.tr(),
+            trailing: rotatable
+                ? IconButton(
+                    key: CameraLiveFullscreenScreen.rotateButtonKey,
+                    tooltip: 'camera_rotate_title'.tr(),
+                    onPressed: rotateBusy
+                        ? null
+                        : () => _toggleRotate(camera.id, !camera.rotate180),
+                    icon: Icon(Icons.flip_camera_android_outlined,
+                        color: glass.textPrimary),
+                  )
+                : null,
+          )),
+          Expanded(
+              child: SafeArea(
+                  top: false,
+                  child: LayoutBuilder(
+                      builder: (context, size) => Column(children: [
+                            SizedBox(
+                                height: math.min(84, size.maxHeight * 0.13)),
+                            AspectRatio(
+                                aspectRatio: 16 / 9,
+                                child: WebRtcLiveView(
+                                    key: _liveKey,
+                                    cameraUuid: widget.cameraId)),
+                            Align(
+                                alignment: Alignment.centerRight,
+                                child: Padding(
+                                    padding: const EdgeInsets.only(right: 12),
+                                    child: IconButton(
+                                      key: const Key(
+                                          'live_fullscreen_orientation'),
+                                      tooltip: 'player_landscape'.tr(),
+                                      onPressed: () => ref
+                                          .read(playerOrientationProvider(
+                                                  _orientationKey)
+                                              .notifier)
+                                          .toggle(),
+                                      icon: FigmaIcon.tinted(FigmaIcons.expand,
+                                          color: glass.textPrimary, size: 36),
+                                    ))),
+                            const Spacer(),
+                          ])))),
+        ]),
+      );
+    }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -105,7 +155,7 @@ class _CameraLiveFullscreenScreenState
           children: [
             // contain(기본) — 확대해서 보는 화면이라 프레임 전체를 보여준다.
             // cover면 가로 화면에서 상하가 크롭된다.
-            WebRtcLiveView(cameraUuid: widget.cameraId),
+            WebRtcLiveView(key: _liveKey, cameraUuid: widget.cameraId),
             // 좌상단 닫기 — 노치/펀치홀을 피해 SafeArea 안쪽. expand된
             // Stack에서 버튼이 늘어나지 않게 Align으로 좌상단 고정.
             SafeArea(
@@ -116,6 +166,7 @@ class _CameraLiveFullscreenScreenState
                   child: _ScrimCircleButton(
                     key: CameraLiveFullscreenScreen.closeButtonKey,
                     icon: Icons.close,
+                    asset: FigmaIcons.close,
                     tooltip:
                         MaterialLocalizations.of(context).closeButtonTooltip,
                     onTap: () => context.pop(),
@@ -123,6 +174,24 @@ class _CameraLiveFullscreenScreenState
                 ),
               ),
             ),
+            SafeArea(
+                child: Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: _ScrimCircleButton(
+                    key: const Key('live_fullscreen_orientation'),
+                    icon: Icons.fullscreen,
+                    asset: FigmaIcons.expand,
+                    tooltip:
+                        (landscape ? 'player_portrait' : 'player_landscape')
+                            .tr(),
+                    onTap: () => ref
+                        .read(
+                            playerOrientationProvider(_orientationKey).notifier)
+                        .toggle(),
+                  )),
+            )),
             // 우상단 화면 뒤집기(180°) — 닫기의 반대편(2026-09-09 사용자
             // 지시: 거꾸로 보이는 걸 알아채는 곳이 바로 이 화면이다).
             // capabilities 미보고 카메라는 숨김(환경설정 타일과 동일 계약).
@@ -137,10 +206,9 @@ class _CameraLiveFullscreenScreenState
                       key: CameraLiveFullscreenScreen.rotateButtonKey,
                       icon: Icons.flip_camera_android_outlined,
                       tooltip: 'camera_rotate_title'.tr(),
-                      onTap: _rotateBusy
+                      onTap: rotateBusy
                           ? null
-                          : () =>
-                              _toggleRotate(camera.id, !camera.rotate180),
+                          : () => _toggleRotate(camera.id, !camera.rotate180),
                     ),
                   ),
                 ),
@@ -157,11 +225,13 @@ class _ScrimCircleButton extends StatelessWidget {
   const _ScrimCircleButton({
     super.key,
     required this.icon,
+    this.asset,
     required this.tooltip,
     required this.onTap,
   });
 
   final IconData icon;
+  final String? asset;
   final String tooltip;
   final VoidCallback? onTap;
 
@@ -176,16 +246,21 @@ class _ScrimCircleButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: SizedBox(
-            width: 36,
-            height: 36,
-            child: Icon(icon,
-                size: 20,
-                color: onTap == null
-                    ? AppTheme.liveOnDark.withValues(alpha: 0.4)
-                    : AppTheme.liveOnDark),
+            width: 44,
+            height: 44,
+            child: asset != null
+                ? FigmaIcon.tinted(asset!, color: Colors.white, size: 24)
+                : Icon(icon,
+                    size: 20,
+                    color: onTap == null
+                        ? AppTheme.liveOnDark.withValues(alpha: 0.4)
+                        : AppTheme.liveOnDark),
           ),
         ),
       ),
     );
   }
 }
+
+final _liveRotateBusyProvider =
+    StateProvider.autoDispose.family<bool, String>((ref, id) => false);

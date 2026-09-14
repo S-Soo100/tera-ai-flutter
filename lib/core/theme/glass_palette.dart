@@ -340,7 +340,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     signalAlert: Color(0xFFD61619), // 브랜드 레드 — 위험 상태 예약
     textPrimary: Color(0xFF1E1E1E), // textStrong
     textSecondary: Color(0xFF3C3C3C), // textBody
-    textTertiary: Color(0xFF919497), // textMuted
+    textTertiary: Color(0xFF949090), // textMuted
     textOnActive: Color(0xFF12151C),
     textOnActiveSecondary: Color(0x9912151C),
     liveRed: Color(0xFFE5382E),
@@ -373,11 +373,11 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     deviceMistBg:
         Color(0xFFE0F6FE), // 분무 잠금 타일 Bg — humidAccent 12% 도출(Figma 미정의)
     deviceGlyph: Color(0xFFFFFFFF),
-    deviceOff: Color(0xFFA9B3BE),
+    deviceOff: Color(0xFFB4AEAE),
     tempAccent: Color(0xFFF85478),
     humidAccent: Color(0xFF00B2F3),
     surfaceTint: Color(0xFFF4F4F4),
-    segmentTrack: Color(0xFFEFF2F5),
+    segmentTrack: Color(0xFFF4F4F4),
     surfaceHeader: Color(0xFFFAFAFA),
     envTempValue: Color(0xFFC00306),
     envHumidValue: Color(0xFF192553),

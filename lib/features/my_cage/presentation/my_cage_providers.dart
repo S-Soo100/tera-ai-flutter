@@ -521,7 +521,10 @@ final crecamResolvedDayProvider =
 final latestHighlightAtProvider =
     FutureProvider.autoDispose<DateTime?>((ref) async {
   final groups = await ref.watch(highlightGroupsProvider.future);
-  return groups.isEmpty ? null : latestFeaturedAt(groups.first);
+  final times = [for (final group in groups) for (final h in group.featured)
+    if (h.publication?.availableAt(DateTime.now()) == true) h.publication!.publishedAt]
+    ..sort((a,b) => b.compareTo(a));
+  return times.firstOrNull;
 });
 
 /// 전체 즐겨찾기(favoritedAt desc — repository가 정렬). 엔트리 카드 최신

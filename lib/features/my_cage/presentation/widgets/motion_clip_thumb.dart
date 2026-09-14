@@ -1,12 +1,11 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/skeleton_loading.dart';
-import '../my_cage_providers.dart';
+import '../thumbnail_cache_providers.dart';
 
-/// motion_clips 썸네일 한 장 — presign URL 조회([motionThumbnailProvider]) +
+/// motion_clips 썸네일 한 장 — 로컬 파일 우선, miss에서만 presign 조회 +
 /// 캐시 키([clipId] 고정 — 서명 쿼리가 매번 달라도 디스크 캐시 유지) +
 /// 로딩 shimmer + 실패/없음 폴백까지의 **단일 구현**.
 ///
@@ -17,12 +16,16 @@ class MotionClipThumb extends ConsumerWidget {
   const MotionClipThumb({
     super.key,
     required this.clipId,
+    this.cameraId = '',
+    this.thumbnailVersion = 'original',
     this.fallbackIcon = Icons.movie_outlined,
     this.fallbackIconSize = 20,
     this.fallbackColor,
   });
 
   final String clipId;
+  final String cameraId;
+  final String thumbnailVersion;
   final IconData fallbackIcon;
   final double fallbackIconSize;
 
@@ -32,7 +35,8 @@ class MotionClipThumb extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
-    final thumbAsync = ref.watch(motionThumbnailProvider(clipId));
+    final thumbAsync = ref.watch(motionThumbnailFileProvider(
+        (clipId: clipId, cameraId: cameraId, version: thumbnailVersion)));
 
     final fallback = ColoredBox(
       color: fallbackColor ?? glass.surfaceTint,
@@ -48,14 +52,9 @@ class MotionClipThumb extends ConsumerWidget {
     );
 
     return thumbAsync.when(
-      data: (url) => url != null
-          ? CachedNetworkImage(
-              imageUrl: url,
-              cacheKey: 'thumb_$clipId',
-              fit: BoxFit.cover,
-              placeholder: (_, __) => skeleton,
-              errorWidget: (_, __, ___) => fallback,
-            )
+      data: (file) => file != null
+          ? Image.file(file,
+              fit: BoxFit.cover, errorBuilder: (_, __, ___) => fallback)
           : fallback,
       loading: () => skeleton,
       error: (_, __) => fallback,

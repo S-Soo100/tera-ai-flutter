@@ -1,6 +1,6 @@
 # 실행용 SVG 매핑
 
-원본 path·mask·viewBox를 보존해 복사했다. 단색 tint는 FigmaIcon.tinted에서 처리한다. 배경 포함 제어 SVG는 소비처에서 배경을 중복 생성하지 않는다. 추가 소비처 교체는 각 기능 작업에서 수행한다.
+원본 export는 보존하고 실행용 파생본을 복사했다. 파생본의 alpha mask 호환 보정은 아래에 기록했다. 단색 tint는 FigmaIcon.tinted에서 처리한다. 배경 포함 제어 SVG는 소비처에서 배경을 중복 생성하지 않는다. 추가 소비처 교체는 각 기능 작업에서 수행한다.
 
 | 원본 노드 | 원본 파일 | 실행 파일 | viewBox |
 |---|---|---|---|
@@ -34,3 +34,13 @@
 | 934:1068 | cool_off.svg | assets/icons/cool_off.svg | 0 0 40 40 |
 | 934:1064 | led_on.svg | assets/icons/led_on.svg | 0 0 40 40 |
 | 934:1070 | led_off.svg | assets/icons/led_off.svg | 0 0 40 40 |
+
+추가 추출(2026-09-14, 동일 파일 Talk to Figma 채널 `ks50dfit`):
+
+| 용도 | 노드 | 원본/런타임 파일 | viewBox |
+|---|---|---|---|
+| pause | 941:1364 | final_pause.svg | 0 0 36 36 |
+| temperature | 945:3394 | final_temperature.svg | 0 0 28 28 |
+| humidity | 945:4826 | final_humidity.svg | 0 0 28 28 |
+
+런타임 보정: flutter_svg 캡처에서 `mask-type:alpha` 안의 회색 mask 도형이 밝기 마스크처럼 옅게 합성되어, 실행용 SVG의 해당 불투명 mask fill만 흰색으로 정규화했다. 도형 path/viewBox와 원본 export는 보존했다. FigmaIcon을 44pt 터치면 안에서 Center로 감싸 glyph 24pt를 유지했다.

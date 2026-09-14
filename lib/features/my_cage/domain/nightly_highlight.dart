@@ -1,3 +1,4 @@
+import 'highlight_publication.dart';
 import '../../../shared/domain/num_format.dart';
 
 /// petcam-api GET /highlights·/highlights/featured 항목(보기 전용).
@@ -11,6 +12,7 @@ import '../../../shared/domain/num_format.dart';
 /// 저장값이 아니라 조회 시 계산이므로 앱은 오래 캐시하지 않는다.
 class NightlyHighlight {
   final String clipId;
+  final HighlightPublication? publication;
   final String cameraId;
   final String cameraName;
   final DateTime startedAt;
@@ -61,6 +63,7 @@ class NightlyHighlight {
 
   const NightlyHighlight({
     required this.clipId,
+    this.publication,
     required this.startedAt,
     this.cameraId = '',
     this.cameraName = '',
@@ -91,6 +94,7 @@ class NightlyHighlight {
         : const <String, dynamic>{};
     return NightlyHighlight(
       clipId: j['clip_id'] as String? ?? '',
+      publication: HighlightPublication.fromJson(j['publication']),
       cameraId: j['camera_id'] as String? ?? '',
       cameraName: j['camera_name'] as String? ?? '',
       startedAt: parseLocalDateTime(j['started_at']) ?? DateTime.now(),

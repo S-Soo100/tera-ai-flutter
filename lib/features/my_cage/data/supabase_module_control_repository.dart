@@ -104,9 +104,7 @@ class SupabaseModuleControlRepository {
   }) async {
     var q = _supabase
         .from('telemetry_30m')
-        .select(
-          'bucket, sample_count, t_a_avg, t_a_min, t_a_max, h_a_avg, h_a_min, h_a_max',
-        )
+        .select() // Optional per-metric valid counts can arrive without breaking old servers.
         .eq('device_id', deviceId)
         .gte('bucket', from.toUtc().toIso8601String());
     if (to != null) {

@@ -67,14 +67,13 @@ class CageControlGrid extends ConsumerWidget {
         key: ventFanKey,
         name: 'device_vent_fan'.tr(),
         status: _stateLabel(t?.fan),
-        glyph: FigmaIcon.tinted(FigmaIcons.modeFan,
-            size: 20, color: glass.deviceGlyph),
+        glyph: FigmaIcon.metric(fanOn ? FigmaIcons.fanOn : FigmaIcons.fanOff,
+            size: 40),
         active: fanOn,
         tileColor: fanOn ? glass.deviceFanBg : glass.surfaceTint,
         iconCircleColor: fanOn ? glass.deviceFan : glass.deviceOff,
         onTap: online ? () => handleFanTap(context, ref, deviceId, t) : null,
-        onLongPress:
-            online ? () => openFanSheet(context, ref, deviceId) : null,
+        onLongPress: online ? () => openFanSheet(context, ref, deviceId) : null,
       ),
       // ② 분무 — Figma대로 꺼짐/켜짐 표시, **탭 즉시 3초 분사**(2026-09-07
       // 사용자 지시 — 시간 선택 시트 폐지, 예약 편집기에는 시간 선택이 남는다).
@@ -82,23 +81,17 @@ class CageControlGrid extends ConsumerWidget {
       _DeviceTile(
         key: mistKey,
         name: 'device_mist'.tr(),
-        status: mistOn
-            ? 'device_state_on'.tr()
-            : 'device_state_off'.tr(),
+        status: mistOn ? 'device_state_on'.tr() : 'device_state_off'.tr(),
         // 꺼짐=format_color_reset(사선 물방울, 원 40 프레임 export라 40),
         // 켜짐=humidity_high(물방울, 글리프만 17×20 → 20) — 2026-09-08
         // 사용자 지시.
-        glyph: mistOn
-            ? FigmaIcon.tinted(FigmaIcons.humidityHigh,
-                size: 20, color: glass.deviceGlyph)
-            : FigmaIcon.tinted(FigmaIcons.formatColorReset,
-                size: 40, color: glass.deviceGlyph),
+        glyph: FigmaIcon.metric(mistOn ? FigmaIcons.mistOn : FigmaIcons.mistOff,
+            size: 40),
         active: mistOn,
         tileColor: mistOn ? glass.deviceMistBg : glass.surfaceTint,
         iconCircleColor: mistOn ? glass.deviceMist : glass.deviceOff,
         onTap: online && !mistLocked
-            ? () => mistOnce(
-                context, ref, deviceId, MistDuration.threeSeconds)
+            ? () => mistOnce(context, ref, deviceId, MistDuration.threeSeconds)
             : null,
       ),
       // ③ 냉각팬 — API 없음, 미배선(UI만). 글리프는 Figma 원본 mode_cool —
@@ -107,8 +100,7 @@ class CageControlGrid extends ConsumerWidget {
         key: coolFanKey,
         name: 'device_cool_fan'.tr(),
         status: 'device_status_pending'.tr(),
-        glyph: FigmaIcon.tinted(FigmaIcons.modeCool,
-            size: 40, color: glass.deviceGlyph),
+        glyph: const FigmaIcon.metric(FigmaIcons.coolOff, size: 40),
         active: false,
         tileColor: glass.surfaceTint,
         iconCircleColor: glass.deviceOff,
@@ -121,7 +113,8 @@ class CageControlGrid extends ConsumerWidget {
         name: 'device_led'.tr(),
         status: _ledLabel(t),
         // Figma도 lightbulb — Material 동형이라 SVG 교체 불필요.
-        glyph: Icon(Icons.lightbulb, size: 20, color: glass.deviceGlyph),
+        glyph: FigmaIcon.metric(ledOn ? FigmaIcons.ledOn : FigmaIcons.ledOff,
+            size: 40),
         active: ledOn,
         tileColor: ledOn ? glass.deviceLedBg : glass.surfaceTint,
         iconCircleColor: ledOn ? glass.deviceLed : glass.deviceOff,
@@ -147,8 +140,7 @@ class CageControlGrid extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child:
-                    SizedBox(height: _tileHeight, child: tiles[row * 2]),
+                child: SizedBox(height: _tileHeight, child: tiles[row * 2]),
               ),
               const SizedBox(width: _gap),
               Expanded(
@@ -181,8 +173,8 @@ class CageControlGrid extends ConsumerWidget {
       name: 'device_heat_fan'.tr(),
       status: _stateLabel(t?.heaterState),
       // 조건부 타일이라 Figma에 원본 없음 — Material 유지.
-      glyph: Icon(Icons.local_fire_department,
-          size: 20, color: glass.deviceGlyph),
+      glyph:
+          Icon(Icons.local_fire_department, size: 20, color: glass.deviceGlyph),
       active: heaterOn,
       tileColor: heaterOn ? glass.deviceHeatBg : glass.surfaceTint,
       iconCircleColor: heaterOn ? glass.deviceHeat : glass.deviceOff,
@@ -286,7 +278,10 @@ class _DeviceTile extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: iconCircleColor,
+                        color: glyph is FigmaIcon &&
+                                (glyph as FigmaIcon).color == null
+                            ? Colors.transparent
+                            : iconCircleColor,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Center(child: glyph),

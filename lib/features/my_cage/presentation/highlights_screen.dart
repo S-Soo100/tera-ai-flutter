@@ -1,3 +1,6 @@
+import '../../auth/presentation/auth_providers.dart';
+import 'highlight_read_providers.dart';
+import '../../../shared/widgets/figma_icon.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -137,8 +140,38 @@ class HighlightsScreen extends ConsumerWidget {
       return CrecamEmptyMessage(message: 'crecam_highlights_empty'.tr());
     }
     final now = DateTime.now();
-    final newest = groups.first;
-    final showBanner = dismissedKey != highlightGroupKey(newest);
+    final owner = ref.watch(currentUserProvider)?.id ?? '';
+    final published = [for (final group in groups) ...group.featured]
+        .where((h) =>
+            h.cameraId.isNotEmpty && h.publication?.availableAt(now) == true)
+        .toList()
+      ..sort((a, b) {
+        final date =
+            b.publication!.publishedAt.compareTo(a.publication!.publishedAt);
+        return date != 0 ? date : a.episodeRank.compareTo(b.episodeRank);
+      });
+    final latest = published.firstOrNull;
+    final publication = latest?.publication;
+    final newest = latest == null
+        ? groups.first
+        : (
+            dayKey: latest.dayKey,
+            featured: published
+                .where((h) =>
+                    h.cameraId == latest.cameraId &&
+                    h.publication!.batchId == publication!.batchId)
+                .toList(),
+            candidates: <NightlyHighlight>[],
+          );
+    final batchKey =
+        latest == null ? '' : '${latest.cameraId}/${publication!.batchId}';
+    final isRead = latest != null &&
+        ref.watch(highlightReadProvider((
+          ownerId: owner,
+          cameraId: latest.cameraId,
+          batchId: publication!.batchId
+        )));
+    final showBanner = latest != null && !isRead && dismissedKey != batchKey;
 
     return ListView(
       // Figma 실측: 배너가 있으면 상단바→배너 12(668:600), 없으면
@@ -151,7 +184,7 @@ class HighlightsScreen extends ConsumerWidget {
             label: nightLabel(newest.dayKey, now),
             onDismiss: () => ref
                 .read(highlightBannerDismissedProvider.notifier)
-                .dismiss(highlightGroupKey(newest)),
+                .dismiss(batchKey),
           ),
           const SizedBox(height: _sectionGap),
         ],
@@ -271,7 +304,8 @@ class _ArrivalBanner extends ConsumerWidget {
                 child: IconButton(
                   key: HighlightsScreen.bannerCloseKey,
                   padding: EdgeInsets.zero,
-                  icon: Icon(Icons.close, size: 24, color: glass.textSecondary),
+                  icon: FigmaIcon.tinted(FigmaIcons.close,
+                      size: 24, color: glass.textSecondary),
                   tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                   onPressed: onDismiss,
                 ),
@@ -388,7 +422,8 @@ class _FeaturedCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  MotionClipThumb(clipId: highlight.clipId),
+                  MotionClipThumb(
+                      clipId: highlight.clipId, cameraId: highlight.cameraId),
                   // Figma 668:679 — 즐겨찾기한 하이라이트는 좌하단 북마크 표시.
                   Positioned(
                     left: 0,
@@ -432,7 +467,8 @@ class _Cell extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          MotionClipThumb(clipId: highlight.clipId),
+          MotionClipThumb(
+              clipId: highlight.clipId, cameraId: highlight.cameraId),
           // Figma 668:679 — 즐겨찾기한 하이라이트는 좌하단 북마크 표시.
           Positioned(
             left: 0,
@@ -449,12 +485,26 @@ void _openPlayer(
     BuildContext context, String clipId, List<NightlyHighlight> playlist) {
   // 재생목록과 함께 클립별 서버 재생 시작점(play_from_sec)을 넘긴다 —
   // 값이 없는 클립은 0초부터(기존 동작).
+  final selected = playlist.where((h) => h.clipId == clipId).first;
+  final publication = selected.publication;
+  final scoped = publication == null
+      ? playlist
+      : playlist
+          .where((h) =>
+              h.cameraId == selected.cameraId &&
+              h.publication?.batchId == publication.batchId)
+          .toList();
   context.push(
     '/crecam/player/$clipId',
     extra: ClipPlaylistArgs(
-      playlist: [for (final h in playlist) h.clipId],
+      source: ClipPlaybackSource.highlight,
+      cameraId: selected.cameraId,
+      highlightBatchId: publication?.availableAt(DateTime.now()) == true
+          ? publication?.batchId
+          : null,
+      playlist: [for (final h in scoped) h.clipId],
       playFromSec: {
-        for (final h in playlist)
+        for (final h in scoped)
           if (h.playFromSec != null) h.clipId: h.playFromSec!,
       },
     ),

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/cage_activity.dart';
 import '../domain/motion_clip.dart';
+import '../domain/motion_clip_page.dart';
 import 'camera_exceptions.dart';
 import '../../../shared/domain/num_format.dart';
 
@@ -63,6 +64,55 @@ class MotionClipRepository {
                   .map((row) => Map<String, dynamic>.from(row as Map))
                   .toList();
             });
+
+  /// Stable all-time paging. Never use a timestamp-only cursor: cameras can
+  /// publish several clips with exactly the same started_at.
+  Future<MotionClipPage> listPage(ClipFeedQuery query,
+      {MotionClipCursor? before, int pageSize = 60}) async {
+    if (pageSize < 1 || pageSize > 200) {
+      throw ArgumentError.value(pageSize, 'pageSize');
+    }
+    var q = _supabase
+        .from('motion_clips')
+        .select()
+        .eq('owner_id', query.ownerId)
+        .eq('camera_id', query.cameraId);
+    if (query.range case final range?) {
+      q = q
+          .gte('started_at', range.start.toUtc().toIso8601String())
+          .lt('started_at', range.endExclusive.toUtc().toIso8601String());
+    }
+    if (before != null) {
+      final stamp = before.startedAt.toUtc().toIso8601String();
+      // UUID comes from a server row, never from a user-entered expression.
+      if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(before.id)) {
+        throw ArgumentError.value(before.id, 'before.id');
+      }
+      q = q.or(
+          'started_at.lt.$stamp,and(started_at.eq.$stamp,id.lt.${before.id})');
+    }
+    final rows = await q
+        .order('started_at', ascending: false)
+        .order('id', ascending: false)
+        .limit(pageSize + 1);
+    final hasMore = rows.length > pageSize;
+    final items = rows.take(pageSize).map(MotionClip.fromJson).toList();
+    final labels = kClipClassificationEnabled && items.isNotEmpty
+        ? await _fetchLabels(items.map((c) => c.id).toList())
+        : const <String, String>{};
+    return (
+      items: List<MotionClip>.unmodifiable([
+        for (final clip in items)
+          labels.containsKey(clip.id)
+              ? clip.copyWith(action: labels[clip.id])
+              : clip
+      ]),
+      nextCursor: hasMore && items.isNotEmpty
+          ? (startedAt: items.last.startedAt, id: items.last.id)
+          : null,
+      hasMore: hasMore,
+    );
+  }
 
   /// 카메라의 모션 클립 목록 (최신순). [day]가 주어지면 그 날(로컬 00:00~24:00)로
   /// started_at 범위 필터. RLS로 본인 카메라 것만.

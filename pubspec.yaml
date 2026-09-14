@@ -1,7 +1,7 @@
 name: vivnanaut
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.99.0+190
+version: 0.100.0+191
 
 environment:
   sdk: ^3.5.0
@@ -24,6 +24,7 @@ dependencies:
   image_picker: ^1.1.2
   uuid: ^4.5.1
   path_provider: ^2.1.5
+  crypto: ^3.0.6
   http: ^1.2.0
   flutter_dotenv: ^5.2.1
   url_launcher: ^6.3.1
@@ -44,6 +45,8 @@ dependencies:
   clarity_flutter: ^1.10.0
 
 dev_dependencies:
+  # Diagnostic capture locale setup uses the existing transitive plugin directly.
+  shared_preferences: ^2.5.5
   flutter_test:
     sdk: flutter
   # 테스트 가짜 비디오 플랫폼(재생 시작점 seek 검증)용 — video_player의

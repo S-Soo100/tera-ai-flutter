@@ -1,3 +1,4 @@
+import 'package:vivnanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -58,7 +59,7 @@ Future<void> _pump(
       overrides: [
         allFavoriteClipsProvider
             .overrideWith((ref) async => favorites ?? _favorites),
-        motionThumbnailProvider.overrideWith((ref, clipId) async => null),
+        motionThumbnailFileProvider.overrideWith((ref, clipId) async => null),
         if (dayFilter != null)
           bookmarksDayFilterProvider.overrideWith((ref) => dayFilter),
       ],

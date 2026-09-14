@@ -4,21 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/glass_palette.dart';
-import '../../../shared/domain/am_pm_time.dart';
-import '../../../shared/domain/time_ago.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../home/presentation/widgets/home_header_bar.dart';
-import '../domain/motion_clip.dart';
 import 'my_cage_providers.dart';
+import 'clip_feed_controller.dart';
+import '../domain/update_day_label.dart';
+import 'widgets/clip_feed_slivers.dart';
 import 'widgets/camera_live_area.dart';
 import '../../../shared/widgets/figma_icon.dart';
-import 'widgets/clip_grid.dart';
-import 'widgets/crecam_detail_top_bar.dart';
-import 'widgets/crecam_states.dart';
-import 'widgets/favorite_bookmark_badge.dart';
-import 'widgets/motion_clip_thumb.dart';
 
 /// 카메라 탭 Camera Home — Figma 668:427 (2026-09-04 재설계 T2, 전면 재작성).
 ///
@@ -30,8 +25,7 @@ import 'widgets/motion_clip_thumb.dart';
 /// 헤더([HomeHeaderBar]) → 라이브 → 엔트리 카드 2개(하이라이트/북마크) →
 /// 기간 설정 버튼 → 시간대별 클립 그리드.
 ///
-/// 스크롤은 SingleChildScrollView — ListView는 스크롤 아웃된 라이브를
-/// dispose해 WebRTC 재연결(수초)이 걸린다(홈 선례).
+/// 영상 행은 지연 생성하고 라이브 헤더는 keepAlive로 연결을 보존한다.
 class CrecamScreen extends ConsumerStatefulWidget {
   const CrecamScreen({super.key});
 
@@ -77,16 +71,27 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
   }
 
   Future<void> _refresh() async {
-    ref.invalidate(camerasProvider);
-    // 부모 invalidate는 자식을 재실행시키지 않는다(리뷰 2026-09-04) —
-    // 클립 목록 family를 직접 깨워야 새 클립이 온다.
-    ref.invalidate(motionClipsProvider);
-    ref.invalidate(crecamHourGroupsProvider);
+    final query = ref.read(clipFeedQueryProvider);
+    if (query != null) {
+      await ref.read(clipFeedProvider(query).notifier).refresh();
+    }
+    if (!mounted) return;
     ref.invalidate(highlightGroupsProvider);
     ref.invalidate(allFavoriteClipsProvider);
-    // 미선택(자동) 날짜의 근거 — 새 클립이 오면 "가장 최근 날짜"도 바뀐다.
-    ref.invalidate(latestMotionClipAtProvider);
-    await ref.read(camerasProvider.future);
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    if (notification.metrics.extentAfter < 600) {
+      final query = ref.read(clipFeedQueryProvider);
+      if (query != null &&
+          ref.read(clipFeedProvider(query)).pageError == null) {
+        ref.read(clipFeedProvider(query).notifier).loadMore();
+      }
+    }
+    return false;
   }
 
   @override
@@ -96,48 +101,54 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
         children: [
           const Padding(
             // top 0 — Figma 668:427은 헤더가 status bar 바로 아래 선다(홈 동일).
-            padding: EdgeInsets.fromLTRB(
-                CrecamScreen._margin, 0, CrecamScreen._margin, CrecamScreen._gap),
+            padding: EdgeInsets.fromLTRB(CrecamScreen._margin, 0,
+                CrecamScreen._margin, CrecamScreen._gap),
             child: HomeHeaderBar(),
           ),
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: _refresh,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.only(
-                  // 플로팅 독 높이만큼 비워야 마지막 그리드가 안 가려진다.
-                  bottom: glassDockListPadding(context).bottom,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: const [
-                    Padding(
-                      padding: EdgeInsets.symmetric(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _onScroll,
+              child: RefreshIndicator(
+                onRefresh: _refresh,
+                notificationPredicate: (notification) =>
+                    notification.depth == 0 &&
+                    notification.metrics.axis == Axis.vertical,
+                child: CustomScrollView(
+                  key: PageStorageKey(ref.watch(clipFeedQueryProvider)),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverList(
+                        delegate: SliverChildListDelegate([
+                      KeepAliveCameraHeader(
+                          child: Column(children: const [
+                        Padding(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: CrecamScreen._margin),
+                            child: CameraLiveArea()),
+                        SizedBox(height: CrecamScreen._sectionGap),
+                        Padding(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: CrecamScreen._margin),
+                            child: _EntryCards()),
+                        SizedBox(height: CrecamScreen._sectionGap),
+                        Padding(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: CrecamScreen._margin),
+                            child: Align(
+                                alignment: Alignment.centerRight,
+                                child: _PeriodButton())),
+                        SizedBox(height: CrecamScreen._gap),
+                      ])),
+                    ])),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(
                           horizontal: CrecamScreen._margin),
-                      child: CameraLiveArea(),
+                      sliver: ClipFeedSlivers(
+                          query: ref.watch(clipFeedQueryProvider)),
                     ),
-                    SizedBox(height: CrecamScreen._sectionGap),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: CrecamScreen._margin),
-                      child: _EntryCards(),
-                    ),
-                    SizedBox(height: CrecamScreen._sectionGap),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: CrecamScreen._margin),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: _PeriodButton(),
-                      ),
-                    ),
-                    SizedBox(height: CrecamScreen._gap),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: CrecamScreen._margin),
-                      child: _HourClipSections(),
-                    ),
+                    SliverToBoxAdapter(
+                        child: SizedBox(
+                            height: glassDockListPadding(context).bottom)),
                   ],
                 ),
               ),
@@ -159,19 +170,10 @@ class _EntryCards extends ConsumerWidget {
     final highlightAt = ref.watch(latestHighlightAtProvider);
     final bookmarkAt = ref.watch(
       allFavoriteClipsProvider.select(
-        (v) => v.whenData(
-            (list) => list.isEmpty ? null : list.first.favoritedAt),
+        (v) =>
+            v.whenData((list) => list.isEmpty ? null : list.first.favoritedAt),
       ),
     );
-    // 어젯밤 활동(밤 22~06시, PRD §3.1) 병기 — PRD 미결 S의 자리(2026-09-07
-    // 사용자 결정). 로딩/에러/0초는 병기 생략 — 요약이 없다고 카드가 죽으면
-    // 안 된다(마이크레 리포트가 상세를 전담).
-    final nightSec = ref.watch(
-        nightlyReportProvider.select((v) => v.valueOrNull?.activitySeconds));
-    final nightExtra = nightSec == null || nightSec <= 0
-        ? null
-        : 'crecam_home_night_activity'
-            .tr(args: ['${(nightSec / 60).ceil()}']);
     return Row(
       children: [
         Expanded(
@@ -180,7 +182,7 @@ class _EntryCards extends ConsumerWidget {
             iconAsset: FigmaIcons.cardsStar,
             title: 'crecam_home_highlights'.tr(),
             latestAt: highlightAt,
-            extra: nightExtra,
+            emptyLabel: 'crecam_update_unknown'.tr(),
             onTap: () => context.push('/crecam/highlights'),
           ),
         ),
@@ -207,20 +209,20 @@ class _EntryCard extends StatelessWidget {
     required this.iconAsset,
     required this.title,
     required this.latestAt,
+    this.emptyLabel,
     required this.onTap,
-    this.extra,
   });
 
   /// Figma 원본 SVG 이름(`FigmaIcons`) — Material 근사치는 2026-09-07 교체.
   final String iconAsset;
   final String title;
+  final String? emptyLabel;
 
   /// 최신 항목 시각. data(null) = 항목 없음("아직 없어요").
   final AsyncValue<DateTime?> latestAt;
   final VoidCallback onTap;
 
   /// 서브타이틀 앞에 병기할 부가 정보(예: 어젯밤 활동). null = 없음.
-  final String? extra;
 
   @override
   Widget build(BuildContext context) {
@@ -299,13 +301,10 @@ class _EntryCard extends StatelessWidget {
           maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
       data: (at) {
         final base = at == null
-            ? 'crecam_home_no_updates'.tr()
-            : 'crecam_home_updated'.tr(args: [timeAgo(at)]);
-        // 병기: "어젯밤 활동 N분 · 업데이트 …". 항목이 없으면 병기만 —
-        // "활동 N분 · 아직 없어요"는 서로 부정하는 문장이 된다.
-        final text = extra == null ? base : (at == null ? extra! : '$extra · $base');
+            ? emptyLabel ?? 'crecam_home_no_updates'.tr()
+            : _updateLabel(at);
         return Text(
-          text,
+          base,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: style,
@@ -315,263 +314,72 @@ class _EntryCard extends StatelessWidget {
   }
 }
 
-// ── 기간 설정 ──────────────────────────────────────────────────────────────────
+String _updateLabel(DateTime at) {
+  final days = calendarDaysAgo(at, DateTime.now());
+  return days <= 0
+      ? 'crecam_updated_today'.tr()
+      : days == 1
+          ? 'crecam_updated_yesterday'.tr()
+          : 'crecam_updated_days'.tr(args: ['$days']);
+}
 
+// ── 명시 기간 설정 ──
 class _PeriodButton extends ConsumerWidget {
   const _PeriodButton();
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
-    // 라벨은 **실제 표시 날짜**(해석 결과)를 따른다 — 미선택(자동)으로 최근
-    // 영상 날짜를 그리는 중이면 그 날짜가 라벨이어야 그리드와 어긋나지 않는다.
-    final day = ref.watch(crecamResolvedDayProvider).valueOrNull;
-    final now = DateTime.now();
-    final isToday = day != null &&
-        day.year == now.year &&
-        day.month == now.month &&
-        day.day == now.day;
-    final label = day == null || isToday
+    final range = ref.watch(clipFeedRangeProvider);
+    final format = DateFormat('yyyy. M. d');
+    final end = range?.endExclusive.subtract(const Duration(microseconds: 1));
+    final label = range == null
         ? 'crecam_home_period'.tr()
-        : DateFormat('yyyy. M. d').format(day);
-
-    return Material(
-      // 라이트=흰 바닥 위 흰 버튼(스트로크로만 선다), 다크=바닥색 + 스트로크.
-      color: glass.wallpaper,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: glass.outline),
-      ),
-      child: InkWell(
-        key: CrecamScreen.periodButtonKey,
-        borderRadius: BorderRadius.circular(8),
-        onTap: () => _pick(context, ref, day ?? now),
-        child: SizedBox(
-          height: 40,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.calendar_today,
-                    size: 16, color: glass.textSecondary),
-                // Figma 실측 갭 4 (958.39 − 954.39).
-                const SizedBox(width: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontFamily: 'Pretendard',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 14 * -0.02,
-                    color: glass.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pick(
-      BuildContext context, WidgetRef ref, DateTime current) async {
-    // 상세 화면들과 같은 공용 피커(자정 정규화 포함) — 정책 2벌 방지.
-    final picked = await showCrecamDayPicker(context, current);
-    if (picked == null || !context.mounted) return;
-    ref.read(crecamDayProvider.notifier).state = picked;
-  }
-}
-
-// ── 시간대별 클립 그리드 ───────────────────────────────────────────────────────
-
-class _HourClipSections extends ConsumerWidget {
-  const _HourClipSections();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final glass = context.glass;
-    final groupsAsync = ref.watch(crecamHourGroupsProvider);
-    // 그리드가 실제로 그린 날짜(해석 결과). 그룹이 있을 때만 라벨에 쓰이므로
-    // 로딩 중 폴백(오늘)은 화면에 나갈 일이 없다.
-    final day = ref.watch(crecamResolvedDayProvider).valueOrNull ??
-        DateTime.now();
-
-    return groupsAsync.when(
-      loading: () => const _SectionsSkeleton(),
-      error: (_, __) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: CrecamErrorRetry(
-          onRetry: () {
-            // 하위 클립 family까지 — 부모만 깨우면 캐시가 그대로다.
-            ref.invalidate(motionClipsProvider);
-            ref.invalidate(crecamHourGroupsProvider);
-          },
-        ),
-      ),
-      data: (groups) {
-        if (groups.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 32),
-            child: Center(
-              child: Text(
-                'crecam_home_empty_day'.tr(),
-                style: TextStyle(
-                  fontFamily: 'Pretendard',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 14 * -0.02,
-                  color: glass.textTertiary,
-                ),
-              ),
-            ),
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < groups.length; i++) ...[
-              if (i > 0) const SizedBox(height: CrecamScreen._sectionGap),
-              _HourSection(
-                group: groups[i],
-                // 날짜는 첫 그룹만(Figma) — 아래로는 같은 날짜의 반복이다.
-                dateLabel:
-                    i == 0 ? DateFormat('yyyy. M. d').format(day) : null,
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _HourSection extends StatelessWidget {
-  const _HourSection({
-    required this.group,
-    required this.dateLabel,
-  });
-
-  final CrecamHourGroup group;
-  final String? dateLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final glass = context.glass;
-    // 재생목록 = **이 시간대**의 클립만(2026-09-07 사용자 지시 — 09시 영상을
-    // 열었으면 09시 영상들이 하나의 재생목록). 그날 전체를 이어붙이던 구
-    // 동작은 폐기: 페이지네이션이 수십 칸으로 뭉개지고, "그 시간대의 순간들"
-    // 이라는 그룹 의미가 사라진다.
-    final playlist = [for (final c in group.clips) c.id];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                formatAmPmTime(group.hour),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'Pretendard',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 16 * -0.02,
-                  color: glass.textSecondary,
-                ),
-              ),
-            ),
-            if (dateLabel != null)
-              Text(
-                dateLabel!,
-                style: TextStyle(
-                  fontFamily: 'Pretendard',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 14 * -0.02,
-                  color: glass.textTertiary,
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipGrid<MotionClip>(
-          items: group.clips,
-          cellBuilder: (clip) => _ClipCell(clip: clip, playlist: playlist),
-        ),
-      ],
-    );
-  }
-
-}
-
-/// 썸네일 셀 — terra-api presigned 썸네일(없으면 회색 폴백). 탭 → 세로
-/// 플레이어(재생목록 = 그 시간대, 시간 내림차순). 즐겨찾기면 좌하단 북마크
-/// 표시(Figma 668:373).
-class _ClipCell extends ConsumerWidget {
-  const _ClipCell({required this.clip, required this.playlist});
-
-  final MotionClip clip;
-  final List<String> playlist;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return GestureDetector(
-      key: ValueKey('crecam_clip_${clip.id}'),
-      behavior: HitTestBehavior.opaque,
-      onTap: () =>
-          context.push('/crecam/player/${clip.id}', extra: playlist),
-      child: Stack(
-        fit: StackFit.expand,
+        : format.format(range.start) == format.format(end!)
+            ? format.format(range.start)
+            : '${format.format(range.start)} – ${format.format(end)}';
+    return Wrap(
+        alignment: WrapAlignment.end,
+        spacing: 8,
+        runSpacing: 4,
         children: [
-          MotionClipThumb(
-            clipId: clip.id,
-            fallbackIcon: Icons.videocam_rounded,
-            fallbackColor: context.glass.overlayFaint,
+          if (range != null)
+            TextButton(
+              key: const Key('crecam_clear_period'),
+              onPressed: () =>
+                  ref.read(clipFeedRangeProvider.notifier).state = null,
+              child: Text('crecam_all_period'.tr()),
+            ),
+          OutlinedButton.icon(
+            key: CrecamScreen.periodButtonKey,
+            style: OutlinedButton.styleFrom(
+                side: BorderSide(color: glass.outline),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8))),
+            icon: FigmaIcon.tinted(FigmaIcons.calendar,
+                color: glass.textSecondary, size: 16),
+            label: Text(label,
+                style: TextStyle(
+                    color: glass.textSecondary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600)),
+            onPressed: () async {
+              final now = DateTime.now();
+              final picked = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(now.year, now.month, now.day),
+                  initialDateRange: range == null
+                      ? null
+                      : DateTimeRange(start: range.start, end: end!));
+              if (picked == null || !context.mounted) return;
+              ref.read(clipFeedRangeProvider.notifier).state = (
+                start: DateTime(
+                    picked.start.year, picked.start.month, picked.start.day),
+                endExclusive: DateTime(
+                    picked.end.year, picked.end.month, picked.end.day + 1)
+              );
+            },
           ),
-          Positioned(
-            left: 0,
-            bottom: 0,
-            child: FavoriteBookmarkBadge(clipId: clip.id),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 로딩 스켈레톤 — 헤더 줄 + 3열 셀 한 그룹(shimmer, CPI 금지).
-class _SectionsSkeleton extends StatelessWidget {
-  const _SectionsSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SkeletonLoading(width: 96, height: 16),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            for (var c = 0; c < 3; c++) ...[
-              if (c > 0) const SizedBox(width: ClipGrid.cellGap),
-              const Expanded(
-                child: AspectRatio(
-                  aspectRatio: ClipGrid.cellAspect,
-                  child: SkeletonLoading(
-                    width: double.infinity,
-                    height: double.infinity,
-                    borderRadius: 0,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ],
-    );
+        ]);
   }
 }

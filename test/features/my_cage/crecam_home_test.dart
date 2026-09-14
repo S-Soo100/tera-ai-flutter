@@ -1,3 +1,9 @@
+import 'package:vivnanaut/features/my_cage/domain/clip_playlist_args.dart';
+import 'package:vivnanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
+import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:vivnanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivnanaut/features/my_cage/presentation/clip_feed_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,8 +65,8 @@ String? pushedClipId;
 List<String>? pushedPlaylist;
 
 /// 정착(활성) 페인의 라이브 뷰 — 비활성 페인은 SizedBox라 카메라당 최대 1개.
-Finder _liveFor(String cameraId) => find.byWidgetPredicate(
-    (w) => w is WebRtcLiveView && w.cameraUuid == cameraId);
+Finder _liveFor(String cameraId) => find
+    .byWidgetPredicate((w) => w is WebRtcLiveView && w.cameraUuid == cameraId);
 
 GoRouter _router() => GoRouter(
       routes: [
@@ -69,8 +75,9 @@ GoRouter _router() => GoRouter(
           path: '/crecam/player/:clipId',
           builder: (_, state) {
             pushedClipId = state.pathParameters['clipId'];
-            pushedPlaylist =
-                (state.extra as List?)?.whereType<String>().toList();
+            pushedPlaylist = state.extra is ClipPlaylistArgs
+                ? (state.extra as ClipPlaylistArgs).playlist
+                : (state.extra as List?)?.whereType<String>().toList();
             return const Scaffold(body: Center(child: Text('player-screen')));
           },
         ),
@@ -88,8 +95,8 @@ GoRouter _router() => GoRouter(
           path: '/crecam/cameras/:cameraId/live',
           builder: (_, state) => Scaffold(
             body: Center(
-              child: Text(
-                  'live-fullscreen-${state.pathParameters['cameraId']}'),
+              child:
+                  Text('live-fullscreen-${state.pathParameters['cameraId']}'),
             ),
           ),
         ),
@@ -118,24 +125,49 @@ Future<void> _pump(
   bool pickedDay = true,
   DateTime? latestClipAt,
   int nightActivitySec = 0,
+  Stream<List<TerraCamera>>? cameraEvents,
+  VoidCallback? onFeedLoad,
+  VoidCallback? onLiveCreate,
 }) async {
+  tester.view.physicalSize = const Size(393, 1000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   pushedClipId = null;
   pushedPlaylist = null;
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        currentUserProvider.overrideWithValue(User(
+            id: 'owner-a',
+            appMetadata: {},
+            userMetadata: {},
+            aud: 'authenticated',
+            createdAt: '2026-01-01')),
+        clipFeedRangeProvider.overrideWith((ref) => pickedDay
+            ? (start: _day, endExclusive: DateTime(2026, 9, 1))
+            : null),
+        clipFeedProvider.overrideWith((ref, query) {
+          final controller = ClipFeedController((cursor) async {
+            onFeedLoad?.call();
+            return (items: clips ?? _clips, nextCursor: null, hasMore: false);
+          });
+          unawaited(controller.refresh());
+          return controller;
+        }),
         enclosureSetsProvider.overrideWith((ref) async => sets),
-        camerasProvider.overrideWith(
-            (ref) => Stream.value(cameras ?? [_offlineCamera()])),
+        camerasProvider.overrideWith((ref) =>
+            cameraEvents ?? Stream.value(cameras ?? [_offlineCamera()])),
         // 실피어 차단 — startConnection()을 부르지 않은 inert 컨트롤러.
-        webrtcLiveControllerProvider.overrideWith(
-            (ref, uuid) => InertLiveController(ref, uuid)),
+        webrtcLiveControllerProvider.overrideWith((ref, uuid) {
+          onLiveCreate?.call();
+          return InertLiveController(ref, uuid);
+        }),
         crecamDayProvider.overrideWith((ref) => pickedDay ? _day : null),
         latestMotionClipAtProvider
             .overrideWith((ref, cameraId) async => latestClipAt),
-        motionClipsProvider
-            .overrideWith((ref, key) async => clips ?? _clips),
-        motionThumbnailProvider.overrideWith((ref, clipId) async => null),
+        motionClipsProvider.overrideWith((ref, key) async => clips ?? _clips),
+        motionThumbnailFileProvider.overrideWith((ref, clipId) async => null),
         latestHighlightAtProvider
             .overrideWith((ref) async => latestHighlightAt),
         allFavoriteClipsProvider
@@ -149,10 +181,53 @@ Future<void> _pump(
       child: MaterialApp.router(routerConfig: _router()),
     ),
   );
-  await tester.pumpAndSettle();
+  if (cameraEvents == null) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
 void main() {
+  testWidgets('중간 스크롤 중 카메라 갱신은 목록/위치/라이브 수명을 유지한다', (tester) async {
+    final events = StreamController<List<TerraCamera>>();
+    addTearDown(events.close);
+    var loads = 0;
+    var lives = 0;
+    final many = List.generate(
+        300,
+        (i) => MotionClip(
+            id: 'clip-$i',
+            cameraId: _cameraId,
+            startedAt: DateTime(2026, 8, 31, 23).subtract(Duration(minutes: i)),
+            durationSec: 8));
+    await _pump(tester,
+        clips: many,
+        cameraEvents: events.stream,
+        pickedDay: false,
+        onFeedLoad: () => loads++,
+        onLiveCreate: () => lives++);
+    events.add([_offlineCamera()]);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1800));
+    await tester.pumpAndSettle();
+    final scroll = tester.state<ScrollableState>(find
+        .descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable))
+        .first);
+    final offset = scroll.position.pixels;
+    final beforeLoads = loads;
+    final beforeLives = lives;
+    expect(offset, greaterThan(500));
+    events.add([_offlineCamera()]);
+    await tester.pumpAndSettle();
+    expect(scroll.position.pixels, closeTo(offset, 1));
+    expect(loads, beforeLoads);
+    expect(lives, beforeLives);
+    expect(find.byKey(const ValueKey('crecam_clip_clip-299')), findsNothing);
+  });
+
   testWidgets('헤더 + 엔트리 카드 2개(하이라이트/북마크) 렌더', (tester) async {
     await _pump(tester);
     expect(find.byType(HomeHeaderBar), findsOneWidget);
@@ -161,7 +236,8 @@ void main() {
     expect(find.text('crecam_home_highlights'), findsOneWidget);
     expect(find.text('crecam_home_bookmarks'), findsOneWidget);
     // 하이라이트·북마크 둘 다 없음 → "아직 없어요" ×2.
-    expect(find.text('crecam_home_no_updates'), findsNWidgets(2));
+    expect(find.text('crecam_home_no_updates'), findsOneWidget);
+    expect(find.text('crecam_update_unknown'), findsOneWidget);
     // 기간 설정 버튼(선택일이 오늘이 아니면 날짜 라벨).
     expect(find.byKey(CrecamScreen.periodButtonKey), findsOneWidget);
     expect(find.text('2026. 8. 31'), findsWidgets);
@@ -186,8 +262,7 @@ void main() {
     expect(find.text('pair-screen'), findsOneWidget);
   });
 
-  testWidgets('DB is_online=false여도 라이브를 시도한다 — 홈과 동일 계약',
-      (tester) async {
+  testWidgets('DB is_online=false여도 라이브를 시도한다 — 홈과 동일 계약', (tester) async {
     // is_online은 stale일 수 있다(2026-09-04 실증: 같은 카메라가 홈에선
     // 나오고 카메라 탭에서만 "오프라인"). 게이팅 없이 항상 시도하고, 실패
     // 표시는 WebRtcLiveView 몫이다.
@@ -200,8 +275,7 @@ void main() {
     expect(find.text('테스트캠'), findsOneWidget);
   });
 
-  testWidgets('확장 버튼 탭 → 라이브 전체화면(가로, 영상만) 라우트',
-      (tester) async {
+  testWidgets('확장 버튼 탭 → 라이브 전체화면(가로, 영상만) 라우트', (tester) async {
     // 구 목적지는 카메라 상세였다 — "확대" 기대와 어긋나 라이브 전용
     // 전체화면으로 교체(2026-09-07 사용자 결정).
     await _pump(tester);
@@ -210,8 +284,7 @@ void main() {
     expect(find.text('live-fullscreen-$_cameraId'), findsOneWidget);
   });
 
-  testWidgets('최초 진입은 홈 세트의 카메라에서 시작 — 목록 첫 카메라가 아니다',
-      (tester) async {
+  testWidgets('최초 진입은 홈 세트의 카메라에서 시작 — 목록 첫 카메라가 아니다', (tester) async {
     // 첫 카메라가 무응답이어도 홈이 보고 있는 카메라로 열려야 "홈에선
     // 보이는데 카메라 탭은 안 보임"이 안 된다(2026-09-04 사용자 제보).
     await _pump(
@@ -226,8 +299,7 @@ void main() {
 
   // ── 홈 ↔ 카메라 탭 슬라이드 동기화 (2026-09-07 사용자 제보) ──────────────
 
-  testWidgets('카메라 스와이프 → 홈 세트 선택이 따라온다 + 순서는 세트 순서',
-      (tester) async {
+  testWidgets('카메라 스와이프 → 홈 세트 선택이 따라온다 + 순서는 세트 순서', (tester) async {
     // raw 목록은 [camB, camA]로 뒤섞어 둔다 — 세트 순서([camA, camB])로
     // 재정렬돼야 페이지 1 스와이프가 camB다.
     await _pump(
@@ -251,8 +323,7 @@ void main() {
     expect(container.read(selectedCrecamCameraProvider), 'camB');
   });
 
-  testWidgets('홈에서 세트 변경 → 카메라 탭 현재 슬라이드가 따라간다',
-      (tester) async {
+  testWidgets('홈에서 세트 변경 → 카메라 탭 현재 슬라이드가 따라간다', (tester) async {
     await _pump(
       tester,
       cameras: [_offlineCamera(id: 'camB'), _offlineCamera(id: 'camA')],
@@ -309,16 +380,14 @@ void main() {
     expect(find.text('2026. 8. 31'), findsNWidgets(2));
   });
 
-  testWidgets('클립 0건 날짜 → 빈 상태 문구 (명시 선택은 자동으로 안 갈아탄다)',
-      (tester) async {
+  testWidgets('클립 0건 날짜 → 빈 상태 문구 (명시 선택은 자동으로 안 갈아탄다)', (tester) async {
     await _pump(tester, clips: const []);
     expect(find.text('crecam_home_empty_day'), findsOneWidget);
   });
 
   // ── 기간 미선택(자동) — 최근 영상 날짜 해석 (2026-09-07) ─────────────────
 
-  testWidgets('기간 미선택 → 최근 클립 날짜로 자동 해석 — 라벨·그리드 일치',
-      (tester) async {
+  testWidgets('기간 미선택이면 버튼은 기간 설정이고 목록은 전체 기간', (tester) async {
     // 오늘 클립이 없는 카메라(관식이 제보)가 "이 날짜에는 영상이 없어요"로
     // 열리면 안 된다 — 가장 최근 영상이 있는 날짜부터 보여준다.
     await _pump(
@@ -327,20 +396,19 @@ void main() {
       latestClipAt: DateTime(2026, 8, 31, 10, 15),
     );
     // 기간 버튼 라벨 + 첫 시간 그룹 날짜 라벨 — 해석된 같은 날짜.
-    expect(find.text('2026. 8. 31'), findsNWidgets(2));
+    expect(find.text('2026. 8. 31'), findsOneWidget);
+    expect(find.text('crecam_home_period'), findsOneWidget);
     expect(find.text('time_am_fmt'), findsNWidgets(2));
     expect(find.text('crecam_home_empty_day'), findsNothing);
   });
 
-  testWidgets('기간 미선택 + 클립 0건 카메라 → 오늘(기본 라벨) + 빈 상태',
-      (tester) async {
+  testWidgets('기간 미선택 + 클립 0건 카메라 → 오늘(기본 라벨) + 빈 상태', (tester) async {
     await _pump(tester, pickedDay: false, latestClipAt: null, clips: const []);
     expect(find.text('crecam_home_period'), findsOneWidget);
-    expect(find.text('crecam_home_empty_day'), findsOneWidget);
+    expect(find.text('crecam_home_empty_all'), findsOneWidget);
   });
 
-  testWidgets('셀 탭 → 세로 플레이어 + **그 시간대** 재생목록(2026-09-07 지시)',
-      (tester) async {
+  testWidgets('셀 탭 → 세로 플레이어 + **그 시간대** 재생목록(2026-09-07 지시)', (tester) async {
     // 09시 영상을 열면 09시 영상들만 하나의 재생목록 — 그날 전체(구 동작)가
     // 아니다. c3(08:30)은 단독 그룹, c1(10:15) 그룹은 [c1, c2(10:05)].
     await _pump(tester);
@@ -363,15 +431,13 @@ void main() {
     expect(pushedPlaylist, ['c1', 'c2']);
   });
 
-  testWidgets('어젯밤 활동이 있으면 하이라이트 카드에 병기 (미결 S)',
-      (tester) async {
+  testWidgets('업데이트 날짜 한 줄에 활동 시간을 덧붙이지 않는다', (tester) async {
     await _pump(tester, nightActivitySec: 300); // 5분
     // tr()는 키 원문 반환(namedArgs 미치환).
-    expect(find.textContaining('crecam_home_night_activity'), findsOneWidget);
+    expect(find.textContaining('crecam_home_night_activity'), findsNothing);
   });
 
-  testWidgets('최신 즐겨찾기 시각 → 북마크 카드 "업데이트" 서브타이틀',
-      (tester) async {
+  testWidgets('최신 즐겨찾기 시각 → 북마크 카드 "업데이트" 서브타이틀', (tester) async {
     await _pump(tester, favorites: [
       FavoriteClip(
         clipId: 'c1',
@@ -385,6 +451,6 @@ void main() {
       ),
     ]);
     // timeAgo → "time_minutes_ago" 키 → crecam_home_updated 조합.
-    expect(find.textContaining('crecam_home_updated'), findsOneWidget);
+    expect(find.text('crecam_updated_today'), findsOneWidget);
   });
 }

@@ -11,6 +11,10 @@ class TelemetryBucket {
   /// 이 30분 버킷에 집계된 원본 telemetry 행 수. 정상 ≈ 600 (30분÷3초).
   final int sampleCount;
 
+  /// Optional server contract: counts after the same validity filter as avg.
+  /// null means unsupported; sampleCount must never be substituted.
+  final int? tValidCount, hValidCount;
+
   /// 메인 센서 A 온도 평균/최소/최대 (°C).
   final double? tAvg;
   final double? tMin;
@@ -24,6 +28,8 @@ class TelemetryBucket {
   const TelemetryBucket({
     required this.bucket,
     required this.sampleCount,
+    this.tValidCount,
+    this.hValidCount,
     required this.tAvg,
     required this.tMin,
     required this.tMax,
@@ -40,6 +46,10 @@ class TelemetryBucket {
     return TelemetryBucket(
       bucket: DateTime.parse(j['bucket'].toString()),
       sampleCount: _parseInt(j['sample_count']),
+      tValidCount:
+          j['t_a_valid_count'] == null ? null : _parseInt(j['t_a_valid_count']),
+      hValidCount:
+          j['h_a_valid_count'] == null ? null : _parseInt(j['h_a_valid_count']),
       tAvg: parseDouble(j['t_a_avg']),
       tMin: parseDouble(j['t_a_min']),
       tMax: parseDouble(j['t_a_max']),
@@ -56,5 +66,4 @@ class TelemetryBucket {
     if (v is String) return int.tryParse(v) ?? 0;
     return 0;
   }
-
 }

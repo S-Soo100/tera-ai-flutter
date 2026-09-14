@@ -14,6 +14,17 @@
 >
 > 아직 옛 브랜드가 남은 곳: `assets/images/logo_wordmark.png`(영상 워터마크에 `terra.ai`), 앱 아이콘, 저장소명 `tera-ai-flutter`, git 원격.
 
+## Final Design 사용자 변경 결정 (2026-09-14)
+
+이번 결정이 아래 과거 회전 금지/팬 원탭/하루 조회 정책보다 우선한다. 브랜치 `codex/final-design-implementation`; 결과는 `docs/design-audits/2026-09-14-implementation-results.md`.
+
+- 카메라 라이브·클립 확대는 세로 진입, 명시 버튼으로 가로 전환. 커뮤니티 플레이어는 이번 변경 범위 밖이다.
+- 꺼진 환기팬은 시간 선택→시작으로 실행. 선택/취소만으로 명령을 보내지 않는다. 일정 & 타이머 문구는 ‘일정’.
+- 카메라 영상 기본 전체 기간, 60개 복합 커서 pagination, 로컬 썸네일 200MB 캐시. 카메라 상태 갱신이 feed를 초기화하지 않는다.
+- 오늘 온습도는 유효한 실시간, 과거는 지표별 valid count를 사용한 평균. 서버 count 미지원은 `--`, 마지막 값/단순 평균 대체 금지.
+- 공개 하이라이트 배치의 실제 재생 진전으로 읽음 처리. 공개 배치/시각은 현재 서버 미지원이며 촬영시각을 도착으로 대체하지 않는다. 상세 계약은 `docs/plans/2026-09-14-data-contract-check.md`.
+- Final Design runtime SVG의 불투명 alpha mask는 흰 mask로 정규화한다. 원본 export는 보존한다. 신규 역할색은 `envTempValue/envHumidValue`, `envTempPeak/envHumidPeak`, `envBarNeutral/envBarMinimum`, `navSelected/navUnselected`.
+
 ## 프로젝트 개요
 파충류 사육자를 위한 올인원 앱. 백색목록 검색, 사육 정보, 모프 유전 계산기 + 게코캠 + 사육장 IoT 제어.
 - **스택**: Flutter + Riverpod + GoRouter + Hive + easy_localization + Supabase + flutter_blue_plus/permission_handler(BLE) + flutter_webrtc(사육장 캠 라이브) + video_player/gal/share_plus(크레캠 영상 재생·기기저장·공유) + fl_chart(홈·통계 공용 온습도 차트)

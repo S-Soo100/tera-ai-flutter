@@ -13,7 +13,6 @@ import '../../../home/presentation/widgets/live_clock_overlay.dart';
 import '../../domain/terra_camera.dart';
 import '../my_cage_providers.dart';
 import 'camera_name_badge.dart';
-import 'live_connection_badge.dart';
 import 'webrtc_live_view.dart';
 
 /// 카메라 탭 라이브 영역 — Figma Camera Home (668:427), 369×271 radius 12.
@@ -91,9 +90,7 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
   int _resolveIndex(
       List<TerraCamera> cameras, String? storedId, String? setCamId) {
     if (cameras.isEmpty) return 0;
-    var i = storedId == null
-        ? -1
-        : cameras.indexWhere((c) => c.id == storedId);
+    var i = storedId == null ? -1 : cameras.indexWhere((c) => c.id == storedId);
     if (i >= 0) return i;
     i = setCamId == null ? -1 : cameras.indexWhere((c) => c.id == setCamId);
     return i >= 0 ? i : 0;
@@ -154,6 +151,7 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
 
     final camerasAsync = ref.watch(camerasProvider);
     return camerasAsync.when(
+      skipLoadingOnReload: true,
       loading: () => const AspectRatio(
         aspectRatio: CameraLiveArea.aspectRatio,
         child: SkeletonLoading(
@@ -206,8 +204,7 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
         }
         // initState 시점에 목록이 로딩이었으면 initialPage가 0으로 굳어
         // 있다 — 해석된 페이지로 점프.
-        if (_controller.hasClients &&
-            _controller.page?.round() != selected) {
+        if (_controller.hasClients && _controller.page?.round() != selected) {
           _controller.jumpToPage(selected);
         }
       });
@@ -217,7 +214,7 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
     final surface = LiveSurface(
       aspectRatio: CameraLiveArea.aspectRatio,
       // 좌상단 연결 배지 — 스트림 phase 기준(홈과 동일 공용 위젯, A3 복원).
-      status: LiveConnectionBadge(cameraId: current.id),
+      status: null,
       // 시계는 항상 — 홈(TopFixedArea)과 동일. 연결 실패 문구는 WebRtcLiveView
       // 몫이고, DB is_online은 stale일 수 있어 여기서 판정하지 않는다.
       corner: const LiveClockOverlay(),
@@ -315,7 +312,8 @@ class _ExpandButton extends StatelessWidget {
         child: const SizedBox(
           width: 32,
           height: 32,
-          child: Icon(Icons.zoom_out_map, size: 17.5, color: AppTheme.liveOnDark),
+          child:
+              Icon(Icons.zoom_out_map, size: 17.5, color: AppTheme.liveOnDark),
         ),
       ),
     );
@@ -341,9 +339,8 @@ class _PageDots extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 3),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: i == current
-                  ? AppTheme.liveOnDark
-                  : AppTheme.liveOnDarkFaint,
+              color:
+                  i == current ? AppTheme.liveOnDark : AppTheme.liveOnDarkFaint,
             ),
           ),
       ],

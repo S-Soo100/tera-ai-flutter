@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../domain/env_daily_average.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -32,6 +33,10 @@ final envDayBucketsProvider =
   // watch는 await 앞에서 (home_set_providers.dart 규칙).
   final repository = ref.watch(supabaseModuleControlRepositoryProvider);
   final day = ref.watch(envDetailDayProvider);
+  ref.watch(envDetailNowProvider.select((value) {
+    final now = value.valueOrNull;
+    return now == null ? null : (now.year, now.month, now.day);
+  }));
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) return const [];
   // 오늘은 아직 안 지난 시간을 물어볼 이유가 없다 — 끝을 now로 자른다.
@@ -83,8 +88,9 @@ final envDayControlLogProvider =
 
 /// 보고 있는 주의 요일별 온/습 min/max — 각각 **항상 7칸 고정**
 /// (데이터 없는 요일은 min/max null). 기기가 없어도 7칸 빈 축을 준다.
-final envWeekRowsProvider = FutureProvider.autoDispose<
-    ({List<DayMinMax> temp, List<DayMinMax> humid})>((ref) async {
+final envWeekRowsProvider =
+    FutureProvider.autoDispose<({List<DayMinMax> temp, List<DayMinMax> humid})>(
+        (ref) async {
   final repository = ref.watch(supabaseModuleControlRepositoryProvider);
   final week = ref.watch(envDetailWeekProvider);
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
@@ -116,8 +122,8 @@ final homeTodayExtremesProvider =
       humidMax: null,
     );
   }
-  final buckets =
-      await repository.telemetryHistory(deviceId, day.start, to: DateTime.now());
+  final buckets = await repository.telemetryHistory(deviceId, day.start,
+      to: DateTime.now());
   return EnvExtremes.from(buckets);
 });
 
@@ -134,4 +140,34 @@ final _todayProvider = Provider.autoDispose<EnvDay>((ref) {
   );
   ref.onDispose(timer.cancel);
   return day;
+});
+
+/// Date changes are re-evaluated at midnight even while the detail stays open.
+final envDetailNowProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
+  yield DateTime.now();
+  yield* Stream.periodic(const Duration(minutes: 1), (_) => DateTime.now());
+});
+
+typedef EnvDailyAverage = ({
+  double? temperature,
+  double? humidity,
+  bool countUnavailable
+});
+final envDailyAverageProvider =
+    FutureProvider.autoDispose<EnvDailyAverage>((ref) async {
+  final rows = await ref.watch(envDayBucketsProvider.future);
+  bool valid(double? value) => value != null && value.isFinite && value > 0;
+  final missingT = rows.any((r) => valid(r.tAvg) && r.tValidCount == null);
+  final missingH = rows.any((r) => valid(r.hAvg) && r.hValidCount == null);
+  return (
+    temperature: missingT
+        ? null
+        : weightedDailyMean(
+            rows.map((r) => (mean: r.tAvg, validCount: r.tValidCount ?? 0))),
+    humidity: missingH
+        ? null
+        : weightedDailyMean(
+            rows.map((r) => (mean: r.hAvg, validCount: r.hValidCount ?? 0))),
+    countUnavailable: missingT || missingH,
+  );
 });

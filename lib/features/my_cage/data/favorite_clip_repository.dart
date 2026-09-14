@@ -16,17 +16,47 @@ import 'motion_clip_repository.dart';
 /// 즐겨찾기 탭 진입 시 [syncFromCloud]로 누락분 pull. 계정 격리는 ownerId로 자체 처리.
 /// main()에서 [init] 선 실행.
 class FavoriteClipRepository {
-  FavoriteClipRepository({required SupabaseClient supabase})
-      : _supabase = supabase;
+  FavoriteClipRepository(
+      {required SupabaseClient supabase,
+      http.Client? downloadClient,
+      Future<Directory> Function()? directoryProvider,
+      String? Function()? ownerIdProvider})
+      : _supabase = supabase,
+        _downloadClient = downloadClient,
+        _directoryProvider = directoryProvider ?? _favDir,
+        _ownerIdProvider =
+            ownerIdProvider ?? (() => supabase.auth.currentUser?.id);
 
   final SupabaseClient _supabase;
+  final http.Client? _downloadClient;
+  final Future<Directory> Function() _directoryProvider;
+  final String? Function() _ownerIdProvider;
   static const _boxName = 'favorite_clips';
   static const _subdir = 'favorite_clips';
   static const _table = 'clip_favorites';
 
   Box<FavoriteClip> get _box => Hive.box<FavoriteClip>(_boxName);
+  Box get _settings => Hive.box('app_settings');
+  String _removalKey(String uid, String clipId) =>
+      'bookmark_removed/${Uri.encodeComponent(uid)}/${Uri.encodeComponent(clipId)}';
+  Set<String> _pendingRemovals(String uid) => _settings.keys
+      .whereType<String>()
+      .where((key) =>
+          key.startsWith('bookmark_removed/${Uri.encodeComponent(uid)}/'))
+      .map((key) => Uri.decodeComponent(key.split('/').last))
+      .toSet();
 
-  String? get _uid => _supabase.auth.currentUser?.id;
+  Future<void> _deleteCloud(String uid, String clipId) async {
+    if (_uid != uid) return;
+    await _supabase
+        .from(_table)
+        .delete()
+        .eq('owner_id', uid)
+        .eq('clip_id', clipId);
+    await _settings.delete(_removalKey(uid, clipId));
+  }
+
+  String? get _uid => _ownerIdProvider();
 
   static Future<void> init() async {
     Hive.registerAdapter(FavoriteClipAdapter());
@@ -78,17 +108,26 @@ class FavoriteClipRepository {
   /// 즐겨찾기 추가 = presigned URL로 mp4 다운로드 → 문서 디렉토리 저장 → 메타 INSERT
   /// → 클라우드 upsert(best-effort).
   Future<void> add(MotionClip clip, String presignedUrl) async {
-    if (_uid == null) return;
+    final uid = _uid;
+    if (uid == null) throw StateError('No bookmark owner');
     if (isFavorite(clip.id)) return;
-    final resp = await http.get(Uri.parse(presignedUrl));
+    final resp = await (_downloadClient?.get(Uri.parse(presignedUrl)) ??
+        http.get(Uri.parse(presignedUrl)));
+    if (_uid != uid) throw StateError('Bookmark owner changed');
     if (resp.statusCode != 200) {
       throw Exception('favorite download failed: ${resp.statusCode}');
     }
     final bytes = resp.bodyBytes;
-    final dir = await _favDir();
+    final base = await _directoryProvider();
+    if (_uid != uid) throw StateError('Bookmark owner changed');
+    final dir = Directory('${base.path}/${Uri.encodeComponent(uid)}');
     if (!dir.existsSync()) dir.createSync(recursive: true);
     final path = '${dir.path}/${clip.id}.mp4';
     await File(path).writeAsBytes(bytes);
+    if (_uid != uid) {
+      await File(path).delete();
+      throw StateError('Bookmark owner changed');
+    }
     await _box.put(
       clip.id,
       FavoriteClip(
@@ -99,11 +138,11 @@ class FavoriteClipRepository {
         filePath: path,
         sizeBytes: bytes.length,
         favoritedAt: DateTime.now(),
-        ownerId: _uid ?? '',
+        ownerId: uid,
       ),
     );
-    final uid = _uid;
-    if (uid != null) {
+    await _settings.delete(_removalKey(uid, clip.id));
+    if (_uid == uid) {
       try {
         await _supabase
             .from(_table)
@@ -117,24 +156,23 @@ class FavoriteClipRepository {
   /// 즐겨찾기 해제 = 로컬 파일 삭제 + 메타 삭제 + 클라우드 삭제(best-effort).
   /// 해제된 클립의 cameraId 반환(목록 갱신용).
   Future<String?> remove(String clipId) async {
+    final uid = _uid;
     final meta = _box.get(clipId);
-    if (meta == null) return null;
+    if (uid == null || meta == null || meta.ownerId != uid) return null;
     final cameraId = meta.cameraId;
+    // Persist deletion intent before removing the local copy. An offline
+    // deletion must not be pulled back from the cloud on the next visit.
+    await _settings.put(_removalKey(uid, clipId), true);
     final f = File(meta.filePath);
     if (f.existsSync()) {
       try {
         await f.delete();
       } catch (_) {}
     }
-    await meta.delete();
-    final uid = _uid;
-    if (uid != null) {
+    if (identical(_box.get(clipId), meta)) await _box.delete(clipId);
+    if (_uid == uid) {
       try {
-        await _supabase
-            .from(_table)
-            .delete()
-            .eq('owner_id', uid)
-            .eq('clip_id', clipId);
+        await _deleteCloud(uid, clipId);
       } catch (_) {}
     }
     return cameraId;
@@ -159,24 +197,35 @@ class FavoriteClipRepository {
   Future<void> syncFromCloud(MotionClipRepository motionRepo) async {
     final uid = _uid;
     if (uid == null) return;
+    final removals = _pendingRemovals(uid);
+    for (final id in removals) {
+      if (_uid != uid) return;
+      try {
+        await _deleteCloud(uid, id);
+      } catch (_) {}
+    }
     final cloud = await _cloudClipIds();
-    final localIds = _box.values
-        .where((f) => f.ownerId == uid)
-        .map((f) => f.clipId)
-        .toSet();
+    if (_uid != uid) return;
+    final localIds =
+        _box.values.where((f) => f.ownerId == uid).map((f) => f.clipId).toSet();
 
     // push: 로컬에만 있는 것
     for (final id in localIds.difference(cloud)) {
+      if (_uid != uid) return;
       try {
         await _supabase.from(_table).upsert({'owner_id': uid, 'clip_id': id});
       } catch (_) {}
     }
     // pull: 클라우드에만 있는 것 → 다운로드
-    for (final id in cloud.difference(localIds)) {
+    for (final id in cloud.difference(localIds).difference(removals)) {
+      if (_uid != uid) return;
+      if (_settings.containsKey(_removalKey(uid, id))) continue;
       try {
         final clip = await motionRepo.getById(id);
         if (clip == null) continue;
         final url = await motionRepo.getPlaybackUrl(id);
+        if (_uid != uid) return;
+        if (_settings.containsKey(_removalKey(uid, id))) continue;
         await add(clip, url); // add가 다시 upsert하지만 idempotent
       } catch (_) {
         /* 개별 실패 skip */

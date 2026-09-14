@@ -13,9 +13,13 @@ class ClipGrid<T> extends StatelessWidget {
     super.key,
     required this.items,
     required this.cellBuilder,
+    this.rowOffset = 0,
+    this.totalItems,
   });
 
   final List<T> items;
+  final int rowOffset;
+  final int? totalItems;
   final Widget Function(T item) cellBuilder;
 
   static const int columns = 3;
@@ -42,9 +46,9 @@ class ClipGrid<T> extends StatelessWidget {
                         ? const SizedBox.shrink()
                         : ClipRRect(
                             borderRadius: clipGridCellRadius(
-                              row: r,
+                              row: rowOffset + r,
                               col: c,
-                              total: items.length,
+                              total: totalItems ?? items.length,
                             ),
                             child: cellBuilder(items[r * columns + c]),
                           ),

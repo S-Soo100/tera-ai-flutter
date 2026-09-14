@@ -245,6 +245,13 @@
   "crecam_home_updated": "업데이트 {}",
   "crecam_home_no_updates": "아직 없어요",
   "crecam_home_night_activity": "어젯밤 {}분 활동",
+  "crecam_updated_today": "업데이트 오늘",
+  "crecam_updated_yesterday": "업데이트 어제",
+  "crecam_updated_days": "업데이트 {}일 전",
+  "crecam_all_period": "전체 기간",
+  "crecam_home_empty_all": "아직 촬영된 영상이 없어요",
+  "player_portrait": "세로 보기",
+  "player_landscape": "가로 보기",
   "crecam_home_period": "기간 설정",
   "crecam_home_empty_day": "이 날짜에는 영상이 없어요",
   "crecam_bookmarks_title": "북마크",
@@ -656,5 +663,12 @@
   "nightly_ratio_rest": "REST",
   "crecam_home_load_failed": "불러오기 실패",
   "time_am_fmt": "오전 {h}:{m}",
-  "time_pm_fmt": "오후 {h}:{m}"
+  "time_pm_fmt": "오후 {h}:{m}",
+  "env_value_realtime": "실시간",
+  "env_value_daily_mean": "일평균",
+  "env_average_unavailable": "평균 데이터 준비 중",
+  "camera_live": "라이브",
+  "crecam_update_unknown": "업데이트 정보 없음",
+  "clip_favorite_remove": "북마크 해제",
+  "crecam_playlist_retry": "나머지 영상 다시 불러오기"
 }

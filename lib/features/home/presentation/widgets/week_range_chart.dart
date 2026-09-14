@@ -1,3 +1,4 @@
+import '../../../../shared/widgets/figma_icon.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -20,7 +21,9 @@ class WeekRangeChart extends StatelessWidget {
     super.key,
     required this.rows,
     required this.accent,
+    this.valueColor,
     required this.icon,
+    this.iconAsset,
     required this.headerFormat,
     required this.axisFormat,
   });
@@ -29,7 +32,9 @@ class WeekRangeChart extends StatelessWidget {
   final List<DayMinMax> rows;
 
   final Color accent;
+  final Color? valueColor;
   final IconData icon;
+  final String? iconAsset;
 
   /// 헤더 수치 표기 — 예: `32.5°C` / `59%`.
   final String Function(double) headerFormat;
@@ -104,12 +109,15 @@ class WeekRangeChart extends StatelessWidget {
     final v = _headerValues;
     return Row(
       children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-          child: Icon(icon, size: 16, color: glass.deviceGlyph),
-        ),
+        if (iconAsset != null)
+          FigmaIcon.metric(iconAsset!, size: 28)
+        else
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+            child: Icon(icon, size: 16, color: glass.deviceGlyph),
+          ),
         const SizedBox(width: 10),
         // Flexible + ellipsis — 값이 길어져도(소수·넓은 단위) 헤더 Row가
         // 옆으로 터지지 않게.
@@ -123,7 +131,7 @@ class WeekRangeChart extends StatelessWidget {
               fontSize: 22,
               fontWeight: FontWeight.w600,
               letterSpacing: 22 * -0.02,
-              color: accent,
+              color: valueColor ?? accent,
             ),
           ),
         ),

@@ -1,3 +1,5 @@
+import 'package:vivnanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivnanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -52,6 +54,8 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        currentUserProvider.overrideWithValue(null),
+        motionThumbnailFileProvider.overrideWith((ref, key) async => null),
         favoriteClipRepositoryProvider.overrideWithValue(_FakeFavoriteRepo()),
         motionClipProvider.overrideWith((ref, id) async => _clip(id)),
         // 네트워크 없는 테스트 — URL 발급을 실패시켜 비디오는 에러 상태 UI로
@@ -68,39 +72,41 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('재생목록 2~10개 — 페이지네이션 바가 목록 길이만큼 보인다',
-      (tester) async {
+  testWidgets('재생목록은 하단 가로 썸네일 스트립으로 탐색한다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'b', playlist: ['a', 'b', 'c']);
 
-    final pagination =
-        find.byKey(ClipPlaylistPlayerScreen.paginationKey);
+    final pagination = find.byKey(ClipPlaylistPlayerScreen.paginationKey);
     expect(pagination, findsOneWidget);
     // 균등 바 3개
-    final row = tester.widget<Row>(pagination);
-    expect(row.children.whereType<Expanded>().length, 3);
+    final strip = tester.widget<ListView>(pagination);
+    expect(strip.scrollDirection, Axis.horizontal);
+    expect(strip.childrenDelegate.estimatedChildCount, 5);
   });
 
-  testWidgets('재생목록 없음(단일 클립) — 페이지네이션을 그리지 않는다',
-      (tester) async {
+  testWidgets('재생목록 없음(단일 클립) — 페이지네이션을 그리지 않는다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'a');
 
     expect(find.byKey(ClipPlaylistPlayerScreen.paginationKey), findsNothing);
   });
 
-  testWidgets('재생목록 10개 초과 — 세그먼트 대신 연속 진행 바', (tester) async {
+  testWidgets('긴 재생목록도 가로 썸네일 스트립으로 탐색한다', (tester) async {
     // 하루치 재생목록은 쉽게 10개를 넘는다 — 숨기는 대신 같은 자리(높이 4)에
     // 진행 바로 위치를 말한다(리뷰 2026-09-04).
     await _pump(tester,
         clipId: 'c1', playlist: [for (var i = 1; i <= 11; i++) 'c$i']);
+    expect(find.byKey(ClipPlaylistPlayerScreen.paginationKey), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(
-        find.byKey(ClipPlaylistPlayerScreen.paginationKey), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+        tester
+            .widget<ListView>(
+                find.byKey(ClipPlaylistPlayerScreen.paginationKey))
+            .scrollDirection,
+        Axis.horizontal);
   });
 
-  testWidgets('이전/다음 화살표 — 중간 클립은 양쪽, 첫/끝 클립은 한쪽만',
-      (tester) async {
+  testWidgets('이전/다음 화살표 — 중간 클립은 양쪽, 첫/끝 클립은 한쪽만', (tester) async {
     // 사용자 피드백 2026-09-08: 투명 탭 존만으로는 이전/다음이 인지 안 됨.
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'b', playlist: ['a', 'b', 'c']);
@@ -118,12 +124,22 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'a', playlist: ['a', 'b', 'c']);
     expect(find.byKey(ClipPlaylistPlayerScreen.counterKey), findsOneWidget);
-    expect(find.text('1 / 3'), findsOneWidget);
+    expect(
+        tester
+            .widget<Semantics>(find.byKey(ClipPlaylistPlayerScreen.counterKey))
+            .properties
+            .label,
+        '1 / 3');
     expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsNothing);
 
     await tester.tap(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey));
     await tester.pumpAndSettle();
-    expect(find.text('2 / 3'), findsOneWidget);
+    expect(
+        tester
+            .widget<Semantics>(find.byKey(ClipPlaylistPlayerScreen.counterKey))
+            .properties
+            .label,
+        '2 / 3');
   });
 
   testWidgets('단일 클립 — 화살표·카운터를 그리지 않는다', (tester) async {

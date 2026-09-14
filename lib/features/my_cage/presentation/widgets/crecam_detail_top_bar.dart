@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/glass_palette.dart';
+import '../../../../shared/widgets/figma_icon.dart';
 
 /// 북마크·하이라이트 상세·플레이어 공용 상단바 (Figma 668:717/600/743) —
 /// 높이 44, 마진 12, 좌 back 44×44, 중앙 [title](16 **Bold** textPrimary —
@@ -21,10 +22,15 @@ class CrecamDetailTopBar extends StatelessWidget {
     this.title,
     this.titleWidget,
     this.onCalendarTap,
-  }) : assert(title == null || titleWidget == null,
-            'title과 titleWidget은 하나만');
+    this.closeButton = false,
+    this.leadingKey,
+    this.trailing,
+  }) : assert(title == null || titleWidget == null, 'title과 titleWidget은 하나만');
 
   final String? title;
+  final bool closeButton;
+  final Key? leadingKey;
+  final Widget? trailing;
 
   /// 중앙에 텍스트 한 줄 대신 얹을 위젯(플레이어의 날짜+시각 2줄 등).
   final Widget? titleWidget;
@@ -45,52 +51,59 @@ class CrecamDetailTopBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Stack(
           children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                icon: Icon(Icons.arrow_back_ios_new,
-                    size: 24, color: glass.textPrimary),
-                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () => context.pop(),
-              ),
-            ),
-          ),
-          Center(
-            child: titleWidget ??
-                Text(
-                  title ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Pretendard',
-                    fontSize: 16,
-                    // Figma 668:670 — Bold + #1E1E1E(textPrimary).
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 16 * -0.02,
-                    color: glass.textPrimary,
-                  ),
-                ),
-          ),
-          if (onCalendarTap != null)
             Align(
-              alignment: Alignment.centerRight,
+              alignment: Alignment.centerLeft,
               child: SizedBox(
                 width: 44,
                 height: 44,
                 child: IconButton(
-                  key: calendarButtonKey,
+                  key: leadingKey,
                   padding: EdgeInsets.zero,
-                  icon: Icon(Icons.calendar_today,
-                      size: 20, color: glass.textPrimary),
-                  tooltip: 'crecam_home_period'.tr(),
-                  onPressed: onCalendarTap,
+                  icon: FigmaIcon.tinted(
+                      closeButton ? FigmaIcons.close : FigmaIcons.arrowPrevious,
+                      size: 24,
+                      color: glass.textPrimary),
+                  tooltip: closeButton
+                      ? MaterialLocalizations.of(context).closeButtonTooltip
+                      : MaterialLocalizations.of(context).backButtonTooltip,
+                  onPressed: () => context.pop(),
                 ),
               ),
             ),
+            Center(
+              child: titleWidget ??
+                  Text(
+                    title ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 16,
+                      // Figma 668:670 — Bold + #1E1E1E(textPrimary).
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 16 * -0.02,
+                      color: glass.textPrimary,
+                    ),
+                  ),
+            ),
+            if (trailing != null)
+              Align(alignment: Alignment.centerRight, child: trailing!),
+            if (onCalendarTap != null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: IconButton(
+                    key: calendarButtonKey,
+                    padding: EdgeInsets.zero,
+                    icon: FigmaIcon.tinted(FigmaIcons.calendar,
+                        size: 20, color: glass.textPrimary),
+                    tooltip: 'crecam_home_period'.tr(),
+                    onPressed: onCalendarTap,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

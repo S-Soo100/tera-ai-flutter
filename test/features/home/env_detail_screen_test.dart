@@ -69,6 +69,7 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         currentDeviceIdProvider.overrideWith((ref) async => null),
+        envDailyAverageProvider.overrideWith((ref) async => (temperature:27.5, humidity:55.0, countUnavailable:false)),
         envDayChartDataProvider
             .overrideWith((ref) async => _chartData(empty: empty)),
         envDayExtremesProvider.overrideWith((ref) async => _extremes),

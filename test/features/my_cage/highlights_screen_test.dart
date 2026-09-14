@@ -1,3 +1,5 @@
+import 'package:vivnanaut/features/my_cage/domain/highlight_publication.dart';
+import 'package:vivnanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,9 +22,16 @@ NightlyHighlight _h(
   String dayKey = '',
   int rank = 0,
   double? playFrom,
+  bool published = true,
 }) =>
     NightlyHighlight(
       clipId: id,
+      cameraId: 'cam',
+      publication: !published || parseDayKey(dayKey) == null ? null : HighlightPublication(
+        batchId: dayKey, status:'ready',
+        captureStart:parseDayKey(dayKey)!.add(const Duration(hours:22)),
+        captureEnd:parseDayKey(dayKey)!.add(const Duration(hours:30)),
+        publishedAt:parseDayKey(dayKey)!.add(const Duration(hours:31))),
       startedAt: at,
       source: 'rule',
       reason: '움직임 3.0초',
@@ -102,7 +111,7 @@ Future<void> _pump(
       overrides: [
         highlightGroupsProvider.overrideWith((ref) async => groups ?? _groups()),
         highlightBannerStoreProvider.overrideWith((ref) => store),
-        motionThumbnailProvider.overrideWith((ref, clipId) async => null),
+        motionThumbnailFileProvider.overrideWith((ref, clipId) async => null),
         isFavoriteProvider.overrideWith((ref, id) => false),
         // dismiss notifier가 계정 id를 watch한다(격리 2026-09-07) — 테스트는
         // Supabase 미초기화라 실 체인 대신 미로그인으로 고정.
@@ -199,12 +208,12 @@ void main() {
       final groups = groupByDay([
         _h('x1', DateTime.now(), tier: 'featured', dayKey: dayKey, rank: 1),
       ]);
-      final store = _FakeBannerStore(highlightGroupKey(groups.first));
+      final store = _FakeBannerStore('cam/$dayKey');
       await _pump(tester, groups: groups, store: store);
       expect(find.text('crecam_highlights_last_night'), findsOneWidget);
     });
 
-    testWidgets('도착 배너(미dismiss) — X → 숨김 + 스토어에 최신 대표 ISO 저장',
+    testWidgets('도착 배너(미dismiss) — X → 숨김 + 스토어에 공개 배치 key 저장',
         (tester) async {
       final store = _FakeBannerStore();
       await _pump(tester, store: store);
@@ -212,17 +221,17 @@ void main() {
       await tester.tap(find.byKey(HighlightsScreen.bannerCloseKey));
       await tester.pumpAndSettle();
       expect(find.byKey(HighlightsScreen.bannerKey), findsNothing);
-      expect(store.value, _f2.startedAt.toIso8601String()); // 최신 대표 = f2
+      expect(store.value, 'cam/$_dayA'); // 최신 대표 = f2
     });
 
     testWidgets('같은 그룹 key가 이미 dismiss → 재방문에도 배너 숨김',
         (tester) async {
-      final store = _FakeBannerStore(_f2.startedAt.toIso8601String());
+      final store = _FakeBannerStore('cam/$_dayA');
       await _pump(tester, store: store);
       expect(find.byKey(HighlightsScreen.bannerKey), findsNothing);
     });
 
-    testWidgets('옛 key dismiss(새 대표 도착) → 배너 다시 표시', (tester) async {
+    testWidgets('옛 배치 dismiss(새 배치 도착) → 배너 다시 표시', (tester) async {
       final store = _FakeBannerStore(_f1.startedAt.toIso8601String());
       await _pump(tester, store: store);
       expect(find.byKey(HighlightsScreen.bannerKey), findsOneWidget);

@@ -250,6 +250,11 @@ GoRouter buildAppRouter({
               clipId: id,
               playlist: extra.playlist,
               playFromSec: extra.playFromSec,
+              source:extra.source,
+              cameraId:extra.cameraId,
+              hourStart:extra.hourStart,
+              hourEndExclusive:extra.hourEndExclusive,
+              highlightBatchId:extra.highlightBatchId,
             );
           }
           // 호출부가 List<String>을 넘기지만 dynamic 리스트로 와도 안전하게 거른다.

@@ -1,3 +1,5 @@
+import 'package:vivnanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivnanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -115,6 +117,8 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        currentUserProvider.overrideWithValue(null),
+        motionThumbnailFileProvider.overrideWith((ref, key) async => null),
         favoriteClipRepositoryProvider.overrideWithValue(_FakeFavoriteRepo()),
         motionClipProvider.overrideWith((ref, id) async => _clip(id)),
         motionClipUrlProvider
@@ -150,21 +154,18 @@ void main() {
     VideoPlayerPlatform.instance = platform;
   });
 
-  testWidgets('playFromSec 8.8 · 영상 60초 → 초기 seek 8.8초 후 play',
-      (tester) async {
+  testWidgets('playFromSec 8.8 · 영상 60초 → 초기 seek 8.8초 후 play', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'a', playFromSec: {'a': 8.8});
 
     expect(platform.seeks, [const Duration(milliseconds: 8800)]);
     expect(platform.playCount, 1);
     // 중간 시작 클립 → "처음부터" 컨트롤 노출
-    expect(
-        find.byKey(ClipPlaylistPlayerScreen.fromStartKey), findsOneWidget);
+    expect(find.byKey(ClipPlaylistPlayerScreen.fromStartKey), findsOneWidget);
     await _teardown(tester);
   });
 
-  testWidgets('playFromSec 없음 → seek 없이 0초부터, "처음부터" 미노출',
-      (tester) async {
+  testWidgets('playFromSec 없음 → seek 없이 0초부터, "처음부터" 미노출', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'a');
 
@@ -174,8 +175,7 @@ void main() {
     await _teardown(tester);
   });
 
-  testWidgets('playFromSec 70 · 영상 60초 → seek 없음 (0초부터)',
-      (tester) async {
+  testWidgets('playFromSec 70 · 영상 60초 → seek 없음 (0초부터)', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'a', playFromSec: {'a': 70});
 
@@ -195,8 +195,7 @@ void main() {
     await _teardown(tester);
   });
 
-  testWidgets('시크바 썸 — 평소엔 숨기고 조작(드래그) 중에만 그린다',
-      (tester) async {
+  testWidgets('시크바 썸 — 평소엔 숨기고 조작(드래그) 중에만 그린다', (tester) async {
     // 사용자 지시 2026-09-12: 재생 중 원형 커서 상시 노출 금지, 탭/드래그로
     // 재생 위치를 옮기는 동안만 표시(전 플레이어 공통 규칙).
     await tester.binding.setSurfaceSize(const Size(393, 852));
@@ -223,13 +222,10 @@ void main() {
     await _teardown(tester);
   });
 
-  testWidgets('다음 클립으로 넘어가면 그 클립 값으로 다시 1회 seek',
-      (tester) async {
+  testWidgets('다음 클립으로 넘어가면 그 클립 값으로 다시 1회 seek', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester,
-        clipId: 'a',
-        playlist: ['a', 'b'],
-        playFromSec: {'a': 8.8, 'b': 3});
+        clipId: 'a', playlist: ['a', 'b'], playFromSec: {'a': 8.8, 'b': 3});
 
     expect(platform.seeks, [const Duration(milliseconds: 8800)]);
 

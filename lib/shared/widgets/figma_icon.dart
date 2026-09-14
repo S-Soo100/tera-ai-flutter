@@ -34,6 +34,9 @@ class FigmaIcon extends StatelessWidget {
 
 /// Figma 아이콘 파일명. 오타로 빈 자리가 나지 않게 상수로 묶는다.
 abstract final class FigmaIcons {
+  static const pause = 'final_pause';
+  static const envTemperature = 'final_temperature';
+  static const envHumidity = 'final_humidity';
   static const close = 'close';
   static const arrowPrevious = 'arrow_previous';
   static const arrowNext = 'arrow_next';

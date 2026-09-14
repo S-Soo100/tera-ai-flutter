@@ -215,6 +215,30 @@
       "viewBox": "0 0 40 40",
       "sha256": "2852441220339eee2195fc57286c840e8403ef96d2aa0f4640a7bcb1592c4dac",
       "mimeType": "image/svg+xml"
+    },
+    {
+      "file": "final_pause.svg",
+      "nodeId": "941:1364",
+      "viewBox": "0 0 36 36",
+      "sha256": "4a8698e5e4785657ca7c5c5c1fbdaf932d3d4cb268dfb927fecc73bc3a23c669",
+      "mimeType": "image/svg+xml",
+      "exportedOn": "2026-09-14"
+    },
+    {
+      "file": "final_temperature.svg",
+      "nodeId": "945:3394",
+      "viewBox": "0 0 28 28",
+      "sha256": "8df25a54dcfa2b064179de6a8967f3390da0efe46a18925038cfe0f9f0704164",
+      "mimeType": "image/svg+xml",
+      "exportedOn": "2026-09-14"
+    },
+    {
+      "file": "final_humidity.svg",
+      "nodeId": "945:4826",
+      "viewBox": "0 0 28 28",
+      "sha256": "0eb14a1c805f7b27e5d6528e08e52d47b308c75e0973cb4d7dbb1c6eca741e12",
+      "mimeType": "image/svg+xml",
+      "exportedOn": "2026-09-14"
     }
   ]
 }
