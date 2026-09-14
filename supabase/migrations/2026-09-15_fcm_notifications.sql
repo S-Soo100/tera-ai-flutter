@@ -277,6 +277,62 @@ BEGIN
 END;
 $$;
 
+-- A dispatcher claims rows before talking to FCM so concurrent invocations
+-- cannot send the same notification at the same time. This function remains
+-- service-role-only: clients cannot inspect or advance outbox work.
+CREATE OR REPLACE FUNCTION public.claim_notification_outbox(p_limit INTEGER)
+RETURNS TABLE (
+  id UUID,
+  notification_id UUID,
+  user_id UUID,
+  attempts INTEGER,
+  kind TEXT,
+  title TEXT,
+  body TEXT,
+  route TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF p_limit IS NULL OR p_limit <= 0 THEN
+    RAISE EXCEPTION 'p_limit must be positive' USING ERRCODE = '22023';
+  END IF;
+
+  RETURN QUERY
+  WITH due AS (
+    SELECT o.id
+    FROM public.notification_outbox AS o
+    WHERE o.status = 'pending'
+      AND o.scheduled_at <= now()
+    ORDER BY o.scheduled_at, o.created_at
+    LIMIT p_limit
+    FOR UPDATE SKIP LOCKED
+  ), claimed AS (
+    UPDATE public.notification_outbox AS o
+    SET status = 'processing',
+        attempts = o.attempts + 1,
+        locked_at = now(),
+        updated_at = now()
+    FROM due
+    WHERE o.id = due.id
+    RETURNING o.id, o.notification_id, o.user_id, o.attempts
+  )
+  SELECT
+    c.id,
+    c.notification_id,
+    c.user_id,
+    c.attempts,
+    n.kind,
+    n.title,
+    n.body,
+    n.route
+  FROM claimed AS c
+  JOIN public.app_notifications AS n ON n.id = c.notification_id;
+END;
+$$;
+
 -- Community producers are database-owned, so a client never writes an
 -- app_notification/event/outbox record directly.
 CREATE OR REPLACE FUNCTION public.notify_community_comment()
@@ -445,6 +501,7 @@ $$;
 REVOKE EXECUTE ON FUNCTION public.notification_event_after_insert() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.register_push_device(UUID, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.deactivate_push_device(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.claim_notification_outbox(INTEGER) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.notify_community_comment() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.notify_community_like_digest() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.notify_community_notice() FROM PUBLIC;
@@ -452,3 +509,4 @@ REVOKE EXECUTE ON FUNCTION public.schedule_water_tank_notification(TIMESTAMPTZ, 
 GRANT EXECUTE ON FUNCTION public.register_push_device(UUID, TEXT, TEXT, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.deactivate_push_device(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.schedule_water_tank_notification(TIMESTAMPTZ, UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_notification_outbox(INTEGER) TO service_role;

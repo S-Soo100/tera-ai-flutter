@@ -321,6 +321,27 @@ Supabase Edge Function secret으로만 설정한다.
 알 수 없는 종류는 ingest 단계에서 422로 거절하며, DB가 만드는 route는 승인된 내부
 경로만 사용한다.
 
+### FCM outbox 발송 계약
+
+`dispatch-push` Edge Function은 service-role 호출로만 실행한다(기본 JWT 검증 유지).
+따라서 `supabase/config.toml`에서 `verify_jwt = false`로 열면 안 되며, 공개 HTTP 호출이나
+클라이언트가 outbox를 직접 처리하는 경로도 없다. 배포 환경에는 아래 secret을 설정한다.
+
+```sh
+supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON='{"client_email":"...","private_key":"..."}'
+```
+
+함수는 `claim_notification_outbox(p_limit)` RPC로 예약 시각이 지난 `pending` 행을
+`FOR UPDATE SKIP LOCKED`로 원자적으로 `processing` 상태로 바꿔 가져온다. Firebase HTTP
+v1은 `vivanaut-app` 프로젝트로만 전송하며, `safety.*`는 Android
+`vivanaut_safety`, 그 외는 `vivanaut_default` 채널을 쓴다. 알림 data는
+`notification_id`, `kind`, `route`의 문자열만 포함한다.
+
+FCM `UNREGISTERED` 또는 invalid token 응답은 해당 설치를 비활성화한다. 429와 5xx는
+최대 1시간의 지수 backoff로 outbox를 재예약하고, 그 밖의 4xx는 token·credential을
+기록하지 않는 안전한 오류 코드와 함께 영구 실패로 처리한다. 모든 활성 설치가 처리되면
+outbox는 `sent`가 된다.
+
 ### 외부 이벤트 ingest 계약
 
 `notification-ingest` Edge Function은 `POST`와
