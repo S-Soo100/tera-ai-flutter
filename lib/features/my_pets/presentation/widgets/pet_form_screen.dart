@@ -37,6 +37,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   late final TextEditingController _weight;
   late final TextEditingController _memo;
   bool _exitDialogOpen = false;
+  final _speciesAnchor = GlobalKey();
 
   @override
   void initState() {
@@ -90,6 +91,40 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) Navigator.of(context).pop();
     });
+  }
+
+  Future<void> _species() async {
+    final box = _speciesAnchor.currentContext!.findRenderObject()! as RenderBox;
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final origin = box.localToGlobal(Offset.zero, ancestor: overlay);
+    final choice = await showMenu<String>(
+      context: context,
+      color: context.glass.surfaceHeader,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      menuPadding: const EdgeInsets.symmetric(vertical: 4),
+      constraints: BoxConstraints.tightFor(width: box.size.width),
+      position: RelativeRect.fromRect(
+          Rect.fromLTWH(
+              origin.dx, origin.dy + box.size.height, box.size.width, 0),
+          Offset.zero & overlay.size),
+      items: [
+        PopupMenuItem(
+            value: 'crested-gecko',
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text('pet_form_crested'.tr(),
+                style: petFormText(context).copyWith(
+                    fontSize: 18,
+                    height: 28 / 18,
+                    color: context.glass.textSecondary)))
+      ],
+    );
+    if (choice != null && mounted) {
+      _change((d) =>
+          d.copyWith(speciesId: choice, speciesName: 'pet_form_crested'.tr()));
+    }
   }
 
   Future<void> _photo() async {
@@ -298,40 +333,31 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                     )),
                 _Field(
                     label: 'pet_form_species'.tr(),
-                    child: DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      initialValue: d.speciesId,
-                      style: petFormText(context),
-                      decoration: petFormDecoration(context).copyWith(
-                          // Figma 765:6880: 24px icon + 20.5px each side = 65.
-                          // Dense dropdown height grows with scaled text;
-                          // do not impose a fixed outer height.
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 17, vertical: 20.5),
-                          errorText: state.submitted && d.speciesId == null
-                              ? 'pet_form_required'.tr()
-                              : null),
-                      icon: FigmaIcon.tinted('redesign_v2/arrow_drop_down',
-                          color: p.deviceOff, size: 24),
-                      items: [
-                        if (legacy)
-                          DropdownMenuItem(
-                              value: _session.initial.speciesId,
-                              child: Text(_session.initial.speciesName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis)),
-                        if (!legacy)
-                          DropdownMenuItem(
-                              value: 'crested-gecko',
-                              child: Text('pet_form_crested'.tr(),
-                                  maxLines: 1, overflow: TextOverflow.ellipsis))
-                      ],
-                      onChanged: legacy
-                          ? null
-                          : (value) => _change((d) => d.copyWith(
-                              speciesId: value,
-                              speciesName: 'pet_form_crested'.tr())),
-                    )),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          KeyedSubtree(
+                              key: const ValueKey('pet-form-species'),
+                              child: KeyedSubtree(
+                                  key: _speciesAnchor,
+                                  child: _Selection(
+                                      label: legacy
+                                          ? _session.initial.speciesName
+                                          : d.speciesId == null
+                                              ? ''
+                                              : 'pet_form_crested'.tr(),
+                                      icon: 'redesign_v2/arrow_drop_down',
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 17, vertical: 20.5),
+                                      onTap: legacy ? null : _species))),
+                          if (state.submitted && d.speciesId == null)
+                            Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(17, 8, 17, 0),
+                                child: Text('pet_form_required'.tr(),
+                                    style: petFormText(context).copyWith(
+                                        fontSize: 12, color: p.navSelected))),
+                        ])),
                 _Field(
                     label: 'pet_form_morph'.tr(),
                     child: _Selection(
@@ -548,7 +574,9 @@ class _Selection extends StatelessWidget {
       this.onTap,
       this.onClear,
       this.muted = false,
-      this.actionLabel});
+      this.actionLabel,
+      this.padding = const EdgeInsets.symmetric(horizontal: 17)});
+  final EdgeInsets padding;
   final String label;
   final String icon;
   final VoidCallback? onTap;
@@ -566,7 +594,7 @@ class _Selection extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: Container(
               constraints: const BoxConstraints(minHeight: 65),
-              padding: const EdgeInsets.symmetric(horizontal: 17),
+              padding: padding,
               child: Row(children: [
                 Expanded(
                     child: Text(label,

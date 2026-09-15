@@ -151,43 +151,49 @@ Future<void> _settleIcons(WidgetTester tester) async {
 
 Future<void> _capture(WidgetTester tester, GlobalKey boundary, String name,
     {bool verifyHeaderPixels = false}) async {
-  await _settleIcons(tester);
-  void repaint(RenderObject object) {
-    object.markNeedsPaint();
-    object.visitChildren(repaint);
-  }
+  debugDisableShadows = false;
+  try {
+    await _settleIcons(tester);
+    void repaint(RenderObject object) {
+      object.markNeedsPaint();
+      object.visitChildren(repaint);
+    }
 
-  repaint(boundary.currentContext!.findRenderObject()!);
-  await tester.pump();
-  await tester.runAsync(() async {
-    final image = await (boundary.currentContext!.findRenderObject()!
-            as RenderRepaintBoundary)
-        .toImage(pixelRatio: 1);
-    if (verifyHeaderPixels) {
-      final rgba = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-      final pixels = rgba!.buffer.asUint8List();
-      for (final left in [281, 337]) {
-        var ink = 0;
-        for (var y = 62; y < 106; y++) {
-          for (var x = left; x < left + 44; x++) {
-            final offset = (y * image.width + x) * 4;
-            if (pixels[offset] < 160 &&
-                pixels[offset + 1] < 160 &&
-                pixels[offset + 2] < 160 &&
-                pixels[offset + 3] > 200) {
-              ink++;
+    repaint(boundary.currentContext!.findRenderObject()!);
+    await tester.pump();
+    await tester.runAsync(() async {
+      final image = await (boundary.currentContext!.findRenderObject()!
+              as RenderRepaintBoundary)
+          .toImage(pixelRatio: 1);
+      if (verifyHeaderPixels) {
+        final rgba = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+        final pixels = rgba!.buffer.asUint8List();
+        for (final left in [281, 337]) {
+          var ink = 0;
+          for (var y = 62; y < 106; y++) {
+            for (var x = left; x < left + 44; x++) {
+              final offset = (y * image.width + x) * 4;
+              if (pixels[offset] < 160 &&
+                  pixels[offset + 1] < 160 &&
+                  pixels[offset + 2] < 160 &&
+                  pixels[offset + 3] > 200) {
+                ink++;
+              }
             }
           }
+          expect(ink, greaterThan(20),
+              reason:
+                  'Header icon at x=$left must actually paint into the PNG');
         }
-        expect(ink, greaterThan(20),
-            reason: 'Header icon at x=$left must actually paint into the PNG');
       }
-    }
-    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    await File('/private/tmp/redesign-$name.png')
-        .writeAsBytes(bytes!.buffer.asUint8List());
-    image.dispose();
-  });
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      await File('/private/tmp/redesign-$name.png')
+          .writeAsBytes(bytes!.buffer.asUint8List());
+      image.dispose();
+    });
+  } finally {
+    debugDisableShadows = true;
+  }
 }
 
 void main() {
@@ -197,6 +203,7 @@ void main() {
     return;
   }
   TestWidgetsFlutterBinding.ensureInitialized();
+
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
     await EasyLocalization.ensureInitialized();
@@ -439,10 +446,15 @@ void main() {
                             child: child!)),
                     home: PetFormScreen(onSave: (_, __) async {}))))));
     await _capture(tester, boundary, 'pet-first');
+    await tester.tap(find.byKey(const ValueKey('pet-form-species')));
+    await tester.pumpAndSettle();
+    await _capture(tester, boundary, 'pet-species-popup');
+    await tester.tap(find.text('크레스티드 게코').last);
+    await tester.pumpAndSettle();
     final nameRect =
         tester.getRect(find.byKey(const ValueKey('pet-form-name')));
     final speciesRect =
-        tester.getRect(find.byType(DropdownButtonFormField<String>));
+        tester.getRect(find.byKey(const ValueKey('pet-form-species')));
     expect(speciesRect.height, 65, reason: 'Figma 765:6880 input height');
     await tester.runAsync(() =>
         File('/private/tmp/redesign-pet-measurements.json')
@@ -515,9 +527,10 @@ void main() {
         tester.getSize(find.byWidgetPredicate(
             (widget) => widget is FigmaIcon && widget.name == FigmaIcons.edit)),
         const Size(24, 24));
-    await tester.ensureVisible(find.byType(DropdownButtonFormField<String>));
+    await tester.ensureVisible(find.byKey(const ValueKey('pet-form-species')));
     await tester.pumpAndSettle();
-    expect(tester.getSize(find.byType(DropdownButtonFormField<String>)).height,
+    expect(
+        tester.getSize(find.byKey(const ValueKey('pet-form-species'))).height,
         greaterThan(65));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());

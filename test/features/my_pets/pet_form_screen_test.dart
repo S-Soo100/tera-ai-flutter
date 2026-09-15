@@ -133,6 +133,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+      'species picker offers only crested and keeps selection after dismiss',
+      (tester) async {
+    await _pump(tester);
+    final field = find.byKey(const ValueKey('pet-form-species'));
+    await tester.ensureVisible(field);
+    await tester.tap(field);
+    await tester.pumpAndSettle();
+    expect(find.text('크레스티드 게코'), findsOneWidget);
+    expect(find.text('레오파드 게코'), findsNothing);
+    await tester.tap(find.text('크레스티드 게코'));
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: field, matching: find.text('크레스티드 게코')),
+        findsOneWidget);
+    await tester.tap(field);
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(5, 110));
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: field, matching: find.text('크레스티드 게코')),
+        findsOneWidget);
+  });
+
   testWidgets('failed save remains on form with changed input', (tester) async {
     await _pump(tester,
         original: Pet(
