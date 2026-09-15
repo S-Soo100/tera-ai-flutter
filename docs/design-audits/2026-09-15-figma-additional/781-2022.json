@@ -1,0 +1,3089 @@
+{
+  "id": "781:2022",
+  "name": "카메라와 도마뱀이 연결되지 않은 상태 추가",
+  "type": "SECTION",
+  "fills": [
+    {
+      "blendMode": "NORMAL",
+      "type": "SOLID",
+      "color": "#444444"
+    }
+  ],
+  "strokes": [
+    {
+      "opacity": 0.10000000149011612,
+      "blendMode": "NORMAL",
+      "type": "SOLID",
+      "color": "#ffffff"
+    }
+  ],
+  "absoluteBoundingBox": {
+    "x": 9561,
+    "y": -8294,
+    "width": 1318,
+    "height": 1473
+  },
+  "children": [
+    {
+      "id": "781:2023",
+      "name": "기기 관리",
+      "type": "FRAME",
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "absoluteBoundingBox": {
+        "x": 10108.7685546875,
+        "y": -8138,
+        "width": 393,
+        "height": 852
+      },
+      "children": [
+        {
+          "id": "781:2024",
+          "name": "Status bar",
+          "type": "INSTANCE",
+          "absoluteBoundingBox": {
+            "x": 10108.7685546875,
+            "y": -8138,
+            "width": 393,
+            "height": 62
+          },
+          "children": [
+            {
+              "id": "I781:2024;5465:16808",
+              "name": "Time",
+              "type": "FRAME",
+              "absoluteBoundingBox": {
+                "x": 10124.7685546875,
+                "y": -8117,
+                "width": 103.5,
+                "height": 22
+              },
+              "children": [
+                {
+                  "id": "I781:2024;5465:16809",
+                  "name": "Time",
+                  "type": "TEXT",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#000000"
+                    }
+                  ],
+                  "absoluteBoundingBox": {
+                    "x": 10158.0185546875,
+                    "y": -8116,
+                    "width": 37,
+                    "height": 22
+                  },
+                  "characters": "9:41",
+                  "style": {
+                    "fontFamily": "SF Pro",
+                    "fontStyle": "Semibold",
+                    "fontWeight": 590,
+                    "fontSize": 17,
+                    "textAlignHorizontal": "CENTER",
+                    "letterSpacing": 0,
+                    "lineHeightPx": 22
+                  }
+                }
+              ]
+            },
+            {
+              "id": "I781:2024;5465:16811",
+              "name": "Levels",
+              "type": "FRAME",
+              "absoluteBoundingBox": {
+                "x": 10382.2685546875,
+                "y": -8117,
+                "width": 103.5,
+                "height": 22
+              },
+              "children": [
+                {
+                  "id": "I781:2024;5465:16814",
+                  "name": "Battery",
+                  "type": "GROUP",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "visible": false,
+                      "type": "SOLID",
+                      "color": "#ffffff"
+                    }
+                  ],
+                  "absoluteBoundingBox": {
+                    "x": 10445.525390625,
+                    "y": -8112,
+                    "width": 27.32803726196289,
+                    "height": 13
+                  },
+                  "children": [
+                    {
+                      "id": "I781:2024;5465:16815",
+                      "name": "Border",
+                      "type": "RECTANGLE",
+                      "strokes": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "SOLID",
+                          "color": "#000000"
+                        }
+                      ],
+                      "cornerRadius": 4.300000190734863,
+                      "absoluteBoundingBox": {
+                        "x": 10445.525390625,
+                        "y": -8112,
+                        "width": 25,
+                        "height": 13
+                      }
+                    },
+                    {
+                      "id": "I781:2024;5465:16817",
+                      "name": "Capacity",
+                      "type": "RECTANGLE",
+                      "fills": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "SOLID",
+                          "color": "#000000"
+                        }
+                      ],
+                      "cornerRadius": 2.5,
+                      "absoluteBoundingBox": {
+                        "x": 10447.525390625,
+                        "y": -8110,
+                        "width": 21,
+                        "height": 9
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "781:2025",
+          "name": "Frame 168",
+          "type": "FRAME",
+          "absoluteBoundingBox": {
+            "x": 10120.7685546875,
+            "y": -8016,
+            "width": 369,
+            "height": 236
+          },
+          "children": [
+            {
+              "id": "781:2026",
+              "name": "Frame 156",
+              "type": "FRAME",
+              "absoluteBoundingBox": {
+                "x": 10120.7685546875,
+                "y": -8016,
+                "width": 369,
+                "height": 109
+              },
+              "children": [
+                {
+                  "id": "781:2027",
+                  "name": "Title",
+                  "type": "FRAME",
+                  "absoluteBoundingBox": {
+                    "x": 10120.7685546875,
+                    "y": -8016,
+                    "width": 369,
+                    "height": 19
+                  },
+                  "children": [
+                    {
+                      "id": "781:2028",
+                      "name": "사육 환경 그룹",
+                      "type": "TEXT",
+                      "fills": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "SOLID",
+                          "color": "#949090"
+                        }
+                      ],
+                      "absoluteBoundingBox": {
+                        "x": 10132.7685546875,
+                        "y": -8016,
+                        "width": 89,
+                        "height": 19
+                      },
+                      "characters": "사육 환경 그룹",
+                      "style": {
+                        "fontFamily": "Pretendard",
+                        "fontStyle": "Medium",
+                        "fontWeight": 500,
+                        "fontSize": 16,
+                        "textAlignHorizontal": "LEFT",
+                        "letterSpacing": -0.32,
+                        "lineHeightPx": 19.09375
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "781:2029",
+                  "name": "Group",
+                  "type": "FRAME",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#f4f4f4"
+                    }
+                  ],
+                  "cornerRadius": 12,
+                  "absoluteBoundingBox": {
+                    "x": 10120.7685546875,
+                    "y": -7985,
+                    "width": 369,
+                    "height": 78
+                  },
+                  "children": [
+                    {
+                      "id": "781:2030",
+                      "name": "Left",
+                      "type": "FRAME",
+                      "absoluteBoundingBox": {
+                        "x": 10136.7685546875,
+                        "y": -7973,
+                        "width": 227,
+                        "height": 54
+                      },
+                      "children": [
+                        {
+                          "id": "781:2031",
+                          "name": "AutoName",
+                          "type": "TEXT",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#949090"
+                            }
+                          ],
+                          "absoluteBoundingBox": {
+                            "x": 10136.7685546875,
+                            "y": -7973,
+                            "width": 227,
+                            "height": 19
+                          },
+                          "characters": "그룹 1",
+                          "style": {
+                            "fontFamily": "Pretendard",
+                            "fontStyle": "Medium",
+                            "fontWeight": 500,
+                            "fontSize": 16,
+                            "textAlignHorizontal": "LEFT",
+                            "letterSpacing": -0.32,
+                            "lineHeightPx": 19.09375
+                          }
+                        },
+                        {
+                          "id": "781:2032",
+                          "name": "사육 환경 1",
+                          "type": "TEXT",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#3c3c3c"
+                            }
+                          ],
+                          "absoluteBoundingBox": {
+                            "x": 10136.7685546875,
+                            "y": -7938,
+                            "width": 227,
+                            "height": 19
+                          },
+                          "characters": "사육 환경 1",
+                          "style": {
+                            "fontFamily": "Pretendard",
+                            "fontStyle": "SemiBold",
+                            "fontWeight": 600,
+                            "fontSize": 16,
+                            "textAlignHorizontal": "LEFT",
+                            "letterSpacing": -0.32,
+                            "lineHeightPx": 19.09375
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "id": "781:2033",
+                      "name": "Right",
+                      "type": "FRAME",
+                      "absoluteBoundingBox": {
+                        "x": 10367.7685546875,
+                        "y": -7964,
+                        "width": 106,
+                        "height": 36
+                      },
+                      "children": [
+                        {
+                          "id": "781:2034",
+                          "name": "Icons",
+                          "type": "FRAME",
+                          "absoluteBoundingBox": {
+                            "x": 10367.7685546875,
+                            "y": -7964,
+                            "width": 80,
+                            "height": 36
+                          },
+                          "children": [
+                            {
+                              "id": "781:2035",
+                              "name": "Home",
+                              "type": "FRAME",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#3c3c3c"
+                                }
+                              ],
+                              "cornerRadius": 22,
+                              "absoluteBoundingBox": {
+                                "x": 10367.7685546875,
+                                "y": -7964,
+                                "width": 36,
+                                "height": 36
+                              },
+                              "children": [
+                                {
+                                  "id": "781:2036",
+                                  "name": "home",
+                                  "type": "INSTANCE",
+                                  "absoluteBoundingBox": {
+                                    "x": 10375.7685546875,
+                                    "y": -7956,
+                                    "width": 20,
+                                    "height": 20
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "I781:2036;849:2083",
+                                      "name": "Bounding box",
+                                      "type": "RECTANGLE",
+                                      "fills": [
+                                        {
+                                          "blendMode": "NORMAL",
+                                          "type": "SOLID",
+                                          "color": "#d9d9d9"
+                                        }
+                                      ],
+                                      "absoluteBoundingBox": {
+                                        "x": 10375.7685546875,
+                                        "y": -7956,
+                                        "width": 20,
+                                        "height": 20
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "id": "781:2037",
+                              "name": "Camera",
+                              "type": "FRAME",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#3c3c3c"
+                                }
+                              ],
+                              "cornerRadius": 22,
+                              "absoluteBoundingBox": {
+                                "x": 10411.7685546875,
+                                "y": -7964,
+                                "width": 36,
+                                "height": 36
+                              },
+                              "children": [
+                                {
+                                  "id": "781:2038",
+                                  "name": "fertile",
+                                  "type": "INSTANCE",
+                                  "absoluteBoundingBox": {
+                                    "x": 10419.7685546875,
+                                    "y": -7956,
+                                    "width": 20,
+                                    "height": 20
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "I781:2038;849:2092",
+                                      "name": "Bounding box",
+                                      "type": "RECTANGLE",
+                                      "fills": [
+                                        {
+                                          "blendMode": "NORMAL",
+                                          "type": "SOLID",
+                                          "color": "#d9d9d9"
+                                        }
+                                      ],
+                                      "absoluteBoundingBox": {
+                                        "x": 10419.7685546875,
+                                        "y": -7956,
+                                        "width": 20,
+                                        "height": 20
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "781:2039",
+                          "name": "arrow_forward_ios",
+                          "type": "GROUP",
+                          "absoluteBoundingBox": {
+                            "x": 10455.7685546875,
+                            "y": -7955,
+                            "width": 18,
+                            "height": 18
+                          },
+                          "children": [
+                            {
+                              "id": "781:2040",
+                              "name": "Bounding box",
+                              "type": "RECTANGLE",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#3c3c3c"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 10455.7685546875,
+                                "y": -7955,
+                                "width": 18,
+                                "height": 18
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "781:2042",
+              "name": "Frame 157",
+              "type": "FRAME",
+              "absoluteBoundingBox": {
+                "x": 10120.7685546875,
+                "y": -7875,
+                "width": 369,
+                "height": 95
+              },
+              "children": [
+                {
+                  "id": "781:2043",
+                  "name": "Title",
+                  "type": "FRAME",
+                  "absoluteBoundingBox": {
+                    "x": 10120.7685546875,
+                    "y": -7875,
+                    "width": 369,
+                    "height": 19
+                  },
+                  "children": [
+                    {
+                      "id": "781:2044",
+                      "name": "그룹 없음",
+                      "type": "TEXT",
+                      "fills": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "SOLID",
+                          "color": "#949090"
+                        }
+                      ],
+                      "absoluteBoundingBox": {
+                        "x": 10132.7685546875,
+                        "y": -7875,
+                        "width": 58,
+                        "height": 19
+                      },
+                      "characters": "그룹 없음",
+                      "style": {
+                        "fontFamily": "Pretendard",
+                        "fontStyle": "Medium",
+                        "fontWeight": 500,
+                        "fontSize": 16,
+                        "textAlignHorizontal": "LEFT",
+                        "letterSpacing": -0.32,
+                        "lineHeightPx": 19.09375
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "781:2045",
+                  "name": "List",
+                  "type": "FRAME",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#f4f4f4"
+                    }
+                  ],
+                  "strokes": [
+                    {
+                      "blendMode": "NORMAL",
+                      "visible": false,
+                      "type": "SOLID",
+                      "color": "#e3e3e3"
+                    }
+                  ],
+                  "cornerRadius": 12,
+                  "absoluteBoundingBox": {
+                    "x": 10120.7685546875,
+                    "y": -7844,
+                    "width": 369,
+                    "height": 64
+                  },
+                  "children": [
+                    {
+                      "id": "781:2046",
+                      "name": "Left",
+                      "type": "FRAME",
+                      "absoluteBoundingBox": {
+                        "x": 10136.7685546875,
+                        "y": -7832,
+                        "width": 106,
+                        "height": 40
+                      },
+                      "children": [
+                        {
+                          "id": "781:2047",
+                          "name": "Camera",
+                          "type": "FRAME",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#3c3c3c"
+                            }
+                          ],
+                          "cornerRadius": 22,
+                          "absoluteBoundingBox": {
+                            "x": 10136.7685546875,
+                            "y": -7830,
+                            "width": 36,
+                            "height": 36
+                          },
+                          "children": [
+                            {
+                              "id": "781:2048",
+                              "name": "camera_video",
+                              "type": "INSTANCE",
+                              "absoluteBoundingBox": {
+                                "x": 10144.7685546875,
+                                "y": -7822,
+                                "width": 20,
+                                "height": 20
+                              },
+                              "children": [
+                                {
+                                  "id": "I781:2048;849:2086",
+                                  "name": "Bounding box",
+                                  "type": "RECTANGLE",
+                                  "fills": [
+                                    {
+                                      "blendMode": "NORMAL",
+                                      "type": "SOLID",
+                                      "color": "#d9d9d9"
+                                    }
+                                  ],
+                                  "absoluteBoundingBox": {
+                                    "x": 10144.7685546875,
+                                    "y": -7822,
+                                    "width": 20,
+                                    "height": 20
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "781:2049",
+                          "name": "Frame 101",
+                          "type": "FRAME",
+                          "absoluteBoundingBox": {
+                            "x": 10184.7685546875,
+                            "y": -7832,
+                            "width": 58,
+                            "height": 40
+                          },
+                          "children": [
+                            {
+                              "id": "781:2050",
+                              "name": "크랑이 캠",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#3c3c3c"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 10184.7685546875,
+                                "y": -7832,
+                                "width": 58,
+                                "height": 19
+                              },
+                              "characters": "크랑이 캠",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "SemiBold",
+                                "fontWeight": 600,
+                                "fontSize": 16,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.32,
+                                "lineHeightPx": 19.09375
+                              }
+                            },
+                            {
+                              "id": "781:2051",
+                              "name": "OFF",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#949090"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 10184.7685546875,
+                                "y": -7809,
+                                "width": 26,
+                                "height": 17
+                              },
+                              "characters": "OFF",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "Medium",
+                                "fontWeight": 500,
+                                "fontSize": 14,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.28,
+                                "lineHeightPx": 16.70703125
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "781:2052",
+                      "name": "Right",
+                      "type": "FRAME",
+                      "absoluteBoundingBox": {
+                        "x": 10286.7685546875,
+                        "y": -7821.5,
+                        "width": 187,
+                        "height": 19
+                      },
+                      "children": [
+                        {
+                          "id": "781:2053",
+                          "name": "FB2_P4_CAM-ㅁㅁㅁㅁ",
+                          "type": "TEXT",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#1e1e1e"
+                            }
+                          ],
+                          "absoluteBoundingBox": {
+                            "x": 10286.7685546875,
+                            "y": -7821.5,
+                            "width": 157,
+                            "height": 19
+                          },
+                          "characters": "FB2_P4_CAM-ㅁㅁㅁㅁ",
+                          "style": {
+                            "fontFamily": "Pretendard",
+                            "fontStyle": "SemiBold",
+                            "fontWeight": 600,
+                            "fontSize": 16,
+                            "textAlignHorizontal": "RIGHT",
+                            "letterSpacing": -0.32,
+                            "lineHeightPx": 19.09375
+                          }
+                        },
+                        {
+                          "id": "781:2054",
+                          "name": "arrow_forward_ios",
+                          "type": "GROUP",
+                          "absoluteBoundingBox": {
+                            "x": 10455.7685546875,
+                            "y": -7821,
+                            "width": 18,
+                            "height": 18
+                          },
+                          "children": [
+                            {
+                              "id": "781:2055",
+                              "name": "Bounding box",
+                              "type": "RECTANGLE",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#3c3c3c"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 10455.7685546875,
+                                "y": -7821,
+                                "width": 18,
+                                "height": 18
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "781:2057",
+          "name": "기기 관리",
+          "type": "TEXT",
+          "fills": [
+            {
+              "blendMode": "NORMAL",
+              "type": "SOLID",
+              "color": "#1e1e1e"
+            }
+          ],
+          "absoluteBoundingBox": {
+            "x": 10276.7685546875,
+            "y": -8063.5,
+            "width": 58,
+            "height": 19
+          },
+          "characters": "기기 관리",
+          "style": {
+            "fontFamily": "Pretendard",
+            "fontStyle": "Bold",
+            "fontWeight": 700,
+            "fontSize": 16,
+            "textAlignHorizontal": "CENTER",
+            "letterSpacing": -0.32,
+            "lineHeightPx": 19.09375
+          }
+        },
+        {
+          "id": "781:2058",
+          "name": "Button/Enabled",
+          "type": "FRAME",
+          "cornerRadius": 22,
+          "absoluteBoundingBox": {
+            "x": 10446.7685546875,
+            "y": -8076,
+            "width": 44,
+            "height": 44
+          },
+          "children": [
+            {
+              "id": "781:2059",
+              "name": "close",
+              "type": "GROUP",
+              "absoluteBoundingBox": {
+                "x": 10456.7685546875,
+                "y": -8066,
+                "width": 24,
+                "height": 24
+              },
+              "children": [
+                {
+                  "id": "781:2060",
+                  "name": "Bounding box",
+                  "type": "RECTANGLE",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#3c3c3c"
+                    }
+                  ],
+                  "absoluteBoundingBox": {
+                    "x": 10456.7685546875,
+                    "y": -8066,
+                    "width": 24,
+                    "height": 24
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "781:2062",
+          "name": "CTA",
+          "type": "FRAME",
+          "fills": [
+            {
+              "blendMode": "NORMAL",
+              "type": "SOLID",
+              "color": "#c00306"
+            }
+          ],
+          "cornerRadius": 12,
+          "absoluteBoundingBox": {
+            "x": 10121.2666015625,
+            "y": -7442,
+            "width": 369,
+            "height": 56
+          },
+          "children": [
+            {
+              "id": "781:2063",
+              "name": "그룹 추가",
+              "type": "TEXT",
+              "fills": [
+                {
+                  "blendMode": "NORMAL",
+                  "type": "SOLID",
+                  "color": "#fafafa"
+                }
+              ],
+              "absoluteBoundingBox": {
+                "x": 10272.7666015625,
+                "y": -7428,
+                "width": 66,
+                "height": 28
+              },
+              "characters": "그룹 추가",
+              "style": {
+                "fontFamily": "Pretendard",
+                "fontStyle": "SemiBold",
+                "fontWeight": 600,
+                "fontSize": 18,
+                "textAlignHorizontal": "LEFT",
+                "letterSpacing": -0.36,
+                "lineHeightPx": 28
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "781:2064",
+      "name": "MyCre",
+      "type": "FRAME",
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "absoluteBoundingBox": {
+        "x": 9647.9375,
+        "y": -8138,
+        "width": 393,
+        "height": 1109
+      },
+      "children": [
+        {
+          "id": "781:2065",
+          "name": "Status bar",
+          "type": "INSTANCE",
+          "absoluteBoundingBox": {
+            "x": 9647.9375,
+            "y": -8138,
+            "width": 393,
+            "height": 62
+          },
+          "children": [
+            {
+              "id": "I781:2065;5465:16808",
+              "name": "Time",
+              "type": "FRAME",
+              "absoluteBoundingBox": {
+                "x": 9663.9375,
+                "y": -8117,
+                "width": 103.5,
+                "height": 22
+              },
+              "children": [
+                {
+                  "id": "I781:2065;5465:16809",
+                  "name": "Time",
+                  "type": "TEXT",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#000000"
+                    }
+                  ],
+                  "absoluteBoundingBox": {
+                    "x": 9697.1875,
+                    "y": -8116,
+                    "width": 37,
+                    "height": 22
+                  },
+                  "characters": "9:41",
+                  "style": {
+                    "fontFamily": "SF Pro",
+                    "fontStyle": "Semibold",
+                    "fontWeight": 590,
+                    "fontSize": 17,
+                    "textAlignHorizontal": "CENTER",
+                    "letterSpacing": 0,
+                    "lineHeightPx": 22
+                  }
+                }
+              ]
+            },
+            {
+              "id": "I781:2065;5465:16811",
+              "name": "Levels",
+              "type": "FRAME",
+              "absoluteBoundingBox": {
+                "x": 9921.4375,
+                "y": -8117,
+                "width": 103.5,
+                "height": 22
+              },
+              "children": [
+                {
+                  "id": "I781:2065;5465:16814",
+                  "name": "Battery",
+                  "type": "GROUP",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "visible": false,
+                      "type": "SOLID",
+                      "color": "#ffffff"
+                    }
+                  ],
+                  "absoluteBoundingBox": {
+                    "x": 9984.6943359375,
+                    "y": -8112,
+                    "width": 27.32803726196289,
+                    "height": 13
+                  },
+                  "children": [
+                    {
+                      "id": "I781:2065;5465:16815",
+                      "name": "Border",
+                      "type": "RECTANGLE",
+                      "strokes": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "SOLID",
+                          "color": "#000000"
+                        }
+                      ],
+                      "cornerRadius": 4.300000190734863,
+                      "absoluteBoundingBox": {
+                        "x": 9984.6943359375,
+                        "y": -8112,
+                        "width": 25,
+                        "height": 13
+                      }
+                    },
+                    {
+                      "id": "I781:2065;5465:16817",
+                      "name": "Capacity",
+                      "type": "RECTANGLE",
+                      "fills": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "SOLID",
+                          "color": "#000000"
+                        }
+                      ],
+                      "cornerRadius": 2.5,
+                      "absoluteBoundingBox": {
+                        "x": 9986.6943359375,
+                        "y": -8110,
+                        "width": 21,
+                        "height": 9
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "781:2066",
+          "name": "Frame 55",
+          "type": "FRAME",
+          "absoluteBoundingBox": {
+            "x": 9659.4375,
+            "y": -8076,
+            "width": 369.5,
+            "height": 44
+          },
+          "children": [
+            {
+              "id": "781:2067",
+              "name": "Button/Enabled",
+              "type": "FRAME",
+              "fills": [
+                {
+                  "blendMode": "NORMAL",
+                  "type": "SOLID",
+                  "color": "#f4f4f4"
+                }
+              ],
+              "cornerRadius": 12,
+              "absoluteBoundingBox": {
+                "x": 9659.4375,
+                "y": -8076,
+                "width": 93,
+                "height": 44
+              },
+              "children": [
+                {
+                  "id": "781:2068",
+                  "name": "크랑이",
+                  "type": "TEXT",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#3c3c3c"
+                    }
+                  ],
+                  "absoluteBoundingBox": {
+                    "x": 9671.4375,
+                    "y": -8063.5,
+                    "width": 41,
+                    "height": 19
+                  },
+                  "characters": "크랑이",
+                  "style": {
+                    "fontFamily": "Pretendard",
+                    "fontStyle": "SemiBold",
+                    "fontWeight": 600,
+                    "fontSize": 16,
+                    "textAlignHorizontal": "LEFT",
+                    "letterSpacing": -0.32,
+                    "lineHeightPx": 19.09375
+                  }
+                },
+                {
+                  "id": "781:2069",
+                  "name": "keyboard_arrow_down",
+                  "type": "GROUP",
+                  "absoluteBoundingBox": {
+                    "x": 9716.4375,
+                    "y": -8066,
+                    "width": 24,
+                    "height": 24
+                  },
+                  "children": [
+                    {
+                      "id": "781:2070",
+                      "name": "Bounding box",
+                      "type": "RECTANGLE",
+                      "fills": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "SOLID",
+                          "color": "#3c3c3c"
+                        }
+                      ],
+                      "absoluteBoundingBox": {
+                        "x": 9716.4375,
+                        "y": -8066,
+                        "width": 24,
+                        "height": 24
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "781:2072",
+              "name": "Frame 54",
+              "type": "FRAME",
+              "absoluteBoundingBox": {
+                "x": 9928.9375,
+                "y": -8076,
+                "width": 100,
+                "height": 44
+              },
+              "children": [
+                {
+                  "id": "781:2073",
+                  "name": "discover_tune",
+                  "type": "FRAME",
+                  "absoluteBoundingBox": {
+                    "x": 9928.9375,
+                    "y": -8076,
+                    "width": 44,
+                    "height": 44
+                  },
+                  "children": []
+                },
+                {
+                  "id": "781:2075",
+                  "name": "Button/Enabled",
+                  "type": "FRAME",
+                  "cornerRadius": 22,
+                  "absoluteBoundingBox": {
+                    "x": 9984.9375,
+                    "y": -8076,
+                    "width": 44,
+                    "height": 44
+                  },
+                  "children": [
+                    {
+                      "id": "781:2076",
+                      "name": "person",
+                      "type": "GROUP",
+                      "absoluteBoundingBox": {
+                        "x": 9994.9375,
+                        "y": -8066,
+                        "width": 24,
+                        "height": 24
+                      },
+                      "children": [
+                        {
+                          "id": "781:2077",
+                          "name": "Bounding box",
+                          "type": "RECTANGLE",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#3c3c3c"
+                            }
+                          ],
+                          "absoluteBoundingBox": {
+                            "x": 9994.9375,
+                            "y": -8066,
+                            "width": 24,
+                            "height": 24
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "781:2079",
+          "name": "Frame 236",
+          "type": "FRAME",
+          "absoluteBoundingBox": {
+            "x": 9659.6875,
+            "y": -7888,
+            "width": 369.5,
+            "height": 920
+          },
+          "children": [
+            {
+              "id": "781:2080",
+              "name": "Frame 232",
+              "type": "FRAME",
+              "absoluteBoundingBox": {
+                "x": 9671.9375,
+                "y": -7888,
+                "width": 345,
+                "height": 91
+              },
+              "children": [
+                {
+                  "id": "781:2081",
+                  "name": "카메라와 연동해 활동 리포트를 받아보세요",
+                  "type": "TEXT",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#626262"
+                    }
+                  ],
+                  "absoluteBoundingBox": {
+                    "x": 9671.9375,
+                    "y": -7888,
+                    "width": 345,
+                    "height": 19
+                  },
+                  "characters": "카메라와 연동해 활동 리포트를 받아보세요",
+                  "style": {
+                    "fontFamily": "Pretendard",
+                    "fontStyle": "Medium",
+                    "fontWeight": 500,
+                    "fontSize": 16,
+                    "textAlignHorizontal": "CENTER",
+                    "letterSpacing": -0.32,
+                    "lineHeightPx": 19.09375
+                  }
+                },
+                {
+                  "id": "781:2082",
+                  "name": "CTA",
+                  "type": "FRAME",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#c00306"
+                    }
+                  ],
+                  "cornerRadius": 29.5,
+                  "absoluteBoundingBox": {
+                    "x": 9735.4375,
+                    "y": -7853,
+                    "width": 218,
+                    "height": 56
+                  },
+                  "children": [
+                    {
+                      "id": "781:2083",
+                      "name": "add",
+                      "type": "GROUP",
+                      "absoluteBoundingBox": {
+                        "x": 9759.4375,
+                        "y": -7837,
+                        "width": 24,
+                        "height": 24
+                      },
+                      "children": [
+                        {
+                          "id": "781:2084",
+                          "name": "Bounding box",
+                          "type": "RECTANGLE",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#d9d9d9"
+                            }
+                          ],
+                          "absoluteBoundingBox": {
+                            "x": 9759.4375,
+                            "y": -7837,
+                            "width": 24,
+                            "height": 24
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "id": "781:2086",
+                      "name": "카메라와 그룹만들기",
+                      "type": "TEXT",
+                      "fills": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "SOLID",
+                          "color": "#fafafa"
+                        }
+                      ],
+                      "absoluteBoundingBox": {
+                        "x": 9787.4375,
+                        "y": -7839,
+                        "width": 142,
+                        "height": 28
+                      },
+                      "characters": "카메라와 그룹만들기",
+                      "style": {
+                        "fontFamily": "Pretendard",
+                        "fontStyle": "SemiBold",
+                        "fontWeight": 600,
+                        "fontSize": 18,
+                        "textAlignHorizontal": "LEFT",
+                        "letterSpacing": -0.36,
+                        "lineHeightPx": 28
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "781:2087",
+              "name": "Frame 235",
+              "type": "FRAME",
+              "absoluteBoundingBox": {
+                "x": 9659.6875,
+                "y": -7757,
+                "width": 369.5,
+                "height": 375
+              },
+              "children": [
+                {
+                  "id": "781:2088",
+                  "name": "DatePicker-Modal",
+                  "type": "FRAME",
+                  "absoluteBoundingBox": {
+                    "x": 9790.4375,
+                    "y": -7757,
+                    "width": 108,
+                    "height": 40
+                  },
+                  "children": [
+                    {
+                      "id": "781:2089",
+                      "name": "2026. 8. 30",
+                      "type": "TEXT",
+                      "fills": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "SOLID",
+                          "color": "#3c3c3c"
+                        }
+                      ],
+                      "absoluteBoundingBox": {
+                        "x": 9798.4375,
+                        "y": -7747.5,
+                        "width": 92,
+                        "height": 21
+                      },
+                      "characters": "2026. 8. 30",
+                      "style": {
+                        "fontFamily": "Pretendard",
+                        "fontStyle": "SemiBold",
+                        "fontWeight": 600,
+                        "fontSize": 18,
+                        "textAlignHorizontal": "LEFT",
+                        "letterSpacing": -0.36,
+                        "lineHeightPx": 21.48046875
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "781:2090",
+                  "name": "Frame 233",
+                  "type": "FRAME",
+                  "absoluteBoundingBox": {
+                    "x": 9659.6875,
+                    "y": -7705,
+                    "width": 369.5,
+                    "height": 323
+                  },
+                  "children": [
+                    {
+                      "id": "781:2091",
+                      "name": "Summary",
+                      "type": "FRAME",
+                      "absoluteBoundingBox": {
+                        "x": 9659.6875,
+                        "y": -7705,
+                        "width": 369.5,
+                        "height": 54
+                      },
+                      "children": [
+                        {
+                          "id": "781:2092",
+                          "name": "Frame 114",
+                          "type": "FRAME",
+                          "absoluteBoundingBox": {
+                            "x": 9671.6875,
+                            "y": -7705,
+                            "width": 166.75,
+                            "height": 54
+                          },
+                          "children": [
+                            {
+                              "id": "781:2093",
+                              "name": "0h 0m",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#c00306"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 9671.6875,
+                                "y": -7705,
+                                "width": 166.5,
+                                "height": 33
+                              },
+                              "characters": "0h 0m",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "SemiBold",
+                                "fontWeight": 600,
+                                "fontSize": 28,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.56,
+                                "lineHeightPx": 33.4140625
+                              }
+                            },
+                            {
+                              "id": "781:2094",
+                              "name": "총 활동 시간",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#949090"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 9671.6875,
+                                "y": -7668,
+                                "width": 66,
+                                "height": 17
+                              },
+                              "characters": "총 활동 시간",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "Medium",
+                                "fontWeight": 500,
+                                "fontSize": 14,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.28,
+                                "lineHeightPx": 16.70703125
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "id": "781:2095",
+                          "name": "Frame 115",
+                          "type": "FRAME",
+                          "absoluteBoundingBox": {
+                            "x": 9850.4375,
+                            "y": -7705,
+                            "width": 166.75,
+                            "height": 54
+                          },
+                          "children": [
+                            {
+                              "id": "781:2096",
+                              "name": "0h 0m",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#949090"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 9850.4375,
+                                "y": -7705,
+                                "width": 166.5,
+                                "height": 33
+                              },
+                              "characters": "0h 0m",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "SemiBold",
+                                "fontWeight": 600,
+                                "fontSize": 28,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.56,
+                                "lineHeightPx": 33.4140625
+                              }
+                            },
+                            {
+                              "id": "781:2097",
+                              "name": "일평균 활동 시간",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#949090"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 9850.4375,
+                                "y": -7668,
+                                "width": 90,
+                                "height": 17
+                              },
+                              "characters": "일평균 활동 시간",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "Medium",
+                                "fontWeight": 500,
+                                "fontSize": 14,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.28,
+                                "lineHeightPx": 16.70703125
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "781:2098",
+                      "name": "GraphGroup",
+                      "type": "GROUP",
+                      "absoluteBoundingBox": {
+                        "x": 9659.6875,
+                        "y": -7638,
+                        "width": 369,
+                        "height": 256
+                      },
+                      "children": [
+                        {
+                          "id": "781:2099",
+                          "name": "Grid",
+                          "type": "FRAME",
+                          "absoluteBoundingBox": {
+                            "x": 9659.6875,
+                            "y": -7638,
+                            "width": 343,
+                            "height": 256
+                          },
+                          "children": [
+                            {
+                              "id": "781:2100",
+                              "name": "LineX",
+                              "type": "FRAME",
+                              "absoluteBoundingBox": {
+                                "x": 9659.6875,
+                                "y": -7638,
+                                "width": 341,
+                                "height": 256
+                              },
+                              "children": []
+                            },
+                            {
+                              "id": "781:2106",
+                              "name": "X",
+                              "type": "FRAME",
+                              "absoluteBoundingBox": {
+                                "x": 9659.6875,
+                                "y": -7404,
+                                "width": 341,
+                                "height": 22
+                              },
+                              "children": [
+                                {
+                                  "id": "781:2107",
+                                  "name": "X",
+                                  "type": "FRAME",
+                                  "absoluteBoundingBox": {
+                                    "x": 9659.6875,
+                                    "y": -7404,
+                                    "width": 85.25,
+                                    "height": 14
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "781:2108",
+                                      "name": "오전 12시",
+                                      "type": "TEXT",
+                                      "fills": [
+                                        {
+                                          "blendMode": "NORMAL",
+                                          "type": "SOLID",
+                                          "color": "#b4aeae"
+                                        }
+                                      ],
+                                      "absoluteBoundingBox": {
+                                        "x": 9663.6875,
+                                        "y": -7404,
+                                        "width": 46,
+                                        "height": 14
+                                      },
+                                      "characters": "오전 12시",
+                                      "style": {
+                                        "fontFamily": "Pretendard",
+                                        "fontStyle": "Medium",
+                                        "fontWeight": 500,
+                                        "fontSize": 12,
+                                        "textAlignHorizontal": "LEFT",
+                                        "letterSpacing": -0.24,
+                                        "lineHeightPx": 14.3203125
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "781:2109",
+                                  "name": "X",
+                                  "type": "FRAME",
+                                  "absoluteBoundingBox": {
+                                    "x": 9744.9375,
+                                    "y": -7404,
+                                    "width": 85.25,
+                                    "height": 14
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "781:2110",
+                                      "name": "오전 6시",
+                                      "type": "TEXT",
+                                      "fills": [
+                                        {
+                                          "blendMode": "NORMAL",
+                                          "type": "SOLID",
+                                          "color": "#b4aeae"
+                                        }
+                                      ],
+                                      "absoluteBoundingBox": {
+                                        "x": 9748.9375,
+                                        "y": -7404,
+                                        "width": 41,
+                                        "height": 14
+                                      },
+                                      "characters": "오전 6시",
+                                      "style": {
+                                        "fontFamily": "Pretendard",
+                                        "fontStyle": "Medium",
+                                        "fontWeight": 500,
+                                        "fontSize": 12,
+                                        "textAlignHorizontal": "LEFT",
+                                        "letterSpacing": -0.24,
+                                        "lineHeightPx": 14.3203125
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "781:2111",
+                                  "name": "X",
+                                  "type": "FRAME",
+                                  "absoluteBoundingBox": {
+                                    "x": 9830.1875,
+                                    "y": -7404,
+                                    "width": 85.25,
+                                    "height": 14
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "781:2112",
+                                      "name": "오후 12시",
+                                      "type": "TEXT",
+                                      "fills": [
+                                        {
+                                          "blendMode": "NORMAL",
+                                          "type": "SOLID",
+                                          "color": "#b4aeae"
+                                        }
+                                      ],
+                                      "absoluteBoundingBox": {
+                                        "x": 9834.1875,
+                                        "y": -7404,
+                                        "width": 46,
+                                        "height": 14
+                                      },
+                                      "characters": "오후 12시",
+                                      "style": {
+                                        "fontFamily": "Pretendard",
+                                        "fontStyle": "Medium",
+                                        "fontWeight": 500,
+                                        "fontSize": 12,
+                                        "textAlignHorizontal": "LEFT",
+                                        "letterSpacing": -0.24,
+                                        "lineHeightPx": 14.3203125
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "781:2113",
+                                  "name": "X",
+                                  "type": "FRAME",
+                                  "absoluteBoundingBox": {
+                                    "x": 9915.4375,
+                                    "y": -7404,
+                                    "width": 85.25,
+                                    "height": 14
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "781:2114",
+                                      "name": "오후 6시",
+                                      "type": "TEXT",
+                                      "fills": [
+                                        {
+                                          "blendMode": "NORMAL",
+                                          "type": "SOLID",
+                                          "color": "#b4aeae"
+                                        }
+                                      ],
+                                      "absoluteBoundingBox": {
+                                        "x": 9919.4375,
+                                        "y": -7404,
+                                        "width": 41,
+                                        "height": 14
+                                      },
+                                      "characters": "오후 6시",
+                                      "style": {
+                                        "fontFamily": "Pretendard",
+                                        "fontStyle": "Medium",
+                                        "fontWeight": 500,
+                                        "fontSize": 12,
+                                        "textAlignHorizontal": "LEFT",
+                                        "letterSpacing": -0.24,
+                                        "lineHeightPx": 14.3203125
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "781:2115",
+                          "name": "LineY",
+                          "type": "FRAME",
+                          "absoluteBoundingBox": {
+                            "x": 9659.6875,
+                            "y": -7637.7646484375,
+                            "width": 369,
+                            "height": 224
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "781:2124",
+                          "name": "Y_temp",
+                          "type": "FRAME",
+                          "absoluteBoundingBox": {
+                            "x": 10000.6875,
+                            "y": -7638,
+                            "width": 28,
+                            "height": 224
+                          },
+                          "children": [
+                            {
+                              "id": "781:2125",
+                              "name": "210",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#b4aeae"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 10002.6875,
+                                "y": -7638,
+                                "width": 26,
+                                "height": 32
+                              },
+                              "characters": "210",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "Medium",
+                                "fontWeight": 500,
+                                "fontSize": 12,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.24,
+                                "lineHeightPx": 14.3203125
+                              }
+                            },
+                            {
+                              "id": "781:2126",
+                              "name": "180",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#b4aeae"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 10002.6875,
+                                "y": -7606,
+                                "width": 26,
+                                "height": 32
+                              },
+                              "characters": "180",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "Medium",
+                                "fontWeight": 500,
+                                "fontSize": 12,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.24,
+                                "lineHeightPx": 14.3203125
+                              }
+                            },
+                            {
+                              "id": "781:2127",
+                              "name": "150",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#b4aeae"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 10002.6875,
+                                "y": -7574,
+                                "width": 26,
+                                "height": 32
+                              },
+                              "characters": "150",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "Medium",
+                                "fontWeight": 500,
+                                "fontSize": 12,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.24,
+                                "lineHeightPx": 14.3203125
+                              }
+                            },
+                            {
+                              "id": "781:2128",
+                              "name": "120",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#b4aeae"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 10002.6875,
+                                "y": -7542,
+                                "width": 26,
+                                "height": 32
+                              },
+                              "characters": "120",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "Medium",
+                                "fontWeight": 500,
+                                "fontSize": 12,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.24,
+                                "lineHeightPx": 14.3203125
+                              }
+                            },
+                            {
+                              "id": "781:2129",
+                              "name": "90",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#b4aeae"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 10002.6875,
+                                "y": -7510,
+                                "width": 26,
+                                "height": 32
+                              },
+                              "characters": "90",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "Medium",
+                                "fontWeight": 500,
+                                "fontSize": 12,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.24,
+                                "lineHeightPx": 14.3203125
+                              }
+                            },
+                            {
+                              "id": "781:2130",
+                              "name": "60",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#b4aeae"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 10002.6875,
+                                "y": -7478,
+                                "width": 26,
+                                "height": 32
+                              },
+                              "characters": "60",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "Medium",
+                                "fontWeight": 500,
+                                "fontSize": 12,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.24,
+                                "lineHeightPx": 14.3203125
+                              }
+                            },
+                            {
+                              "id": "781:2131",
+                              "name": "30",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#b4aeae"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 10002.6875,
+                                "y": -7446,
+                                "width": 26,
+                                "height": 32
+                              },
+                              "characters": "30",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "Medium",
+                                "fontWeight": 500,
+                                "fontSize": 12,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.24,
+                                "lineHeightPx": 14.3203125
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "id": "781:2132",
+                          "name": "Graph",
+                          "type": "FRAME",
+                          "absoluteBoundingBox": {
+                            "x": 9661.8125,
+                            "y": -7624.33349609375,
+                            "width": 336,
+                            "height": 210.33349609375
+                          },
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "781:2133",
+              "name": "Frame 234",
+              "type": "FRAME",
+              "absoluteBoundingBox": {
+                "x": 9659.6875,
+                "y": -7342,
+                "width": 369.5,
+                "height": 374
+              },
+              "children": [
+                {
+                  "id": "781:2134",
+                  "name": "DatePicker-Modal",
+                  "type": "FRAME",
+                  "absoluteBoundingBox": {
+                    "x": 9762.4375,
+                    "y": -7342,
+                    "width": 164,
+                    "height": 40
+                  },
+                  "children": [
+                    {
+                      "id": "781:2135",
+                      "name": "2026. 8. 24 - 8. 30",
+                      "type": "TEXT",
+                      "fills": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "SOLID",
+                          "color": "#3c3c3c"
+                        }
+                      ],
+                      "absoluteBoundingBox": {
+                        "x": 9770.4375,
+                        "y": -7332.5,
+                        "width": 148,
+                        "height": 21
+                      },
+                      "characters": "2026. 8. 24 - 8. 30",
+                      "style": {
+                        "fontFamily": "Pretendard",
+                        "fontStyle": "SemiBold",
+                        "fontWeight": 600,
+                        "fontSize": 18,
+                        "textAlignHorizontal": "LEFT",
+                        "letterSpacing": -0.36,
+                        "lineHeightPx": 21.48046875
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "781:2136",
+                  "name": "Summary",
+                  "type": "FRAME",
+                  "absoluteBoundingBox": {
+                    "x": 9659.6875,
+                    "y": -7290,
+                    "width": 369.5,
+                    "height": 54
+                  },
+                  "children": [
+                    {
+                      "id": "781:2137",
+                      "name": "Frame 114",
+                      "type": "FRAME",
+                      "absoluteBoundingBox": {
+                        "x": 9671.6875,
+                        "y": -7290,
+                        "width": 166.75,
+                        "height": 54
+                      },
+                      "children": [
+                        {
+                          "id": "781:2138",
+                          "name": "0h 0m",
+                          "type": "TEXT",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#c00306"
+                            }
+                          ],
+                          "absoluteBoundingBox": {
+                            "x": 9671.6875,
+                            "y": -7290,
+                            "width": 166.5,
+                            "height": 33
+                          },
+                          "characters": "0h 0m",
+                          "style": {
+                            "fontFamily": "Pretendard",
+                            "fontStyle": "SemiBold",
+                            "fontWeight": 600,
+                            "fontSize": 28,
+                            "textAlignHorizontal": "LEFT",
+                            "letterSpacing": -0.56,
+                            "lineHeightPx": 33.4140625
+                          }
+                        },
+                        {
+                          "id": "781:2139",
+                          "name": "총 활동 시간",
+                          "type": "TEXT",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#949090"
+                            }
+                          ],
+                          "absoluteBoundingBox": {
+                            "x": 9671.6875,
+                            "y": -7253,
+                            "width": 66,
+                            "height": 17
+                          },
+                          "characters": "총 활동 시간",
+                          "style": {
+                            "fontFamily": "Pretendard",
+                            "fontStyle": "Medium",
+                            "fontWeight": 500,
+                            "fontSize": 14,
+                            "textAlignHorizontal": "LEFT",
+                            "letterSpacing": -0.28,
+                            "lineHeightPx": 16.70703125
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "id": "781:2140",
+                      "name": "Frame 115",
+                      "type": "FRAME",
+                      "absoluteBoundingBox": {
+                        "x": 9850.4375,
+                        "y": -7290,
+                        "width": 166.75,
+                        "height": 54
+                      },
+                      "children": [
+                        {
+                          "id": "781:2141",
+                          "name": "0h 0m",
+                          "type": "TEXT",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#949090"
+                            }
+                          ],
+                          "absoluteBoundingBox": {
+                            "x": 9850.4375,
+                            "y": -7290,
+                            "width": 166.5,
+                            "height": 33
+                          },
+                          "characters": "0h 0m",
+                          "style": {
+                            "fontFamily": "Pretendard",
+                            "fontStyle": "SemiBold",
+                            "fontWeight": 600,
+                            "fontSize": 28,
+                            "textAlignHorizontal": "LEFT",
+                            "letterSpacing": -0.56,
+                            "lineHeightPx": 33.4140625
+                          }
+                        },
+                        {
+                          "id": "781:2142",
+                          "name": "주간 평균 활동 시간",
+                          "type": "TEXT",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#949090"
+                            }
+                          ],
+                          "absoluteBoundingBox": {
+                            "x": 9850.4375,
+                            "y": -7253,
+                            "width": 105,
+                            "height": 17
+                          },
+                          "characters": "주간 평균 활동 시간",
+                          "style": {
+                            "fontFamily": "Pretendard",
+                            "fontStyle": "Medium",
+                            "fontWeight": 500,
+                            "fontSize": 14,
+                            "textAlignHorizontal": "LEFT",
+                            "letterSpacing": -0.28,
+                            "lineHeightPx": 16.70703125
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "781:2143",
+                  "name": "GraphGroup",
+                  "type": "GROUP",
+                  "absoluteBoundingBox": {
+                    "x": 9659.9375,
+                    "y": -7224,
+                    "width": 369,
+                    "height": 256
+                  },
+                  "children": [
+                    {
+                      "id": "781:2144",
+                      "name": "Group 19",
+                      "type": "GROUP",
+                      "absoluteBoundingBox": {
+                        "x": 9659.9375,
+                        "y": -7224,
+                        "width": 369,
+                        "height": 256
+                      },
+                      "children": [
+                        {
+                          "id": "781:2145",
+                          "name": "Group 18",
+                          "type": "GROUP",
+                          "absoluteBoundingBox": {
+                            "x": 9659.9375,
+                            "y": -7224,
+                            "width": 369,
+                            "height": 256
+                          },
+                          "children": [
+                            {
+                              "id": "781:2146",
+                              "name": "Grid",
+                              "type": "FRAME",
+                              "absoluteBoundingBox": {
+                                "x": 9659.9375,
+                                "y": -7224,
+                                "width": 343,
+                                "height": 256
+                              },
+                              "children": [
+                                {
+                                  "id": "781:2147",
+                                  "name": "LineX",
+                                  "type": "FRAME",
+                                  "absoluteBoundingBox": {
+                                    "x": 9659.9375,
+                                    "y": -7224,
+                                    "width": 341,
+                                    "height": 256
+                                  },
+                                  "children": []
+                                },
+                                {
+                                  "id": "781:2156",
+                                  "name": "X",
+                                  "type": "FRAME",
+                                  "absoluteBoundingBox": {
+                                    "x": 9659.9375,
+                                    "y": -6990,
+                                    "width": 341,
+                                    "height": 22
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "781:2157",
+                                      "name": "X",
+                                      "type": "FRAME",
+                                      "absoluteBoundingBox": {
+                                        "x": 9659.9375,
+                                        "y": -6990,
+                                        "width": 48.71428680419922,
+                                        "height": 14
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "781:2158",
+                                          "name": "월",
+                                          "type": "TEXT",
+                                          "fills": [
+                                            {
+                                              "blendMode": "NORMAL",
+                                              "type": "SOLID",
+                                              "color": "#b4aeae"
+                                            }
+                                          ],
+                                          "absoluteBoundingBox": {
+                                            "x": 9663.9375,
+                                            "y": -6990,
+                                            "width": 11,
+                                            "height": 14
+                                          },
+                                          "characters": "월",
+                                          "style": {
+                                            "fontFamily": "Pretendard",
+                                            "fontStyle": "Medium",
+                                            "fontWeight": 500,
+                                            "fontSize": 12,
+                                            "textAlignHorizontal": "LEFT",
+                                            "letterSpacing": -0.24,
+                                            "lineHeightPx": 14.3203125
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "id": "781:2159",
+                                      "name": "X",
+                                      "type": "FRAME",
+                                      "absoluteBoundingBox": {
+                                        "x": 9708.6513671875,
+                                        "y": -6990,
+                                        "width": 48.71428298950195,
+                                        "height": 14
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "781:2160",
+                                          "name": "화",
+                                          "type": "TEXT",
+                                          "fills": [
+                                            {
+                                              "blendMode": "NORMAL",
+                                              "type": "SOLID",
+                                              "color": "#b4aeae"
+                                            }
+                                          ],
+                                          "absoluteBoundingBox": {
+                                            "x": 9712.6513671875,
+                                            "y": -6990,
+                                            "width": 11,
+                                            "height": 14
+                                          },
+                                          "characters": "화",
+                                          "style": {
+                                            "fontFamily": "Pretendard",
+                                            "fontStyle": "Medium",
+                                            "fontWeight": 500,
+                                            "fontSize": 12,
+                                            "textAlignHorizontal": "LEFT",
+                                            "letterSpacing": -0.24,
+                                            "lineHeightPx": 14.3203125
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "id": "781:2161",
+                                      "name": "X",
+                                      "type": "FRAME",
+                                      "absoluteBoundingBox": {
+                                        "x": 9757.3662109375,
+                                        "y": -6990,
+                                        "width": 48.71428680419922,
+                                        "height": 14
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "781:2162",
+                                          "name": "수",
+                                          "type": "TEXT",
+                                          "fills": [
+                                            {
+                                              "blendMode": "NORMAL",
+                                              "type": "SOLID",
+                                              "color": "#b4aeae"
+                                            }
+                                          ],
+                                          "absoluteBoundingBox": {
+                                            "x": 9761.3662109375,
+                                            "y": -6990,
+                                            "width": 11,
+                                            "height": 14
+                                          },
+                                          "characters": "수",
+                                          "style": {
+                                            "fontFamily": "Pretendard",
+                                            "fontStyle": "Medium",
+                                            "fontWeight": 500,
+                                            "fontSize": 12,
+                                            "textAlignHorizontal": "LEFT",
+                                            "letterSpacing": -0.24,
+                                            "lineHeightPx": 14.3203125
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "id": "781:2163",
+                                      "name": "X",
+                                      "type": "FRAME",
+                                      "absoluteBoundingBox": {
+                                        "x": 9806.080078125,
+                                        "y": -6990,
+                                        "width": 48.71428680419922,
+                                        "height": 14
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "781:2164",
+                                          "name": "목",
+                                          "type": "TEXT",
+                                          "fills": [
+                                            {
+                                              "blendMode": "NORMAL",
+                                              "type": "SOLID",
+                                              "color": "#b4aeae"
+                                            }
+                                          ],
+                                          "absoluteBoundingBox": {
+                                            "x": 9810.080078125,
+                                            "y": -6990,
+                                            "width": 11,
+                                            "height": 14
+                                          },
+                                          "characters": "목",
+                                          "style": {
+                                            "fontFamily": "Pretendard",
+                                            "fontStyle": "Medium",
+                                            "fontWeight": 500,
+                                            "fontSize": 12,
+                                            "textAlignHorizontal": "LEFT",
+                                            "letterSpacing": -0.24,
+                                            "lineHeightPx": 14.3203125
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "id": "781:2165",
+                                      "name": "X",
+                                      "type": "FRAME",
+                                      "absoluteBoundingBox": {
+                                        "x": 9854.794921875,
+                                        "y": -6990,
+                                        "width": 48.71428298950195,
+                                        "height": 14
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "781:2166",
+                                          "name": "금",
+                                          "type": "TEXT",
+                                          "fills": [
+                                            {
+                                              "blendMode": "NORMAL",
+                                              "type": "SOLID",
+                                              "color": "#b4aeae"
+                                            }
+                                          ],
+                                          "absoluteBoundingBox": {
+                                            "x": 9858.794921875,
+                                            "y": -6990,
+                                            "width": 11,
+                                            "height": 14
+                                          },
+                                          "characters": "금",
+                                          "style": {
+                                            "fontFamily": "Pretendard",
+                                            "fontStyle": "Medium",
+                                            "fontWeight": 500,
+                                            "fontSize": 12,
+                                            "textAlignHorizontal": "LEFT",
+                                            "letterSpacing": -0.24,
+                                            "lineHeightPx": 14.3203125
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "id": "781:2167",
+                                      "name": "X",
+                                      "type": "FRAME",
+                                      "absoluteBoundingBox": {
+                                        "x": 9903.5087890625,
+                                        "y": -6990,
+                                        "width": 48.71428680419922,
+                                        "height": 14
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "781:2168",
+                                          "name": "토",
+                                          "type": "TEXT",
+                                          "fills": [
+                                            {
+                                              "blendMode": "NORMAL",
+                                              "type": "SOLID",
+                                              "color": "#b4aeae"
+                                            }
+                                          ],
+                                          "absoluteBoundingBox": {
+                                            "x": 9907.5087890625,
+                                            "y": -6990,
+                                            "width": 11,
+                                            "height": 14
+                                          },
+                                          "characters": "토",
+                                          "style": {
+                                            "fontFamily": "Pretendard",
+                                            "fontStyle": "Medium",
+                                            "fontWeight": 500,
+                                            "fontSize": 12,
+                                            "textAlignHorizontal": "LEFT",
+                                            "letterSpacing": -0.24,
+                                            "lineHeightPx": 14.3203125
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "id": "781:2169",
+                                      "name": "X",
+                                      "type": "FRAME",
+                                      "absoluteBoundingBox": {
+                                        "x": 9952.2236328125,
+                                        "y": -6990,
+                                        "width": 48.71428680419922,
+                                        "height": 14
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "781:2170",
+                                          "name": "일",
+                                          "type": "TEXT",
+                                          "fills": [
+                                            {
+                                              "blendMode": "NORMAL",
+                                              "type": "SOLID",
+                                              "color": "#b4aeae"
+                                            }
+                                          ],
+                                          "absoluteBoundingBox": {
+                                            "x": 9956.2236328125,
+                                            "y": -6990,
+                                            "width": 11,
+                                            "height": 14
+                                          },
+                                          "characters": "일",
+                                          "style": {
+                                            "fontFamily": "Pretendard",
+                                            "fontStyle": "Medium",
+                                            "fontWeight": 500,
+                                            "fontSize": 12,
+                                            "textAlignHorizontal": "LEFT",
+                                            "letterSpacing": -0.24,
+                                            "lineHeightPx": 14.3203125
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "id": "781:2171",
+                              "name": "LineY",
+                              "type": "FRAME",
+                              "absoluteBoundingBox": {
+                                "x": 9659.9375,
+                                "y": -7223.7646484375,
+                                "width": 369,
+                                "height": 224
+                              },
+                              "children": []
+                            },
+                            {
+                              "id": "781:2180",
+                              "name": "Y_temp",
+                              "type": "FRAME",
+                              "absoluteBoundingBox": {
+                                "x": 10000.9375,
+                                "y": -7224,
+                                "width": 28,
+                                "height": 224
+                              },
+                              "children": [
+                                {
+                                  "id": "781:2181",
+                                  "name": "3h",
+                                  "type": "TEXT",
+                                  "fills": [
+                                    {
+                                      "blendMode": "NORMAL",
+                                      "type": "SOLID",
+                                      "color": "#b4aeae"
+                                    }
+                                  ],
+                                  "absoluteBoundingBox": {
+                                    "x": 10002.9375,
+                                    "y": -7224,
+                                    "width": 26,
+                                    "height": 32
+                                  },
+                                  "characters": "3h",
+                                  "style": {
+                                    "fontFamily": "Pretendard",
+                                    "fontStyle": "Medium",
+                                    "fontWeight": 500,
+                                    "fontSize": 12,
+                                    "textAlignHorizontal": "LEFT",
+                                    "letterSpacing": -0.24,
+                                    "lineHeightPx": 14.3203125
+                                  }
+                                },
+                                {
+                                  "id": "781:2182",
+                                  "name": "2.5h",
+                                  "type": "TEXT",
+                                  "fills": [
+                                    {
+                                      "blendMode": "NORMAL",
+                                      "type": "SOLID",
+                                      "color": "#b4aeae"
+                                    }
+                                  ],
+                                  "absoluteBoundingBox": {
+                                    "x": 10002.9375,
+                                    "y": -7192,
+                                    "width": 26,
+                                    "height": 32
+                                  },
+                                  "characters": "2.5h",
+                                  "style": {
+                                    "fontFamily": "Pretendard",
+                                    "fontStyle": "Medium",
+                                    "fontWeight": 500,
+                                    "fontSize": 12,
+                                    "textAlignHorizontal": "LEFT",
+                                    "letterSpacing": -0.24,
+                                    "lineHeightPx": 14.3203125
+                                  }
+                                },
+                                {
+                                  "id": "781:2183",
+                                  "name": "2h",
+                                  "type": "TEXT",
+                                  "fills": [
+                                    {
+                                      "blendMode": "NORMAL",
+                                      "type": "SOLID",
+                                      "color": "#b4aeae"
+                                    }
+                                  ],
+                                  "absoluteBoundingBox": {
+                                    "x": 10002.9375,
+                                    "y": -7160,
+                                    "width": 26,
+                                    "height": 32
+                                  },
+                                  "characters": "2h",
+                                  "style": {
+                                    "fontFamily": "Pretendard",
+                                    "fontStyle": "Medium",
+                                    "fontWeight": 500,
+                                    "fontSize": 12,
+                                    "textAlignHorizontal": "LEFT",
+                                    "letterSpacing": -0.24,
+                                    "lineHeightPx": 14.3203125
+                                  }
+                                },
+                                {
+                                  "id": "781:2184",
+                                  "name": "1.5h",
+                                  "type": "TEXT",
+                                  "fills": [
+                                    {
+                                      "blendMode": "NORMAL",
+                                      "type": "SOLID",
+                                      "color": "#b4aeae"
+                                    }
+                                  ],
+                                  "absoluteBoundingBox": {
+                                    "x": 10002.9375,
+                                    "y": -7128,
+                                    "width": 26,
+                                    "height": 32
+                                  },
+                                  "characters": "1.5h",
+                                  "style": {
+                                    "fontFamily": "Pretendard",
+                                    "fontStyle": "Medium",
+                                    "fontWeight": 500,
+                                    "fontSize": 12,
+                                    "textAlignHorizontal": "LEFT",
+                                    "letterSpacing": -0.24,
+                                    "lineHeightPx": 14.3203125
+                                  }
+                                },
+                                {
+                                  "id": "781:2185",
+                                  "name": "1h",
+                                  "type": "TEXT",
+                                  "fills": [
+                                    {
+                                      "blendMode": "NORMAL",
+                                      "type": "SOLID",
+                                      "color": "#b4aeae"
+                                    }
+                                  ],
+                                  "absoluteBoundingBox": {
+                                    "x": 10002.9375,
+                                    "y": -7096,
+                                    "width": 26,
+                                    "height": 32
+                                  },
+                                  "characters": "1h",
+                                  "style": {
+                                    "fontFamily": "Pretendard",
+                                    "fontStyle": "Medium",
+                                    "fontWeight": 500,
+                                    "fontSize": 12,
+                                    "textAlignHorizontal": "LEFT",
+                                    "letterSpacing": -0.24,
+                                    "lineHeightPx": 14.3203125
+                                  }
+                                },
+                                {
+                                  "id": "781:2186",
+                                  "name": "0.5h",
+                                  "type": "TEXT",
+                                  "fills": [
+                                    {
+                                      "blendMode": "NORMAL",
+                                      "type": "SOLID",
+                                      "color": "#b4aeae"
+                                    }
+                                  ],
+                                  "absoluteBoundingBox": {
+                                    "x": 10002.9375,
+                                    "y": -7064,
+                                    "width": 26,
+                                    "height": 32
+                                  },
+                                  "characters": "0.5h",
+                                  "style": {
+                                    "fontFamily": "Pretendard",
+                                    "fontStyle": "Medium",
+                                    "fontWeight": 500,
+                                    "fontSize": 12,
+                                    "textAlignHorizontal": "LEFT",
+                                    "letterSpacing": -0.24,
+                                    "lineHeightPx": 14.3203125
+                                  }
+                                },
+                                {
+                                  "id": "781:2187",
+                                  "name": "0h",
+                                  "type": "TEXT",
+                                  "fills": [
+                                    {
+                                      "blendMode": "NORMAL",
+                                      "type": "SOLID",
+                                      "color": "#b4aeae"
+                                    }
+                                  ],
+                                  "absoluteBoundingBox": {
+                                    "x": 10002.9375,
+                                    "y": -7032,
+                                    "width": 26,
+                                    "height": 32
+                                  },
+                                  "characters": "0h",
+                                  "style": {
+                                    "fontFamily": "Pretendard",
+                                    "fontStyle": "Medium",
+                                    "fontWeight": 500,
+                                    "fontSize": 12,
+                                    "textAlignHorizontal": "LEFT",
+                                    "letterSpacing": -0.24,
+                                    "lineHeightPx": 14.3203125
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "781:2188",
+                      "name": "Graph",
+                      "type": "FRAME",
+                      "absoluteBoundingBox": {
+                        "x": 9664.9375,
+                        "y": -7218.1513671875,
+                        "width": 137.39999389648438,
+                        "height": 218.270263671875
+                      },
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "781:2189",
+          "name": "Card",
+          "type": "FRAME",
+          "fills": [
+            {
+              "blendMode": "NORMAL",
+              "type": "SOLID",
+              "color": "#f4f4f4"
+            }
+          ],
+          "cornerRadius": 12,
+          "absoluteBoundingBox": {
+            "x": 9659.9375,
+            "y": -8020,
+            "width": 369,
+            "height": 112
+          },
+          "children": [
+            {
+              "id": "781:2190",
+              "name": "Left",
+              "type": "FRAME",
+              "absoluteBoundingBox": {
+                "x": 9675.9375,
+                "y": -8004,
+                "width": 230,
+                "height": 80
+              },
+              "children": [
+                {
+                  "id": "781:2191",
+                  "name": "favicon_viva_50",
+                  "type": "FRAME",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#ffffff"
+                    }
+                  ],
+                  "cornerRadius": 4,
+                  "absoluteBoundingBox": {
+                    "x": 9675.9375,
+                    "y": -8004,
+                    "width": 80,
+                    "height": 80
+                  },
+                  "children": [
+                    {
+                      "id": "781:2192",
+                      "name": "logo_vivanaut_verti_260711 1",
+                      "type": "RECTANGLE",
+                      "fills": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "IMAGE",
+                          "scaleMode": "STRETCH",
+                          "imageTransform": [
+                            [
+                              0.6767195463180542,
+                              0,
+                              0.15976355969905853
+                            ],
+                            [
+                              0,
+                              0.7026607394218445,
+                              3.552713678800501e-15
+                            ]
+                          ]
+                        }
+                      ],
+                      "absoluteBoundingBox": {
+                        "x": 9691.9208984375,
+                        "y": -7991,
+                        "width": 48.03307342529297,
+                        "height": 54
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "781:2193",
+                  "name": "Frame 123",
+                  "type": "FRAME",
+                  "absoluteBoundingBox": {
+                    "x": 9771.9375,
+                    "y": -7988.5,
+                    "width": 134,
+                    "height": 49
+                  },
+                  "children": [
+                    {
+                      "id": "781:2194",
+                      "name": "Frame 139",
+                      "type": "FRAME",
+                      "absoluteBoundingBox": {
+                        "x": 9771.9375,
+                        "y": -7988.5,
+                        "width": 106,
+                        "height": 24
+                      },
+                      "children": [
+                        {
+                          "id": "781:2195",
+                          "name": "크레 이름",
+                          "type": "TEXT",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#3c3c3c"
+                            }
+                          ],
+                          "absoluteBoundingBox": {
+                            "x": 9771.9375,
+                            "y": -7986,
+                            "width": 58,
+                            "height": 19
+                          },
+                          "characters": "크레 이름",
+                          "style": {
+                            "fontFamily": "Pretendard",
+                            "fontStyle": "Bold",
+                            "fontWeight": 700,
+                            "fontSize": 16,
+                            "textAlignHorizontal": "LEFT",
+                            "letterSpacing": -0.32,
+                            "lineHeightPx": 19.09375
+                          }
+                        },
+                        {
+                          "id": "781:2196",
+                          "name": "Tag",
+                          "type": "FRAME",
+                          "fills": [
+                            {
+                              "blendMode": "NORMAL",
+                              "type": "SOLID",
+                              "color": "#ffffff"
+                            }
+                          ],
+                          "cornerRadius": 12,
+                          "absoluteBoundingBox": {
+                            "x": 9837.9375,
+                            "y": -7988.5,
+                            "width": 40,
+                            "height": 24
+                          },
+                          "children": [
+                            {
+                              "id": "781:2197",
+                              "name": "암컷",
+                              "type": "TEXT",
+                              "fills": [
+                                {
+                                  "blendMode": "NORMAL",
+                                  "type": "SOLID",
+                                  "color": "#d61619"
+                                }
+                              ],
+                              "absoluteBoundingBox": {
+                                "x": 9845.9375,
+                                "y": -7985,
+                                "width": 24,
+                                "height": 17
+                              },
+                              "characters": "암컷",
+                              "style": {
+                                "fontFamily": "Pretendard",
+                                "fontStyle": "Bold",
+                                "fontWeight": 700,
+                                "fontSize": 14,
+                                "textAlignHorizontal": "LEFT",
+                                "letterSpacing": -0.28,
+                                "lineHeightPx": 16.70703125
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "781:2198",
+                      "name": "아잔틱 릴리 화이트 | 21g",
+                      "type": "TEXT",
+                      "fills": [
+                        {
+                          "blendMode": "NORMAL",
+                          "type": "SOLID",
+                          "color": "#3c3c3c"
+                        }
+                      ],
+                      "absoluteBoundingBox": {
+                        "x": 9771.9375,
+                        "y": -7956.5,
+                        "width": 134,
+                        "height": 17
+                      },
+                      "characters": "아잔틱 릴리 화이트 | 21g",
+                      "style": {
+                        "fontFamily": "Pretendard",
+                        "fontStyle": "Medium",
+                        "fontWeight": 500,
+                        "fontSize": 14,
+                        "textAlignHorizontal": "LEFT",
+                        "letterSpacing": -0.28,
+                        "lineHeightPx": 16.70703125
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "781:2199",
+              "name": "more_vert",
+              "type": "GROUP",
+              "absoluteBoundingBox": {
+                "x": 9988.9375,
+                "y": -8004,
+                "width": 24,
+                "height": 24
+              },
+              "children": [
+                {
+                  "id": "781:2200",
+                  "name": "Bounding box",
+                  "type": "RECTANGLE",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#d9d9d9"
+                    }
+                  ],
+                  "absoluteBoundingBox": {
+                    "x": 9988.9375,
+                    "y": -8004,
+                    "width": 24,
+                    "height": 24
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "781:2202",
+      "name": "그룹을 추가하면 어떤걸 할수있는지 안내하는것이 필요 이건 나중에 추가~",
+      "type": "TEXT",
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "absoluteBoundingBox": {
+        "x": 10140.7685546875,
+        "y": -7262.9833984375,
+        "width": 329,
+        "height": 38
+      },
+      "characters": "그룹을 추가하면 어떤걸 할수있는지 안내하는것이 필요\n이건 나중에 추가~",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      }
+    }
+  ]
+}
