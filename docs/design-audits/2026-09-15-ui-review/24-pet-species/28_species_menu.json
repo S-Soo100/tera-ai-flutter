@@ -1,0 +1,536 @@
+[
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      852.0
+    ],
+    "color": 4294967295,
+    "shape": "null"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      176.5,
+      -116.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "사진 추가",
+    "rect": [
+      167.69062423706055,
+      -76.0,
+      57.618751525878906,
+      28.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.8x)"
+  },
+  {
+    "type": "Text",
+    "text": "이름*",
+    "rect": [
+      24.0,
+      32.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "TextFormField",
+    "text": null,
+    "rect": [
+      12.0,
+      63.0,
+      369.0,
+      65.0
+    ]
+  },
+  {
+    "type": "EditableText",
+    "text": "",
+    "rect": [
+      29.0,
+      86.0,
+      299.8112506866455,
+      19.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "0/10",
+    "rect": [
+      332.8112506866455,
+      86.0,
+      31.188749313354492,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "종*",
+    "rect": [
+      24.0,
+      152.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      12.0,
+      183.0,
+      369.0,
+      65.0
+    ],
+    "color": 4294638330,
+    "shape": "RoundedRectangleBorder(BorderSide(color: Color(alpha: 1.0000, red: 0.8902, green: 0.8902, blue: 0.8902, colorSpace: ColorSpace.sRGB)), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "text": "",
+    "rect": [
+      29.0,
+      206.0,
+      311.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      340.0,
+      203.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "모프",
+    "rect": [
+      24.0,
+      272.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      12.0,
+      303.0,
+      369.0,
+      65.0
+    ],
+    "color": 4294638330,
+    "shape": "RoundedRectangleBorder(BorderSide(color: Color(alpha: 1.0000, red: 0.8902, green: 0.8902, blue: 0.8902, colorSpace: ColorSpace.sRGB)), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "text": "선택 안함",
+    "rect": [
+      29.0,
+      326.0,
+      311.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      340.0,
+      323.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "성별",
+    "rect": [
+      24.0,
+      392.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "수컷",
+    "rect": [
+      59.49187469482422,
+      433.5,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "암컷",
+    "rect": [
+      182.99187469482422,
+      433.5,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      289.7378120422363,
+      437.5,
+      15.0,
+      11.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "미구분",
+    "rect": [
+      313.2378120422363,
+      433.5,
+      40.524375915527344,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "생년월일",
+    "rect": [
+      24.0,
+      487.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      12.0,
+      518.0,
+      369.0,
+      65.0
+    ],
+    "color": 4294638330,
+    "shape": "RoundedRectangleBorder(BorderSide(color: Color(alpha: 1.0000, red: 0.8902, green: 0.8902, blue: 0.8902, colorSpace: ColorSpace.sRGB)), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "text": "선택 안함",
+    "rect": [
+      29.0,
+      541.0,
+      311.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      340.0,
+      538.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "입양일",
+    "rect": [
+      24.0,
+      607.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      12.0,
+      638.0,
+      369.0,
+      65.0
+    ],
+    "color": 4294638330,
+    "shape": "RoundedRectangleBorder(BorderSide(color: Color(alpha: 1.0000, red: 0.8902, green: 0.8902, blue: 0.8902, colorSpace: ColorSpace.sRGB)), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "text": "선택 안함",
+    "rect": [
+      29.0,
+      661.0,
+      311.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      340.0,
+      658.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "체중 (g)",
+    "rect": [
+      24.0,
+      727.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "TextFormField",
+    "text": null,
+    "rect": [
+      12.0,
+      758.0,
+      369.0,
+      65.0
+    ]
+  },
+  {
+    "type": "EditableText",
+    "text": "",
+    "rect": [
+      29.0,
+      781.0,
+      335.0,
+      19.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "그룹",
+    "rect": [
+      24.0,
+      847.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      12.0,
+      878.0,
+      369.0,
+      65.0
+    ],
+    "color": 4294638330,
+    "shape": "RoundedRectangleBorder(BorderSide(color: Color(alpha: 1.0000, red: 0.8902, green: 0.8902, blue: 0.8902, colorSpace: ColorSpace.sRGB)), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "text": "그룹 없음",
+    "rect": [
+      29.0,
+      901.0,
+      255.4906234741211,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "그룹 설정",
+    "rect": [
+      284.4906234741211,
+      901.0,
+      57.509376525878906,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7529, green: 0.0118, blue: 0.0235, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      346.0,
+      901.5,
+      18.0,
+      18.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "메모",
+    "rect": [
+      24.0,
+      967.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "TextFormField",
+    "text": null,
+    "rect": [
+      12.0,
+      998.0,
+      369.0,
+      130.0
+    ]
+  },
+  {
+    "type": "EditableText",
+    "text": "",
+    "rect": [
+      29.0,
+      1015.5,
+      335.0,
+      95.0
+    ]
+  },
+  {
+    "type": "FilledButton",
+    "text": null,
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": false
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "color": 4293125091,
+    "shape": "RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "text": "저장",
+    "rect": [
+      181.30335903167725,
+      710.0,
+      30.393281936645508,
+      28.0
+    ],
+    "style": "null"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      106.0
+    ],
+    "color": 4294967295,
+    "shape": "null"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ],
+    "color": 0,
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      22.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "개체 정보 입력",
+    "rect": [
+      152.60812377929688,
+      74.5,
+      87.78375244140625,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      12.0,
+      248.0,
+      369.0,
+      52.0
+    ],
+    "color": 4294967295,
+    "shape": "RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "PopupMenuItem<String>",
+    "text": null,
+    "rect": [
+      12.0,
+      252.0,
+      369.0,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "크레스티드 게코",
+    "rect": [
+      32.0,
+      260.0,
+      110.73101806640625,
+      28.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 500, letterSpacing: -0.3, height: 1.6x)"
+  }
+]
