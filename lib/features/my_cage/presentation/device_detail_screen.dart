@@ -186,17 +186,14 @@ class _DeviceDetailBody extends ConsumerWidget {
                                                     () {}, // Explicit product contract: ON fixed, no command.
                                                 child: Container(
                                                     width: 56,
-                                                    margin:
-                                                        const EdgeInsets.all(3),
                                                     alignment: Alignment.center,
                                                     decoration: BoxDecoration(
-                                                        color: on
-                                                            ? glass
-                                                                .surfaceHeader
-                                                            : null,
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(9)),
+                                                        border: on
+                                                            ? Border(
+                                                                right: BorderSide(
+                                                                    color: glass
+                                                                        .border))
+                                                            : null),
                                                     child: Text(
                                                         (on
                                                                 ? 'management_on'
@@ -307,21 +304,27 @@ class _DeviceGroupSettings extends ConsumerWidget {
             title: 'management_group_setting'.tr(),
             onBack: () => Navigator.pop(context)),
         Expanded(
-            child: ListView(padding: const EdgeInsets.only(top: 24), children: [
-          Row(children: [
-            ManagementItemIcon(item.key.kind),
-            const SizedBox(width: 12),
-            Expanded(
-                child: Text(item.name,
-                    style: managementStyle(context, weight: FontWeight.w600))),
-            Flexible(
-                child: Text(item.hardwareId ?? '--',
-                    style: managementStyle(context, weight: FontWeight.w600))),
-          ]),
-          const SizedBox(height: 24),
+            child: ListView(padding: const EdgeInsets.only(top: 16), children: [
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(children: [
+                ManagementItemIcon(item.key.kind),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: Text(item.name,
+                        style:
+                            managementStyle(context, weight: FontWeight.w600))),
+                Flexible(
+                    child: Text(item.hardwareId ?? '--',
+                        style:
+                            managementStyle(context, weight: FontWeight.w600),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis)),
+              ])),
+          const SizedBox(height: 28),
           for (final group in inventory.groups)
             Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 8),
                 child: Material(
                   color: glass.overlay,
                   borderRadius: BorderRadius.circular(12),
@@ -331,7 +334,8 @@ class _DeviceGroupSettings extends ConsumerWidget {
                         .read(_selectedDeviceGroupProvider.notifier)
                         .state = group.id,
                     child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         child: Row(children: [
                           Expanded(
                               child: Column(
@@ -346,11 +350,23 @@ class _DeviceGroupSettings extends ConsumerWidget {
                                               }),
                                     style: managementStyle(context,
                                         color: glass.textTertiary)),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 16),
                                 Text(group.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                     style: managementStyle(context,
                                         weight: FontWeight.w600)),
                               ])),
+                          for (final kind in ManagementKind.values) ...[
+                            const SizedBox(width: 8),
+                            ManagementItemIcon(kind,
+                                backgroundColor: inventory
+                                        .members(group.id)
+                                        .any((item) => item.key.kind == kind)
+                                    ? glass.textSecondary
+                                    : glass.textTertiary),
+                          ],
+                          const SizedBox(width: 8),
                           FigmaIcon.tinted(
                               selected == group.id
                                   ? 'redesign_v2/check_box_400'
@@ -362,10 +378,24 @@ class _DeviceGroupSettings extends ConsumerWidget {
                         ])),
                   ),
                 )),
-          TextButton(
-              onPressed: () => Navigator.pop(context, 'new'),
-              child: Text('management_add_group'.tr(),
-                  style: managementStyle(context, color: glass.navSelected))),
+          Material(
+              color: glass.overlay,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => Navigator.pop(context, 'new'),
+                  child: SizedBox(
+                      height: 52,
+                      child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(children: [
+                            FigmaIcon.tinted(FigmaIcons.add,
+                                size: 24, color: glass.navSelected),
+                            const SizedBox(width: 4),
+                            Text('management_add_group'.tr(),
+                                style: managementStyle(context,
+                                    color: glass.navSelected)),
+                          ]))))),
         ])),
         ManagementButton(
             label: 'management_done'.tr(),
@@ -373,14 +403,15 @@ class _DeviceGroupSettings extends ConsumerWidget {
                 ? null
                 : () => Navigator.pop(context, selected)),
         if (item.groupId != null)
-          Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+          SizedBox(
+              height: 56,
               child: TextButton(
                 onPressed: () => Navigator.pop(context, _removeGroupAction),
                 child: Text('management_remove_group'.tr(),
                     style: managementStyle(context,
                         color: glass.navSelected, weight: FontWeight.w600)),
               )),
+        const SizedBox(height: 10),
       ]),
     )));
   }

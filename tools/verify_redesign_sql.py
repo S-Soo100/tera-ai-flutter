@@ -12,11 +12,12 @@ import subprocess
 root = Path(__file__).resolve().parents[1]
 parts = ['BEGIN;', (root / 'test/sql/redesign_base_schema.sql').read_text()]
 for name in ['20260915_assignment_history.sql', '20260915_redesign_groups.sql',
-             '20260915_clip_visibility.sql', '20260915_redesign_pets.sql']:
+             '20260915_clip_visibility.sql', '20260915_redesign_pets.sql', '20260915_redesign_delete_group.sql']:
     path = root / 'supabase/drafts' / name
     if path.exists():
         parts.append(re.sub(r'(?mi)^(BEGIN|COMMIT|ROLLBACK);.*$', '', path.read_text()))
-parts += [(root / 'test/sql/redesign_contract_assertions.sql').read_text(), 'ROLLBACK;']
+parts += [(root / 'test/sql/redesign_contract_assertions.sql').read_text(),
+          (root / 'test/sql/redesign_delete_group_assertions.sql').read_text(), 'ROLLBACK;']
 result = subprocess.run(['docker', 'exec', '-i', 'vivanaut-redesign-sql-check',
                          'psql', '-U', 'supabase_admin', '-d', 'postgres',
                          '-v', 'ON_ERROR_STOP=1'], input='\n'.join(parts), text=True)

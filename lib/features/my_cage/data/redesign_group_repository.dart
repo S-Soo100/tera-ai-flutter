@@ -104,6 +104,18 @@ class RedesignGroupRepository {
     return result['group_id']! as String;
   }
 
+  Future<void> deleteGroup(String groupId, {required String requestId}) async {
+    final result = await _call('redesign_delete_group_v1', {
+      'p_group_id': groupId,
+      'p_request_id': requestId,
+    });
+    if (result is! Map<String, Object?> ||
+        result['group_id'] != groupId ||
+        result['deleted'] != true) {
+      throw const ManagementFailure('management_save_failed');
+    }
+  }
+
   Future<void> rename(ManagementKey key, String name) async {
     final result = await _call('redesign_rename_item_v1',
         {'p_kind': key.kind.name, 'p_item_id': key.id, 'p_name': name.trim()});

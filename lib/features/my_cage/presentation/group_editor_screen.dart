@@ -10,7 +10,12 @@ import 'device_management_controller.dart';
 import 'widgets/management_widgets.dart';
 
 class GroupEditorScreen extends ConsumerWidget {
-  const GroupEditorScreen({super.key, this.groupId, this.initialMember});
+  const GroupEditorScreen(
+      {super.key,
+      this.groupId,
+      this.initialMember,
+      this.selectMembers = false});
+  final bool selectMembers;
   final String? groupId;
 
   /// Only used after the device membership selector confirmed any move.
@@ -45,6 +50,7 @@ class GroupEditorScreen extends ConsumerWidget {
           if (member != null && !draft.members.contains(member.key)) {
             draft = draft.select(member);
           }
+          if (selectMembers) draft = draft.copy(step: GroupEditorStep.members);
           final initial = draft;
           return ProviderScope(
               key: ValueKey((repo, groupId, initialMember)),
@@ -100,6 +106,28 @@ class _GroupEditorBody extends ConsumerWidget {
       controller.select(item);
     }
 
+    Future<void> finish() async {
+      // Let PopScope observe the committed state before leaving a dirty editor.
+      await WidgetsBinding.instance.endOfFrame;
+      if (!context.mounted) return;
+      final refresh = ref.read(managementMutationCompletedProvider);
+      context.pop();
+      refresh();
+    }
+
+    Future<void> deleteGroup() async {
+      if (draft.saving) return;
+      final confirmed = await managementConfirm(
+          context, 'management_delete_group_confirm'.tr(),
+          action: 'management_delete'.tr());
+      if (!confirmed || !context.mounted) return;
+      if (await ref
+          .read(groupEditorControllerProvider.notifier)
+          .deleteGroup()) {
+        await finish();
+      }
+    }
+
     Future<void> action() async {
       final controller = ref.read(groupEditorControllerProvider.notifier);
       switch (draft.step) {
@@ -111,8 +139,7 @@ class _GroupEditorBody extends ConsumerWidget {
           if (draft.members.isNotEmpty) controller.step(GroupEditorStep.review);
         case GroupEditorStep.review:
           if (await controller.save(inventory) && context.mounted) {
-            ref.read(managementMutationCompletedProvider)();
-            context.pop();
+            await finish();
           }
       }
     }
@@ -124,7 +151,7 @@ class _GroupEditorBody extends ConsumerWidget {
         draft.groupId == null ? 'management_create_group' : 'management_done',
     };
     return PopScope(
-        canPop: !dirty && !draft.saving,
+        canPop: draft.finished || (!dirty && !draft.saving),
         onPopInvokedWithResult: (didPop, _) {
           if (!didPop) leave();
         },
@@ -275,9 +302,23 @@ class _GroupEditorBody extends ConsumerWidget {
                                       draft.members.isEmpty)
                               ? null
                               : action),
+                      if (draft.groupId != null &&
+                          draft.step == GroupEditorStep.review)
+                        SizedBox(
+                            height: 56,
+                            child: TextButton(
+                                key: const Key('management_delete_group'),
+                                onPressed: draft.saving ? null : deleteGroup,
+                                child: Text('management_delete_group'.tr(),
+                                    style: managementStyle(context,
+                                        size: 16,
+                                        color: context.glass.navSelected)))),
                       SizedBox(
-                          height: (100 - MediaQuery.paddingOf(context).bottom)
-                              .clamp(16, 100)),
+                          height: draft.groupId != null &&
+                                  draft.step == GroupEditorStep.review
+                              ? 10
+                              : (100 - MediaQuery.paddingOf(context).bottom)
+                                  .clamp(16, 100)),
                     ])))));
   }
 }

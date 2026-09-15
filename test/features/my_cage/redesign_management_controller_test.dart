@@ -4,6 +4,41 @@ import 'package:vivanaut/features/my_cage/domain/redesign_management.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_management_controller.dart';
 
 void main() {
+  test('delete failure preserves members and retries the same atomic request',
+      () async {
+    final requests = <String>[];
+    final controller = GroupEditorController(
+        RedesignGroupRepository(
+            loadRows: (_) async => [],
+            rpc: (name, params) async {
+              expect(name, 'redesign_delete_group_v1');
+              requests.add(params['p_request_id']! as String);
+              if (requests.length == 1) {
+                throw const ManagementFailure('management_server_unsupported');
+              }
+              return {'group_id': 'g', 'deleted': true};
+            }),
+        GroupEditDraft(
+            groupId: 'g',
+            name: 'saved',
+            members: {
+              const ManagementKey(kind: ManagementKind.camera, id: 'c'),
+              const ManagementKey(kind: ManagementKind.pet, id: 'p'),
+            },
+            step: GroupEditorStep.review));
+    addTearDown(controller.dispose);
+    expect(await controller.deleteGroup(), false);
+    expect(controller.state.members.length, 2);
+    expect(controller.state.name, 'saved');
+    expect(controller.state.finished, false);
+    expect(controller.state.errorKey, 'management_server_unsupported');
+    expect(await controller.deleteGroup(), true);
+    expect(controller.state.finished, true);
+    expect(requests[0], requests[1]);
+    expect(await controller.deleteGroup(), false);
+    expect(requests.length, 2);
+  });
+
   test('failed group save preserves the name, selected items and review step',
       () async {
     final member = const ManagementItem(

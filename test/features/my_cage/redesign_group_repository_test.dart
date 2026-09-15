@@ -4,6 +4,30 @@ import 'package:vivanaut/features/my_cage/data/redesign_group_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/redesign_management.dart';
 
 void main() {
+  test('group deletion uses one atomic RPC and rejects missing server support',
+      () async {
+    var calls = 0;
+    final repo = RedesignGroupRepository(
+        loadRows: (_) async => [],
+        rpc: (name, params) async {
+          calls++;
+          expect(name, 'redesign_delete_group_v1');
+          expect(params, {'p_group_id': 'g', 'p_request_id': 'request'});
+          return {'group_id': 'g', 'deleted': true};
+        });
+    await repo.deleteGroup('g', requestId: 'request');
+    expect(calls, 1);
+    final unavailable = RedesignGroupRepository(
+        loadRows: (_) async => [],
+        rpc: (_, __) async {
+          throw const PostgrestException(
+              message: 'missing function', code: 'PGRST202');
+        });
+    await expectLater(
+        unavailable.deleteGroup('g', requestId: 'request'),
+        throwsA(isA<ManagementFailure>()
+            .having((e) => e.key, 'key', 'management_server_unsupported')));
+  });
   test(
       'inventory preserves existing names, standalone pets and actual identifiers',
       () async {

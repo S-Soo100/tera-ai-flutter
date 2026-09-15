@@ -50,6 +50,7 @@ class GroupEditorController extends StateNotifier<GroupEditDraft> {
   GroupEditorController(this._repo, GroupEditDraft draft) : super(draft);
   final RedesignGroupRepository _repo;
   String? _requestId;
+  String? _deleteRequestId;
   void name(String value) {
     if (!state.saving) {
       state = state.copy(name: value, useDefaultName: false);
@@ -83,6 +84,27 @@ class GroupEditorController extends StateNotifier<GroupEditDraft> {
     return error == null;
   }
 
+  Future<bool> deleteGroup() async {
+    final id = state.groupId;
+    if (id == null || state.saving || state.finished) return false;
+    state = state.copy(saving: true);
+    try {
+      await _repo.deleteGroup(id,
+          requestId: _deleteRequestId ??= const Uuid().v4());
+      if (!mounted) return false;
+      state = state.copy(saving: false, finished: true);
+      return true;
+    } catch (error) {
+      if (!mounted) return false;
+      state = state.copy(
+          saving: false,
+          errorKey: error is ManagementFailure
+              ? error.key
+              : 'management_save_failed');
+      return false;
+    }
+  }
+
   Future<bool> save(ManagementInventory inventory) async {
     if (state.saving || !validateName(inventory)) return false;
     if (state.members.isEmpty) {
@@ -99,7 +121,7 @@ class GroupEditorController extends StateNotifier<GroupEditDraft> {
       final id = await _repo.saveGroup(state,
           requestId: _requestId ??= const Uuid().v4());
       if (!mounted) return false;
-      state = state.copy(saving: false, savedGroupId: id);
+      state = state.copy(saving: false, savedGroupId: id, finished: true);
       return true;
     } catch (error) {
       if (!mounted) return false;

@@ -107,6 +107,7 @@ class GroupEditDraft {
       this.errorKey,
       this.nameErrorKey,
       this.savedGroupId,
+      this.finished = false,
       this.useDefaultName = false})
       : members = Set.unmodifiable(members),
         expectedGroups = Map.unmodifiable(expectedGroups);
@@ -130,6 +131,7 @@ class GroupEditDraft {
   final String? errorKey;
   final String? nameErrorKey;
   final String? savedGroupId;
+  final bool finished;
   final bool useDefaultName;
   bool requiresMoveConfirmation(ManagementItem item) =>
       item.groupId != null && item.groupId != groupId;
@@ -154,6 +156,7 @@ class GroupEditDraft {
           String? errorKey,
           String? nameErrorKey,
           String? savedGroupId,
+          bool? finished,
           bool? useDefaultName}) =>
       GroupEditDraft(
           groupId: groupId,
@@ -165,6 +168,7 @@ class GroupEditDraft {
           errorKey: errorKey,
           nameErrorKey: nameErrorKey,
           savedGroupId: savedGroupId ?? this.savedGroupId,
+          finished: finished ?? this.finished,
           useDefaultName: useDefaultName ?? this.useDefaultName);
 }
 

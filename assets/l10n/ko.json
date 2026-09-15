@@ -1,4 +1,9 @@
 {
+  "redesign_selected": "선택됨",
+  "management_delete_group": "이 그룹 삭제",
+  "management_delete_group_confirm": "이 그룹을 삭제할까요? 소속 기기와 개체는 삭제되지 않고 ‘그룹 없음’으로 이동합니다.",
+  "activity_connect_camera": "카메라와 그룹만들기",
+  "activity_connect_camera_hint": "카메라와 연동해 활동 리포트를 받아보세요",
   "device_add_title": "기기 추가",
   "device_add_device": "사육장",
   "device_add_camera": "카메라",

@@ -131,14 +131,16 @@ class ManagementSymbolBadge extends StatelessWidget {
 }
 
 class ManagementItemIcon extends StatelessWidget {
-  const ManagementItemIcon(this.kind, {super.key});
+  const ManagementItemIcon(this.kind, {super.key, this.backgroundColor});
+  final Color? backgroundColor;
   final ManagementKind kind;
   @override
   Widget build(BuildContext context) => Container(
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-          color: context.glass.textSecondary, shape: BoxShape.circle),
+          color: backgroundColor ?? context.glass.textSecondary,
+          shape: BoxShape.circle),
       alignment: Alignment.center,
       child: FigmaIcon.tinted(
           switch (kind) {
@@ -199,25 +201,26 @@ class ManagementItemRow extends StatelessWidget {
               const SizedBox(width: 8),
               if (item.hardwareId != null || groupName != null)
                 ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .46),
-                  child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                    if (item.hardwareId != null)
-                      Text(item.hardwareId!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: managementStyle(context,
-                              weight: FontWeight.w600,
-                              color: glass.textPrimary)),
-                    if (groupName != null)
-                      Text(groupName!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: managementStyle(context,
-                              size: 14, color: glass.textTertiary)),
-                  ])),
+                    constraints: BoxConstraints(
+                        maxWidth: MediaQuery.sizeOf(context).width * .46),
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (item.hardwareId != null)
+                            Text(item.hardwareId!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: managementStyle(context,
+                                    weight: FontWeight.w600,
+                                    color: glass.textPrimary)),
+                          if (groupName != null)
+                            Text(groupName!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: managementStyle(context,
+                                    size: 14, color: glass.textTertiary)),
+                        ])),
               if (selected != null)
                 Padding(
                     padding: const EdgeInsets.only(left: 12),

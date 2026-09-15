@@ -12,6 +12,73 @@ import 'package:vivanaut/features/my_cage/presentation/group_editor_screen.dart'
 import 'package:vivanaut/features/my_cage/presentation/widgets/management_widgets.dart';
 
 void main() {
+  for (final fail in [false, true]) {
+    testWidgets('group delete cancel writes nothing, confirmed fail=$fail',
+        (tester) async {
+      var writes = 0;
+      var refreshes = 0;
+      final inventory = ManagementInventory(groups: [
+        const ManagementGroup(id: 'g', name: 'Group')
+      ], items: [
+        const ManagementItem(
+            key: ManagementKey(kind: ManagementKind.camera, id: 'c'),
+            name: 'Camera',
+            groupId: 'g')
+      ]);
+      final repo = RedesignGroupRepository(
+          loadRows: (_) async => [],
+          rpc: (name, params) async {
+            writes++;
+            expect(name, 'redesign_delete_group_v1');
+            if (fail) {
+              throw const ManagementFailure('management_server_unsupported');
+            }
+            return {'group_id': 'g', 'deleted': true};
+          });
+      final router = GoRouter(routes: [
+        GoRoute(
+            path: '/',
+            builder: (_, __) => const Scaffold(body: Text('returned'))),
+        GoRoute(
+            path: '/edit',
+            builder: (_, __) => const GroupEditorScreen(groupId: 'g'))
+      ]);
+      addTearDown(router.dispose);
+      await tester.pumpWidget(ProviderScope(
+          overrides: [
+            managementInventoryProvider.overrideWith((ref) async => inventory),
+            redesignGroupRepositoryProvider.overrideWith((ref) => repo),
+            managementMutationCompletedProvider
+                .overrideWithValue(() => refreshes++),
+          ],
+          child:
+              MaterialApp.router(theme: AppTheme.light, routerConfig: router)));
+      router.push('/edit');
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField), 'unsaved');
+      await tester.tap(find.byKey(const Key('management_delete_group')));
+      await tester.pumpAndSettle();
+      expect(find.text('management_delete_group_confirm'), findsOneWidget);
+      await tester.tap(find.text('management_cancel'));
+      await tester.pumpAndSettle();
+      expect(writes, 0);
+      expect(refreshes, 0);
+      await tester.tap(find.byKey(const Key('management_delete_group')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('management_delete'));
+      await tester.pumpAndSettle();
+      expect(writes, 1);
+      expect(refreshes, fail ? 0 : 1);
+      expect(find.text('returned'), fail ? findsNothing : findsOneWidget);
+      if (fail) {
+        expect(find.text('Camera'), findsOneWidget);
+        expect(find.text('unsaved'), findsOneWidget);
+        expect(find.text('management_server_unsupported'), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('group-add CTA is hidden for only single-member groups',
       (tester) async {
     final inventory = ManagementInventory(groups: [
