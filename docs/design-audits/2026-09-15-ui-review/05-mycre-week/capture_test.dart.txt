@@ -61,14 +61,50 @@ void main() {
                   overrides: [
                     activityClockProvider
                         .overrideWith((ref) => Stream.value(now)),
-                    activitySelectedDayProvider.overrideWith((ref, scope) => ActivityWindow.day(2026,9,13)),
-                    activitySelectedWeekProvider.overrideWith((ref, scope) => ActivityWindow.weekContaining(ActivityWindow.day(2026,9,13))),
+                    activitySelectedDayProvider.overrideWith(
+                        (ref, scope) => ActivityWindow.day(2026, 9, 13)),
+                    activitySelectedWeekProvider.overrideWith((ref, scope) =>
+                        ActivityWindow.weekContaining(
+                            ActivityWindow.day(2026, 9, 13))),
                     activityDataProvider.overrideWith((ref, query) async =>
                         ActivityData(
                             intervals: [
-                          for (var d=7; d<=13; d++)
-                          for(var hour=0; hour<24; hour++)
-                            ActivityInterval(cameraId:'a',startUtc:DateTime.utc(2026,9,d,hour-9,3),endUtc:DateTime.utc(2026,9,d,hour-9,3).add(Duration(minutes:([26,22,17,12,8,5,3,2,1,2,1,2,3,2,3,4,6,10,19,28,35,31,29,27][hour]*(.85+(d-7)*.045)).round()))),
+                          for (var d = 7; d <= 13; d++)
+                            for (var hour = 0; hour < 24; hour++)
+                              ActivityInterval(
+                                  cameraId: 'a',
+                                  startUtc:
+                                      DateTime.utc(2026, 9, d, hour - 9, 3),
+                                  endUtc: DateTime.utc(2026, 9, d, hour - 9, 3)
+                                      .add(Duration(
+                                          minutes: ([
+                                                    26,
+                                                    22,
+                                                    17,
+                                                    12,
+                                                    8,
+                                                    5,
+                                                    3,
+                                                    2,
+                                                    1,
+                                                    2,
+                                                    1,
+                                                    2,
+                                                    3,
+                                                    2,
+                                                    3,
+                                                    4,
+                                                    6,
+                                                    10,
+                                                    19,
+                                                    28,
+                                                    35,
+                                                    31,
+                                                    29,
+                                                    27
+                                                  ][hour] *
+                                                  (.85 + (d - 7) * .045))
+                                              .round()))),
                         ]
                                 .where((i) =>
                                     !i.startUtc
@@ -88,24 +124,23 @@ void main() {
                                   padding: const EdgeInsets.only(top: 62)),
                               child: child!)),
                       home: MyCreActivityScreen(
-                          userId: 'u',
-                          pet: pet,
-                          hasCameraConnection: linked,
-                          assignments: [
-                            ActivityAssignment(
-                                cameraId: 'a', origin: ActivityOrigin.legacy)
-                          ],
-                          header: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              child: RedesignTabHeader(
-                                  choices: const [(id: 'p', label: '사육 환경 1')],
-                                  selectedId: 'p',
-                                  emptyLabel: '',
-                                  onSelected: (_) {})),
-                          onAddPet: () {},
-                          onEditPet: () {},
-                          onOpenLegacyReports: () {}))))));
+                        userId: 'u',
+                        pet: pet,
+                        hasCameraConnection: linked,
+                        assignments: [
+                          ActivityAssignment(
+                              cameraId: 'a', origin: ActivityOrigin.legacy)
+                        ],
+                        header: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: RedesignTabHeader(
+                                choices: const [(id: 'p', label: '사육 환경 1')],
+                                selectedId: 'p',
+                                emptyLabel: '',
+                                onSelected: (_) {})),
+                        onAddPet: () {},
+                        onEditPet: () {},
+                      ))))));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.runAsync(() async {

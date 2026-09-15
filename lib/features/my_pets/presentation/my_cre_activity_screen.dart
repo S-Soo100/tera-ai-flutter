@@ -24,7 +24,6 @@ class MyCreActivityScreen extends ConsumerWidget {
       required this.hasCameraConnection,
       required this.assignments,
       required this.onAddPet,
-      required this.onOpenLegacyReports,
       this.assignmentNotice,
       this.onEditPet,
       this.onConnectCamera});
@@ -35,17 +34,12 @@ class MyCreActivityScreen extends ConsumerWidget {
   final VoidCallback? onConnectCamera;
   final List<ActivityAssignment> assignments;
   final VoidCallback onAddPet;
-  final VoidCallback onOpenLegacyReports;
   final VoidCallback? onEditPet;
   final Widget? assignmentNotice;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = pet;
-    final legacy = TextButton(
-        key: const Key('activity_legacy'),
-        onPressed: onOpenLegacyReports,
-        child: Text('activity_legacy_reports'.tr()));
     if (selected == null) {
       return Scaffold(
           body: SafeArea(
@@ -94,7 +88,6 @@ class MyCreActivityScreen extends ConsumerWidget {
                                               letterSpacing: -.36,
                                               color: context
                                                   .glass.surfaceHeader)))),
-                          legacy
                         ]))),
               ])));
     }
@@ -294,8 +287,6 @@ class MyCreActivityScreen extends ConsumerWidget {
                                   inProgress: week.endUtc.isAfter(now),
                                   onRetry: () => ref.invalidate(
                                       activityDataProvider(weekQuery))),
-                            const SizedBox(height: 20),
-                            legacy,
                           ]))),
             ])));
   }

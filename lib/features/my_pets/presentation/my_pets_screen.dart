@@ -75,7 +75,6 @@ class MyPetsScreen extends ConsumerWidget {
       onEditPet: selected == null
           ? null
           : () => context.push('/my-pets/${selected.id}/edit'),
-      onOpenLegacyReports: () => context.push('/my-pets/reports'),
     );
   }
 }

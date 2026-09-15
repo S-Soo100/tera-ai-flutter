@@ -88,24 +88,23 @@ void main() {
                                   padding: const EdgeInsets.only(top: 62)),
                               child: child!)),
                       home: MyCreActivityScreen(
-                          userId: 'u',
-                          pet: pet,
-                          hasCameraConnection: linked,
-                          assignments: [
-                            ActivityAssignment(
-                                cameraId: 'a', origin: ActivityOrigin.legacy)
-                          ],
-                          header: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              child: RedesignTabHeader(
-                                  choices: const [(id: 'p', label: '사육 환경 1')],
-                                  selectedId: 'p',
-                                  emptyLabel: '',
-                                  onSelected: (_) {})),
-                          onAddPet: () {},
-                          onEditPet: () {},
-                          onOpenLegacyReports: () {}))))));
+                        userId: 'u',
+                        pet: pet,
+                        hasCameraConnection: linked,
+                        assignments: [
+                          ActivityAssignment(
+                              cameraId: 'a', origin: ActivityOrigin.legacy)
+                        ],
+                        header: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: RedesignTabHeader(
+                                choices: const [(id: 'p', label: '사육 환경 1')],
+                                selectedId: 'p',
+                                emptyLabel: '',
+                                onSelected: (_) {})),
+                        onAddPet: () {},
+                        onEditPet: () {},
+                      ))))));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.runAsync(() async {

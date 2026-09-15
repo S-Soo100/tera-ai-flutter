@@ -16,18 +16,15 @@ void main() {
           child: MaterialApp(
               theme: AppTheme.light,
               home: MyCreActivityScreen(
-                  header: const Text('header'),
-                  userId: null,
-                  pet: Pet(
-                      id: 'p',
-                      name: 'Pet',
-                      speciesId: 's',
-                      speciesName: 'Gecko'),
-                  hasCameraConnection: connection,
-                  assignments: const [],
-                  onAddPet: () {},
-                  onConnectCamera: () => connects++,
-                  onOpenLegacyReports: () {}))));
+                header: const Text('header'),
+                userId: null,
+                pet: Pet(
+                    id: 'p', name: 'Pet', speciesId: 's', speciesName: 'Gecko'),
+                hasCameraConnection: connection,
+                assignments: const [],
+                onAddPet: () {},
+                onConnectCamera: () => connects++,
+              ))));
       await tester.pump();
       expect(find.text('activity_camera_attribution'), findsNothing);
       if (connection == false) {
@@ -43,34 +40,30 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
-  testWidgets('empty profile offers registration and preserves old reports',
+  testWidgets('empty profile offers registration without legacy report button',
       (tester) async {
     var added = 0;
-    var legacy = 0;
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
             theme: AppTheme.light,
             home: MyCreActivityScreen(
-                header: const Text('Group header'),
-                userId: null,
-                pet: null,
-                hasCameraConnection: false,
-                assignments: const [],
-                onAddPet: () => added++,
-                onOpenLegacyReports: () => legacy++))));
+              header: const Text('Group header'),
+              userId: null,
+              pet: null,
+              hasCameraConnection: false,
+              assignments: const [],
+              onAddPet: () => added++,
+            ))));
     expect(find.byType(Image), findsOneWidget);
     expect(
         tester.widget<Image>(find.byType(Image)).image, FigmaImages.emptyPet);
     await tester.tap(find.byKey(const Key('activity_add_pet')));
     expect(added, 1);
-    await tester.ensureVisible(find.byKey(const Key('activity_legacy')));
-    await tester.tap(find.byKey(const Key('activity_legacy')));
-    expect(legacy, 1);
+    expect(find.byKey(const Key('activity_legacy')), findsNothing);
   });
   testWidgets(
-      'profile uses pet name, fixed header stays after scroll and legacy remains reachable',
+      'profile uses pet name and fixed header stays after scroll without legacy report button',
       (tester) async {
-    var legacy = 0;
     final pet = Pet(
         id: 'p',
         name: 'Individual',
@@ -80,13 +73,13 @@ void main() {
         child: MaterialApp(
             theme: AppTheme.light,
             home: MyCreActivityScreen(
-                header: const Text('Group header'),
-                userId: null,
-                pet: pet,
-                hasCameraConnection: false,
-                assignments: const [],
-                onAddPet: () {},
-                onOpenLegacyReports: () => legacy++))));
+              header: const Text('Group header'),
+              userId: null,
+              pet: pet,
+              hasCameraConnection: false,
+              assignments: const [],
+              onAddPet: () {},
+            ))));
     await tester.pump();
     expect(find.text('Individual'), findsOneWidget);
     expect(find.byKey(const Key('activity_no_connection')), findsOneWidget);
@@ -96,9 +89,7 @@ void main() {
         find.byType(SingleChildScrollView).first, const Offset(0, -600));
     await tester.pump();
     expect(tester.getTopLeft(find.text('Group header')).dy, headerY);
-    await tester.ensureVisible(find.byKey(const Key('activity_legacy')));
-    await tester.tap(find.byKey(const Key('activity_legacy')));
-    expect(legacy, 1);
+    expect(find.byKey(const Key('activity_legacy')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
