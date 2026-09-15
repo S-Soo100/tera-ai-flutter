@@ -371,12 +371,12 @@ class _DeviceGroupSettings extends ConsumerWidget {
                           const SizedBox(width: 8),
                           FigmaIcon.tinted(
                               selected == group.id
-                                  ? 'redesign_v2/check_box_400'
+                                  ? 'redesign_v2/check_box_300'
                                   : 'redesign_v2/check_box_outline_blank_400',
                               size: 24,
                               color: selected == group.id
                                   ? glass.navSelected
-                                  : glass.textTertiary),
+                                  : glass.deviceOff),
                         ])),
                   ),
                 )),

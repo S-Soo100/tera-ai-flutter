@@ -1,0 +1,473 @@
+
+00:00 +0: loading /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart
+00:01 +0: loading /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart
+00:01 +0: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: (setUpAll)
+00:01 +0: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: (setUpAll)
+[🌎 Easy Localization] [DEBUG] Localization initialized
+
+00:02 +0: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: scan narrow screen and large text fit without overflow
+00:02 +0: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: scan narrow screen and large text fit without overflow
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Init state
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+
+00:02 +0: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/management_capture_test.dart: (setUpAll)
+[🌎 Easy Localization] [DEBUG] Localization initialized
+
+00:02 +0: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: scan narrow screen and large text fit without overflow
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+
+00:02 +0: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/management_capture_test.dart: source-sized localized inventory, detail, group review, selection
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Init state
+[🌎 Easy Localization] [INFO] Start locale loaded ko
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+
+00:02 +0: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+
+00:02 +1: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+00:02 +1: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: networks narrow screen and large text fit without overflow
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Init state
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+
+00:02 +2: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+00:02 +2: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: credentials narrow screen and large text fit without overflow
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Init state
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+
+00:02 +2: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+
+00:02 +3: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+00:02 +3: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: connecting narrow screen and large text fit without overflow
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Init state
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+
+00:02 +3: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group_confirm] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete] not found
+
+00:02 +4: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+00:02 +4: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: results narrow screen and large text fit without overflow
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Init state
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+
+00:02 +4: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+[🌎 Easy Localization] [WARNING] Localization key [management_cancel] not found
+
+00:02 +4: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: results narrow screen and large text fit without overflow
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+
+00:02 +4: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+
+00:02 +4: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/management_capture_test.dart: source-sized localized inventory, detail, group review, selection
+[🌎 Easy Localization] [DEBUG] Start
+
+00:02 +4: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+
+00:02 +4: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/management_capture_test.dart: source-sized localized inventory, detail, group review, selection
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+
+00:02 +4: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+
+00:02 +4: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/management_capture_test.dart: source-sized localized inventory, detail, group review, selection
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+
+00:02 +5: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+00:02 +5: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: results single narrow screen and large text fit without overflow
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Init state
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+
+00:02 +5: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+
+00:02 +5: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: results single narrow screen and large text fit without overflow
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+
+00:02 +6: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+00:02 +6: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: opt-in capture measured selection/password/result screens
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Init state
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+
+00:02 +6: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group_confirm] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete] not found
+
+00:02 +6: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: opt-in capture measured selection/password/result screens
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+
+00:02 +6: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=false
+[🌎 Easy Localization] [WARNING] Localization key [management_cancel] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_cancel] not found
+
+00:02 +7: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/management_capture_test.dart: source-sized localized inventory, detail, group review, selection
+00:02 +7: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: opt-in capture measured selection/password/result screens
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+
+00:02 +7: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=true
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+
+00:02 +7: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_add_flow_screen_test.dart: opt-in capture measured selection/password/result screens
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+
+00:02 +7: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=true
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+
+00:02 +8: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/management_capture_test.dart: source-sized localized inventory, detail, group review, selection
+00:02 +8: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=true
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group_confirm] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_cancel] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+
+00:02 +8: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/management_capture_test.dart: source-sized localized inventory, detail, group review, selection
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+
+00:02 +8: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group delete cancel writes nothing, confirmed fail=true
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group_confirm] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_cancel] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_server_unsupported] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+
+00:02 +9: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/management_capture_test.dart: source-sized localized inventory, detail, group review, selection
+00:03 +9: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/management_capture_test.dart: source-sized localized inventory, detail, group review, selection
+00:03 +9: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group-add CTA is hidden for only single-member groups
+[🌎 Easy Localization] [WARNING] Localization key [management_title] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_title] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_groups] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_ungrouped] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_no_items] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+
+00:03 +10: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/management_capture_test.dart: source-sized localized inventory, detail, group review, selection
+00:03 +11: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: ... power stays ON and sends no write even when OFF is tapped
+00:03 +11: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: device power stays ON and sends no write even when OFF is tapped
+[🌎 Easy Localization] [WARNING] Localization key [management_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_info] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_on] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_off] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_ungrouped] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_setting] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+
+00:03 +12: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: ... power stays ON and sends no write even when OFF is tapped
+00:03 +12: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: ... a cross-group move keeps the original selected member
+00:03 +12: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: canceling a cross-group move keeps the original selected member
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_member_hint] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_kind_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_kind_camera] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_kind_pet] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_select] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_move_confirm] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_move] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_cancel] not found
+
+00:03 +13: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: ... a cross-group move keeps the original selected member
+00:03 +13: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: device dirty editor confirmed discard pops once
+00:03 +13: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: device dirty editor confirmed discard pops once
+[🌎 Easy Localization] [WARNING] Localization key [management_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_info] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_on] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_off] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_setting] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_info] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_on] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_off] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_setting] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_discard] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_cancel] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_confirm] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_cancel] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_confirm] not found
+
+00:03 +14: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: device dirty editor confirmed discard pops once
+00:03 +14: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: device dirty editor save pops once
+00:03 +14: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: device dirty editor save pops once
+[🌎 Easy Localization] [WARNING] Localization key [management_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_info] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_on] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_off] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_setting] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_info] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_on] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_off] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_setting] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_info] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_on] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_off] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_setting] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+
+00:03 +15: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: device dirty editor save pops once
+00:03 +15: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group dirty editor confirmed discard pops once
+00:03 +15: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group dirty editor confirmed discard pops once
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_discard] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_cancel] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_confirm] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_cancel] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_confirm] not found
+
+00:03 +16: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group dirty editor confirmed discard pops once
+00:03 +16: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group dirty editor save pops once
+00:03 +16: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group dirty editor save pops once
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+
+00:03 +17: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group dirty editor save pops once
+00:03 +17: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group member device opens its own detail without saving
+00:03 +17: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group member device opens its own detail without saving
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+
+00:03 +18: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group member device opens its own detail without saving
+00:03 +18: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group member camera opens its own detail without saving
+00:03 +18: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group member camera opens its own detail without saving
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+
+00:03 +19: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group member camera opens its own detail without saving
+00:03 +19: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group member pet opens its own detail without saving
+00:03 +19: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group member pet opens its own detail without saving
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_members] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_change] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+
+00:03 +20: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: group member pet opens its own detail without saving
+00:03 +20: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: remove from group lives in settings and cancel sends no write
+00:03 +20: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: remove from group lives in settings and cancel sends no write
+[🌎 Easy Localization] [WARNING] Localization key [management_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_name] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_device_info] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_power_on_label] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_on] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_off] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_setting] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_delete_device] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group_setting] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_add_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_done] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_remove_group] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_back] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_remove_confirm] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_remove] not found
+[🌎 Easy Localization] [WARNING] Localization key [management_cancel] not found
+
+00:03 +21: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_cage/device_management_screen_test.dart: remove from group lives in settings and cancel sends no write
+00:03 +21: All tests passed!

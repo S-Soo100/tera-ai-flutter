@@ -359,7 +359,10 @@
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
       "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
-      "consumers": []
+      "consumers": [
+        "lib/features/my_cage/presentation/device_add_flow_screen.dart",
+        "lib/features/my_cage/presentation/device_detail_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/check_box_400.svg",
@@ -382,7 +385,9 @@
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
       "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
-      "consumers": []
+      "consumers": [
+        "lib/features/my_cage/presentation/device_add_flow_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/check_box_outline_blank_400.svg",
@@ -394,6 +399,7 @@
       "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
       "consumers": [
         "lib/features/my_cage/presentation/device_add_flow_screen.dart",
+        "lib/features/my_cage/presentation/device_detail_screen.dart",
         "lib/features/my_cage/presentation/widgets/management_widgets.dart"
       ]
     },

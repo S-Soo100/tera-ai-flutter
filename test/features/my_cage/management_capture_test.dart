@@ -130,6 +130,9 @@ void main() {
     await pump(
         const DeviceDetailScreen(kind: ManagementKind.device, itemId: 'd'));
     await capture('management-device');
+    await tester.tap(find.text('그룹 설정'));
+    await tester.pumpAndSettle();
+    await capture('management-device-group-settings');
     await pump(const GroupEditorScreen(groupId: 'g'));
     await capture('management-group-review');
     await tester.tap(find.text('추가 · 변경'));

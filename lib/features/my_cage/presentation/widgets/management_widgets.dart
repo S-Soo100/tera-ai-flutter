@@ -228,8 +228,7 @@ class ManagementItemRow extends StatelessWidget {
                         selected!
                             ? 'redesign_v2/check_box_400'
                             : 'redesign_v2/check_box_outline_blank_400',
-                        color:
-                            selected! ? glass.navSelected : glass.textTertiary,
+                        color: selected! ? glass.navSelected : glass.deviceOff,
                         size: 24))
               else if (showArrow)
                 Padding(

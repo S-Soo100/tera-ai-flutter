@@ -343,7 +343,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                     ? 'redesign_v2/check_box_400'
                                     : 'redesign_v2/check_box_outline_blank_400',
                                 size: 24,
-                                color: context.glass.textPrimary),
+                                color: state.selected[c.kind]?.physicalId ==
+                                        c.physicalId
+                                    ? context.glass.navSelected
+                                    : context.glass.deviceOff),
                           ])))))
       ]),
     ];
@@ -442,10 +445,12 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                     child: Row(children: [
                       FigmaIcon.tinted(
                           state.remember
-                              ? 'redesign_v2/check_box_400'
-                              : 'redesign_v2/check_box_outline_blank_400',
+                              ? 'redesign_v2/check_box_300'
+                              : 'redesign_v2/check_box_outline_blank_300',
                           size: 24,
-                          color: context.glass.textPrimary),
+                          color: state.remember
+                              ? context.glass.navSelected
+                              : context.glass.deviceOff),
                       const SizedBox(width: 12),
                       Expanded(
                           child: Text('device_add_remember'.tr(),

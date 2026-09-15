@@ -178,15 +178,22 @@ void main() {
                           child:
                               const DeviceAddFlowScreen(flowKey: 'test')))))));
       await tester.pumpAndSettle();
-      await tester.runAsync(() async {
-        final image = await (boundary.currentContext!.findRenderObject()!
-                as RenderRepaintBoundary)
-            .toImage();
-        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-        await File('/private/tmp/pairing-${step.name}.png')
-            .writeAsBytes(bytes!.buffer.asUint8List());
-        image.dispose();
-      });
+      Future<void> capture(String name) => tester.runAsync(() async {
+            final image = await (boundary.currentContext!.findRenderObject()!
+                    as RenderRepaintBoundary)
+                .toImage();
+            final bytes =
+                await image.toByteData(format: ui.ImageByteFormat.png);
+            await File('/private/tmp/pairing-$name.png')
+                .writeAsBytes(bytes!.buffer.asUint8List());
+            image.dispose();
+          });
+      await capture(step.name);
+      if (step == DeviceAddStep.credentials) {
+        await tester.tap(find.text('비밀번호 기억하기'));
+        await tester.pumpAndSettle();
+        await capture('credentials-checked');
+      }
     }
     await tester.pumpWidget(const SizedBox());
     await tester.pump();
