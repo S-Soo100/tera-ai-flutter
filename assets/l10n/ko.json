@@ -487,6 +487,8 @@
   "clip_classification_ai_note": "🔎 분류는 AI 추정이에요 (오탐 있을 수 있어요)",
   "clip_saving": "저장 중…",
   "clip_saved_to_gallery": "사진 앱에 저장했어요",
+  "clip_download_progress": "영상 다운로드 중",
+  "clip_download_done": "영상 다운로드 완료",
   "clip_save_failed": "저장에 실패했어요",
   "clip_favorite_add": "즐겨찾기",
   "clip_favorite_saving": "즐겨찾기에 저장 중…",

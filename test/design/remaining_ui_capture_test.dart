@@ -27,6 +27,8 @@ import 'package:vivanaut/shared/domain/week_range.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
+import 'package:vivanaut/features/my_cage/data/video_export_service.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/crecam_detail_top_bar.dart';
 import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
 import 'package:vivanaut/core/theme/glass_palette.dart';
@@ -58,6 +60,15 @@ class _Favorite extends Fake implements FavoriteClipRepository {
   File? getLocalFile(String id) => null;
   @override
   FavoriteClip? getMeta(String id) => null;
+}
+
+class _Export extends Fake implements VideoExportService {
+  final done = Completer<void>();
+  @override
+  Future<void> saveToGallery(String clipId,
+      {File? localFile, String? presignedUrl}) async {
+    await done.future;
+  }
 }
 
 class _Video extends VideoPlayerPlatform {
@@ -151,9 +162,14 @@ Future<void> _settle(WidgetTester tester) async {
   expect(tester.takeException(), isNull);
 }
 
-Future<void> capture(
-    WidgetTester tester, GlobalKey boundary, String name) async {
-  await _settle(tester);
+Future<void> capture(WidgetTester tester, GlobalKey boundary, String name,
+    {bool settle = true}) async {
+  // 무한 애니메이션(다운로드 스피너)이 있는 화면은 settle이 끝나지 않는다.
+  if (settle) {
+    await _settle(tester);
+  } else {
+    await tester.pump();
+  }
   void repaint(RenderObject o) {
     o.markNeedsPaint();
     o.visitChildren(repaint);
@@ -406,6 +422,10 @@ void main() {
     await capture(tester, boundary, 'p13-bookmarks');
     await tester.tap(find.byType(PopupMenuButton<String>).first);
     await capture(tester, boundary, 'p13-bookmarks-menu');
+    await tester.tapAt(const Offset(100, 500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(CrecamDetailTopBar.calendarButtonKey));
+    await capture(tester, boundary, 'p16-calendar');
     debugDisableShadows = true;
     await tester.binding.setSurfaceSize(null);
   });
@@ -454,6 +474,45 @@ void main() {
     await tester.tapAt(const Offset(426, 150));
     await tester.pump(const Duration(milliseconds: 300));
     await capture(tester, boundary, 'p14-player-landscape-hidden');
+    debugDisableShadows = true;
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('P16 download captures', (tester) async {
+    debugDisableShadows = false;
+    VideoPlayerPlatform.instance = _Video();
+    final export = _Export();
+    final boundary = GlobalKey();
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await tester.pumpWidget(shell(
+        boundary,
+        const ClipPlaylistPlayerScreen(clipId: 'b', playlist: ['a', 'b', 'c']),
+        overrides: [
+          currentUserProvider.overrideWithValue(null),
+          favoriteClipRepositoryProvider.overrideWithValue(_Favorite()),
+          motionThumbnailFileProvider.overrideWith((ref, key) async => null),
+          motionClipProvider.overrideWith((ref, id) async => MotionClip(
+              id: id,
+              cameraId: 'cam',
+              startedAt: DateTime(2026, 8, 28, 10, 21),
+              durationSec: 60)),
+          motionClipUrlProvider
+              .overrideWith((ref, id) async => 'https://example.test/$id'),
+          videoExportServiceProvider.overrideWithValue(export),
+        ]));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.byWidgetPredicate(
+        (w) => w is FigmaIcon && w.name == FigmaIcons.download));
+    await tester.pump(const Duration(milliseconds: 100));
+    await capture(tester, boundary, 'p16-download-progress', settle: false);
+    export.done.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await capture(tester, boundary, 'p16-download-done');
+    await tester.pump(const Duration(seconds: 3));
     debugDisableShadows = true;
     await tester.binding.setSurfaceSize(null);
   });

@@ -29,8 +29,9 @@ void main() {
     final toast = find.byKey(const Key('clip_toast'));
     expect(toast, findsOneWidget);
     final rect = tester.getRect(toast);
-    expect(rect.size, const Size(256, 60));
-    expect(rect.left, 68.5);
+    // 폭은 글자에 따라(Pretendard 실측 256), 높이 60, 가로 가운데.
+    expect(rect.height, 60);
+    expect(rect.center.dx, 196.5);
     expect(rect.bottom, 640);
     expect(find.text('북마크에 저장되었습니다'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
@@ -40,7 +41,7 @@ void main() {
   testWidgets('landscape toast sits 84 above the bottom', (tester) async {
     await pump(tester, const Size(852, 393));
     final rect = tester.getRect(find.byKey(const Key('clip_toast')));
-    expect(rect.left, 298);
+    expect(rect.center.dx, 426);
     expect(rect.bottom, 309);
     dismissClipToast();
     await tester.pump();

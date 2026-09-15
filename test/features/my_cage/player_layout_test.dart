@@ -9,6 +9,7 @@ import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/core/theme/glass_palette.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
+import 'package:vivanaut/features/my_cage/data/video_export_service.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
 import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
@@ -24,6 +25,17 @@ class _Favorite extends Fake implements FavoriteClipRepository {
   File? getLocalFile(String id) => null;
   @override
   FavoriteClip? getMeta(String id) => null;
+}
+
+class _Export extends Fake implements VideoExportService {
+  final done = Completer<void>();
+  int calls = 0;
+  @override
+  Future<void> saveToGallery(String clipId,
+      {File? localFile, String? presignedUrl}) async {
+    calls++;
+    await done.future;
+  }
 }
 
 class _Video extends VideoPlayerPlatform {
@@ -68,7 +80,7 @@ class _Video extends VideoPlayerPlatform {
 /// Figma 941:1834(세로)·941:1928(가로) 실측 좌표.
 void main() {
   Future<void> pump(WidgetTester tester, Size size,
-      {EdgeInsets padding = EdgeInsets.zero}) async {
+      {EdgeInsets padding = EdgeInsets.zero, _Export? export}) async {
     VideoPlayerPlatform.instance = _Video();
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -86,6 +98,8 @@ void main() {
               durationSec: 60)),
           motionClipUrlProvider
               .overrideWith((ref, id) async => 'https://example.test/$id'),
+          if (export != null)
+            videoExportServiceProvider.overrideWithValue(export),
         ],
         child: MaterialApp(
             theme: AppTheme.light,
@@ -189,6 +203,42 @@ void main() {
     expect(find.text('+10s'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
     expect(chip, findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('download: white dim + 62 spinner + text, then done toast',
+      (tester) async {
+    final export = _Export();
+    await pump(tester, const Size(393, 852),
+        padding: const EdgeInsets.only(top: 62, bottom: 34), export: export);
+    await tester.tap(find.byWidgetPredicate(
+        (w) => w is FigmaIcon && w.name == FigmaIcons.download));
+    await tester.pump();
+    expect(export.calls, 1);
+    final overlay = find.byKey(const Key('player_download_overlay'));
+    expect(overlay, findsOneWidget);
+    expect(tester.getSize(overlay), const Size(393, 852));
+    // Figma 1106:3659 — 스피너 62 (165.5,375), 문구 y449 (Loading 가운데 y426).
+    final spinner = find.byKey(const Key('player_download_spinner'));
+    expect(tester.getSize(spinner), const Size(62, 62));
+    expect(tester.getCenter(spinner).dx, 196.5);
+    final label = find.text('clip_download_progress');
+    expect(label, findsOneWidget);
+    expect(tester.getRect(label).top - tester.getRect(spinner).bottom, 12);
+    // dim이 입력을 막는다 — 다운로드 버튼을 다시 눌러도 호출 없음.
+    await tester.tap(find.byWidgetPredicate(
+        (w) => w is FigmaIcon && w.name == FigmaIcons.download),
+        warnIfMissed: false);
+    await tester.pump();
+    expect(export.calls, 1);
+    export.done.complete();
+    await tester.pump();
+    await tester.pump();
+    expect(overlay, findsNothing);
+    expect(find.byKey(const Key('clip_toast')), findsOneWidget);
+    expect(find.text('clip_download_done'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.byKey(const Key('clip_toast')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

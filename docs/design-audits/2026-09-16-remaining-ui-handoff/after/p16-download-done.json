@@ -1,0 +1,320 @@
+[
+  {
+    "type": "IconButton",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "close",
+    "rect": [
+      22.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "2026. 08. 28",
+    "rect": [
+      150.4746856689453,
+      66.0,
+      92.05062866210938,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "오전 10:21",
+    "rect": [
+      166.8377742767334,
+      85.0,
+      59.3244514465332,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3294, green: 0.3294, blue: 0.3294, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      333.0,
+      62.0,
+      48.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      337.0,
+      64.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/delete",
+    "rect": [
+      345.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      427.0625,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "final_pause",
+    "rect": [
+      12.0,
+      427.0625,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "0:12 / 1:00",
+    "rect": [
+      56.0,
+      436.5625,
+      62.79109191894531,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      297.0,
+      427.0625,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "1×",
+    "rect": [
+      306.8955078125,
+      435.0625,
+      16.208984375,
+      20.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 700)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      345.0,
+      427.0625,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "expand",
+    "rect": [
+      345.0,
+      427.0625,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      16.5,
+      656.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_previous",
+    "rect": [
+      28.5,
+      668.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      96.5,
+      658.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      96.5,
+      658.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "download",
+    "rect": [
+      100.5,
+      662.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      148.5,
+      658.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      148.5,
+      658.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "share",
+    "rect": [
+      152.5,
+      662.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      200.5,
+      658.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      200.5,
+      658.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/sticky_note_2",
+    "rect": [
+      204.5,
+      662.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      252.5,
+      658.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      252.5,
+      658.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "bookmark",
+    "rect": [
+      256.5,
+      662.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      328.5,
+      656.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_next",
+    "rect": [
+      340.5,
+      668.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/check",
+    "rect": [
+      116.7698183926669,
+      602.0,
+      21.81818181818182,
+      16.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "영상 다운로드 완료",
+    "rect": [
+      149.6789093017578,
+      596.0,
+      129.64218139648438,
+      28.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 500, letterSpacing: -0.4, height: 1.6x)"
+  }
+]

@@ -26,6 +26,7 @@ import 'bookmark_controller.dart';
 import '../../auth/presentation/auth_providers.dart';
 import 'widgets/crecam_detail_top_bar.dart';
 import 'widgets/clip_memo_editor.dart';
+import 'widgets/clip_toast.dart';
 import 'clip_memo_providers.dart';
 import 'clip_visibility_providers.dart';
 import 'widgets/clip_hide_dialog.dart';
@@ -109,6 +110,7 @@ class _ClipPlaylistPlayerScreenState
   bool _initialized = false;
   String? _error;
   bool _busy = false; // 저장/공유/즐겨찾기 진행 중
+  bool _downloading = false; // 기기 저장 진행 중 — 흰 dim + 스피너(1106:3659)
   bool _isPlaying = false;
   bool _autoAdvanced = false; // 클립당 자동 다음 1회 가드
   MotionClipCursor? _nextCursor;
@@ -497,10 +499,12 @@ class _ClipPlaylistPlayerScreenState
 
   Future<void> _save() async {
     if (_busy) return;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _downloading = true;
+    });
     final clipId = _currentClipId; // 진행 중 클립 전환에도 대상 고정
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(content: Text('clip_saving'.tr())));
     try {
       final src = await _source(clipId);
       await ref.read(videoExportServiceProvider).saveToGallery(
@@ -508,12 +512,19 @@ class _ClipPlaylistPlayerScreenState
             localFile: src.file,
             presignedUrl: src.url,
           );
-      messenger
-          .showSnackBar(SnackBar(content: Text('clip_saved_to_gallery'.tr())));
+      if (!mounted) return;
+      setState(() => _downloading = false);
+      // Figma 1106:3584 — 완료만 토스트. 실패는 아래 별도 스낵바(완료 오인 금지).
+      showClipToast(context, text: 'clip_download_done'.tr());
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text('clip_save_failed'.tr())));
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _downloading = false;
+        });
+      }
     }
   }
 
@@ -715,10 +726,12 @@ class _ClipPlaylistPlayerScreenState
                             ])),
                   ])),
             ],
+            if (_downloading) const _DownloadOverlay(),
           ]));
     }
     return Scaffold(
-        body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        body: Stack(fit: StackFit.expand, children: [
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       CrecamDetailHeaderArea(child: _topBar(glass, startedAt)),
       Expanded(
           child: SafeArea(
@@ -755,6 +768,8 @@ class _ClipPlaylistPlayerScreenState
                           const SizedBox(height: 54),
                         ],
                       )))),
+    ]),
+      if (_downloading) const _DownloadOverlay(),
     ]));
   }
 
@@ -1353,4 +1368,99 @@ class _SeekBarState extends State<_SeekBar> {
       ),
     );
   }
+}
+
+/// 기기 저장 진행 화면 (Figma 1106:3659) — 흰 dim이 화면 전체 입력을 막고,
+/// 가운데 62 원호 스피너 + 12 + '영상 다운로드 중' 18/600 #3C3C3C.
+/// 실제 진행률은 제공되지 않으므로 퍼센트를 꾸미지 않는다. 진행 중에는 닫기까지
+/// 가려진다(짧은 저장이며 취소 계약이 없다).
+class _DownloadOverlay extends StatelessWidget {
+  const _DownloadOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return Positioned.fill(
+      key: const Key('player_download_overlay'),
+      child: AbsorbPointer(
+        child: ColoredBox(
+          color: glass.wallpaper.withValues(alpha: 0.8),
+          child: Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              _SpinnerArc(size: 62, color: glass.textSecondary),
+              const SizedBox(height: 12),
+              Text('clip_download_progress'.tr(),
+                  style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 18,
+                      height: 28 / 18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.36,
+                      color: glass.textSecondary)),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 원본 progress_activity 글리프(3/4 원호)를 도는 커스텀 스피너. Material
+/// CircularProgressIndicator를 쓰지 않는다(프로젝트 금지) — 디자인이 지정한
+/// 그림을 그대로 그린다.
+class _SpinnerArc extends StatefulWidget {
+  const _SpinnerArc({required this.size, required this.color});
+  final double size;
+  final Color color;
+
+  @override
+  State<_SpinnerArc> createState() => _SpinnerArcState();
+}
+
+class _SpinnerArcState extends State<_SpinnerArc>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _turn = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1000))
+    ..repeat();
+
+  @override
+  void dispose() {
+    _turn.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => RotationTransition(
+        turns: _turn,
+        child: CustomPaint(
+          key: const Key('player_download_spinner'),
+          size: Size.square(widget.size),
+          painter: _ArcPainter(color: widget.color),
+        ),
+      );
+}
+
+class _ArcPainter extends CustomPainter {
+  const _ArcPainter({required this.color});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = size.width / 10;
+    final rect = Rect.fromLTWH(
+        stroke / 2, stroke / 2, size.width - stroke, size.height - stroke);
+    canvas.drawArc(
+        rect,
+        -math.pi / 2,
+        math.pi * 1.5,
+        false,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = stroke);
+  }
+
+  @override
+  bool shouldRepaint(_ArcPainter old) => old.color != color;
 }
