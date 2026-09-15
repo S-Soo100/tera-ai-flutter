@@ -66,18 +66,21 @@ class ManagementButton extends StatelessWidget {
       {super.key,
       required this.label,
       required this.onPressed,
-      this.red = false});
+      this.red = false,
+      this.compact = false});
   final String label;
   final VoidCallback? onPressed;
   final bool red;
+  final bool compact;
   @override
   Widget build(BuildContext context) => ConstrainedBox(
       constraints:
-          const BoxConstraints(minWidth: double.infinity, minHeight: 56),
+          BoxConstraints(minWidth: double.infinity, minHeight: compact ? 44 : 56),
       child: FilledButton(
           onPressed: onPressed,
           style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              padding: EdgeInsets.symmetric(
+                  horizontal: 24, vertical: compact ? 8 : 14),
               backgroundColor:
                   red ? context.glass.navSelected : context.glass.textPrimary,
               disabledBackgroundColor: context.glass.border,
@@ -87,10 +90,10 @@ class ManagementButton extends StatelessWidget {
           child: Text(label,
               textAlign: TextAlign.center,
               style: managementStyle(context,
-                      size: 18,
+                      size: compact ? 16 : 18,
                       weight: FontWeight.w600,
                       color: ManagementColors.buttonForeground(context))
-                  .copyWith(height: 28 / 18))));
+                  .copyWith(height: 28 / (compact ? 16 : 18)))));
 }
 
 class ManagementNameField extends StatelessWidget {
@@ -326,6 +329,38 @@ class ManagementGroupCard extends StatelessWidget {
           ])));
 }
 
+/// Korean topic particle selection for Hangul and default numeric names.
+/// Unknown pronunciations retain the neutral combined form in localization.
+bool? managementNameHasFinalConsonant(String name) {
+  final value = name.trim();
+  if (value.isEmpty) return null;
+  final last = value.runes.last;
+  if (last >= 0xAC00 && last <= 0xD7A3) return (last - 0xAC00) % 28 != 0;
+  if (last >= 0x30 && last <= 0x39) {
+    return const {0, 1, 3, 6, 7, 8}.contains(last - 0x30);
+  }
+  return null;
+}
+
+String managementMoveMessage({
+  required String item,
+  required String sourceGroup,
+  String? targetGroup,
+}) {
+  final topicKey = switch (managementNameHasFinalConsonant(item)) {
+    true => 'management_topic_final',
+    false => 'management_topic_open',
+    null => 'management_topic_unknown',
+  };
+  return 'management_move_confirm'.tr(namedArgs: {
+    'item': topicKey.tr(namedArgs: {'name': item}),
+    'group': sourceGroup,
+    'target': targetGroup == null
+        ? 'management_new_group'.tr()
+        : 'management_target_group'.tr(namedArgs: {'name': targetGroup}),
+  });
+}
+
 Future<bool> managementConfirm(BuildContext context, String message,
         {String? action}) async =>
     await showDialog<bool>(
@@ -334,7 +369,7 @@ Future<bool> managementConfirm(BuildContext context, String message,
             backgroundColor: context.glass.surfaceHeader,
             insetPadding: const EdgeInsets.symmetric(horizontal: 24),
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -349,12 +384,14 @@ Future<bool> managementConfirm(BuildContext context, String message,
                       child: Row(children: [
                         Expanded(
                             child: ManagementButton(
+                                compact: true,
                                 label: 'management_cancel'.tr(),
                                 onPressed: () =>
                                     Navigator.pop(context, false))),
                         const SizedBox(width: 12),
                         Expanded(
                             child: ManagementButton(
+                                compact: true,
                                 label: action ?? 'management_confirm'.tr(),
                                 red: true,
                                 onPressed: () => Navigator.pop(context, true))),

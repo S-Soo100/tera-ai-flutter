@@ -79,12 +79,12 @@ class _PairingPetSelectionBody extends ConsumerWidget {
       if (draft.requiresMoveConfirmation(item)) {
         final confirmed = await managementConfirm(
             context,
-            'management_move_confirm'.tr(namedArgs: {
-              'item': item.name,
-              'group': inventory.group(item.groupId)?.name ??
+            managementMoveMessage(
+              item: item.name,
+              sourceGroup: inventory.group(item.groupId)?.name ??
                   'management_group'.tr(),
-              'target': group.name,
-            }),
+              targetGroup: group.name,
+            ),
             action: 'management_move'.tr());
         if (!confirmed || !context.mounted) return;
       }

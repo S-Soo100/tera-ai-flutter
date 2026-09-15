@@ -94,12 +94,12 @@ class _GroupEditorBody extends ConsumerWidget {
           draft.requiresMoveConfirmation(item)) {
         final confirmed = await managementConfirm(
             context,
-            'management_move_confirm'.tr(namedArgs: {
-              'item': item.name,
-              'group': inventory.group(item.groupId)?.name ??
+            managementMoveMessage(
+              item: item.name,
+              sourceGroup: inventory.group(item.groupId)?.name ??
                   'management_group'.tr(),
-              'target': draft.name,
-            }),
+              targetGroup: draft.name,
+            ),
             action: 'management_move'.tr());
         if (!confirmed || !context.mounted) return;
       }

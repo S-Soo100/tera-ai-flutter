@@ -91,12 +91,12 @@ class _DeviceDetailBody extends ConsumerWidget {
       if (item.groupId != null) {
         final accepted = await managementConfirm(
             context,
-            'management_move_confirm'.tr(namedArgs: {
-              'item': item.name,
-              'group': inventory.group(item.groupId)?.name ??
+            managementMoveMessage(
+              item: item.name,
+              sourceGroup: inventory.group(item.groupId)?.name ??
                   'management_group'.tr(),
-              'target': target?.name ?? 'management_new_group'.tr(),
-            }),
+              targetGroup: target?.name,
+            ),
             action: 'management_move'.tr());
         if (!accepted || !context.mounted) return;
       }
