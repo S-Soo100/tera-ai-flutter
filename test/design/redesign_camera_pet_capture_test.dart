@@ -523,10 +523,15 @@ void main() {
                             sex: 'male'),
                         onSave: (_, __) async {}))))));
     await _settleIcons(tester);
-    expect(
-        tester.getSize(find.byWidgetPredicate(
-            (widget) => widget is FigmaIcon && widget.name == FigmaIcons.edit)),
-        const Size(24, 24));
+    // 26번 승인(0.107.30+241): 사진 편집 배지는 36 프레임, 내부 연필 그림 18
+    // (redesign_v2/edit.svg viewBox 36, path 9~27). 프레임과 내부 그림을
+    // 분리해 검증한다 — 24는 승인 전 옛 기대값이었다.
+    final editBadge = find.byWidgetPredicate(
+        (widget) => widget is FigmaIcon && widget.name == FigmaIcons.edit);
+    expect(tester.getSize(editBadge), const Size(36, 36));
+    final editSvg = File('assets/icons/redesign_v2/edit.svg').readAsStringSync();
+    expect(editSvg, contains('viewBox="0 0 36 36"'));
+    expect(editSvg, contains('M10 27C9.71667 27'));
     await tester.ensureVisible(find.byKey(const ValueKey('pet-form-species')));
     await tester.pumpAndSettle();
     expect(
