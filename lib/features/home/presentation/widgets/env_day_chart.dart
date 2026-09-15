@@ -386,8 +386,8 @@ class _EnvDayChartState extends State<EnvDayChart> {
     return Positioned(
       left: left ? 0 : null,
       right: left ? null : 0,
-      top: EnvDayChart.markerBand,
-      height: EnvDayChart.plotHeight,
+      top: EnvDayChart.markerBand - EnvDayChart.labelHeight / 2,
+      height: EnvDayChart.plotHeight + EnvDayChart.labelHeight / 2,
       width: EnvDayChart.yLabelWidth,
       // 흰 바닥 마스크 — 차트가 라벨 밑으로 흐를 때 글자가 뭉개지지 않게.
       child: ColoredBox(
@@ -396,7 +396,7 @@ class _EnvDayChartState extends State<EnvDayChart> {
           children: [
             for (var i = 0; i < ticks.length; i++)
               Positioned(
-                top: i * EnvDayChart.rowStep - EnvDayChart.labelHeight / 2,
+                top: i * EnvDayChart.rowStep,
                 left: left ? null : 2,
                 right: left ? 2 : null,
                 child: SizedBox(
@@ -460,6 +460,29 @@ class _DayPlotPainter extends CustomPainter {
       final y = i * EnvDayChart.rowStep;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
     }
+
+    // Six-hour boundaries are solid; their three-hour midpoints are dotted.
+    // This painter scrolls with the same 524px time coordinate as the series.
+    for (var hour = 0; hour <= 24; hour += 3) {
+      final x = hour / 24 * size.width;
+      final bottom = size.height + EnvDayChart.axisHeight;
+      if (hour % 6 == 0) {
+        canvas.drawLine(
+            Offset(x, -EnvDayChart.markerBand), Offset(x, bottom), grid);
+      } else {
+        for (double y = -EnvDayChart.markerBand; y < size.height; y += 4) {
+          canvas.drawLine(
+              Offset(x, y),
+              Offset(x, (y + 2).clamp(-EnvDayChart.markerBand, size.height)),
+              grid);
+        }
+      }
+    }
+    for (final y in [-EnvDayChart.markerBand, size.height]) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
+    }
+    canvas.drawLine(Offset(0, size.height + EnvDayChart.axisHeight),
+        Offset(size.width, size.height + EnvDayChart.axisHeight), grid);
 
     void drawLinePath(List<({double x, double y})> pts, Color color) {
       if (pts.length < 2) return; // 점 하나짜리 선은 보이지 않는다.

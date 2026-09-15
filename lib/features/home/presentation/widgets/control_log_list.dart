@@ -15,6 +15,16 @@ Widget controlEntryIcon(
     ControlLogEntry entry, GlassPalette glass, double size) {
   final off = entry.state == ControlLogState.off;
   final compact = size == 28;
+  if (entry.kind == MarkerKind.mist && !off) {
+    return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+            shape: BoxShape.circle, color: controlEntryColor(entry, glass)),
+        child: FigmaIcon.metric(
+            'redesign_v2/${compact ? '2828' : '3636'}/humidity_high_glyph',
+            size: size));
+  }
   final asset = switch (entry.kind) {
     MarkerKind.fan => FigmaIcons.fanBadge(on: !off, compact: compact),
     MarkerKind.cooling => FigmaIcons.coolingBadge(on: !off, compact: compact),

@@ -121,7 +121,7 @@ void main() {
           find.byWidgetPredicate((w) => w is FigmaIcon && w.name == name);
       expect(
           icon(FigmaIcons.fanBadge(on: true, compact: true)), findsOneWidget);
-      expect(icon(FigmaIcons.mistBadge(compact: true)), findsOneWidget);
+      expect(icon('redesign_v2/2828/humidity_high_glyph'), findsOneWidget);
       expect(icon(FigmaIcons.ledBadge(on: true, compact: true)),
           findsNothing); // 창 밖
       // X축 눈금 4개 (오전 12시/6시/오후 12시/6시 — 미초기화 tr()은 키 반환).
