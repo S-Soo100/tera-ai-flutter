@@ -142,7 +142,11 @@ class ActivityBars extends StatelessWidget {
                                             style: labelStyle.copyWith(
                                                 fontSize: 14,
                                                 letterSpacing: -.7,
-                                                color: glass.bodySecondary))),
+                                                color: buckets[i].seconds ==
+                                                            peak &&
+                                                        peak > 0
+                                                    ? ActivityColors.peak
+                                                    : glass.bodySecondary))),
                                 ],
                               ])))),
             for (var i = 0; i < labels.length; i++)
