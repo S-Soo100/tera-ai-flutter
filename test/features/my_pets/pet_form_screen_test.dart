@@ -155,6 +155,44 @@ void main() {
         findsOneWidget);
   });
 
+  testWidgets(
+      'save is disabled until required input is valid and recovers after errors',
+      (tester) async {
+    await _pump(tester);
+    Future<bool> saveEnabled() async {
+      await tester.scrollUntilVisible(find.text('저장'), 400,
+          scrollable: find.byType(Scrollable).first);
+      return tester.widget<FilledButton>(find.byType(FilledButton)).onPressed !=
+          null;
+    }
+
+    Future<void> name(String text) async {
+      final field = find.byKey(const ValueKey('pet-form-name'));
+      await tester.scrollUntilVisible(field, -400,
+          scrollable: find.byType(Scrollable).first);
+      await tester.enterText(field, text);
+      await tester.pumpAndSettle();
+    }
+
+    expect(await saveEnabled(), isFalse);
+    await name('크랑이');
+    expect(await saveEnabled(), isFalse);
+    final species = find.byKey(const ValueKey('pet-form-species'));
+    await tester.scrollUntilVisible(species, -400,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(species);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('크레스티드 게코'));
+    await tester.pumpAndSettle();
+    expect(await saveEnabled(), isTrue);
+    await name('한' * 11);
+    expect(await saveEnabled(), isFalse);
+    await name('크랑이');
+    expect(await saveEnabled(), isTrue);
+    await name('   ');
+    expect(await saveEnabled(), isFalse);
+  });
+
   testWidgets('failed save remains on form with changed input', (tester) async {
     await _pump(tester,
         original: Pet(

@@ -246,6 +246,10 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
         ? validatePetName(d.name, peers, excludingId: _session.id)
         : null;
     final weightError = validatePetWeight(d.weight);
+    final canSave = !state.saving &&
+        d.speciesId != null &&
+        validatePetName(d.name, peers, excludingId: _session.id) == null &&
+        weightError == null;
     final groupNames = {for (final g in widget.groups) g.id: g.name};
     final legacy = _session.initial.speciesId != null &&
         _session.initial.speciesId != 'crested-gecko';
@@ -327,9 +331,15 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                           _change((d) => d.copyWith(name: value)),
                       decoration: petFormDecoration(context).copyWith(
                           errorText: nameError?.tr(),
-                          suffixText: '${d.name.characters.length}/10',
-                          suffixStyle: petFormText(context)
-                              .copyWith(color: p.textTertiary)),
+                          // Unlike suffixText, the counter stays visible on an
+                          // empty, unfocused field.
+                          suffixIconConstraints: const BoxConstraints(),
+                          suffixIcon: Padding(
+                            padding: const EdgeInsets.only(right: 17),
+                            child: Text('${d.name.characters.length}/10',
+                                style: petFormText(context)
+                                    .copyWith(color: p.textTertiary)),
+                          )),
                     )),
                 _Field(
                     label: 'pet_form_species'.tr(),
@@ -403,16 +413,15 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                                                       child: Center(
                                                           child: FigmaIcon.tinted(
                                                               'redesign_v2/check',
-                                                              color: p
-                                                                  .surfaceHeader,
-                                                              size: 15))),
+                                                              color: VivaColors.fillBack,
+                                                              size: 11))),
                                                   const SizedBox(width: 4)
                                                 ],
                                                 Text('pet_form_sex_$sex'.tr(),
                                                     style: petFormText(context)
                                                         .copyWith(
                                                             color: d.sex == sex
-                                                                ? p.surfaceHeader
+                                                                ? VivaColors.fillBack
                                                                 : p.textSecondary)),
                                               ])),
                                     ))),
@@ -448,11 +457,13 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                     child: TextFormField(
                       controller: _memo,
                       style: petFormText(context),
-                      maxLines: 4,
+                      minLines: 5,
+                      maxLines: 5,
                       onChanged: (value) =>
                           _change((d) => d.copyWith(memo: value)),
                       decoration: petFormDecoration(context)
-                          .copyWith(contentPadding: const EdgeInsets.all(17)),
+                          .copyWith(contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 17, vertical: 17.5)),
                     )),
                 if (state.errorKey != null)
                   Padding(
@@ -465,7 +476,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                     state.saving
                         ? 'pet_form_saving'.tr()
                         : 'pet_form_save'.tr(),
-                    state.saving ? null : _save),
+                    canSave ? _save : null),
               ],
             )),
       ),
@@ -525,11 +536,14 @@ AppBar petFormAppBar(BuildContext context, String title, VoidCallback onBack) =>
       surfaceTintColor: context.glass.surfaceHeader,
       toolbarHeight: 44,
       centerTitle: true,
-      leading: IconButton(
+      leadingWidth: 56,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 12),
+        child: IconButton(
           onPressed: onBack,
           tooltip: 'pet_form_back'.tr(),
           icon: FigmaIcon.tinted(FigmaIcons.arrowPrevious,
-              color: context.glass.textSecondary, size: 24)),
+              color: context.glass.textSecondary, size: 24))),
       title: Text(title,
           style: petFormText(context).copyWith(fontWeight: FontWeight.w700)),
     );
@@ -542,11 +556,14 @@ Widget petFormButton(
             onPressed: onPressed,
             style: FilledButton.styleFrom(
                 backgroundColor: context.glass.textPrimary,
-                foregroundColor: context.glass.surfaceHeader,
+                foregroundColor: VivaColors.fillBack,
+                disabledBackgroundColor: context.glass.border,
+                disabledForegroundColor: VivaColors.fillBack,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 textStyle: petFormText(context)
-                    .copyWith(fontSize: 18, fontWeight: FontWeight.w600)),
+                    .copyWith(fontSize: 18, fontWeight: FontWeight.w600,
+                        height: 28 / 18, letterSpacing: -0.36)),
             child: Text(label)));
 
 class _Field extends StatelessWidget {
@@ -613,11 +630,12 @@ class _Selection extends StatelessWidget {
                       style: petFormText(context).copyWith(
                           color: context.glass.navSelected,
                           fontWeight: FontWeight.w600)),
+                if (actionLabel != null) const SizedBox(width: 4),
                 FigmaIcon.tinted(icon,
                     color: actionLabel != null
                         ? context.glass.navSelected
                         : context.glass.deviceOff,
-                    size: 24),
+                    size: actionLabel != null ? 18 : 24),
               ]))));
 }
 
