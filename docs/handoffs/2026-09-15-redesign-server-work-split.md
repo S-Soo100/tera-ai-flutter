@@ -4,6 +4,8 @@
 > 2026-09-15 사용자가 확정 기획·구현계획 저장과 함께 담당 구분을 요청했다.
 > [확정 기획](../superpowers/specs/2026-09-15-figma-redesign-approved-design.md) · [구현계획](../superpowers/plans/2026-09-15-figma-redesign-implementation.md)
 
+전달용 문서 작성 완료(미발송): [petcam-lab 요청서](2026-09-15-petcam-lab-redesign-request.md) · [이관훈님 요청서](2026-09-15-lee-gwanhun-redesign-request.md). 각 파일을 단독으로 전달할 수 있도록 배경·요구사항·검증 기준·회신 항목을 포함했다.
+
 ## 1. 결론
 
 **Supabase라고 전부 외부 요청 대상은 아니다.** 앱 전용 테이블·RLS·RPC·카탈로그·Flutter 연동은 우리가 작성·검증·배포를 담당할 수 있다. 반면 같은 프로젝트에 있어도 terra-server 또는 petcam-lab이 생산·소비하는 원본 데이터와 공통 계약은 해당 담당자와 맞춰야 한다.
