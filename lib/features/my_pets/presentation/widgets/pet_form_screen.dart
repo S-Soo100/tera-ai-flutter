@@ -122,6 +122,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                 style: petFormText(context).copyWith(
                     fontSize: 18,
                     height: 28 / 18,
+                    letterSpacing: -.36,
                     color: context.glass.textSecondary)))
       ],
     );
