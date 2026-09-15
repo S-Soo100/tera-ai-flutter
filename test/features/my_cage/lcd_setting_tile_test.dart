@@ -75,6 +75,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '밥 6시');
+    await tester.pump();
     await tester.tap(find.byKey(const Key('lcd_apply')));
     await tester.pumpAndSettle();
 
@@ -102,6 +103,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('lcd_text_field')), 'a' * 80);
+    await tester.pump();
     final field =
         tester.widget<TextField>(find.byKey(const Key('lcd_text_field')));
     expect(field.controller!.text.length, 20);
@@ -117,6 +119,7 @@ void main() {
     await tester.tap(find.byKey(HomeLcdRow.rowKey));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '재시도 문구');
+    await tester.pump();
     await tester.tap(find.byKey(const Key('lcd_apply')));
     await tester.pumpAndSettle();
 
@@ -141,6 +144,7 @@ void main() {
     final field =
         tester.widget<TextField>(find.byKey(const Key('lcd_text_field')));
     field.controller!.text = '123456789 123456789 12345';
+    await tester.pump();
     await tester.tap(find.byKey(const Key('lcd_apply')));
     await tester.pumpAndSettle();
 
@@ -154,6 +158,7 @@ void main() {
     await tester.tap(find.byKey(HomeLcdRow.rowKey));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '전송 문구');
+    await tester.pump();
 
     final apply =
         tester.widget<FilledButton>(find.byKey(const Key('lcd_apply')));
@@ -174,7 +179,7 @@ void main() {
         isNull);
     expect(
         tester
-            .widget<OutlinedButton>(find.byKey(const Key('lcd_reset')))
+            .widget<TextButton>(find.byKey(const Key('lcd_reset')))
             .onPressed,
         isNull);
 
@@ -188,5 +193,64 @@ void main() {
     await _pump(tester, repo, deviceId: null);
 
     expect(find.byKey(HomeLcdRow.rowKey), findsNothing);
+  });
+
+  testWidgets('P08 전체 화면 좌표 — 그림 자리 118, 안내 305, 입력 359, 완료 696/복원 752',
+      (tester) async {
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final repo = _FakeLcdRepo();
+    await tester.pumpWidget(ProviderScope(
+        overrides: [
+          lcdRepositoryProvider.overrideWithValue(repo),
+          currentSetProvider.overrideWith((ref) async => EnclosureSet(
+              enclosure: Enclosure(
+                  id: 'e1', name: '1번', createdAt: DateTime(2026, 8, 1)),
+              device: Device(
+                  id: 'd1',
+                  ownerId: null,
+                  enclosureId: null,
+                  name: null,
+                  isOnline: true,
+                  lastSeenAt: null),
+              camera: null,
+              pet: null)),
+        ],
+        child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                    padding: const EdgeInsets.only(top: 62, bottom: 34)),
+                child: child!),
+            home: const Scaffold(body: HomeLcdRow()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(tester.getRect(find.byKey(const Key('lcd_illustration_slot'))),
+        const Rect.fromLTWH(12, 118, 369, 171));
+    expect(tester.getRect(find.text('lcd_screen_description')).top, 305);
+    // 번역 없는 테스트라 안내가 1줄(원본 2줄 → 359). 상대 간격 16으로 확인.
+    final field = tester.getRect(find.byKey(const Key('lcd_field')));
+    expect(field.top,
+        tester.getRect(find.text('lcd_screen_description')).bottom + 16);
+    expect(field.height, 65);
+    expect(tester.getRect(find.byKey(const Key('lcd_counter'))).right,
+        closeTo(364, 0.5));
+    expect(find.text('0/20'), findsOneWidget);
+    expect(tester.getRect(find.byKey(const Key('lcd_apply'))),
+        const Rect.fromLTWH(12, 696, 369, 56));
+    expect(tester.getRect(find.byKey(const Key('lcd_reset'))).top, 752);
+    // 수정 없음(빈 문구)이면 완료 비활성, 입력하면 활성.
+    expect(
+        tester.widget<FilledButton>(find.byKey(const Key('lcd_apply'))).onPressed,
+        isNull);
+    await tester.enterText(find.byKey(const Key('lcd_text_field')), '도도도네 집');
+    await tester.pump();
+    expect(find.text('6/20'), findsOneWidget);
+    expect(
+        tester.widget<FilledButton>(find.byKey(const Key('lcd_apply'))).onPressed,
+        isNotNull);
+    expect(tester.takeException(), isNull);
   });
 }

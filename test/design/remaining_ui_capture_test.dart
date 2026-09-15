@@ -38,6 +38,12 @@ import 'package:vivanaut/features/my_cage/domain/wifi_access_point.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_screen.dart';
 import '../features/my_cage/device_add_flow_test.dart' show Gateway, device, camera;
+import 'package:vivanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivanaut/features/home/presentation/home_screen.dart';
+import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivanaut/features/my_cage/data/lcd_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
+import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivanaut/features/my_cage/data/clip_memo_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/clip_memo.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
@@ -60,6 +66,13 @@ import 'package:vivanaut/features/wiki/presentation/wiki_providers.dart';
 import 'package:vivanaut/shared/widgets/figma_icon.dart';
 
 const _outDir = '/private/tmp/remaining-after';
+
+class _Lcd implements LcdRepository {
+  @override
+  Future<void> setText(String deviceId, String text) async {}
+  @override
+  Future<void> clear(String deviceId) async {}
+}
 
 class _FlowController extends DeviceAddFlowController {
   _FlowController(DeviceAddState initial)
@@ -730,6 +743,38 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('pet-form-save')));
     await capture(tester, boundary, 'p02-pet-done');
+    debugDisableShadows = true;
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('P08 LCD captures', (tester) async {
+    debugDisableShadows = false;
+    final boundary = GlobalKey();
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await tester.pumpWidget(shell(boundary, const Scaffold(body: HomeLcdRow()),
+        overrides: [
+          lcdRepositoryProvider.overrideWithValue(_Lcd()),
+          currentSetProvider.overrideWith((ref) async => EnclosureSet(
+              enclosure: Enclosure(
+                  id: 'e1', name: '1번', createdAt: DateTime(2026, 8, 1)),
+              device: Device(
+                  id: 'd1',
+                  ownerId: null,
+                  enclosureId: null,
+                  name: null,
+                  isOnline: true,
+                  lastSeenAt: null),
+              camera: null,
+              pet: null)),
+        ]));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await capture(tester, boundary, 'p08-lcd-empty');
+    await tester.enterText(find.byKey(const Key('lcd_text_field')), '도도도네 집');
+    await capture(tester, boundary, 'p08-lcd-filled');
     debugDisableShadows = true;
     await tester.binding.setSurfaceSize(null);
   });
