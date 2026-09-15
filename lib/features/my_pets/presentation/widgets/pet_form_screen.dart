@@ -622,16 +622,20 @@ class _Selection extends StatelessWidget {
 }
 
 class PetFormPhoto extends StatelessWidget {
-  const PetFormPhoto({super.key, this.path, required this.size});
+  const PetFormPhoto(
+      {super.key, this.path, required this.size, this.placeholderSize = 56});
   final String? path;
   final double size;
+  final double placeholderSize;
   @override
   Widget build(BuildContext context) {
     final fallback = ColoredBox(
         color: context.glass.surfaceHeader,
         child: Center(
             child: Image(
-                image: FigmaImages.petPlaceholder, width: 56, height: 56)));
+                image: FigmaImages.petPlaceholder,
+                width: placeholderSize, height: placeholderSize,
+                fit: BoxFit.contain)));
     final photo = path;
     if (photo == null || photo.isEmpty) return fallback;
     if (photo.startsWith('http://') || photo.startsWith('https://')) {

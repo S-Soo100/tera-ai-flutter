@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/glass_palette.dart';
+import '../../../core/theme/activity_colors.dart';
+import '../../../shared/domain/num_format.dart';
 import '../../../shared/widgets/figma_icon.dart';
 import '../../my_cage/presentation/widgets/management_widgets.dart';
 import '../domain/pet.dart';
@@ -29,8 +31,8 @@ class PetManagementScreen extends ConsumerWidget {
     };
     final message = '${titleKey.tr(namedArgs: {'name': pet.name})}\n'
         '${'pet_form_delete_body'.tr()}';
-    final accepted = await managementConfirm(context, message,
-        action: 'common_delete'.tr());
+    final accepted =
+        await managementConfirm(context, message, action: 'common_delete'.tr());
     if (accepted != true || !context.mounted) return;
     final handler = onDelete;
     if (handler == null) {
@@ -61,90 +63,185 @@ class PetManagementScreen extends ConsumerWidget {
         onEdit != null ? onEdit!(pet) : context.push('/my-pets/${pet.id}/edit');
     return Scaffold(
       backgroundColor: p.surfaceHeader,
-      appBar: petFormAppBar(context, 'pet_form_management'.tr(),
-          () => Navigator.of(context).pop()),
-      body: pets.isEmpty
-          ? Center(
-              child:
-                  Image(image: FigmaImages.emptyPet, width: 345, height: 227))
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
-              itemCount: pets.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (ctx, index) {
-                final pet = pets[index];
-                final sex =
-                    ['male', 'female'].contains(pet.sex) ? pet.sex : 'unknown';
-                final detail = [
-                  if (pet.morph?.isNotEmpty ?? false) pet.morph!,
-                  if (pet.weight != null)
-                    'pet_form_weight_value'.tr(args: [pet.weight.toString()])
-                ].join(' | ');
-                return Container(
-                    constraints: const BoxConstraints(minHeight: 112),
-                    padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-                    decoration: BoxDecoration(
-                        color: p.surfaceTint,
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Row(children: [
-                      SizedBox(
-                          width: 80,
-                          height: 80,
-                          child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child:
-                                  PetFormPhoto(path: pet.photoPath, size: 80))),
-                      const SizedBox(width: 16),
-                      Expanded(
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                            Wrap(
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                spacing: 8,
-                                children: [
-                                  Text(pet.name,
-                                      style: petFormText(context).copyWith(
-                                          fontWeight: FontWeight.w600)),
-                                  Text('pet_form_sex_$sex'.tr(),
-                                      style: petFormText(context).copyWith(
-                                          fontSize: 14,
-                                          color: p.textSecondary)),
-                                ]),
-                            const SizedBox(height: 8),
-                            Text(detail.isEmpty ? pet.speciesName : detail,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: petFormText(context).copyWith(
-                                    fontSize: 14, color: p.textSecondary)),
-                          ])),
-                      PopupMenuButton<String>(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Column(children: [
+            ManagementTopBar(
+                title: 'pet_form_management'.tr(),
+                close: true,
+                onBack: () => Navigator.of(context).pop()),
+            Expanded(
+              child: pets.isEmpty
+                  ? const Center(
+                      child: Image(
+                          image: FigmaImages.emptyPet, width: 345, height: 227))
+                  : ListView.separated(
+                      padding: const EdgeInsets.only(top: 16, bottom: 24),
+                      itemCount: pets.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, index) => _PetManagementCard(
+                          pet: pets[index],
                           enabled: deleting == null,
-                          tooltip: 'pet_form_more'.tr(),
-                          icon: FigmaIcon.tinted(FigmaIcons.more,
-                              color: p.textSecondary, size: 24),
-                          onSelected: (action) {
-                            if (action == 'edit') {
-                              edit(pet);
-                            } else {
-                              _delete(context, ref, pet);
-                            }
-                          },
-                          itemBuilder: (_) => [
-                                PopupMenuItem(
-                                    value: 'edit',
-                                    child: Text('pet_form_edit'.tr())),
-                                PopupMenuItem(
-                                    value: 'delete',
-                                    child: Text('pet_form_delete'.tr()))
+                          onEdit: () => edit(pets[index]),
+                          onDelete: () => _delete(context, ref, pets[index])),
+                    ),
+            ),
+            ManagementButton(
+                key: const Key('pet_management_add'),
+                label: 'pet_form_add'.tr(),
+                red: true,
+                onPressed: deleting == null ? add : null),
+            SizedBox(
+                height: (100 - MediaQuery.paddingOf(context).bottom)
+                    .clamp(16.0, 100.0)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _PetManagementCard extends StatelessWidget {
+  const _PetManagementCard({
+    required this.pet,
+    required this.enabled,
+    required this.onEdit,
+    required this.onDelete,
+  });
+  final Pet pet;
+  final bool enabled;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.glass;
+    final sex = ['male', 'female'].contains(pet.sex) ? pet.sex : 'unknown';
+    final detail = [
+      if (pet.morph?.isNotEmpty ?? false) pet.morph!,
+      if (pet.weight != null)
+        'pet_form_weight_value'.tr(args: [formatCompact(pet.weight!)]),
+    ].join(' | ');
+    return Container(
+      key: ValueKey('pet_management_card_${pet.id}'),
+      constraints: const BoxConstraints(minHeight: 112),
+      decoration: BoxDecoration(
+          color: p.overlay, borderRadius: BorderRadius.circular(12)),
+      child: Stack(children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(children: [
+            ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: SizedBox.square(
+                    dimension: 80,
+                    child: PetFormPhoto(
+                        path: pet.photoPath, size: 80, placeholderSize: 80))),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(pet.name,
+                            style: managementStyle(context,
+                                weight: FontWeight.w700)),
+                        Container(
+                          height: 24,
+                          constraints: const BoxConstraints(minWidth: 40),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                              color: p.surfaceHeader,
+                              borderRadius: BorderRadius.circular(12)),
+                          child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('pet_form_sex_$sex'.tr(),
+                                    style: managementStyle(context,
+                                        size: 14,
+                                        weight: FontWeight.w700,
+                                        color: sex == 'female'
+                                            ? ActivityColors.female
+                                            : sex == 'male'
+                                                ? ActivityColors.male
+                                                : p.bodySecondary)),
                               ]),
-                    ]));
-              }),
-      bottomNavigationBar: SafeArea(
-          child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-              child: petFormButton(context, 'pet_form_add'.tr(),
-                  deleting == null ? add : null))),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(detail.isEmpty ? pet.speciesName : detail,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: managementStyle(context, size: 14)),
+                  ],
+                ),
+              ),
+            ),
+          ]),
+        ),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: SizedBox.square(
+            dimension: 40,
+            child: PopupMenuButton<String>(
+              key: ValueKey('pet_management_menu_${pet.id}'),
+              enabled: enabled,
+              tooltip: 'pet_form_more'.tr(),
+              position: PopupMenuPosition.under,
+              // PopupMenuPosition.under subtracts half the icon padding.
+              offset: const Offset(8, 8),
+              constraints: const BoxConstraints.tightFor(width: 140),
+              menuPadding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              color: p.surfaceHeader,
+              surfaceTintColor: p.surfaceHeader,
+              elevation: 6,
+              shadowColor: p.textPrimary.withValues(alpha: .12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              icon: FigmaIcon.tinted(FigmaIcons.more,
+                  color: p.textSecondary, size: 24),
+              onSelected: (action) => action == 'edit' ? onEdit() : onDelete(),
+              itemBuilder: (_) => [
+                for (final action in ['edit', 'delete'])
+                  PopupMenuItem<String>(
+                    value: action,
+                    height: 44,
+                    padding: EdgeInsets.zero,
+                    child: Container(
+                      height: 44,
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: action == 'edit'
+                          ? BoxDecoration(
+                              border:
+                                  Border(bottom: BorderSide(color: p.border)))
+                          : null,
+                      child: Text('pet_form_$action'.tr(),
+                          style: managementStyle(context,
+                                  size: 18,
+                                  color: action == 'delete'
+                                      ? p.navSelected
+                                      : p.textSecondary)
+                              .copyWith(height: 28 / 18)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }

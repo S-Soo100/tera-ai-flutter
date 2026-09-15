@@ -13,10 +13,20 @@ import 'package:vivanaut/features/my_pets/presentation/my_pets_providers.dart';
 import 'package:vivanaut/features/my_pets/presentation/pet_management_screen.dart';
 
 class _Pets extends PetRepository {
-  _Pets(this.pet);
+  _Pets(this.pet, [this.count = 1]);
   final Pet pet;
+  final int count;
   @override
-  List<Pet> getAllPets() => [pet];
+  List<Pet> getAllPets() => count == 1
+      ? [pet]
+      : [
+          for (var i = 0; i < count; i++)
+            Pet(
+                id: 'p$i',
+                name: pet.name,
+                speciesId: pet.speciesId,
+                speciesName: pet.speciesName),
+        ];
   @override
   Future<void> clearPets() async {}
 }
@@ -29,8 +39,12 @@ class _Strings extends AssetLoader {
           as Map<String, dynamic>;
 }
 
-Future<void> _open(WidgetTester tester, String name,
-    Future<void> Function(Pet) onDelete) async {
+Future<void> _open(
+    WidgetTester tester, String name, Future<void> Function(Pet) onDelete,
+    {int count = 1,
+    bool openMenu = true,
+    VoidCallback? onAdd,
+    ValueChanged<Pet>? onEdit}) async {
   final pet =
       Pet(id: 'p', name: name, speciesId: 'crested', speciesName: '크레스티드 게코');
   await tester.pumpWidget(EasyLocalization(
@@ -42,19 +56,24 @@ Future<void> _open(WidgetTester tester, String name,
           builder: (context) => ProviderScope(
                   overrides: [
                     petListProvider.overrideWith(
-                        (ref) => PetListNotifier(_Pets(pet), null))
+                        (ref) => PetListNotifier(_Pets(pet, count), null))
                   ],
                   child: MaterialApp(
                       theme: AppTheme.light,
                       locale: context.locale,
                       supportedLocales: context.supportedLocales,
                       localizationsDelegates: context.localizationDelegates,
-                      home: PetManagementScreen(onDelete: onDelete))))));
+                      home: PetManagementScreen(
+                          onDelete: onDelete,
+                          onAdd: onAdd,
+                          onEdit: onEdit))))));
   await tester.pumpAndSettle();
-  await tester.tap(find.byType(PopupMenuButton<String>));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('개체 삭제'));
-  await tester.pumpAndSettle();
+  if (openMenu) {
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('개체 삭제'));
+    await tester.pumpAndSettle();
+  }
 }
 
 void main() {
@@ -114,4 +133,32 @@ void main() {
       await tester.pumpAndSettle();
     });
   }
+  testWidgets(
+      'add stays fixed and last pet edit remains reachable after scrolling',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    var adds = 0;
+    final edited = <String>[];
+    await _open(tester, '크랑이', (_) async => fail('must not delete'),
+        count: 12,
+        openMenu: false,
+        onAdd: () => adds++,
+        onEdit: (pet) => edited.add(pet.id));
+    final add = find.byKey(const Key('pet_management_add'));
+    final before = tester.getRect(add);
+    final last = find.byKey(const ValueKey('pet_management_menu_p11'));
+    await tester.scrollUntilVisible(last, 500,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(add), before);
+    await tester.tap(last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('개체 정보 수정'));
+    await tester.pumpAndSettle();
+    expect(edited, ['p11']);
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    expect(adds, 1);
+  });
 }
