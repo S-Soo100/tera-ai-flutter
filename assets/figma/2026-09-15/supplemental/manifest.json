@@ -1,0 +1,34 @@
+{
+  "capturedAt": "2026-09-15",
+  "channel": "wvkqunn6",
+  "files": [
+    {
+      "node": "765:2693",
+      "referencePng": "assets/figma/2026-09-15/supplemental/env_temperature.png",
+      "sourceSvg": "assets/icons/final_temperature.svg",
+      "sourceSha256": "034c3489f6c9211f95dac4c1eb709fc9362a75d1c3f01f911a7eea1e24bc4ae0",
+      "runtime": "assets/icons/redesign_v2/env_temperature.svg",
+      "runtimeSha256": "8df25a54dcfa2b064179de6a8967f3390da0efe46a18925038cfe0f9f0704164",
+      "displaySize": [
+        28,
+        28
+      ],
+      "transform": "Only background rect fill updated to #C00306; white vector glyph preserved",
+      "exportLimitation": "Talk to Figma plugin hardcodes PNG despite accepting SVG option"
+    },
+    {
+      "node": "765:2699",
+      "referencePng": "assets/figma/2026-09-15/supplemental/env_humidity.png",
+      "sourceSvg": "assets/icons/final_humidity.svg",
+      "sourceSha256": "314e1196857006fd12697910d1f571725afa20d6306801152a2c8e873f699b18",
+      "runtime": "assets/icons/redesign_v2/env_humidity.svg",
+      "runtimeSha256": "0eb14a1c805f7b27e5d6528e08e52d47b308c75e0973cb4d7dbb1c6eca741e12",
+      "displaySize": [
+        28,
+        28
+      ],
+      "transform": "Only background rect fill updated to #192553; white vector glyph preserved",
+      "exportLimitation": "Talk to Figma plugin hardcodes PNG despite accepting SVG option"
+    }
+  ]
+}

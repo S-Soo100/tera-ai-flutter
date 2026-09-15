@@ -23,6 +23,39 @@ EnvChartData _data({bool empty = false}) {
 }
 
 void main() {
+  test('missing half-hour buckets break each metric line', () {
+    final points = [
+      (x: 0.0, y: .5),
+      (x: 1 / 48, y: .6),
+      (x: 3 / 48, y: .7),
+      (x: 4 / 48, y: .8)
+    ];
+    final segments = environmentLineSegments(points, maxGap: 1 / 48);
+    expect(segments.map((part) => part.length), [2, 2]);
+    expect(segments.first.last.x, 1 / 48);
+    expect(segments.last.first.x, 3 / 48);
+  });
+  testWidgets('same day refresh preserves user horizontal scroll',
+      (tester) async {
+    Widget chart(double fraction) => MaterialApp(
+        home: Scaffold(
+            body: SizedBox(
+                width: 393,
+                child: EnvDayChart(data: _data(), initialFraction: fraction))));
+    await tester.pumpWidget(chart(0));
+    await tester.pump();
+    await tester.drag(
+        find.byType(SingleChildScrollView), const Offset(-120, 0));
+    await tester.pumpAndSettle();
+    final before =
+        tester.state<ScrollableState>(find.byType(Scrollable)).position.pixels;
+    expect(before, greaterThan(0));
+    await tester.pumpWidget(chart(1));
+    await tester.pumpAndSettle();
+    expect(
+        tester.state<ScrollableState>(find.byType(Scrollable)).position.pixels,
+        before);
+  });
   group('resolveMarkerCenters — 겹침 보정', () {
     test('겹치지 않으면 그대로', () {
       final out = resolveMarkerCenters([50, 100, 200], min: 14, max: 510);

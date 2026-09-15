@@ -8,6 +8,9 @@ import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/favorite_clip.dart';
 import 'my_cage_providers.dart';
+import 'clip_visibility_providers.dart';
+import 'clip_memo_providers.dart';
+import 'widgets/clip_memo_card.dart';
 import 'widgets/crecam_detail_top_bar.dart';
 import 'widgets/crecam_states.dart';
 import 'widgets/motion_clip_thumb.dart';
@@ -31,6 +34,7 @@ class BookmarksScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(clipVisibilityEntryRefreshProvider('bookmarks'));
     final glass = context.glass;
     final favoritesAsync = ref.watch(allFavoriteClipsProvider);
     final day = ref.watch(bookmarksDayFilterProvider);
@@ -68,7 +72,11 @@ class BookmarksScreen extends ConsumerWidget {
                     child: favoritesAsync.when(
                       loading: () => const _ListSkeleton(),
                       error: (_, __) => CrecamErrorRetry(
-                        onRetry: () => ref.invalidate(allFavoriteClipsProvider),
+                        onRetry: () {
+                          ref.invalidate(
+                              clipVisibilityEntryRefreshProvider('bookmarks'));
+                          ref.invalidate(allFavoriteClipsProvider);
+                        },
                       ),
                       data: (favorites) => _list(context, favorites, day),
                     ),
@@ -91,9 +99,11 @@ class BookmarksScreen extends ConsumerWidget {
 
   Widget _list(
       BuildContext context, List<FavoriteClip> favorites, DateTime? day) {
+    final sorted = [...favorites]
+      ..sort((a, b) => b.favoritedAt.compareTo(a.favoritedAt));
     final filtered = day == null
-        ? favorites
-        : favorites.where((f) {
+        ? sorted
+        : sorted.where((f) {
             final t = f.startedAt.toLocal();
             return t.year == day.year &&
                 t.month == day.month &&
@@ -133,6 +143,11 @@ class _BookmarkCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
+    final owner = ref.watch(clipMemoAccountProvider);
+    final memoKey = (ownerId: clip.ownerId, clipId: clip.clipId);
+    final memo = owner == clip.ownerId
+        ? ref.watch(clipMemoProvider(memoKey)).valueOrNull
+        : null;
     final thumb = MotionClipThumb(
         clipId: clip.clipId, cameraId: clip.cameraId, fallbackIconSize: 28);
 
@@ -157,10 +172,19 @@ class _BookmarkCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(12)),
-            child: AspectRatio(aspectRatio: 369 / 180, child: thumb),
-          ),
+          SizedBox(
+              height: 180,
+              child: Row(children: [
+                Expanded(
+                    child: ClipRRect(
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  child: SizedBox.expand(child: thumb),
+                )),
+                if (memo != null) ...[
+                  const SizedBox(width: 8),
+                  ClipMemoCard(memo: memo, memoKey: memoKey),
+                ],
+              ])),
         ],
       ),
     );

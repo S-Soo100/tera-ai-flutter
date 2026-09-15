@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/glass_palette.dart';
+import '../../../../core/theme/viva_colors.dart';
 import '../../../../shared/domain/actuator_marker.dart';
 import '../../../../shared/domain/am_pm_time.dart';
 import '../../../../shared/domain/control_log.dart';
@@ -76,7 +77,9 @@ class ControlLogList extends StatelessWidget {
     return Container(
       key: sectionKey,
       width: double.infinity,
-      color: glass.surfaceHeader,
+      color: Theme.of(context).brightness == Brightness.light
+          ? VivaColors.fillBack
+          : glass.surfaceHeader,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +94,7 @@ class ControlLogList extends StatelessWidget {
               color: glass.textPrimary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           if (entries.isEmpty)
             Text(
               'env_detail_empty_log'.tr(),
@@ -136,15 +139,15 @@ class _LogRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final glass = context.glass;
     final name = controlKindNameKey(entry.kind).tr();
-    // 온습도 매칭은 같은 버킷에서 오므로 둘 다 있거나 둘 다 없다.
-    final hasEnv = entry.temperature != null && entry.humidity != null;
 
     // 델타는 off 로우에만 온다(도메인 보장) — 있으면 델타, 없으면 캡션.
     final deltaParts = [
-      if (entry.deltaTemperature case final dT?)
-        'env_detail_delta_temp'.tr(args: [_signed(dT)]),
-      if (entry.deltaHumidity case final dH?)
-        'env_detail_delta_humid'.tr(args: [_signed(dH)]),
+      'env_detail_delta_temp'.tr(args: [
+        entry.deltaTemperature == null ? '--' : _signed(entry.deltaTemperature!)
+      ]),
+      'env_detail_delta_humid'.tr(args: [
+        entry.deltaHumidity == null ? '--' : _signed(entry.deltaHumidity!)
+      ]),
     ];
 
     return Row(
@@ -166,7 +169,7 @@ class _LogRow extends StatelessWidget {
                   color: glass.textSecondary,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 formatAmPmTime(entry.at),
                 style: TextStyle(
@@ -179,39 +182,44 @@ class _LogRow extends StatelessWidget {
             ],
           ),
         ),
-        // 온습도를 모르면(30분 넘게 이격) 우측 열 자체를 생략한다 —
-        // `--`를 찍으면 "센서가 0을 쟀다"로 읽힌다.
-        if (hasEnv)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'env_detail_env_value'.tr(args: [
-                  formatCompact(entry.temperature!),
-                  formatCompact(entry.humidity!),
-                ]),
-                style: TextStyle(
-                  fontFamily: 'Pretendard',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 16 * -0.02,
-                  color: glass.textSecondary,
-                ),
+        // Missing readings retain the value column with an explicit --.
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              'env_detail_env_value'.tr(args: [
+                entry.temperature == null
+                    ? '--'
+                    : formatCompact(entry.temperature!),
+                entry.humidity == null ? '--' : formatCompact(entry.humidity!),
+              ]),
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 16 * -0.02,
+                color: glass.textPrimary,
               ),
-              const SizedBox(height: 2),
-              Text(
-                deltaParts.isNotEmpty
-                    ? deltaParts.join(' ')
-                    : 'env_detail_at_operation'.tr(),
-                style: TextStyle(
-                  fontFamily: 'Pretendard',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: glass.textTertiary,
-                ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              entry.state == ControlLogState.off
+                  ? deltaParts.join(' ')
+                  : 'env_detail_at_operation'.tr(),
+              key: entry.state == ControlLogState.off &&
+                      entry.deltaTemperature == null &&
+                      entry.deltaHumidity == null
+                  ? const ValueKey('control-delta-unknown')
+                  : null,
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: glass.textTertiary,
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
       ],
     );
   }

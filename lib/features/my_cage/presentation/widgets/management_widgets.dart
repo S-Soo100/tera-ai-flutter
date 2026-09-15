@@ -1,0 +1,319 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../../../core/theme/glass_palette.dart';
+import '../../../../shared/widgets/figma_icon.dart';
+import '../../domain/redesign_management.dart';
+import '../management_colors.dart';
+
+class ManagementTopBar extends StatelessWidget {
+  const ManagementTopBar(
+      {super.key,
+      required this.title,
+      required this.onBack,
+      this.close = false});
+  final String title;
+  final VoidCallback onBack;
+  final bool close;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+      height: 44,
+      child: Stack(alignment: Alignment.center, children: [
+        Text(title, style: managementStyle(context, weight: FontWeight.w700)),
+        Align(
+            alignment: close ? Alignment.centerRight : Alignment.centerLeft,
+            child: IconButton(
+                onPressed: onBack,
+                tooltip: 'management_back'.tr(),
+                icon: FigmaIcon.tinted(
+                    close ? FigmaIcons.close : FigmaIcons.arrowPrevious,
+                    size: 24,
+                    color: context.glass.textPrimary))),
+      ]));
+}
+
+TextStyle managementStyle(BuildContext context,
+        {double size = 16,
+        FontWeight weight = FontWeight.w500,
+        Color? color}) =>
+    Theme.of(context).textTheme.bodyMedium!.copyWith(
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: -size * .02,
+        height: 1.193359375,
+        color: color ?? context.glass.textSecondary);
+
+class ManagementLabel extends StatelessWidget {
+  const ManagementLabel(this.text, {super.key});
+  final String text;
+  @override
+  Widget build(BuildContext context) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Text(text,
+          style: managementStyle(context, color: context.glass.textTertiary)));
+}
+
+class ManagementButton extends StatelessWidget {
+  const ManagementButton(
+      {super.key,
+      required this.label,
+      required this.onPressed,
+      this.red = false});
+  final String label;
+  final VoidCallback? onPressed;
+  final bool red;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: FilledButton(
+          onPressed: onPressed,
+          style: FilledButton.styleFrom(
+              backgroundColor:
+                  red ? context.glass.navSelected : context.glass.textPrimary,
+              disabledBackgroundColor: context.glass.border,
+              foregroundColor: context.glass.surfaceHeader,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12))),
+          child: Text(label,
+              style: managementStyle(context,
+                  size: 18,
+                  weight: FontWeight.w600,
+                  color: context.glass.surfaceHeader))));
+}
+
+class ManagementNameField extends StatelessWidget {
+  const ManagementNameField(
+      {super.key,
+      required this.initialName,
+      required this.onChanged,
+      this.errorKey,
+      this.enabled = true});
+  final String initialName;
+  final ValueChanged<String> onChanged;
+  final String? errorKey;
+  final bool enabled;
+  @override
+  Widget build(BuildContext context) => TextFormField(
+      initialValue: initialName,
+      enabled: enabled,
+      onChanged: onChanged,
+      maxLength: 10,
+      maxLengthEnforcement: MaxLengthEnforcement.none,
+      style: managementStyle(context, color: context.glass.textPrimary),
+      decoration: InputDecoration(
+          filled: true,
+          fillColor: ManagementColors.nameField(context),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 23),
+          counterText: '',
+          suffixText: '${Characters(initialName).length}/10',
+          suffixStyle:
+              managementStyle(context, color: context.glass.textTertiary),
+          errorText: errorKey?.tr(),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: context.glass.border))));
+}
+
+class ManagementSymbolBadge extends StatelessWidget {
+  const ManagementSymbolBadge(this.icon, {super.key});
+  final String icon;
+  @override
+  Widget build(BuildContext context) => Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+          color: context.glass.textSecondary, shape: BoxShape.circle),
+      child:
+          FigmaIcon.tinted(icon, size: 20, color: context.glass.surfaceHeader));
+}
+
+class ManagementItemIcon extends StatelessWidget {
+  const ManagementItemIcon(this.kind, {super.key});
+  final ManagementKind kind;
+  @override
+  Widget build(BuildContext context) => Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+          color: context.glass.textSecondary, shape: BoxShape.circle),
+      alignment: Alignment.center,
+      child: FigmaIcon.tinted(
+          switch (kind) {
+            ManagementKind.device => 'nav_home',
+            ManagementKind.camera => 'nav_camera',
+            ManagementKind.pet => 'nav_mycre',
+          },
+          size: 20,
+          color: context.glass.surfaceHeader));
+}
+
+class ManagementItemRow extends StatelessWidget {
+  const ManagementItemRow(
+      {super.key,
+      required this.item,
+      this.groupName,
+      this.onTap,
+      this.selected,
+      this.showArrow = true});
+  final ManagementItem item;
+  final String? groupName;
+  final VoidCallback? onTap;
+  final bool? selected;
+  final bool showArrow;
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return InkWell(
+        onTap: onTap,
+        child: Container(
+            constraints: const BoxConstraints(minHeight: 64),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+                border:
+                    Border(bottom: BorderSide(color: glass.border, width: .5))),
+            child: Row(children: [
+              ManagementItemIcon(item.key.kind),
+              const SizedBox(width: 12),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text(item.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            managementStyle(context, weight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(
+                        item.key.kind == ManagementKind.pet
+                            ? item.subtitle ?? '--'
+                            : 'management_power_on_label'.tr(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: managementStyle(context,
+                            size: 14, color: glass.textTertiary)),
+                  ])),
+              const SizedBox(width: 8),
+              Flexible(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                    if (item.hardwareId != null)
+                      Text(item.hardwareId!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: managementStyle(context,
+                              weight: FontWeight.w600,
+                              color: glass.textPrimary)),
+                    if (groupName != null)
+                      Text(groupName!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: managementStyle(context,
+                              size: 14, color: glass.textTertiary)),
+                  ])),
+              if (selected != null)
+                Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: FigmaIcon.tinted(
+                        selected!
+                            ? 'redesign_v2/check_box_400'
+                            : 'redesign_v2/check_box_outline_blank_400',
+                        color:
+                            selected! ? glass.navSelected : glass.textTertiary,
+                        size: 24))
+              else if (showArrow)
+                Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: FigmaIcon.tinted(FigmaIcons.arrowNext,
+                        size: 18, color: glass.textSecondary)),
+            ])));
+  }
+}
+
+class ManagementGroupCard extends StatelessWidget {
+  const ManagementGroupCard(
+      {super.key,
+      required this.group,
+      required this.members,
+      required this.onTap});
+  final ManagementGroup group;
+  final List<ManagementItem> members;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+          constraints: const BoxConstraints(minHeight: 78),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+              color: context.glass.overlay,
+              borderRadius: BorderRadius.circular(12)),
+          child: Row(children: [
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(
+                      group.number == null
+                          ? 'management_group'.tr()
+                          : 'management_group_number'
+                              .tr(namedArgs: {'number': '${group.number}'}),
+                      style: managementStyle(context,
+                          color: context.glass.textTertiary)),
+                  const SizedBox(height: 16),
+                  Text(group.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: managementStyle(context, weight: FontWeight.w600)),
+                ])),
+            for (final kind in ManagementKind.values
+                .where((k) => members.any((i) => i.key.kind == k)))
+              Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: ManagementItemIcon(kind)),
+            const SizedBox(width: 8),
+            FigmaIcon.tinted(FigmaIcons.arrowNext,
+                size: 18, color: context.glass.textSecondary),
+          ])));
+}
+
+Future<bool> managementConfirm(BuildContext context, String message,
+        {String? action}) async =>
+    await showDialog<bool>(
+        context: context,
+        builder: (context) => Dialog(
+            backgroundColor: context.glass.surfaceHeader,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(message,
+                      textAlign: TextAlign.center,
+                      style: managementStyle(context,
+                              size: 18, color: context.glass.textPrimary)
+                          .copyWith(height: 28 / 18)),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                      height: 44,
+                      child: Row(children: [
+                        Expanded(
+                            child: ManagementButton(
+                                label: 'management_cancel'.tr(),
+                                onPressed: () =>
+                                    Navigator.pop(context, false))),
+                        const SizedBox(width: 12),
+                        Expanded(
+                            child: ManagementButton(
+                                label: action ?? 'management_confirm'.tr(),
+                                red: true,
+                                onPressed: () => Navigator.pop(context, true))),
+                      ])),
+                ])))) ??
+    false;

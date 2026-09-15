@@ -9,6 +9,24 @@ import '../../../../shared/domain/env_chart_data.dart';
 import '../../../../shared/domain/num_format.dart';
 import 'control_log_list.dart';
 
+/// Split a telemetry line wherever at least one 30-minute bucket is absent.
+/// Each metric uses its own points, so one failed sensor never bridges a gap.
+List<List<({double x, double y})>> environmentLineSegments(
+  List<({double x, double y})> points, {
+  required double maxGap,
+}) {
+  final segments = <List<({double x, double y})>>[];
+  for (final point in points) {
+    if (!point.x.isFinite || !point.y.isFinite) continue;
+    if (segments.isEmpty || point.x - segments.last.last.x > maxGap + 1e-9) {
+      segments.add([point]);
+    } else {
+      segments.last.add(point);
+    }
+  }
+  return segments;
+}
+
 /// 겹치는 마커 중심 x들을 **최소 [minGap] 간격**으로 벌린다 (계획서 §A.5).
 ///
 /// [centers]는 오름차순 픽셀 좌표. 앞에서 뒤로 밀어 간격을 확보하고, 끝을
@@ -83,10 +101,10 @@ class EnvDayChart extends StatefulWidget {
   /// Y 눈금은 항상 6개([AxisBounds.divisions]+1) — 격자 5칸.
   static const double rowStep = 36;
   static const double gridSpan = rowStep * AxisBounds.divisions; // 180
-  static const double footroom = 8;
-  static const double plotHeight = gridSpan + footroom; // 188
+  static const double footroom = 22;
+  static const double plotHeight = gridSpan + footroom; // 202
 
-  static const double axisHeight = 20;
+  static const double axisHeight = 22;
   static const double totalHeight = markerBand + plotHeight + axisHeight;
 
   /// 고정 Y축 라벨 컬럼 폭 (흰 바닥 마스크 포함).
@@ -214,6 +232,8 @@ class _EnvDayChartState extends State<EnvDayChart> {
           height: EnvDayChart.plotHeight,
           child: CustomPaint(
             painter: _DayPlotPainter(
+              maxGap: const Duration(minutes: 30).inMicroseconds /
+                  widget.data.to.difference(widget.data.from).inMicroseconds,
               tempPoints: widget.data.tempPoints,
               humidPoints: widget.data.humidPoints,
               tempColor: glass.tempAccent,
@@ -401,6 +421,7 @@ class _EnvDayChartState extends State<EnvDayChart> {
 /// 프레임 고정 전제의 fl_chart 배선보다 좌표를 직접 잡는 편이 정확하다.
 class _DayPlotPainter extends CustomPainter {
   const _DayPlotPainter({
+    required this.maxGap,
     required this.tempPoints,
     required this.humidPoints,
     required this.tempColor,
@@ -413,6 +434,7 @@ class _DayPlotPainter extends CustomPainter {
     required this.scrubDotFill,
   });
 
+  final double maxGap;
   final List<({double x, double y})> tempPoints;
   final List<({double x, double y})> humidPoints;
   final Color tempColor;
@@ -441,9 +463,13 @@ class _DayPlotPainter extends CustomPainter {
 
     void drawLinePath(List<({double x, double y})> pts, Color color) {
       if (pts.length < 2) return; // 점 하나짜리 선은 보이지 않는다.
-      final path = Path()..moveTo(pts.first.x * size.width, _dy(pts.first.y));
-      for (final p in pts.skip(1)) {
-        path.lineTo(p.x * size.width, _dy(p.y));
+      final path = Path();
+      for (final segment in environmentLineSegments(pts, maxGap: maxGap)) {
+        if (segment.length < 2) continue;
+        path.moveTo(segment.first.x * size.width, _dy(segment.first.y));
+        for (final p in segment.skip(1)) {
+          path.lineTo(p.x * size.width, _dy(p.y));
+        }
       }
       canvas.drawPath(
         path,
@@ -485,6 +511,7 @@ class _DayPlotPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DayPlotPainter old) =>
+      old.maxGap != maxGap ||
       old.tempPoints != tempPoints ||
       old.humidPoints != humidPoints ||
       old.tempColor != tempColor ||

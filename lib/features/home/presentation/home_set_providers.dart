@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../my_cage/presentation/my_cage_providers.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
+import '../../my_cage/domain/enclosure.dart';
 import '../../my_pets/presentation/my_pets_providers.dart';
 import '../data/enclosure_set_repository.dart';
 import '../domain/enclosure_set.dart';
@@ -41,7 +42,35 @@ final enclosureSetsProvider = FutureProvider<List<EnclosureSet>>((ref) async {
 
 /// 헤더 드롭다운 / 상단 스와이프로 갱신되는 선택 인덱스.
 /// 범위 검증은 여기서 하지 않고 [currentSetProvider]가 clamp 한다.
-final selectedSetIndexProvider = StateProvider<int>((ref) => 0);
+final selectedSetIndexProvider = StateProvider<int>((ref) {
+  ref.watch(currentUserProvider.select((user) => user?.id));
+  return 0;
+});
+final selectedHomeDeviceIdProvider = StateProvider<String?>((ref) {
+  ref.watch(currentUserProvider.select((user) => user?.id));
+  return null;
+});
+
+/// Device-anchored Home choices, including devices without a persisted group.
+final homeDeviceSetsProvider = FutureProvider<List<EnclosureSet>>((ref) async {
+  final groups = ref.watch(enclosureSetsProvider.future);
+  final devices = ref.watch(deviceListProvider.future);
+  final sets = await groups;
+  final allDevices = await devices;
+  return [
+    for (final device in allDevices)
+      sets.where((s) => s.device?.id == device.id).firstOrNull ??
+          EnclosureSet(
+              enclosure: Enclosure(
+                  id: 'ungrouped-device:${device.id}',
+                  name: device.name ?? '',
+                  createdAt: DateTime.fromMillisecondsSinceEpoch(0)),
+              device: device,
+              camera: null,
+              pet: null,
+              isUngroupedDevice: true),
+  ];
+});
 
 // ── 현재 세트 ──────────────────────────────────────────────────────────────────
 
@@ -53,8 +82,13 @@ final currentSetProvider = FutureProvider<EnclosureSet?>((ref) async {
   // watch는 반드시 await **앞에서** 한다. await 뒤의 ref.watch는 의존이
   // 등록되지 않거나 늦게 등록돼 인덱스 변경이 반영되지 않는다.
   final raw = ref.watch(selectedSetIndexProvider);
-  final sets = await ref.watch(enclosureSetsProvider.future);
+  final selectedId = ref.watch(selectedHomeDeviceIdProvider);
+  final sets = await ref.watch(homeDeviceSetsProvider.future);
   if (sets.isEmpty) return null;
+  final selected = selectedId == null
+      ? null
+      : sets.where((s) => s.device?.id == selectedId).firstOrNull;
+  if (selected != null) return selected;
   return sets[raw.clamp(0, sets.length - 1)];
 });
 

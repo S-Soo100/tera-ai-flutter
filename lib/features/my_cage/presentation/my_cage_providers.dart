@@ -1,3 +1,4 @@
+import 'clip_visibility_providers.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show debugPrint;
@@ -278,9 +279,14 @@ final motionClipsProvider = FutureProvider.autoDispose
   // 카메라 스와이프로 리스너가 잠깐 떨어져도 2분간 캐시 유지 — A→B→A 왕복이
   // 0쿼리가 된다. 갱신은 pull-to-refresh/재시도의 명시 invalidate가 맡는다.
   keepAliveFor(ref, const Duration(minutes: 2));
-  return ref
-      .watch(motionClipRepositoryProvider)
-      .listByCamera(key.cameraId, day: key.day, limit: 200);
+  final repository = ref.watch(motionClipRepositoryProvider);
+  final hiddenFuture = ref.watch(hiddenClipIdsProvider.future);
+  final clips =
+      await repository.listByCamera(key.cameraId, day: key.day, limit: 200);
+  final hidden = await hiddenFuture;
+  return clips
+      .where((clip) => !hidden.contains(clip.id))
+      .toList(growable: false);
 });
 
 /// 비디오 기록 날짜 필터(null = 전체 기간). autoDispose — 화면 이탈 시 리셋.
@@ -356,7 +362,12 @@ final favoriteClipRepositoryProvider = Provider<FavoriteClipRepository>((ref) {
 /// 카메라의 즐겨찾기 목록(로컬). add/remove 후 invalidate로 갱신.
 final favoriteClipsProvider =
     Provider.autoDispose.family<List<FavoriteClip>, String>((ref, cameraId) {
-  return ref.watch(favoriteClipRepositoryProvider).listByCamera(cameraId);
+  final hidden = ref.watch(currentClipVisibilityProvider).hiddenIds;
+  return ref
+      .watch(favoriteClipRepositoryProvider)
+      .listByCamera(cameraId)
+      .where((clip) => !hidden.contains(clip.clipId))
+      .toList(growable: false);
 });
 
 /// 특정 클립 즐겨찾기 여부. add/remove 후 invalidate.
@@ -467,7 +478,10 @@ final nightlyReportProvider =
 /// (2026-09-07 홈↔카메라 슬라이드 동기화) 인덱스는 목록 재조립에 흔들린다.
 /// 해석 로직이 여기 없고 위젯에 있는 이유: currentSetProvider(home)를 이
 /// 파일이 import하면 home_set_providers ↔ my_cage_providers 순환이 된다.
-final selectedCrecamCameraProvider = StateProvider<String?>((ref) => null);
+final selectedCrecamCameraProvider = StateProvider<String?>((ref) {
+  ref.watch(currentUserProvider.select((user) => user?.id));
+  return null;
+});
 
 /// 기간 설정 날짜(자정 정규화). **null = 미선택(자동)** — 실제 표시 날짜는
 /// [crecamResolvedDayProvider]가 "가장 최근 영상이 있는 날짜"로 해석한다
@@ -537,7 +551,12 @@ final latestHighlightAtProvider =
 final allFavoriteClipsProvider =
     FutureProvider<List<FavoriteClip>>((ref) async {
   ref.watch(currentUserProvider.select((u) => u?.id));
-  return ref.watch(favoriteClipRepositoryProvider).listAll();
+  final repository = ref.watch(favoriteClipRepositoryProvider);
+  final hidden = await ref.watch(hiddenClipIdsProvider.future);
+  return repository
+      .listAll()
+      .where((clip) => !hidden.contains(clip.clipId))
+      .toList(growable: false);
 });
 
 // ── 하이라이트 상세 (2026-09-04 재설계 T4) ─────────────────────────────────────
@@ -587,7 +606,25 @@ final highlightGroupsProvider =
     FutureProvider.autoDispose<List<DayHighlightGroup>>((ref) async {
   final cameraId = ref.watch(selectedCrecamCameraProvider);
   if (cameraId == null) return const [];
-  return ref.watch(_highlightGroupsForCameraProvider(cameraId).future);
+  final groupsFuture =
+      ref.watch(_highlightGroupsForCameraProvider(cameraId).future);
+  final hiddenFuture = ref.watch(hiddenClipIdsProvider.future);
+  final groups = await groupsFuture;
+  final hidden = await hiddenFuture;
+  return [
+    for (final group in groups)
+      if (group.featured.any((clip) => !hidden.contains(clip.clipId)) ||
+          group.candidates.any((clip) => !hidden.contains(clip.clipId)))
+        (
+          dayKey: group.dayKey,
+          featured: group.featured
+              .where((clip) => !hidden.contains(clip.clipId))
+              .toList(growable: false),
+          candidates: group.candidates
+              .where((clip) => !hidden.contains(clip.clipId))
+              .toList(growable: false)
+        )
+  ];
 });
 
 /// 도착 배너 dismiss 저장소(Hive `app_settings`).

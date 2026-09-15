@@ -12,6 +12,7 @@ import '../domain/highlight_group.dart';
 import '../domain/nightly_highlight.dart';
 import 'clip_playlist_player_screen.dart';
 import 'my_cage_providers.dart';
+import 'clip_visibility_providers.dart';
 import 'widgets/clip_grid.dart';
 import 'widgets/crecam_states.dart';
 import 'widgets/favorite_bookmark_badge.dart';
@@ -46,6 +47,7 @@ class HighlightsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(clipVisibilityEntryRefreshProvider('highlights'));
     final glass = context.glass;
     final groupsAsync = ref.watch(highlightGroupsProvider);
     final day = ref.watch(highlightsDayFilterProvider);
@@ -84,7 +86,11 @@ class HighlightsScreen extends ConsumerWidget {
                     child: groupsAsync.when(
                       loading: () => const _Skeleton(),
                       error: (_, __) => CrecamErrorRetry(
-                        onRetry: () => ref.invalidate(highlightGroupsProvider),
+                        onRetry: () {
+                          ref.invalidate(
+                              clipVisibilityEntryRefreshProvider('highlights'));
+                          ref.invalidate(highlightGroupsProvider);
+                        },
                       ),
                       data: (groups) => day != null
                           ? _dayView(context, groups, day)

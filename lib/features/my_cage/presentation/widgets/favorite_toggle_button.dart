@@ -2,80 +2,56 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../my_cage_providers.dart';
+import '../../../../core/theme/glass_palette.dart';
+import '../../../../shared/widgets/figma_icon.dart';
+import '../bookmark_controller.dart';
+import '../clip_memo_providers.dart';
+import 'clip_memo_editor.dart';
 
-/// 클립 즐겨찾기 토글 버튼. 추가 시 motion_clip 메타 + presigned URL을 받아
-/// 로컬 다운로드(+클라우드 push는 repo가 처리). 리포트 카드 등 공용.
-/// clipId = motion_clips.id (하이라이트 미러도 동일 UUID).
-class FavoriteToggleButton extends ConsumerStatefulWidget {
+/// Shared bookmark entry point. Adding always offers an optional local memo.
+class FavoriteToggleButton extends ConsumerWidget {
   const FavoriteToggleButton({super.key, required this.clipId, this.color});
-
   final String clipId;
   final Color? color;
 
   @override
-  ConsumerState<FavoriteToggleButton> createState() =>
-      _FavoriteToggleButtonState();
-}
-
-class _FavoriteToggleButtonState extends ConsumerState<FavoriteToggleButton> {
-  bool _busy = false;
-
-  Future<void> _toggle() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    final repo = ref.read(favoriteClipRepositoryProvider);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      if (repo.isFavorite(widget.clipId)) {
-        final cameraId = await repo.remove(widget.clipId);
-        if (!mounted) return;
-        ref.invalidate(isFavoriteProvider(widget.clipId));
-        if (cameraId != null) ref.invalidate(favoriteClipsProvider(cameraId));
-        // non-autoDispose 전역 목록(북마크 상세·엔트리 카드) 동기화 —
-        // 리뷰 2026-09-04.
-        ref.invalidate(allFavoriteClipsProvider);
-        messenger.showSnackBar(
-            SnackBar(content: Text('clip_favorite_removed'.tr())));
-      } else {
-        final clip = await ref.read(motionClipProvider(widget.clipId).future);
-        if (clip == null) {
-          if (mounted) {
-            messenger
-                .showSnackBar(SnackBar(content: Text('clip_save_failed'.tr())));
-          }
-          return;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final owner = ref.watch(clipMemoAccountProvider);
+    final state = owner == null
+        ? null
+        : ref.watch(
+            bookmarkControllerProvider((ownerId: owner, clipId: clipId)));
+    if (owner != null) {
+      ref.listen(bookmarkControllerProvider((ownerId: owner, clipId: clipId)),
+          (previous, next) {
+        if (next.error != null && previous?.error != next.error) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('clip_save_failed'.tr()),
+            action: SnackBarAction(
+                label: 'retry'.tr(),
+                onPressed: () {
+                  if (!context.mounted ||
+                      ref.read(clipMemoAccountProvider) != owner) {
+                    return;
+                  }
+                  ref
+                      .read(bookmarkControllerProvider(
+                          (ownerId: owner, clipId: clipId)).notifier)
+                      .retry();
+                }),
+          ));
         }
-        messenger
-            .showSnackBar(SnackBar(content: Text('clip_favorite_saving'.tr())));
-        final url = await ref.read(motionClipUrlProvider(widget.clipId).future);
-        await repo.add(clip, url);
-        if (!mounted) return;
-        ref.invalidate(isFavoriteProvider(widget.clipId));
-        ref.invalidate(favoriteClipsProvider(clip.cameraId));
-        ref.invalidate(allFavoriteClipsProvider);
-        messenger
-            .showSnackBar(SnackBar(content: Text('clip_favorite_added'.tr())));
-      }
-    } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text('clip_save_failed'.tr())));
-    } finally {
-      if (mounted) setState(() => _busy = false);
+      });
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isFav = ref.watch(isFavoriteProvider(widget.clipId));
+    final favorite = state?.desired ?? false;
     return IconButton(
-      icon: Icon(
-        isFav ? Icons.favorite : Icons.favorite_border,
-        color: isFav
-            ? Colors.redAccent
-            : (widget.color ?? Theme.of(context).colorScheme.outline),
-      ),
-      tooltip: 'clip_favorite_add'.tr(),
-      onPressed: _busy ? null : _toggle,
+      icon: FigmaIcon.tinted(
+          favorite ? FigmaIcons.bookmarkCheck : FigmaIcons.bookmark,
+          color: color ?? context.glass.textPrimary,
+          size: 36),
+      tooltip: (favorite ? 'clip_favorite_remove' : 'clip_favorite_add').tr(),
+      onPressed:
+          owner == null ? null : () => toggleClipBookmark(context, ref, clipId),
     );
   }
 }

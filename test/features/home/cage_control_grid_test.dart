@@ -184,7 +184,7 @@ void main() {
   testWidgets('LED 켜짐 + 밝기 보고 → 퍼센트 표기', (tester) async {
     await _pump(tester,
         reading: _reading(led: ActuatorState.on, ledBrightness: 60));
-    expect(find.text('unit_percent_fmt'), findsOneWidget);
+    expect(find.text('redesign_led_on_brightness'), findsOneWidget);
   });
 
   testWidgets('오프라인이면 배선 타일 탭 무반응(시트 없음)', (tester) async {

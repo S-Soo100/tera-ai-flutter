@@ -196,7 +196,7 @@ class CageControlGrid extends ConsumerWidget {
       return 'device_state_unknown'.tr();
     }
     if (t.led == ActuatorState.on && t.ledBrightness != null) {
-      return 'unit_percent_fmt'.tr(args: ['${t.ledBrightness}']);
+      return 'redesign_led_on_brightness'.tr(args: ['${t.ledBrightness}']);
     }
     return _stateLabel(t.led);
   }

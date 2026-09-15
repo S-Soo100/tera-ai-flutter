@@ -49,7 +49,7 @@ void main() {
     expect(find.text('env_detail_env_value'), findsNWidgets(2));
   });
 
-  testWidgets('캡션 로우 — ran(분무)·델타 없는 off는 캡션', (tester) async {
+  testWidgets('분무는 캡션, 델타 없는 off는 미상 변화량', (tester) async {
     await _pump(tester, [
       ControlLogEntry(
         kind: MarkerKind.mist,
@@ -70,10 +70,11 @@ void main() {
 
     expect(find.text('env_detail_ran'), findsOneWidget);
     expect(find.text('env_detail_off'), findsOneWidget);
-    expect(find.text('env_detail_at_operation'), findsNWidgets(2));
+    expect(find.text('env_detail_at_operation'), findsOneWidget);
+    expect(find.byKey(const ValueKey('control-delta-unknown')), findsOneWidget);
   });
 
-  testWidgets('온습도 미상 로우 — 우측 열 생략', (tester) async {
+  testWidgets('온습도 미상 로우 — 우측 열을 --로 유지', (tester) async {
     await _pump(tester, [
       ControlLogEntry(
         kind: MarkerKind.heater,
@@ -83,8 +84,8 @@ void main() {
     ]);
 
     expect(find.text('env_detail_on'), findsOneWidget);
-    expect(find.text('env_detail_env_value'), findsNothing);
-    expect(find.text('env_detail_at_operation'), findsNothing);
+    expect(find.text('env_detail_env_value'), findsOneWidget);
+    expect(find.text('env_detail_at_operation'), findsOneWidget);
   });
 
   testWidgets('빈 목록 — 빈 상태 문구', (tester) async {

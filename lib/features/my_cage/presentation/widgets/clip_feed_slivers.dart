@@ -59,30 +59,37 @@ class ClipFeedSlivers extends ConsumerWidget {
       final label =
           previousDate != date ? DateFormat('yyyy. M. d').format(date) : null;
       previousDate = date;
+      final firstGroup = rows.isEmpty;
       rows.add((context) => Padding(
             key: ValueKey('clip_hour_${group.key.toIso8601String()}'),
-            padding: const EdgeInsets.only(top: 16, bottom: 8),
+            padding: EdgeInsets.only(top: firstGroup ? 0 : 16, bottom: 8),
             child: Row(children: [
               Expanded(
                   child: Text(formatAmPmTime(group.key),
                       style: TextStyle(
                           fontSize: 16,
+                          height: 19 / 16,
+                          letterSpacing: -.32,
                           fontWeight: FontWeight.w600,
                           color: context.glass.textSecondary))),
               if (label != null)
                 Text(label,
                     style: TextStyle(
                         fontSize: 14,
+                        height: 17 / 14,
+                        letterSpacing: -.28,
                         fontWeight: FontWeight.w600,
                         color: context.glass.textTertiary)),
             ]),
           ));
       for (var start = 0; start < group.value.length; start += 3) {
         final rowOffset = start ~/ 3;
+        final hasNextRow = start + 3 < group.value.length;
         final clips = group.value.skip(start).take(3).toList(growable: false);
         rows.add((context) => Padding(
               key: ValueKey('clip_row_${clips.first.id}'),
-              padding: const EdgeInsets.only(bottom: ClipGrid.cellGap),
+              padding:
+                  EdgeInsets.only(bottom: hasNextRow ? ClipGrid.cellGap : 0),
               child: ClipGrid<MotionClip>(
                   items: clips,
                   rowOffset: rowOffset,

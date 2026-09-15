@@ -1,3 +1,4 @@
+import 'package:vivanaut/features/my_cage/presentation/clip_visibility_providers.dart';
 import 'package:vivanaut/features/my_cage/domain/clip_playlist_args.dart';
 import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'dart:async';
@@ -9,7 +10,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
-import 'package:vivanaut/features/home/presentation/widgets/home_header_bar.dart';
+import 'package:vivanaut/shared/widgets/redesign_tab_header.dart';
+import 'package:vivanaut/shared/widgets/redesign_empty_state.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
@@ -44,9 +47,15 @@ TerraCamera _offlineCamera({String id = _cameraId}) => TerraCamera(
 
 /// [camId] 카메라가 물린 사육장 세트 — 홈이 보고 있는 세트 픽스처.
 EnclosureSet _setWithCamera(String camId) => EnclosureSet(
-      enclosure:
-          Enclosure(id: 'e1', name: '1번 사육장', createdAt: DateTime(2026, 1, 1)),
-      device: null,
+      enclosure: Enclosure(
+          id: 'group-$camId', name: '사육 환경 1', createdAt: DateTime(2026, 1, 1)),
+      device: Device(
+          id: 'device-$camId',
+          ownerId: 'owner-a',
+          enclosureId: 'group-$camId',
+          name: '사육장',
+          isOnline: true,
+          lastSeenAt: null),
       camera: _offlineCamera(id: camId),
       pet: null,
     );
@@ -107,7 +116,7 @@ GoRouter _router() => GoRouter(
           ),
         ),
         GoRoute(
-          path: '/crecam/cameras/pair',
+          path: '/devices/add',
           builder: (_, __) =>
               const Scaffold(body: Center(child: Text('pair-screen'))),
         ),
@@ -145,6 +154,7 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        clipVisibilityAccountProvider.overrideWithValue(null),
         currentUserProvider.overrideWithValue(User(
             id: 'owner-a',
             appMetadata: {},
@@ -163,6 +173,9 @@ Future<void> _pump(
           return controller;
         }),
         enclosureSetsProvider.overrideWith((ref) async => sets),
+        homeDeviceSetsProvider.overrideWith((ref) async => sets),
+        enclosuresProvider
+            .overrideWith((ref) async => sets.map((s) => s.enclosure).toList()),
         camerasProvider.overrideWith((ref) =>
             cameraEvents ?? Stream.value(cameras ?? [_offlineCamera()])),
         // 실피어 차단 — startConnection()을 부르지 않은 inert 컨트롤러.
@@ -237,7 +250,7 @@ void main() {
 
   testWidgets('헤더 + 엔트리 카드 2개(하이라이트/북마크) 렌더', (tester) async {
     await _pump(tester);
-    expect(find.byType(HomeHeaderBar), findsOneWidget);
+    expect(find.byType(RedesignTabHeader), findsOneWidget);
     expect(find.byKey(CrecamScreen.highlightCardKey), findsOneWidget);
     expect(find.byKey(CrecamScreen.bookmarkCardKey), findsOneWidget);
     expect(find.text('crecam_home_highlights'), findsOneWidget);
@@ -262,9 +275,9 @@ void main() {
 
   testWidgets('카메라 0대 → 빈 상태 카드 + 페어링 진입', (tester) async {
     await _pump(tester, cameras: const []);
-    expect(find.byKey(CameraLiveArea.emptyCardKey), findsOneWidget);
-    expect(find.text('my_cage_empty_title'), findsOneWidget);
-    await tester.tap(find.text('my_cage_add_camera'));
+    expect(find.byType(RedesignEmptyState), findsOneWidget);
+    expect(find.text('redesign_empty_camera'), findsOneWidget);
+    await tester.tap(find.text('redesign_device_add'));
     await tester.pumpAndSettle();
     expect(find.text('pair-screen'), findsOneWidget);
   });
@@ -343,7 +356,7 @@ void main() {
     final container = ProviderScope.containerOf(
         tester.element(find.byType(CrecamScreen)),
         listen: false);
-    container.read(selectedSetIndexProvider.notifier).state = 1;
+    container.read(selectedHomeDeviceIdProvider.notifier).state = 'device-camB';
     await tester.pumpAndSettle();
 
     expect(_liveFor('camB'), findsOneWidget);

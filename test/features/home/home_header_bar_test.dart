@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +13,13 @@ import 'package:vivanaut/features/my_pets/domain/pet.dart';
 EnclosureSet _set(String id, String encName, {String? petName}) => EnclosureSet(
       enclosure:
           Enclosure(id: id, name: encName, createdAt: DateTime(2026, 1, 1)),
-      device: null,
+      device: Device(
+          id: 'd-$id',
+          ownerId: 'u',
+          enclosureId: id,
+          name: '기기 $id',
+          isOnline: true,
+          lastSeenAt: null),
       camera: null,
       pet: petName == null
           ? null
@@ -28,7 +36,8 @@ Future<ProviderContainer> _pump(
   List<EnclosureSet> sets,
 ) async {
   final c = ProviderContainer(overrides: [
-    enclosureSetsProvider.overrideWith((ref) async => sets),
+    currentUserProvider.overrideWithValue(null),
+    homeDeviceSetsProvider.overrideWith((ref) async => sets),
   ]);
   addTearDown(c.dispose);
   await tester.pumpWidget(
@@ -55,7 +64,7 @@ GoRouter _router() => GoRouter(
               const Scaffold(body: Center(child: Text('profile-screen'))),
         ),
         GoRoute(
-          path: '/smart-cage/devices/pair',
+          path: '/devices/add',
           builder: (_, __) =>
               const Scaffold(body: Center(child: Text('device-pair-screen'))),
         ),
@@ -65,12 +74,12 @@ GoRouter _router() => GoRouter(
               const Scaffold(body: Center(child: Text('camera-pair-screen'))),
         ),
         GoRoute(
-          path: '/pet-add',
+          path: '/my-pets/manage',
           builder: (_, __) =>
               const Scaffold(body: Center(child: Text('pet-add-screen'))),
         ),
         GoRoute(
-          path: '/enclosure-settings',
+          path: '/devices/manage',
           builder: (_, __) => const Scaffold(
               body: Center(child: Text('enclosure-link-screen'))),
         ),
@@ -83,116 +92,54 @@ GoRouter _router() => GoRouter(
     );
 
 void main() {
-  testWidgets('짧은 세트명에서도 우측 버튼이 헤더 우단에 붙는다 (2026-09-07 회귀)', (tester) async {
-    // Flexible(pill)+Spacer 시절: 여유 공간이 1:1 분배돼 loose 필이 할당을
-    // 남기면 잔여가 Row 우측에 몰려 버튼들이 화면 끝에서 ~40pt 떠 보였다.
-    // 짧은 라벨(긴 라벨은 할당을 다 써 재현 불가)로 고정한다.
-    await _pump(tester, [_set('e1', '집', petName: '크')]);
-    final header = tester.getRect(find.byType(HomeHeaderBar));
-    final person = tester.getRect(find.byKey(HomeHeaderBar.personButtonKey));
-    expect(person.right, header.right);
-    // 필은 h44를 꽉 채운다(Figma 668:430) — 텍스트 높이로 수축 금지.
-    final pill = tester.getRect(find.byKey(HomeHeaderBar.setPillKey));
-    expect(pill.height, HomeHeaderBar.height);
-  });
-
-  testWidgets('필 라벨 = 개체명(있으면), 사육장명과 합치지 않는다', (tester) async {
-    await _pump(tester, [_set('e1', '1번 사육장', petName: '젤리')]);
-    expect(find.text('젤리'), findsOneWidget);
-    expect(find.text('젤리 (1번 사육장)'), findsNothing);
-  });
-
-  testWidgets('개체가 없으면 사육장명으로 폴백', (tester) async {
-    await _pump(tester, [_set('e1', '1번 사육장')]);
-    expect(find.text('1번 사육장'), findsOneWidget);
-  });
-
-  testWidgets('세트가 1개면 드롭다운 화살표 비노출 (PRD §3.1 예외)', (tester) async {
-    await _pump(tester, [_set('e1', '1번 사육장')]);
-    expect(find.byKey(HomeHeaderBar.dropdownArrowKey), findsNothing);
-  });
-
-  testWidgets('세트가 2개 이상이면 화살표 노출', (tester) async {
-    await _pump(tester, [_set('e1', 'A'), _set('e2', 'B')]);
+  testWidgets('그룹명을 표시하고 한 항목이어도 펼칠 수 있다', (tester) async {
+    await _pump(tester, [_set('e1', '사육 환경 1', petName: '젤리')]);
+    expect(find.text('사육 환경 1'), findsOneWidget);
+    expect(find.text('젤리'), findsNothing);
     expect(find.byKey(HomeHeaderBar.dropdownArrowKey), findsOneWidget);
+    final header = tester.getRect(find.byType(HomeHeaderBar));
+    expect(tester.getRect(find.byKey(HomeHeaderBar.personButtonKey)).right,
+        header.right);
+    expect(tester.getRect(find.byKey(HomeHeaderBar.setPillKey)).height, 44);
   });
-
-  testWidgets('드롭다운에서 다른 세트를 고르면 선택 인덱스가 바뀐다', (tester) async {
+  testWidgets('드롭다운은 기기 ID로 선택하고 이름 변경과 분리한다', (tester) async {
     final c = await _pump(tester, [_set('e1', 'A'), _set('e2', 'B')]);
-
     await tester.tap(find.byKey(HomeHeaderBar.setPillKey));
     await tester.pumpAndSettle();
     await tester.tap(find.text('B').last);
     await tester.pumpAndSettle();
-
-    expect(c.read(selectedSetIndexProvider), 1);
+    expect(c.read(selectedHomeDeviceIdProvider), 'd-e2');
   });
-
-  testWidgets('세트가 없으면 빈 라벨로 죽지 않는다', (tester) async {
-    await _pump(tester, const []);
-    expect(find.byType(HomeHeaderBar), findsOneWidget);
-    expect(find.text('home_no_set'), findsOneWidget);
+  testWidgets('0대면 pill 없이 관리와 계정만 표시한다', (tester) async {
+    await _pump(tester, []);
+    expect(find.byKey(HomeHeaderBar.setPillKey), findsNothing);
+    expect(find.byKey(HomeHeaderBar.personButtonKey), findsOneWidget);
   });
-
-  testWidgets('person 버튼 → 프로필 화면 — 계정으로 가는 유일한 문이다', (tester) async {
+  testWidgets('긴 그룹명과 확대 글꼴이 320px 헤더를 넘지 않는다', (tester) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await _pump(tester, [_set('e1', '아주긴사육환경이름입니다')]);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('관리 메뉴에서 세 진입점을 열 수 있다', (tester) async {
+    await _pump(tester, [_set('e1', 'A')]);
+    await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
+    await tester.pumpAndSettle();
+    expect(find.text('redesign_device_add'), findsOneWidget);
+    expect(find.text('redesign_device_manage'), findsOneWidget);
+    expect(find.text('redesign_pet_manage'), findsOneWidget);
+    await tester.tap(find.text('redesign_device_add'));
+    await tester.pumpAndSettle();
+    expect(find.text('device-pair-screen'), findsOneWidget);
+  });
+  testWidgets('계정 아이콘은 프로필로 이동한다', (tester) async {
     await _pump(tester, [_set('e1', 'A')]);
     await tester.tap(find.byKey(HomeHeaderBar.personButtonKey));
     await tester.pumpAndSettle();
     expect(find.text('profile-screen'), findsOneWidget);
-  });
-
-  testWidgets('⚙️ 버튼 → /env-settings — 연동/설정 분리(2026-09-08)', (tester) async {
-    await _pump(tester, [_set('e1', 'A')]);
-    await tester.tap(find.byKey(HomeHeaderBar.settingsButtonKey));
-    await tester.pumpAndSettle();
-    expect(find.text('env-settings-screen'), findsOneWidget);
-  });
-
-  group('[+] 메뉴', () {
-    testWidgets('탭하면 기기/카메라/개체 추가 + 사육장 연동 4항목이 뜬다', (tester) async {
-      await _pump(tester, [_set('e1', 'A')]);
-      await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
-      await tester.pumpAndSettle();
-      expect(find.text('home_add_device'), findsOneWidget);
-      expect(find.text('home_add_camera'), findsOneWidget);
-      expect(find.text('home_add_pet'), findsOneWidget);
-      expect(find.text('home_enclosure_link'), findsOneWidget);
-    });
-
-    testWidgets('카메라 추가 → /crecam/cameras/pair (카메라 탭 재설계 T2)', (tester) async {
-      await _pump(tester, [_set('e1', 'A')]);
-      await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('home_add_camera'));
-      await tester.pumpAndSettle();
-      expect(find.text('camera-pair-screen'), findsOneWidget);
-    });
-
-    testWidgets('기기 추가 → /smart-cage/devices/pair', (tester) async {
-      await _pump(tester, [_set('e1', 'A')]);
-      await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('home_add_device'));
-      await tester.pumpAndSettle();
-      expect(find.text('device-pair-screen'), findsOneWidget);
-    });
-
-    testWidgets('개체 추가 → /pet-add (셸 밖 전용 라우트)', (tester) async {
-      await _pump(tester, [_set('e1', 'A')]);
-      await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('home_add_pet'));
-      await tester.pumpAndSettle();
-      expect(find.text('pet-add-screen'), findsOneWidget);
-    });
-
-    testWidgets('사육장 연동 → /enclosure-settings', (tester) async {
-      await _pump(tester, [_set('e1', 'A')]);
-      await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('home_enclosure_link'));
-      await tester.pumpAndSettle();
-      expect(find.text('enclosure-link-screen'), findsOneWidget);
-    });
   });
 }

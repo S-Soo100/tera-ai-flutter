@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/motion_clip_page.dart';
 import 'my_cage_providers.dart';
+import '../domain/clip_visibility.dart';
+import 'clip_visibility_providers.dart';
 
 typedef PlayerFeedPageLoader = Future<MotionClipPage> Function(
     MotionClipCursor? before);
@@ -13,7 +15,14 @@ typedef PlayerFeedPageLoader = Future<MotionClipPage> Function(
 final playerFeedPageLoaderProvider = Provider.autoDispose
     .family<PlayerFeedPageLoader, ClipFeedQuery>((ref, query) {
   final repository = ref.watch(motionClipRepositoryProvider);
-  return (before) => repository.listPage(query, before: before);
+  return (before) async {
+    await ref.read(clipVisibilityProvider(query.ownerId).notifier).ready();
+    return loadVisibleClipPage(
+        before: before,
+        hiddenIds: () =>
+            ref.read(clipVisibilityProvider(query.ownerId)).hiddenIds,
+        load: (cursor) => repository.listPage(query, before: cursor));
+  };
 });
 
 final playerOrientationProvider = StateNotifierProvider.autoDispose

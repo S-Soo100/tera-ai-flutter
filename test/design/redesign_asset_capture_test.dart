@@ -70,6 +70,41 @@ void main() {
     sheet.dispose();
   });
 
+  test('온습도 배지는 배경과 흰 글리프를 함께 보존해 Figma export와 일치한다', () async {
+    for (final name in ['env_temperature', 'env_humidity']) {
+      final info = await vg.loadPicture(
+          SvgAssetLoader('assets/icons/redesign_v2/$name.svg'), null);
+      final recorder = ui.PictureRecorder();
+      Canvas(recorder)
+        ..scale(3)
+        ..drawPicture(info.picture);
+      final picture = recorder.endRecording();
+      final actual = await picture.toImage(84, 84);
+      final codec = await ui.instantiateImageCodec(
+          File('assets/figma/2026-09-15/supplemental/$name.png')
+              .readAsBytesSync());
+      final expected = (await codec.getNextFrame()).image;
+      final a = (await actual.toByteData(format: ui.ImageByteFormat.rawRgba))!
+          .buffer
+          .asUint8List();
+      final b = (await expected.toByteData(format: ui.ImageByteFormat.rawRgba))!
+          .buffer
+          .asUint8List();
+      expect(a.length, b.length);
+      var difference = 0;
+      for (var i = 0; i < a.length; i++) {
+        difference += (a[i] - b[i]).abs();
+      }
+      // Same vector at 3x; small renderer antialiasing differences are allowed.
+      expect(difference / a.length / 255, lessThan(0.025), reason: name);
+      actual.dispose();
+      expected.dispose();
+      codec.dispose();
+      picture.dispose();
+      info.picture.dispose();
+    }
+  });
+
   testWidgets('3배율 PNG를 원본 픽셀 크기가 아닌 논리 크기로 표시한다', (tester) async {
     for (final provider in [
       FigmaImages.emptyPet,

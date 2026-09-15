@@ -43,7 +43,7 @@ class WeekRangeChart extends StatelessWidget {
   final String Function(double, int decimals) axisFormat;
 
   // ── 치수 (Figma 369×297 근사) ──
-  static const double chartHeight = 252;
+  static const double chartHeight = 256;
   static const double gridTop = 18; // 최고값 라벨이 앉는 여백
   static const double gridBottom = chartHeight - 22; // 최저값 라벨 여백
   static const double gridSpan = gridBottom - gridTop;
@@ -81,7 +81,7 @@ class WeekRangeChart extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _header(glass),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         if (axis == null)
           SizedBox(
             height: chartHeight,
@@ -110,7 +110,7 @@ class WeekRangeChart extends StatelessWidget {
     return Row(
       children: [
         if (iconAsset != null)
-          FigmaIcon.metric(iconAsset!, size: 28)
+          FigmaIcon.tinted(iconAsset!, color: valueColor ?? accent, size: 28)
         else
           Container(
             width: 28,
@@ -118,7 +118,7 @@ class WeekRangeChart extends StatelessWidget {
             decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
             child: Icon(icon, size: 16, color: glass.deviceGlyph),
           ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         // Flexible + ellipsis — 값이 길어져도(소수·넓은 단위) 헤더 Row가
         // 옆으로 터지지 않게.
         Flexible(
@@ -128,14 +128,15 @@ class WeekRangeChart extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontFamily: 'Pretendard',
-              fontSize: 22,
+              fontSize: 28,
+              height: 33 / 28,
               fontWeight: FontWeight.w600,
-              letterSpacing: 22 * -0.02,
+              letterSpacing: 28 * -0.02,
               color: valueColor ?? accent,
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Flexible(
           child: Text(
             v == null ? '--' : headerFormat(v.min),
@@ -143,9 +144,10 @@ class WeekRangeChart extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontFamily: 'Pretendard',
-              fontSize: 20,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 20 * -0.02,
+              fontSize: 28,
+              height: 33 / 28,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 28 * -0.02,
               color: glass.textTertiary,
             ),
           ),

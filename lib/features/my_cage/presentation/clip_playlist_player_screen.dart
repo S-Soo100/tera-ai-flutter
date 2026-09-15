@@ -24,6 +24,10 @@ import 'my_cage_providers.dart';
 import 'bookmark_controller.dart';
 import '../../auth/presentation/auth_providers.dart';
 import 'widgets/crecam_detail_top_bar.dart';
+import 'widgets/clip_memo_editor.dart';
+import 'clip_memo_providers.dart';
+import 'clip_visibility_providers.dart';
+import 'widgets/clip_hide_dialog.dart';
 
 /// 세로 재생목록 플레이어 (Figma 668:743, 카메라 탭 재설계 T1).
 ///
@@ -210,17 +214,19 @@ class _ClipPlaylistPlayerScreenState
         _nextCursor,
       );
       if (!mounted || ref.read(currentUserProvider)?.id != owner) return;
-      final current = _currentClipId;
+      final current = _playlist.isEmpty ? null : _currentClipId;
+      final hidden = ref.read(currentClipVisibilityProvider).hiddenIds;
       final expanded = {
         ..._playlist,
         ...page.items.map((clip) => clip.id),
-      }.toList(growable: false);
+      }.where((id) => !hidden.contains(id)).toList(growable: false);
       _playlist = expanded;
-      _index = expanded.indexOf(current);
+      _index = current == null ? 0 : math.max(0, expanded.indexOf(current));
       _nextCursor = page.nextCursor;
       _hasMore = page.hasMore;
       _setFilmstripPreview(_index);
       _centerFilmstrip(_index, animate: false);
+      if (current == null && expanded.isNotEmpty) unawaited(_load());
     } catch (_) {
       if (mounted) {
         ref.read(playerPlaylistErrorProvider(_orientationKey).notifier).state =
@@ -268,6 +274,20 @@ class _ClipPlaylistPlayerScreenState
 
     VideoPlayerController? controller;
     try {
+      final owner = ref.read(clipVisibilityAccountProvider);
+      if (owner != null) {
+        final visibility = ref.read(clipVisibilityProvider(owner).notifier);
+        await visibility.ready();
+        if (!mounted ||
+            seq != _loadSeq ||
+            ref.read(clipVisibilityAccountProvider) != owner) {
+          return;
+        }
+        if (visibility.hiddenIds.contains(clipId)) {
+          _applyHiddenClips(visibility.hiddenIds);
+          return;
+        }
+      }
       // 즐겨찾기(로컬 파일) 우선 — 오프라인 재생 가능
       final localFile =
           ref.read(favoriteClipRepositoryProvider).getLocalFile(clipId);
@@ -499,14 +519,52 @@ class _ClipPlaylistPlayerScreenState
   }
 
   void _toggleFavorite(MotionClip? clip) {
-    final owner = ref.read(currentUserProvider)?.id;
+    toggleClipBookmark(context, ref, _currentClipId, canAdd: clip != null);
+  }
+
+  void _editMemo() {
+    final owner = ref.read(clipMemoAccountProvider);
     if (owner == null) return;
-    final key = (ownerId: owner, clipId: _currentClipId);
-    final state = ref.read(bookmarkControllerProvider(key));
-    if (clip == null && !state.desired) return;
-    ref
-        .read(bookmarkControllerProvider(key).notifier)
-        .setDesired(!state.desired);
+    showClipMemoEditor(context, key: (ownerId: owner, clipId: _currentClipId));
+  }
+
+  void _hideCurrentClip() {
+    final owner = ref.read(clipVisibilityAccountProvider);
+    if (owner == null || _playlist.isEmpty) return;
+    showClipHideDialog(context, ownerId: owner, clipId: _currentClipId);
+  }
+
+  void _applyHiddenClips(Set<String> hiddenIds) {
+    if (!mounted || _playlist.isEmpty) return;
+    final current = _currentClipId;
+    final oldIndex = _index;
+    final visible = _playlist
+        .where((id) => !hiddenIds.contains(id))
+        .toList(growable: false);
+    if (visible.length == _playlist.length) return;
+    _urlCache.removeWhere((id, _) => hiddenIds.contains(id));
+    _playlist = visible;
+    _index = visible.contains(current)
+        ? visible.indexOf(current)
+        : math.min(oldIndex, math.max(0, visible.length - 1));
+    if (visible.isEmpty) {
+      _loadSeq++;
+      final controller = _controller;
+      controller?.removeListener(_onTick);
+      _controller = null;
+      _initialized = false;
+      _isPlaying = false;
+      unawaited(controller?.dispose());
+      if (_hasMore) unawaited(_loadMoreFeedPlaylist());
+      return;
+    }
+    _setFilmstripPreview(_index);
+    _centerFilmstrip(_index, animate: false);
+    _loadMoreIfNearEnd(_index);
+    if (current != _currentClipId) {
+      _autoAdvanced = false;
+      unawaited(_load());
+    }
   }
 
   @override
@@ -514,6 +572,41 @@ class _ClipPlaylistPlayerScreenState
     final glass = context.glass;
     ref.watch(playerPlaylistProvider(_playlistSeed));
     ref.watch(playerIndexProvider(_playlistSeed));
+    final visibility = ref.watch(currentClipVisibilityProvider);
+    ref.listen(currentClipVisibilityProvider.select((value) => value.hiddenIds),
+        (_, hidden) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _applyHiddenClips(hidden));
+    });
+    ref.listen(clipVisibilityAccountProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _applyHiddenClips(_playlist.toSet());
+        });
+      }
+    });
+    if (visibility.loading) {
+      return const Scaffold(
+          body: Center(
+              child: SkeletonLoading(width: double.infinity, height: 224)));
+    }
+    if (_playlist.isEmpty) {
+      return Scaffold(
+          body: SafeArea(
+              child: Column(children: [
+        CrecamDetailTopBar(closeButton: true),
+        Expanded(
+            child: Center(
+                child: ref.watch(playerPlaylistLoadingProvider(_orientationKey))
+                    ? const SkeletonLoading(width: double.infinity, height: 224)
+                    : Text('clip_hide_empty'.tr()))),
+      ])));
+    }
+    if (visibility.hiddenIds.contains(_currentClipId)) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _applyHiddenClips(visibility.hiddenIds));
+      return const Scaffold(body: SizedBox.shrink());
+    }
     final controlsVisible =
         ref.watch(playerControlsVisibleProvider(_orientationKey));
     final currentId = _currentClipId;
@@ -602,55 +695,60 @@ class _ClipPlaylistPlayerScreenState
   Widget _navigationActions(GlassPalette glass, MotionClip? clip, bool isFav,
       {bool showArrows = true}) {
     final hasNavigation = showArrows && _playlist.length > 1;
-    return Align(
-      alignment: Alignment.center,
-      child: Row(
-          key: ClipPlaylistPlayerScreen.navigationActionsKey,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (hasNavigation) ...[
-              if (_index > 0)
-                _navArrow(
-                  key: ClipPlaylistPlayerScreen.prevArrowKey,
-                  asset: FigmaIcons.arrowPrevious,
-                  tooltip:
-                      MaterialLocalizations.of(context).previousPageTooltip,
-                  onTap: () => _go(-1),
-                )
-              else
-                const SizedBox.square(dimension: 48),
-              const SizedBox(width: 24),
-            ],
-            Column(mainAxisSize: MainAxisSize.min, children: [
-              _actionPill(glass, clip, isFav),
-              if (ref.watch(currentUserProvider)?.id case final owner?)
-                if (ref
-                        .watch(bookmarkControllerProvider(
-                            (ownerId: owner, clipId: _currentClipId)))
-                        .error !=
-                    null)
-                  TextButton(
-                      onPressed: () => ref
-                          .read(bookmarkControllerProvider(
-                                  (ownerId: owner, clipId: _currentClipId))
-                              .notifier)
-                          .retry(),
-                      child: Text('retry'.tr())),
+    // Use this row's actual constraints: split views and rotation can narrow
+    // its layout independently of the enclosing MediaQuery viewport.
+    return LayoutBuilder(builder: (context, constraints) {
+      final arrowGap = ((constraints.maxWidth - 312) / 2).clamp(0.0, 24.0);
+      return Align(
+        alignment: Alignment.center,
+        child: Row(
+            key: ClipPlaylistPlayerScreen.navigationActionsKey,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasNavigation) ...[
+                if (_index > 0)
+                  _navArrow(
+                    key: ClipPlaylistPlayerScreen.prevArrowKey,
+                    asset: FigmaIcons.arrowPrevious,
+                    tooltip:
+                        MaterialLocalizations.of(context).previousPageTooltip,
+                    onTap: () => _go(-1),
+                  )
+                else
+                  const SizedBox.square(dimension: 48),
+                SizedBox(width: arrowGap),
+              ],
+              Column(mainAxisSize: MainAxisSize.min, children: [
+                _actionPill(glass, clip, isFav),
+                if (ref.watch(currentUserProvider)?.id case final owner?)
+                  if (ref
+                          .watch(bookmarkControllerProvider(
+                              (ownerId: owner, clipId: _currentClipId)))
+                          .error !=
+                      null)
+                    TextButton(
+                        onPressed: () => ref
+                            .read(bookmarkControllerProvider(
+                                    (ownerId: owner, clipId: _currentClipId))
+                                .notifier)
+                            .retry(),
+                        child: Text('retry'.tr())),
+              ]),
+              if (hasNavigation) ...[
+                SizedBox(width: arrowGap),
+                if (_index < _playlist.length - 1)
+                  _navArrow(
+                    key: ClipPlaylistPlayerScreen.nextArrowKey,
+                    asset: FigmaIcons.arrowNext,
+                    tooltip: MaterialLocalizations.of(context).nextPageTooltip,
+                    onTap: () => _go(1),
+                  )
+                else
+                  const SizedBox.square(dimension: 48),
+              ],
             ]),
-            if (hasNavigation) ...[
-              const SizedBox(width: 24),
-              if (_index < _playlist.length - 1)
-                _navArrow(
-                  key: ClipPlaylistPlayerScreen.nextArrowKey,
-                  asset: FigmaIcons.arrowNext,
-                  tooltip: MaterialLocalizations.of(context).nextPageTooltip,
-                  onTap: () => _go(1),
-                )
-              else
-                const SizedBox.square(dimension: 48),
-            ],
-          ]),
-    );
+      );
+    });
   }
 
   Widget _navArrow({
@@ -712,6 +810,12 @@ class _ClipPlaylistPlayerScreenState
     // 날짜·시각은 본문이 아니라 크롬이라 클램프가 관례에 맞다.
     return CrecamDetailTopBar(
       closeButton: true,
+      trailing: IconButton(
+          key: const Key('clip_hide_button'),
+          tooltip: 'clip_hide_action'.tr(),
+          onPressed: _hideCurrentClip,
+          icon: FigmaIcon.tinted('redesign_v2/delete',
+              size: 24, color: glass.textPrimary)),
       titleWidget: startedAt == null
           ? null
           : MediaQuery.withClampedTextScaling(
@@ -913,7 +1017,7 @@ class _ClipPlaylistPlayerScreenState
 
     return Container(
       key: ClipPlaylistPlayerScreen.actionPillKey,
-      width: 164,
+      width: 216,
       height: 48,
       decoration: BoxDecoration(
         color: glass.surfaceTint,
@@ -923,6 +1027,8 @@ class _ClipPlaylistPlayerScreenState
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          action(FigmaIcons.memo, 'clip_memo_add'.tr(), _editMemo),
+          const SizedBox(width: 8),
           action(FigmaIcons.download, 'clip_save'.tr(), _busy ? null : _save),
           const SizedBox(width: 8),
           action(FigmaIcons.share, 'clip_share'.tr(), _busy ? null : _share),

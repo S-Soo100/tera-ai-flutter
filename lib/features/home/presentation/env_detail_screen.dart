@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../core/theme/glass_palette.dart';
+import '../../../core/theme/viva_colors.dart';
 import '../../../shared/domain/env_chart_data.dart';
 import '../../../shared/domain/env_day.dart';
 import '../../../shared/domain/num_format.dart';
@@ -40,10 +41,10 @@ class EnvDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
-  bool _weekly = false;
+  bool get _weekly => ref.watch(envDetailWeeklyProvider);
 
   /// 스크러버 위치(0~1). 손 떼도 유지, **날짜가 바뀌면 해제**(§A.5).
-  double? _scrubX;
+  double? get _scrubX => ref.watch(envDetailScrubProvider);
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +54,9 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
       body: Column(
         children: [
           _topBar(glass),
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
           _segment(glass),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           Expanded(child: _weekly ? _weeklyBody(glass) : _dailyBody(glass)),
         ],
       ),
@@ -73,7 +74,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: 56,
+          height: 44,
           width: double.infinity,
           child: Stack(
             alignment: Alignment.center,
@@ -127,7 +128,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
             decoration: selected
                 ? BoxDecoration(
                     // Figma는 white — 다크에서도 성립하게 카드색 토큰으로.
-                    color: glass.overlay,
+                    color: glass.surfaceHeader,
                     borderRadius: BorderRadius.circular(14),
                   )
                 : null,
@@ -152,7 +153,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
         height: 32,
         padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(
-          color: glass.segmentTrack,
+          color: glass.outline,
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -161,13 +162,15 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
               key: EnvDetailScreen.segmentDailyKey,
               label: 'env_detail_daily'.tr(),
               selected: !_weekly,
-              onTap: () => setState(() => _weekly = false),
+              onTap: () =>
+                  ref.read(envDetailWeeklyProvider.notifier).state = false,
             ),
             half(
               key: EnvDetailScreen.segmentWeeklyKey,
               label: 'env_detail_weekly'.tr(),
               selected: _weekly,
-              onTap: () => setState(() => _weekly = true),
+              onTap: () =>
+                  ref.read(envDetailWeeklyProvider.notifier).state = true,
             ),
           ],
         ),
@@ -187,7 +190,13 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
       padding: EdgeInsets.zero,
       children: [
         _dayPager(glass, day),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
+        Semantics(
+            label: (day.isToday ? 'env_value_realtime' : 'env_value_daily_mean')
+                .tr(),
+            child: _valueBar(glass, day, chartAsync.valueOrNull)),
+        if (!day.isToday) _averageStatus(glass),
+        const SizedBox(height: 16),
         chartAsync.when(
           loading: () => _skeleton(glass, height: EnvDayChart.totalHeight),
           error: (_, __) => _noData(glass, height: EnvDayChart.totalHeight),
@@ -197,22 +206,25 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                   data: d,
                   log: log,
                   scrubX: _scrubX,
-                  onScrubChanged: (x) => setState(() => _scrubX = x),
+                  onScrubChanged: (x) =>
+                      ref.read(envDetailScrubProvider.notifier).state = x,
                   initialFraction: _nowFraction(day),
                 ),
         ),
-        const SizedBox(height: 16),
-        Semantics(
-            label: (day.isToday ? 'env_value_realtime' : 'env_value_daily_mean')
-                .tr(),
-            child: _valueBar(glass, day, chartAsync.valueOrNull)),
-        if (!day.isToday) _averageStatus(glass),
         const SizedBox(height: 24),
         logAsync.when(
           loading: () => _skeleton(glass, height: 160),
-          // 기록 조회 실패는 "기록 없음"과 같은 얼굴 — 조회부(fetchCommandRows)가
-          // 이미 실패를 빈 목록으로 흡수하므로 여기 올 일은 드물다.
-          error: (_, __) => const ControlLogList(entries: []),
+          error: (_, __) => Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(children: [
+              Text('env_log_load_failed'.tr(),
+                  style: TextStyle(color: glass.textSecondary)),
+              TextButton(
+                onPressed: () => ref.invalidate(envDayControlLogProvider),
+                child: Text('retry'.tr()),
+              ),
+            ]),
+          ),
           data: (entries) => ControlLogList(entries: entries),
         ),
       ],
@@ -241,7 +253,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
               glass: glass,
               onTap: () {
                 ref.read(envDetailDayProvider.notifier).state = day.previous;
-                setState(() => _scrubX = null); // 날짜 변경 시 해제(§A.5)
+                ref.read(envDetailScrubProvider.notifier).state =
+                    null; // 날짜 변경 시 해제(§A.5)
               },
             ),
             Expanded(
@@ -263,7 +276,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                 glass: glass,
                 onTap: () {
                   ref.read(envDetailDayProvider.notifier).state = day.next;
-                  setState(() => _scrubX = null);
+                  ref.read(envDetailScrubProvider.notifier).state = null;
                 },
               ),
           ],
@@ -361,8 +374,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
         children: [
           _valueColumn(
             glass: glass,
-            icon: FigmaIcons.envTemperature,
-            accent: glass.envTempValue,
+            icon: 'redesign_v2/env_temperature',
+            accent: VivaColors.mainDark,
             value: temp == null
                 ? '--'
                 : 'home_live_temp_value'.tr(args: [formatCompact(temp)]),
@@ -371,8 +384,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
           ),
           _valueColumn(
             glass: glass,
-            icon: FigmaIcons.envHumidity,
-            accent: glass.envHumidValue,
+            icon: 'redesign_v2/env_humidity',
+            accent: VivaColors.subDark,
             value: humid == null
                 ? '--'
                 : 'home_live_humid_value'.tr(args: [formatCompact(humid)]),
@@ -411,8 +424,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                     fontSize: 28,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 28 * -0.02,
-                    height: 1.1,
-                    color: glass.textPrimary,
+                    height: 1.193359375,
+                    color: accent,
                   ),
                 ),
               ),
@@ -462,8 +475,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
               children: [
                 WeekRangeChart(
                   rows: rows.temp,
-                  accent: glass.envTempPeak,
-                  valueColor: glass.envTempValue,
+                  accent: VivaColors.mainDark,
+                  valueColor: VivaColors.mainDark,
                   icon: Icons.thermostat,
                   iconAsset: FigmaIcons.envTemperature,
                   headerFormat: (v) =>
@@ -471,11 +484,11 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                   axisFormat: (v, d) => 'stats_axis_temp'
                       .tr(namedArgs: {'v': v.toStringAsFixed(d)}),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 40),
                 WeekRangeChart(
                   rows: rows.humid,
-                  accent: glass.envHumidPeak,
-                  valueColor: glass.envHumidValue,
+                  accent: VivaColors.subDark,
+                  valueColor: VivaColors.subDark,
                   icon: Icons.water_drop,
                   iconAsset: FigmaIcons.envHumidity,
                   headerFormat: (v) =>

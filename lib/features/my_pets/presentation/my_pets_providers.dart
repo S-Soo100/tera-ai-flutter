@@ -113,8 +113,7 @@ class PetListNotifier extends StateNotifier<List<Pet>> {
 final petDetailProvider = Provider.family<Pet?, String>((ref, petId) {
   ref.watch(currentUserProvider
       .select((u) => u?.id)); // 계정 전환 시 재평가 (detail/edit stale 방지)
-  final repo = ref.watch(petRepositoryProvider);
-  return repo.getPet(petId);
+  return ref.watch(petListProvider).where((pet) => pet.id == petId).firstOrNull;
 });
 
 /// 체중 기록 조회 (family provider)

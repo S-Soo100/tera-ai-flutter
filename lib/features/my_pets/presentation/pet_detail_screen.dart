@@ -8,6 +8,7 @@ import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../domain/pet.dart';
 import 'my_pets_providers.dart';
+import 'pet_form_route.dart';
 import 'widgets/event_timeline.dart';
 import 'widgets/media_gallery.dart';
 
@@ -105,7 +106,7 @@ class PetDetailScreen extends ConsumerWidget {
       ),
     );
     if (confirmed == true && context.mounted) {
-      await ref.read(petListProvider.notifier).delete(pet.id);
+      await ref.read(deleteRedesignPetProvider)(pet);
       if (context.mounted) context.pop();
     }
   }

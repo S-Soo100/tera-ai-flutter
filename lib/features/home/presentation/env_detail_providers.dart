@@ -1,5 +1,6 @@
 import 'dart:async';
 import '../domain/env_daily_average.dart';
+import '../data/command_history_repository.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +19,10 @@ import 'home_control_providers.dart';
 /// 하루 경계는 **자정**([EnvDay], B.4 결정)이다 — 홈 24h 차트의
 /// [chartWindowProvider](6시간 전진 프레임)·어젯밤 리포트(07:00 경계)와
 /// 다른 개념이니 혼용하지 말 것.
+
+final envDetailWeeklyProvider = StateProvider.autoDispose<bool>((ref) => false);
+final envDetailScrubProvider =
+    StateProvider.autoDispose<double?>((ref) => null);
 
 /// 상세 화면이 보고 있는 날. 페이저가 previous/next로 교체한다.
 final envDetailDayProvider =
@@ -69,21 +74,40 @@ final envDayControlLogProvider =
     FutureProvider.autoDispose<List<ControlLogEntry>>((ref) async {
   final day = ref.watch(envDetailDayProvider);
   final client = ref.watch(supabaseClientProvider);
-  // watch는 await 앞에서 — await 뒤의 watch는 dispose(날짜 페이저 연타·화면
-  // 이탈) 후 continuation이 죽은 element에 걸려 StateError가 되고, 화면은
-  // 기록이 있는 날인데 "기록 없음"을 그린다(리뷰 2026-09-03). 먼저 잡아두면
-  // commands·버킷 조회가 병렬로도 돈다.
-  final bucketsFuture = ref.watch(envDayBucketsProvider.future);
+  final repository = ref.watch(supabaseModuleControlRepositoryProvider);
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) return const [];
-  final rows = await fetchCommandRows(
-    client,
-    deviceId,
-    from: day.start,
-    to: day.end,
-  );
-  final buckets = await bucketsFuture;
-  return buildControlLog(commandRows: rows, buckets: buckets);
+  final now = DateTime.now();
+  final to = day.end.isBefore(now) ? day.end : now;
+  final historyFuture = CommandHistoryRepository(client)
+      .readWithContext(deviceId, from: day.start, to: to);
+  final bucketsFuture = repository.telemetryHistory(
+      deviceId, day.start.subtract(const Duration(minutes: 30)),
+      to: to);
+  final (history, buckets) = await (historyFuture, bucketsFuture).wait;
+  // A very old start only needs its neighbouring buckets, not all telemetry
+  // between that start and today. There are at most five short requests.
+  final starts = <DateTime>{};
+  for (final row in history.preceding) {
+    final stamp = row['issued_at'];
+    if (!isControlLogStart(row['action']) || stamp is! String) continue;
+    final at = DateTime.tryParse(stamp);
+    if (at != null &&
+        at.isBefore(day.start.subtract(const Duration(minutes: 30)))) {
+      starts.add(at);
+    }
+  }
+  final contextBuckets = await Future.wait([
+    for (final start in starts)
+      repository.telemetryHistory(
+          deviceId, start.subtract(const Duration(minutes: 30)),
+          to: start.add(const Duration(minutes: 30, microseconds: 1))),
+  ]);
+  return buildControlLog(
+      commandRows: [...history.preceding, ...history.rows],
+      buckets: [...buckets, ...contextBuckets.expand((rows) => rows)],
+      visibleFrom: day.start,
+      visibleTo: day.end);
 });
 
 /// 보고 있는 주의 요일별 온/습 min/max — 각각 **항상 7칸 고정**

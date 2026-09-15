@@ -8,7 +8,12 @@
       "runtimeSha256": "73282b3ed49ad4709da2082d3823420aab33e6dc82dca5993cff7dcec696be44",
       "viewBox": "0 0 28 28",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/2828/light_off.svg",
@@ -17,7 +22,12 @@
       "runtimeSha256": "bba12ad692bbed631ee498b6da35a86f2000d57327bac171daf5219d332cd58f",
       "viewBox": "0 0 28 28",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/2828/lightbulb.svg",
@@ -26,7 +36,12 @@
       "runtimeSha256": "a76e47786c109ea48b5171f09523d6f954094f0bd3372e02cca1d77a0e453bcc",
       "viewBox": "0 0 28 28",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/2828/mode_cool.svg",
@@ -35,7 +50,12 @@
       "runtimeSha256": "2350791a8a3fd1f6101f5e0e6a45eb534ff67aefb5e940097c9894982a559c79",
       "viewBox": "0 0 28 28",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/2828/mode_cool_off.svg",
@@ -44,7 +64,12 @@
       "runtimeSha256": "1ae633c6f0b06ce63be421076ce9b22cf83622d483a2a4b101f93a53159f31c4",
       "viewBox": "0 0 28 28",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/2828/mode_fan_2.svg",
@@ -53,7 +78,12 @@
       "runtimeSha256": "4394e1c57af92278dbb0ae72b2e07bd17f0f28fc4fa1116b82c900941fe3cbee",
       "viewBox": "0 0 28 28",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/2828/mode_fan_off.svg",
@@ -62,7 +92,12 @@
       "runtimeSha256": "f6c60fe91823429eb08599f1c9a446f335a22091c786da7ca90f917644153fc3",
       "viewBox": "0 0 28 28",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/3636/humidity_high.svg",
@@ -71,7 +106,12 @@
       "runtimeSha256": "9f11b0e394aa6c93a8477da75add34a4cadbb43397a89b32c890eea5795aeb78",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/3636/light_off.svg",
@@ -80,7 +120,12 @@
       "runtimeSha256": "572b89c1de2daf51991bbd5519c42f742206b38841d81b06d6485915c22bf963",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/3636/lightbulb.svg",
@@ -89,7 +134,12 @@
       "runtimeSha256": "62fb4969ec2647d07a62c17718c9f5a880ed8ed85eafc60cba2b17f0eaded730",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/3636/mode_cool.svg",
@@ -98,7 +148,12 @@
       "runtimeSha256": "5ac681777f7d88f2c7f1e5f8cb4491464b479a1ff670ee46db1d292f832b13a2",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/3636/mode_cool_off.svg",
@@ -107,7 +162,12 @@
       "runtimeSha256": "0a4dc6b9338f27ad530c09cd101fa0e2f843f500a86baa8c1bf7c5ebecb67538",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/3636/mode_fan_2.svg",
@@ -116,7 +176,12 @@
       "runtimeSha256": "184c77c75ee3e7f78b45eff1fc00ef5053761e594b7d0e63ba1c53c718a11afe",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/3636/mode_fan_off.svg",
@@ -125,7 +190,12 @@
       "runtimeSha256": "dbe4e5038504b8cf6449cb0db2ce305a51ccc7b475e7e4e12f3eca4242c0b993",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "role": "Compact chart marker (28) or control record badge (36); original colored circle preserved",
+      "consumers": [
+        "lib/features/home/presentation/widgets/control_log_list.dart",
+        "lib/shared/domain/control_log.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/Toast_V.svg",
@@ -134,7 +204,8 @@
       "runtimeSha256": "8bff4bc0ff6b45de19b6f3b3da6e83088ab590b53d5f470d8594f70455284cdc",
       "viewBox": "0 0 71 34",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/add_photo_alternate.svg",
@@ -143,7 +214,10 @@
       "runtimeSha256": "f4ae19417b2c5216d8ee84a311b6f60586dcd3659f051a3bc3191e22ca55eee7",
       "viewBox": "0 0 40 40",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_pets/presentation/widgets/pet_form_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/arrow_drop_down.svg",
@@ -152,7 +226,11 @@
       "runtimeSha256": "77a15e3e74035449b1f8823eed5736e2d2137b23c70457d23e5a8fb4d07a3f98",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_pets/presentation/widgets/pet_form_screen.dart",
+        "lib/shared/widgets/redesign_tab_header.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/bookmark-1.svg",
@@ -161,7 +239,8 @@
       "runtimeSha256": "1087dd4bb1ae24f08b6eff0dd3b7023f2108563b6b0e23d927e8ca9f54cec045",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/bookmark-2.svg",
@@ -170,7 +249,8 @@
       "runtimeSha256": "248d36c7c27d2395f0722e7c0420385af45ec98d643cebf2bb5c2188d7b957b4",
       "viewBox": "0 0 36 36",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/bookmark.svg",
@@ -179,7 +259,10 @@
       "runtimeSha256": "7f44adc5a64cd385e1c01d9aa991b8ca615ea836d86ad0b238947b628c680bb3",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/shared/widgets/figma_icon.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/bookmark_check.svg",
@@ -198,6 +281,12 @@
       "parentSize": [
         40,
         40
+      ],
+      "consumers": [
+        "lib/features/my_cage/presentation/clip_playlist_player_screen.dart",
+        "lib/features/my_cage/presentation/crecam_screen.dart",
+        "lib/features/my_cage/presentation/widgets/favorite_toggle_button.dart",
+        "lib/shared/widgets/figma_icon.dart"
       ]
     },
     {
@@ -207,7 +296,10 @@
       "runtimeSha256": "4d77e123603fc638b5fbce0a3d4dcdde2b95830abf1a5dfc41018f3defeb1c74",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_pets/presentation/widgets/pet_form_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/cancel.svg",
@@ -216,7 +308,11 @@
       "runtimeSha256": "fae17645d2a8549cc5d4ea28fc48cea7e3060a2dd438828e12e17ac3359af12c",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/device_add_flow_screen.dart",
+        "lib/features/my_pets/presentation/widgets/pet_form_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/cards_star.svg",
@@ -235,6 +331,10 @@
       "parentSize": [
         40,
         40
+      ],
+      "consumers": [
+        "lib/features/my_cage/presentation/crecam_screen.dart",
+        "lib/shared/widgets/figma_icon.dart"
       ]
     },
     {
@@ -244,7 +344,12 @@
       "runtimeSha256": "70232a992fea5196478869efc2389058225dab16c0ff6f8707dc81ed2f586735",
       "viewBox": "0 0 15 11",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/device_add_flow_screen.dart",
+        "lib/features/my_cage/presentation/widgets/management_widgets.dart",
+        "lib/features/my_pets/presentation/widgets/pet_form_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/check_box_300.svg",
@@ -253,7 +358,8 @@
       "runtimeSha256": "49016c63f41693e2e3db3a9eff5572a664dabb23efc84e2a75f87ef3ca2b8486",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/check_box_400.svg",
@@ -262,7 +368,11 @@
       "runtimeSha256": "1ae8e4e942b1c5477ffd9b47a3e6df0855d4df40dfa04ff322b271cc19e4b605",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/device_add_flow_screen.dart",
+        "lib/features/my_cage/presentation/widgets/management_widgets.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/check_box_outline_blank_300.svg",
@@ -271,7 +381,8 @@
       "runtimeSha256": "94fbac5fcccde128b38237d053fb852286fa3054c6048ea1edfc08551261dbff",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/check_box_outline_blank_400.svg",
@@ -280,7 +391,11 @@
       "runtimeSha256": "0b8fb874a6fa8cdf055e8e7fee09a4c62a80388bcafdf8e9c9d51bae669b5de3",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/device_add_flow_screen.dart",
+        "lib/features/my_cage/presentation/widgets/management_widgets.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/check_circle.svg",
@@ -289,7 +404,10 @@
       "runtimeSha256": "6dc3dc89b56dbf0b3da3a4c6242235e96d74542658c3997838dad6848d357072",
       "viewBox": "0 0 64 64",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/device_add_flow_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/delete.svg",
@@ -298,7 +416,10 @@
       "runtimeSha256": "8ed5de1a2b9845f0ef7048e7c80cd795db87cf483744bb4ea458092d3d4c0802",
       "viewBox": "0 0 44 44",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/clip_playlist_player_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/discover_tune.svg",
@@ -307,7 +428,21 @@
       "runtimeSha256": "e63a1db4fb013bfa2f23169c924d018965613c104217f5343da53b1e99cd44d7",
       "viewBox": "0 0 44 44",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Compared with current Figma PNG export",
+      "role": "Three-tab management action including original inner padding",
+      "figmaNode": "765:4239",
+      "displaySize": [
+        44,
+        44
+      ],
+      "parentSize": [
+        44,
+        44
+      ],
+      "consumers": [
+        "lib/shared/widgets/figma_icon.dart",
+        "lib/shared/widgets/redesign_tab_header.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/download.svg",
@@ -316,7 +451,8 @@
       "runtimeSha256": "ded9814be63994b12e59f1b87d4cf4e532dc76baa57c33af77d0f8c49c536fe9",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/edit.svg",
@@ -325,7 +461,11 @@
       "runtimeSha256": "c1040764b2467cea51411b5e577c1258b29f28e4626fff2df47f1de292038819",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_pets/presentation/widgets/pet_form_screen.dart",
+        "lib/shared/widgets/figma_icon.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/fast_forward.svg",
@@ -334,7 +474,8 @@
       "runtimeSha256": "24ed186c7aec634cc5448c190191cd579c924b549ce525e70ec029afa61076ad",
       "viewBox": "0 0 26 26",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/humidity_high-1.svg",
@@ -343,7 +484,8 @@
       "runtimeSha256": "9f11b0e394aa6c93a8477da75add34a4cadbb43397a89b32c890eea5795aeb78",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/humidity_high-2.svg",
@@ -352,7 +494,8 @@
       "runtimeSha256": "73282b3ed49ad4709da2082d3823420aab33e6dc82dca5993cff7dcec696be44",
       "viewBox": "0 0 28 28",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/humidity_high.svg",
@@ -361,7 +504,8 @@
       "runtimeSha256": "86006669f552633cadd9bc26b9ed02362bfedbefe287b715d5189f0380ad1452",
       "viewBox": "0 0 40 40",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/lock.svg",
@@ -370,7 +514,8 @@
       "runtimeSha256": "0572afafb4396f323a37c03b1935ca04684e41110f6f7836bd4c969731be8d8d",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/mode_fan_2-1.svg",
@@ -379,7 +524,8 @@
       "runtimeSha256": "184c77c75ee3e7f78b45eff1fc00ef5053761e594b7d0e63ba1c53c718a11afe",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/mode_fan_2-2.svg",
@@ -388,7 +534,8 @@
       "runtimeSha256": "4394e1c57af92278dbb0ae72b2e07bd17f0f28fc4fa1116b82c900941fe3cbee",
       "viewBox": "0 0 28 28",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/mode_fan_2.svg",
@@ -397,7 +544,8 @@
       "runtimeSha256": "174903adaa91bdf36d75359215df1349c28c41a3418af743b87cb5067f0a30f1",
       "viewBox": "0 0 40 40",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/mode_fan_off-1.svg",
@@ -406,7 +554,8 @@
       "runtimeSha256": "dbe4e5038504b8cf6449cb0db2ce305a51ccc7b475e7e4e12f3eca4242c0b993",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/mode_fan_off-2.svg",
@@ -415,7 +564,8 @@
       "runtimeSha256": "f6c60fe91823429eb08599f1c9a446f335a22091c786da7ca90f917644153fc3",
       "viewBox": "0 0 28 28",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/mode_fan_off.svg",
@@ -424,7 +574,8 @@
       "runtimeSha256": "b9ef0f285baa08543dfeb793183834b6a57fd79fd9318fff346b8194b9fc9722",
       "viewBox": "0 0 40 40",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/more_vert.svg",
@@ -433,7 +584,13 @@
       "runtimeSha256": "e2ea1f701619a29383f25a4764c6b4fe8d6692a28b4864f914fd522a003e5e30",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/widgets/clip_memo_card.dart",
+        "lib/features/my_pets/presentation/pet_management_screen.dart",
+        "lib/features/my_pets/presentation/widgets/activity_pet_header.dart",
+        "lib/shared/widgets/figma_icon.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/pause.svg",
@@ -442,7 +599,8 @@
       "runtimeSha256": "a49d71b1dfa55894dd6f4a25cebace08e8b67525d02f4a261eb6ab6ac5af9c79",
       "viewBox": "0 0 36 36",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/play_arrow.svg",
@@ -451,7 +609,8 @@
       "runtimeSha256": "2da79718965c83a9cb21e11578ed7e2fdaf834df434fc0198b8b88ccd2d5da1a",
       "viewBox": "0 0 36 36",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/power_settings_new.svg",
@@ -460,7 +619,10 @@
       "runtimeSha256": "3445c814c0dc84dcba9369d416216be66fd61a9d667e653fc819f966fc8fd324",
       "viewBox": "0 0 17 17",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/device_detail_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/progress_activity-1.svg",
@@ -469,7 +631,8 @@
       "runtimeSha256": "1c80f16e668cd86e3d4f34bca8cfb302f18ca095e08ac7403d7d894b2b3fe7cd",
       "viewBox": "0 0 62 62",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/progress_activity.svg",
@@ -478,7 +641,10 @@
       "runtimeSha256": "b9391d9da8224fe0351e36c13762bf23ccc2346539893c07f3481a38cef78fe7",
       "viewBox": "0 0 20 20",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/device_add_flow_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/restart_alt.svg",
@@ -487,7 +653,8 @@
       "runtimeSha256": "d53899b7663e1d29eeab06c72b6e19516d04f4c944599098c94fb1ce1aba2dcb",
       "viewBox": "0 0 16 18",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/search.svg",
@@ -496,7 +663,10 @@
       "runtimeSha256": "c36b3e8870fd22f4144552af6ce4bd3925ba6db3ef9a5fc769d7affa724863b9",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_pets/presentation/widgets/pet_form_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/share.svg",
@@ -505,7 +675,8 @@
       "runtimeSha256": "43517ca5c9eb0e013617c1e20f499cd2e1ce35fb6073404ee928996815699a9b",
       "viewBox": "0 0 36 36",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/signal_cellular_alt.svg",
@@ -514,7 +685,8 @@
       "runtimeSha256": "0cef3a388293eba78873c802edcc9af8c40373b7fe0f369646c319a6a3a36e7e",
       "viewBox": "0 0 16 16",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/signal_cellular_alt_1_bar.svg",
@@ -523,7 +695,8 @@
       "runtimeSha256": "44f271b45bd9c8b387ace7af8844bf296c1c2165ce3712740bc1da1dc350bb67",
       "viewBox": "0 0 16 16",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/signal_cellular_alt_2_bar.svg",
@@ -532,7 +705,8 @@
       "runtimeSha256": "acc2f5c82cf009e94a26f9717d3b3ed424669d5169ccfaf202f6053ad15d21d7",
       "viewBox": "0 0 16 16",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/speed_1_2x-1.svg",
@@ -541,7 +715,8 @@
       "runtimeSha256": "6a57e96953480e2a1b17724dc11f3ea94449387bf95de666e7f21c2b8d403f4c",
       "viewBox": "0 0 36 36",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/speed_1_2x.svg",
@@ -550,7 +725,8 @@
       "runtimeSha256": "d28bcb137604daa6b9653cbc2226d3f93357ae3b902b4dda3c801f0e0aa16454",
       "viewBox": "0 0 36 36",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/speed_1_5x.svg",
@@ -559,7 +735,8 @@
       "runtimeSha256": "76f8b1ac0c6e410c7c54a161a6d69277d2b26d489f0c0f575f86229cdc8afb9b",
       "viewBox": "0 0 36 36",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/speed_2x.svg",
@@ -568,7 +745,8 @@
       "runtimeSha256": "beeaac4ff10efb36c1e768255ff99ccb63992a88a8fc429d1045e9443885a759",
       "viewBox": "0 0 36 36",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/sticky_note_2.svg",
@@ -577,7 +755,11 @@
       "runtimeSha256": "1a4d1dba44156c9c21b10bf07429d7bd485bd3366f84e4564840dc3d18567eab",
       "viewBox": "0 0 36 36",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/clip_playlist_player_screen.dart",
+        "lib/shared/widgets/figma_icon.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/visibility.svg",
@@ -586,7 +768,10 @@
       "runtimeSha256": "22f6a832db186263506cf252d11ab3ddaf1f6ca16f3c704563d4662f24d86080",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/device_add_flow_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/visibility_off.svg",
@@ -595,7 +780,10 @@
       "runtimeSha256": "9ca5c682b7936e1443cee61be219339d519b9c33921dfc1508784054145429bc",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/device_add_flow_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/wifi-1.svg",
@@ -604,7 +792,8 @@
       "runtimeSha256": "875d914201a5eb9ade6e1dc1c4ff5e82d77beec12d4ecbd0d5d888991b2aa1f8",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/wifi-2.svg",
@@ -613,7 +802,8 @@
       "runtimeSha256": "3020cb45b67f041951cac54afe9ccb040a02c1e6cd3aca3f4b3ca98d53ef4625",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/wifi.svg",
@@ -622,7 +812,10 @@
       "runtimeSha256": "84122302b19a04f048392f432d6db1ae84a9c0f8c3958da2e635838df5917608",
       "viewBox": "0 0 24 24",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/device_add_flow_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/workspaces.svg",
@@ -631,7 +824,10 @@
       "runtimeSha256": "e134e1e24fd9dba321b359f262ac48466cf20debbcd637d6a5c6a81ba203e536",
       "viewBox": "0 0 17 15",
       "transform": "byte-copy",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": [
+        "lib/features/my_cage/presentation/device_detail_screen.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/icons/zoom_in_map.svg",
@@ -640,7 +836,8 @@
       "runtimeSha256": "1d6cfda97326c5d751dec1520ff0e9fe880a951a298f1ac4c7aed00717c2605e",
       "viewBox": "0 0 36 36",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/icons/zoom_out_map.svg",
@@ -649,35 +846,48 @@
       "runtimeSha256": "724c1cb2614c7917afbb8b20f52789013deddfc65ff4a2179f3b310baa493268",
       "viewBox": "0 0 36 36",
       "transform": "opaque-alpha-mask-white",
-      "placementStatus": "Match role, node and display size before using on a screen"
+      "placementStatus": "Source retained; usage inventory below (unused variants are not forced into UI)",
+      "consumers": []
     },
     {
       "source": "assets/figma/2026-09-15/images/Empty_01x3.png",
       "sourceSha256": "7b5a178b75875e692ee7ed1d76001aeb13b8ee5290b320715d601584c432f7d4",
       "runtime": "assets/figma/2026-09-15/images/Empty_01x3.png",
       "transform": "ExactAssetImage(scale: 3)",
-      "scale": 3
+      "scale": 3,
+      "consumers": [
+        "lib/shared/widgets/figma_icon.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/images/Empty_02x3.png",
       "sourceSha256": "ab642432b1cf5a184d4c541e82fce72ba8e90e4e480687a41bbb6167b16c862d",
       "runtime": "assets/figma/2026-09-15/images/Empty_02x3.png",
       "transform": "ExactAssetImage(scale: 3)",
-      "scale": 3
+      "scale": 3,
+      "consumers": [
+        "lib/shared/widgets/figma_icon.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/images/Empty_03x3.png",
       "sourceSha256": "59b0a348e96005ba0a0dfc62459a871e9bb0878f15e24b0e51cf8a52f980f275",
       "runtime": "assets/figma/2026-09-15/images/Empty_03x3.png",
       "transform": "ExactAssetImage(scale: 3)",
-      "scale": 3
+      "scale": 3,
+      "consumers": [
+        "lib/shared/widgets/figma_icon.dart"
+      ]
     },
     {
       "source": "assets/figma/2026-09-15/images/favicon_viva_50x3.png",
       "sourceSha256": "116c29c29ba1f95d4f35a802e5da99bae0a0dcbe8d885000fbe6a487b40c0f47",
       "runtime": "assets/figma/2026-09-15/images/favicon_viva_50x3.png",
       "transform": "ExactAssetImage(scale: 3)",
-      "scale": 3
+      "scale": 3,
+      "consumers": [
+        "lib/shared/widgets/figma_icon.dart"
+      ]
     }
   ]
 }
