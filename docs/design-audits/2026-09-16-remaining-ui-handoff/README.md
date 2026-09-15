@@ -3,6 +3,8 @@
 2026-09-16 / 앱 코드 기준 `570c0c0` (`0.107.33+244`). 이번 작업은 문서와 비교 자료만 추가했다.
 
 - [Claude에게 줄 명령](CLAUDE_START.md)
+- **[수정 결과 RESULTS.md](RESULTS.md)** — P01~P18 상태·커밋·검증·P11 결정안·P17 자산표·평균 안건 (2026-09-16 구현 후)
+- [수정 전후 비교 compare.html](compare.html) — `after/manifest.json`에서 생성
 - [수정계획서](PLAN.md) — 18개 작업, 구현 파일·수정 내용·검증 기준·결정 대기 항목
 - [비교 화면](preview.html)
 - [104개 원본 상태 추적표](SCREEN_MATRIX.md)
