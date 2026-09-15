@@ -443,7 +443,8 @@ class _DataStatus extends StatelessWidget {
             ? 'activity_estimated_notice'
             : inProgress
                 ? 'activity_in_progress'
-                : 'activity_coverage_unknown';
+                : null;
+    if (key == null) return const SizedBox.shrink();
     return Padding(
         padding: const EdgeInsets.only(top: 8),
         child: Text(key.tr(),
