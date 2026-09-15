@@ -312,7 +312,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                               ? 'pet_form_required'.tr()
                               : null),
                       icon: FigmaIcon.tinted('redesign_v2/arrow_drop_down',
-                          color: p.textSecondary, size: 24),
+                          color: p.deviceOff, size: 24),
                       items: [
                         if (legacy)
                           DropdownMenuItem(

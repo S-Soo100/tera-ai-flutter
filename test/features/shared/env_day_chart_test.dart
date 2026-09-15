@@ -146,7 +146,7 @@ void main() {
       // 콘텐츠 좌표 0.3 근처를 탭 → 데이터 포인트(0.1/0.3/0.5)로 스냅.
       final box = tester.getRect(find.byKey(EnvDayChart.chartKey));
       await tester.tapAt(Offset(
-        box.left + EnvDayChart.yLabelWidth + 0.3 * EnvDayChart.contentWidth,
+        box.left + EnvDayChart.plotInset + 0.3 * EnvDayChart.contentWidth,
         box.top + EnvDayChart.markerBand + 50,
       ));
       await tester.pump();

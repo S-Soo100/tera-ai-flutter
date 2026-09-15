@@ -36,6 +36,11 @@ class ActivityBars extends StatelessWidget {
       required this.maxSeconds,
       required this.labels,
       required this.weekly});
+  // Seven 32px rows: the highest tick ends the first row, zero ends the last.
+  static const double rowHeight = 32;
+  static const double plotHeight = 224;
+  static const double valueHeight = plotHeight - rowHeight;
+
   final List<ActivityBucket> buckets;
   final double maxSeconds;
   final List<String> labels;
@@ -45,6 +50,7 @@ class ActivityBars extends StatelessWidget {
     final glass = context.glass;
     final labelStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
         fontSize: 12,
+        height: 1.193359375,
         letterSpacing: -.24,
         fontWeight: FontWeight.w500,
         color: glass.deviceOff);
@@ -58,25 +64,28 @@ class ActivityBars extends StatelessWidget {
             Positioned(
                 left: 0,
                 top: 0,
-                width: plotWidth,
-                height: 224,
+                width: constraints.maxWidth,
+                height: 256,
                 child: CustomPaint(
-                    painter:
-                        _ActivityGrid(glass.border, timeDividers: !weekly))),
+                    painter: _ActivityGrid(glass.border,
+                        plotWidth: plotWidth, divisions: labels.length))),
             for (var tick = 0; tick <= 6; tick++)
               Positioned(
                   right: 0,
-                  top: tick * (224 / 6) - (tick == 0 ? 0 : 7),
+                  top: tick * rowHeight,
                   width: 26,
-                  child: Text(
-                      weekly
-                          ? 'activity_hours_axis'.tr(namedArgs: {
-                              'value': NumberFormat('0.#')
-                                  .format(maxSeconds / 3600 * (6 - tick) / 6)
-                            })
-                          : '${60 - tick * 10}',
-                      style: labelStyle,
-                      textAlign: TextAlign.right)),
+                  height: rowHeight,
+                  child: Align(
+                      alignment: Alignment.bottomLeft,
+                      child: Text(
+                          weekly
+                              ? 'activity_hours_axis'.tr(namedArgs: {
+                                  'value': NumberFormat('0.#').format(
+                                      maxSeconds / 3600 * (6 - tick) / 6)
+                                })
+                              : '${60 - tick * 10}',
+                          style: labelStyle,
+                          textAlign: TextAlign.left))),
             for (var i = 0; i < buckets.length; i++)
               Positioned(
                   left: i * width,
@@ -107,10 +116,10 @@ class ActivityBars extends StatelessWidget {
                                       width: weekly
                                           ? math.min(28, width - 8)
                                           : math.max(1, width - 4),
-                                      height: (224 *
+                                      height: (valueHeight *
                                               buckets[i].seconds! /
                                               maxSeconds)
-                                          .clamp(0, 224),
+                                          .clamp(0, valueHeight),
                                       decoration: BoxDecoration(
                                         borderRadius:
                                             const BorderRadius.vertical(
@@ -122,11 +131,11 @@ class ActivityBars extends StatelessWidget {
                                       )),
                                   if (weekly)
                                     Positioned(
-                                        bottom: (224 *
+                                        bottom: (valueHeight *
                                                     buckets[i].seconds! /
                                                     maxSeconds +
                                                 2)
-                                            .clamp(2, 226),
+                                            .clamp(2, valueHeight + 2),
                                         child: Text(
                                             activityDuration(
                                                 buckets[i].seconds),
@@ -147,29 +156,37 @@ class ActivityBars extends StatelessWidget {
 }
 
 class _ActivityGrid extends CustomPainter {
-  const _ActivityGrid(this.color, {required this.timeDividers});
-  final bool timeDividers;
+  const _ActivityGrid(this.color,
+      {required this.plotWidth, required this.divisions});
+  final double plotWidth;
+  final int divisions;
   final Color color;
   @override
   void paint(Canvas canvas, Size size) {
+    // Figma export: half-point strokes in the existing border palette color.
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 1;
-    // Figma time dividers: midnight, 06:00, noon, 18:00.
-    for (var i = 0; timeDividers && i < 4; i++) {
-      final x = size.width * i / 4;
-      for (double y = 0; y < size.height; y += 8) {
-        canvas.drawLine(
-            Offset(x, y), Offset(x, math.min(y + 4, size.height)), paint);
+      ..strokeWidth = .5;
+    for (var i = 0; i <= divisions; i++) {
+      final x = plotWidth * i / divisions;
+      if (i == 0 || i == divisions) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      } else {
+        for (double y = 0; y < size.height; y += 4) {
+          canvas.drawLine(
+              Offset(x, y), Offset(x, math.min(y + 2, size.height)), paint);
+        }
       }
     }
-    for (var i = 0; i <= 6; i++) {
-      final y = size.height * i / 6;
+    for (var i = 0; i <= 7; i++) {
+      final y = ActivityBars.rowHeight * i;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
 
   @override
   bool shouldRepaint(_ActivityGrid oldDelegate) =>
-      color != oldDelegate.color || timeDividers != oldDelegate.timeDividers;
+      color != oldDelegate.color ||
+      plotWidth != oldDelegate.plotWidth ||
+      divisions != oldDelegate.divisions;
 }

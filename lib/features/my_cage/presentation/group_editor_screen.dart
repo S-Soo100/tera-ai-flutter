@@ -311,8 +311,10 @@ class _GroupEditorBody extends ConsumerWidget {
                                 onPressed: draft.saving ? null : deleteGroup,
                                 child: Text('management_delete_group'.tr(),
                                     style: managementStyle(context,
-                                        size: 16,
-                                        color: context.glass.navSelected)))),
+                                            size: 18,
+                                            weight: FontWeight.w600,
+                                            color: context.glass.navSelected)
+                                        .copyWith(height: 28 / 18)))),
                       SizedBox(
                           height: draft.groupId != null &&
                                   draft.step == GroupEditorStep.review

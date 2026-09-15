@@ -1,0 +1,422 @@
+
+00:00 +0: loading /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_pets/my_cre_activity_screen_test.dart                                                           
+00:01 +0: loading /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_pets/my_cre_activity_screen_test.dart                                                           
+00:01 +0: only confirmed unlinked camera displays initial zero: false                                                                                                                                  
+00:01 +0: only confirmed unlinked camera displays initial zero: false                                                                                                                                  
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_legacy_reports] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_connect_camera_hint] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_connect_camera] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_camera_attribution] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_sex_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_day_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_12] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_18] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_week_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_1] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_2] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_3] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_4] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_5] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_legacy_reports] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_connect_camera_hint] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_connect_camera] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_camera_attribution] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_sex_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_day_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_12] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_18] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_week_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_1] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_2] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_3] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_4] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_5] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: no matching candidates
+  Actual: _TextWidgetFinder:<Found 1 widget with text "activity_camera_attribution": [
+            Text("activity_camera_attribution", debugLabel: ((englishLike bodySmall
+2021).merge(((blackMountainView bodySmall).apply).merge(unknown))).copyWith, inherit: false, color:
+Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family:
+Pretendard, size: 12.0, weight: 400, letterSpacing: 0.4, baseline: alphabetic, height: 1.3x,
+leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue:
+0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none, dependencies: [DefaultSelectionStyle,
+DefaultTextStyle, MediaQuery]),
+          ]>
+   Which: means one was found but none were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_pets/my_cre_activity_screen_test.dart:32:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_pets/my_cre_activity_screen_test.dart line 32
+The test description was:
+  only confirmed unlinked camera displays initial zero: false
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+00:02 +0 -1: only confirmed unlinked camera displays initial zero: false [E]                                                                                                                           
+  Test failed. See exception logs above.
+  The test description was: only confirmed unlinked camera displays initial zero: false
+  
+
+To run this test again: /Users/baek/develop/flutter/bin/cache/dart-sdk/bin/dart test /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_pets/my_cre_activity_screen_test.dart -p vm --plain-name 'only confirmed unlinked camera displays initial zero: false'
+
+00:02 +0 -1: only confirmed unlinked camera displays initial zero: null                                                                                                                                
+00:02 +0 -1: only confirmed unlinked camera displays initial zero: null                                                                                                                                
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_legacy_reports] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_camera_attribution] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_sex_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_day_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_12] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_18] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_coverage_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_week_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_1] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_2] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_3] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_4] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_5] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_in_progress] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_legacy_reports] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_camera_attribution] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_sex_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_day_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_12] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_18] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_coverage_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_week_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_1] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_2] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_3] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_4] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_5] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_in_progress] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+
+00:02 +1 -1: only confirmed unlinked camera displays initial zero: null                                                                                                                                
+00:02 +1 -1: only confirmed unlinked camera displays initial zero: true                                                                                                                                
+00:02 +1 -1: only confirmed unlinked camera displays initial zero: true                                                                                                                                
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_legacy_reports] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_camera_attribution] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_sex_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_day_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_12] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_18] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_coverage_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_week_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_1] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_2] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_3] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_4] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_5] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_in_progress] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_legacy_reports] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_camera_attribution] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_sex_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_day_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_12] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_18] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_coverage_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_week_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_1] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_2] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_3] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_4] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_5] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_in_progress] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+
+00:02 +2 -1: only confirmed unlinked camera displays initial zero: true                                                                                                                                
+00:02 +2 -1: empty profile offers registration and preserves old reports                                                                                                                               
+00:02 +2 -1: empty profile offers registration and preserves old reports                                                                                                                               
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_legacy_reports] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_empty] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_add_pet] not found[0m
+
+00:02 +3 -1: empty profile offers registration and preserves old reports                                                                                                                               
+00:02 +3 -1: profile uses pet name, fixed header stays after scroll and legacy remains reachable                                                                                                       
+00:02 +3 -1: profile uses pet name, fixed header stays after scroll and legacy remains reachable                                                                                                       
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_legacy_reports] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_connect_camera_hint] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_connect_camera] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_camera_attribution] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_sex_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_day_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_12] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_18] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_week_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_1] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_2] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_3] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_4] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_5] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_legacy_reports] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_connect_camera_hint] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_connect_camera] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_camera_attribution] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_sex_unknown] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_day_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_12] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hour_18] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_previous] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_next] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_total] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_week_average] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_duration] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_0] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_1] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_2] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_3] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_4] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_5] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_weekday_6] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+[34m[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found[0m
+
+00:02 +4 -1: profile uses pet name, fixed header stays after scroll and legacy remains reachable                                                                                                       
+00:02 +4 -1: Some tests failed.                                                                                                                                                                        

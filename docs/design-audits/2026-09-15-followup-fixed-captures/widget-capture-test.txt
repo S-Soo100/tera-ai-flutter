@@ -1,0 +1,33 @@
+
+00:00 +0: loading /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_pets/activity_capture_test.dart                                                                 
+00:01 +0: loading /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_pets/activity_capture_test.dart                                                                 
+00:01 +0: (setUpAll)                                                                                                                                                                                   
+00:01 +0: (setUpAll)                                                                                                                                                                                   
+[90m[🌎 Easy Localization] [DEBUG] Localization initialized[0m
+
+00:01 +0: 393px localized MyCre populated, lower content and empty captures                                                                                                                            
+00:01 +0: 393px localized MyCre populated, lower content and empty captures                                                                                                                            
+[90m[🌎 Easy Localization] [DEBUG] Start[0m
+[90m[🌎 Easy Localization] [DEBUG] Init state[0m
+[32m[🌎 Easy Localization] [INFO] Start locale loaded ko[0m
+[90m[🌎 Easy Localization] [DEBUG] Build[0m
+[90m[🌎 Easy Localization] [DEBUG] Init Localization Delegate[0m
+[90m[🌎 Easy Localization] [DEBUG] Init provider[0m
+[90m[🌎 Easy Localization] [DEBUG] Load Localization Delegate[0m
+[90m[🌎 Easy Localization] [DEBUG] Build[0m
+[90m[🌎 Easy Localization] [DEBUG] Init Localization Delegate[0m
+[90m[🌎 Easy Localization] [DEBUG] Init provider[0m
+[90m[🌎 Easy Localization] [DEBUG] Start[0m
+[90m[🌎 Easy Localization] [DEBUG] Build[0m
+[90m[🌎 Easy Localization] [DEBUG] Init Localization Delegate[0m
+[90m[🌎 Easy Localization] [DEBUG] Init provider[0m
+[90m[🌎 Easy Localization] [DEBUG] Load Localization Delegate[0m
+[90m[🌎 Easy Localization] [DEBUG] Start[0m
+[90m[🌎 Easy Localization] [DEBUG] Build[0m
+[90m[🌎 Easy Localization] [DEBUG] Init Localization Delegate[0m
+[90m[🌎 Easy Localization] [DEBUG] Init provider[0m
+[90m[🌎 Easy Localization] [DEBUG] Load Localization Delegate[0m
+
+00:02 +1: 393px localized MyCre populated, lower content and empty captures                                                                                                                            
+00:02 +1: (tearDownAll)                                                                                                                                                                                
+00:02 +1: All tests passed!                                                                                                                                                                            

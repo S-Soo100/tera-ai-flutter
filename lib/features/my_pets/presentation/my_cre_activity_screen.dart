@@ -295,12 +295,13 @@ class MyCreActivityScreen extends ConsumerWidget {
                                   onRetry: () => ref.invalidate(
                                       activityDataProvider(weekQuery))),
                             const SizedBox(height: 20),
-                            Text('activity_camera_attribution'.tr(),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                        color: context.glass.bodySecondary)),
+                            if (!unlinked)
+                              Text('activity_camera_attribution'.tr(),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                          color: context.glass.bodySecondary)),
                             legacy,
                           ]))),
             ])));

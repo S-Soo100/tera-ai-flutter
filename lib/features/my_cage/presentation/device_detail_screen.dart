@@ -314,10 +314,12 @@ class _DeviceGroupSettings extends ConsumerWidget {
                     child: Text(item.name,
                         style:
                             managementStyle(context, weight: FontWeight.w600))),
-                Flexible(
+                const SizedBox(width: 12),
+                Expanded(
                     child: Text(item.hardwareId ?? '--',
-                        style:
-                            managementStyle(context, weight: FontWeight.w600),
+                        textAlign: TextAlign.right,
+                        style: managementStyle(context,
+                            color: glass.textPrimary, weight: FontWeight.w600),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis)),
               ])),
@@ -409,7 +411,10 @@ class _DeviceGroupSettings extends ConsumerWidget {
                 onPressed: () => Navigator.pop(context, _removeGroupAction),
                 child: Text('management_remove_group'.tr(),
                     style: managementStyle(context,
-                        color: glass.navSelected, weight: FontWeight.w600)),
+                            size: 18,
+                            color: glass.navSelected,
+                            weight: FontWeight.w600)
+                        .copyWith(height: 28 / 18)),
               )),
         const SizedBox(height: 10),
       ]),

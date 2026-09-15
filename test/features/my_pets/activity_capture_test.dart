@@ -48,7 +48,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     final boundary = GlobalKey();
     final now = DateTime.parse('2026-09-15T03:00:00Z');
-    Future<void> pump(Pet? pet) async {
+    Future<void> pump(Pet? pet, {bool linked = true}) async {
       await tester.pumpWidget(EasyLocalization(
           supportedLocales: const [Locale('ko')],
           startLocale: const Locale('ko'),
@@ -56,7 +56,7 @@ void main() {
           assetLoader: const _Translations(),
           child: Builder(
               builder: (context) => ProviderScope(
-                  key: ValueKey(pet?.id),
+                  key: ValueKey((pet?.id, linked)),
                   overrides: [
                     activityClockProvider
                         .overrideWith((ref) => Stream.value(now)),
@@ -90,7 +90,7 @@ void main() {
                       home: MyCreActivityScreen(
                           userId: 'u',
                           pet: pet,
-                          hasCameraConnection: true,
+                          hasCameraConnection: linked,
                           assignments: [
                             ActivityAssignment(
                                 cameraId: 'a', origin: ActivityOrigin.legacy)
@@ -142,6 +142,18 @@ void main() {
         find.byType(SingleChildScrollView).first, const Offset(0, -480));
     await tester.pumpAndSettle();
     await capture('mycre-week');
+    await pump(
+        Pet(
+            id: 'unlinked',
+            name: '모모',
+            speciesId: 's',
+            speciesName: '크레스티드 게코'),
+        linked: false);
+    await tester.drag(
+        find.byType(SingleChildScrollView).first, const Offset(0, -600));
+    await tester.pumpAndSettle();
+    expect(find.text('연결된 카메라에서 감지한 활동입니다. 카메라는 개체를 구별하지 않습니다.'), findsNothing);
+    await capture('mycre-unlinked-week');
     await pump(null);
     await capture('mycre-empty');
   });
