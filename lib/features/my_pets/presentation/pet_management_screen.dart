@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/figma_icon.dart';
+import '../../my_cage/presentation/widgets/management_widgets.dart';
 import '../domain/pet.dart';
 import 'my_pets_providers.dart';
 import 'widgets/pet_form_screen.dart';
@@ -21,20 +22,15 @@ class PetManagementScreen extends ConsumerWidget {
 
   Future<void> _delete(BuildContext context, WidgetRef ref, Pet pet) async {
     if (ref.read(_petDeletingProvider) != null) return;
-    final accepted = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-              title: Text('pet_form_delete_title'.tr()),
-              content: Text('pet_form_delete_body'.tr()),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: Text('pet_form_cancel'.tr())),
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: Text('pet_form_delete'.tr()))
-              ],
-            ));
+    final titleKey = switch (managementNameHasFinalConsonant(pet.name)) {
+      true => 'pet_form_delete_title',
+      false => 'pet_form_delete_title_open',
+      null => 'pet_form_delete_title_unknown',
+    };
+    final message = '${titleKey.tr(namedArgs: {'name': pet.name})}\n'
+        '${'pet_form_delete_body'.tr()}';
+    final accepted = await managementConfirm(context, message,
+        action: 'common_delete'.tr());
     if (accepted != true || !context.mounted) return;
     final handler = onDelete;
     if (handler == null) {
