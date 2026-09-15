@@ -1,0 +1,270 @@
+[
+  {
+    "type": "Text",
+    "text": "그룹",
+    "rect": [
+      182.99187469482422,
+      74.5,
+      27.016250610351562,
+      19.0
+    ],
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "그룹 이름 설정",
+    "rect": [
+      24.0,
+      122.0,
+      345.0,
+      21.0
+    ],
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.36,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "추가할 그룹의 이름을 설정해 주세요",
+    "rect": [
+      24.0,
+      151.0,
+      345.0,
+      17.0
+    ],
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff626262"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "6/10",
+    "rect": [
+      332.7175006866455,
+      207.0,
+      31.282499313354492,
+      19.0
+    ],
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "이미 사용 중인 이름입니다.",
+    "rect": [
+      32.0,
+      253.0,
+      132.1640625,
+      16.0
+    ],
+    "style": {
+      "size": 12.0,
+      "weight": 400,
+      "height": 1.33,
+      "spacing": 0.4,
+      "color": "ffba1a1a"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "이 그룹에 기기 · 개체 추가",
+    "rect": [
+      108.46593475341797,
+      710.0,
+      176.06813049316406,
+      28.0
+    ],
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "fffafafa"
+    }
+  },
+  {
+    "type": "RichText",
+    "text": "그룹",
+    "rect": [
+      182.99187469482422,
+      74.5,
+      27.016250610351562,
+      19.0
+    ],
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "RichText",
+    "text": "그룹 이름 설정",
+    "rect": [
+      24.0,
+      122.0,
+      345.0,
+      21.0
+    ],
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.36,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "RichText",
+    "text": "추가할 그룹의 이름을 설정해 주세요",
+    "rect": [
+      24.0,
+      151.0,
+      345.0,
+      17.0
+    ],
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff626262"
+    }
+  },
+  {
+    "type": "RichText",
+    "text": "6/10",
+    "rect": [
+      332.7175006866455,
+      207.0,
+      31.282499313354492,
+      19.0
+    ],
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "RichText",
+    "text": "이미 사용 중인 이름입니다.",
+    "rect": [
+      32.0,
+      253.0,
+      132.1640625,
+      16.0
+    ],
+    "style": {
+      "size": 12.0,
+      "weight": 400,
+      "height": 1.33,
+      "spacing": 0.4,
+      "color": "ffba1a1a"
+    }
+  },
+  {
+    "type": "RichText",
+    "text": "이 그룹에 기기 · 개체 추가",
+    "rect": [
+      108.46593475341797,
+      710.0,
+      176.06813049316406,
+      28.0
+    ],
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "fffafafa"
+    }
+  },
+  {
+    "type": "TextFormField",
+    "text": null,
+    "rect": [
+      12.0,
+      184.0,
+      369.0,
+      85.0
+    ]
+  },
+  {
+    "type": "ManagementButton",
+    "text": null,
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      852.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ],
+    "color": "0"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "color": "ff1e1e1e"
+  },
+  {
+    "type": "FilledButton",
+    "text": null,
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": true
+  }
+]
