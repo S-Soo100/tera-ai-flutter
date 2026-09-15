@@ -52,6 +52,7 @@ import 'package:vivanaut/features/my_cage/presentation/device_management_screen.
 import 'package:vivanaut/features/my_cage/presentation/pairing_pet_selection_screen.dart';
 import 'package:vivanaut/features/my_pets/data/pet_repository.dart';
 import 'package:vivanaut/features/my_pets/domain/pet.dart';
+import 'package:vivanaut/features/my_pets/domain/pet_form_state.dart';
 import 'package:vivanaut/features/my_pets/presentation/my_pets_providers.dart';
 import 'package:vivanaut/features/my_pets/presentation/widgets/pet_form_screen.dart';
 import 'package:vivanaut/features/wiki/domain/morph_genetics.dart';
@@ -676,6 +677,59 @@ void main() {
     await capture(tester, boundary, 'p05-pet-selection');
     await pumpPets(1);
     await capture(tester, boundary, 'p05-pet-single');
+    debugDisableShadows = true;
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('P02 group picker and registration complete captures',
+      (tester) async {
+    debugDisableShadows = false;
+    final boundary = GlobalKey();
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await tester.pumpWidget(shell(
+        boundary,
+        PetFormScreen(
+            groups: const [
+              PetFormGroupOption(
+                  id: 'g1',
+                  name: '마뱀이네 집',
+                  number: 1,
+                  hasDevice: true,
+                  hasCamera: true),
+              PetFormGroupOption(
+                  id: 'g2',
+                  name: '도도도의 집',
+                  number: 2,
+                  hasDevice: true,
+                  hasCamera: true),
+            ],
+            onSave: (_, __) async {}),
+        overrides: [
+          petListProvider
+              .overrideWith((ref) => PetListNotifier(_Pets(), null)),
+        ]));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('그룹 설정'), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('그룹 설정'));
+    await capture(tester, boundary, 'p02-group-picker');
+    await tester.tap(find.byKey(const ValueKey('pet-form-group-g1')));
+    await capture(tester, boundary, 'p02-group-picker-selected');
+    await tester.tap(find.byKey(const ValueKey('pet-form-group-confirm')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('pet-form-name')), -300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.enterText(find.byKey(const ValueKey('pet-form-name')), '도도');
+    await tester.tap(find.byKey(const ValueKey('pet-form-species')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('크레스티드 게코').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('pet-form-save')));
+    await capture(tester, boundary, 'p02-pet-done');
     debugDisableShadows = true;
     await tester.binding.setSurfaceSize(null);
   });

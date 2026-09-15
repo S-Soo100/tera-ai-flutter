@@ -27,9 +27,20 @@ class PetFormState {
 }
 
 class PetFormGroupOption {
-  const PetFormGroupOption({required this.id, required this.name});
+  const PetFormGroupOption(
+      {required this.id,
+      required this.name,
+      this.number,
+      this.hasDevice = false,
+      this.hasCamera = false});
   final String id;
   final String name;
+
+  /// 목록 순서 기반 자동 이름 번호(Figma 1043:3649 AutoName '그룹 N').
+  final int? number;
+
+  /// 카드 오른쪽 사육장·카메라 아이콘 표시 여부.
+  final bool hasDevice, hasCamera;
 }
 
 /// The handler must persist profile + history-aware assignment as one logical

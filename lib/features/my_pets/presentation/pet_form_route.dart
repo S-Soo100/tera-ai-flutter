@@ -5,6 +5,8 @@ import '../../auth/presentation/auth_providers.dart';
 import '../../my_cage/data/redesign_group_repository.dart';
 import '../../my_cage/presentation/device_management_controller.dart';
 import '../../my_cage/presentation/my_cage_providers.dart';
+import '../../home/domain/enclosure_set.dart';
+import '../../home/presentation/home_set_providers.dart';
 import '../data/redesign_pet_repository.dart';
 import '../domain/pet.dart';
 import '../domain/pet_form_state.dart';
@@ -81,10 +83,20 @@ class PetFormRoute extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pets = ref.watch(petListProvider);
     final groups = ref.watch(enclosuresProvider).valueOrNull ?? const [];
+    final sets = {
+      for (final set in ref.watch(enclosureSetsProvider).valueOrNull ??
+          const <EnclosureSet>[])
+        set.enclosure.id: set
+    };
     final options = [
-      for (final group in groups)
+      for (final (index, group) in groups.indexed)
         if (!pets.any((pet) => pet.id != petId && pet.enclosureId == group.id))
-          PetFormGroupOption(id: group.id, name: group.name)
+          PetFormGroupOption(
+              id: group.id,
+              name: group.name,
+              number: index + 1,
+              hasDevice: sets[group.id]?.device != null,
+              hasCamera: sets[group.id]?.camera != null)
     ];
     final save = ref.watch(petProfileAndGroupSaveProvider);
     return petId == null

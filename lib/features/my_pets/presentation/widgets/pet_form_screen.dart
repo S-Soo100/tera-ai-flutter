@@ -5,11 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:math' as math;
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../core/theme/viva_colors.dart';
 import '../../../../shared/widgets/figma_icon.dart';
+import '../../../my_cage/domain/redesign_management.dart';
+import '../../../my_cage/presentation/widgets/management_widgets.dart';
 import '../../../wiki/presentation/wiki_providers.dart';
 import '../../domain/pet.dart';
 import '../../domain/pet_form_draft.dart';
@@ -281,19 +285,13 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
           .showError('pet_form_group_unavailable');
       return;
     }
-    final result = await showModalBottomSheet<({String? value})>(
-        context: context,
-        builder: (ctx) => SafeArea(
-              child: ListView(shrinkWrap: true, children: [
-                ListTile(
-                    title: Text('pet_form_no_group'.tr()),
-                    onTap: () => Navigator.pop(ctx, (value: null))),
-                for (final group in widget.groups)
-                  ListTile(
-                      title: Text(group.name),
-                      onTap: () => Navigator.pop(ctx, (value: group.id))),
-              ]),
-            ));
+    // Figma 1043:3649 — 전체 화면 그룹 카드 선택. 폼 draft만 바꾸고 저장은
+    // 기존 저장 시점에 한 번 한다.
+    final current = ref.read(petFormProvider(_session)).draft.groupId;
+    final result = await Navigator.of(context).push<({String? value})>(
+        MaterialPageRoute(
+            builder: (_) => _GroupSelectionScreen(
+                groups: widget.groups, initialGroupId: current)));
     if (mounted && result != null) {
       _change((d) => d.copyWith(groupId: result.value));
     }
@@ -306,9 +304,18 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
         storePhoto: ref.read(petFormPhotoStoreProvider),
         peers: ref.read(petListProvider));
     if (saved && mounted) {
+      final isNew = widget.original == null;
       // PopScope receives the committed state before leaving.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) Navigator.of(context).pop();
+        if (!mounted) return;
+        if (isNew) {
+          // Figma 1035:2735 — 신규 등록 성공에만 완료 화면. 폼 라우트를 교체하므로
+          // 뒤로가기로 폼에 돌아와 같은 개체를 또 만들지 않는다.
+          Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+              builder: (_) => const _PetRegisteredScreen()));
+        } else {
+          Navigator.of(context).pop();
+        }
       });
     }
   }
@@ -1029,5 +1036,217 @@ class _WeightUnitFormatter extends TextInputFormatter {
           baseOffset: newValue.selection.baseOffset.clamp(0, value.length),
           extentOffset: newValue.selection.extentOffset.clamp(0, value.length)),
     );
+  }
+}
+
+/// 개체의 사육 환경(그룹) 선택 — Figma 1043:3649. 제목 y228, 카드 345×78 r12
+/// #F4F4F4(자동 이름 16/500 #949090 + 이름 16/600), 사육장→카메라 36 아이콘,
+/// 체크 24. 하단 '이 사육 환경에서 키우기'(미선택 비활성) y696, '나중에 하기'
+/// y752는 변경 없이 닫는다(그룹 해제는 사육장 연동 화면 담당).
+class _GroupSelectionScreen extends StatefulWidget {
+  const _GroupSelectionScreen({required this.groups, this.initialGroupId});
+  final List<PetFormGroupOption> groups;
+  final String? initialGroupId;
+  @override
+  State<_GroupSelectionScreen> createState() => _GroupSelectionScreenState();
+}
+
+class _GroupSelectionScreenState extends State<_GroupSelectionScreen> {
+  late String? _selected = widget.initialGroupId;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    final safeTop = MediaQuery.paddingOf(context).top;
+    return Scaffold(
+        backgroundColor: glass.surfaceHeader,
+        body: SafeArea(
+            child: LayoutBuilder(builder: (context, constraints) {
+          final titleTop = constraints.maxHeight < 650
+              ? 24.0
+              : (228 - safeTop).clamp(24.0, constraints.maxHeight * .3);
+          return Stack(children: [
+            ListView(
+                padding: EdgeInsets.fromLTRB(24, titleTop, 24, 112 + 10 + 16),
+                children: [
+                  Text('pet_form_group_pick_title'.tr(),
+                      textAlign: TextAlign.center,
+                      style: petFormText(context).copyWith(
+                          fontSize: 18,
+                          height: 21.48046875 / 18,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.36,
+                          color: glass.textSecondary)),
+                  const SizedBox(height: 8),
+                  Text('pairing_pet_subtitle'.tr(),
+                      textAlign: TextAlign.center,
+                      style: petFormText(context)
+                          .copyWith(color: glass.bodySecondary)),
+                  const SizedBox(height: 24),
+                  for (final (index, group) in widget.groups.indexed) ...[
+                    if (index > 0) const SizedBox(height: 8),
+                    _GroupCard(
+                        group: group,
+                        selected: _selected == group.id,
+                        onTap: () => setState(() => _selected =
+                            _selected == group.id ? null : group.id)),
+                  ],
+                ]),
+            Positioned(
+                left: 12,
+                right: 12,
+                bottom: 10,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  ManagementButton(
+                      key: const ValueKey('pet-form-group-confirm'),
+                      label: 'pairing_pet_primary_action'.tr(),
+                      onPressed: _selected == null
+                          ? null
+                          : () =>
+                              Navigator.pop(context, (value: _selected))),
+                  SizedBox(
+                      height: 56,
+                      child: TextButton(
+                          key: const ValueKey('pet-form-group-later'),
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 56),
+                              foregroundColor: glass.textSecondary,
+                              textStyle: petFormText(context).copyWith(
+                                  fontSize: 18,
+                                  height: 28 / 18,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.36)),
+                          child: Text('pairing_pet_later'.tr()))),
+                ])),
+          ]);
+        })));
+  }
+}
+
+class _GroupCard extends StatelessWidget {
+  const _GroupCard(
+      {required this.group, required this.selected, required this.onTap});
+  final PetFormGroupOption group;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return InkWell(
+        key: ValueKey('pet-form-group-${group.id}'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+            height: 78,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+                color: glass.overlay, borderRadius: BorderRadius.circular(12)),
+            child: Row(children: [
+              Expanded(
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    if (group.number case final number?) ...[
+                      Text('pet_form_group_auto'.tr(args: ['$number']),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: petFormText(context)
+                              .copyWith(color: glass.textTertiary)),
+                      const SizedBox(height: 16),
+                    ],
+                    Text(group.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: petFormText(context).copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: glass.textSecondary)),
+                  ])),
+              const SizedBox(width: 4),
+              // 아이콘 순서: 사육장 → 카메라 (→ 개체는 이 화면에 없음).
+              if (group.hasDevice) ...[
+                const ManagementItemIcon(ManagementKind.device),
+                const SizedBox(width: 8),
+              ],
+              if (group.hasCamera) ...[
+                const ManagementItemIcon(ManagementKind.camera),
+                const SizedBox(width: 8),
+              ],
+              FigmaIcon.tinted(
+                  selected
+                      ? 'redesign_v2/check_box_400'
+                      : 'redesign_v2/check_box_outline_blank_400',
+                  size: 24,
+                  color: selected ? glass.navSelected : glass.deviceOff),
+            ])));
+  }
+}
+
+/// 신규 등록 완료 — Figma 1035:2735. 체크 64 y308, 제목 y396, 부제 y425,
+/// '기기 추가 하기' y696 → 기기 추가 흐름, '나중에 하기' y752 → 목록으로.
+class _PetRegisteredScreen extends StatelessWidget {
+  const _PetRegisteredScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    final safeTop = MediaQuery.paddingOf(context).top;
+    return Scaffold(
+        backgroundColor: glass.surfaceHeader,
+        body: SafeArea(
+            child: Stack(children: [
+          Padding(
+              padding: EdgeInsets.only(
+                  top: math.min(308 - safeTop,
+                      MediaQuery.sizeOf(context).height * 0.29)),
+              child: Column(children: [
+                Center(
+                    child: FigmaIcon.tinted('redesign_v2/check_circle',
+                        size: 64, color: glass.textPrimary)),
+                const SizedBox(height: 24),
+                Text('pet_form_done_title'.tr(),
+                    textAlign: TextAlign.center,
+                    style: petFormText(context).copyWith(
+                        fontSize: 18,
+                        height: 21.48046875 / 18,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.36,
+                        color: glass.textSecondary)),
+                const SizedBox(height: 8),
+                Text('pet_form_done_subtitle'.tr(),
+                    textAlign: TextAlign.center,
+                    style: petFormText(context)
+                        .copyWith(color: glass.bodySecondary)),
+              ])),
+          Positioned(
+              left: 12,
+              right: 12,
+              bottom: 10,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                ManagementButton(
+                    key: const ValueKey('pet-form-done-devices'),
+                    label: 'pet_form_done_devices'.tr(),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      context.push('/devices/add');
+                    }),
+                SizedBox(
+                    height: 56,
+                    child: TextButton(
+                        key: const ValueKey('pet-form-done-later'),
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 56),
+                            foregroundColor: glass.textSecondary,
+                            textStyle: petFormText(context).copyWith(
+                                fontSize: 18,
+                                height: 28 / 18,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.36)),
+                        child: Text('pairing_pet_later'.tr()))),
+              ])),
+        ])));
   }
 }

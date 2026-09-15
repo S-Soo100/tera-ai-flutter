@@ -1,0 +1,84 @@
+[
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/check_circle",
+    "rect": [
+      164.5,
+      308.0,
+      64.0,
+      64.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "도마뱀 추가 완료",
+    "rect": [
+      139.40027236938477,
+      396.0,
+      114.19945526123047,
+      21.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "이어서 사육장과 카메라를 추가해 주세요",
+    "rect": [
+      74.50843811035156,
+      425.0,
+      243.98312377929688,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": true
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "기기 추가 하기",
+    "rect": [
+      146.99859237670898,
+      710.0,
+      99.00281524658203,
+      28.0
+    ],
+    "style": "TextStyle(debugLabel: (((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, baseline: ideographic, height: 1.6x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      752.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "나중에 하기",
+    "rect": [
+      156.5526580810547,
+      766.0,
+      79.89468383789062,
+      28.0
+    ],
+    "style": "null"
+  }
+]

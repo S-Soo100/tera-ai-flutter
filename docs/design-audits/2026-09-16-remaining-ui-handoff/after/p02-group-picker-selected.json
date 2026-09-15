@@ -1,0 +1,565 @@
+[
+  {
+    "type": "Text",
+    "text": "모프",
+    "rect": [
+      -74.25,
+      -196.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      -165.0,
+      369.0,
+      65.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "선택 안함",
+    "rect": [
+      -69.25,
+      -142.0,
+      311.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/search",
+    "rect": [
+      241.75,
+      -144.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "성별",
+    "rect": [
+      -74.25,
+      -76.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      -45.0,
+      123.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "수컷",
+    "rect": [
+      -38.75812530517578,
+      -34.5,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      36.75,
+      -45.0,
+      123.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "암컷",
+    "rect": [
+      84.74187469482422,
+      -34.5,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      159.75,
+      -45.0,
+      123.0,
+      40.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/check",
+    "rect": [
+      191.48781204223633,
+      -30.5,
+      15.0,
+      11.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "미구분",
+    "rect": [
+      214.98781204223633,
+      -34.5,
+      40.524375915527344,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "생년월일",
+    "rect": [
+      -74.25,
+      19.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      50.0,
+      369.0,
+      65.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "선택 안함",
+    "rect": [
+      -69.25,
+      73.0,
+      311.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/calendar_month",
+    "rect": [
+      241.75,
+      70.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "입양일",
+    "rect": [
+      -74.25,
+      139.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      170.0,
+      369.0,
+      65.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "선택 안함",
+    "rect": [
+      -69.25,
+      193.0,
+      311.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/calendar_month",
+    "rect": [
+      241.75,
+      190.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "체중 (g)",
+    "rect": [
+      -74.25,
+      259.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "EditableText",
+    "text": "",
+    "rect": [
+      -69.25,
+      313.0,
+      335.0,
+      19.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "그룹",
+    "rect": [
+      -74.25,
+      379.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      410.0,
+      369.0,
+      65.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "그룹 없음",
+    "rect": [
+      -69.25,
+      433.0,
+      255.4906234741211,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "그룹 설정",
+    "rect": [
+      186.2406234741211,
+      433.0,
+      57.509376525878906,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7529, green: 0.0118, blue: 0.0235, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_next",
+    "rect": [
+      247.75,
+      433.5,
+      18.0,
+      18.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "메모",
+    "rect": [
+      -74.25,
+      499.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "EditableText",
+    "text": "",
+    "rect": [
+      -69.25,
+      547.5,
+      335.0,
+      95.0
+    ]
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      -86.25,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": false
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "저장",
+    "rect": [
+      83.05335903167725,
+      710.0,
+      30.393281936645508,
+      28.0
+    ],
+    "style": "null"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      -86.25,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_previous",
+    "rect": [
+      -76.25,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "개체 정보 입력",
+    "rect": [
+      54.358123779296875,
+      74.5,
+      87.78375244140625,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "도마뱀을 어느 환경에서 키울까요?",
+    "rect": [
+      24.0,
+      228.0,
+      345.0,
+      21.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "도마뱀의 활동 리포트를 받아볼수 있어요",
+    "rect": [
+      24.0,
+      257.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'pet-form-group-g1'>]",
+    "rect": [
+      24.0,
+      300.0,
+      345.0,
+      78.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "그룹 1",
+    "rect": [
+      40.0,
+      312.0,
+      37.454376220703125,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "마뱀이네 집",
+    "rect": [
+      40.0,
+      347.0,
+      71.01750183105469,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "nav_home",
+    "rect": [
+      249.0,
+      329.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "nav_camera",
+    "rect": [
+      293.0,
+      329.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/check_box_400",
+    "rect": [
+      329.0,
+      327.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'pet-form-group-g2'>]",
+    "rect": [
+      24.0,
+      386.0,
+      345.0,
+      78.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "그룹 2",
+    "rect": [
+      40.0,
+      398.0,
+      39.798126220703125,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "도도도의 집",
+    "rect": [
+      40.0,
+      433.0,
+      71.01750183105469,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "nav_home",
+    "rect": [
+      249.0,
+      415.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "nav_camera",
+    "rect": [
+      293.0,
+      415.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/check_box_outline_blank_400",
+    "rect": [
+      329.0,
+      413.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": true
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "이 사육 환경에서 키우기",
+    "rect": [
+      114.64957427978516,
+      710.0,
+      163.7008514404297,
+      28.0
+    ],
+    "style": "TextStyle(debugLabel: (((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, baseline: ideographic, height: 1.6x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      752.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "나중에 하기",
+    "rect": [
+      156.5526580810547,
+      766.0,
+      79.89468383789062,
+      28.0
+    ],
+    "style": "null"
+  }
+]
