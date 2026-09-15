@@ -2,6 +2,16 @@
 
 저장일: 2026-09-15
 
+## 최신 재개 상태 — 구현 착수
+
+사용자가 "flutter 코드 구현 시작하자. talk to figma mcp 연결 살아있는지 확인해봐"라고 지시했다.
+Talk to Figma `wvkqunn6` 재접속 및 7개 섹션 조회 성공. 기존 FCM 작업은 completed 상태다.
+`main`의 `1389e8e`에서 `.worktrees/redesign-20260915` / `codex/figma-redesign-20260915`를 생성했다.
+현재 공통 흰 배경·SVG runtime 70개·PNG 배율·Camera 진입 아이콘 2개 기반 구현을 저장했다.
+세부 완료 범위와 후속 작업은 [실측·구현 기록](../design-audits/2026-09-15-redesign-frame-matrix.md)을 따른다.
+전체 화면 재설계는 진행 중이다. 외부 회신·운영 DB·실기기 검증 상태는 여전히 대기다.
+아래 1~6절은 직전 기획 저장 시점의 이력이며, 구현 미착수라는 과거 문구는 이 최신 상태로 대체한다.
+
 ## 1. 현재 목표·단계·권한
 
 - 목표: Figma의 Home·Camera·MyCre·기기 연결(사육장/카메라)·기기/그룹 관리·개체 등록/관리 전체의 기획 확정과 구현계획 저장.

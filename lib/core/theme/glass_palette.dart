@@ -337,9 +337,9 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   // 매핑: docs/design-system-viva-colors.md
   static const light = GlassPalette(
     brightness: Brightness.light,
-    wallpaper: VivaColors.fillBack, // VIVA Fill/Back
+    wallpaper: Colors.white, // 2026-09-15 재설계: 화면 바닥은 흰색.
     overlay: VivaColors.fillButton, // Asset_v2/Card + NewHighlight
-    overlayStrong: VivaColors.fillBack, // = surfaceHeader
+    overlayStrong: Colors.white, // = surfaceHeader
     overlayFaint: VivaColors.fillButton, // surfaceSubtle — 비활성 칩 배경
     border: VivaColors.fillLine, // 칩 테두리·상단바 하단선
     outline: VivaColors.fillLine, // 기간 설정 버튼 stroke (Figma Camera)
@@ -393,7 +393,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     humidAccent: Color(0xFF00B2F3),
     surfaceTint: VivaColors.fillButton,
     segmentTrack: VivaColors.fillButton,
-    surfaceHeader: VivaColors.fillBack,
+    surfaceHeader: Colors.white,
     envTempValue: Color(0xFFF85478),
     envHumidValue: Color(0xFF00B2F3),
     envTempPeak: Color(0xFFF85478),

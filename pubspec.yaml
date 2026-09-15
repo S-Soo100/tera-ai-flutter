@@ -1,7 +1,7 @@
 name: vivanaut
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.103.2+207
+version: 0.104.0+208
 
 environment:
   sdk: ^3.5.0
@@ -70,6 +70,10 @@ flutter:
     - assets/data/morphs/
     - assets/images/
     - assets/icons/
+    - assets/icons/redesign_v2/
+    - assets/icons/redesign_v2/2828/
+    - assets/icons/redesign_v2/3636/
+    - assets/figma/2026-09-15/images/
     - assets/videos/
   fonts:
     - family: Pretendard

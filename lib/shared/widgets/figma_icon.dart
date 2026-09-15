@@ -34,6 +34,12 @@ class FigmaIcon extends StatelessWidget {
 
 /// Figma 아이콘 파일명. 오타로 빈 자리가 나지 않게 상수로 묶는다.
 abstract final class FigmaIcons {
+  // 2026-09-15 원본 → runtime 변환 이력은 redesign-asset-map.json에 보관.
+  // 원형 면이 들어 있는 28/36/40px 파일은 metric으로 그린다.
+  static const management = 'redesign_v2/discover_tune';
+  static const memo = 'redesign_v2/sticky_note_2';
+  static const edit = 'redesign_v2/edit';
+  static const more = 'redesign_v2/more_vert';
   static const pause = 'final_pause';
   static const envTemperature = 'final_temperature';
   static const envHumidity = 'final_humidity';
@@ -67,8 +73,8 @@ abstract final class FigmaIcons {
   static const shower = 'shower';
   static const modeFan = 'mode_fan_2';
   // 카메라 탭 엔트리 카드(2026-09-07 Figma 대조 — Material 근사치 교체).
-  static const cardsStar = 'cards_star';
-  static const bookmarkCheck = 'bookmark_check';
+  static const cardsStar = 'redesign_v2/cards_star';
+  static const bookmarkCheck = 'redesign_v2/bookmark_check';
   // 홈 제어 타일(2026-09-07 재대조 — Material 근사치 교체). 배경 원은
   // 타일이 그리므로 export의 rect는 제거하고 글리프만 담았다. viewBox가
   // 제각각(분무 40 패딩 포함 / 냉각 28 패딩 포함 / 팬 20 글리프만)이라
@@ -77,4 +83,25 @@ abstract final class FigmaIcons {
   static const modeCool = 'mode_cool';
   // 분무 켜짐 글리프(2026-09-08 사용자 지시) — 글리프만 17×20.
   static const humidityHigh = 'humidity_high';
+}
+
+/// 사용자가 제공한 PNG의 x3 배율. 파일 이름의 x3만으로 배율이 적용되지 않는다.
+/// Empty 원본 1035×681 → 345×227, favicon 168×168 → 56×56.
+abstract final class FigmaImages {
+  static const emptyCamera = ExactAssetImage(
+    'assets/figma/2026-09-15/images/Empty_02x3.png',
+    scale: 3,
+  );
+  static const emptyPet = ExactAssetImage(
+    'assets/figma/2026-09-15/images/Empty_01x3.png',
+    scale: 3,
+  );
+  static const emptyEnclosure = ExactAssetImage(
+    'assets/figma/2026-09-15/images/Empty_03x3.png',
+    scale: 3,
+  );
+  static const petPlaceholder = ExactAssetImage(
+    'assets/figma/2026-09-15/images/favicon_viva_50x3.png',
+    scale: 3,
+  );
 }

@@ -184,6 +184,7 @@ class AppTheme {
         backgroundColor: palette.wallpaper,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         titleTextStyle: textTheme.titleLarge,
         iconTheme: const IconThemeData(color: textTitle),
       ),

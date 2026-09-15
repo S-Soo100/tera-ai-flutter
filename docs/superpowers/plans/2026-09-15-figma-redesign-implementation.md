@@ -1,6 +1,6 @@
 # Figma 전면 재설계 Implementation Plan
 
-> **For agentic workers:** 실행 시 `superpowers:executing-plans`를 적용해 작업 단위별로 진행한다. 프로젝트 CAOF에 따라 기존 feature 수정은 메인이 맡고, 새 화면·새 RLS 정책 등 Critical 작업은 승인된 범위를 `flutter-dev`에 분리한다. 지금은 문서 저장 단계이며 구현 에이전트를 실행하지 않는다.
+> **For agentic workers:** 실행 시 `superpowers:executing-plans`를 적용해 작업 단위별로 진행한다. 프로젝트 CAOF에 따라 기존 feature 수정은 메인이 맡고, 새 화면·새 RLS 정책 등 Critical 작업은 승인된 범위를 `flutter-dev`에 분리한다. 사용자가 Flutter 구현 시작을 지시했으며 1단계 기반 작업을 진행 중이다. [실측·검증 기록](../../design-audits/2026-09-15-redesign-frame-matrix.md).
 
 **Goal:** 사용자 승인 기획대로 Home·Camera·MyCre·연결·관리·등록 UI와 데이터 동작을 교체하고 Figma 실측 대조로 검수한다.
 
@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- 확정 상태: 2026-09-15 사용자 승인. 이번 커밋은 문서만 저장하며 코드·운영 DB·외부 메시지는 변경하지 않는다.
+- 확정 상태: 2026-09-15 사용자 승인 및 Flutter 구현 시작 지시. 앱 구현은 진행하되 운영 DB·외부 메시지 전송은 이번 기반 작업에 포함하지 않는다.
 - 신규 구현 전 최신 `CLAUDE.md` 및 실행 중인 다른 작업·git status를 확인한다. FCM 관련 최신 변경을 덮거나 별도 하이라이트 배치 체계를 만들지 않는다.
 - 배경 **#FFFFFF**, 카드·버튼 기본 면 **#F4F4F4**. Material 기본 tint/elevation/최소 크기에 의한 Figma 오차를 확인한다.
 - 색·문자열 하드코딩 금지. Riverpod/Repository/GoRouter 사용. 새 로딩은 기존 스켈레톤 규칙을 따른다.
@@ -40,7 +40,7 @@
 | 6 | MyCre·연결 이력·legacy 승계 | 1/2, P1 활동 구간·coverage |
 | 7 | 화면 대조·실기기·회귀·출시 기록 | 각 기능 통합 완료 |
 
-3/5의 독립 앱 작업은 외부 회신 전에 진행할 수 있다. 미지원 API를 가짜 성공으로 연결하지 않는다. 2026-09-15 사용자가 이관훈님과 petcam-lab에 요청서를 직접 전달했다고 확인했다. 회신 대기이며 중복 발송하지 않는다. 현재 작업은 문서 저장까지이고 앱·DB 구현에는 착수하지 않았다.
+3/5의 독립 앱 작업은 외부 회신 전에 진행할 수 있다. 미지원 API를 가짜 성공으로 연결하지 않는다. 2026-09-15 사용자가 이관훈님과 petcam-lab에 요청서를 직접 전달했다고 확인했다. 회신 대기이며 중복 발송하지 않는다. 현재 1A/1B의 에셋·흰 배경 기반 작업에 착수했으며 전체 레이아웃 검수는 남아 있다.
 
 ## 1. 디자인 기준·에셋 연결
 
@@ -52,11 +52,11 @@
 - Modify: `lib/shared/widgets/figma_icon.dart`의 `FigmaIcon`·`FigmaIcons`, `pubspec.yaml`.
 - Create when needed: `assets/icons/redesign_v2/`의 runtime 사본. 필요한 변환별 원본 path/hash를 asset map에 기록.
 
-- [ ] `rg -n 'class FigmaIcons|class FigmaIcon' lib`로 현재 registry와 renderer의 실제 위치를 확정한다. duplicate registry를 새로 만들지 않는다.
+- [x] `rg -n 'class FigmaIcons|class FigmaIcon' lib`로 현재 registry와 renderer의 실제 위치를 확정한다. duplicate registry를 새로 만들지 않는다.
 - [ ] Talk to Figma로 확정 기획 §1 노드를 읽고 상태별 frame ID, 너비, safe area, font/line height, parent/icon bounds, padding, radius, fills를 측정표에 기록한다. 추출되지 않은 auto-layout 값은 화면 bounds와 시각 검증으로 확인한다.
 - [ ] 아이콘별 역할·ON/OFF·Figma node·원본 파일·runtime 파일·viewBox·표시 크기를 매핑한다. 이름 접미사만으로 역할을 정하지 않는다.
 - [ ] SVG 마스크·여백·다색 렌더를 실제 Flutter에서 확인한다. 원본 변환 필요 시 runtime 사본만 변경한다.
-- [ ] PNG Empty 345×227, favicon 56×56의 3배율을 등록한다. 필요한 이미지 크기보다 해상도가 낮으면 별도 디자인 보완으로 기록하고 완료로 숨기지 않는다.
+- [x] PNG Empty 345×227, favicon 56×56의 3배율을 등록한다. 필요한 이미지 크기보다 해상도가 낮으면 별도 디자인 보완으로 기록하고 완료로 숨기지 않는다.
 - [ ] 원본 해시 불변과 깨진 에셋 경로 0을 확인하고 에셋 연결 단위로 커밋한다.
 
 **Acceptance:** 각 보이는 아이콘은 source node/file까지 역추적 가능. ‘대충 같은 아이콘’ 대체 없음. fan/LED/schedule 팝업은 Figma 미제작 보완 화면으로 분리해 검수한다.
