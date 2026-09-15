@@ -157,6 +157,8 @@ class _GroupEditorBody extends ConsumerWidget {
         key: const Key('management_group_next'),
         label: (draft.saving ? 'management_saving' : button).tr(),
         onPressed: draft.saving ||
+                (draft.step != GroupEditorStep.members &&
+                    draft.nameErrorKey != null) ||
                 (draft.step == GroupEditorStep.members && draft.members.isEmpty)
             ? null
             : action);
@@ -208,11 +210,22 @@ class _GroupEditorBody extends ConsumerWidget {
                                 ManagementNameField(
                                     initialName: draft.name,
                                     enabled: !draft.saving,
-                                    errorKey: draft.nameErrorKey,
-                                    onChanged: (value) => ref
-                                        .read(groupEditorControllerProvider
-                                            .notifier)
-                                        .name(value)),
+                                    errorBelowField: true,
+                                    errorKey: draft.nameErrorKey ==
+                                            'management_name_duplicate'
+                                        ? 'management_group_name_duplicate'
+                                        : draft.nameErrorKey,
+                                    onChanged: (value) {
+                                      final controller = ref.read(
+                                          groupEditorControllerProvider
+                                              .notifier);
+                                      final revalidate =
+                                          draft.nameErrorKey != null;
+                                      controller.name(value);
+                                      if (revalidate) {
+                                        controller.validateName(inventory);
+                                      }
+                                    }),
                               if (draft.step == GroupEditorStep.members) ...[
                                 Padding(
                                     padding: const EdgeInsets.symmetric(

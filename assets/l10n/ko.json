@@ -143,6 +143,7 @@
   "management_default_camera": "카메라",
   "management_name_required": "이름을 입력해 주세요.",
   "management_name_length": "이름은 10자 이내로 입력해 주세요.",
+  "management_group_name_duplicate": "중복되지 않는 이름으로 설정해 주세요",
   "management_name_duplicate": "이미 사용 중인 이름입니다.",
   "management_load_retry": "목록을 불러오지 못했습니다. 다시 시도",
   "management_auth_changed": "로그인 상태가 바뀌었습니다. 다시 로그인해 주세요.",

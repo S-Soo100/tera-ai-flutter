@@ -99,31 +99,50 @@ class ManagementNameField extends StatelessWidget {
       required this.initialName,
       required this.onChanged,
       this.errorKey,
-      this.enabled = true});
+      this.enabled = true,
+      this.errorBelowField = false});
   final String initialName;
   final ValueChanged<String> onChanged;
   final String? errorKey;
   final bool enabled;
+  final bool errorBelowField;
   @override
-  Widget build(BuildContext context) => TextFormField(
-      initialValue: initialName,
-      enabled: enabled,
-      onChanged: onChanged,
-      maxLength: 10,
-      maxLengthEnforcement: MaxLengthEnforcement.none,
-      style: managementStyle(context, color: context.glass.textPrimary),
-      decoration: InputDecoration(
-          filled: true,
-          fillColor: ManagementColors.nameField(context),
-          contentPadding: const EdgeInsets.fromLTRB(16, 23, 13, 23),
-          counterText: '',
-          suffixText: '${Characters(initialName).length}/10',
-          suffixStyle:
-              managementStyle(context, color: context.glass.textTertiary),
-          errorText: errorKey?.tr(),
-          border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: context.glass.border))));
+  Widget build(BuildContext context) {
+    final border = OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.glass.border));
+    final field = TextFormField(
+        initialValue: initialName,
+        enabled: enabled,
+        onChanged: onChanged,
+        maxLength: 10,
+        maxLengthEnforcement: MaxLengthEnforcement.none,
+        style: managementStyle(context, color: context.glass.textPrimary),
+        decoration: InputDecoration(
+            filled: true,
+            fillColor: ManagementColors.nameField(context),
+            contentPadding: const EdgeInsets.fromLTRB(16, 23, 13, 23),
+            counterText: '',
+            suffixText: '${Characters(initialName).length}/10',
+            suffixStyle:
+                managementStyle(context, color: context.glass.textTertiary),
+            errorText: errorBelowField ? null : errorKey?.tr(),
+            enabledBorder: errorBelowField ? border : null,
+            focusedBorder: errorBelowField ? border : null,
+            border: border));
+    if (!errorBelowField) return field;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      field,
+      if (errorKey != null)
+        Padding(
+            padding: const EdgeInsets.only(left: 12, right: 12, top: 8),
+            child: Semantics(
+                liveRegion: true,
+                child: Text(errorKey!.tr(),
+                    style: managementStyle(context,
+                        size: 12, color: context.glass.navSelected)))),
+    ]);
+  }
 }
 
 class ManagementSymbolBadge extends StatelessWidget {
