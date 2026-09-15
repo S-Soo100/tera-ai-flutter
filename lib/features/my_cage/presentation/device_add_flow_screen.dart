@@ -147,7 +147,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                 child: ManagementTopBar(
                     title: 'device_add_title'.tr(),
                     onBack: _close,
-                    close: state.step == DeviceAddStep.connecting ||
+                    close: state.step == DeviceAddStep.credentials ||
+                        state.step == DeviceAddStep.connecting ||
                         state.step == DeviceAddStep.results)),
           Expanded(
               child: LayoutBuilder(
@@ -200,6 +201,18 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                         if (state.step ==
                                             DeviceAddStep.scan) ...[
                                           const SizedBox(height: 24),
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                bottom: 16),
+                                            child: Text(
+                                                'device_add_selection_hint'
+                                                    .tr(),
+                                                textAlign: TextAlign.center,
+                                                style: managementStyle(context,
+                                                    size: 14,
+                                                    color: context
+                                                        .glass.bodySecondary)),
+                                          ),
                                           ManagementButton(
                                               label: 'device_add_selected'.tr(
                                                   args: [
@@ -267,14 +280,20 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             const SizedBox(height: 8),
             Text(subtitle.tr(args: args),
                 style: managementStyle(context,
-                    size: 14, color: context.glass.textTertiary)),
+                    size: 14, color: context.glass.bodySecondary)),
             const SizedBox(height: 16)
           ]));
   Widget _surface(BuildContext context, List<Widget> children) => ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: ColoredBox(
-          color: ManagementColors.nameField(context),
-          child: Column(children: children)));
+          color: context.glass.overlay,
+          child: Column(children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0)
+                Divider(height: 1, thickness: 1, color: context.glass.border),
+              children[i],
+            ],
+          ])));
   List<Widget> _scan(BuildContext context, DeviceAddState state,
       DeviceAddFlowController controller) {
     final candidates = [
@@ -327,14 +346,30 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: managementStyle(context,
-                                          weight: FontWeight.w600)),
+                                          weight: FontWeight.w600,
+                                          color: context.glass.textPrimary)),
                                   const SizedBox(height: 4),
-                                  Text(
-                                      'device_add_signal'
-                                          .tr(args: ['${c.rssi}']),
-                                      style: managementStyle(context,
-                                          size: 14,
-                                          color: context.glass.textTertiary))
+                                  Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Flexible(
+                                            child: Text(
+                                                'device_add_signal'
+                                                    .tr(args: ['${c.rssi}']),
+                                                style: managementStyle(context,
+                                                    size: 14,
+                                                    color: context
+                                                        .glass.textTertiary))),
+                                        const SizedBox(width: 4),
+                                        FigmaIcon.tinted(
+                                            c.rssi >= -60
+                                                ? 'redesign_v2/signal_cellular_alt'
+                                                : c.rssi >= -75
+                                                    ? 'redesign_v2/signal_cellular_alt_2_bar'
+                                                    : 'redesign_v2/signal_cellular_alt_1_bar',
+                                            size: 16,
+                                            color: context.glass.textTertiary),
+                                      ])
                                 ])),
                             const SizedBox(width: 12),
                             FigmaIcon.tinted(
@@ -403,6 +438,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             constraints: const BoxConstraints(minHeight: 65),
             decoration: BoxDecoration(
                 color: ManagementColors.nameField(context),
+                border: Border.all(color: context.glass.border),
                 borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(children: [
@@ -416,6 +452,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                       style: managementStyle(context),
                       onChanged: (_) {
                         ++_fillGeneration;
+                        setState(() {});
                       },
                       decoration: InputDecoration(
                           hintText: 'device_add_password'.tr(),
@@ -424,14 +461,17 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                           focusedBorder: InputBorder.none,
                           filled: false))),
               IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 24, minHeight: 48),
                   onPressed: state.busy ? null : controller.togglePassword,
                   tooltip: 'device_add_show_password'.tr(),
                   icon: FigmaIcon.tinted(
-                      state.showPassword
+                      state.showPassword || _password.text.isEmpty
                           ? 'redesign_v2/visibility'
                           : 'redesign_v2/visibility_off',
                       size: 24,
-                      color: context.glass.textPrimary)),
+                      color: context.glass.deviceOff)),
             ])),
         const SizedBox(height: 8),
         Semantics(
@@ -441,7 +481,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                     ? null
                     : () => controller.remember(!state.remember),
                 child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                     child: Row(children: [
                       FigmaIcon.tinted(
                           state.remember
@@ -451,7 +491,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                           color: state.remember
                               ? context.glass.navSelected
                               : context.glass.deviceOff),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 4),
                       Expanded(
                           child: Text('device_add_remember'.tr(),
                               style: managementStyle(context, size: 14))),
@@ -566,6 +606,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
   }
 
   Future<void> _petChoice(String? groupId) async {
+    if (groupId != null) {
+      await context.push('/groups/$groupId/choose-pet');
+      return;
+    }
     final choice = await showModalBottomSheet<String>(
         context: context,
         builder: (context) => SafeArea(

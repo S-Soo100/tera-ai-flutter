@@ -12,6 +12,7 @@ import '../../features/my_cage/presentation/device_management_screen.dart';
 import '../../features/my_cage/presentation/device_add_flow_route.dart';
 import '../../features/my_cage/presentation/device_detail_screen.dart';
 import '../../features/my_cage/presentation/group_editor_screen.dart';
+import '../../features/my_cage/presentation/pairing_pet_selection_screen.dart';
 import '../../features/my_cage/domain/redesign_management.dart';
 import '../../features/my_cage/presentation/crecam_screen.dart';
 import '../../features/my_cage/presentation/smart_cage_screen.dart';
@@ -378,6 +379,10 @@ GoRouter buildAppRouter({
           path: '/groups/:id',
           builder: (context, state) =>
               GroupEditorScreen(groupId: state.pathParameters['id'])),
+      GoRoute(
+          path: '/groups/:groupId/choose-pet',
+          builder: (context, state) => PairingPetSelectionScreen(
+              groupId: state.pathParameters['groupId']!)),
       GoRoute(
         path: '/pet-add',
         builder: (context, state) => PetFormRoute(

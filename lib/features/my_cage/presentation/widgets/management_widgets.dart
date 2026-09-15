@@ -63,12 +63,13 @@ class ManagementButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool red;
   @override
-  Widget build(BuildContext context) => SizedBox(
-      width: double.infinity,
-      height: 56,
+  Widget build(BuildContext context) => ConstrainedBox(
+      constraints:
+          const BoxConstraints(minWidth: double.infinity, minHeight: 56),
       child: FilledButton(
           onPressed: onPressed,
           style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               backgroundColor:
                   red ? context.glass.navSelected : context.glass.textPrimary,
               disabledBackgroundColor: context.glass.border,
@@ -76,6 +77,7 @@ class ManagementButton extends StatelessWidget {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12))),
           child: Text(label,
+              textAlign: TextAlign.center,
               style: managementStyle(context,
                   size: 18,
                   weight: FontWeight.w600,
