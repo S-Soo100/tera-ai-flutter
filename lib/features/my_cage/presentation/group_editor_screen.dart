@@ -306,6 +306,9 @@ class _GroupEditorBody extends ConsumerWidget {
                                         borderRadius:
                                             BorderRadius.circular(12)),
                                     child: TextButton(
+                                        style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 16)),
                                         onPressed: draft.saving
                                             ? null
                                             : () => ref
@@ -322,7 +325,8 @@ class _GroupEditorBody extends ConsumerWidget {
                                               style: managementStyle(context,
                                                   weight: FontWeight.w600,
                                                   color: context
-                                                      .glass.navSelected))
+                                                      .glass.navSelected)
+                                                  .copyWith(height: 28 / 16))
                                         ]))),
                               ],
                               if (draft.errorKey != null)
