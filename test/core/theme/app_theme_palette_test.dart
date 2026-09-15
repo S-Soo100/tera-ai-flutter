@@ -77,7 +77,7 @@ void main() {
       expect(light.envHumidValue, const Color(0xFF00B2F3));
       expect(light.envHumidPeak, const Color(0xFF00B2F3));
       expect(light.envBarNeutral, const Color(0xFF626262));
-      expect(light.envBarMinimum, const Color(0xFFA9B3BE));
+      expect(light.envBarMinimum, VivaColors.fillIcon); // 1081:5052 최저 막대
     });
 
     test('온습도 상세 SVG 아이콘도 지표색을 사용한다', () {

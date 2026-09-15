@@ -1,0 +1,782 @@
+[
+  {
+    "type": "Text",
+    "text": "온습도 상세",
+    "rect": [
+      161.04593658447266,
+      72.5,
+      70.90812683105469,
+      23.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      339.0,
+      60.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      341.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "close",
+    "rect": [
+      351.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "일간",
+    "rect": [
+      93.43039035797119,
+      131.5,
+      23.639219284057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "주간",
+    "rect": [
+      275.9303903579712,
+      131.5,
+      23.639219284057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 700, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      12.0,
+      172.0,
+      48.0,
+      40.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      16.0,
+      172.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_previous",
+    "rect": [
+      24.0,
+      180.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "2026. 9. 14 - 9. 20",
+    "rect": [
+      128.4702911376953,
+      181.5,
+      144.05941772460938,
+      21.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/env_temperature",
+    "rect": [
+      12.0,
+      238.5,
+      28.0,
+      28.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "33°C",
+    "rect": [
+      48.0,
+      236.0,
+      64.91625213623047,
+      33.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7529, green: 0.0118, blue: 0.0235, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 28.0, weight: 600, letterSpacing: -0.6, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "23°C",
+    "rect": [
+      120.91625213623047,
+      236.0,
+      64.09593963623047,
+      33.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 28.0, weight: 600, letterSpacing: -0.6, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "30",
+    "rect": [
+      27.94866602761405,
+      352.0,
+      16.816953659057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "25",
+    "rect": [
+      28.22893946511405,
+      457.0,
+      16.256406784057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "33",
+    "rect": [
+      76.61510017939976,
+      304.0,
+      16.912656784057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7529, green: 0.0118, blue: 0.0235, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "25",
+    "rect": [
+      76.94322517939976,
+      457.0,
+      16.256406784057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7529, green: 0.0118, blue: 0.0235, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "30",
+    "rect": [
+      125.37723745618548,
+      352.0,
+      16.816953659057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "25",
+    "rect": [
+      125.65751089368548,
+      457.0,
+      16.256406784057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "30",
+    "rect": [
+      174.0915231704712,
+      352.0,
+      16.816953659057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "23",
+    "rect": [
+      174.2487497329712,
+      489.0,
+      16.502500534057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "30",
+    "rect": [
+      222.8058088847569,
+      352.0,
+      16.816953659057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "23",
+    "rect": [
+      222.9630354472569,
+      489.0,
+      16.502500534057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "30",
+    "rect": [
+      271.52009459904264,
+      352.0,
+      16.816953659057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "25",
+    "rect": [
+      271.80036803654264,
+      457.0,
+      16.256406784057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "30",
+    "rect": [
+      320.2343803133283,
+      352.0,
+      16.816953659057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "25",
+    "rect": [
+      320.5146537508283,
+      457.0,
+      16.256406784057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "월",
+    "rect": [
+      16.0,
+      511.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "화",
+    "rect": [
+      64.71428571428572,
+      511.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "수",
+    "rect": [
+      113.42857142857143,
+      511.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "목",
+    "rect": [
+      162.14285714285714,
+      511.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "금",
+    "rect": [
+      210.85714285714286,
+      511.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "토",
+    "rect": [
+      259.57142857142856,
+      511.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "일",
+    "rect": [
+      308.2857142857143,
+      511.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "34°",
+    "rect": [
+      355.0,
+      294.6796875,
+      19.565156936645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "32°",
+    "rect": [
+      355.0,
+      326.6796875,
+      19.084688186645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "30°",
+    "rect": [
+      355.0,
+      358.6796875,
+      19.354219436645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "28°",
+    "rect": [
+      355.0,
+      390.6796875,
+      19.014375686645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "26°",
+    "rect": [
+      355.0,
+      422.6796875,
+      19.072969436645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "24°",
+    "rect": [
+      355.0,
+      454.6796875,
+      19.031953811645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "22°",
+    "rect": [
+      355.0,
+      486.6796875,
+      18.733125686645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/env_humidity",
+    "rect": [
+      12.0,
+      575.5,
+      28.0,
+      28.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "72%",
+    "rect": [
+      48.0,
+      573.0,
+      57.05437469482422,
+      33.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.0980, green: 0.1451, blue: 0.3255, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 28.0, weight: 600, letterSpacing: -0.6, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "50%",
+    "rect": [
+      113.05437469482422,
+      573.0,
+      59.46062469482422,
+      33.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 28.0, weight: 600, letterSpacing: -0.6, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "65",
+    "rect": [
+      28.03069727761405,
+      689.0,
+      16.652891159057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "55",
+    "rect": [
+      28.14690821511405,
+      778.0,
+      16.420469284057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "65",
+    "rect": [
+      76.74498299189976,
+      689.0,
+      16.652891159057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "55",
+    "rect": [
+      76.86119392939976,
+      778.0,
+      16.420469284057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "72",
+    "rect": [
+      125.98563637052264,
+      644.2,
+      15.6001558303833,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.0980, green: 0.1451, blue: 0.3255, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "55",
+    "rect": [
+      125.57547964368548,
+      778.0,
+      16.420469284057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.0980, green: 0.1451, blue: 0.3255, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "65",
+    "rect": [
+      174.1735544204712,
+      689.0,
+      16.652891159057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "55",
+    "rect": [
+      174.2897653579712,
+      778.0,
+      16.420469284057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "65",
+    "rect": [
+      222.8878401347569,
+      689.0,
+      16.652891159057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "55",
+    "rect": [
+      223.0040510722569,
+      778.0,
+      16.420469284057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "65",
+    "rect": [
+      271.60212584904264,
+      689.0,
+      16.652891159057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "50",
+    "rect": [
+      271.64314147404264,
+      810.0,
+      16.570859909057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "65",
+    "rect": [
+      320.3164115633283,
+      689.0,
+      16.652891159057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "55",
+    "rect": [
+      320.4326225008283,
+      778.0,
+      16.420469284057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "월",
+    "rect": [
+      16.0,
+      848.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "화",
+    "rect": [
+      64.71428571428572,
+      848.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "수",
+    "rect": [
+      113.42857142857143,
+      848.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "목",
+    "rect": [
+      162.14285714285714,
+      848.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "금",
+    "rect": [
+      210.85714285714286,
+      848.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "토",
+    "rect": [
+      259.57142857142856,
+      848.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "일",
+    "rect": [
+      308.2857142857143,
+      848.0,
+      10.131093978881836,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "75%",
+    "rect": [
+      355.0,
+      631.6796875,
+      23.889375686645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "70%",
+    "rect": [
+      355.0,
+      663.6796875,
+      23.953828811645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "65%",
+    "rect": [
+      355.0,
+      695.6796875,
+      24.768281936645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "60%",
+    "rect": [
+      355.0,
+      727.6796875,
+      24.897188186645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "55%",
+    "rect": [
+      355.0,
+      759.6796875,
+      24.569063186645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "50%",
+    "rect": [
+      355.0,
+      791.6796875,
+      24.697969436645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "45%",
+    "rect": [
+      355.0,
+      823.6796875,
+      24.908906936645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  }
+]

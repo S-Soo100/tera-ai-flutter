@@ -22,10 +22,14 @@ class AxisBounds {
     required this.min,
     required this.max,
     required this.step,
+    required this.divisions,
   });
 
-  /// 눈금 칸 수. 라벨은 이보다 하나 많다(6개).
-  static const int divisions = 5;
+  /// 기본 눈금 칸 수. 라벨은 이보다 하나 많다(일간 6개).
+  static const int defaultDivisions = 5;
+
+  /// 이 축의 눈금 칸 수 — 주간 범위 차트는 7개 라벨(6칸)을 쓴다(1081:5052).
+  final int divisions;
 
   /// 칸 크기 후보의 가수(假數). 1·2·5의 10의 거듭제곱 배만 쓴다 —
   /// 3이나 7 단위 눈금은 사람이 암산으로 못 읽는다.
@@ -43,6 +47,7 @@ class AxisBounds {
   static AxisBounds? forValues(
     Iterable<double> values, {
     double minStep = 0.2,
+    int divisions = defaultDivisions,
   }) {
     final valid = values.where((v) => v > 0).toList();
     if (valid.isEmpty) return null;
@@ -50,7 +55,8 @@ class AxisBounds {
     final lo = valid.reduce((a, b) => a < b ? a : b);
     final hi = valid.reduce((a, b) => a > b ? a : b);
 
-    final s = _pickStep(lo: lo, hi: hi, minStep: minStep);
+    final s =
+        _pickStep(lo: lo, hi: hi, minStep: minStep, divisions: divisions);
     var min = (lo / s).floorToDouble() * s;
     var max = (hi / s).ceilToDouble() * s;
 
@@ -64,7 +70,7 @@ class AxisBounds {
       }
     }
 
-    return AxisBounds._(min: min, max: max, step: s);
+    return AxisBounds._(min: min, max: max, step: s, divisions: divisions);
   }
 
   /// 데이터를 [divisions]칸 안에 담는 가장 작은 "읽을 만한" 칸 크기.
@@ -75,6 +81,7 @@ class AxisBounds {
     required double lo,
     required double hi,
     required double minStep,
+    required int divisions,
   }) {
     // 후보는 **[minStep] 바로 위**부터 훑어야 한다. 1에서만 출발하면 하한이
     // 1보다 작아도 0.2·0.5 같은 칸을 아예 못 만들어, 좁은 구간이 5단위 축에

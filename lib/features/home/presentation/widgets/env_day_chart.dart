@@ -98,9 +98,9 @@ class EnvDayChart extends StatefulWidget {
   static const double markerSize = 28;
   static const double markerMinGap = 22;
 
-  /// Y 눈금은 항상 6개([AxisBounds.divisions]+1) — 격자 5칸.
+  /// Y 눈금은 항상 6개([AxisBounds.defaultDivisions]+1) — 격자 5칸.
   static const double rowStep = 32;
-  static const double gridSpan = rowStep * AxisBounds.divisions; // 160
+  static const double gridSpan = rowStep * AxisBounds.defaultDivisions; // 160
   // Figma labels sit at the bottom of each 32px row. Keep one row above
   // the highest tick, and map both the curves and scrub dots to those ticks.
   static const double plotHeight = gridSpan + rowStep; // 192
@@ -302,7 +302,8 @@ class _EnvDayChartState extends State<EnvDayChart> {
       for (var i = 0; i < spots.length; i++)
         Positioned(
           left: centers[i] - EnvDayChart.markerSize / 2,
-          top: 0,
+          // Figma 1081:4873 — 28 마커가 32 띠 가운데(y+2).
+          top: (EnvDayChart.markerBand - EnvDayChart.markerSize) / 2,
           child: Tooltip(
             message:
                 '${formatAmPmTime(spots[i].e.at)} ${controlKindNameKey(spots[i].e.kind).tr()}',
@@ -445,7 +446,7 @@ class _DayPlotPainter extends CustomPainter {
       ..color = gridColor
       ..strokeWidth = 1
       ..isAntiAlias = false;
-    for (var i = 0; i <= AxisBounds.divisions + 1; i++) {
+    for (var i = 0; i <= AxisBounds.defaultDivisions + 1; i++) {
       final y = i * EnvDayChart.rowStep;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
     }

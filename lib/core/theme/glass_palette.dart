@@ -404,7 +404,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     envTempPeak: Color(0xFFF85478),
     envHumidPeak: Color(0xFF00B2F3),
     envBarNeutral: VivaColors.labelTertiary,
-    envBarMinimum: Color(0xFFA9B3BE),
+    envBarMinimum: VivaColors.fillIcon, // 주간 최저 막대 #B4AEAE (1081:5052)
     navSelected: VivaColors.mainDark,
     navUnselected: VivaColors.labelTertiary,
   );

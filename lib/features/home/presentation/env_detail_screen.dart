@@ -67,8 +67,9 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
 
   Widget _topBar(GlassPalette glass) {
     return Container(
-      decoration: BoxDecoration(
-        color: glass.surfaceHeader,
+      decoration: BoxDecoration(color: glass.surfaceHeader),
+      // Figma 1081:4873 — 헤더 106(62+44) 안에서 하단선을 그린다(높이 미추가).
+      foregroundDecoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: glass.border)),
       ),
       child: SafeArea(
@@ -137,6 +138,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
               style: TextStyle(
                 fontFamily: 'Pretendard',
                 fontSize: 14,
+                height: 16.70703125 / 14,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                 letterSpacing: 14 * -0.02,
                 color: selected ? glass.textSecondary : glass.bodySecondary,
@@ -211,7 +213,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                   initialFraction: _nowFraction(day),
                 ),
         ),
-        const SizedBox(height: 24),
+        // Figma 1081:4873 — 차트(294~550) → 제어 기록 패널 584(상단선 1 포함).
+        const SizedBox(height: 33),
         logAsync.when(
           loading: () => _skeleton(glass, height: 160),
           error: (_, __) => Padding(
@@ -288,6 +291,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
   TextStyle _pagerLabelStyle(GlassPalette glass) => TextStyle(
         fontFamily: 'Pretendard',
         fontSize: 18,
+        height: 21.48046875 / 18,
         fontWeight: FontWeight.w600,
         letterSpacing: 18 * -0.02,
         color: glass.textSecondary,
@@ -439,6 +443,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
             style: TextStyle(
               fontFamily: 'Pretendard',
               fontSize: 14,
+              height: 16.70703125 / 14,
               fontWeight: FontWeight.w500,
               color: glass.textTertiary,
             ),
@@ -458,7 +463,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
       padding: const EdgeInsets.only(bottom: 24),
       children: [
         _weekPager(glass, week),
-        const SizedBox(height: 8),
+        // Figma 1081:5052 — 페이저(172~212) → 헤더 236.
+        const SizedBox(height: 24),
         rowsAsync.when(
           loading: () => Column(
             children: [
@@ -475,10 +481,10 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
               children: [
                 WeekRangeChart(
                   rows: rows.temp,
-                  accent: VivaColors.mainDark,
+                  // Figma 1081:5052 — 최고 막대 #D61619, 수치·헤더 #C00306.
+                  accent: glass.tempAccent,
                   valueColor: VivaColors.mainDark,
-                  icon: Icons.thermostat,
-                  iconAsset: FigmaIcons.envTemperature,
+                  iconAsset: 'redesign_v2/env_temperature',
                   headerFormat: (v) =>
                       'env_detail_temp_value'.tr(args: [formatCompact(v)]),
                   axisFormat: (v, d) => 'stats_axis_temp'
@@ -487,10 +493,10 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                 const SizedBox(height: 40),
                 WeekRangeChart(
                   rows: rows.humid,
-                  accent: VivaColors.subDark,
+                  // Figma 1081:5052 — 최고 막대 #2E408C, 수치·헤더 #192553.
+                  accent: glass.humidAccent,
                   valueColor: VivaColors.subDark,
-                  icon: Icons.water_drop,
-                  iconAsset: FigmaIcons.envHumidity,
+                  iconAsset: 'redesign_v2/env_humidity',
                   headerFormat: (v) =>
                       'env_detail_humid_value'.tr(args: [formatCompact(v)]),
                   axisFormat: (v, d) => 'stats_axis_humid'

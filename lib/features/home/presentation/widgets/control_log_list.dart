@@ -87,9 +87,13 @@ class ControlLogList extends StatelessWidget {
     return Container(
       key: sectionKey,
       width: double.infinity,
-      color: Theme.of(context).brightness == Brightness.light
-          ? VivaColors.fillBack
-          : glass.surfaceHeader,
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.light
+            ? VivaColors.fillBack
+            : glass.surfaceHeader,
+        // Figma 1081:4873 Frame 110 — 상단 구분선.
+        border: Border(top: BorderSide(color: glass.border)),
+      ),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,6 +103,7 @@ class ControlLogList extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'Pretendard',
               fontSize: 18,
+              height: 20 / 18,
               fontWeight: FontWeight.w700,
               letterSpacing: 18 * -0.02,
               color: glass.textPrimary,
@@ -174,6 +179,7 @@ class _LogRow extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: 'Pretendard',
                   fontSize: 16,
+                  height: 19.09375 / 16,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 16 * -0.02,
                   color: glass.textSecondary,
@@ -185,6 +191,7 @@ class _LogRow extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: 'Pretendard',
                   fontSize: 14,
+                  height: 16.70703125 / 14,
                   fontWeight: FontWeight.w500,
                   color: glass.textTertiary,
                 ),
@@ -206,6 +213,7 @@ class _LogRow extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Pretendard',
                 fontSize: 16,
+                height: 19.09375 / 16,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 16 * -0.02,
                 color: glass.textPrimary,
@@ -224,6 +232,7 @@ class _LogRow extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Pretendard',
                 fontSize: 14,
+                height: 16.70703125 / 14,
                 fontWeight: FontWeight.w500,
                 color: glass.textTertiary,
               ),
