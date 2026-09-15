@@ -150,6 +150,16 @@ class _GroupEditorBody extends ConsumerWidget {
       GroupEditorStep.review =>
         draft.groupId == null ? 'management_create_group' : 'management_done',
     };
+    final floatingSelection = draft.step == GroupEditorStep.members;
+    final buttonBottom =
+        (100 - MediaQuery.paddingOf(context).bottom).clamp(16.0, 100.0);
+    final nextButton = ManagementButton(
+        key: const Key('management_group_next'),
+        label: (draft.saving ? 'management_saving' : button).tr(),
+        onPressed: draft.saving ||
+                (draft.step == GroupEditorStep.members && draft.members.isEmpty)
+            ? null
+            : action);
     return PopScope(
         canPop: draft.finished || (!dirty && !draft.saving),
         onPopInvokedWithResult: (didPop, _) {
@@ -163,153 +173,162 @@ class _GroupEditorBody extends ConsumerWidget {
                       ManagementTopBar(
                           title: 'management_group'.tr(), onBack: leave),
                       Expanded(
-                          child: ListView(
-                              padding:
-                                  const EdgeInsets.only(top: 16, bottom: 24),
-                              children: [
-                            if (draft.step == GroupEditorStep.name) ...[
-                              Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: Text('management_name_heading'.tr(),
-                                      style: managementStyle(context,
-                                          size: 18, weight: FontWeight.w600))),
-                              const SizedBox(height: 8),
-                              Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: Text('management_name_hint'.tr(),
-                                      style: managementStyle(context,
-                                          size: 14,
-                                          color: context.glass.bodySecondary))),
-                              const SizedBox(height: 16),
-                            ] else if (draft.step ==
-                                GroupEditorStep.review) ...[
-                              ManagementLabel('management_group_name'.tr()),
-                              const SizedBox(height: 12),
-                            ],
-                            if (draft.step != GroupEditorStep.members)
-                              ManagementNameField(
-                                  initialName: draft.name,
-                                  enabled: !draft.saving,
-                                  errorKey: draft.nameErrorKey,
-                                  onChanged: (value) => ref
-                                      .read(groupEditorControllerProvider
-                                          .notifier)
-                                      .name(value)),
-                            if (draft.step == GroupEditorStep.members) ...[
-                              Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: Text(draft.name,
-                                      style: managementStyle(context,
-                                          size: 18, weight: FontWeight.w600))),
-                              const SizedBox(height: 8),
-                              Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: Text('management_member_hint'.tr(),
-                                      style: managementStyle(context,
-                                          size: 14,
-                                          color: context.glass.bodySecondary))),
-                              const SizedBox(height: 24),
-                              for (final kind in ManagementKind.values) ...[
-                                ManagementLabel(
-                                    'management_kind_${kind.name}'.tr()),
+                          child: Stack(fit: StackFit.expand, children: [
+                        ListView(
+                            padding: EdgeInsets.only(
+                                top: 16,
+                                bottom: floatingSelection
+                                    ? buttonBottom + 56 + 24
+                                    : 24),
+                            children: [
+                              if (draft.step == GroupEditorStep.name) ...[
+                                Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text('management_name_heading'.tr(),
+                                        style: managementStyle(context,
+                                            size: 18,
+                                            weight: FontWeight.w600))),
+                                const SizedBox(height: 8),
+                                Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text('management_name_hint'.tr(),
+                                        style: managementStyle(context,
+                                            size: 14,
+                                            color:
+                                                context.glass.bodySecondary))),
+                                const SizedBox(height: 16),
+                              ] else if (draft.step ==
+                                  GroupEditorStep.review) ...[
+                                ManagementLabel('management_group_name'.tr()),
+                                const SizedBox(height: 12),
+                              ],
+                              if (draft.step != GroupEditorStep.members)
+                                ManagementNameField(
+                                    initialName: draft.name,
+                                    enabled: !draft.saving,
+                                    errorKey: draft.nameErrorKey,
+                                    onChanged: (value) => ref
+                                        .read(groupEditorControllerProvider
+                                            .notifier)
+                                        .name(value)),
+                              if (draft.step == GroupEditorStep.members) ...[
+                                Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text(draft.name,
+                                        style: managementStyle(context,
+                                            size: 18,
+                                            weight: FontWeight.w600))),
+                                const SizedBox(height: 8),
+                                Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text('management_member_hint'.tr(),
+                                        style: managementStyle(context,
+                                            size: 14,
+                                            color:
+                                                context.glass.bodySecondary))),
+                                const SizedBox(height: 24),
+                                for (final kind in ManagementKind.values) ...[
+                                  ManagementLabel(
+                                      'management_kind_${kind.name}'.tr()),
+                                  const SizedBox(height: 12),
+                                  Material(
+                                    color: context.glass.overlay,
+                                    borderRadius: BorderRadius.circular(12),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Column(children: [
+                                      for (final item in inventory.items
+                                          .where((i) => i.key.kind == kind))
+                                        ManagementItemRow(
+                                            item: item,
+                                            groupName: inventory
+                                                .group(item.groupId)
+                                                ?.name,
+                                            selected: draft.members
+                                                .contains(item.key),
+                                            onTap: draft.saving
+                                                ? null
+                                                : () => select(item)),
+                                    ]),
+                                  ),
+                                  const SizedBox(height: 24),
+                                ],
+                              ],
+                              if (draft.step == GroupEditorStep.review) ...[
+                                const SizedBox(height: 44),
+                                ManagementLabel('management_members'.tr()),
                                 const SizedBox(height: 12),
                                 Material(
                                   color: context.glass.overlay,
                                   borderRadius: BorderRadius.circular(12),
                                   clipBehavior: Clip.antiAlias,
                                   child: Column(children: [
-                                    for (final item in inventory.items
-                                        .where((i) => i.key.kind == kind))
-                                      ManagementItemRow(
-                                          item: item,
-                                          groupName: inventory
-                                              .group(item.groupId)
-                                              ?.name,
-                                          selected:
-                                              draft.members.contains(item.key),
-                                          onTap: draft.saving
-                                              ? null
-                                              : () => select(item)),
+                                    for (final kind in ManagementKind.values)
+                                      for (final key in draft.members
+                                          .where((m) => m.kind == kind))
+                                        if (inventory.item(key)
+                                            case final item?)
+                                          ManagementItemRow(
+                                            item: item,
+                                            showArrow: initial.groupId != null,
+                                            onTap: initial.groupId == null ||
+                                                    draft.saving
+                                                ? null
+                                                : () => context.push(item
+                                                            .key.kind ==
+                                                        ManagementKind.pet
+                                                    ? '/my-pets/${item.key.id}/edit'
+                                                    : '/devices/${item.key.kind.name}/${item.key.id}'),
+                                          ),
                                   ]),
                                 ),
-                                const SizedBox(height: 24),
+                                const SizedBox(height: 8),
+                                Container(
+                                    height: 52,
+                                    decoration: BoxDecoration(
+                                        color: context.glass.overlay,
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    child: TextButton(
+                                        onPressed: draft.saving
+                                            ? null
+                                            : () => ref
+                                                .read(
+                                                    groupEditorControllerProvider
+                                                        .notifier)
+                                                .step(GroupEditorStep.members),
+                                        child: Row(children: [
+                                          FigmaIcon.tinted(FigmaIcons.add,
+                                              size: 24,
+                                              color: context.glass.navSelected),
+                                          const SizedBox(width: 4),
+                                          Text('management_add_change'.tr(),
+                                              style: managementStyle(context,
+                                                  weight: FontWeight.w600,
+                                                  color: context
+                                                      .glass.navSelected))
+                                        ]))),
                               ],
-                            ],
-                            if (draft.step == GroupEditorStep.review) ...[
-                              const SizedBox(height: 44),
-                              ManagementLabel('management_members'.tr()),
-                              const SizedBox(height: 12),
-                              Material(
-                                color: context.glass.overlay,
-                                borderRadius: BorderRadius.circular(12),
-                                clipBehavior: Clip.antiAlias,
-                                child: Column(children: [
-                                  for (final kind in ManagementKind.values)
-                                    for (final key in draft.members
-                                        .where((m) => m.kind == kind))
-                                      if (inventory.item(key) case final item?)
-                                        ManagementItemRow(
-                                          item: item,
-                                          showArrow: initial.groupId != null,
-                                          onTap: initial.groupId == null ||
-                                                  draft.saving
-                                              ? null
-                                              : () => context.push(item
-                                                          .key.kind ==
-                                                      ManagementKind.pet
-                                                  ? '/my-pets/${item.key.id}/edit'
-                                                  : '/devices/${item.key.kind.name}/${item.key.id}'),
-                                        ),
-                                ]),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                  height: 52,
-                                  decoration: BoxDecoration(
-                                      color: context.glass.overlay,
-                                      borderRadius: BorderRadius.circular(12)),
-                                  child: TextButton(
-                                      onPressed: draft.saving
-                                          ? null
-                                          : () => ref
-                                              .read(
-                                                  groupEditorControllerProvider
-                                                      .notifier)
-                                              .step(GroupEditorStep.members),
-                                      child: Row(children: [
-                                        FigmaIcon.tinted(FigmaIcons.add,
-                                            size: 24,
-                                            color: context.glass.navSelected),
-                                        const SizedBox(width: 4),
-                                        Text('management_add_change'.tr(),
-                                            style: managementStyle(context,
-                                                weight: FontWeight.w600,
-                                                color:
-                                                    context.glass.navSelected))
-                                      ]))),
-                            ],
-                            if (draft.errorKey != null)
-                              Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Text(draft.errorKey!.tr(),
-                                      key: const Key('management_save_error'),
-                                      style: managementStyle(context,
-                                          size: 14,
-                                          color: context.glass.navSelected))),
-                          ])),
-                      ManagementButton(
-                          key: const Key('management_group_next'),
-                          label: (draft.saving ? 'management_saving' : button)
-                              .tr(),
-                          onPressed: draft.saving ||
-                                  (draft.step == GroupEditorStep.members &&
-                                      draft.members.isEmpty)
-                              ? null
-                              : action),
+                              if (draft.errorKey != null)
+                                Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Text(draft.errorKey!.tr(),
+                                        key: const Key('management_save_error'),
+                                        style: managementStyle(context,
+                                            size: 14,
+                                            color: context.glass.navSelected))),
+                            ]),
+                        if (floatingSelection)
+                          Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: buttonBottom,
+                              child: nextButton),
+                      ])),
+                      if (!floatingSelection) nextButton,
                       if (draft.groupId != null &&
                           draft.step == GroupEditorStep.review)
                         SizedBox(
@@ -323,12 +342,13 @@ class _GroupEditorBody extends ConsumerWidget {
                                             weight: FontWeight.w600,
                                             color: context.glass.navSelected)
                                         .copyWith(height: 28 / 18)))),
-                      SizedBox(
-                          height: draft.groupId != null &&
-                                  draft.step == GroupEditorStep.review
-                              ? 10
-                              : (100 - MediaQuery.paddingOf(context).bottom)
-                                  .clamp(16, 100)),
+                      if (!floatingSelection)
+                        SizedBox(
+                            height: draft.groupId != null &&
+                                    draft.step == GroupEditorStep.review
+                                ? 10
+                                : (100 - MediaQuery.paddingOf(context).bottom)
+                                    .clamp(16, 100)),
                     ])))));
   }
 }

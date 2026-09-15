@@ -16,6 +16,8 @@
 
 ## Figma 재설계 사용자 확정 (2026-09-15, 구현 중)
 
+- **페이지별 버튼 구조 검수 (2026-09-16 사용자 지시):** Figma의 하단 버튼이 스크롤 내부인지, 별도 영역 고정인지, 콘텐츠 위에 겹치는 플로팅인지 구분한다. 활성/비활성 조건·좌우/하단 위치·SafeArea·마지막 항목 접근성까지 확인하고 모든 페이지를 동일한 footer 구조로 일괄 치환하지 않는다. 그룹 구성원 선택의 선택 버튼은 콘텐츠 위에 고정하며 목록이 뒤로 스크롤된다.
+
 - 새 디자인·동작의 확정 기준은 [`docs/superpowers/specs/2026-09-15-figma-redesign-approved-design.md`](docs/superpowers/specs/2026-09-15-figma-redesign-approved-design.md)다. 해당 재설계 구현에서는 아래 과거 결정과 충돌할 경우 이 확정 기획을 우선한다.
 - [7단계 구현계획](docs/superpowers/plans/2026-09-15-figma-redesign-implementation.md), [서버 담당·직접 수행 구분](docs/handoffs/2026-09-15-redesign-server-work-split.md)을 함께 읽는다.
 - 사용자가 전체 자동 구현을 승인했다. `codex/figma-redesign-20260915` 작업 트리에 Home·Camera·MyCre·통합 BLE·그룹/개체 관리·메모/계정별 숨김 UI와 저장소·라우트를 구현했다. [구현 결과와 검증](docs/design-audits/2026-09-15-redesign-implementation-results.md)을 현재 상태 기준으로 읽는다.

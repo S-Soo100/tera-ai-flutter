@@ -75,6 +75,17 @@ void main() {
           key: ManagementKey(kind: ManagementKind.camera, id: 'c2'),
           name: '카메라 2',
           hardwareId: 'p4cam-extra'),
+      if (const bool.fromEnvironment('CAPTURE_FLOATING')) ...[
+        for (var i = 2; i <= 3; i++)
+          ManagementItem(
+              key: ManagementKey(kind: ManagementKind.device, id: 'd$i'),
+              name: '사육장 $i',
+              hardwareId: 'viva-iot-000$i'),
+        const ManagementItem(
+            key: ManagementKey(kind: ManagementKind.pet, id: 'p2'),
+            name: '모모',
+            subtitle: '아잔틱 릴리 화이트'),
+      ],
     ]);
     final repo = RedesignGroupRepository(
         loadRows: (_) async => [],
@@ -138,6 +149,14 @@ void main() {
     await tester.tap(find.text('추가 · 변경'));
     await tester.pumpAndSettle();
     await capture('management-group-selection');
+    if (const bool.fromEnvironment('CAPTURE_FLOATING')) {
+      final cta = find.byKey(const Key('management_group_next'));
+      final before = tester.getRect(cta);
+      await tester.drag(find.byType(ListView), const Offset(0, -450));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(cta), before);
+      await capture('management-group-selection-scrolled');
+    }
     expect(tester.takeException(), isNull);
   });
 }

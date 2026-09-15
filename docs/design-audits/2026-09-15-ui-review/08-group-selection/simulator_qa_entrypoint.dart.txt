@@ -163,7 +163,11 @@ final _pet = Pet(id:'p',name:'모모',speciesId:'crested-gecko',speciesName:'크
 final _inventory = ManagementInventory(groups:[const ManagementGroup(id:'g',name:'사육 환경 1',number:1)],items:[
  const ManagementItem(key:ManagementKey(kind:ManagementKind.device,id:'d'),name:'거실 사육장',hardwareId:'viva-iot-0001',groupId:'g',isOnline:true),
  const ManagementItem(key:ManagementKey(kind:ManagementKind.camera,id:'c'),name:'관찰 카메라',hardwareId:'FB2_P4_CAM-0001',groupId:'g',isOnline:true),
- const ManagementItem(key:ManagementKey(kind:ManagementKind.pet,id:'p'),name:'모모',groupId:'g',subtitle:'아잔틱 릴리 화이트')]);
+ const ManagementItem(key:ManagementKey(kind:ManagementKind.pet,id:'p'),name:'모모',groupId:'g',subtitle:'아잔틱 릴리 화이트'),
+ const ManagementItem(key:ManagementKey(kind:ManagementKind.device,id:'d2'),name:'사육장 2',hardwareId:'viva-iot-0002'),
+ const ManagementItem(key:ManagementKey(kind:ManagementKind.device,id:'d3'),name:'사육장 3',hardwareId:'viva-iot-0003'),
+ const ManagementItem(key:ManagementKey(kind:ManagementKind.camera,id:'c2'),name:'카메라 2',hardwareId:'FB2_P4_CAM-0002'),
+ const ManagementItem(key:ManagementKey(kind:ManagementKind.pet,id:'p2'),name:'크랑이',subtitle:'아잔틱 릴리 화이트')]);
 // Synthetic illustration only: not measurements or husbandry guidance.
 final _reviewDay = DateTime(2026,9,13);
 double _round1(double n) => (n*10).round()/10;
