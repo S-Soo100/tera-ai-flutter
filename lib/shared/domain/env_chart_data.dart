@@ -119,8 +119,8 @@ class EnvChartData {
     for (final b in buckets) {
       final t = b.tAvg;
       final h = b.hAvg;
-      if (t != null && t > 0) temps.add(t);
-      if (h != null && h > 0) humids.add(h);
+      if (t != null && t.isFinite && t > 0) temps.add(t);
+      if (h != null && h.isFinite && h > 0) humids.add(h);
     }
 
     final tempAxis = AxisBounds.forValues(temps, minStep: tempStep);
@@ -134,7 +134,7 @@ class EnvChartData {
       final out = <({double x, double y})>[];
       for (final b in buckets) {
         final v = pick(b);
-        if (v == null || v <= 0) continue;
+        if (v == null || !v.isFinite || v <= 0) continue;
         final x = b.bucket.difference(from).inMicroseconds / span;
         if (x < 0 || x > 1) continue; // 구간 밖 버킷은 버린다.
         out.add((x: x, y: axis.normalize(v)));

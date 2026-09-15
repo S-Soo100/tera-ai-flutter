@@ -1,0 +1,61 @@
+-- REVIEW DRAFT ONLY. Not applied to any database. Remote DDL/RLS audit required.
+-- Coordinate all group/device/camera/pet writers with Lee before deployment.
+-- Run before redesign_groups.sql; commit only as a separately reviewed migration.
+begin;
+-- A removed profile remains available to its original activity/media records.
+-- The application and restrictive SELECT policy hide tombstoned profiles.
+alter table public.pets add column if not exists deleted_at timestamptz;
+create table if not exists public.pet_camera_assignments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id),
+  pet_id uuid references public.pets(id) on delete set null,
+  pet_identity uuid not null,
+  camera_id uuid not null references public.cameras(id) on delete restrict,
+  group_id uuid references public.enclosures(id) on delete set null,
+  start_at timestamptz,
+  end_at timestamptz,
+  origin text not null check (origin in ('recorded','legacy_inherited')),
+  created_at timestamptz not null default now(),
+  check (origin = 'legacy_inherited' or start_at is not null),
+  check (end_at is null or start_at is null or end_at > start_at)
+);
+create unique index if not exists pet_camera_assignment_open
+  on public.pet_camera_assignments(user_id,pet_identity,camera_id) where end_at is null;
+create index if not exists pet_camera_assignment_read
+  on public.pet_camera_assignments(user_id,pet_identity,created_at);
+alter table public.pet_camera_assignments enable row level security;
+drop policy if exists assignment_owner_read on public.pet_camera_assignments;
+create policy assignment_owner_read on public.pet_camera_assignments
+  for select to authenticated using (user_id=auth.uid());
+revoke all on public.pet_camera_assignments from anon, authenticated;
+grant select on public.pet_camera_assignments to authenticated;
+
+-- Internal helper. Caller holds the shared owner advisory lock and mutates all
+-- relationships in the SAME transaction. It is never exposed as an app RPC.
+create or replace function public.redesign_reconcile_assignments(p_user_id uuid,p_at timestamptz)
+returns void language plpgsql security definer set search_path=pg_catalog,public as $$
+begin
+  if p_user_id is null or p_at is null then raise exception 'Missing owner/time'; end if;
+  -- Closed rows survive reassignment, pet deletion and removal of empty groups.
+  update public.pet_camera_assignments a set end_at=greatest(p_at,coalesce(a.start_at,p_at)+interval '1 microsecond')
+  where a.user_id=p_user_id and a.end_at is null and not exists (
+    select 1 from public.pets p join public.cameras c on c.enclosure_id=p.enclosure_id
+    where p.id=a.pet_id and c.id=a.camera_id and p.user_id=p_user_id
+      and c.owner_id=p_user_id and p.enclosure_id=a.group_id and p.deleted_at is null);
+  insert into public.pet_camera_assignments(user_id,pet_id,pet_identity,camera_id,group_id,start_at,origin)
+  select p_user_id,p.id,p.id,c.id,p.enclosure_id,p_at,'recorded'
+  from public.pets p join public.cameras c on c.enclosure_id=p.enclosure_id
+  where p.user_id=p_user_id and c.owner_id=p_user_id and p.deleted_at is null
+    and not exists (select 1 from public.pet_camera_assignments a
+      where a.user_id=p_user_id and a.pet_identity=p.id and a.camera_id=c.id and a.end_at is null);
+end $$;
+revoke all on function public.redesign_reconcile_assignments(uuid,timestamptz) from public,anon,authenticated;
+
+-- IMPORTANT: No automatic legacy backfill. Old nightly report queried all owned
+-- cameras, not each pet. Keep /my-pets/reports unchanged. Import legacy_inherited
+-- rows only from an audited pre-cutover scope; unknown starts remain NULL, never
+-- pet.created_at. Newly registered animals never receive legacy rows.
+-- All non-app writers must use the same owner lock and call this helper. Current
+-- REST DELETE devices/cameras is NOT compatible (hard cascade); soft unlink and
+-- historical-owner access need the backend owner's separate deployment.
+rollback;

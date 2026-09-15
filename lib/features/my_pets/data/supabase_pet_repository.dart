@@ -87,25 +87,33 @@ class SupabasePetRepository {
       'memo': pet.memo,
     });
 
+    if (_client.auth.currentUser?.id != userId) return;
     await _cacheBox.put(pet.id, pet);
   }
 
   Future<void> updatePet(Pet pet) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw StateError('Not authenticated');
     pet.updatedAt = DateTime.now();
-    await _client.from('pets').update({
-      'name': pet.name,
-      'species_id': pet.speciesId,
-      'species_name': pet.speciesName,
-      'morph': pet.morph,
-      'sex': pet.sex,
-      'birth_date': pet.birthDate?.toIso8601String(),
-      'adoption_date': pet.adoptionDate?.toIso8601String(),
-      'weight': pet.weight,
-      'avatar_url': pet.photoPath,
-      'memo': pet.memo,
-      'updated_at': pet.updatedAt.toIso8601String(),
-    }).eq('id', pet.id);
+    await _client
+        .from('pets')
+        .update({
+          'name': pet.name,
+          'species_id': pet.speciesId,
+          'species_name': pet.speciesName,
+          'morph': pet.morph,
+          'sex': pet.sex,
+          'birth_date': pet.birthDate?.toIso8601String(),
+          'adoption_date': pet.adoptionDate?.toIso8601String(),
+          'weight': pet.weight,
+          'avatar_url': pet.photoPath,
+          'memo': pet.memo,
+          'updated_at': pet.updatedAt.toIso8601String(),
+        })
+        .eq('id', pet.id)
+        .eq('user_id', userId);
 
+    if (_client.auth.currentUser?.id != userId) return;
     await _cacheBox.put(pet.id, pet);
   }
 
@@ -127,8 +135,13 @@ class SupabasePetRepository {
         .eq('user_id', userId)
         .order('updated_at', ascending: false);
 
+    if (_client.auth.currentUser?.id != userId) return;
     await _cacheBox.clear();
     for (final row in data) {
+      if (_client.auth.currentUser?.id != userId) return;
+      // Older deployments omit this column. Deleted profiles retain source
+      // activity/media rows but no longer appear in any app selection.
+      if (row['deleted_at'] != null) continue;
       final pet = petFromRow(Map<String, dynamic>.from(row as Map));
       await _cacheBox.put(pet.id, pet);
     }

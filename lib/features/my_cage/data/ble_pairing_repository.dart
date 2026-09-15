@@ -33,6 +33,18 @@ const _kConnectTimeoutSec = 15;
 
 sealed class BlePairingEvent {}
 
+class BleNameOk extends BlePairingEvent {}
+
+class BleJwtOk extends BlePairingEvent {
+  BleJwtOk(this.length);
+  final int length;
+}
+
+class BlePairOk extends BlePairingEvent {
+  BlePairOk(this.hardwareId);
+  final String hardwareId;
+}
+
 /// WiFi 스캔 완료 — 확정된 AP 목록.
 class BleScanComplete extends BlePairingEvent {
   final List<WifiAccessPoint> accessPoints;
@@ -271,6 +283,23 @@ class BlePairingRepository {
       return;
     }
 
+    if (msg == 'NAME_OK') {
+      _eventController.add(BleNameOk());
+      return;
+    }
+    if (msg.startsWith('JWT_OK ')) {
+      final length = int.tryParse(msg.substring(7));
+      if (length != null) _eventController.add(BleJwtOk(length));
+      return;
+    }
+    if (msg.startsWith('JWT_CHUNK ')) return;
+    if (msg.startsWith('PAIR_OK ')) {
+      final id = msg.substring(8).trim();
+      if (id.isNotEmpty && !id.contains(' ')) {
+        _eventController.add(BlePairOk(id));
+      }
+      return;
+    }
     // ── 설정 흐름 ──
     if (msg == 'SSID_OK') {
       _eventController.add(BleSsidOk());
@@ -356,6 +385,19 @@ class BlePairingRepository {
 
     await _write(rx, 'CONNECT');
   }
+
+  /// Exact APP_INTEGRATION.md §6 protocol. Never log command contents.
+  /// flutter_blue_plus defaults to debug and may print characteristic bytes.
+  /// Disable SDK/native tracing before sending Wi-Fi credentials or a JWT.
+  Future<void> suppressCredentialLogging() =>
+      FlutterBluePlus.setLogLevel(LogLevel.none);
+
+  /// ATT reserves 3 bytes, and JWT: reserves 4 more. iOS negotiates MTU
+  /// itself, so 200 is a ceiling, never an assumption about writable payload.
+  int get jwtChunkSize => ((_connectedDevice?.mtuNow ?? 23) - 7).clamp(1, 200);
+
+  Future<void> sendPairingCommand(String command) =>
+      _write(_requireRx(), command);
 
   BluetoothCharacteristic _requireRx() {
     final rx = _rxChar;

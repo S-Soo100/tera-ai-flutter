@@ -17,14 +17,21 @@ class EnclosureSet {
   final TerraCamera? camera;
   final Pet? pet;
 
+  /// View-only adapter for a device without a group, never a group write target.
+  final bool isUngroupedDevice;
+
   const EnclosureSet({
     required this.enclosure,
     required this.device,
     required this.camera,
     required this.pet,
+    this.isUngroupedDevice = false,
   });
 
   String get id => enclosure.id;
+  String? get groupId => isUngroupedDevice ? null : enclosure.id;
+  String get homeLabel =>
+      isUngroupedDevice ? device?.name ?? enclosure.name : enclosure.name;
 
   DeviceMode get mode {
     final hasCam = camera != null;
