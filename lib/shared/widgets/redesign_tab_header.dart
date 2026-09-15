@@ -49,19 +49,71 @@ class RedesignTabHeader extends StatelessWidget {
                           tooltip:
                               choices.firstWhere((c) => c.id == selected).label,
                           offset: const Offset(0, 44),
-                          elevation: 0,
-                          color: glass.surfaceTint,
+                          elevation: 6,
+                          shadowColor: glass.textPrimary.withValues(alpha: .12),
+                          constraints:
+                              const BoxConstraints.tightFor(width: 200),
+                          menuPadding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          color: glass.surfaceHeader,
+                          surfaceTintColor: glass.surfaceHeader,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                           onSelected: onSelected,
                           itemBuilder: (_) => [
-                            for (final choice in choices)
-                              PopupMenuItem(
-                                  value: choice.id,
-                                  child: Text(choice.label,
-                                      style: style,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis))
+                            for (var i = 0; i < choices.length; i++)
+                              PopupMenuItem<String>(
+                                  value: choices[i].id,
+                                  height: 44,
+                                  padding: EdgeInsets.zero,
+                                  child: Container(
+                                      constraints:
+                                          const BoxConstraints(minHeight: 44),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12),
+                                      decoration: BoxDecoration(
+                                          border: i < choices.length - 1
+                                              ? Border(
+                                                  bottom: BorderSide(
+                                                      color: glass.border))
+                                              : null),
+                                      child: Row(children: [
+                                        Expanded(
+                                            child: Text(choices[i].label,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: style.copyWith(
+                                                    fontSize: 18,
+                                                    color: choices[i].id ==
+                                                            selected
+                                                        ? glass.textPrimary
+                                                        : glass.textSecondary,
+                                                    letterSpacing: -.36,
+                                                    height: 28 / 18,
+                                                    fontWeight: choices[i].id ==
+                                                            selected
+                                                        ? FontWeight.w700
+                                                        : FontWeight.w500))),
+                                        if (choices[i].id == selected) ...[
+                                          const SizedBox(width: 8),
+                                          ConstrainedBox(
+                                              constraints: const BoxConstraints(
+                                                  maxWidth: 80),
+                                              child: Text(
+                                                  'redesign_selected'.tr(),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: style.copyWith(
+                                                      fontSize: 18,
+                                                      letterSpacing: -.36,
+                                                      height: 28 / 18,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          glass.navSelected))),
+                                        ],
+                                      ]))),
                           ],
                           child: Container(
                               key: pillKey,
@@ -84,8 +136,7 @@ class RedesignTabHeader extends StatelessWidget {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis)),
                                     const SizedBox(width: 4),
-                                    FigmaIcon.tinted(
-                                        'redesign_v2/arrow_drop_down',
+                                    FigmaIcon.tinted(FigmaIcons.dropdown,
                                         key: arrowKey,
                                         color: glass.textSecondary,
                                         size: 24),
