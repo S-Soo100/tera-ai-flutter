@@ -26,11 +26,13 @@ class MyCreActivityScreen extends ConsumerWidget {
       required this.onAddPet,
       required this.onOpenLegacyReports,
       this.assignmentNotice,
-      this.onEditPet});
+      this.onEditPet,
+      this.onConnectCamera});
   final Widget header;
   final Pet? pet;
   final String? userId;
-  final bool hasCameraConnection;
+  final bool? hasCameraConnection;
+  final VoidCallback? onConnectCamera;
   final List<ActivityAssignment> assignments;
   final VoidCallback onAddPet;
   final VoidCallback onOpenLegacyReports;
@@ -116,7 +118,8 @@ class MyCreActivityScreen extends ConsumerWidget {
         petId: selected.id,
         window: week,
         assignments: assignments);
-    final canQuery = userId != null && assignments.isNotEmpty;
+    final unlinked = hasCameraConnection == false;
+    final canQuery = !unlinked && userId != null && assignments.isNotEmpty;
     final dayAsync = canQuery
         ? ref.watch(activityDataProvider(dayQuery))
         : const AsyncData(ActivityData());
@@ -157,12 +160,64 @@ class MyCreActivityScreen extends ConsumerWidget {
                           children: [
                             ActivityPetHeader(pet: selected, onEdit: onEditPet),
                             if (assignmentNotice != null) assignmentNotice!,
-                            if (!hasCameraConnection)
+                            if (unlinked)
                               Padding(
-                                  padding: const EdgeInsets.only(top: 12),
-                                  child: Text('activity_no_connection'.tr(),
-                                      key:
-                                          const Key('activity_no_connection'))),
+                                  padding: const EdgeInsets.only(
+                                      top: 20, bottom: 20),
+                                  child: Column(children: [
+                                    Text('activity_connect_camera_hint'.tr(),
+                                        key:
+                                            const Key('activity_no_connection'),
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                                fontSize: 16,
+                                                height: 1.193359375,
+                                                letterSpacing: -.32,
+                                                fontWeight: FontWeight.w500,
+                                                color: context
+                                                    .glass.bodySecondary)),
+                                    const SizedBox(height: 16),
+                                    SizedBox(
+                                        height: 56,
+                                        child: FilledButton(
+                                            key: const Key(
+                                                'activity_connect_camera'),
+                                            onPressed: onConnectCamera,
+                                            style: FilledButton.styleFrom(
+                                                backgroundColor:
+                                                    context.glass.navSelected,
+                                                foregroundColor: context
+                                                    .glass.buttonForeground,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 24),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            28))),
+                                            child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  FigmaIcon.tinted(
+                                                      FigmaIcons.add,
+                                                      size: 24,
+                                                      color: context.glass
+                                                          .buttonForeground),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                      'activity_connect_camera'
+                                                          .tr(),
+                                                      style: const TextStyle(
+                                                          fontSize: 18,
+                                                          height: 28 / 18,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          letterSpacing: -.36)),
+                                                ]))),
+                                  ])),
                             const SizedBox(height: 20),
                             _DateRow(
                                 label: DateFormat('yyyy. M. d')
@@ -181,8 +236,8 @@ class MyCreActivityScreen extends ConsumerWidget {
                                     context, ref, scope, day, today, false)),
                             const SizedBox(height: 12),
                             _Summary(
-                                total: daily.seconds,
-                                average: average.seconds,
+                                total: unlinked ? 0 : daily.seconds,
+                                average: unlinked ? 0 : average.seconds,
                                 weekly: false),
                             const SizedBox(height: 12),
                             if (dayAsync.isLoading)
@@ -190,16 +245,17 @@ class MyCreActivityScreen extends ConsumerWidget {
                             else
                               ActivityDayChart(
                                   key: const Key('activity_day_chart'),
-                                  hours: daily.hours),
-                            _DataStatus(
-                                async: dayAsync,
-                                estimated: daily.isEstimated,
-                                beforeConnection: daily.state ==
-                                    ActivityObservation.beforeConnection,
-                                inProgress: daily.state ==
-                                    ActivityObservation.inProgress,
-                                onRetry: () => ref.invalidate(
-                                    activityDataProvider(dayQuery))),
+                                  hours: unlinked ? const [] : daily.hours),
+                            if (!unlinked)
+                              _DataStatus(
+                                  async: dayAsync,
+                                  estimated: daily.isEstimated,
+                                  beforeConnection: daily.state ==
+                                      ActivityObservation.beforeConnection,
+                                  inProgress: daily.state ==
+                                      ActivityObservation.inProgress,
+                                  onRetry: () => ref.invalidate(
+                                      activityDataProvider(dayQuery))),
                             const SizedBox(height: 40),
                             _DateRow(
                                 label:
@@ -221,8 +277,8 @@ class MyCreActivityScreen extends ConsumerWidget {
                                     _pickDate(context, ref, scope, week, today, true)),
                             const SizedBox(height: 12),
                             _Summary(
-                                total: weekly.seconds,
-                                average: weekly.average.seconds,
+                                total: unlinked ? 0 : weekly.seconds,
+                                average: unlinked ? 0 : weekly.average.seconds,
                                 weekly: true),
                             const SizedBox(height: 12),
                             if (weekAsync.isLoading)
@@ -230,13 +286,14 @@ class MyCreActivityScreen extends ConsumerWidget {
                             else
                               ActivityWeekChart(
                                   key: const Key('activity_week_chart'),
-                                  days: weekly.days),
-                            _DataStatus(
-                                async: weekAsync,
-                                estimated: weekly.isEstimated,
-                                inProgress: week.endUtc.isAfter(now),
-                                onRetry: () => ref.invalidate(
-                                    activityDataProvider(weekQuery))),
+                                  days: unlinked ? const [] : weekly.days),
+                            if (!unlinked)
+                              _DataStatus(
+                                  async: weekAsync,
+                                  estimated: weekly.isEstimated,
+                                  inProgress: week.endUtc.isAfter(now),
+                                  onRetry: () => ref.invalidate(
+                                      activityDataProvider(weekQuery))),
                             const SizedBox(height: 20),
                             Text('activity_camera_attribution'.tr(),
                                 style: Theme.of(context)

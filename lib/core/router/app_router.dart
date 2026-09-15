@@ -355,6 +355,20 @@ GoRouter buildAppRouter({
                 kind: kind, itemId: state.pathParameters['id']!);
           }),
       GoRoute(
+          path: '/device-groups/connect-camera',
+          builder: (context, state) {
+            final target = state.extra;
+            return GroupEditorScreen(
+                selectMembers: true,
+                groupId: target is ({String? groupId, ManagementKey member})
+                    ? target.groupId
+                    : null,
+                initialMember:
+                    target is ({String? groupId, ManagementKey member})
+                        ? target.member
+                        : null);
+          }),
+      GoRoute(
           path: '/groups/new',
           builder: (context, state) => GroupEditorScreen(
               initialMember: state.extra is ManagementKey

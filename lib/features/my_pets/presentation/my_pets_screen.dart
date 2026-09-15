@@ -6,6 +6,7 @@ import '../../../shared/widgets/redesign_tab_header.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../home/domain/group_display_label.dart';
 import '../../my_cage/presentation/my_cage_providers.dart';
+import '../../my_cage/domain/redesign_management.dart';
 import 'my_cre_activity_screen.dart';
 import 'my_pets_providers.dart';
 import 'pet_assignment_providers.dart';
@@ -21,7 +22,7 @@ class MyPetsScreen extends ConsumerWidget {
     final selected =
         pets.where((p) => p.id == selectedId).firstOrNull ?? pets.firstOrNull;
     final groups = ref.watch(enclosuresProvider).valueOrNull ?? const [];
-    final cameras = ref.watch(camerasProvider).valueOrNull ?? const [];
+    final camerasAsync = ref.watch(camerasProvider);
     final assignments = selected == null
         ? null
         : ref.watch(petCameraAssignmentsProvider(selected.id));
@@ -51,8 +52,18 @@ class MyPetsScreen extends ConsumerWidget {
                   ref.read(selectedMyCrePetIdProvider.notifier).state = id)),
       pet: selected,
       userId: userId,
-      hasCameraConnection: selected?.enclosureId != null &&
-          cameras.any((c) => c.enclosureId == selected!.enclosureId),
+      hasCameraConnection: selected?.enclosureId == null
+          ? false
+          : camerasAsync.isLoading || camerasAsync.hasError
+              ? null
+              : camerasAsync.value!
+                  .any((c) => c.enclosureId == selected!.enclosureId),
+      onConnectCamera: selected == null
+          ? null
+          : () => context.push('/device-groups/connect-camera', extra: (
+                groupId: selected.enclosureId,
+                member: ManagementKey(kind: ManagementKind.pet, id: selected.id)
+              )),
       assignments: assignments?.valueOrNull ?? const [],
       assignmentNotice: assignments?.hasError == true
           ? TextButton(

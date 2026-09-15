@@ -7,6 +7,41 @@ import 'package:vivanaut/features/my_pets/presentation/my_cre_activity_screen.da
 import 'package:vivanaut/shared/widgets/figma_icon.dart';
 
 void main() {
+  for (final connection in <bool?>[false, null, true]) {
+    testWidgets(
+        'only confirmed unlinked camera displays initial zero: $connection',
+        (tester) async {
+      var connects = 0;
+      await tester.pumpWidget(ProviderScope(
+          child: MaterialApp(
+              theme: AppTheme.light,
+              home: MyCreActivityScreen(
+                  header: const Text('header'),
+                  userId: null,
+                  pet: Pet(
+                      id: 'p',
+                      name: 'Pet',
+                      speciesId: 's',
+                      speciesName: 'Gecko'),
+                  hasCameraConnection: connection,
+                  assignments: const [],
+                  onAddPet: () {},
+                  onConnectCamera: () => connects++,
+                  onOpenLegacyReports: () {}))));
+      await tester.pump();
+      if (connection == false) {
+        expect(find.text('--'), findsNothing);
+        expect(find.text('activity_duration'), findsNWidgets(4));
+        await tester.tap(find.byKey(const Key('activity_connect_camera')));
+        expect(connects, 1);
+      } else {
+        expect(find.text('--'), findsAtLeastNWidgets(4));
+        expect(find.text('activity_duration'), findsNothing);
+        expect(find.byKey(const Key('activity_connect_camera')), findsNothing);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
   testWidgets('empty profile offers registration and preserves old reports',
       (tester) async {
     var added = 0;
