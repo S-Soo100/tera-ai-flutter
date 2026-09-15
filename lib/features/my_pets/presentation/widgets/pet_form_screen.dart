@@ -251,7 +251,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                                                 children: [
                                                   FigmaIcon.tinted(
                                                       'redesign_v2/add_photo_alternate',
-                                                      color: p.textTertiary,
+                                                      color: p.deviceOff,
                                                       size: 40),
                                                   Text(
                                                       'pet_form_photo_add'.tr(),
@@ -354,9 +354,18 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                                           _change((d) => d.copyWith(sex: sex)),
                                       child: Container(
                                           height: 40,
-                                          color: d.sex == sex
-                                              ? AppTheme.brandNavy
-                                              : p.surfaceTint,
+                                          decoration: BoxDecoration(
+                                              color: d.sex == sex
+                                                  ? AppTheme.brandNavy
+                                                  : p.surfaceTint,
+                                              border: (sex == 'male' &&
+                                                          d.sex == 'unknown') ||
+                                                      (sex == 'female' &&
+                                                          d.sex == 'male')
+                                                  ? Border(
+                                                      right: BorderSide(
+                                                          color: p.border))
+                                                  : null),
                                           child: Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.center,
