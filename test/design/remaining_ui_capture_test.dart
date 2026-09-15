@@ -47,6 +47,8 @@ import 'package:vivanaut/features/home/presentation/home_screen.dart';
 import 'package:vivanaut/features/home/presentation/schedule_providers.dart';
 import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart';
 import '../features/home/schedule_fixtures.dart';
+import 'package:vivanaut/features/my_cage/presentation/highlights_screen.dart';
+import '../features/my_cage/highlight_fixtures.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/my_cage/data/lcd_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/device.dart';
@@ -854,6 +856,34 @@ void main() {
       await capture(tester, boundary, 'p10-editor-$d');
       await tester.tap(find.byTooltip('뒤로'));
       await tester.pumpAndSettle();
+    }
+    debugDisableShadows = true;
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('P12 highlights captures', (tester) async {
+    debugDisableShadows = false;
+    final boundary = GlobalKey();
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    for (final (name, dismissed) in [
+      ('p12-highlights', null),
+      ('p12-highlights-dismissed', 'cam/2026-08-31'),
+    ]) {
+      await tester
+          .pumpWidget(shell(boundary, const HighlightsScreen(), overrides: [
+        highlightGroupsProvider
+            .overrideWith((ref) async => figmaHighlightGroups()),
+        highlightBannerStoreProvider
+            .overrideWith((ref) => FakeHighlightBannerStore(dismissed)),
+        motionThumbnailFileProvider.overrideWith((ref, clipId) async => null),
+        isFavoriteProvider
+            .overrideWith((ref, id) => id == 'g0c1' || id == 'g0c5'),
+        currentUserProvider.overrideWith((ref) => null),
+      ]));
+      await capture(tester, boundary, name);
     }
     debugDisableShadows = true;
     await tester.binding.setSurfaceSize(null);

@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/highlight_group.dart';
+import '../domain/highlight_publication.dart';
 import '../domain/nightly_highlight.dart';
 import 'clip_playlist_player_screen.dart';
 import 'my_cage_providers.dart';
@@ -25,6 +26,11 @@ final highlightsDayFilterProvider =
     StateProvider.autoDispose<DateTime?>((ref) => null);
 
 /// 하이라이트 상세 — 하루(20:00 KST 경계, 서버 day_key) 묶음 보기.
+///
+/// 2026-09-16 Figma 1081:5235(P12): 묶음은 날짜(공개 배치의 실제 촬영 구간)
+/// 헤더 + **3열 연속 그리드**(Camera Home과 같은 [ClipGrid])다. 전폭 대표
+/// 카드·시각 라벨은 원본에 없어 뺐다. 재생 순서(rank)·play_from_sec·읽음
+/// 처리·배너 dismiss는 그대로다.
 ///
 /// 2026-09-11 `/highlights/featured` 전환: 묶음([highlightGroupsProvider])은
 /// 서버 day_key 그대로, **⭐ 대표만** 보여준다. 후보는 화면에서 완전히 뺐다
@@ -186,7 +192,7 @@ class HighlightsScreen extends ConsumerWidget {
         if (showBanner) ...[
           _ArrivalBanner(
             group: newest,
-            label: nightLabel(newest.dayKey, now),
+            label: periodLabel(newest, now),
             onDismiss: () => ref
                 .read(highlightBannerDismissedProvider.notifier)
                 .dismiss(batchKey),
@@ -224,6 +230,30 @@ class HighlightsScreen extends ConsumerWidget {
         .tr(namedArgs: {'month': '${date.month}', 'day': '${date.day}'});
   }
 
+  /// 묶음·배너 날짜 — 공개 배치의 **실제 촬영 구간**(`capture_start~end`)이
+  /// 있을 때만 "2026. 8. 28 - 8. 31"(Figma 1081:5235) 서식으로 그린다. 없으면
+  /// 밤 라벨([nightLabel])로 남긴다 — 원본 예시 날짜를 고정하거나 배치를
+  /// 합성하지 않는다.
+  static String periodLabel(DayHighlightGroup group, DateTime now) {
+    final publication = group.featured
+        .map((h) => h.publication)
+        .whereType<HighlightPublication>()
+        .firstOrNull;
+    if (publication == null) return nightLabel(group.dayKey, now);
+    return formatPeriod(
+        publication.captureStart.toLocal(), publication.captureEnd.toLocal());
+  }
+
+  /// `2026. 8. 28 - 8. 31` / 같은 날이면 `2026. 8. 31` / 해가 다르면 둘 다 연도.
+  static String formatPeriod(DateTime start, DateTime end) {
+    final s = DateFormat('yyyy. M. d').format(start);
+    if (_isSameDay(start, end)) return s;
+    final e = start.year == end.year
+        ? DateFormat('M. d').format(end)
+        : DateFormat('yyyy. M. d').format(end);
+    return '$s - $e';
+  }
+
   static Widget _sectionHeader(BuildContext context, String text) {
     return Text(
       text,
@@ -233,6 +263,7 @@ class HighlightsScreen extends ConsumerWidget {
         fontFamily: 'Pretendard',
         fontSize: 16,
         fontWeight: FontWeight.w600,
+        height: 19.09375 / 16,
         letterSpacing: 16 * -0.02,
         color: context.glass.textSecondary,
       ),
@@ -279,10 +310,13 @@ class _ArrivalBanner extends ConsumerWidget {
                 children: [
                   Text(
                     'crecam_highlights_banner_title'.tr(),
+                    // Figma 1081:5235 — 18/700 lh21.48, 14/500 lh16.7. 폰트
+                    // 기본 행간을 두면 배너가 8 늘어난다(2026-09-16 실측).
                     style: TextStyle(
                       fontFamily: 'Pretendard',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
+                      height: 21.48046875 / 18,
                       letterSpacing: 18 * -0.02,
                       color: glass.mediaTitle,
                     ),
@@ -294,6 +328,7 @@ class _ArrivalBanner extends ConsumerWidget {
                       fontFamily: 'Pretendard',
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
+                      height: 16.70703125 / 14,
                       letterSpacing: 14 * -0.02,
                       color: glass.mediaMeta,
                     ),
@@ -375,8 +410,10 @@ class _BannerThumbStack extends StatelessWidget {
   }
 }
 
-/// day_key 묶음 섹션 — 헤더("어젯밤" 등) + ⭐ 대표 카드(rank 순, 카메라가
-/// 여러 대면 카메라별 시간대 상한 적용분). 후보는 그리지 않는다(2026-09-11).
+/// day_key 묶음 섹션 — 날짜 헤더(16/600, Figma 1081:5235 y405.3) + 8 + ⭐ 대표
+/// 3열 그리드(rank 순, 셀 121.67×113·갭 2·바깥 모서리 r12). 후보는 그리지
+/// 않는다(2026-09-11). 순위·움직임·클립 수 배지와 판정 사유는 표시하지
+/// 않는다(2026-09-11 사용자 지시) — 데이터는 정렬(rank)에만 쓴다.
 class _Section extends StatelessWidget {
   const _Section({required this.group, required this.now});
 
@@ -389,88 +426,36 @@ class _Section extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         HighlightsScreen._sectionHeader(
-            context, HighlightsScreen.nightLabel(group.dayKey, now)),
+            context, HighlightsScreen.periodLabel(group, now)),
         const SizedBox(height: 8),
-        for (final h in group.featured) ...[
-          _FeaturedCard(highlight: h, playlist: group.featured),
-          const SizedBox(height: 12),
-        ],
+        ClipGrid<NightlyHighlight>(
+          items: group.featured,
+          cellBuilder: (h) => _Cell(
+              highlight: h,
+              playlist: group.featured,
+              keyPrefix: 'highlight_featured_'),
+        ),
       ],
     );
   }
 }
 
-/// ⭐ 대표 카드 — 썸네일(16:9) + 시각.
-/// 탭 → 세로 플레이어(재생목록 = 그 묶음 대표, rank 순).
-///
-/// 순위·움직임·클립 수 배지와 판정 사유·사람 확정 체크는 **표시하지 않는다**
-/// (2026-09-11 사용자 지시 — 규칙 진단 정보는 관리자 라벨러 웹 몫, 고객
-/// 화면에는 내부 판정 문구를 노출하지 않는다). 데이터 자체는 도메인에 남아
-/// 정렬(rank)에만 쓰인다.
-class _FeaturedCard extends StatelessWidget {
-  const _FeaturedCard({required this.highlight, required this.playlist});
-
-  final NightlyHighlight highlight;
-  final List<NightlyHighlight> playlist;
-
-  @override
-  Widget build(BuildContext context) {
-    final glass = context.glass;
-
-    return GestureDetector(
-      key: ValueKey('highlight_featured_${highlight.clipId}'),
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _openPlayer(context, highlight.clipId, playlist),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  MotionClipThumb(
-                      clipId: highlight.clipId, cameraId: highlight.cameraId),
-                  // Figma 668:679 — 즐겨찾기한 하이라이트는 좌하단 북마크 표시.
-                  Positioned(
-                    left: 0,
-                    bottom: 0,
-                    child: FavoriteBookmarkBadge(clipId: highlight.clipId),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            DateFormat('HH:mm').format(highlight.startedAt.toLocal()),
-            style: TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: glass.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 날짜 필터용 소형 썸네일 셀 — 탭 → 세로 플레이어(재생목록 = 그 날짜의
-/// 대표, 시간 내림차순).
+/// 그리드 썸네일 셀(묶음·날짜 필터 공용) — 탭 → 세로 플레이어(재생목록 =
+/// 그 묶음 대표 rank 순 / 그 날짜의 대표 시간 내림차순).
 class _Cell extends StatelessWidget {
-  const _Cell({required this.highlight, required this.playlist});
+  const _Cell(
+      {required this.highlight,
+      required this.playlist,
+      this.keyPrefix = 'highlight_cell_'});
 
   final NightlyHighlight highlight;
   final List<NightlyHighlight> playlist;
+  final String keyPrefix;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      key: ValueKey('highlight_cell_${highlight.clipId}'),
+      key: ValueKey('$keyPrefix${highlight.clipId}'),
       behavior: HitTestBehavior.opaque,
       onTap: () => _openPlayer(context, highlight.clipId, playlist),
       child: Stack(
@@ -520,7 +505,7 @@ void _openPlayer(
   );
 }
 
-/// 로딩 스켈레톤 — 배너 면 + 헤더 줄 + 대표 카드 한 장(shimmer, CPI 금지).
+/// 로딩 스켈레톤 — 배너 면 + 헤더 줄 + 그리드 한 줄(shimmer, CPI 금지).
 class _Skeleton extends StatelessWidget {
   const _Skeleton();
 
@@ -543,15 +528,13 @@ class _Skeleton extends StatelessWidget {
         SkeletonLoading(width: 140, height: 16),
         SizedBox(height: 8),
         AspectRatio(
-          aspectRatio: 16 / 9,
+          aspectRatio: 369 / 113,
           child: SkeletonLoading(
             width: double.infinity,
             height: double.infinity,
             borderRadius: 12,
           ),
         ),
-        SizedBox(height: 8),
-        SkeletonLoading(width: 200, height: 14),
       ],
     );
   }
