@@ -1,6 +1,6 @@
 # Figma 후속 구현 결과 — 2026-09-15
 
-앱 구현: **완료, 0.107.7+218 / e45f5c9**. 작업 트리 `.worktrees/redesign-20260915`, 브랜치 `codex/figma-redesign-20260915`. 운영 서버·DB 변경 없음. 이번 구현 커밋은 로컬에 저장했으며 push하지 않았다.
+앱 구현: **계획 항목 반영, 0.107.7+218 / e45f5c9**. 후속 재검수에서 시각·문구 차이6개가 확인되어 **Figma 일치 완료 판정은 보류**한다. [재검수 상세](2026-09-15-followup-comparison-analysis.md). 작업 트리 `.worktrees/redesign-20260915`, 브랜치 `codex/figma-redesign-20260915`. 운영 서버·DB 변경 없음. 이번 구현 커밋은 로컬에 저장했으며 push하지 않았다.
 
 [16장 비교 페이지](2026-09-15-followup-captures/preview.html) · [그룹 삭제 서버 추가 요청서](../handoffs/2026-09-15-group-delete-atomic-contract.md)
 
