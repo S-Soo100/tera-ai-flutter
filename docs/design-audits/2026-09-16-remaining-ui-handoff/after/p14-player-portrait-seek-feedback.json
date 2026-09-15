@@ -81,12 +81,22 @@
     "type": "Text",
     "text": "+10s",
     "rect": [
-      265.79068422317505,
+      245.29068422317505,
       292.03125,
       30.6124210357666,
       17.0
     ],
     "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/fast_forward",
+    "rect": [
+      279.90310525894165,
+      287.53125,
+      26.0,
+      26.0
+    ]
   },
   {
     "type": "InkWell",

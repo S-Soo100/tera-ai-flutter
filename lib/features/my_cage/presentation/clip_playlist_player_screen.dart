@@ -720,8 +720,8 @@ class _ClipPlaylistPlayerScreenState
                                         builder: (context, c) => SizedBox(
                                             width: math.min(510, c.maxWidth),
                                             child: _thumbnailStrip()))),
-                              if (ref.watch(playerPlaylistErrorProvider(
-                                  _orientationKey)))
+                              if (ref.watch(
+                                  playerPlaylistErrorProvider(_orientationKey)))
                                 _playlistRetry(),
                             ])),
                   ])),
@@ -732,43 +732,46 @@ class _ClipPlaylistPlayerScreenState
     return Scaffold(
         body: Stack(fit: StackFit.expand, children: [
       Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      CrecamDetailHeaderArea(child: _topBar(glass, startedAt)),
-      Expanded(
-          child: SafeArea(
-              top: false,
-              child: LayoutBuilder(
-                  builder: (context, outer) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          SizedBox(
-                              height: math.min(84, outer.maxHeight * 0.13)),
-                          _videoArea(glass, outer),
-                          SizedBox(
-                              height: 16,
-                              child: _SeekBar(
-                                  onSeek: _seekTo,
-                                  controller:
-                                      _initialized ? _controller : null)),
-                          Visibility(
-                              visible: controlsVisible,
-                              maintainSize: true,
-                              maintainState: true,
-                              maintainAnimation: true,
-                              child: _controlRow(glass)),
-                          const Spacer(),
-                          _navigationActions(glass, clip, isFav),
-                          if (_playlist.length > 1) ...[
-                            const SizedBox(height: 12),
-                            _thumbnailStrip()
+        CrecamDetailHeaderArea(child: _topBar(glass, startedAt)),
+        Expanded(
+            child: SafeArea(
+                top: false,
+                child: LayoutBuilder(
+                    builder: (context, outer) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SizedBox(
+                                height: math.min(84, outer.maxHeight * 0.13)),
+                            _videoArea(glass, outer),
+                            SizedBox(
+                                height: 16,
+                                child: _SeekBar(
+                                    onSeek: _seekTo,
+                                    controller:
+                                        _initialized ? _controller : null)),
+                            Visibility(
+                                visible: controlsVisible,
+                                maintainSize: true,
+                                maintainState: true,
+                                maintainAnimation: true,
+                                child: _controlRow(glass)),
+                            const Spacer(),
+                            _navigationActions(glass, clip, isFav),
+                            if (_playlist.length > 1) ...[
+                              const SizedBox(height: 12),
+                              _thumbnailStrip()
+                            ],
+                            if (ref.watch(
+                                playerPlaylistErrorProvider(_orientationKey)))
+                              _playlistRetry(),
+                            // Figma 941:1834 — 스트립 하단 y764, 홈 인디케이터 위 54
+                            // (본문 712 기준 7.6%). 작은 화면(320×568)은 비율로
+                            // 줄여 11px overflow를 막는다(회귀 2026-09-16).
+                            SizedBox(
+                                height: math.min(54, outer.maxHeight * 0.076)),
                           ],
-                          if (ref.watch(
-                              playerPlaylistErrorProvider(_orientationKey)))
-                            _playlistRetry(),
-                          // Figma 941:1834 — 스트립 하단 y764, 홈 인디케이터 위 54.
-                          const SizedBox(height: 54),
-                        ],
-                      )))),
-    ]),
+                        )))),
+      ]),
       if (_downloading) const _DownloadOverlay(),
     ]));
   }
@@ -1093,10 +1096,12 @@ class _ClipPlaylistPlayerScreenState
                   onTap: () => ref
                       .read(playerOrientationProvider(_orientationKey).notifier)
                       .toggle(),
-                  // 원본 가로는 zoom_in_map(축소) 그림이나 자산 미확보 —
-                  // expand를 유지한다(P17 자산 목록).
-                  child: FigmaIcon.tinted(FigmaIcons.expand,
-                      color: glass.textPrimary, size: 36)),
+                  // 세로=zoom_out_map(expand), 가로=zoom_in_map(축소) —
+                  // 둘 다 Figma 36 export(941:1834/1928).
+                  child: FigmaIcon.tinted(
+                      landscape ? FigmaIcons.zoomInMap : FigmaIcons.expand,
+                      color: glass.textPrimary,
+                      size: 36)),
             ])));
   }
 
@@ -1126,31 +1131,30 @@ class _ClipPlaylistPlayerScreenState
             color: glass.surfaceTint, borderRadius: BorderRadius.circular(24)),
         child: MediaQuery.withClampedTextScaling(
             maxScaleFactor: 1.2,
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(DateFormat('yyyy. MM. dd').format(startedAt.toLocal()),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontFamily: 'Pretendard',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.32,
-                          height: 19 / 16,
-                          color: glass.textPrimary)),
-                  const SizedBox(height: 2),
-                  Text(formatAmPmTime(startedAt.toLocal()),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontFamily: 'Pretendard',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.28,
-                          height: 17 / 14,
-                          color: glass.mediaMeta)),
-                ])));
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Text(DateFormat('yyyy. MM. dd').format(startedAt.toLocal()),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.32,
+                      height: 19 / 16,
+                      color: glass.textPrimary)),
+              const SizedBox(height: 2),
+              Text(formatAmPmTime(startedAt.toLocal()),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.28,
+                      height: 17 / 14,
+                      color: glass.mediaMeta)),
+            ])));
   }
 
   /// 가로 44 원형 버튼 (Figma Button/Enabled — #F4F4F4 r22, 그림 24).
@@ -1172,7 +1176,8 @@ class _ClipPlaylistPlayerScreenState
                       onTap: onTap,
                       child: Center(
                           child: FigmaIcon.tinted(asset,
-                              size: 24, color: context.glass.textSecondary))))));
+                              size: 24,
+                              color: context.glass.textSecondary))))));
 
   /// 가로 우상단 알약 (Figma Frame 135 — 276×48 r24): 삭제 44 + 12 +
   /// 다운로드·공유·메모·북마크 44 동작면(간격 8).
@@ -1200,7 +1205,8 @@ class _ClipPlaylistPlayerScreenState
   }
 
   /// 다운로드 → 공유 → 메모 → 북마크 (Figma 941:1834 순서), 44 동작면·간격 8.
-  List<Widget> _actionButtons(GlassPalette glass, MotionClip? clip, bool isFav) {
+  List<Widget> _actionButtons(
+      GlassPalette glass, MotionClip? clip, bool isFav) {
     final color = glass.textPrimary;
     Widget action(String asset, String tooltip, VoidCallback? onTap) {
       return SizedBox(
@@ -1249,9 +1255,9 @@ class _ClipPlaylistPlayerScreenState
   }
 }
 
-/// 더블탭 ±10초 피드백 칩 (Figma 941:1928 Toast_V — 34 r24 #1E1E1E,
-/// 14/600 #FAFAFA). 원본의 fast_forward 26 글리프는 자산 미확보라 문구만
-/// 그린다(P17 자산 목록).
+/// 더블탭 ±10초 피드백 칩 (Figma 941:1928 Toast_V — 77×34 r24 #1E1E1E,
+/// 안쪽 8, 문구 14/600 #FAFAFA + 4 + fast_forward 26). 되감기는 같은
+/// 글리프를 좌우 반전해 문구 앞에 둔다(원본에 fast_rewind export 없음).
 class _SeekFeedbackChip extends StatelessWidget {
   const _SeekFeedbackChip({required this.seconds});
   final int seconds;
@@ -1259,23 +1265,39 @@ class _SeekFeedbackChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
+    final forward = seconds > 0;
+    final label = Text('${forward ? '+' : '-'}${seconds.abs()}s',
+        style: TextStyle(
+            fontFamily: 'Pretendard',
+            fontSize: 14,
+            height: 16.70703125 / 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.28,
+            color: glass.buttonForeground));
+    final glyph = Transform.flip(
+        flipX: !forward,
+        child: FigmaIcon.tinted(FigmaIcons.fastForward,
+            size: 26, color: glass.buttonForeground));
     return Container(
         key: const Key('player_seek_feedback'),
         height: 34,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
             color: glass.textPrimary, borderRadius: BorderRadius.circular(24)),
         // alignment를 주면 Container가 가로로 늘어나 Align 위치가 무의미해진다.
         child: Center(
             widthFactor: 1,
-            child: Text('${seconds > 0 ? '+' : '-'}${seconds.abs()}s',
-            style: TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 14,
-                height: 16.70703125 / 14,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.28,
-                color: glass.buttonForeground))));
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (forward) ...[
+                label,
+                const SizedBox(width: 4),
+                glyph
+              ] else ...[
+                glyph,
+                const SizedBox(width: 4),
+                label
+              ],
+            ])));
   }
 }
 

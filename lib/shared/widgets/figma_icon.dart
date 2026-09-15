@@ -45,8 +45,15 @@ abstract final class FigmaIcons {
   static const envHumidity = 'final_humidity';
   static const close = 'close';
   static const cancel = 'redesign_v2/cancel';
+
   /// 44 프레임 export(글리프 17×19 가운데) — 예약 목록 휴지통(Figma 1106:5317).
   static const trash = 'redesign_v2/delete';
+
+  /// 플레이어 가로 축소(36) — 세로의 [expand](zoom_out_map)와 짝(Figma 941:1928).
+  static const zoomInMap = 'redesign_v2/zoom_in_map';
+
+  /// ±10초 피드백 칩 글리프 26(Figma 941:1928 Toast_V). 되감기는 좌우 반전.
+  static const fastForward = 'redesign_v2/fast_forward';
   static const arrowPrevious = 'arrow_previous';
   static const arrowNext = 'arrow_next';
   static const download = 'download';
