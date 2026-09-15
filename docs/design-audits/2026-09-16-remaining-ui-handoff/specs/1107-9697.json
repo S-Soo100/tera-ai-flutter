@@ -1,0 +1,175 @@
+{
+  "frame": {
+    "id": "1107:9697",
+    "name": "Modal- 삭제",
+    "section": "home",
+    "bounds": {
+      "x": 15488.630859375,
+      "y": -6398,
+      "width": 345,
+      "height": 144
+    },
+    "text": [
+      "예약을 삭제하시겠습니까?",
+      "취소",
+      "삭제"
+    ],
+    "file": "1107-9697.png",
+    "task": "P10",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1107:9697",
+      "name": "Modal- 삭제",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0,
+        "width": 345,
+        "height": 144
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1107:9698",
+      "name": "예약을 삭제하시겠습니까?",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 24,
+        "width": 297,
+        "height": 28
+      },
+      "characters": "예약을 삭제하시겠습니까?",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 18,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "1107:9699",
+      "name": "Frame 172",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 76,
+        "width": 297,
+        "height": 44
+      }
+    },
+    {
+      "id": "1107:9700",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 76,
+        "width": 142.5,
+        "height": 44
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1107:9701",
+      "name": "취소",
+      "type": "TEXT",
+      "rect": {
+        "x": 81.25,
+        "y": 84,
+        "width": 28,
+        "height": 28
+      },
+      "characters": "취소",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    },
+    {
+      "id": "1107:9702",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 178.5,
+        "y": 76,
+        "width": 142.5,
+        "height": 44
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1107:9703",
+      "name": "삭제",
+      "type": "TEXT",
+      "rect": {
+        "x": 235.75,
+        "y": 84,
+        "width": 28,
+        "height": 28
+      },
+      "characters": "삭제",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    }
+  ]
+}

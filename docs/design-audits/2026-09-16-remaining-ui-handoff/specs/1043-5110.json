@@ -1,0 +1,787 @@
+{
+  "frame": {
+    "id": "1043:5110",
+    "name": "Camera_empty",
+    "section": "connection",
+    "bounds": {
+      "x": 4865,
+      "y": -844,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "Home",
+      "Camera",
+      "MyCre",
+      "Community",
+      "카메라를 추가하고\n밤 사이의 하이라이트 영상을 받아보세요",
+      "기기 추가"
+    ],
+    "file": "1043-5110.png",
+    "task": "P06",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1043:5110",
+      "name": "Camera_empty",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1043:5111",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I1043:5111;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1043:5111;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I1043:5111;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1043:5111;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I1043:5111;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I1043:5111;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "1043:5112",
+      "name": "Frame 53",
+      "type": "FRAME",
+      "rect": {
+        "x": 281,
+        "y": 62,
+        "width": 100,
+        "height": 44
+      }
+    },
+    {
+      "id": "1043:5113",
+      "name": "discover_tune",
+      "type": "FRAME",
+      "rect": {
+        "x": 281,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "id": "1043:5115",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 337,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "1043:5116",
+      "name": "person",
+      "type": "GROUP",
+      "rect": {
+        "x": 347,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1043:5117",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 347,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:5119",
+      "name": "Navigation",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 772,
+        "width": 393,
+        "height": 80
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1043:5120",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 44.5,
+        "y": 784,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1043:5121",
+      "name": "home",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 58.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1043:5121;849:2083",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 58.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:5122",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 54.5,
+        "y": 812,
+        "width": 32,
+        "height": 14
+      },
+      "characters": "Home",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:5123",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 128.5,
+        "y": 784,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1043:5124",
+      "name": "camera_video",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 142.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1043:5124;849:2086",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 142.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:5125",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 133.5,
+        "y": 812,
+        "width": 42,
+        "height": 14
+      },
+      "characters": "Camera",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ]
+    },
+    {
+      "id": "1043:5126",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 212.5,
+        "y": 784,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1043:5127",
+      "name": "fertile",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 226.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1043:5127;849:2092",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 226.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:5128",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 220.5,
+        "y": 812,
+        "width": 36,
+        "height": 14
+      },
+      "characters": "MyCre",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1043:5129",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 296.5,
+        "y": 784,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1043:5130",
+      "name": "mode_comment",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 310.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1043:5130;849:2089",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 310.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:5131",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 292,
+        "y": 812,
+        "width": 61,
+        "height": 14
+      },
+      "characters": "Community",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1043:5891",
+      "name": "Frame 200",
+      "type": "FRAME",
+      "rect": {
+        "x": 24,
+        "y": 250,
+        "width": 345,
+        "height": 353
+      }
+    },
+    {
+      "id": "1063:7310",
+      "name": "Empty_02",
+      "type": "FRAME",
+      "rect": {
+        "x": 24,
+        "y": 250,
+        "width": 345,
+        "height": 227
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1063:7311",
+      "name": "Group 24",
+      "type": "GROUP",
+      "rect": {
+        "x": 78.1719,
+        "y": 291.6392,
+        "width": 236.65625,
+        "height": 156.72216796875
+      }
+    },
+    {
+      "id": "1063:7312",
+      "name": "Ellipse 38",
+      "type": "ELLIPSE",
+      "rect": {
+        "x": 175.5293,
+        "y": 427.0854,
+        "width": 133.80712890625,
+        "height": 21.27587890625
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f3f3f3"
+        }
+      ]
+    },
+    {
+      "id": "1063:7313",
+      "name": "Ellipse 37",
+      "type": "ELLIPSE",
+      "rect": {
+        "x": 85.7383,
+        "y": 406.4521,
+        "width": 129.8671875,
+        "height": 28.51025390625
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f3f3f3"
+        }
+      ]
+    },
+    {
+      "id": "1063:7314",
+      "name": "camera_video",
+      "type": "FRAME",
+      "rect": {
+        "x": 78.1719,
+        "y": 291.6392,
+        "width": 145,
+        "height": 146
+      }
+    },
+    {
+      "id": "1063:7315",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 78.1719,
+        "y": 291.6392,
+        "width": 145,
+        "height": 146
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1063:7318",
+      "name": "Thumbs",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 187.2852,
+        "y": 376.4165,
+        "width": 112.29541015625,
+        "height": 63.33837890625
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafbfd"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1063:7319",
+      "name": "play_arrow",
+      "type": "GROUP",
+      "rect": {
+        "x": 224.4326,
+        "y": 390.0854,
+        "width": 36,
+        "height": 36
+      }
+    },
+    {
+      "id": "1063:7320",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 224.4326,
+        "y": 390.0854,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1043:5671",
+      "name": "카메라를 추가하고 밤 사이의 하이라이트 영상을 받아보세요",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 493,
+        "width": 345,
+        "height": 38
+      },
+      "characters": "카메라를 추가하고\n밤 사이의 하이라이트 영상을 받아보세요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1043:5136",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 125.5,
+        "y": 547,
+        "width": 142,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ],
+      "cornerRadius": 29.5
+    },
+    {
+      "id": "1043:5137",
+      "name": "add",
+      "type": "GROUP",
+      "rect": {
+        "x": 149.5,
+        "y": 563,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1043:5138",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 149.5,
+        "y": 563,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:5140",
+      "name": "기기 추가",
+      "type": "TEXT",
+      "rect": {
+        "x": 177.5,
+        "y": 561,
+        "width": 66,
+        "height": 28
+      },
+      "characters": "기기 추가",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    }
+  ]
+}

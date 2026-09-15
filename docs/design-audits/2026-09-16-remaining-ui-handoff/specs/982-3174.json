@@ -1,0 +1,2786 @@
+{
+  "frame": {
+    "id": "982:3174",
+    "name": "네트워크 비밀번호",
+    "section": "connection",
+    "bounds": {
+      "x": 7400,
+      "y": 412,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "WiFi 연결",
+      "WiFi 비밀 번호 입력",
+      "선택한 네트워크: iptime_office",
+      "|",
+      "비밀번호 기억하기",
+      "기기 추가",
+      "“The”",
+      "the",
+      "to",
+      "space",
+      "return",
+      "ABC",
+      "z",
+      "x",
+      "c",
+      "v",
+      "b",
+      "n",
+      "m",
+      "􀆛",
+      "􀆝",
+      "a",
+      "s",
+      "d",
+      "f",
+      "g",
+      "h",
+      "j",
+      "k",
+      "l",
+      "q",
+      "w",
+      "e",
+      "r",
+      "t",
+      "y",
+      "u",
+      "i",
+      "o",
+      "p"
+    ],
+    "file": "982-3174.png",
+    "task": "P04",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "982:3174",
+      "name": "네트워크 비밀번호",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "982:3175",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I982:3175;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I982:3175;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I982:3175;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I982:3175;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I982:3175;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I982:3175;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "982:3177",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 466,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "982:3181",
+      "name": "WiFi 연결",
+      "type": "TEXT",
+      "rect": {
+        "x": 161.5,
+        "y": 480,
+        "width": 70,
+        "height": 28
+      },
+      "characters": "WiFi 연결",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    },
+    {
+      "id": "982:3191",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 122,
+        "width": 369,
+        "height": 46
+      }
+    },
+    {
+      "id": "982:3192",
+      "name": "WiFi 비밀 번호 입력",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 122,
+        "width": 345,
+        "height": 21
+      },
+      "characters": "WiFi 비밀 번호 입력",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 21.48046875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3193",
+      "name": "선택한 네트워크: iptime_office",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 151,
+        "width": 345,
+        "height": 17
+      },
+      "characters": "선택한 네트워크: iptime_office",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "982:3412",
+      "name": "FieldWrap",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 184,
+        "width": 369,
+        "height": 101
+      }
+    },
+    {
+      "id": "982:3195",
+      "name": "Field",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 184,
+        "width": 369,
+        "height": 65
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "982:3196",
+      "name": "cursor",
+      "type": "TEXT",
+      "rect": {
+        "x": 29,
+        "y": 207,
+        "width": 6,
+        "height": 19
+      },
+      "characters": "|",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d61619"
+        }
+      ]
+    },
+    {
+      "id": "982:3241",
+      "name": "visibility",
+      "type": "GROUP",
+      "rect": {
+        "x": 340,
+        "y": 204.5,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3236",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 340,
+        "y": 204.5,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3334",
+      "name": "remember",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 261,
+        "width": 134,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3342",
+      "name": "check_box_outline_blank",
+      "type": "GROUP",
+      "rect": {
+        "x": 20,
+        "y": 261,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3337",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 20,
+        "y": 261,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3263",
+      "name": "비밀번호 기억하기",
+      "type": "TEXT",
+      "rect": {
+        "x": 48,
+        "y": 264.5,
+        "width": 98,
+        "height": 17
+      },
+      "characters": "비밀번호 기억하기",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3411",
+      "name": "TopNav",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 62,
+        "width": 369,
+        "height": 44
+      }
+    },
+    {
+      "id": "982:3226",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "982:3227",
+      "name": "arrow_back_ios_new",
+      "type": "GROUP",
+      "rect": {
+        "x": 22,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3228",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 22,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3185",
+      "name": "기기 추가",
+      "type": "TEXT",
+      "rect": {
+        "x": 168,
+        "y": 74.5,
+        "width": 58,
+        "height": 19
+      },
+      "characters": "기기 추가",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "982:3186",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 338,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "982:3187",
+      "name": "close",
+      "type": "GROUP",
+      "rect": {
+        "x": 348,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3188",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 348,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "990:9761",
+      "name": "Keyboard - iPhone",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 565,
+        "width": 393,
+        "height": 287
+      }
+    },
+    {
+      "id": "I990:9761;537:155368",
+      "name": "Background",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 541,
+        "width": 393,
+        "height": 336
+      },
+      "fills": [
+        {
+          "opacity": 0.8999999761581421,
+          "blendMode": "LUMINOSITY",
+          "type": "SOLID",
+          "color": "#555555"
+        },
+        {
+          "opacity": 0.8700000047683716,
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#56585c"
+        },
+        {
+          "blendMode": "COLOR_DODGE",
+          "type": "SOLID",
+          "color": "#939393"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;135:63469",
+      "name": "Accessory Bar",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 568,
+        "width": 402,
+        "height": 43
+      }
+    },
+    {
+      "id": "I990:9761;135:64001",
+      "name": "Autocorrection",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 570,
+        "width": 402,
+        "height": 39
+      }
+    },
+    {
+      "id": "I990:9761;135:64001;119:56629",
+      "name": "Autocomplete Suggestion",
+      "type": "FRAME",
+      "rect": {
+        "x": 1,
+        "y": 570,
+        "width": 127.33333587646484,
+        "height": 39
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ebedf0"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;135:64001;119:56630",
+      "name": "“The”",
+      "type": "TEXT",
+      "rect": {
+        "x": 1,
+        "y": 570,
+        "width": 127.33333587646484,
+        "height": 39
+      },
+      "characters": "“The”",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.4300000071525574,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;135:64001;135:64717",
+      "name": "Separator (Clear)",
+      "type": "FRAME",
+      "rect": {
+        "x": 130.3335,
+        "y": 577,
+        "width": 5,
+        "height": 25
+      }
+    },
+    {
+      "id": "I990:9761;135:64001;135:64718",
+      "name": "Separator",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 132.3335,
+        "y": 577,
+        "width": 1,
+        "height": 25
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;135:64001;119:56595",
+      "name": "Autocomplete Suggestion",
+      "type": "FRAME",
+      "rect": {
+        "x": 137.3335,
+        "y": 570,
+        "width": 127.33332824707031,
+        "height": 39
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;135:64001;119:56596",
+      "name": "the",
+      "type": "TEXT",
+      "rect": {
+        "x": 137.3335,
+        "y": 570,
+        "width": 127.33332824707031,
+        "height": 39
+      },
+      "characters": "the",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.4300000071525574,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;135:64001;135:64443",
+      "name": "Separator",
+      "type": "FRAME",
+      "rect": {
+        "x": 266.6665,
+        "y": 577,
+        "width": 5,
+        "height": 25
+      }
+    },
+    {
+      "id": "I990:9761;135:64001;135:64444",
+      "name": "Separator",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 268.6665,
+        "y": 577,
+        "width": 1,
+        "height": 25
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;135:64001;119:56663",
+      "name": "Autocomplete Suggestion",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.6665,
+        "y": 570,
+        "width": 127.33332824707031,
+        "height": 39
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;135:64001;119:56664",
+      "name": "to",
+      "type": "TEXT",
+      "rect": {
+        "x": 273.6665,
+        "y": 570,
+        "width": 127.33332824707031,
+        "height": 39
+      },
+      "characters": "to",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.4300000071525574,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;117:76299",
+      "name": "Spacer",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 0,
+        "y": 562,
+        "width": 393,
+        "height": 5
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffff00"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211",
+      "name": "Keyboard Layouts",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 567,
+        "width": 393,
+        "height": 204
+      }
+    },
+    {
+      "id": "I990:9761;118:55211;118:54762",
+      "name": "Row 4",
+      "type": "FRAME",
+      "rect": {
+        "x": 101,
+        "y": 729,
+        "width": 191,
+        "height": 42
+      }
+    },
+    {
+      "id": "I990:9761;118:55211;118:54763",
+      "name": "Space",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 101,
+        "y": 729,
+        "width": 191,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54763;536:125289",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 101,
+        "y": 729,
+        "width": 191,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54763;208:52903",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 101,
+        "y": 729,
+        "width": 191,
+        "height": 42
+      },
+      "characters": "space",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.3100000023841858,
+        "lineHeightPx": 21
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54764",
+      "name": "Return",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 298,
+        "y": 729,
+        "width": 91.99999237060547,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54764;536:125575",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 298,
+        "y": 729,
+        "width": 92,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "COLOR_BURN",
+          "type": "SOLID",
+          "color": "#8f8f8f"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54764;118:62484",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 298,
+        "y": 729,
+        "width": 92,
+        "height": 42
+      },
+      "characters": "return",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.3100000023841858,
+        "lineHeightPx": 21
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54765",
+      "name": "Keyboard Switch",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 3,
+        "y": 729,
+        "width": 91.99999237060547,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54765;536:126105",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 3,
+        "y": 729,
+        "width": 92,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "COLOR_BURN",
+          "type": "SOLID",
+          "color": "#8f8f8f"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54765;107:59928",
+      "name": "ABC",
+      "type": "TEXT",
+      "rect": {
+        "x": 3,
+        "y": 729,
+        "width": 92,
+        "height": 42
+      },
+      "characters": "ABC",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.3100000023841858,
+        "lineHeightPx": 21
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54766",
+      "name": "Row 3",
+      "type": "FRAME",
+      "rect": {
+        "x": 62,
+        "y": 675,
+        "width": 269,
+        "height": 42
+      }
+    },
+    {
+      "id": "I990:9761;118:55211;118:54767",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 62,
+        "y": 675,
+        "width": 33.28571319580078,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54767;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 62,
+        "y": 675,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54767;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 73,
+        "y": 679,
+        "width": 12,
+        "height": 28
+      },
+      "characters": "z",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54769",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 101.2856,
+        "y": 675,
+        "width": 33.28571701049805,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54769;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 101.2856,
+        "y": 675,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54769;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 112.2856,
+        "y": 679,
+        "width": 12,
+        "height": 28
+      },
+      "characters": "x",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54771",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 140.5713,
+        "y": 675,
+        "width": 33.28571319580078,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54771;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 140.5713,
+        "y": 675,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54771;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 151.5713,
+        "y": 679,
+        "width": 13,
+        "height": 28
+      },
+      "characters": "c",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54773",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 179.8569,
+        "y": 675,
+        "width": 33.28571319580078,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54773;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 179.8569,
+        "y": 675,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54773;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 190.8569,
+        "y": 679,
+        "width": 13,
+        "height": 28
+      },
+      "characters": "v",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54775",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 219.1431,
+        "y": 675,
+        "width": 33.28571319580078,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54775;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 219.1431,
+        "y": 675,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54775;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 229.1431,
+        "y": 679,
+        "width": 15,
+        "height": 28
+      },
+      "characters": "b",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54777",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 258.4287,
+        "y": 675,
+        "width": 33.28571319580078,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54777;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 258.4287,
+        "y": 675,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54777;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 268.4287,
+        "y": 679,
+        "width": 14,
+        "height": 28
+      },
+      "characters": "n",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54779",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 297.7144,
+        "y": 675,
+        "width": 33.28571319580078,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54779;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 297.7144,
+        "y": 675,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54779;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 304.7144,
+        "y": 679,
+        "width": 21,
+        "height": 28
+      },
+      "characters": "m",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54780",
+      "name": "Delete Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 346,
+        "y": 675,
+        "width": 44.000003814697266,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54780;536:126174",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 346,
+        "y": 675,
+        "width": 44,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "COLOR_BURN",
+          "type": "SOLID",
+          "color": "#8f8f8f"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54780;118:62363",
+      "name": "Delete",
+      "type": "TEXT",
+      "rect": {
+        "x": 355,
+        "y": 682,
+        "width": 26,
+        "height": 28
+      },
+      "characters": "􀆛",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 20,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54781",
+      "name": "Shift Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 3,
+        "y": 675,
+        "width": 44.000003814697266,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54781;536:126177",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 3,
+        "y": 675,
+        "width": 44,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "COLOR_BURN",
+          "type": "SOLID",
+          "color": "#8f8f8f"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54781;118:62408",
+      "name": "􀆝",
+      "type": "TEXT",
+      "rect": {
+        "x": 13,
+        "y": 682,
+        "width": 25,
+        "height": 28
+      },
+      "characters": "􀆝",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 20,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54782",
+      "name": "Row 2",
+      "type": "FRAME",
+      "rect": {
+        "x": 23,
+        "y": 621,
+        "width": 347,
+        "height": 42
+      }
+    },
+    {
+      "id": "I990:9761;118:55211;118:54783",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 23,
+        "y": 621,
+        "width": 33.22222137451172,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54783;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 23,
+        "y": 621,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54783;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 34,
+        "y": 625,
+        "width": 13,
+        "height": 28
+      },
+      "characters": "a",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54785",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 62.2222,
+        "y": 621,
+        "width": 33.22222137451172,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54785;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 62.2222,
+        "y": 621,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54785;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 73.2222,
+        "y": 625,
+        "width": 12,
+        "height": 28
+      },
+      "characters": "s",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54787",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 101.4443,
+        "y": 621,
+        "width": 33.22222137451172,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54787;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 101.4443,
+        "y": 621,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54787;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 111.4443,
+        "y": 625,
+        "width": 15,
+        "height": 28
+      },
+      "characters": "d",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54789",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 140.6665,
+        "y": 621,
+        "width": 33.22221755981445,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54789;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 140.6665,
+        "y": 621,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54789;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 153.6665,
+        "y": 625,
+        "width": 8,
+        "height": 28
+      },
+      "characters": "f",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54791",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 179.8887,
+        "y": 621,
+        "width": 33.22222137451172,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54791;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 179.8887,
+        "y": 621,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54791;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 189.8887,
+        "y": 625,
+        "width": 14,
+        "height": 28
+      },
+      "characters": "g",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54793",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 219.1113,
+        "y": 621,
+        "width": 33.22222137451172,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54793;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 219.1113,
+        "y": 621,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54793;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 229.1113,
+        "y": 625,
+        "width": 14,
+        "height": 28
+      },
+      "characters": "h",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54795",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 258.3335,
+        "y": 621,
+        "width": 33.22222137451172,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54795;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 258.3335,
+        "y": 621,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54795;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 272.3335,
+        "y": 625,
+        "width": 6,
+        "height": 28
+      },
+      "characters": "j",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54797",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 297.5557,
+        "y": 621,
+        "width": 33.22222137451172,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54797;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 297.5557,
+        "y": 621,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54797;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 308.5557,
+        "y": 625,
+        "width": 13,
+        "height": 28
+      },
+      "characters": "k",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54799",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 336.7778,
+        "y": 621,
+        "width": 33.22222137451172,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54799;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 336.7778,
+        "y": 621,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54799;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 350.7778,
+        "y": 625,
+        "width": 6,
+        "height": 28
+      },
+      "characters": "l",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54800",
+      "name": "Row 1",
+      "type": "FRAME",
+      "rect": {
+        "x": 3,
+        "y": 567,
+        "width": 386.9999694824219,
+        "height": 42
+      }
+    },
+    {
+      "id": "I990:9761;118:55211;118:54801",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 3,
+        "y": 567,
+        "width": 33.29999542236328,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54801;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 3,
+        "y": 567,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54801;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 13,
+        "y": 571,
+        "width": 14,
+        "height": 28
+      },
+      "characters": "q",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54803",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 42.2998,
+        "y": 567,
+        "width": 33.29999923706055,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54803;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 42.2998,
+        "y": 567,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54803;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 50.2998,
+        "y": 571,
+        "width": 19,
+        "height": 28
+      },
+      "characters": "w",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54805",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 81.6001,
+        "y": 567,
+        "width": 33.29999923706055,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54805;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 81.6001,
+        "y": 567,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54805;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 91.6001,
+        "y": 571,
+        "width": 14,
+        "height": 28
+      },
+      "characters": "e",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54807",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 120.8999,
+        "y": 567,
+        "width": 33.29999923706055,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54807;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 120.8999,
+        "y": 567,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54807;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 133.8999,
+        "y": 571,
+        "width": 8,
+        "height": 28
+      },
+      "characters": "r",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54809",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 160.2002,
+        "y": 567,
+        "width": 33.29999923706055,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54809;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 160.2002,
+        "y": 567,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54809;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 173.2002,
+        "y": 571,
+        "width": 8,
+        "height": 28
+      },
+      "characters": "t",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54811",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 199.5,
+        "y": 567,
+        "width": 33.29999542236328,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54811;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 199.5,
+        "y": 567,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54811;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 210.5,
+        "y": 571,
+        "width": 13,
+        "height": 28
+      },
+      "characters": "y",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54813",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 238.7998,
+        "y": 567,
+        "width": 33.29999542236328,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54813;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 238.7998,
+        "y": 567,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54813;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 248.7998,
+        "y": 571,
+        "width": 14,
+        "height": 28
+      },
+      "characters": "u",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54815",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 278.1001,
+        "y": 567,
+        "width": 33.29999542236328,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54815;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 278.1001,
+        "y": 567,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54815;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 292.1001,
+        "y": 571,
+        "width": 6,
+        "height": 28
+      },
+      "characters": "i",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54817",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 317.3999,
+        "y": 567,
+        "width": 33.29999542236328,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54817;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 317.3999,
+        "y": 567,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54817;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 327.3999,
+        "y": 571,
+        "width": 14,
+        "height": 28
+      },
+      "characters": "o",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;118:55211;118:54819",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 356.7002,
+        "y": 567,
+        "width": 33.29999542236328,
+        "height": 42
+      },
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54819;536:126445",
+      "name": "Key",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 356.7002,
+        "y": 567,
+        "width": 33,
+        "height": 42
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 4.599999904632568
+    },
+    {
+      "id": "I990:9761;118:55211;118:54819;118:60225",
+      "name": "Q",
+      "type": "TEXT",
+      "rect": {
+        "x": 366.7002,
+        "y": 571,
+        "width": 14,
+        "height": 28
+      },
+      "characters": "p",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Regular",
+        "fontWeight": 400,
+        "fontSize": 25,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:9761;113:73016",
+      "name": "Emoji and Mic",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 771,
+        "width": 393,
+        "height": 55
+      }
+    },
+    {
+      "id": "I990:9761;106:60044",
+      "name": "Home Indicator",
+      "type": "INSTANCE",
+      "rect": {
+        "x": -4.5,
+        "y": 826,
+        "width": 402,
+        "height": 26
+      }
+    },
+    {
+      "id": "I990:9761;106:60044;106:60028",
+      "name": "Home Indicator",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 124.5,
+        "y": 839,
+        "width": 144,
+        "height": 5
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 100
+    }
+  ]
+}

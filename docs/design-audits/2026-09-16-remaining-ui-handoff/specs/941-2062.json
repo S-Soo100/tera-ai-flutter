@@ -1,0 +1,67 @@
+{
+  "frame": {
+    "id": "941:2062",
+    "name": "VideoDetail-hori",
+    "section": "camera",
+    "bounds": {
+      "x": 10903.999982821424,
+      "y": -4240.000037242103,
+      "width": 852.000017178576,
+      "height": 393.00003724210274
+    },
+    "text": [],
+    "file": "941-2062.png",
+    "task": "P14",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "941:2062",
+      "name": "VideoDetail-hori",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 852.000017178576,
+        "height": 393.00003724210274
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "941:2063",
+      "name": "Rectangle 97",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 81.2481,
+        "y": 0.0,
+        "width": 689.5044555664062,
+        "height": 393
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              0.8703944683074951,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

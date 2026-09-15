@@ -1,0 +1,1047 @@
+{
+  "frame": {
+    "id": "1081:6803",
+    "name": "Memo",
+    "section": "camera",
+    "bounds": {
+      "x": 8109.5,
+      "y": -4683,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "2026. 8.28 ",
+      "오전 10:21 ",
+      "0:12 / 1:00",
+      "북마크에 저장되었습니다"
+    ],
+    "file": "1081-6803.png",
+    "task": "P15",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1081:6803",
+      "name": "Memo",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1081:6804",
+      "name": "Thums",
+      "type": "FRAME",
+      "rect": {
+        "x": -14.5,
+        "y": 716,
+        "width": 422,
+        "height": 48
+      }
+    },
+    {
+      "id": "1081:6805",
+      "name": "Rectangle 144",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": -14.5,
+        "y": 720,
+        "width": 40,
+        "height": 40
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#7c7c7c"
+        }
+      ],
+      "cornerRadius": 4
+    },
+    {
+      "id": "1081:6806",
+      "name": "Rectangle 137",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 29.5,
+        "y": 720,
+        "width": 40,
+        "height": 40
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#7c7c7c"
+        }
+      ],
+      "cornerRadius": 4
+    },
+    {
+      "id": "1081:6807",
+      "name": "Rectangle 136",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 73.5,
+        "y": 720,
+        "width": 40,
+        "height": 40
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#7c7c7c"
+        }
+      ],
+      "cornerRadius": 4
+    },
+    {
+      "id": "1081:6808",
+      "name": "Frame 146",
+      "type": "FRAME",
+      "rect": {
+        "x": 117.5,
+        "y": 716,
+        "width": 158,
+        "height": 48
+      }
+    },
+    {
+      "id": "1081:6809",
+      "name": "Rectangle 138",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 117.5,
+        "y": 720,
+        "width": 40,
+        "height": 40
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#7c7c7c"
+        }
+      ],
+      "cornerRadius": 4
+    },
+    {
+      "id": "1081:6810",
+      "name": "Rectangle 139",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 169.5,
+        "y": 720,
+        "width": 54,
+        "height": 40
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#7c7c7c"
+        }
+      ],
+      "cornerRadius": 3
+    },
+    {
+      "id": "1081:6811",
+      "name": "Rectangle 140",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 235.5,
+        "y": 720,
+        "width": 40,
+        "height": 40
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#7c7c7c"
+        }
+      ],
+      "cornerRadius": 4
+    },
+    {
+      "id": "1081:6812",
+      "name": "Rectangle 141",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 279.5,
+        "y": 720,
+        "width": 40,
+        "height": 40
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#7c7c7c"
+        }
+      ],
+      "cornerRadius": 4
+    },
+    {
+      "id": "1081:6813",
+      "name": "Rectangle 142",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 323.5,
+        "y": 720,
+        "width": 40,
+        "height": 40
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#7c7c7c"
+        }
+      ],
+      "cornerRadius": 4
+    },
+    {
+      "id": "1081:6814",
+      "name": "Rectangle 143",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 367.5,
+        "y": 720,
+        "width": 40,
+        "height": 40
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#7c7c7c"
+        }
+      ],
+      "cornerRadius": 4
+    },
+    {
+      "id": "1081:6815",
+      "name": "Rectangle 113",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 0.0,
+        "y": 0,
+        "width": 393,
+        "height": 106
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1081:6816",
+      "name": "Rectangle 97",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 0.0,
+        "y": 190,
+        "width": 393,
+        "height": 224
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              0.8703944683074951,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:6819",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": -0.4092,
+        "y": 0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I1081:6819;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 15.5908,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1081:6819;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 48.8408,
+        "y": 22,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I1081:6819;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.0908,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1081:6819;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.3477,
+        "y": 26,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I1081:6819;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.3477,
+        "y": 26,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I1081:6819;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.3477,
+        "y": 28,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "1081:6820",
+      "name": "Frame 134",
+      "type": "FRAME",
+      "rect": {
+        "x": 151.5,
+        "y": 64,
+        "width": 90,
+        "height": 38
+      }
+    },
+    {
+      "id": "1081:6821",
+      "name": "2026. 8.28",
+      "type": "TEXT",
+      "rect": {
+        "x": 151.5,
+        "y": 64,
+        "width": 90,
+        "height": 19
+      },
+      "characters": "2026. 8.28 ",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "1081:6822",
+      "name": "오전 10:21",
+      "type": "TEXT",
+      "rect": {
+        "x": 151.5,
+        "y": 85,
+        "width": 90,
+        "height": 17
+      },
+      "characters": "오전 10:21 ",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 14,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1081:6823",
+      "name": "delete",
+      "type": "FRAME",
+      "rect": {
+        "x": 337.0,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "id": "1081:6825",
+      "name": "Frame 144",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 430,
+        "width": 369,
+        "height": 36
+      }
+    },
+    {
+      "id": "1081:6826",
+      "name": "Frame 143",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 430,
+        "width": 108,
+        "height": 36
+      }
+    },
+    {
+      "id": "1081:6827",
+      "name": "play_arrow",
+      "type": "GROUP",
+      "rect": {
+        "x": 12.0,
+        "y": 430,
+        "width": 36,
+        "height": 36
+      }
+    },
+    {
+      "id": "1081:6828",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 12.0,
+        "y": 430,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1081:6830",
+      "name": "0:12 / 1:00",
+      "type": "TEXT",
+      "rect": {
+        "x": 56.0,
+        "y": 439.5,
+        "width": 64,
+        "height": 17
+      },
+      "characters": "0:12 / 1:00",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1081:6831",
+      "name": "Frame 142",
+      "type": "FRAME",
+      "rect": {
+        "x": 297.0,
+        "y": 430,
+        "width": 84,
+        "height": 36
+      }
+    },
+    {
+      "id": "1081:6832",
+      "name": "speed_2x",
+      "type": "GROUP",
+      "rect": {
+        "x": 297.0,
+        "y": 430,
+        "width": 36,
+        "height": 36
+      }
+    },
+    {
+      "id": "1081:6833",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 297.0,
+        "y": 430,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1081:6835",
+      "name": "zoom_out_map",
+      "type": "GROUP",
+      "rect": {
+        "x": 345.0,
+        "y": 430,
+        "width": 36,
+        "height": 36
+      }
+    },
+    {
+      "id": "1081:6836",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 345.0,
+        "y": 430,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1081:6838",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "id": "1081:6839",
+      "name": "close",
+      "type": "GROUP",
+      "rect": {
+        "x": 22.0,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1081:6840",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 22.0,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1081:6842",
+      "name": "Buttons",
+      "type": "FRAME",
+      "rect": {
+        "x": 16.5,
+        "y": 656,
+        "width": 360,
+        "height": 48
+      }
+    },
+    {
+      "id": "1081:6843",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 16.5,
+        "y": 656,
+        "width": 48,
+        "height": 48
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 24
+    },
+    {
+      "id": "1081:6844",
+      "name": "arrow_back_ios_new",
+      "type": "GROUP",
+      "rect": {
+        "x": 28.5,
+        "y": 668,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1081:6845",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 28.5,
+        "y": 668,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1081:6847",
+      "name": "Frame 135",
+      "type": "FRAME",
+      "rect": {
+        "x": 88.5,
+        "y": 656,
+        "width": 216,
+        "height": 48
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 24
+    },
+    {
+      "id": "1081:6848",
+      "name": "download",
+      "type": "FRAME",
+      "rect": {
+        "x": 100.5,
+        "y": 662,
+        "width": 36,
+        "height": 36
+      }
+    },
+    {
+      "id": "1081:6850",
+      "name": "share",
+      "type": "FRAME",
+      "rect": {
+        "x": 152.5,
+        "y": 662,
+        "width": 36,
+        "height": 36
+      }
+    },
+    {
+      "id": "1084:7138",
+      "name": "sticky_note_2",
+      "type": "GROUP",
+      "rect": {
+        "x": 204.5,
+        "y": 662,
+        "width": 36,
+        "height": 36
+      }
+    },
+    {
+      "id": "1084:7133",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 204.5,
+        "y": 662,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1081:6852",
+      "name": "bookmark",
+      "type": "GROUP",
+      "rect": {
+        "x": 256.5,
+        "y": 662,
+        "width": 36,
+        "height": 36
+      }
+    },
+    {
+      "id": "1081:6853",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 256.5,
+        "y": 662,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1081:6855",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 328.5,
+        "y": 656,
+        "width": 48,
+        "height": 48
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 24
+    },
+    {
+      "id": "1081:6856",
+      "name": "arrow_back_ios_new",
+      "type": "GROUP",
+      "rect": {
+        "x": 340.5,
+        "y": 668,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1081:6857",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 340.5,
+        "y": 668,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1081:6859",
+      "name": "Rectangle 191",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 0.0,
+        "y": 715,
+        "width": 80,
+        "height": 50
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "GRADIENT_LINEAR",
+          "gradientHandlePositions": [
+            {
+              "x": 8.742702399531164e-15,
+              "y": 0.5
+            },
+            {
+              "x": 1.0000000000000087,
+              "y": 0.49999999999999994
+            },
+            {
+              "x": 8.743682829716083e-15,
+              "y": 0.5160116393203311
+            }
+          ],
+          "gradientStops": [
+            {
+              "color": "#ffffff",
+              "position": 0
+            },
+            {
+              "color": "#ffffff",
+              "position": 0.5
+            },
+            {
+              "color": "#ffffff00",
+              "position": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:6860",
+      "name": "Rectangle 192",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 313.0,
+        "y": 715,
+        "width": 80,
+        "height": 50
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "GRADIENT_LINEAR",
+          "gradientHandlePositions": [
+            {
+              "x": 8.742702399531164e-15,
+              "y": 0.5
+            },
+            {
+              "x": 1.0000000000000087,
+              "y": 0.49999999999999994
+            },
+            {
+              "x": 8.743682829716083e-15,
+              "y": 0.5160116393203311
+            }
+          ],
+          "gradientStops": [
+            {
+              "color": "#ffffff",
+              "position": 0
+            },
+            {
+              "color": "#ffffff",
+              "position": 0.5
+            },
+            {
+              "color": "#ffffff00",
+              "position": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:6889",
+      "name": "Toast",
+      "type": "FRAME",
+      "rect": {
+        "x": 68.5,
+        "y": 580,
+        "width": 256,
+        "height": 60
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 8
+    },
+    {
+      "id": "1081:6890",
+      "name": "Group 12",
+      "type": "GROUP",
+      "rect": {
+        "x": 92.5,
+        "y": 596,
+        "width": 27.999998092651367,
+        "height": 27.999998092651367
+      }
+    },
+    {
+      "id": "1081:6891",
+      "name": "Ellipse 7",
+      "type": "ELLIPSE",
+      "rect": {
+        "x": 92.5,
+        "y": 596,
+        "width": 27.999998092651367,
+        "height": 27.999998092651367
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1081:6893",
+      "name": "북마크에 저장되었습니다",
+      "type": "TEXT",
+      "rect": {
+        "x": 128.5,
+        "y": 596,
+        "width": 172,
+        "height": 28
+      },
+      "characters": "북마크에 저장되었습니다",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    }
+  ]
+}

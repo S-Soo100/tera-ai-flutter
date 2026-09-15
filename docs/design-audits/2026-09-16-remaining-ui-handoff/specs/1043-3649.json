@@ -1,0 +1,826 @@
+{
+  "frame": {
+    "id": "1043:3649",
+    "name": "iPhone 14 & 15 Pro - 217",
+    "section": "connection",
+    "bounds": {
+      "x": 9500.9375,
+      "y": 2412,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "이 사육 환경에서 키우기",
+      "나중에 하기",
+      "도마뱀을 어느 환경에서 키울까요?",
+      "도마뱀의 활동 리포트를 받아볼수 있어요",
+      "그룹 1",
+      "마뱀이네 집",
+      "그룹 2",
+      "도도도의 집"
+    ],
+    "file": "1043-3649.png",
+    "task": "P02",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1043:3649",
+      "name": "iPhone 14 & 15 Pro - 217",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1043:3650",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0.0,
+        "y": 0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I1043:3650;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16.0,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1043:3650;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I1043:3650;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1043:3650;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I1043:3650;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I1043:3650;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "1043:3670",
+      "name": "Buttons",
+      "type": "FRAME",
+      "rect": {
+        "x": 11.793,
+        "y": 696,
+        "width": 369,
+        "height": 112
+      }
+    },
+    {
+      "id": "1043:3671",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 11.793,
+        "y": 696,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1043:3672",
+      "name": "이 사육 환경에서 키우기",
+      "type": "TEXT",
+      "rect": {
+        "x": 113.793,
+        "y": 710,
+        "width": 165,
+        "height": 28
+      },
+      "characters": "이 사육 환경에서 키우기",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    },
+    {
+      "id": "1043:3673",
+      "name": "TextButton",
+      "type": "FRAME",
+      "rect": {
+        "x": 11.793,
+        "y": 752,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1043:3674",
+      "name": "나중에 하기",
+      "type": "TEXT",
+      "rect": {
+        "x": 155.793,
+        "y": 766,
+        "width": 81,
+        "height": 28
+      },
+      "characters": "나중에 하기",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:3728",
+      "name": "Frame 191",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 228,
+        "width": 345,
+        "height": 236
+      }
+    },
+    {
+      "id": "1043:3729",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 228,
+        "width": 345,
+        "height": 48
+      }
+    },
+    {
+      "id": "1043:3730",
+      "name": "도마뱀을 어느 환경에서 키울까요?",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 228,
+        "width": 345,
+        "height": 21
+      },
+      "characters": "도마뱀을 어느 환경에서 키울까요?",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 21.48046875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:3731",
+      "name": "도마뱀의 활동 리포트를 받아볼수 있어요",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 257,
+        "width": 345,
+        "height": 19
+      },
+      "characters": "도마뱀의 활동 리포트를 받아볼수 있어요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1043:3732",
+      "name": "Groups",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 300,
+        "width": 345,
+        "height": 164
+      }
+    },
+    {
+      "id": "1043:3733",
+      "name": "Group",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 300,
+        "width": 345,
+        "height": 78
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1043:3734",
+      "name": "Left",
+      "type": "FRAME",
+      "rect": {
+        "x": 40.0,
+        "y": 312,
+        "width": 197,
+        "height": 54
+      }
+    },
+    {
+      "id": "1043:3735",
+      "name": "AutoName",
+      "type": "TEXT",
+      "rect": {
+        "x": 40.0,
+        "y": 312,
+        "width": 197,
+        "height": 19
+      },
+      "characters": "그룹 1",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "1043:3736",
+      "name": "마뱀이네 집",
+      "type": "TEXT",
+      "rect": {
+        "x": 40.0,
+        "y": 347,
+        "width": 197,
+        "height": 19
+      },
+      "characters": "마뱀이네 집",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:3737",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 241.0,
+        "y": 321,
+        "width": 112,
+        "height": 36
+      }
+    },
+    {
+      "id": "1043:3738",
+      "name": "Icons",
+      "type": "FRAME",
+      "rect": {
+        "x": 241.0,
+        "y": 321,
+        "width": 80,
+        "height": 36
+      }
+    },
+    {
+      "id": "1043:3739",
+      "name": "Home",
+      "type": "FRAME",
+      "rect": {
+        "x": 241.0,
+        "y": 321,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 22
+    },
+    {
+      "id": "1043:3740",
+      "name": "home",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 249.0,
+        "y": 329,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "I1043:3740;849:2083",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 249.0,
+        "y": 329,
+        "width": 20,
+        "height": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:3741",
+      "name": "Camera",
+      "type": "FRAME",
+      "rect": {
+        "x": 285.0,
+        "y": 321,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 22
+    },
+    {
+      "id": "1043:3742",
+      "name": "camera_video",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 293.0,
+        "y": 329,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "I1043:3742;849:2086",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 293.0,
+        "y": 329,
+        "width": 20,
+        "height": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:3743",
+      "name": "check_box",
+      "type": "GROUP",
+      "rect": {
+        "x": 329.0,
+        "y": 327,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1043:3744",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 329.0,
+        "y": 327,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:3746",
+      "name": "Group",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 386,
+        "width": 345,
+        "height": 78
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1043:3747",
+      "name": "Left",
+      "type": "FRAME",
+      "rect": {
+        "x": 40.0,
+        "y": 398,
+        "width": 197,
+        "height": 54
+      }
+    },
+    {
+      "id": "1043:3748",
+      "name": "AutoName",
+      "type": "TEXT",
+      "rect": {
+        "x": 40.0,
+        "y": 398,
+        "width": 197,
+        "height": 19
+      },
+      "characters": "그룹 2",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "1043:3749",
+      "name": "도도도의 집",
+      "type": "TEXT",
+      "rect": {
+        "x": 40.0,
+        "y": 433,
+        "width": 197,
+        "height": 19
+      },
+      "characters": "도도도의 집",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:3750",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 241.0,
+        "y": 407,
+        "width": 112,
+        "height": 36
+      }
+    },
+    {
+      "id": "1043:3751",
+      "name": "Icons",
+      "type": "FRAME",
+      "rect": {
+        "x": 241.0,
+        "y": 407,
+        "width": 80,
+        "height": 36
+      }
+    },
+    {
+      "id": "1043:3752",
+      "name": "Home",
+      "type": "FRAME",
+      "rect": {
+        "x": 241.0,
+        "y": 407,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 22
+    },
+    {
+      "id": "1043:3753",
+      "name": "home",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 249.0,
+        "y": 415,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "I1043:3753;849:2083",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 249.0,
+        "y": 415,
+        "width": 20,
+        "height": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:3754",
+      "name": "Camera",
+      "type": "FRAME",
+      "rect": {
+        "x": 285.0,
+        "y": 407,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 22
+    },
+    {
+      "id": "1043:3755",
+      "name": "camera_video",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 293.0,
+        "y": 415,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "I1043:3755;849:2086",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 293.0,
+        "y": 415,
+        "width": 20,
+        "height": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:3756",
+      "name": "check_box_outline_blank",
+      "type": "GROUP",
+      "rect": {
+        "x": 329.0,
+        "y": 413,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1043:3757",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 329.0,
+        "y": 413,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    }
+  ]
+}

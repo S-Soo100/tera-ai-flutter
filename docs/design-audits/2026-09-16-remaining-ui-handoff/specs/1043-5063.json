@@ -1,0 +1,823 @@
+{
+  "frame": {
+    "id": "1043:5063",
+    "name": "Home_empty",
+    "section": "connection",
+    "bounds": {
+      "x": 4453,
+      "y": -844,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "Home",
+      "Camera",
+      "MyCre",
+      "Community",
+      "사육장을 추가하고\n온습도를 원격으로 관리하세요",
+      "기기 추가"
+    ],
+    "file": "1043-5063.png",
+    "task": "P06",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1043:5063",
+      "name": "Home_empty",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1043:5064",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I1043:5064;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1043:5064;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I1043:5064;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1043:5064;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I1043:5064;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I1043:5064;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "1043:5065",
+      "name": "Frame 53",
+      "type": "FRAME",
+      "rect": {
+        "x": 281,
+        "y": 62,
+        "width": 100,
+        "height": 44
+      }
+    },
+    {
+      "id": "1043:5066",
+      "name": "discover_tune",
+      "type": "FRAME",
+      "rect": {
+        "x": 281,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "id": "1043:5068",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 337,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "1043:5069",
+      "name": "person",
+      "type": "GROUP",
+      "rect": {
+        "x": 347,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1043:5070",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 347,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:5072",
+      "name": "Navigation",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 772,
+        "width": 393,
+        "height": 80
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1043:5073",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 44.5,
+        "y": 784,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1043:5074",
+      "name": "home",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 58.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1043:5074;849:2083",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 58.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:5075",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 54.5,
+        "y": 812,
+        "width": 32,
+        "height": 14
+      },
+      "characters": "Home",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ]
+    },
+    {
+      "id": "1043:5076",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 128.5,
+        "y": 784,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1043:5077",
+      "name": "camera_video",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 142.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1043:5077;849:2086",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 142.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:5078",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 133.5,
+        "y": 812,
+        "width": 42,
+        "height": 14
+      },
+      "characters": "Camera",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1043:5079",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 212.5,
+        "y": 784,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1043:5080",
+      "name": "fertile",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 226.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1043:5080;849:2092",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 226.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:5081",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 220.5,
+        "y": 812,
+        "width": 36,
+        "height": 14
+      },
+      "characters": "MyCre",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1043:5082",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 296.5,
+        "y": 784,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1043:5083",
+      "name": "mode_comment",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 310.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1043:5083;849:2089",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 310.5,
+        "y": 784,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:5084",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 292,
+        "y": 812,
+        "width": 61,
+        "height": 14
+      },
+      "characters": "Community",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1043:5890",
+      "name": "Frame 199",
+      "type": "FRAME",
+      "rect": {
+        "x": 24,
+        "y": 250,
+        "width": 345,
+        "height": 353
+      }
+    },
+    {
+      "id": "1063:7292",
+      "name": "Empty_03",
+      "type": "FRAME",
+      "rect": {
+        "x": 24,
+        "y": 250,
+        "width": 345,
+        "height": 227
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1063:7293",
+      "name": "Group 25",
+      "type": "GROUP",
+      "rect": {
+        "x": 92.4043,
+        "y": 271.296,
+        "width": 194.953369140625,
+        "height": 198.70399475097656
+      }
+    },
+    {
+      "id": "1063:7294",
+      "name": "Ellipse 37",
+      "type": "ELLIPSE",
+      "rect": {
+        "x": 105.6426,
+        "y": 435.4469,
+        "width": 181.715087890625,
+        "height": 34.55311584472656
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f3f3f3"
+        }
+      ]
+    },
+    {
+      "id": "1063:7295",
+      "name": "Frame 193",
+      "type": "FRAME",
+      "rect": {
+        "x": 130.293,
+        "y": 271.296,
+        "width": 136.21726989746094,
+        "height": 43.68927764892578
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1063:7296",
+      "name": "Rectangle 187",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 226.6416,
+        "y": 282.9243,
+        "width": 27.712732315063477,
+        "height": 17.879247665405273
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 3.3223724365234375
+    },
+    {
+      "id": "1063:7297",
+      "name": "Rectangle 185",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 130.293,
+        "y": 314.9855,
+        "width": 136.21726989746094,
+        "height": 137.4978790283203
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b9b5b5"
+        }
+      ]
+    },
+    {
+      "id": "1063:7298",
+      "name": "mode_fan_2",
+      "type": "FRAME",
+      "rect": {
+        "x": 232.793,
+        "y": 385.6075,
+        "width": 40,
+        "height": 40
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#228c73"
+        }
+      ],
+      "cornerRadius": 100
+    },
+    {
+      "id": "1063:7300",
+      "name": "humidity_high",
+      "type": "FRAME",
+      "rect": {
+        "x": 103.793,
+        "y": 330.1183,
+        "width": 46.942108154296875,
+        "height": 46.942108154296875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#2e408c"
+        }
+      ],
+      "cornerRadius": 100
+    },
+    {
+      "id": "1063:7302",
+      "name": "mode_cool",
+      "type": "FRAME",
+      "rect": {
+        "x": 140.793,
+        "y": 423.5519,
+        "width": 38,
+        "height": 37
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#636ddb"
+        }
+      ],
+      "cornerRadius": 100
+    },
+    {
+      "id": "1063:7304",
+      "name": "lightbulb",
+      "type": "FRAME",
+      "rect": {
+        "x": 254.3545,
+        "y": 305.6652,
+        "width": 33,
+        "height": 33
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e89e00"
+        }
+      ],
+      "cornerRadius": 100
+    },
+    {
+      "id": "1043:5672",
+      "name": "사육장을 추가하고 온습도를 원격으로 관리하세요",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 493,
+        "width": 345,
+        "height": 38
+      },
+      "characters": "사육장을 추가하고\n온습도를 원격으로 관리하세요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1043:5052",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 125.5,
+        "y": 547,
+        "width": 142,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ],
+      "cornerRadius": 29.5
+    },
+    {
+      "id": "1043:5059",
+      "name": "add",
+      "type": "GROUP",
+      "rect": {
+        "x": 149.5,
+        "y": 563,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1043:5060",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 149.5,
+        "y": 563,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:5056",
+      "name": "기기 추가",
+      "type": "TEXT",
+      "rect": {
+        "x": 177.5,
+        "y": 561,
+        "width": 66,
+        "height": 28
+      },
+      "characters": "기기 추가",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,374 @@
+{
+  "frame": {
+    "id": "1035:2735",
+    "name": "추가 완료- 도마뱀",
+    "section": "connection",
+    "bounds": {
+      "x": 8666.9375,
+      "y": 2412,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "기기 추가 하기",
+      "나중에 하기",
+      "도마뱀 추가 완료",
+      "이어서 사육장과 카메라를 추가해 주세요"
+    ],
+    "file": "1035-2735.png",
+    "task": "P02",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1035:2735",
+      "name": "추가 완료- 도마뱀",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1035:2736",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0.0,
+        "y": 0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I1035:2736;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16.0,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1035:2736;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I1035:2736;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1035:2736;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I1035:2736;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I1035:2736;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "1035:2737",
+      "name": "Buttons",
+      "type": "FRAME",
+      "rect": {
+        "x": 11.793,
+        "y": 696,
+        "width": 369,
+        "height": 112
+      }
+    },
+    {
+      "id": "1035:2738",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 11.793,
+        "y": 696,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1035:2739",
+      "name": "기기 추가 하기",
+      "type": "TEXT",
+      "rect": {
+        "x": 146.293,
+        "y": 710,
+        "width": 100,
+        "height": 28
+      },
+      "characters": "기기 추가 하기",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    },
+    {
+      "id": "1035:2740",
+      "name": "TextButton",
+      "type": "FRAME",
+      "rect": {
+        "x": 11.793,
+        "y": 752,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1035:2741",
+      "name": "나중에 하기",
+      "type": "TEXT",
+      "rect": {
+        "x": 155.793,
+        "y": 766,
+        "width": 81,
+        "height": 28
+      },
+      "characters": "나중에 하기",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1035:2742",
+      "name": "Frame 167",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 308,
+        "width": 369,
+        "height": 136
+      }
+    },
+    {
+      "id": "1035:2743",
+      "name": "check_circle",
+      "type": "GROUP",
+      "rect": {
+        "x": 164.5,
+        "y": 308,
+        "width": 64,
+        "height": 64
+      }
+    },
+    {
+      "id": "1035:2744",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 164.5,
+        "y": 308,
+        "width": 64,
+        "height": 64
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1035:2746",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 396,
+        "width": 369,
+        "height": 48
+      }
+    },
+    {
+      "id": "1035:2747",
+      "name": "도마뱀 추가 완료",
+      "type": "TEXT",
+      "rect": {
+        "x": 12.0,
+        "y": 396,
+        "width": 369,
+        "height": 21
+      },
+      "characters": "도마뱀 추가 완료",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 21.48046875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1035:2748",
+      "name": "이어서 사육장과 카메라를 추가해 주세요",
+      "type": "TEXT",
+      "rect": {
+        "x": 12.0,
+        "y": 425,
+        "width": 369,
+        "height": 19
+      },
+      "characters": "이어서 사육장과 카메라를 추가해 주세요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    }
+  ]
+}

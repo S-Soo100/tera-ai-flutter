@@ -1,0 +1,496 @@
+{
+  "frame": {
+    "id": "990:11767",
+    "name": "iPhone 14 & 15 Pro - 207",
+    "section": "connection",
+    "bounds": {
+      "x": 7878.5,
+      "y": 5844.3955078125,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "사육 환경 그룹",
+      "지정된 그룹이 없습니다",
+      "그룹 없음",
+      "해당하는 기기가 없습니다",
+      "기기 관리",
+      "기기 추가"
+    ],
+    "file": "990-11767.png",
+    "task": "P06",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "990:11767",
+      "name": "iPhone 14 & 15 Pro - 207",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "990:11768",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I990:11768;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16.0,
+        "y": 21.0,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I990:11768;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22.0,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:11768;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21.0,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I990:11768;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26.0,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I990:11768;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26.0,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I990:11768;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28.0,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "990:11769",
+      "name": "Frame 168",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 122.0,
+        "width": 369,
+        "height": 222
+      }
+    },
+    {
+      "id": "990:11770",
+      "name": "Frame 156",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 122.0,
+        "width": 369,
+        "height": 95
+      }
+    },
+    {
+      "id": "990:11771",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 122.0,
+        "width": 369,
+        "height": 19
+      }
+    },
+    {
+      "id": "990:11772",
+      "name": "사육 환경 그룹",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 122.0,
+        "width": 89,
+        "height": 19
+      },
+      "characters": "사육 환경 그룹",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "990:11773",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 153.0,
+        "width": 369,
+        "height": 64
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "990:11774",
+      "name": "지정된 그룹이 없습니다",
+      "type": "TEXT",
+      "rect": {
+        "x": 28.0,
+        "y": 171.0,
+        "width": 143,
+        "height": 28
+      },
+      "characters": "지정된 그룹이 없습니다",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "990:11775",
+      "name": "Frame 157",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 249.0,
+        "width": 369,
+        "height": 95
+      }
+    },
+    {
+      "id": "990:11776",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 249.0,
+        "width": 369,
+        "height": 19
+      }
+    },
+    {
+      "id": "990:11777",
+      "name": "그룹 없음",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 249.0,
+        "width": 58,
+        "height": 19
+      },
+      "characters": "그룹 없음",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "990:11778",
+      "name": "Lists",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 280.0,
+        "width": 369,
+        "height": 64
+      },
+      "cornerRadius": 12
+    },
+    {
+      "id": "990:11891",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 280.0,
+        "width": 369,
+        "height": 64
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "990:11892",
+      "name": "해당하는 기기가 없습니다",
+      "type": "TEXT",
+      "rect": {
+        "x": 28.0,
+        "y": 298.0,
+        "width": 157,
+        "height": 28
+      },
+      "characters": "해당하는 기기가 없습니다",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "990:11861",
+      "name": "기기 관리",
+      "type": "TEXT",
+      "rect": {
+        "x": 168.0,
+        "y": 74.5,
+        "width": 58,
+        "height": 19
+      },
+      "characters": "기기 관리",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "990:11862",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 338.0,
+        "y": 62.0,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "990:11863",
+      "name": "close",
+      "type": "GROUP",
+      "rect": {
+        "x": 348.0,
+        "y": 72.0,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "990:11864",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 348.0,
+        "y": 72.0,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "990:11866",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.498,
+        "y": 696.0,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "990:11867",
+      "name": "기기 추가",
+      "type": "TEXT",
+      "rect": {
+        "x": 163.998,
+        "y": 710.0,
+        "width": 66,
+        "height": 28
+      },
+      "characters": "기기 추가",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    }
+  ]
+}

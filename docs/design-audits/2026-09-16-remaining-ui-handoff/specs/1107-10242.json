@@ -1,0 +1,68 @@
+{
+  "frame": {
+    "id": "1107:10242",
+    "name": " ",
+    "section": "home",
+    "bounds": {
+      "x": 13731.630859375,
+      "y": -7644,
+      "width": 222,
+      "height": 100
+    },
+    "text": [
+      "예약 삭제"
+    ],
+    "file": "1107-10242.png",
+    "task": "P10",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1107:10242",
+      "name": " ",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0,
+        "width": 222,
+        "height": 100
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1107:10243",
+      "name": "예약 삭제",
+      "type": "TEXT",
+      "rect": {
+        "x": 20.0,
+        "y": 20,
+        "width": 182,
+        "height": 60
+      },
+      "characters": "예약 삭제",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 50,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -1,
+        "lineHeightPx": 59.66796875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    }
+  ]
+}

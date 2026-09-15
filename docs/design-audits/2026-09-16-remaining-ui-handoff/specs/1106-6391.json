@@ -1,0 +1,194 @@
+{
+  "frame": {
+    "id": "1106:6391",
+    "name": "BottomSheet",
+    "section": "home",
+    "bounds": {
+      "x": 8296.3759765625,
+      "y": -5728.5,
+      "width": 393,
+      "height": 176
+    },
+    "text": [
+      "즉시 작동",
+      "예약 작동",
+      "1회 분사 시작"
+    ],
+    "file": "1106-6391.png",
+    "task": "P09",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1106:6391",
+      "name": "BottomSheet",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 393,
+        "height": 176
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ]
+    },
+    {
+      "id": "1106:6392",
+      "name": "Toggle_L",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 24.0,
+        "width": 345,
+        "height": 32
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 18
+    },
+    {
+      "id": "1106:6393",
+      "name": "Left",
+      "type": "FRAME",
+      "rect": {
+        "x": 26.0,
+        "y": 26.0,
+        "width": 168.5,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "1106:6394",
+      "name": "즉시 작동",
+      "type": "TEXT",
+      "rect": {
+        "x": 84.75,
+        "y": 31.5,
+        "width": 51,
+        "height": 17
+      },
+      "characters": "즉시 작동",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 14,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1106:6395",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 198.5,
+        "y": 26.0,
+        "width": 168.5,
+        "height": 28
+      },
+      "cornerRadius": 14
+    },
+    {
+      "id": "1106:6396",
+      "name": "예약 작동",
+      "type": "TEXT",
+      "rect": {
+        "x": 257.25,
+        "y": 31.5,
+        "width": 51,
+        "height": 17
+      },
+      "characters": "예약 작동",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 14,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1106:6425",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 80.0,
+        "width": 345,
+        "height": 44
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#2e408c"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1106:6426",
+      "name": "1회 분사 시작",
+      "type": "TEXT",
+      "rect": {
+        "x": 155.5,
+        "y": 88.0,
+        "width": 82,
+        "height": 28
+      },
+      "characters": "1회 분사 시작",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    }
+  ]
+}
