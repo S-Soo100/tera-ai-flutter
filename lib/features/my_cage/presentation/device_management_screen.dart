@@ -43,17 +43,20 @@ class DeviceManagementScreen extends ConsumerWidget {
                                           child:
                                               Text('management_no_groups'.tr()))
                                     else
-                                      for (final group in inventory.groups)
-                                        Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: 12),
-                                            child: ManagementGroupCard(
-                                                group: group,
-                                                members:
-                                                    inventory.members(group.id),
-                                                onTap: () => context.push(
-                                                    '/groups/${group.id}'))),
-                                    const SizedBox(height: 20),
+                                      for (final (index, group)
+                                          in inventory.groups.indexed) ...[
+                                        if (index > 0)
+                                          const SizedBox(height: 8),
+                                        ManagementGroupCard(
+                                            group: group,
+                                            members: inventory.members(group.id),
+                                            onTap: () => context.push(
+                                                '/groups/${group.id}')),
+                                      ],
+                                    SizedBox(
+                                        height: inventory.groups.isEmpty
+                                            ? 20
+                                            : 36),
                                     ManagementLabel(
                                         'management_ungrouped'.tr()),
                                     const SizedBox(height: 12),
@@ -73,14 +76,21 @@ class DeviceManagementScreen extends ConsumerWidget {
                                                   color: context
                                                       .glass.textTertiary)))
                                     else
-                                      for (final item in inventory.ungrouped)
-                                        ManagementItemRow(
-                                            item: item,
-                                            onTap: () => context.push(item
-                                                        .key.kind ==
-                                                    ManagementKind.pet
-                                                ? '/my-pets/${item.key.id}'
-                                                : '/devices/${item.key.kind.name}/${item.key.id}')),
+                                      Material(
+                                        color: context.glass.overlay,
+                                        borderRadius: BorderRadius.circular(12),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: Column(children: [
+                                          for (final item in inventory.ungrouped)
+                                            ManagementItemRow(
+                                                item: item,
+                                                onTap: () => context.push(item
+                                                            .key.kind ==
+                                                        ManagementKind.pet
+                                                    ? '/my-pets/${item.key.id}'
+                                                    : '/devices/${item.key.kind.name}/${item.key.id}')),
+                                        ]),
+                                      ),
                                   ]))),
                   if (async.asData?.value case final inventory?) ...[
                     if (inventory.isEmpty)
