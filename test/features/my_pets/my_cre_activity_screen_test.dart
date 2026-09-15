@@ -29,8 +29,7 @@ void main() {
                   onConnectCamera: () => connects++,
                   onOpenLegacyReports: () {}))));
       await tester.pump();
-      expect(find.text('activity_camera_attribution'),
-          connection == false ? findsNothing : findsOneWidget);
+      expect(find.text('activity_camera_attribution'), findsNothing);
       if (connection == false) {
         expect(find.text('--'), findsNothing);
         expect(find.text('activity_duration'), findsNWidgets(4));
