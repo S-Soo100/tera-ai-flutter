@@ -108,90 +108,112 @@ class _PairingPetSelectionBody extends ConsumerWidget {
     final hasSelectedPet =
         draft.members.any((member) => member.kind == ManagementKind.pet);
     final safeTop = MediaQuery.paddingOf(context).top;
+    // Figma 1043:5893(여러 마리) 제목 y174 / 1043:5992(한 마리) y266.
+    final figmaTitleTop = registered.length == 1 ? 266.0 : 174.0;
+    // 하단 CTA(696~752) + 나중에 하기(752~808): SafeArea 안 bottom 10.
+    const footerHeight = 112.0;
+    const footerBottom = 10.0;
     return PopScope(
         canPop: !draft.saving,
         child: Scaffold(body:
             SafeArea(child: LayoutBuilder(builder: (context, constraints) {
           final titleTop = constraints.maxHeight < 650
               ? 24.0
-              : (174 - safeTop)
-                  .clamp(24.0, constraints.maxHeight * .24)
+              : (figmaTitleTop - safeTop)
+                  .clamp(24.0, constraints.maxHeight * .32)
                   .toDouble();
-          return Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: Column(children: [
-                SizedBox(height: titleTop),
-                Text(
-                    (registered.length == 1
-                            ? 'pairing_pet_single_title'
-                            : 'pairing_pet_title')
-                        .tr(),
-                    textAlign: TextAlign.center,
-                    style: managementStyle(context,
-                        size: 18,
-                        weight: FontWeight.w600,
-                        color: context.glass.textSecondary)),
-                const SizedBox(height: 8),
-                Text('pairing_pet_subtitle'.tr(),
-                    textAlign: TextAlign.center,
-                    style: managementStyle(context,
-                        size: 16, color: context.glass.bodySecondary)),
-                const SizedBox(height: 24),
-                Expanded(
-                    child: registered.isEmpty
-                        ? _EmptyPets(onRegister: registerPet)
-                        : ListView.separated(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            itemCount: registered.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (_, index) {
-                              final item = registered[index];
-                              final pet = petsById[item.key.id] ??
-                                  Pet(
-                                      id: item.key.id,
-                                      name: item.name,
-                                      speciesId: '',
-                                      speciesName: '',
-                                      morph: item.subtitle,
-                                      createdAt: DateTime(0),
-                                      updatedAt: DateTime(0));
-                              return _PetChoiceCard(
-                                  item: item,
-                                  pet: pet,
-                                  selected: draft.members.contains(item.key),
-                                  enabled: !draft.saving,
-                                  onTap: () => select(item));
-                            })),
-                if (draft.errorKey != null)
-                  Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(draft.errorKey!.tr(),
-                          style: managementStyle(context,
-                              size: 14, color: context.glass.navSelected))),
-                if (registered.isNotEmpty)
-                  SizedBox(
-                      key: const Key('pairing_pet_save'),
-                      child: ManagementButton(
-                          label: 'pairing_pet_primary_action'.tr(),
-                          onPressed: draft.saving ||
-                                  registered.isEmpty ||
-                                  !hasSelectedPet
-                              ? null
-                              : save)),
-                const SizedBox(height: 6),
-                SizedBox(
-                    height: 48,
-                    child: TextButton(
-                        key: const Key('pairing_pet_later'),
-                        onPressed:
-                            draft.saving ? null : () => context.go('/home'),
-                        child: Text('pairing_pet_later'.tr(),
+          return Stack(children: [
+            Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                child: Column(children: [
+                  SizedBox(height: titleTop),
+                  Text(
+                      (registered.length == 1
+                              ? 'pairing_pet_single_title'
+                              : 'pairing_pet_title')
+                          .tr(),
+                      textAlign: TextAlign.center,
+                      style: managementStyle(context,
+                              size: 18,
+                              weight: FontWeight.w600,
+                              color: context.glass.textSecondary)
+                          .copyWith(height: 21.48046875 / 18)),
+                  const SizedBox(height: 8),
+                  Text('pairing_pet_subtitle'.tr(),
+                      textAlign: TextAlign.center,
+                      style: managementStyle(context,
+                              size: 16, color: context.glass.bodySecondary)
+                          .copyWith(height: 19.09375 / 16)),
+                  const SizedBox(height: 24),
+                  Expanded(
+                      child: registered.isEmpty
+                          ? _EmptyPets(onRegister: registerPet)
+                          : ListView.separated(
+                              // 마지막 카드가 플로팅 CTA 뒤에 숨지 않게.
+                              padding: const EdgeInsets.fromLTRB(
+                                  12, 0, 12, footerHeight + footerBottom + 16),
+                              itemCount: registered.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (_, index) {
+                                final item = registered[index];
+                                final pet = petsById[item.key.id] ??
+                                    Pet(
+                                        id: item.key.id,
+                                        name: item.name,
+                                        speciesId: '',
+                                        speciesName: '',
+                                        morph: item.subtitle,
+                                        createdAt: DateTime(0),
+                                        updatedAt: DateTime(0));
+                                return _PetChoiceCard(
+                                    item: item,
+                                    pet: pet,
+                                    selected: draft.members.contains(item.key),
+                                    enabled: !draft.saving,
+                                    onTap: () => select(item));
+                              })),
+                ])),
+            Positioned(
+                left: 12,
+                right: 12,
+                bottom: footerBottom,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  if (draft.errorKey != null)
+                    Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(draft.errorKey!.tr(),
+                            textAlign: TextAlign.center,
                             style: managementStyle(context,
-                                size: 18,
-                                weight: FontWeight.w600,
-                                color: context.glass.textSecondary)))),
-              ]));
+                                size: 14, color: context.glass.navSelected))),
+                  if (registered.isNotEmpty)
+                    SizedBox(
+                        key: const Key('pairing_pet_save'),
+                        child: ManagementButton(
+                            label: 'pairing_pet_primary_action'.tr(),
+                            onPressed: draft.saving ||
+                                    registered.isEmpty ||
+                                    !hasSelectedPet
+                                ? null
+                                : save))
+                  else
+                    const SizedBox(height: 56),
+                  SizedBox(
+                      height: 56,
+                      child: TextButton(
+                          key: const Key('pairing_pet_later'),
+                          onPressed:
+                              draft.saving ? null : () => context.go('/home'),
+                          style: TextButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 56)),
+                          child: Text('pairing_pet_later'.tr(),
+                              style: managementStyle(context,
+                                      size: 18,
+                                      weight: FontWeight.w600,
+                                      color: context.glass.textSecondary)
+                                  .copyWith(height: 28 / 18)))),
+                ])),
+          ]);
         }))));
   }
 }
@@ -276,11 +298,14 @@ class _SexTag extends StatelessWidget {
       'male' => 'male',
       _ => 'unknown',
     };
+    // Figma 1043:5893 Tag — 높이 24, 좌우 8, r12, 14/700.
     return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        height: 24,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
             color: context.glass.surfaceHeader,
-            borderRadius: BorderRadius.circular(4)),
+            borderRadius: BorderRadius.circular(12)),
         child: Text('pet_form_sex_$normalized'.tr(),
             style: managementStyle(context,
                 size: 14,
@@ -337,8 +362,9 @@ class _PetPhoto extends StatelessWidget {
           : Image.file(File(path),
               fit: BoxFit.cover, errorBuilder: (_, __, ___) => placeholder);
     }
+    // Figma favicon_viva_50 — 80×80 r4 흰 바탕.
     return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(4),
         child: SizedBox(width: 80, height: 80, child: image));
   }
 }

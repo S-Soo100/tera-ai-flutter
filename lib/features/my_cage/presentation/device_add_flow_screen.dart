@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,6 +105,56 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     if (mounted) context.go('/home');
   }
 
+  /// 모든 결과가 Wi-Fi 실패(비밀번호 오류 계열)인지 — 등록 대기/기타 실패는
+  /// 기존 결과 화면 의미를 보존한다(P04: 모든 오류를 비밀번호 오류로 바꾸지 않음).
+  static bool _allWifiFailed(DeviceAddState state) =>
+      state.results.isNotEmpty &&
+      state.results.values
+          .every((r) => r.outcome == DeviceAddOutcome.wifiFailed);
+
+  Future<void> _showErrorModal(String messageKey) async {
+    if (!mounted) return;
+    await showDialog<void>(
+        context: context,
+        useSafeArea: false, // 원본은 화면 전체 가운데(y354).
+        builder: (context) => Dialog(
+            backgroundColor: context.glass.surfaceHeader,
+            surfaceTintColor: context.glass.surfaceHeader,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            // Figma 982:3500 — 345×144, 안쪽 24, 문구 18/500/28, CTA 297×44 r8.
+            child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 345),
+                child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Text(messageKey.tr(),
+                          key: const Key('device_add_error_modal'),
+                          textAlign: TextAlign.center,
+                          style: managementStyle(context,
+                                  size: 18, color: context.glass.textPrimary)
+                              .copyWith(height: 28 / 18)),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: FilledButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: FilledButton.styleFrom(
+                                  backgroundColor: context.glass.textPrimary,
+                                  foregroundColor:
+                                      ManagementColors.buttonForeground(
+                                          context),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                  textStyle: managementStyle(context,
+                                          weight: FontWeight.w600)
+                                      .copyWith(height: 28 / 16)),
+                              child: Text('device_add_confirm'.tr()))),
+                    ])))));
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(deviceAddFlowProvider(_key));
@@ -122,6 +173,21 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
           next.step == DeviceAddStep.results) {
         ++_fillGeneration;
         _password.clear();
+        if (_allWifiFailed(next)) {
+          // Figma 982:3500 — 비밀번호 화면으로 돌아가 입력을 유지하고 확인 모달.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            unawaited(_network(next.ssid));
+            unawaited(_showErrorModal('device_add_wifi_failed_check'));
+          });
+        }
+      }
+      if (next.step == DeviceAddStep.credentials &&
+          next.errorKey != null &&
+          next.errorKey != previous?.errorKey) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_showErrorModal(next.errorKey!));
+        });
       }
       if (!_notified &&
           next.results.values
@@ -131,156 +197,127 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       }
     });
     final controller = ref.read(deviceAddFlowProvider(_key).notifier);
+    final step = state.step;
+    final showsTopBar = step != DeviceAddStep.results ||
+        state.results.values
+            .any((r) => r.outcome != DeviceAddOutcome.registered);
+    final (body, footer, above) = switch (step) {
+      DeviceAddStep.scan => _scan(context, state, controller),
+      DeviceAddStep.networks => _networks(context, state, controller),
+      DeviceAddStep.credentials ||
+      DeviceAddStep.connecting =>
+        _credentials(context, state, controller),
+      DeviceAddStep.results => _results(context, state, controller),
+    };
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
     return PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) unawaited(_close());
+          if (!didPop) unawaited(_back(state, controller));
         },
         child: Scaffold(
-            body: SafeArea(
-                child: Column(children: [
-          if (state.step != DeviceAddStep.results ||
-              state.results.values
-                  .any((r) => r.outcome != DeviceAddOutcome.registered))
-            Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: ManagementTopBar(
-                    title: 'device_add_title'.tr(),
-                    onBack: _close,
-                    close: state.step == DeviceAddStep.credentials ||
-                        state.step == DeviceAddStep.connecting ||
-                        state.step == DeviceAddStep.results)),
-          Expanded(
-              child: LayoutBuilder(
-                  builder: (context, constraints) => SingleChildScrollView(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      child: ConstrainedBox(
-                          constraints:
-                              BoxConstraints(minHeight: constraints.maxHeight),
-                          child: IntrinsicHeight(
-                              child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        const SizedBox(height: 16),
-                                        if (state.step == DeviceAddStep.scan)
-                                          ..._scan(context, state, controller),
-                                        if (state.step ==
-                                            DeviceAddStep.networks)
-                                          ..._networks(
-                                              context, state, controller),
-                                        if (state.step ==
-                                                DeviceAddStep.credentials ||
-                                            state.step ==
-                                                DeviceAddStep.connecting)
-                                          ..._credentials(
-                                              context, state, controller),
-                                        if (state.step ==
-                                            DeviceAddStep.connecting)
-                                          ..._connecting(context, state),
-                                        if (state.step == DeviceAddStep.results)
-                                          ..._results(
-                                              context, state, controller),
-                                        if (state.errorKey case final error?)
-                                          Padding(
-                                              padding: const EdgeInsets.all(12),
-                                              child: Text(error.tr(),
-                                                  style: managementStyle(
-                                                      context,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .error))),
-                                        if (state.step !=
-                                                DeviceAddStep.connecting &&
-                                            state.step != DeviceAddStep.results)
-                                          const Spacer(),
-                                        if (state.step ==
-                                            DeviceAddStep.scan) ...[
-                                          const SizedBox(height: 24),
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: 16),
-                                            child: Text(
-                                                'device_add_selection_hint'
-                                                    .tr(),
-                                                textAlign: TextAlign.center,
-                                                style: managementStyle(context,
-                                                    size: 14,
-                                                    color: context
-                                                        .glass.bodySecondary)),
-                                          ),
-                                          ManagementButton(
-                                              label: 'device_add_selected'.tr(
-                                                  args: [
-                                                    '${state.selected.length}'
-                                                  ]),
-                                              onPressed: state.selected.isEmpty
-                                                  ? null
-                                                  : controller.loadNetworks),
-                                          _PairingTextButton(
-                                              onPressed: state.busy
-                                                  ? null
-                                                  : controller.scan,
-                                              child: Text(
-                                                  'device_add_rescan'.tr())),
-                                        ],
-                                        if (state.step ==
-                                            DeviceAddStep.networks) ...[
-                                          const SizedBox(height: 24),
-                                          ManagementButton(
-                                              label: 'device_add_rescan'.tr(),
-                                              onPressed: state.busy
-                                                  ? null
-                                                  : controller.loadNetworks),
-                                          _PairingTextButton(
-                                              onPressed: state.busy
-                                                  ? null
-                                                  : () => _network(''),
-                                              child: Text(
-                                                  'device_add_manual'.tr())),
-                                        ],
-                                        if (state.step ==
-                                                DeviceAddStep.credentials ||
-                                            state.step ==
-                                                DeviceAddStep.connecting) ...[
-                                          const SizedBox(height: 24),
-                                          ManagementButton(
-                                              label: 'device_add_connect'.tr(),
-                                              onPressed: state.busy
-                                                  ? null
-                                                  : () => controller.connect(
-                                                      _ssid.text,
-                                                      _password.text)),
-                                          _PairingTextButton(
-                                              onPressed: state.busy
-                                                  ? null
-                                                  : controller.loadNetworks,
-                                              child: Text(
-                                                  'device_add_choose_network'
-                                                      .tr())),
-                                        ],
-                                        const SizedBox(height: 10),
-                                      ]))))))),
-        ]))));
+            body: Stack(fit: StackFit.expand, children: [
+          SafeArea(
+              child: Column(children: [
+            if (showsTopBar)
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: ManagementTopBar(
+                      title: 'device_add_title'.tr(),
+                      onBack: () => _back(state, controller),
+                      close: step == DeviceAddStep.results,
+                      onClose: step == DeviceAddStep.networks ||
+                              step == DeviceAddStep.credentials ||
+                              step == DeviceAddStep.connecting
+                          ? _close
+                          : null)),
+            Expanded(
+                child: Stack(children: [
+              SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.fromLTRB(
+                      12, 16, 12, _footerBottom(footer.length, keyboard) +
+                          56.0 * footer.length +
+                          (above == null ? 0 : 29) +
+                          16),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ...body,
+                        if (state.errorKey case final error?)
+                          if (step != DeviceAddStep.credentials)
+                            Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Text(error.tr(),
+                                    style: managementStyle(context,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .error))),
+                      ])),
+              // Figma 공통 하단 CTA — 콘텐츠 위 플로팅. 단일 y696, 둘이면
+              // 696/752, 키보드가 있으면 키보드 위 43.
+              Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: _footerBottom(footer.length, keyboard),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    if (above != null)
+                      Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: above),
+                    ...footer,
+                  ])),
+            ])),
+          ])),
+          if (step == DeviceAddStep.connecting) const _ConnectingOverlay(),
+        ])));
   }
 
+  /// 하단 CTA 아래 여백(SafeArea 안). 원본: 단일 CTA 696~752 → 852-34-752=66,
+  /// 보조 포함 752~808 → 10, 키보드 위 43(982:3174).
+  double _footerBottom(int buttons, bool keyboard) => keyboard
+      ? 43
+      : (66.0 - 56.0 * (buttons - 1)).clamp(10.0, 66.0);
+
+  /// 뒤로가기 의미: 비밀번호→네트워크 목록, 네트워크→기기 검색, 그 외 중단 확인.
+  Future<void> _back(
+      DeviceAddState state, DeviceAddFlowController controller) async {
+    switch (state.step) {
+      case DeviceAddStep.credentials:
+        await controller.loadNetworks();
+      case DeviceAddStep.networks:
+        await controller.scan();
+      case DeviceAddStep.scan:
+      case DeviceAddStep.connecting:
+      case DeviceAddStep.results:
+        await _close();
+    }
+  }
+
+  /// 제목 18/600 (+ 진행 중이면 오른쪽 8에 20 스피너) / 8 / 부제 14/500.
   Widget _heading(BuildContext context, String title, String subtitle,
-          {List<String> args = const []}) =>
+          {List<String> args = const [], bool busy = false}) =>
       Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title.tr(),
-                style: managementStyle(context,
-                    size: 18, weight: FontWeight.w600)),
+            Row(children: [
+              Flexible(
+                  child: Text(title.tr(),
+                      style: managementStyle(context,
+                              size: 18, weight: FontWeight.w600)
+                          .copyWith(height: 21.48046875 / 18))),
+              if (busy) ...[
+                const SizedBox(width: 8),
+                const _PairingProgress(size: 20),
+              ],
+            ]),
             const SizedBox(height: 8),
             Text(subtitle.tr(args: args),
                 style: managementStyle(context,
-                    size: 14, color: context.glass.bodySecondary)),
+                        size: 14, color: context.glass.bodySecondary)
+                    .copyWith(height: 16.70703125 / 14)),
             const SizedBox(height: 16)
           ]));
   Widget _surface(BuildContext context, List<Widget> children) => ClipRRect(
@@ -294,8 +331,22 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
               children[i],
             ],
           ])));
-  List<Widget> _scan(BuildContext context, DeviceAddState state,
-      DeviceAddFlowController controller) {
+
+  /// 원본 빈 상태 박스 — 369×64 r12 #F4F4F4, 16/500/28 #949090, 안쪽 16.
+  Widget _emptyBox(BuildContext context, String text) => Container(
+      key: const Key('device_add_empty_box'),
+      constraints: const BoxConstraints(minHeight: 64),
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      decoration: BoxDecoration(
+          color: context.glass.overlay,
+          borderRadius: BorderRadius.circular(12)),
+      child: Text(text,
+          style: managementStyle(context, color: context.glass.textTertiary)
+              .copyWith(height: 28 / 16)));
+
+  (List<Widget>, List<Widget>, Widget?) _scan(BuildContext context,
+      DeviceAddState state, DeviceAddFlowController controller) {
     final candidates = [
       for (final candidate in state.candidates)
         if (state.results[candidate.kind]?.canRetry != false) candidate
@@ -305,101 +356,138 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
         }
         return b.rssi.compareTo(a.rssi);
       });
-    return [
-      _heading(
-          context, 'device_add_select_title', 'device_add_select_subtitle'),
-      if (state.busy) const Center(child: _PairingProgress(size: 28)),
+    final body = [
+      _heading(context, 'device_add_select_title', 'device_add_select_subtitle',
+          busy: state.busy),
       if (candidates.isEmpty)
-        Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-                (state.busy ? 'device_add_searching' : 'device_add_no_devices')
-                    .tr(),
-                textAlign: TextAlign.center)),
-      _surface(context, [
-        for (final c in candidates)
-          Semantics(
-              selected: state.selected[c.kind]?.physicalId == c.physicalId,
-              child: InkWell(
-                  onTap: state.results[c.kind]?.canRetry == false
-                      ? null
-                      : () => controller.select(c),
-                  child: ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 64),
-                      child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          child: Row(children: [
-                            ManagementItemIcon(c.kind == PairTargetKind.device
-                                ? ManagementKind.device
-                                : ManagementKind.camera),
-                            const SizedBox(width: 12),
-                            Text(_kind(c.kind),
-                                style: managementStyle(context,
-                                    weight: FontWeight.w600)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                  Text(c.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: managementStyle(context,
-                                          weight: FontWeight.w600,
-                                          color: context.glass.textPrimary)),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
+        _emptyBox(
+            context,
+            (state.busy ? 'device_add_searching' : 'device_add_no_devices')
+                .tr())
+      else
+        _surface(context, [
+          for (final c in candidates)
+            Semantics(
+                selected: state.selected[c.kind]?.physicalId == c.physicalId,
+                child: InkWell(
+                    key: Key('device_add_candidate_${c.physicalId}'),
+                    onTap: state.results[c.kind]?.canRetry == false
+                        ? null
+                        : () => controller.select(c),
+                    child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 64),
+                        child: Padding(
+                            // Figma 971:1837 — 아이콘 x28(안쪽 16), 체크 우측 16.
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            child: Row(children: [
+                              ManagementItemIcon(
+                                  c.kind == PairTargetKind.device
+                                      ? ManagementKind.device
+                                      : ManagementKind.camera),
+                              const SizedBox(width: 12),
+                              Text(_kind(c.kind),
+                                  style: managementStyle(context,
+                                      weight: FontWeight.w600)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                  child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
                                       children: [
-                                        Flexible(
-                                            child: Text(
-                                                'device_add_signal'
-                                                    .tr(args: ['${c.rssi}']),
-                                                style: managementStyle(context,
-                                                    size: 14,
-                                                    color: context
-                                                        .glass.textTertiary))),
-                                        const SizedBox(width: 4),
-                                        FigmaIcon.tinted(
-                                            c.rssi >= -60
-                                                ? 'redesign_v2/signal_cellular_alt'
-                                                : c.rssi >= -75
-                                                    ? 'redesign_v2/signal_cellular_alt_2_bar'
-                                                    : 'redesign_v2/signal_cellular_alt_1_bar',
-                                            size: 16,
-                                            color: context.glass.textTertiary),
-                                      ])
-                                ])),
-                            const SizedBox(width: 12),
-                            FigmaIcon.tinted(
-                                state.selected[c.kind]?.physicalId ==
-                                        c.physicalId
-                                    ? 'redesign_v2/check_box_400'
-                                    : 'redesign_v2/check_box_outline_blank_400',
-                                size: 24,
-                                color: state.selected[c.kind]?.physicalId ==
-                                        c.physicalId
-                                    ? context.glass.navSelected
-                                    : context.glass.deviceOff),
-                          ])))))
-      ]),
+                                    Text(c.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: managementStyle(context,
+                                            weight: FontWeight.w600,
+                                            color:
+                                                context.glass.textPrimary)),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          Flexible(
+                                              child: Text(
+                                                  'device_add_signal'.tr(
+                                                      args: ['${c.rssi}']),
+                                                  style: managementStyle(
+                                                      context,
+                                                      size: 14,
+                                                      color: context.glass
+                                                          .textTertiary))),
+                                          const SizedBox(width: 4),
+                                          FigmaIcon.tinted(
+                                              c.rssi >= -60
+                                                  ? 'redesign_v2/signal_cellular_alt'
+                                                  : c.rssi >= -75
+                                                      ? 'redesign_v2/signal_cellular_alt_2_bar'
+                                                      : 'redesign_v2/signal_cellular_alt_1_bar',
+                                              size: 16,
+                                              // Figma 신호 그림 #B4AEAE.
+                                              color: context.glass.deviceOff),
+                                        ])
+                                  ])),
+                              const SizedBox(width: 12),
+                              FigmaIcon.tinted(
+                                  state.selected[c.kind]?.physicalId ==
+                                          c.physicalId
+                                      ? 'redesign_v2/check_box_400'
+                                      : 'redesign_v2/check_box_outline_blank_400',
+                                  size: 24,
+                                  color: state.selected[c.kind]?.physicalId ==
+                                          c.physicalId
+                                      ? context.glass.navSelected
+                                      : context.glass.deviceOff),
+                            ])))))
+        ]),
     ];
+    // Figma 971:1837/990:11220 — 미선택은 '다시 스캔'(스캔 중 회색), 선택하면
+    // '기기 N개 추가'. 재검색은 선택 해제로 되돌아온다(중복 CTA 없음).
+    final footer = [
+      if (state.selected.isEmpty)
+        ManagementButton(
+            key: const Key('device_add_rescan'),
+            label: 'device_add_rescan'.tr(),
+            icon: 'redesign_v2/restart_alt',
+            onPressed: state.busy ? null : controller.scan)
+      else
+        ManagementButton(
+            key: const Key('device_add_continue'),
+            label:
+                'device_add_selected'.tr(args: ['${state.selected.length}']),
+            onPressed: controller.loadNetworks),
+    ];
+    // Figma 990:7601 — 1개 선택 시에만 안내(y667).
+    final above = state.selected.length == 1 && candidates.length > 1
+        ? Text('device_add_selection_hint'.tr(),
+            key: const Key('device_add_selection_hint'),
+            textAlign: TextAlign.center,
+            style: managementStyle(context,
+                    size: 14, color: context.glass.bodySecondary)
+                .copyWith(height: 16.70703125 / 14))
+        : null;
+    return (body, footer, above);
   }
 
-  List<Widget> _networks(BuildContext context, DeviceAddState state,
-          DeviceAddFlowController controller) =>
-      [
-        _heading(
-            context, 'device_add_network_title', 'device_add_network_subtitle'),
-        if (state.busy) const Center(child: _PairingProgress(size: 28)),
-        if (!state.busy && state.networks.isEmpty)
-          Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text('device_add_no_networks'.tr())),
+  (List<Widget>, List<Widget>, Widget?) _networks(BuildContext context,
+      DeviceAddState state, DeviceAddFlowController controller) {
+    final body = [
+      _heading(
+          context, 'device_add_network_title', 'device_add_network_subtitle',
+          busy: state.busy),
+      if (state.networks.isEmpty)
+        _emptyBox(
+            context,
+            (state.busy
+                    ? 'device_add_network_searching'
+                    : 'device_add_no_networks')
+                .tr())
+      else
         _surface(context, [
           for (final ap in state.networks)
             InkWell(
+                key: Key('device_add_network_${ap.ssid}'),
                 onTap: () => _network(ap.ssid),
                 child: ConstrainedBox(
                     constraints: const BoxConstraints(minHeight: 65),
@@ -409,114 +497,167 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                         child: Row(children: [
                           Expanded(
                               child: Text(ap.ssid,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: managementStyle(context,
                                       weight: FontWeight.w600))),
                           const SizedBox(width: 12),
+                          // 원본의 잠금 그림은 AP 보안 정보가 없어 그리지 않는다
+                          // (P11 결정 대기).
                           FigmaIcon.tinted('redesign_v2/wifi',
                               size: 24, color: context.glass.textPrimary)
                         ]))))
         ]),
-      ];
-  List<Widget> _credentials(BuildContext context, DeviceAddState state,
-          DeviceAddFlowController controller) =>
-      [
-        _heading(
-            context,
-            'device_add_password_title',
-            state.ssid.isEmpty
-                ? 'device_add_password_subtitle'
-                : 'device_add_selected_network',
-            args: state.ssid.isEmpty ? [] : [state.ssid]),
-        if (state.ssid.isEmpty) ...[
-          TextField(
-              controller: _ssid,
-              autocorrect: false,
-              decoration: InputDecoration(labelText: 'device_add_ssid'.tr())),
-          const SizedBox(height: 12)
-        ],
-        Container(
-            constraints: const BoxConstraints(minHeight: 65),
-            decoration: BoxDecoration(
-                color: ManagementColors.nameField(context),
-                border: Border.all(color: context.glass.border),
-                borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(children: [
-              Expanded(
-                  child: TextField(
-                      controller: _password,
-                      enabled: !state.busy,
-                      obscureText: !state.showPassword,
-                      autocorrect: false,
-                      enableSuggestions: false,
-                      style: managementStyle(context),
-                      onChanged: (_) {
-                        ++_fillGeneration;
-                        setState(() {});
-                      },
-                      decoration: InputDecoration(
-                          hintText: 'device_add_password'.tr(),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: false))),
-              IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 24, minHeight: 48),
-                  onPressed: state.busy ? null : controller.togglePassword,
-                  tooltip: 'device_add_show_password'.tr(),
-                  icon: FigmaIcon.tinted(
-                      state.showPassword || _password.text.isEmpty
-                          ? 'redesign_v2/visibility'
-                          : 'redesign_v2/visibility_off',
-                      size: 24,
-                      color: context.glass.deviceOff)),
-            ])),
-        const SizedBox(height: 8),
-        Semantics(
-            checked: state.remember,
-            child: InkWell(
-                onTap: state.busy
-                    ? null
-                    : () => controller.remember(!state.remember),
-                child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                    child: Row(children: [
-                      FigmaIcon.tinted(
-                          state.remember
-                              ? 'redesign_v2/check_box_300'
-                              : 'redesign_v2/check_box_outline_blank_300',
-                          size: 24,
-                          color: state.remember
-                              ? context.glass.navSelected
-                              : context.glass.deviceOff),
-                      const SizedBox(width: 4),
-                      Expanded(
-                          child: Text('device_add_remember'.tr(),
-                              style: managementStyle(context, size: 14))),
-                    ])))),
-      ];
-  List<Widget> _connecting(BuildContext context, DeviceAddState state) => [
-        const Spacer(),
-        const Center(child: _PairingProgress(size: 48)),
-        const SizedBox(height: 24),
-        Text('device_add_connecting'.tr(),
-            textAlign: TextAlign.center,
-            style: managementStyle(context, size: 18, weight: FontWeight.w600)),
-        const SizedBox(height: 16),
-        for (final result in state.results.values) _result(context, result),
-        const Spacer(),
-      ];
-  List<Widget> _results(BuildContext context, DeviceAddState state,
-      DeviceAddFlowController controller) {
+    ];
+    final footer = [
+      ManagementButton(
+          key: const Key('device_add_network_rescan'),
+          label: 'device_add_network_rescan'.tr(),
+          icon: 'redesign_v2/restart_alt',
+          onPressed: state.busy ? null : controller.loadNetworks),
+      _PairingTextButton(
+          key: const Key('device_add_manual'),
+          onPressed: state.busy ? null : () => _network(''),
+          child: Text('device_add_manual'.tr())),
+    ];
+    return (body, footer, null);
+  }
+
+  (List<Widget>, List<Widget>, Widget?) _credentials(BuildContext context,
+      DeviceAddState state, DeviceAddFlowController controller) {
+    final busy = state.busy || state.step == DeviceAddStep.connecting;
+    final body = [
+      _heading(
+          context,
+          'device_add_password_title',
+          state.ssid.isEmpty
+              ? 'device_add_password_subtitle'
+              : 'device_add_selected_network',
+          args: state.ssid.isEmpty ? [] : [state.ssid]),
+      if (state.ssid.isEmpty) ...[
+        _field(context,
+            child: TextField(
+                controller: _ssid,
+                enabled: !busy,
+                autocorrect: false,
+                style: managementStyle(context),
+                decoration: InputDecoration(
+                    hintText: 'device_add_ssid'.tr(),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    filled: false))),
+        const SizedBox(height: 12)
+      ],
+      // Figma 982:3174 — 369×65 r12 #FAFAFA/#E3E3E3, 글자 x+17, 눈 24 우 17
+      // (48 터치면 안에 가운데 → 오른쪽 안쪽 5).
+      _field(context,
+          padding: const EdgeInsets.only(left: 16, right: 5),
+          child: Row(children: [
+            Expanded(
+                child: TextField(
+                    controller: _password,
+                    enabled: !busy,
+                    obscureText: !state.showPassword,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    style: managementStyle(context),
+                    onChanged: (_) {
+                      ++_fillGeneration;
+                      setState(() {});
+                    },
+                    decoration: InputDecoration(
+                        hintText: 'device_add_password'.tr(),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false))),
+            IconButton(
+                key: const Key('device_add_eye'),
+                style: IconButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    fixedSize: const Size(48, 48),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                onPressed: busy ? null : controller.togglePassword,
+                tooltip: 'device_add_show_password'.tr(),
+                icon: FigmaIcon.tinted(
+                    state.showPassword || _password.text.isEmpty
+                        ? 'redesign_v2/visibility'
+                        : 'redesign_v2/visibility_off',
+                    size: 24,
+                    color: context.glass.deviceOff)),
+          ])),
+      const SizedBox(height: 12),
+      // Figma remember — 체크 24 x20(안쪽 8) + 4 + 14/500 #3C3C3C.
+      Semantics(
+          checked: state.remember,
+          child: InkWell(
+              onTap: busy ? null : () => controller.remember(!state.remember),
+              child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(children: [
+                    FigmaIcon.tinted(
+                        state.remember
+                            ? 'redesign_v2/check_box_300'
+                            : 'redesign_v2/check_box_outline_blank_300',
+                        size: 24,
+                        color: state.remember
+                            ? context.glass.navSelected
+                            : context.glass.deviceOff),
+                    const SizedBox(width: 4),
+                    Expanded(
+                        child: Text('device_add_remember'.tr(),
+                            style: managementStyle(context,
+                                    size: 14,
+                                    color: context.glass.textSecondary)
+                                .copyWith(height: 16.70703125 / 14))),
+                  ])))),
+    ];
+    // 빈 비밀번호 비활성은 AP 보안 정보가 없어 보류(개방형 AP 허용) — P11.
+    final footer = [
+      ManagementButton(
+          key: const Key('device_add_connect'),
+          label: 'device_add_connect'.tr(),
+          onPressed:
+              busy ? null : () => controller.connect(_ssid.text, _password.text)),
+    ];
+    return (body, footer, null);
+  }
+
+  Widget _field(BuildContext context,
+          {required Widget child,
+          EdgeInsets padding = const EdgeInsets.symmetric(horizontal: 16)}) =>
+      Container(
+          constraints: const BoxConstraints(minHeight: 65),
+          decoration: BoxDecoration(
+              color: ManagementColors.nameField(context),
+              border: Border.all(color: context.glass.border),
+              borderRadius: BorderRadius.circular(12)),
+          padding: padding,
+          child: child);
+
+  (List<Widget>, List<Widget>, Widget?) _results(BuildContext context,
+      DeviceAddState state, DeviceAddFlowController controller) {
     final confirmed =
         state.results.values.where((r) => r.registeredId != null).length;
     final retry = state.results.values.any((r) => r.canRetry);
     final pending = state.results.values
         .any((r) => r.outcome == DeviceAddOutcome.registrationPending);
-    return [
-      const Spacer(),
+    final titleKey = confirmed == 2
+        ? 'device_add_both_done'
+        : confirmed == 1
+            ? (state.results[PairTargetKind.device]?.registeredId != null
+                ? 'device_add_device_done'
+                : 'device_add_camera_done')
+            : 'device_add_results';
+    final topBar = state.results.values
+        .any((r) => r.outcome != DeviceAddOutcome.registered);
+    final body = [
+      // Figma 982:3643 — 체크 64 y308(상단바 없음: 62+16+230), 제목 y396(+24),
+      // 부제 y425(+8). 작은 화면은 비율로 줄인다.
+      SizedBox(
+          height: math.min(topBar ? 186 : 230,
+              MediaQuery.sizeOf(context).height * 0.27)),
       Center(
           child: FigmaIcon.tinted(
               confirmed > 0
@@ -527,18 +668,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
               size: 64,
               color: context.glass.textPrimary)),
       const SizedBox(height: 24),
-      Text(
-          (confirmed == 2
-                  ? 'device_add_both_done'
-                  : confirmed == 1
-                      ? (state.results[PairTargetKind.device]?.registeredId !=
-                              null
-                          ? 'device_add_device_done'
-                          : 'device_add_camera_done')
-                      : 'device_add_results')
-              .tr(),
+      Text(titleKey.tr(),
           textAlign: TextAlign.center,
-          style: managementStyle(context, size: 18, weight: FontWeight.w600)),
+          style: managementStyle(context, size: 18, weight: FontWeight.w600)
+              .copyWith(height: 21.48046875 / 18)),
       const SizedBox(height: 8),
       if (!retry && !pending && confirmed > 0)
         Text(
@@ -549,11 +682,13 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                         : 'device_add_continue_device_subtitle')
                 .tr(),
             textAlign: TextAlign.center,
-            style: managementStyle(context))
+            style: managementStyle(context, color: context.glass.bodySecondary)
+                .copyWith(height: 19.09375 / 16))
       else
         for (final result in state.results.values) _result(context, result),
       if (confirmed == 1 && !pending)
         _PairingTextButton(
+            key: const Key('device_add_link_existing'),
             onPressed: state.busy
                 ? null
                 : () {
@@ -572,8 +707,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             padding: const EdgeInsets.all(12),
             child: Text('device_add_group_error'.tr(),
                 textAlign: TextAlign.center)),
-      const Spacer(),
-      const SizedBox(height: 24),
+    ];
+    final footer = <Widget>[
       if (retry)
         ManagementButton(
             label: 'device_add_retry_failed'.tr(),
@@ -586,23 +721,25 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
         ManagementButton(
             label: 'device_add_retry_group'.tr(),
             onPressed: state.busy ? null : controller.groupConfirmed),
-      if (confirmed == 1 && !pending) ...[
-        const SizedBox(height: 8),
+      if (confirmed == 1 && !pending)
         ManagementButton(
+            key: const Key('device_add_continue_kind'),
             label: (state.results[PairTargetKind.device]?.registeredId != null
                     ? 'device_add_continue_camera'
                     : 'device_add_continue_device')
                 .tr(),
-            onPressed: state.busy ? null : controller.continueAdding)
-      ],
+            onPressed: state.busy ? null : controller.continueAdding),
       if (confirmed == 2 && !state.groupError)
         ManagementButton(
+            key: const Key('device_add_pet'),
             label: 'device_add_pet'.tr(),
             onPressed: state.busy ? null : () => _petChoice(state.groupId)),
       _PairingTextButton(
+          key: const Key('device_add_later'),
           onPressed: state.busy ? null : _home,
           child: Text('device_add_later'.tr())),
     ];
+    return (body, footer, null);
   }
 
   Future<void> _petChoice(String? groupId) async {
@@ -677,21 +814,47 @@ class _PairingProgressState extends State<_PairingProgress>
   Widget build(BuildContext context) => RotationTransition(
       turns: _rotation,
       child: FigmaIcon.tinted('redesign_v2/progress_activity',
-          size: widget.size, color: context.glass.textTertiary));
+          size: widget.size,
+          color: widget.size >= 48
+              ? context.glass.textSecondary
+              : context.glass.textTertiary));
 }
 
 /// Figma secondary CTA: 56 high, 18/600, same label role as primary text.
 class _PairingTextButton extends StatelessWidget {
-  const _PairingTextButton({required this.onPressed, required this.child});
+  const _PairingTextButton(
+      {super.key, required this.onPressed, required this.child});
   final VoidCallback? onPressed;
   final Widget child;
   @override
   Widget build(BuildContext context) => TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(
-          minimumSize: const Size(0, 56),
-          foregroundColor: context.glass.textPrimary,
-          textStyle:
-              managementStyle(context, size: 18, weight: FontWeight.w600)),
+          minimumSize: const Size(double.infinity, 56),
+          // Figma TextButton 18/600 #3C3C3C.
+          foregroundColor: context.glass.textSecondary,
+          textStyle: managementStyle(context, size: 18, weight: FontWeight.w600)
+              .copyWith(height: 28 / 18)),
       child: child);
+}
+
+/// Wi-Fi 연결 대기 (Figma 982:3604) — 흰 dim이 입력을 막고 가운데 62 스피너
+/// + 12 + 'WiFi 연결 중' 18/600 #3C3C3C. 상단 닫기까지 가려진다.
+class _ConnectingOverlay extends StatelessWidget {
+  const _ConnectingOverlay();
+  @override
+  Widget build(BuildContext context) => Positioned.fill(
+      key: const Key('device_add_connecting_overlay'),
+      child: AbsorbPointer(
+          child: ColoredBox(
+              color: context.glass.wallpaper.withValues(alpha: 0.8),
+              child: Center(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                const _PairingProgress(size: 62),
+                const SizedBox(height: 12),
+                Text('device_add_connecting'.tr(),
+                    style: managementStyle(context,
+                            size: 18, weight: FontWeight.w600)
+                        .copyWith(height: 28 / 18)),
+              ])))));
 }

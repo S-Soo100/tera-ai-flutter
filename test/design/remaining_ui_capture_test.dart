@@ -32,6 +32,12 @@ import 'package:vivanaut/features/my_cage/presentation/widgets/crecam_detail_top
 import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
 import 'package:vivanaut/core/theme/glass_palette.dart';
+import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
+import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
+import 'package:vivanaut/features/my_cage/domain/wifi_access_point.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_add_flow_screen.dart';
+import '../features/my_cage/device_add_flow_test.dart' show Gateway, device, camera;
 import 'package:vivanaut/features/my_cage/data/clip_memo_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/clip_memo.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
@@ -43,6 +49,7 @@ import 'package:vivanaut/features/my_cage/data/redesign_group_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/redesign_management.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_management_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_management_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/pairing_pet_selection_screen.dart';
 import 'package:vivanaut/features/my_pets/data/pet_repository.dart';
 import 'package:vivanaut/features/my_pets/domain/pet.dart';
 import 'package:vivanaut/features/my_pets/presentation/my_pets_providers.dart';
@@ -52,6 +59,28 @@ import 'package:vivanaut/features/wiki/presentation/wiki_providers.dart';
 import 'package:vivanaut/shared/widgets/figma_icon.dart';
 
 const _outDir = '/private/tmp/remaining-after';
+
+class _FlowController extends DeviceAddFlowController {
+  _FlowController(DeviceAddState initial)
+      : super(
+            gateway: Gateway(),
+            accountId: 'a',
+            isCurrent: () => true,
+            token: () => '',
+            namePrefix: (_) => '기기',
+            names: () async => [],
+            confirm: (_, __) async => null,
+            saveCredentials: (_, __) async {},
+            readCredentials: () async => {},
+            autoGroup: (_, __) async => 'group') {
+    state = initial;
+  }
+  @override
+  Future<void> scan() async {}
+  @override
+  Future<void> loadNetworks() async {}
+  void set(DeviceAddState next) => state = next;
+}
 
 class _Favorite extends Fake implements FavoriteClipRepository {
   @override
@@ -513,6 +542,140 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await capture(tester, boundary, 'p16-download-done');
     await tester.pump(const Duration(seconds: 3));
+    debugDisableShadows = true;
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('P03-P05 device add flow captures', (tester) async {
+    debugDisableShadows = false;
+    final boundary = GlobalKey();
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final controller = _FlowController(
+        const DeviceAddState(candidates: [device, camera], busy: true));
+    await tester.pumpWidget(shell(boundary, const DeviceAddFlowScreen(flowKey: 'cap'),
+        overrides: [
+          deviceAddAccountProvider.overrideWithValue('a'),
+          deviceAddFlowProvider('cap').overrideWith((ref) => controller),
+        ]));
+    await capture(tester, boundary, 'p03-scan-busy', settle: false);
+    controller.set(const DeviceAddState(candidates: [device, camera]));
+    await capture(tester, boundary, 'p03-scan-unselected');
+    controller.set(const DeviceAddState(
+        candidates: [device, camera], selected: {PairTargetKind.device: device}));
+    await capture(tester, boundary, 'p03-scan-one');
+    controller.set(const DeviceAddState());
+    await capture(tester, boundary, 'p03-scan-none');
+    controller.set(const DeviceAddState(step: DeviceAddStep.networks, networks: [
+      WifiAccessPoint(no: 1, ssid: 'iptime_office', rssi: -30, channel: 1),
+      WifiAccessPoint(no: 2, ssid: 'SK_WIFIGIGA88', rssi: -50, channel: 6),
+      WifiAccessPoint(no: 3, ssid: 'SK_WIFIGIGA66', rssi: -60, channel: 6),
+      WifiAccessPoint(no: 4, ssid: 'SK_WIFIGIGA11', rssi: -70, channel: 11),
+    ]));
+    await capture(tester, boundary, 'p04-networks');
+    controller.set(const DeviceAddState(step: DeviceAddStep.networks));
+    await capture(tester, boundary, 'p04-networks-none');
+    controller.set(const DeviceAddState(
+        step: DeviceAddStep.credentials, ssid: 'iptime_office'));
+    await capture(tester, boundary, 'p04-password-empty');
+    await tester.enterText(find.byType(TextField), '123456496jsdhoij!#!@');
+    await capture(tester, boundary, 'p04-password-filled');
+    controller.set(const DeviceAddState(
+        step: DeviceAddStep.connecting, ssid: 'iptime_office'));
+    await capture(tester, boundary, 'p04-connecting', settle: false);
+    controller.set(const DeviceAddState(
+        step: DeviceAddStep.results,
+        ssid: 'iptime_office',
+        results: {
+          PairTargetKind.device: DeviceAddResult(
+              candidate: device, outcome: DeviceAddOutcome.wifiFailed),
+        }));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await capture(tester, boundary, 'p04-password-error');
+    await tester.tap(find.text('확인'));
+    await tester.pumpAndSettle();
+    controller.set(const DeviceAddState(step: DeviceAddStep.results, results: {
+      PairTargetKind.device: DeviceAddResult(
+          candidate: device,
+          outcome: DeviceAddOutcome.registered,
+          registeredId: 'd'),
+    }));
+    await capture(tester, boundary, 'p05-result-device');
+    controller.set(const DeviceAddState(step: DeviceAddStep.results, results: {
+      PairTargetKind.device: DeviceAddResult(
+          candidate: device,
+          outcome: DeviceAddOutcome.registered,
+          registeredId: 'd'),
+      PairTargetKind.camera: DeviceAddResult(
+          candidate: camera,
+          outcome: DeviceAddOutcome.registered,
+          registeredId: 'c'),
+    }));
+    await capture(tester, boundary, 'p05-result-both');
+    debugDisableShadows = true;
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('P05 pet selection captures', (tester) async {
+    debugDisableShadows = false;
+    final boundary = GlobalKey();
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final now = DateTime(2026, 9, 15);
+    Pet pet(String id, String name,
+            {String sex = 'unknown', String? morph, double? w}) =>
+        Pet(
+            id: id,
+            name: name,
+            speciesId: 'crested-gecko',
+            speciesName: '크레스티드 게코',
+            sex: sex,
+            morph: morph,
+            weight: w,
+            enclosureId: 'target',
+            createdAt: now,
+            updatedAt: now);
+    ManagementInventory inventory(int count) => ManagementInventory(groups: [
+          const ManagementGroup(id: 'target', name: '사육 환경 1'),
+        ], items: [
+          const ManagementItem(
+              key: ManagementKey(kind: ManagementKind.device, id: 'device'),
+              name: '온습도계',
+              groupId: 'target'),
+          for (var i = 0; i < count; i++)
+            ManagementItem(
+                key: ManagementKey(kind: ManagementKind.pet, id: 'p$i'),
+                name: i == 0 ? '크레 이름' : '둘째',
+                groupId: i == 0 ? 'target' : null),
+        ]);
+    Future<void> pumpPets(int count) async {
+      await tester.pumpWidget(shell(
+          boundary, const PairingPetSelectionScreen(groupId: 'target'),
+          overrides: [
+            managementInventoryProvider
+                .overrideWith((ref) async => inventory(count)),
+            redesignGroupRepositoryProvider.overrideWith((ref) =>
+                RedesignGroupRepository(
+                    loadRows: (_) async => [], rpc: (_, __) async => null)),
+            pairingPetsProvider.overrideWith((ref) => [
+                  for (var i = 0; i < count; i++)
+                    pet('p$i', i == 0 ? '크레 이름' : '둘째',
+                        sex: 'female', morph: '아잔틱 릴리 화이트', w: 21),
+                ]),
+            managementMutationCompletedProvider.overrideWithValue(() {}),
+          ]));
+      await tester.pumpAndSettle();
+    }
+
+    await pumpPets(3);
+    await capture(tester, boundary, 'p05-pet-selection');
+    await pumpPets(1);
+    await capture(tester, boundary, 'p05-pet-single');
     debugDisableShadows = true;
     await tester.binding.setSurfaceSize(null);
   });

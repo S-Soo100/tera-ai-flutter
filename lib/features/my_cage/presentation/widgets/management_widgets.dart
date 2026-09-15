@@ -11,10 +11,16 @@ class ManagementTopBar extends StatelessWidget {
       {super.key,
       required this.title,
       required this.onBack,
-      this.close = false});
+      this.close = false,
+      this.onClose});
   final String title;
   final VoidCallback onBack;
+
+  /// true면 단일 버튼이 오른쪽 닫기(X)가 된다.
   final bool close;
+
+  /// 왼쪽 뒤로가기와 별도로 오른쪽 닫기를 함께 둔다(Figma 982:3103 TopNav).
+  final VoidCallback? onClose;
   @override
   Widget build(BuildContext context) => SizedBox(
       height: 44,
@@ -37,6 +43,22 @@ class ManagementTopBar extends StatelessWidget {
                         close ? FigmaIcons.close : FigmaIcons.arrowPrevious,
                         size: 24,
                         color: context.glass.textPrimary)))),
+        if (!close && onClose != null)
+          Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: IconButton(
+                      key: const Key('management_top_close'),
+                      padding: const EdgeInsets.all(10),
+                      constraints:
+                          const BoxConstraints.tightFor(width: 44, height: 44),
+                      onPressed: onClose,
+                      tooltip: MaterialLocalizations.of(context)
+                          .closeButtonTooltip,
+                      icon: FigmaIcon.tinted(FigmaIcons.close,
+                          size: 24, color: context.glass.textPrimary)))),
       ]));
 }
 
@@ -67,11 +89,15 @@ class ManagementButton extends StatelessWidget {
       required this.label,
       required this.onPressed,
       this.red = false,
-      this.compact = false});
+      this.compact = false,
+      this.icon});
   final String label;
   final VoidCallback? onPressed;
   final bool red;
   final bool compact;
+
+  /// 글자 앞 24 그림(Figma restart_alt 등) — 간격 4.
+  final String? icon;
   @override
   Widget build(BuildContext context) => ConstrainedBox(
       constraints:
@@ -87,13 +113,21 @@ class ManagementButton extends StatelessWidget {
               foregroundColor: ManagementColors.buttonForeground(context),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12))),
-          child: Text(label,
-              textAlign: TextAlign.center,
-              style: managementStyle(context,
-                      size: compact ? 16 : 18,
-                      weight: FontWeight.w600,
-                      color: ManagementColors.buttonForeground(context))
-                  .copyWith(height: 28 / (compact ? 16 : 18)))));
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (icon case final asset?) ...[
+              FigmaIcon.tinted(asset,
+                  size: 24, color: ManagementColors.buttonForeground(context)),
+              const SizedBox(width: 4),
+            ],
+            Flexible(
+                child: Text(label,
+                    textAlign: TextAlign.center,
+                    style: managementStyle(context,
+                            size: compact ? 16 : 18,
+                            weight: FontWeight.w600,
+                            color: ManagementColors.buttonForeground(context))
+                        .copyWith(height: 28 / (compact ? 16 : 18)))),
+          ])));
 }
 
 class ManagementNameField extends StatelessWidget {

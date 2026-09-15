@@ -586,6 +586,248 @@
     "진행 중 닫기까지 가려진다 — 저장은 짧고 서버 취소 계약이 없다. 진행률은 제공되지 않아 퍼센트를 표시하지 않는다.",
     "clipId는 시작 시 고정(진행 중 클립 전환 무관)."
    ]
+  },
+  {
+   "id": "P03",
+   "title": "BLE 검색·선택",
+   "status": "수정 완료",
+   "pairs": [
+    {
+     "figma": "figma/971-1837.png",
+     "before": "app/pairing-scan-busy.png",
+     "after": "after/p03-scan-busy.png",
+     "label": "스캔 중 (제목 옆 스피너, 회색 다시 스캔)"
+    },
+    {
+     "figma": "figma/990-11220.png",
+     "before": "app/pairing-scan-unselected.png",
+     "after": "after/p03-scan-unselected.png",
+     "label": "미선택"
+    },
+    {
+     "figma": "figma/990-7601.png",
+     "before": "app/pairing-scan-one.png",
+     "after": "after/p03-scan-one.png",
+     "label": "1개 선택 + 안내"
+    },
+    {
+     "figma": "figma/990-11450.png",
+     "before": "app/pairing-scan-none.png",
+     "after": "after/p03-scan-none.png",
+     "label": "검색 결과 없음"
+    }
+   ],
+   "measurements": [
+    [
+     "제목/부제",
+     "24/122 18/600/21.48, 24/151 14/500/16.7 #626262, 스피너 20 x+8",
+     "동일(스피너 146.2/122.5)",
+     "일치"
+    ],
+    [
+     "목록 행",
+     "369×64 #F4F4F4 하단선, 아이콘 36 x28, 라벨 x76 16/600, 이름 우측 16/600 #1E1E1E, dBm 14/500 #949090 + 신호 16 #B4AEAE x313, 체크 24 x341",
+     "라벨 76/206.5, dBm 219, 신호 313/219.5, 체크 341/204",
+     "일치"
+    ],
+    [
+     "CTA",
+     "x12 y696 369×56: 미선택 다시 스캔(restart 24+4, 스캔 중 #E3E3E3), 선택 기기 N개 추가 #1E1E1E",
+     "동일(아이콘 151.5 vs 149.5)",
+     "일치(2pt)"
+    ],
+    [
+     "안내",
+     "함께 사용할 기기를 선택해 주세요 y667 (1개 선택 시)",
+     "y667",
+     "일치"
+    ],
+    [
+     "빈 결과",
+     "369×64 r12 #F4F4F4, 검색된 기기가 없습니다 x28 16/500/28 #949090",
+     "동일",
+     "일치 — 이전 평문+긴 문구"
+    ],
+    [
+     "재검색 진입",
+     "원본에 없음(선택 해제로 다시 스캔 복귀)",
+     "선택 재탭=해제, 이전 별도 텍스트 버튼 제거",
+     "원본 패턴 유지"
+    ]
+   ],
+   "notes": [
+    "실제 RSSI·기기 이름 사용, 가짜 항목 없음. 320폭/큰 글자 overflow 테스트(기존) 통과."
+   ]
+  },
+  {
+   "id": "P04",
+   "title": "Wi-Fi 목록·비밀번호·대기·오류",
+   "status": "수정 완료(보안 정보는 결정 대기)",
+   "pairs": [
+    {
+     "figma": "figma/982-3103.png",
+     "before": "app/pairing-network-list.png",
+     "after": "after/p04-networks.png",
+     "label": "네트워크 목록 (잠금 그림은 AP 보안 정보 없어 미표시)"
+    },
+    {
+     "figma": "figma/990-11380.png",
+     "before": "app/pairing-network-none.png",
+     "after": "after/p04-networks-none.png",
+     "label": "네트워크 없음"
+    },
+    {
+     "figma": "figma/982-3174.png",
+     "before": "app/pairing-password-empty.png",
+     "after": "after/p04-password-empty.png",
+     "label": "비밀번호 빈 상태 (CTA 활성 유지 — 결정 대기)"
+    },
+    {
+     "figma": "figma/982-3413.png",
+     "before": "app/pairing-password-filled.png",
+     "after": "after/p04-password-filled.png",
+     "label": "비밀번호 입력"
+    },
+    {
+     "figma": "figma/982-3604.png",
+     "before": "app/pairing-connecting.png",
+     "after": "after/p04-connecting.png",
+     "label": "연결 대기 overlay"
+    },
+    {
+     "figma": "figma/982-3500.png",
+     "before": "app/pairing-password-error.png",
+     "after": "after/p04-password-error.png",
+     "label": "비밀번호 오류 모달"
+    }
+   ],
+   "measurements": [
+    [
+     "네트워크 행",
+     "369×65, ssid x28 16/600 #3C3C3C, wifi 24 x341, 잠금 24 x313(보안 AP)",
+     "ssid 28/207, wifi 341/204.5, 잠금 미표시",
+     "일치(잠금 제외)"
+    ],
+    [
+     "CTA 2단",
+     "네트워크 재검색 y696(restart) + 직접 입력 y752 18/600 #3C3C3C",
+     "128.7/712·154/710·164.2/766",
+     "일치"
+    ],
+    [
+     "상단바",
+     "뒤로 + 닫기(우 338)",
+     "네트워크·비밀번호 단계 닫기 추가",
+     "일치"
+    ],
+    [
+     "비밀번호 필드",
+     "369×65 r12 #FAFAFA/#E3E3E3 y184, 글자 x29, 눈 24 x340",
+     "y184 h65, 눈 339/204.5(48 터치면)",
+     "일치(1pt)"
+    ],
+    [
+     "기억하기",
+     "체크 24 x20 y261, 글 x48 14/500 #3C3C3C",
+     "20/261, 48/264.5",
+     "일치"
+    ],
+    [
+     "키보드 위 CTA",
+     "y466 (키보드 565 위 43)",
+     "viewInsets 287 → 466 (테스트)",
+     "일치, 실기기 키보드 높이는 시뮬 확인"
+    ],
+    [
+     "연결 대기",
+     "흰 Dim + 스피너 62 (165.5,375) + WiFi 연결 중 y449",
+     "overlay 62 가운데 + 12",
+     "일치"
+    ],
+    [
+     "오류 모달",
+     "345×144 r12 y354, 문구 18/500/28 y378, 확인 297×44 r8 y430",
+     "문구 378, 확인 438(글자)",
+     "일치"
+    ],
+    [
+     "빈 비밀번호 비활성/자물쇠",
+     "원본 회색 CTA·자물쇠",
+     "AP 보안 정보 없음 → 활성 유지·자물쇠 미표시",
+     "P11 결정 대기"
+    ]
+   ],
+   "notes": [
+    "모든 실패를 비밀번호 오류로 바꾸지 않았다: 결과가 전부 wifiFailed일 때만 모달+입력 유지, timeout/등록 대기는 기존 결과 화면.",
+    "WiFi 비밀 번호 입력(원본 띄어쓰기)은 오탈자로 보고 기존 표기 유지."
+   ]
+  },
+  {
+   "id": "P05",
+   "title": "연결 완료·개체 선택",
+   "status": "수정 완료",
+   "pairs": [
+    {
+     "figma": "figma/982-3643.png",
+     "before": "app/pairing-result-device.png",
+     "after": "after/p05-result-device.png",
+     "label": "사육장 완료"
+    },
+    {
+     "figma": "figma/990-11583.png",
+     "before": "app/pairing-result-both.png",
+     "after": "after/p05-result-both.png",
+     "label": "둘 다 완료"
+    },
+    {
+     "figma": "figma/1043-5893.png",
+     "before": "app/pairing-pet-selected.png",
+     "after": "after/p05-pet-selection.png",
+     "label": "개체 여러 마리"
+    },
+    {
+     "figma": "figma/1043-5992.png",
+     "before": "app/pairing-pet-small.png",
+     "after": "after/p05-pet-single.png",
+     "label": "개체 한 마리 (확인형 제목)"
+    }
+   ],
+   "measurements": [
+    [
+     "완료 블록",
+     "체크 64 (164.5,308), 제목 y396 18/600, 부제 y425 16/500 #626262",
+     "308/396/425",
+     "일치 — 이전 Spacer 배분"
+    ],
+    [
+     "완료 CTA",
+     "y696 + 나중에 하기 y752",
+     "696/752(글자 710/766)",
+     "일치"
+    ],
+    [
+     "기존 기기와 연결",
+     "원본 없음",
+     "부제 아래 텍스트 버튼 유지(승인 경로)",
+     "유지"
+    ],
+    [
+     "개체 제목",
+     "여러 마리 y174 / 한 마리 y266, 부제 +29",
+     "174/203, 266/295",
+     "일치"
+    ],
+    [
+     "개체 카드",
+     "345×112 r12 #F4F4F4 x24, 사진 80 r4, 이름 x136 y+34 16/700, 태그 40×24 r12 14/700 #D61619, 체크 24 x329 y+16",
+     "이름 136/281, 태그 209/282, 상세 308.5, 체크 329/262",
+     "일치(1pt)"
+    ]
+   ],
+   "notes": [
+    "긴 이름/모프는 축소하지 않고 말줄임, 목록은 CTA 뒤로 스크롤(하단 여백 138).",
+    "부분 성공/등록 대기/실패 재시도는 원본 프레임이 없어 기존 복구 흐름을 새 footer 안에 유지."
+   ]
   }
  ]
 }
