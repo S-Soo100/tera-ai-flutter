@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/figma_icon.dart';
+import '../../../shared/widgets/redesign_empty_state.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../data/activity_repository.dart';
 import '../domain/activity_summary.dart';
@@ -64,30 +65,11 @@ class MyCreActivityScreen extends ConsumerWidget {
                                       letterSpacing: -.32,
                                       color: context.glass.bodySecondary)),
                           const SizedBox(height: 16),
-                          SizedBox(
-                              width: double.infinity,
-                              height: 56,
-                              child: FilledButton(
-                                  key: const Key('activity_add_pet'),
-                                  onPressed: onAddPet,
-                                  style: FilledButton.styleFrom(
-                                      backgroundColor:
-                                          context.glass.textPrimary,
-                                      foregroundColor:
-                                          context.glass.surfaceHeader,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12))),
-                                  child: Text('activity_add_pet'.tr(),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w600,
-                                              letterSpacing: -.36,
-                                              color: context
-                                                  .glass.surfaceHeader)))),
+                          // Figma 1043:5161 — 172x56 pill with add glyph.
+                          RedesignPillCta(
+                              key: const Key('activity_add_pet'),
+                              label: 'activity_add_pet'.tr(),
+                              onPressed: onAddPet),
                         ]))),
               ])));
     }
@@ -173,43 +155,12 @@ class MyCreActivityScreen extends ConsumerWidget {
                                                 color: context
                                                     .glass.bodySecondary)),
                                     const SizedBox(height: 16),
-                                    SizedBox(
-                                        height: 56,
-                                        child: FilledButton(
-                                            key: const Key(
-                                                'activity_connect_camera'),
-                                            onPressed: onConnectCamera,
-                                            style: FilledButton.styleFrom(
-                                                backgroundColor:
-                                                    context.glass.navSelected,
-                                                foregroundColor: context
-                                                    .glass.buttonForeground,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 24),
-                                                shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            28))),
-                                            child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  FigmaIcon.tinted(
-                                                      FigmaIcons.add,
-                                                      size: 24,
-                                                      color: context.glass
-                                                          .buttonForeground),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                      'activity_connect_camera'
-                                                          .tr(),
-                                                      style: const TextStyle(
-                                                          fontSize: 18,
-                                                          height: 28 / 18,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          letterSpacing: -.36)),
-                                                ]))),
+                                    // Figma 1107:9719 — 218x56 pill.
+                                    RedesignPillCta(
+                                        key: const Key(
+                                            'activity_connect_camera'),
+                                        label: 'activity_connect_camera'.tr(),
+                                        onPressed: onConnectCamera),
                                   ])),
                             const SizedBox(height: 20),
                             _DateRow(

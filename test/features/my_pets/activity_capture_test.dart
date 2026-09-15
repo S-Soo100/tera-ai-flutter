@@ -104,6 +104,7 @@ void main() {
                                 onSelected: (_) {})),
                         onAddPet: () {},
                         onEditPet: () {},
+                        onConnectCamera: () {},
                       ))))));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -148,6 +149,7 @@ void main() {
             speciesId: 's',
             speciesName: '크레스티드 게코'),
         linked: false);
+    await capture('mycre-unlinked');
     await tester.drag(
         find.byType(SingleChildScrollView).first, const Offset(0, -600));
     await tester.pumpAndSettle();

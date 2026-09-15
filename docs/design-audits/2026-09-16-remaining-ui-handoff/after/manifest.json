@@ -90,6 +90,97 @@
     "원본 예시의 타 종 모프 이름은 앱 카탈로그에 넣지 않았다.",
     "캡처는 위젯 테스트 fixture(393×852, SafeArea 62/34)이며 실기기 키보드는 시뮬레이터에서 별도 확인."
    ]
+  },
+  {
+   "id": "P06",
+   "title": "빈 화면·미연결 MyCre",
+   "status": "수정 완료",
+   "pairs": [
+    {
+     "figma": "figma/1063-7793.png",
+     "before": "app/redesign-home-empty.png",
+     "after": "after/p06-home-empty.png",
+     "label": "홈 빈 화면"
+    },
+    {
+     "figma": "figma/1063-7731.png",
+     "before": "app/redesign-camera-empty-isolated.png",
+     "after": "after/p06-camera-empty.png",
+     "label": "카메라 빈 화면"
+    },
+    {
+     "figma": "figma/1063-7663.png",
+     "before": null,
+     "after": "after/p06-mycre-empty.png",
+     "label": "MyCre 미등록"
+    },
+    {
+     "figma": "figma/1107-9719.png",
+     "before": null,
+     "after": "after/p06-mycre-unlinked.png",
+     "label": "MyCre 개체 있음·카메라 미연결 (원본 1109 높이 프레임 상단)"
+    },
+    {
+     "figma": "figma/990-11767.png",
+     "before": null,
+     "after": "after/p06-management-empty.png",
+     "label": "기기 관리 0개"
+    }
+   ],
+   "measurements": [
+    [
+     "빈 화면 그림",
+     "x24 y250 345×227",
+     "Empty_0*x3 scale3, 그림 첫 행 홈270/카메라297(원본 Group 271/291.6)",
+     "일치"
+    ],
+    [
+     "안내 문구",
+     "y493 16/500/19.09/-0.32 #626262 중앙",
+     "y493 16/500/19/-0.32 bodySecondary(#626262)",
+     "색 #3C3C3C→#626262 수정"
+    ],
+    [
+     "CTA 홈/카메라",
+     "x125.5 y547 142×56 r29.5 #C00306",
+     "x127~266(AA 제외) y547 h56 StadiumBorder navSelected",
+     "일치"
+    ],
+    [
+     "CTA MyCre 미등록",
+     "x110.5 y547 172×56",
+     "x111~282 y547 h56",
+     "일치(구 검정 전폭 r12 교체)"
+    ],
+    [
+     "CTA MyCre 미연결",
+     "x87.5 y285 218×56",
+     "x88~305 y285 h56",
+     "일치(r28→Stadium)"
+    ],
+    [
+     "CTA 내부",
+     "pad24 + add24 + gap4 + 18/600/28/-0.36 #FAFAFA",
+     "동일, buttonForeground(#FAFAFA)",
+     "일치"
+    ],
+    [
+     "기기관리 라벨/박스",
+     "라벨 y122·y249 #949090, 박스 369×64 r12 #F4F4F4 y153·y280, 내부 x28",
+     "라벨 y122·y249, 박스 y154~216·281~343(AA 제외), 내부 x28",
+     "일치(그룹 없음 박스 신설, 간격 20→32)"
+    ],
+    [
+     "기기관리 하단 CTA",
+     "x12 y696 369×56 r12",
+     "x12 y696 369×56 (기존 ManagementButton)",
+     "일치"
+    ]
+   ],
+   "notes": [
+    "긴 라벨은 Flexible로 줄바꿈되며 알약이 커진다(잘림 없음). 큰 글자 설정은 시뮬레이터 별도 확인.",
+    "시뮬레이터는 비로그인 상태라 로그인 필요 화면은 사용자 로그인 후 확인."
+   ]
   }
  ]
 }

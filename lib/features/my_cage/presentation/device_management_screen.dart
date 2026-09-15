@@ -38,10 +38,22 @@ class DeviceManagementScreen extends ConsumerWidget {
                                     ManagementLabel('management_groups'.tr()),
                                     const SizedBox(height: 12),
                                     if (inventory.groups.isEmpty)
-                                      Padding(
+                                      // Figma 990:11767 — 369x64 #F4F4F4 r12.
+                                      Container(
+                                          key: const Key('management_no_groups'),
+                                          constraints: const BoxConstraints(
+                                              minHeight: 64),
+                                          alignment: Alignment.centerLeft,
                                           padding: const EdgeInsets.all(16),
-                                          child:
-                                              Text('management_no_groups'.tr()))
+                                          decoration: BoxDecoration(
+                                              color: context.glass.overlay,
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
+                                          child: Text(
+                                              'management_no_groups'.tr(),
+                                              style: managementStyle(context,
+                                                  color: context
+                                                      .glass.textTertiary)))
                                     else
                                       for (final (index, group)
                                           in inventory.groups.indexed) ...[
@@ -55,7 +67,7 @@ class DeviceManagementScreen extends ConsumerWidget {
                                       ],
                                     SizedBox(
                                         height: inventory.groups.isEmpty
-                                            ? 20
+                                            ? 32
                                             : 36),
                                     ManagementLabel(
                                         'management_ungrouped'.tr()),

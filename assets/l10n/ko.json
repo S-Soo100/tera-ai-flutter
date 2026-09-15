@@ -139,7 +139,7 @@
   "management_groups": "사육 환경 그룹",
   "management_group_number": "그룹 {number}",
   "management_ungrouped": "그룹 없음",
-  "management_no_groups": "지정된 그룹이 없습니다. 그룹을 추가해 주세요.",
+  "management_no_groups": "지정된 그룹이 없습니다",
   "management_no_items": "해당하는 기기가 없습니다",
   "management_add_device": "기기 추가",
   "management_add_group": "그룹 추가",

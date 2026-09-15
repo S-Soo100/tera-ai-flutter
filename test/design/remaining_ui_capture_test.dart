@@ -14,6 +14,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
+import 'package:vivanaut/features/my_cage/data/redesign_group_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/redesign_management.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_management_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_management_screen.dart';
 import 'package:vivanaut/features/my_pets/data/pet_repository.dart';
 import 'package:vivanaut/features/my_pets/domain/pet.dart';
 import 'package:vivanaut/features/my_pets/presentation/my_pets_providers.dart';
@@ -176,6 +180,23 @@ void main() {
     }
     await tester.tap(find.byKey(const ValueKey('pet-form-morph-clear')));
     await capture(tester, boundary, 'p01-morph-cleared');
+    debugDisableShadows = true;
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('P06 device management empty capture', (tester) async {
+    debugDisableShadows = false;
+    final boundary = GlobalKey();
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await tester.pumpWidget(shell(boundary, const DeviceManagementScreen(),
+        overrides: [
+          managementInventoryProvider.overrideWith(
+              (ref) async => ManagementInventory(groups: [], items: [])),
+          redesignGroupRepositoryProvider.overrideWith((ref) =>
+              RedesignGroupRepository(
+                  loadRows: (_) async => [], rpc: (_, __) async => null)),
+        ]));
+    await capture(tester, boundary, 'p06-management-empty');
     debugDisableShadows = true;
     await tester.binding.setSurfaceSize(null);
   });
