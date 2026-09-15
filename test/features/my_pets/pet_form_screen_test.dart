@@ -40,6 +40,8 @@ class _Strings extends AssetLoader {
         'pet_form_save': '저장',
         'pet_form_back': '뒤로',
         'pet_form_photo_add': '사진 추가',
+        'pet_form_photo_replace': '사진 교체',
+        'pet_form_photo_remove': '사진 삭제',
         'pet_form_discard_title': '입력을 취소할까요?',
         'pet_form_discard_body': '저장하지 않은 변경사항이 사라집니다.',
         'pet_form_keep': '계속 입력',
@@ -51,7 +53,9 @@ class _Strings extends AssetLoader {
 }
 
 Future<void> _pump(WidgetTester tester,
-    {Pet? original, bool failSave = false}) async {
+    {Pet? original,
+    bool failSave = false,
+    Future<void> Function(Pet, String?)? save}) async {
   tester.view.physicalSize = const Size(393, 852);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
@@ -79,7 +83,8 @@ Future<void> _pump(WidgetTester tester,
                                   .push(MaterialPageRoute<void>(
                                       builder: (_) => PetFormScreen(
                                           original: original,
-                                          onSave: (_, __) async {
+                                          onSave: (pet, group) async {
+                                            await save?.call(pet, group);
                                             if (failSave) {
                                               throw Exception('offline');
                                             }
@@ -191,6 +196,61 @@ void main() {
     expect(await saveEnabled(), isTrue);
     await name('   ');
     expect(await saveEnabled(), isFalse);
+  });
+
+  testWidgets(
+      'date cancel preserves value and selection none clears only the date',
+      (tester) async {
+    final pet = Pet(
+        id: 'date',
+        name: '도도',
+        speciesId: 'crested-gecko',
+        speciesName: '크레스티드 게코',
+        birthDate: DateTime(2026, 1, 12));
+    await _pump(tester, original: pet);
+    await tester.scrollUntilVisible(find.text('2026. 1. 12'), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('2026. 1. 12'));
+    await tester.pumpAndSettle();
+    final dialog = find.byType(Dialog);
+    expect(find.descendant(of: dialog, matching: find.text('선택 안함')),
+        findsOneWidget);
+    await tester.tap(find.descendant(of: dialog, matching: find.text('취소')));
+    await tester.pumpAndSettle();
+    expect(find.text('2026. 1. 12'), findsOneWidget);
+    await tester.tap(find.text('2026. 1. 12'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+        find.descendant(of: find.byType(Dialog), matching: find.text('선택 안함')));
+    await tester.pumpAndSettle();
+    expect(find.text('2026. 1. 12'), findsNothing);
+    expect(pet.birthDate, DateTime(2026, 1, 12));
+  });
+
+  testWidgets('weight unit stays display-only and decimal precision is saved',
+      (tester) async {
+    Pet? saved;
+    await _pump(tester,
+        original: Pet(
+            id: 'weight',
+            name: '도도',
+            speciesId: 'crested-gecko',
+            speciesName: '크레스티드 게코',
+            weight: 30), save: (pet, _) async {
+      saved = pet;
+    });
+    final field = find.byKey(const ValueKey('pet-form-weight'));
+    await tester.scrollUntilVisible(field, 300,
+        scrollable: find.byType(Scrollable).first);
+    expect(tester.widget<TextFormField>(field).controller!.text, '30g');
+    await tester.enterText(field, '30.125');
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextFormField>(field).controller!.text, '30.125g');
+    await tester.scrollUntilVisible(find.text('저장'), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('저장'));
+    await tester.pumpAndSettle();
+    expect(saved?.weight, 30.125);
   });
 
   testWidgets('failed save remains on form with changed input', (tester) async {

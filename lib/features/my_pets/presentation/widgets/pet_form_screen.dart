@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -38,6 +39,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   late final TextEditingController _memo;
   bool _exitDialogOpen = false;
   final _speciesAnchor = GlobalKey();
+  final _photoAnchor = GlobalKey();
 
   @override
   void initState() {
@@ -47,7 +49,8 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
         original: widget.original,
         initialGroupId: widget.initialGroupId);
     _name = TextEditingController(text: _session.initial.name);
-    _weight = TextEditingController(text: _session.initial.weight);
+    _weight =
+        TextEditingController(text: _weightWithUnit(_session.initial.weight));
     _memo = TextEditingController(text: _session.initial.memo);
   }
 
@@ -129,21 +132,63 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
 
   Future<void> _photo() async {
     final draft = ref.read(petFormProvider(_session)).draft;
-    final action = await showModalBottomSheet<String>(
+    final String? action;
+    if (draft.photoPath != null) {
+      final box = _photoAnchor.currentContext!.findRenderObject()! as RenderBox;
+      final overlay =
+          Overlay.of(context).context.findRenderObject()! as RenderBox;
+      final origin = box.localToGlobal(Offset.zero, ancestor: overlay);
+      final palette = context.glass;
+      action = await showMenu<String>(
         context: context,
-        builder: (ctx) => SafeArea(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                ListTile(
-                    title: Text(draft.photoPath == null
-                        ? 'pet_form_photo_add'.tr()
-                        : 'pet_form_photo_replace'.tr()),
+        color: palette.surfaceHeader,
+        surfaceTintColor: Colors.transparent,
+        elevation: 6,
+        shadowColor: palette.textPrimary.withValues(alpha: .12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        constraints: const BoxConstraints.tightFor(width: 106),
+        menuPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        position: RelativeRect.fromRect(
+            Rect.fromLTWH(origin.dx + box.size.width - 106,
+                origin.dy + box.size.height + 4, 106, 0),
+            Offset.zero & overlay.size),
+        items: [
+          for (final item in [
+            ('pick', 'pet_form_photo_replace'),
+            ('remove', 'pet_form_photo_remove')
+          ])
+            PopupMenuItem<String>(
+              value: item.$1,
+              height: 44,
+              padding: EdgeInsets.zero,
+              child: Container(
+                height: 44,
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: item.$1 == 'pick'
+                    ? BoxDecoration(
+                        border:
+                            Border(bottom: BorderSide(color: palette.border)))
+                    : null,
+                child: Text(item.$2.tr(),
+                    style: petFormText(context).copyWith(
+                        fontSize: 18,
+                        height: 28 / 18,
+                        letterSpacing: -.36,
+                        color: palette.textSecondary)),
+              ),
+            ),
+        ],
+      );
+    } else {
+      action = await showModalBottomSheet<String>(
+          context: context,
+          builder: (ctx) => SafeArea(
+                child: ListTile(
+                    title: Text('pet_form_photo_add'.tr()),
                     onTap: () => Navigator.pop(ctx, 'pick')),
-                if (draft.photoPath != null)
-                  ListTile(
-                      title: Text('pet_form_photo_remove'.tr()),
-                      onTap: () => Navigator.pop(ctx, 'remove')),
-              ]),
-            ));
+              ));
+    }
     if (!mounted) return;
     if (action == 'remove') {
       _change((d) => d.copyWith(photoPath: null));
@@ -174,16 +219,48 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
     final now = DateUtils.dateOnly(DateTime.now());
     final first =
         old != null && old.isBefore(DateTime(1900)) ? old : DateTime(1900);
-    final picked = await showDatePicker(
+    var selected = old == null || old.isAfter(now) ? now : old;
+    final picked = await showDialog<({DateTime? value})>(
         context: context,
-        initialDate: old == null || old.isAfter(now) ? now : old,
-        firstDate: first,
-        lastDate: now,
-        helpText: (birth ? 'pet_form_birth' : 'pet_form_adoption').tr());
+        builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
+              final labels = MaterialLocalizations.of(ctx);
+              return AlertDialog(
+                backgroundColor: ctx.glass.surfaceHeader,
+                surfaceTintColor: Colors.transparent,
+                insetPadding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                title:
+                    Text((birth ? 'pet_form_birth' : 'pet_form_adoption').tr()),
+                content: SizedBox(
+                  width: 328,
+                  height: 336,
+                  child: CalendarDatePicker(
+                    initialDate: selected,
+                    firstDate: first,
+                    lastDate: now,
+                    onDateChanged: (date) =>
+                        setDialogState(() => selected = date),
+                  ),
+                ),
+                actions: [
+                  if (old != null)
+                    TextButton(
+                        onPressed: () => Navigator.pop(ctx, (value: null)),
+                        child: Text('pet_form_none'.tr())),
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(labels.cancelButtonLabel)),
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, (value: selected)),
+                      child: Text(labels.okButtonLabel)),
+                ],
+              );
+            }));
     if (mounted && picked != null) {
       _change((d) => birth
-          ? d.copyWith(birthDate: picked)
-          : d.copyWith(adoptionDate: picked));
+          ? d.copyWith(birthDate: picked.value)
+          : d.copyWith(adoptionDate: picked.value));
     }
   }
 
@@ -308,6 +385,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                                       right: 12,
                                       bottom: 12,
                                       child: Container(
+                                          key: _photoAnchor,
                                           width: 36,
                                           height: 36,
                                           alignment: Alignment.center,
@@ -317,7 +395,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                                           child: FigmaIcon.tinted(
                                               FigmaIcons.edit,
                                               color: p.textSecondary,
-                                              size: 24))),
+                                              size: 36))),
                               ])),
                         ))),
                 const SizedBox(height: 24),
@@ -413,7 +491,8 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                                                       child: Center(
                                                           child: FigmaIcon.tinted(
                                                               'redesign_v2/check',
-                                                              color: VivaColors.fillBack,
+                                                              color: VivaColors
+                                                                  .fillBack,
                                                               size: 11))),
                                                   const SizedBox(width: 4)
                                                 ],
@@ -421,7 +500,8 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                                                     style: petFormText(context)
                                                         .copyWith(
                                                             color: d.sex == sex
-                                                                ? VivaColors.fillBack
+                                                                ? VivaColors
+                                                                    .fillBack
                                                                 : p.textSecondary)),
                                               ])),
                                     ))),
@@ -431,12 +511,14 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                 _Field(
                     label: 'pet_form_weight'.tr(),
                     child: TextFormField(
+                      key: const ValueKey('pet-form-weight'),
                       controller: _weight,
+                      inputFormatters: [const _WeightUnitFormatter()],
                       style: petFormText(context),
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (value) =>
-                          _change((d) => d.copyWith(weight: value)),
+                      onChanged: (value) => _change(
+                          (d) => d.copyWith(weight: _weightWithoutUnit(value))),
                       decoration: petFormDecoration(context)
                           .copyWith(errorText: weightError?.tr()),
                     )),
@@ -461,9 +543,9 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                       maxLines: 5,
                       onChanged: (value) =>
                           _change((d) => d.copyWith(memo: value)),
-                      decoration: petFormDecoration(context)
-                          .copyWith(contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 17, vertical: 17.5)),
+                      decoration: petFormDecoration(context).copyWith(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 13, vertical: 17.5)),
                     )),
                 if (state.errorKey != null)
                   Padding(
@@ -491,12 +573,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                 : '${date.year}. ${date.month}. ${date.day}',
             icon: 'redesign_v2/calendar_month',
             muted: date == null,
-            onTap: () => _date(birth),
-            onClear: date == null
-                ? null
-                : () => _change((d) => birth
-                    ? d.copyWith(birthDate: null)
-                    : d.copyWith(adoptionDate: null))),
+            onTap: () => _date(birth)),
       );
 }
 
@@ -516,7 +593,7 @@ Color _fieldColor(BuildContext context) =>
 InputDecoration petFormDecoration(BuildContext context) => InputDecoration(
       filled: true,
       fillColor: _fieldColor(context),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 23),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 23),
       border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: context.glass.border)),
@@ -538,12 +615,12 @@ AppBar petFormAppBar(BuildContext context, String title, VoidCallback onBack) =>
       centerTitle: true,
       leadingWidth: 56,
       leading: Padding(
-        padding: const EdgeInsets.only(left: 12),
-        child: IconButton(
-          onPressed: onBack,
-          tooltip: 'pet_form_back'.tr(),
-          icon: FigmaIcon.tinted(FigmaIcons.arrowPrevious,
-              color: context.glass.textSecondary, size: 24))),
+          padding: const EdgeInsets.only(left: 12),
+          child: IconButton(
+              onPressed: onBack,
+              tooltip: 'pet_form_back'.tr(),
+              icon: FigmaIcon.tinted(FigmaIcons.arrowPrevious,
+                  color: context.glass.textSecondary, size: 24))),
       title: Text(title,
           style: petFormText(context).copyWith(fontWeight: FontWeight.w700)),
     );
@@ -561,9 +638,11 @@ Widget petFormButton(
                 disabledForegroundColor: VivaColors.fillBack,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
-                textStyle: petFormText(context)
-                    .copyWith(fontSize: 18, fontWeight: FontWeight.w600,
-                        height: 28 / 18, letterSpacing: -0.36)),
+                textStyle: petFormText(context).copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    height: 28 / 18,
+                    letterSpacing: -0.36)),
             child: Text(label)));
 
 class _Field extends StatelessWidget {
@@ -589,7 +668,6 @@ class _Selection extends StatelessWidget {
       {required this.label,
       required this.icon,
       this.onTap,
-      this.onClear,
       this.muted = false,
       this.actionLabel,
       this.padding = const EdgeInsets.symmetric(horizontal: 17)});
@@ -597,7 +675,6 @@ class _Selection extends StatelessWidget {
   final String label;
   final String icon;
   final VoidCallback? onTap;
-  final VoidCallback? onClear;
   final bool muted;
   final String? actionLabel;
   @override
@@ -619,12 +696,6 @@ class _Selection extends StatelessWidget {
                             color: muted
                                 ? context.glass.textTertiary
                                 : context.glass.textPrimary))),
-                if (onClear != null)
-                  IconButton(
-                      onPressed: onClear,
-                      tooltip: 'pet_form_clear'.tr(),
-                      icon: FigmaIcon.tinted('redesign_v2/cancel',
-                          color: context.glass.textTertiary, size: 20)),
                 if (actionLabel != null)
                   Text(actionLabel!,
                       style: petFormText(context).copyWith(
@@ -652,7 +723,8 @@ class PetFormPhoto extends StatelessWidget {
         child: Center(
             child: Image(
                 image: FigmaImages.petPlaceholder,
-                width: placeholderSize, height: placeholderSize,
+                width: placeholderSize,
+                height: placeholderSize,
                 fit: BoxFit.contain)));
     final photo = path;
     if (photo == null || photo.isEmpty) return fallback;
@@ -724,5 +796,28 @@ class _MorphSearchSheet extends ConsumerWidget {
                             child: Text('pet_form_retry'.tr()))))),
           ])),
     ));
+  }
+}
+
+String _weightWithoutUnit(String text) =>
+    text.endsWith('g') ? text.substring(0, text.length - 1) : text;
+
+String _weightWithUnit(String text) => text.isEmpty ? '' : '${text}g';
+
+/// The draft always holds a number; the editor renders a trailing unit.
+class _WeightUnitFormatter extends TextInputFormatter {
+  const _WeightUnitFormatter();
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (!newValue.composing.isCollapsed) return newValue;
+    final value = _weightWithoutUnit(newValue.text);
+    if (value.isEmpty) return TextEditingValue.empty;
+    return TextEditingValue(
+      text: _weightWithUnit(value),
+      selection: TextSelection(
+          baseOffset: newValue.selection.baseOffset.clamp(0, value.length),
+          extentOffset: newValue.selection.extentOffset.clamp(0, value.length)),
+    );
   }
 }

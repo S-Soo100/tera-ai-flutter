@@ -1,0 +1,76 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vivanaut/core/theme/app_theme.dart';
+import 'package:vivanaut/features/my_pets/data/pet_repository.dart';
+import 'package:vivanaut/features/my_pets/domain/pet.dart';
+import 'package:vivanaut/features/my_pets/domain/pet_form_state.dart';
+import 'package:vivanaut/features/my_pets/presentation/my_pets_providers.dart';
+import 'package:vivanaut/features/my_pets/presentation/widgets/pet_form_screen.dart';
+import 'package:vivanaut/shared/widgets/figma_icon.dart';
+class _Pets extends PetRepository { @override List<Pet> getAllPets()=>[]; }
+class _Strings extends AssetLoader {
+ const _Strings();
+ @override Future<Map<String,dynamic>> load(String p,Locale l) async => jsonDecode(File('assets/l10n/ko.json').readAsStringSync()) as Map<String,dynamic>;
+}
+void main(){
+ TestWidgetsFlutterBinding.ensureInitialized();
+ setUpAll(() async {
+ SharedPreferences.setMockInitialValues({}); await EasyLocalization.ensureInitialized();
+ final f=FontLoader('Pretendard');
+ for(final w in ['Regular','Medium','SemiBold','Bold']){f.addFont(rootBundle.load('assets/fonts/Pretendard-$w.otf'));} await f.load();
+ final material = FontLoader('MaterialIcons');
+ material.addFont(Future.value(ByteData.sublistView(File('/Users/baek/develop/flutter/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf').readAsBytesSync())));
+ await material.load();
+ });
+ testWidgets('review25 form full and phone scroll audit',(tester) async {
+ debugDisableShadows = false;
+ addTearDown(() { debugDisableShadows = true; });
+ final boundary=GlobalKey();
+ await tester.pumpWidget(const MaterialApp(home:Scaffold()));
+ await tester.runAsync(() async {await precacheImage(FileImage(File('/private/tmp/review26-photo.png')),tester.element(find.byType(Scaffold)));});
+ Future<void> pump(double height) async {
+ await tester.binding.setSurfaceSize(Size(393,height));
+ await tester.pumpWidget(ProviderScope(key:UniqueKey(),overrides:[petListProvider.overrideWith((ref)=>PetListNotifier(_Pets(),null))],child:EasyLocalization(supportedLocales:const[Locale('ko')],startLocale:const Locale('ko'),path:'assets/l10n',assetLoader:const _Strings(),child:Builder(builder:(c)=>MaterialApp(theme:AppTheme.light,locale:c.locale,supportedLocales:c.supportedLocales,localizationsDelegates:c.localizationDelegates,builder:(c,child)=>RepaintBoundary(key:boundary,child:MediaQuery(data:MediaQuery.of(c).copyWith(padding:const EdgeInsets.only(top:62,bottom:34)),child:child!)),home:PetFormScreen(original:Pet(id:'review26',name:'도도도도',speciesId:'crested-gecko',speciesName:'크레스티드 게코',morph:'아잔틱 릴리 화이트',sex:'male',birthDate:DateTime(2026,1,12),adoptionDate:DateTime(2026,1,8),weight:30,photoPath:'/private/tmp/review26-photo.png',enclosureId:'g',memo:'밥을 잘 못먹음'),groups:const[PetFormGroupOption(id:'g',name:'크랑이네')],onSave:(_,__) async {}))))));
+ await tester.pumpAndSettle(); expect(tester.takeException(),isNull);
+ }
+ Future<void> capture(String name) async {
+ final rows=<Map<String,dynamic>>[];
+ void visit(Element e){final r=e.renderObject;if(r is RenderBox&&r.hasSize){final p=r.localToGlobal(Offset.zero);final w=e.widget;
+ if(w is Text || w is EditableText || w is TextFormField || w is FilledButton || w is FigmaIcon){
+ rows.add({'type':w.runtimeType.toString(),'text':w is Text?w.data:w is EditableText?w.controller.text:null,'rect':[p.dx,p.dy,r.size.width,r.size.height],if(w is Text)'style':w.style.toString(),if(w is FilledButton)'enabled':w.onPressed!=null});}}
+ e.visitChildren(visit);}
+ boundary.currentContext!.visitChildElements(visit);
+ await tester.runAsync(() async {final r=boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;final i=await r.toImage(pixelRatio:1);final b=await i.toByteData(format:ui.ImageByteFormat.png);File('/private/tmp/$name.png').writeAsBytesSync(b!.buffer.asUint8List());i.dispose();File('/private/tmp/$name.json').writeAsStringSync(const JsonEncoder.withIndent('  ').convert(rows));});
+ }
+ await pump(1603); await capture('review26-fixed-full');
+ await tester.tap(find.bySemanticsLabel('사진 추가'));await tester.pumpAndSettle();await capture('review26-fixed-full-menu');
+ expect(find.byType(BottomSheet),findsNothing);
+ await tester.tapAt(const Offset(10,100));await tester.pumpAndSettle();
+ expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,isNotNull);
+ await pump(852);await capture('review26-fixed-top');
+ await tester.tap(find.bySemanticsLabel('사진 추가'));await tester.pumpAndSettle();await capture('review26-fixed-photo-menu');
+ await tester.tapAt(const Offset(10,100));await tester.pumpAndSettle();
+ final scroll=tester.state<ScrollableState>(find.byType(Scrollable).first);final max=scroll.position.maxScrollExtent;
+ scroll.position.jumpTo(max);await tester.pumpAndSettle();await capture('review26-fixed-bottom');
+ expect(find.text('저장').hitTestable(),findsOneWidget);
+ expect(tester.takeException(),isNull);
+ await tester.scrollUntilVisible(find.text('2026. 1. 12'), -300, scrollable:find.byType(Scrollable).first);
+ await tester.tap(find.text('2026. 1. 12'));await tester.pumpAndSettle();await capture('review26-fixed-date');
+ await tester.tap(find.descendant(of:find.byType(Dialog),matching:find.text('선택 안함')));await tester.pumpAndSettle();
+ expect(find.text('2026. 1. 12'),findsNothing);
+ await tester.scrollUntilVisible(find.bySemanticsLabel('사진 추가'),-400,scrollable:find.byType(Scrollable).first);
+ await tester.tap(find.bySemanticsLabel('사진 추가'));await tester.pumpAndSettle();
+ await tester.tap(find.text('사진 삭제'));await tester.pumpAndSettle();
+ expect(find.text('사진 추가'),findsOneWidget);
+ debugDisableShadows = true;
+ await tester.binding.setSurfaceSize(null);
+ });
+}

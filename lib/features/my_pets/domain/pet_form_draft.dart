@@ -50,7 +50,12 @@ class PetFormDraft {
           sex: pet.sex,
           birthDate: pet.birthDate,
           adoptionDate: pet.adoptionDate,
-          weight: pet.weight?.toString() ?? '',
+          weight: pet.weight == null
+              ? ''
+              : pet.weight!.isFinite &&
+                      pet.weight == pet.weight!.roundToDouble()
+                  ? pet.weight!.toInt().toString()
+                  : pet.weight.toString(),
           memo: pet.memo ?? '',
           photoPath: pet.photoPath,
           groupId: pet.enclosureId,
