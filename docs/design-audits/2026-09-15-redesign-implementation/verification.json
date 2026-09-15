@@ -1,0 +1,43 @@
+{
+  "version": "0.107.1+212",
+  "sourceCommit": "65a8788",
+  "flutterTest": {
+    "passed": 848,
+    "skippedOptIn": 6,
+    "exitCode": 0
+  },
+  "flutterAnalyze": {
+    "errors": 0,
+    "warnings": 0,
+    "existingInfo": 6,
+    "exitCode": 0
+  },
+  "additionalCameraPetCaptureTests": 5,
+  "sql": {
+    "isolatedPostgres": 17,
+    "transaction": "ROLLBACK",
+    "exitCode": 0,
+    "containerStopped": true
+  },
+  "builds": {
+    "androidDebug": {
+      "path": "build/app/outputs/flutter-apk/app-debug.apk",
+      "exitCode": 0,
+      "bytes": 212528594,
+      "sha256": "797c4f46c4c82cc50e95ef807334a38b54141dd600df5fd1b20f95ec0aa9921a"
+    },
+    "iosSimulatorExecutable": {
+      "path": "build/ios/iphonesimulator/Runner.app/Runner",
+      "exitCode": 0,
+      "bytes": 156736,
+      "sha256": "4ebdc0a304e5ca99ba56901e52aef65048e4a41d9b8cda4014188def48ee7813"
+    }
+  },
+  "iosLaunch": {
+    "device": "iPhone 17 simulator / iOS 26.4",
+    "bundleId": "com.vivanaut.app",
+    "exitCode": 0,
+    "screen": "login",
+    "authenticatedDeviceE2E": false
+  }
+}

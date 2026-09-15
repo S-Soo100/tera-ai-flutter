@@ -2,21 +2,17 @@
 
 저장일: 2026-09-15
 
-## 최신 재개 상태 — 구현 착수
+## 최신 재개 상태 — 전체 Flutter 구현 저장
 
-사용자가 "flutter 코드 구현 시작하자. talk to figma mcp 연결 살아있는지 확인해봐"라고 지시했다.
-Talk to Figma `wvkqunn6` 재접속 및 7개 섹션 조회 성공. 기존 FCM 작업은 completed 상태다.
-`main`의 `1389e8e`에서 `.worktrees/redesign-20260915` / `codex/figma-redesign-20260915`를 생성했다.
-현재 공통 흰 배경·SVG runtime 70개·PNG 배율·Camera 진입 아이콘 2개 기반 구현을 저장했다.
-세부 완료 범위와 후속 작업은 [실측·구현 기록](../design-audits/2026-09-15-redesign-frame-matrix.md)을 따른다.
-이어 fan2 실제 상태/제어/일정/타이머, LED 20~100/10% 단위, LCD 20자,
-ACK 결과 검증, 제어 기록 36px/차트 28px SVG와 로컬 메모 저장소 기반을 구현했다.
-[세부 구현·회신 계약](../design-audits/2026-09-15-redesign-controls-and-replies.md)을 읽는다.
-관련 테스트 194개 통과. `flutter analyze --no-pub --no-fatal-infos` 오류 0·경고 0,
-기존 info 10. 버전 `0.105.0+209`. 전체 화면 재설계와 실기기 검증은 진행 중이다.
-이관훈님 회신 2건 수신, petcam-lab은 사용자 확인상 작업 진행 중이다.
-회신의 soft unlink/원자 그룹/온습도 count/푸시 보완은 배포 완료가 아니다. 운영 DB는 변경하지 않았다.
-아래 1~6절의 기획 저장 시점 이력 중 구현 미착수·양측 회신 대기 문구는 이 최신 상태로 대체한다.
+- 사용자 지시: **자동진행, 전체 구현을 완료하고 보고**. `.worktrees/redesign-20260915` / `codex/figma-redesign-20260915`에서 수행했다. 기존 main/다른 작업 수정 없음.
+- 최신 구현·테스트·화면 자료·외부 gate는 [최종 결과](../design-audits/2026-09-15-redesign-implementation-results.md)가 기준이다. 아래 기획 시점의 미착수/응답대기 서술은 역사 기록이며 현재 상태가 아니다.
+- Home/환경/Camera/메모/숨김/MyCre/통합 연결/그룹·기기·개체 관리/등록과 신규 라우트 구현. 그룹명 우선, 기본 이름 첫 번호1, 크레스티드 신규 한정, 1종류1구성원, 20자 LCD, LED20~100/10% 규칙 유지.
+- petcam-lab 활동 API 배포 확인. 이관훈님 회신2건 수신. [활동 계약](../references/2026-09-15-petcam-activity-handoff.md)과 보존형 삭제/RPC 초안을 연결했다.
+- 운영 DB는 변경하지 않았다. 앱 SQL 4개는 로컬 격리 PostgreSQL 테스트 및 ROLLBACK 완료. soft unlink·공통 writer·legacy 감사·coverage/valid count·하이라이트 배치·푸시 추가 계약은 남아 있다.
+- 전체 자동 테스트 848개 통과(캡처 opt-in6개 제외), analyze 오류0/경고0/기존info6. 최종 `0.107.1+212` Android APK·iOS simulator 빌드 통과. 추가 폼/Camera 캡처5개와 집중28개도 통과. 자세한 결과는 최종 결과문서를 참조한다.
+- 사용자 원본 SVG70+PNG4 해시 보존. 온습도 runtime2개만 기존 SVG 배경색을 Figma에 맞춰 분리했고 현재 원본 PNG와 픽셀 비교했다.
+- 실제 ESP32/물리 Android E2E는 미실행. 이 조건을 운영 사용 완료로 표현하지 않는다.
+- 사용자에게 이미 전달된 요청서를 재발송하지 않는다. 새 배포·외부 메시지·push는 실행하지 않았다.
 
 ## 1. 현재 목표·단계·권한
 

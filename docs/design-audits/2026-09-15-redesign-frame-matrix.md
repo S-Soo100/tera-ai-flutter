@@ -1,5 +1,7 @@
 # 재설계 1차 실측·구현 기록
 
+> 아래는 1차 기반 구현 당시 기록이다. 전체 화면 후속 구현과 운영 대기는 [최종 결과](2026-09-15-redesign-implementation-results.md)를 따른다.
+
 2026-09-15, Talk to Figma `wvkqunn6`, `vivanaunt app` (`0:1`).
 실제 MCP 재접속·문서 조회 성공. Asset / Asset_v2 / Camera / Home /
 CreActivity / Main / 기기 연결v3의 7개 섹션을 확인했다.

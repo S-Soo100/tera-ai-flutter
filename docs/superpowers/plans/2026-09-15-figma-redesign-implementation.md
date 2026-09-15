@@ -1,5 +1,8 @@
 # Figma 전면 재설계 Implementation Plan
 
+> 실행 기록(2026-09-15): Flutter 독립 구현을 완료했다. [최종 결과·시험·외부 gate](../../design-audits/2026-09-15-redesign-implementation-results.md)가 현재 실행 상태다. 운영 DB/공통 writer/실물 E2E가 포함된 항목은 미완료로 남긴다. 아래 체크박스는 이 구분을 따른다.
+
+
 > **For agentic workers:** 실행 시 `superpowers:executing-plans`를 적용해 작업 단위별로 진행한다. 프로젝트 CAOF에 따라 기존 feature 수정은 메인이 맡고, 새 화면·새 RLS 정책 등 Critical 작업은 승인된 범위를 `flutter-dev`에 분리한다. 사용자가 Flutter 구현 시작을 지시했으며 1단계 기반 작업을 진행 중이다. [실측·검증 기록](../../design-audits/2026-09-15-redesign-frame-matrix.md).
 
 **Goal:** 사용자 승인 기획대로 Home·Camera·MyCre·연결·관리·등록 UI와 데이터 동작을 교체하고 Figma 실측 대조로 검수한다.
@@ -53,11 +56,11 @@
 - Create when needed: `assets/icons/redesign_v2/`의 runtime 사본. 필요한 변환별 원본 path/hash를 asset map에 기록.
 
 - [x] `rg -n 'class FigmaIcons|class FigmaIcon' lib`로 현재 registry와 renderer의 실제 위치를 확정한다. duplicate registry를 새로 만들지 않는다.
-- [ ] Talk to Figma로 확정 기획 §1 노드를 읽고 상태별 frame ID, 너비, safe area, font/line height, parent/icon bounds, padding, radius, fills를 측정표에 기록한다. 추출되지 않은 auto-layout 값은 화면 bounds와 시각 검증으로 확인한다.
-- [ ] 아이콘별 역할·ON/OFF·Figma node·원본 파일·runtime 파일·viewBox·표시 크기를 매핑한다. 이름 접미사만으로 역할을 정하지 않는다.
-- [ ] SVG 마스크·여백·다색 렌더를 실제 Flutter에서 확인한다. 원본 변환 필요 시 runtime 사본만 변경한다.
+- [x] Talk to Figma로 확정 기획 §1 노드를 읽고 상태별 frame ID, 너비, safe area, font/line height, parent/icon bounds, padding, radius, fills를 측정표에 기록한다. 추출되지 않은 auto-layout 값은 화면 bounds와 시각 검증으로 확인한다.
+- [x] 아이콘별 역할·ON/OFF·Figma node·원본 파일·runtime 파일·viewBox·표시 크기를 매핑한다. 이름 접미사만으로 역할을 정하지 않는다.
+- [x] SVG 마스크·여백·다색 렌더를 실제 Flutter에서 확인한다. 원본 변환 필요 시 runtime 사본만 변경한다.
 - [x] PNG Empty 345×227, favicon 56×56의 3배율을 등록한다. 필요한 이미지 크기보다 해상도가 낮으면 별도 디자인 보완으로 기록하고 완료로 숨기지 않는다.
-- [ ] 원본 해시 불변과 깨진 에셋 경로 0을 확인하고 에셋 연결 단위로 커밋한다.
+- [x] 원본 해시 불변과 깨진 에셋 경로 0을 확인하고 에셋 연결 단위로 커밋한다.
 
 **Acceptance:** 각 보이는 아이콘은 source node/file까지 역추적 가능. ‘대충 같은 아이콘’ 대체 없음. fan/LED/schedule 팝업은 Figma 미제작 보완 화면으로 분리해 검수한다.
 
@@ -66,8 +69,8 @@
 **Files:** `lib/core/theme/glass_palette.dart`, `lib/core/theme/app_theme.dart`, `lib/shared/widgets/glass_dock.dart`, `lib/shared/widgets/glass_tab_header.dart`, `lib/features/home/presentation/widgets/home_header_bar.dart`, shell/router의 실제 소비처.
 
 - [ ] `rg -n 'class GlassTabShell|WallpaperBackground|appBarTheme|surfaceTintColor' lib`로 상단 회색의 렌더 경로를 추적한다. Android 재현 화면을 먼저 기록한다.
-- [ ] palette 역할색과 Figma 실측 크기를 공통 컴포넌트에 적용한다. ThemeExtension 변경은 생성자/dark/light/copyWith/lerp까지 일치시킨다.
-- [ ] 헤더·dock 고정, body 단일 스크롤, 바닥/키보드 inset을 적용한다. 버튼 저장 중 잠금·입력 보존·미저장 이탈 정책을 공유 처리한다.
+- [x] palette 역할색과 Figma 실측 크기를 공통 컴포넌트에 적용한다. ThemeExtension 변경은 생성자/dark/light/copyWith/lerp까지 일치시킨다.
+- [x] 헤더·dock 고정, body 단일 스크롤, 바닥/키보드 inset을 적용한다. 버튼 저장 중 잠금·입력 보존·미저장 이탈 정책을 공유 처리한다.
 - [ ] Android 스크롤 전·중·후의 상단 흰색, 긴 이름, text scale·작은 화면을 실제 렌더로 확인한다. 화면 스타일만 바꾼 곳은 구현을 복제하는 불필요한 단위 테스트 대신 비교 이미지를 남긴다.
 
 ## 2. 데이터 구조·계약 준비
@@ -77,8 +80,8 @@
 **Files:** 업무 분장표, 기존 `supabase/migrations/`, `lib/features/my_pets/data/supabase_pet_repository.dart`, `lib/features/my_cage/data/camera_repository.dart`, `supabase_module_control_repository.dart`, `lib/features/home/data/enclosure_set_repository.dart`.
 
 - [ ] 실제 linked project·remote migration history·대상 테이블 column/type/index/FK/RLS·`assign_pet_to_enclosure` 정의를 읽기 전용으로 확인한다. 비밀값/개인 행을 문서에 저장하지 않는다.
-- [ ] 현재 기기 삭제 cascade, clip owner 접근, 웹/서버의 연결 UPDATE 경로를 T1/T2 회신에 대조한다.
-- [ ] 아래 앱 모델의 경계는 유지하되 실제 SQL 타입·RPC 이름은 이 조회 결과에 맞춰 migration에서 정의한다. 다른 팀이 소유한 raw table/view 교체는 별도 계약 없이 실행하지 않는다.
+- [x] 현재 기기 삭제 cascade, clip owner 접근, 웹/서버의 연결 UPDATE 경로를 T1/T2 회신에 대조한다.
+- [x] 아래 앱 모델의 경계는 유지하되 실제 SQL 타입·RPC 이름은 이 조회 결과에 맞춰 migration에서 정의한다. 다른 팀이 소유한 raw table/view 교체는 별도 계약 없이 실행하지 않는다.
 - [ ] P1/T3/P2의 입력 fixture를 받아 실제 응답과 비교한다. 회신이 없는 계약은 `외부 계약 대기`로 명시하고 UI fixture만을 운영 완료 증거로 사용하지 않는다.
 
 ### Task 2B — 사용자 숨김·로컬 메모·연결 이력의 저장 책임 분리
@@ -142,36 +145,36 @@ void verifyMemoContract(ClipMemoRepository Function() buildRepository) {
 }
 ```
 
-- [ ] 먼저 테스트에서 메모 저장/수정/북마크 해제/계정 전환, 연속 색 금지, 사용자 숨김 재조회 fixture를 만든다.
-- [ ] 숨김은 `(user_id, clip_id)` 유일성·owner RLS·원본 접근 검증을 가진 추가 테이블로 작성한다. 원본 activity view의 RLS를 바꾸지 않는다.
-- [ ] 메모 key는 account+clip, 마지막 색 key도 account별로 둔다. 로그아웃이나 계정 변경 후 다른 owner cache를 노출하지 않는다.
+- [x] 먼저 테스트에서 메모 저장/수정/북마크 해제/계정 전환, 연속 색 금지, 사용자 숨김 재조회 fixture를 만든다.
+- [x] 숨김은 `(user_id, clip_id)` 유일성·owner RLS·원본 접근 검증을 가진 추가 테이블로 작성한다. 원본 activity view의 RLS를 바꾸지 않는다.
+- [x] 메모 key는 account+clip, 마지막 색 key도 account별로 둔다. 로그아웃이나 계정 변경 후 다른 owner cache를 노출하지 않는다.
 - [ ] 연결 이력은 account/pet/camera, `[start,end)`, origin을 저장한다. 기존 사용자는 migration 전 조회 범위·출처를 승계하고, 신규 개체에는 적용하지 않는다.
 - [ ] 시작/종료 구간 생성·빈 그룹 제거·이름 할당은 T1과 합의한 원자 write 경로에서 수행한다. 서버 clock을 사용한다.
-- [ ] 두 사용자 fixture로 읽기/쓰기 거부·clip 원본 보존·집계 불변을 SQL transaction 테스트하고 rollback한다. production에 fixture를 영구 삽입하지 않는다.
-- [ ] 해당 테스트 실행 후 데이터 준비 단위를 커밋한다. 운영 적용은 별도 실행 단계이며 본 문서 저장 중에는 하지 않는다.
+- [x] 두 사용자 fixture로 읽기/쓰기 거부·clip 원본 보존·집계 불변을 SQL transaction 테스트하고 rollback한다. production에 fixture를 영구 삽입하지 않는다.
+- [x] 해당 테스트 실행 후 데이터 준비 단위를 커밋한다. 운영 적용은 별도 실행 단계이며 본 문서 저장 중에는 하지 않는다.
 
 ### Task 2C — 카탈로그 대조·기존 데이터 승계
 
 **Files:** `assets/data/morphs/crested-gecko.json`, `lib/features/wiki/data/care_info_repository.dart`, `lib/features/home/data/species_repository.dart`, `lib/features/my_pets/data/supabase_pet_repository.dart`.
 
-- [ ] DB/로컬 카탈로그를 ID·이름·유전자·모프·라인브리딩 특성별로 비교한 목록을 만든다. 17 대 23 항목 차이를 문서화한다.
-- [ ] 중복/조합/명칭 차이를 출처로 검증하고 등록용 stable ID↔표시명 매핑을 만든다. 명칭이 비슷하다는 이유로 서로 다른 trait를 병합하지 않는다.
-- [ ] 신규 선택에는 크레스티드만 노출한다. 기존 다른 종·모프 문자열은 읽기/수정 시 보존하며 강제로 초기화하지 않는다.
+- [x] DB/로컬 카탈로그를 ID·이름·유전자·모프·라인브리딩 특성별로 비교한 목록을 만든다. 17 대 23 항목 차이를 문서화한다.
+- [x] 중복/조합/명칭 차이를 출처로 검증하고 등록용 stable ID↔표시명 매핑을 만든다. 명칭이 비슷하다는 이유로 서로 다른 trait를 병합하지 않는다.
+- [x] 신규 선택에는 크레스티드만 노출한다. 기존 다른 종·모프 문자열은 읽기/수정 시 보존하며 강제로 초기화하지 않는다.
 - [ ] legacy 연결 migration은 개체별 현재 연결과 기존 조회 결과를 비교하고 재실행 시 중복 이력이 생기지 않도록 한다. 기존 전체 카메라 리포트를 개체별 실제 관측으로 오인한 재배정은 막는다.
 
 ## 3. Home·환경·제어·일정
 
 **Modify:** `lib/features/home/presentation/home_screen.dart`, `widgets/cage_control_grid.dart`, `cage_control_actions.dart`, `widgets/fan_duration_sheet.dart`, `env_detail_screen.dart`, `env_detail_providers.dart`, `routine_settings_screen.dart`, `widgets/schedule_editor_sheet.dart`, `lib/features/my_cage/domain/telemetry_reading.dart`, `device_command.dart`, `lib/shared/domain/actuator_marker.dart`, `control_log.dart`, `lib/features/home/domain/schedule.dart`, timer/notification의 해당 fan 소비처, `lib/features/my_cage/presentation/widgets/lcd_setting_tile.dart`.
 
-- [ ] Home 사육장 없음/사육장만/통합/기기별 오프라인 상태를 fixture로 검증하고 단일 스크롤 배치를 적용한다.
+- [x] Home 사육장 없음/사육장만/통합/기기별 오프라인 상태를 fixture로 검증하고 단일 스크롤 배치를 적용한다.
 - [x] telemetry 모델에 fan2를 추가하고 null→unavailable을 보존한다. command·schedule enum과 wire 역변환·off counterpart·구간 UI·marker/log 종류에 fan2를 함께 등록한다.
 - [x] fan 실행 로직을 대상 actuator로 분리한다. 환기팬과 냉각팬의 선택 저장·진행 중 타이머·알림 취소가 섞이지 않게 식별자를 확장한다. 명시 시작 전에는 명령 0회.
 - [x] LED 선택창 20~100/10% 단위, 실제 tile은 보고값을 표시한다. 보고값이 선택 단계 사이면 UI 선택값만 가장 가까운 단계로 초기화하며 명시 적용 전에는 장치 상태를 바꾸지 않는다.
 - [x] LCD maxLength와 카운터를 20으로 바꾸고 이름 중복 검증을 적용하지 않는다. 저장 대상을 이름 수정과 분리한다.
-- [ ] 온습도 결측 선 끊김·과거 가중 평균·요일 min/max·사용자 scroll 보존을 적용한다. 제어 로그는 승인된 근사치 계산, missing 값의 우측 칸을 `--`로 유지하고 원본 실행 결과를 확인한다.
-- [ ] 제어 log 계산은 시작/종료 짝을 시간순으로 처리하고 표시는 최신순. 자정을 넘는 종료도 필요한 직전 시작을 조회해 매칭하며 없으면 변화량 `--`.
-- [ ] 일정 기존 자료를 유지하고 fan2 on/off·구간·guard 구분을 확장한다. 수정에서 서버가 허용하지 않는 action 변경을 보내지 않는다. 시간/요일 변경과 구간 양쪽 활성화/삭제 실패를 함께 검증한다.
-- [ ] 분무 3초·5초 잠금, 팬 off 취소, 냉각팬 null, 잘못된 result를 성공으로 표시하지 않는 fixture와 기존 FCM/타이머 알림 회귀를 실행한다.
+- [x] 온습도 결측 선 끊김·과거 가중 평균·요일 min/max·사용자 scroll 보존을 적용한다. 제어 로그는 승인된 근사치 계산, missing 값의 우측 칸을 `--`로 유지하고 원본 실행 결과를 확인한다.
+- [x] 제어 log 계산은 시작/종료 짝을 시간순으로 처리하고 표시는 최신순. 자정을 넘는 종료도 필요한 직전 시작을 조회해 매칭하며 없으면 변화량 `--`.
+- [x] 일정 기존 자료를 유지하고 fan2 on/off·구간·guard 구분을 확장한다. 수정에서 서버가 허용하지 않는 action 변경을 보내지 않는다. 시간/요일 변경과 구간 양쪽 활성화/삭제 실패를 함께 검증한다.
+- [x] 분무 3초·5초 잠금, 팬 off 취소, 냉각팬 null, 잘못된 result를 성공으로 표시하지 않는 fixture와 기존 FCM/타이머 알림 회귀를 실행한다.
 
 **Relevant tests:** `test/features/home/fan_duration_sheet_test.dart`, `fan_timer_duration_test.dart`, `schedule_test.dart`, `routine_settings_screen_test.dart`, `control_log_list_test.dart`, `test/features/shared/control_log_test.dart`, `env_day_test.dart`, `env_day_chart_test.dart`, `test/fan_timer_notification_plan_test.dart`, `test/schedule_notification_plan_test.dart`.
 
@@ -196,18 +199,18 @@ test('냉각팬 wire와 미보고 상태를 구분한다', () {
 
 **Create:** `lib/features/my_cage/presentation/device_add_flow_screen.dart`, `device_management_screen.dart`, `group_editor_screen.dart`, `device_add_flow_controller.dart`, `lib/features/my_pets/presentation/pet_management_screen.dart`, `test/features/my_cage/device_add_flow_test.dart`, `test/features/my_pets/pet_management_test.dart`.
 
-- [ ] 두 종류의 BLE 기기를 선택하는 흐름을 `선택→Wi-Fi→각 기기 연결 결과→완료/부분 성공` 상태로 나눈다. 성공한 기기에 재전송하지 않는다.
-- [ ] 표시명으로 기기를 동일시하지 않고 프로토콜과 대응하는 고유 ID를 사용한다. 서버의 등록 기기 목록을 BLE 검색 결과에 합성하지 않는다.
-- [ ] Wi-Fi 기억을 명시적 체크·WIFI_OK 성공 시·account+SSID 저장으로 변경한다. 기존 계정 미구분 캐시를 다른 계정에 자동 공개하지 않는다.
-- [ ] 자동 그룹 대상은 이번 동시 선택 또는 이어서 추가한 상대다. 독립 추가에서 여러 후보가 있으면 사용자가 선택하고, 기존 그룹 이동은 확인한다.
+- [x] 두 종류의 BLE 기기를 선택하는 흐름을 `선택→Wi-Fi→각 기기 연결 결과→완료/부분 성공` 상태로 나눈다. 성공한 기기에 재전송하지 않는다.
+- [x] 표시명으로 기기를 동일시하지 않고 프로토콜과 대응하는 고유 ID를 사용한다. 서버의 등록 기기 목록을 BLE 검색 결과에 합성하지 않는다.
+- [x] Wi-Fi 기억을 명시적 체크·WIFI_OK 성공 시·account+SSID 저장으로 변경한다. 기존 계정 미구분 캐시를 다른 계정에 자동 공개하지 않는다.
+- [x] 자동 그룹 대상은 이번 동시 선택 또는 이어서 추가한 상대다. 독립 추가에서 여러 후보가 있으면 사용자가 선택하고, 기존 그룹 이동은 확인한다.
 - [ ] T1/T2 경로로 그룹 변경·이름 할당·이력 갱신·등록 해제를 실행한다. 미등록 기기 claim은 T4 회신 전에 성공으로 취급하지 않는다.
 - [ ] 기본 이름 생성기를 `사육 환경 1`/`사육장 1`/`카메라 1`부터 시작하도록 통일한다. 공백·접미사 포함 10자 제한, 기존 이름 충돌 건너뛰기, 동시 생성의 원자 할당을 확인한다. 기존 이름은 migration으로 자동 개명하지 않는다.
-- [ ] Home·Camera·MyCre의 선택 헤더와 목록 항목에 그룹명 우선 표시 규칙을 공통 적용한다. 그룹 없는 항목은 개별 이름, 상세·프로필은 원래 기기/개체 이름을 유지한다. 표시명 대신 ID를 사용하고 그룹명 수정·소속 이동·해제 후 세 탭의 표시를 갱신한다.
-- [ ] 같은 그룹의 세 탭에서 동일 그룹명이 보이는지, 그룹 해제 후 개별 이름으로 돌아오는지, 이름만 같은 서로 다른 항목이 잘못 선택되지 않는지 검증한다. 첫 생성 번호 1·이름 충돌·기존 사용자 이름 보존도 확인한다.
-- [ ] 기기 관리의 전체 전원은 ON 고정 버튼으로 구현한다. 온라인 상태나 actuator 상태와 같은 provider로 대체하지 않는다.
-- [ ] 등록·관리 폼을 Figma에 맞추고 이름 10자/중복 금지, 사진, 크레스티드 종·모프, 성별·날짜·체중·메모·선택 그룹을 구현한다. 저장 실패 시 입력이나 기존 사진을 지우지 않는다.
-- [ ] 마지막 구성원 제외 시 빈 그룹 제거, 유형별 상한 1개, 표시 순서·추가 버튼 조건을 검증한다. 원본·카메라·개체 정보가 연쇄 삭제되지 않는지 확인한다.
-- [ ] 기존 pairing/deep link를 보존하고 `/devices/add`, `/devices/manage`, `/groups/new`, `/my-pets/manage`를 필요한 신규 route로 등록한다. `/my-pets/:petId`보다 manage 정적 경로를 먼저 처리한다.
+- [x] Home·Camera·MyCre의 선택 헤더와 목록 항목에 그룹명 우선 표시 규칙을 공통 적용한다. 그룹 없는 항목은 개별 이름, 상세·프로필은 원래 기기/개체 이름을 유지한다. 표시명 대신 ID를 사용하고 그룹명 수정·소속 이동·해제 후 세 탭의 표시를 갱신한다.
+- [x] 같은 그룹의 세 탭에서 동일 그룹명이 보이는지, 그룹 해제 후 개별 이름으로 돌아오는지, 이름만 같은 서로 다른 항목이 잘못 선택되지 않는지 검증한다. 첫 생성 번호 1·이름 충돌·기존 사용자 이름 보존도 확인한다.
+- [x] 기기 관리의 전체 전원은 ON 고정 버튼으로 구현한다. 온라인 상태나 actuator 상태와 같은 provider로 대체하지 않는다.
+- [x] 등록·관리 폼을 Figma에 맞추고 이름 10자/중복 금지, 사진, 크레스티드 종·모프, 성별·날짜·체중·메모·선택 그룹을 구현한다. 저장 실패 시 입력이나 기존 사진을 지우지 않는다.
+- [x] 마지막 구성원 제외 시 빈 그룹 제거, 유형별 상한 1개, 표시 순서·추가 버튼 조건을 검증한다. 원본·카메라·개체 정보가 연쇄 삭제되지 않는지 확인한다.
+- [x] 기존 pairing/deep link를 보존하고 `/devices/add`, `/devices/manage`, `/groups/new`, `/my-pets/manage`를 필요한 신규 route로 등록한다. `/my-pets/:petId`보다 manage 정적 경로를 먼저 처리한다.
 
 **사용 흐름 수락:** 동시 등록 중 하나 실패→성공 기기 유지→실패 기기만 재시도→완료 후 ‘나중에 하기’→Home에 성공 기기 표시. 기존 개체 이동→확인 취소 시 소속 유지, 확정 시 이전 이력 종료와 새 이력 시작.
 
@@ -217,12 +220,12 @@ test('냉각팬 wire와 미보고 상태를 구분한다', () {
 
 **Create:** `lib/features/my_cage/presentation/clip_memo_providers.dart`, `widgets/clip_memo_editor.dart`, `test/features/my_cage/clip_visibility_feed_test.dart`.
 
-- [ ] 기존 60건 cursor·캐시·전체 기간 기준을 보존하며 헤더/라이브/진입 카드/3열 그리드를 Figma에 맞춘다. 카메라 상태 갱신만으로 feed를 초기화하지 않는다.
-- [ ] 모든 플레이어에서 메모 편집으로 연결하고 메모 카드는 북마크 목록에만 표시한다. 북마크 조작과 메모 삭제의 독립성을 테스트한다.
-- [ ] 새 색은 직전 색을 제외하고 배정하며 문자 편집·스크롤·재실행으로 바꾸지 않는다. Hive adapter 변경으로 기존 캐시를 손상하지 않는다.
-- [ ] hide 성공 시 일반/하이라이트/북마크/현재 재생 큐/캐시를 갱신한다. 원본 활동 조회는 필터하지 않는다. 다른 기기의 재조회에도 동일 hidden ID가 반영되는지 확인한다.
-- [ ] 숨긴 영상만 있는 페이지에서도 다음 cursor를 조회할 수 있게 하고, 무한 루프·잘못된 조기 종료를 테스트한다.
-- [ ] 북마크/일반은 영상 끝에서 정지, 하이라이트만 다음으로 이동한다. 회전·seek·공유/저장·기존 로컬 mp4 회귀를 확인한다.
+- [x] 기존 60건 cursor·캐시·전체 기간 기준을 보존하며 헤더/라이브/진입 카드/3열 그리드를 Figma에 맞춘다. 카메라 상태 갱신만으로 feed를 초기화하지 않는다.
+- [x] 모든 플레이어에서 메모 편집으로 연결하고 메모 카드는 북마크 목록에만 표시한다. 북마크 조작과 메모 삭제의 독립성을 테스트한다.
+- [x] 새 색은 직전 색을 제외하고 배정하며 문자 편집·스크롤·재실행으로 바꾸지 않는다. Hive adapter 변경으로 기존 캐시를 손상하지 않는다.
+- [x] hide 성공 시 일반/하이라이트/북마크/현재 재생 큐/캐시를 갱신한다. 원본 활동 조회는 필터하지 않는다. 다른 기기의 재조회에도 동일 hidden ID가 반영되는지 확인한다.
+- [x] 숨긴 영상만 있는 페이지에서도 다음 cursor를 조회할 수 있게 하고, 무한 루프·잘못된 조기 종료를 테스트한다.
+- [x] 북마크/일반은 영상 끝에서 정지, 하이라이트만 다음으로 이동한다. 회전·seek·공유/저장·기존 로컬 mp4 회귀를 확인한다.
 - [ ] P2의 공개 배치 메타를 재사용하고 존재하지 않는 공개 시각/도착/읽음 상태를 만들지 않는다. FCM 설계와 같은 배치인지 대조한다.
 
 **Run:** `flutter test test/features/my_cage` 및 관련 새 fixture. 표시만 달라지는 부분은 Figma 이미지 비교로 확인한다.
@@ -234,11 +237,11 @@ test('냉각팬 wire와 미보고 상태를 구분한다', () {
 
 **Interfaces:** activity provider는 인증 ID·선택 pet ID·일/주를 key로 삼는다. assignment repository에서 대상 camera·허용 기간을 얻어 P1 interval/coverage adapter로 전달한다. 출력은 시간/요일별 활동 초·관측 상태·평균의 분모다. 렌더 코드에서 raw clip duration을 직접 합산하지 않는다.
 
-- [ ] P1 응답을 fixture로 고정하고 UTC interval을 KST 일/주 조회 창 및 배정 기간으로 자른 뒤 합집합·시간 bucket 분할을 수행한다.
-- [ ] 유효한 0/미수집/처리 중을 다른 상태로 보존한다. 일평균은 직전 7일, 주평균은 선택 주 완료일, 금주 합계에는 당일 진행분을 포함한다.
+- [x] P1 응답을 fixture로 고정하고 UTC interval을 KST 일/주 조회 창 및 배정 기간으로 자른 뒤 합집합·시간 bucket 분할을 수행한다.
+- [x] 유효한 0/미수집/처리 중을 다른 상태로 보존한다. 일평균은 직전 7일, 주평균은 선택 주 완료일, 금주 합계에는 당일 진행분을 포함한다.
 - [ ] legacy origin은 기존 범위를 보존하며 신규 개체의 연결 시작 이후 조건과 분기한다. 이동 경계의 동일 초를 중복 집계하지 않는다.
-- [ ] 일/주 전환·개체 선택·자정 날짜 변경에서 이전 Future 응답이 새 화면을 덮지 않는다. 미연결·미수집·값 0을 구분한다.
-- [ ] 프로필+일간+주간 단일 스크롤, 고정 헤더, 긴 이름·빈 상태를 Figma와 대조한다.
+- [x] 일/주 전환·개체 선택·자정 날짜 변경에서 이전 Future 응답이 새 화면을 덮지 않는다. 미연결·미수집·값 0을 구분한다.
+- [x] 프로필+일간+주간 단일 스크롤, 고정 헤더, 긴 이름·빈 상태를 Figma와 대조한다.
 
 **Core fixture table**
 
@@ -256,14 +259,14 @@ test('냉각팬 wire와 미보고 상태를 구분한다', () {
 
 ## 7. 통합 검증·기록·완료 판정
 
-- [ ] 각 단계에서 변경 개요를 읽고 기능별 diff를 점검한다. 10개 이상 파일을 한 번에 모두 읽지 않는다.
-- [ ] 구현을 그대로 되풀이하는 테스트를 양산하지 않고 상태 전이·데이터 경계·다른 계정 거부·실패 재시도를 focused test로 검증한다.
-- [ ] `flutter analyze --no-pub` 오류 0을 확인한다. 기존 info는 건수를 명시하고 신규 오류를 기존 문제로 취급하지 않는다. 의존 변경 시 pub get을 먼저 수행한다.
-- [ ] focused test 이후 전체 회귀가 필요한 통합 변경에는 `flutter test`를 수행한다. 새 변경이나 실패가 없으면 이유 없이 반복하지 않는다.
+- [x] 각 단계에서 변경 개요를 읽고 기능별 diff를 점검한다. 10개 이상 파일을 한 번에 모두 읽지 않는다.
+- [x] 구현을 그대로 되풀이하는 테스트를 양산하지 않고 상태 전이·데이터 경계·다른 계정 거부·실패 재시도를 focused test로 검증한다.
+- [x] `flutter analyze --no-pub` 오류 0을 확인한다. 기존 info는 건수를 명시하고 신규 오류를 기존 문제로 취급하지 않는다. 의존 변경 시 pub get을 먼저 수행한다.
+- [x] focused test 이후 전체 회귀가 필요한 통합 변경에는 `flutter test`를 수행한다. 새 변경이나 실패가 없으면 이유 없이 반복하지 않는다.
 - [ ] Android debug build와 실기기에서 흰 상단, BLE 동시/부분 연결, fan/fan2/LED/mist, 백그라운드 타이머를 확인한다. iOS도 safe area·키보드·저장을 확인한다.
-- [ ] Figma frame별 같은 논리 폭으로 촬영해 색·아이콘 실측 크기·여백·문자·잘림·터치 영역·고정 스크롤을 대조한다. 차이는 수정하거나 승인된 차이로 기록한다.
-- [ ] `docs/design-audits/2026-09-15-redesign-implementation-results.md`에 spec 절→task→테스트/이미지→결과를 기록한다. 외부 계약 대기는 미완료로 표시하고 담당과 필요한 회신을 명시한다.
-- [ ] 코드를 포함하는 논리 단위마다 version+CHANGELOG와 함께 커밋한다. 순수 계획 문서 커밋은 앱 버전·CHANGELOG를 변경하지 않는다.
+- [x] Figma frame별 같은 논리 폭으로 촬영해 색·아이콘 실측 크기·여백·문자·잘림·터치 영역·고정 스크롤을 대조한다. 차이는 수정하거나 승인된 차이로 기록한다.
+- [x] `docs/design-audits/2026-09-15-redesign-implementation-results.md`에 spec 절→task→테스트/이미지→결과를 기록한다. 외부 계약 대기는 미완료로 표시하고 담당과 필요한 회신을 명시한다.
+- [x] 코드를 포함하는 논리 단위마다 version+CHANGELOG와 함께 커밋한다. 순수 계획 문서 커밋은 앱 버전·CHANGELOG를 변경하지 않는다.
 
 ### 완료를 잘못 판정하지 않기 위한 기준
 
