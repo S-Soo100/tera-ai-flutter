@@ -1,0 +1,231 @@
+import 'package:vivanaut/features/my_cage/presentation/pairing_pet_selection_screen.dart';
+import 'dart:math' as math;
+import 'package:vivanaut/shared/domain/control_log.dart';
+import 'package:vivanaut/shared/domain/actuator_marker.dart';
+import 'package:vivanaut/features/my_pets/domain/activity_window.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:vivanaut/core/router/tab_branches.dart';
+import 'package:vivanaut/core/theme/app_theme.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
+import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
+import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
+import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
+import 'package:vivanaut/features/my_cage/domain/nightly_report.dart';
+import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_feed_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_visibility_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/crecam_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/camera_live_area.dart';
+import 'package:vivanaut/features/my_pets/data/pet_repository.dart';
+import 'package:vivanaut/features/my_pets/domain/pet.dart';
+import 'package:vivanaut/features/my_pets/presentation/my_pets_providers.dart';
+import 'package:vivanaut/features/my_pets/presentation/widgets/pet_form_screen.dart';
+import 'package:vivanaut/shared/widgets/figma_icon.dart';
+import 'package:vivanaut/shared/widgets/glass_dock.dart';
+import 'package:vivanaut/shared/widgets/redesign_tab_header.dart';
+import 'package:go_router/go_router.dart';
+import 'package:vivanaut/features/home/presentation/home_screen.dart';
+import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
+import 'package:vivanaut/features/home/presentation/env_detail_screen.dart';
+import 'package:vivanaut/features/home/presentation/widgets/running_timer_chip.dart';
+import 'package:vivanaut/features/home/domain/running_timer.dart';
+import 'package:vivanaut/features/my_cage/domain/actuator_state.dart';
+import 'package:vivanaut/features/my_cage/domain/telemetry_reading.dart';
+import 'package:vivanaut/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivanaut/features/my_cage/data/redesign_group_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/redesign_management.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_management_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_management_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_detail_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/group_editor_screen.dart';
+import 'package:vivanaut/features/my_pets/data/activity_repository.dart';
+import 'package:vivanaut/features/my_pets/domain/activity_summary.dart';
+import 'package:vivanaut/features/my_pets/presentation/activity_providers.dart';
+import 'package:vivanaut/features/my_pets/presentation/my_cre_activity_screen.dart';
+import 'package:vivanaut/shared/domain/env_extremes.dart';
+import 'package:vivanaut/shared/domain/week_range.dart';
+import 'package:vivanaut/shared/domain/env_day.dart';
+import 'package:vivanaut/features/my_pets/domain/pet_form_state.dart';
+class _Pets extends PetRepository {
+  @override
+  Future<void> clearPets() async {}
+  @override
+  List<Pet> getAllPets() => [];
+}
+
+class _LocalLive extends WebRtcLiveController {
+  _LocalLive(super.ref, super.cameraUuid) {
+    state = const WebRtcLiveState(
+        phase: WebRtcLivePhase.failed, errorKey: 'crecam_live_error_failed');
+  }
+}
+
+final _day = DateTime(2026, 9, 15);
+final _camera = TerraCamera(
+    id: 'fixture-camera',
+    cameraId: 'fixture-camera-hardware',
+    name: '카메라 1',
+    isOnline: false,
+    enclosureId: 'fixture-group',
+    createdAt: _day);
+final _set = EnclosureSet(
+    enclosure: Enclosure(id: 'fixture-group', name: '사육 환경 1', createdAt: _day),
+    device: const Device(
+        id: 'fixture-device',
+        ownerId: 'fixture-owner',
+        enclosureId: 'fixture-group',
+        name: '사육장 1', hardwareId: 'viva-iot-0001',
+        isOnline: true,
+        lastSeenAt: null),
+    camera: _camera,
+    pet: null);
+final _secondSet = EnclosureSet(enclosure: Enclosure(id:'fixture-group-2',name:'사육 환경 2',createdAt:_day),device:const Device(id:'fixture-device-2',ownerId:'fixture-owner',enclosureId:'fixture-group-2',name:'사육장 2',isOnline:true,lastSeenAt:null),camera:_secondCamera,pet:null);
+final _secondCamera = TerraCamera(id:'fixture-camera-2',cameraId:'fixture-camera-2',name:'카메라 2',isOnline:false,enclosureId:'fixture-group-2',createdAt:_day);
+final _clips = [
+  for (var i = 0; i < 12; i++)
+    MotionClip(
+        id: 'fixture-clip-$i',
+        cameraId: _camera.id,
+        startedAt: DateTime(2026, 9, 15, 10 - i ~/ 6, 55 - (i % 6) * 8),
+        durationSec: 8)
+];
+
+List<Override> _overrides({bool empty = false}) => [
+      currentUserProvider.overrideWithValue(User(
+          id: 'fixture-owner',
+          appMetadata: {},
+          userMetadata: {},
+          aud: 'authenticated',
+          createdAt: '2026-01-01')),
+      clipVisibilityAccountProvider.overrideWithValue(null),
+      clipFeedRangeProvider.overrideWith((ref) => null),
+      clipFeedProvider.overrideWith((ref, query) {
+        final controller = ClipFeedController((cursor) async => (
+              items: empty ? <MotionClip>[] : _clips,
+              nextCursor: null,
+              hasMore: false
+            ));
+        unawaited(controller.refresh());
+        return controller;
+      }),
+      enclosureSetsProvider.overrideWith((ref) async => empty ? [] : [_set, _secondSet]),
+      homeDeviceSetsProvider.overrideWith((ref) async => empty ? [] : [_set, _secondSet]),
+      enclosuresProvider
+          .overrideWith((ref) async => empty ? [] : [_set.enclosure, _secondSet.enclosure]),
+      camerasProvider
+          .overrideWith((ref) => Stream.value(empty ? [] : [_camera, _secondCamera])),
+      webrtcLiveControllerProvider
+          .overrideWith((ref, id) => _LocalLive(ref, id)),
+      crecamDayProvider.overrideWith((ref) => null),
+      latestMotionClipAtProvider.overrideWith((ref, id) async => _day),
+      motionClipsProvider.overrideWith((ref, key) async => empty ? [] : _clips),
+      motionThumbnailFileProvider.overrideWith((ref, key) async => null),
+      latestHighlightAtProvider.overrideWith((ref) async => _day),
+      allFavoriteClipsProvider.overrideWith((ref) async => empty
+          ? []
+          : [
+              FavoriteClip(
+                  clipId: _clips.first.id,
+                  cameraId: _camera.id,
+                  startedAt: _clips.first.startedAt,
+                  durationSec: 8,
+                  filePath: '/fixture/not-read.mp4',
+                  sizeBytes: 0,
+                  favoritedAt: _day,
+                  ownerId: 'fixture-owner')
+            ]),
+      isFavoriteProvider.overrideWith((ref, id) => id == _clips.first.id),
+      nightlyReportProvider.overrideWith((ref) async =>
+          const NightlyReport(activitySeconds: 0, highlights: [])),
+      petListProvider.overrideWith((ref) => PetListNotifier(_Pets(), null)),
+    ];
+
+
+final _pet = Pet(id:'p',name:'모모',speciesId:'crested-gecko',speciesName:'크레스티드 게코',morph:'아잔틱 릴리 화이트',sex:'female',weight:21);
+final _inventory = ManagementInventory(groups:[const ManagementGroup(id:'g',name:'사육 환경 1',number:1)],items:[
+ const ManagementItem(key:ManagementKey(kind:ManagementKind.device,id:'d'),name:'거실 사육장',hardwareId:'viva-iot-0001',groupId:'g',isOnline:true),
+ const ManagementItem(key:ManagementKey(kind:ManagementKind.camera,id:'c'),name:'관찰 카메라',hardwareId:'FB2_P4_CAM-0001',groupId:'g',isOnline:true),
+ const ManagementItem(key:ManagementKey(kind:ManagementKind.pet,id:'p'),name:'모모',groupId:'g',subtitle:'아잔틱 릴리 화이트')]);
+// Synthetic illustration only: not measurements or husbandry guidance.
+final _reviewDay = DateTime(2026,9,13);
+double _round1(double n) => (n*10).round()/10;
+List<TelemetryBucket> _naturalBuckets(DateTime day) => [
+ for(var i=0;i<48;i++) _naturalBucket(day,i),
+];
+TelemetryBucket _naturalBucket(DateTime day,int i) {
+ final h=i/2;
+ final offset=math.sin(day.day*1.7)*.45;
+ final t=_round1(24.1+1.45*math.cos((h-15)*math.pi/12)+.13*math.sin(h*1.9)+offset);
+ // Daytime drying plus an evening humidity rise, with small irregularity.
+ final evening=h>=19 ? 16*math.exp(-(h-19)/3.5) : 0.0;
+ final humidity=_round1(64-6*math.cos((h-15)*math.pi/12)+evening+1.1*math.sin(h*.85)+offset*2);
+ return TelemetryBucket(bucket:day.add(Duration(minutes:i*30)),sampleCount:600,tValidCount:598,hValidCount:596,tAvg:t,tMin:_round1(t-.2),tMax:_round1(t+.2),hAvg:humidity,hMin:_round1(humidity-1.2),hMax:_round1(humidity+1.1));
+}
+List<ControlLogEntry> _naturalLogs(DateTime day) => buildControlLog(
+ commandRows:[for(final event in [(8,0,'led_on'),(14,0,'fan_on'),(14,30,'fan_off'),(19,0,'mist'),(20,0,'led_off')])
+ <String,Object?>{'action':event.$3,'issued_at':day.add(Duration(hours:event.$1,minutes:event.$2)).toUtc().toIso8601String(),'status':'acked','result':'ok'}],
+ buckets:_naturalBuckets(day),visibleFrom:day,visibleTo:day.add(const Duration(days:1)));
+ActivityData _naturalActivity() => ActivityData(dataStatus:ActivityDataStatus.exact,videoClipCount:120,exactClipCount:120,intervals:[
+ for(var d=7;d<=13;d++) for(var h=0;h<24;h++)
+ ActivityInterval(cameraId:'fixture-camera',startUtc:DateTime(2026,9,d,h,3).toUtc(),endUtc:DateTime(2026,9,d,h,3).toUtc().add(Duration(minutes: ([26,22,17,12,8,5,3,2,1,2,1,2,3,2,3,4,6,10,19,28,35,31,29,27][h]*(.85+(d-7)*.045)).round()))),
+]);
+Widget scoped(Widget page,{bool empty=false}) => ProviderScope(key:UniqueKey(),overrides:[ pairingPetsProvider.overrideWithValue([_pet]),..._overrides(empty:empty),
+ currentDeviceIdProvider.overrideWith((ref)async=>empty?null:'fixture-device'),
+ moduleOnlineProvider('fixture-device').overrideWithValue(true),
+ telemetryStreamProvider.overrideWith((ref,id)async* { while (true) { yield TelemetryReading(deviceId:id,tA:24.6,hA:66.8,aOk:true,tB:null,hB:null,bOk:false,relay:ActuatorState.off,fan:ActuatorState.on,fan2:ActuatorState.on,led:ActuatorState.on,ledBrightness:50,heaterState:ActuatorState.off,heaterLocked:false,ts:DateTime.now()); await Future<void>.delayed(const Duration(seconds:10)); } }),
+ homeTodayExtremesProvider.overrideWith((ref)async=>EnvExtremes.from(_naturalBuckets(DateTime.now()))),
+ runningTimersProvider.overrideWith((ref)async=>const<RunningTimer>[]),
+ envDetailDayProvider.overrideWith((ref)=>EnvDay.of(_reviewDay)),
+ envDetailWeekProvider.overrideWith((ref)=>WeekRange.containing(_reviewDay)),
+ envDayBucketsProvider.overrideWith((ref)async=>_naturalBuckets(ref.watch(envDetailDayProvider).start)),
+ envDayControlLogProvider.overrideWith((ref)async=>_naturalLogs(ref.watch(envDetailDayProvider).start)),
+ envWeekRowsProvider.overrideWith((ref)async {final w=ref.watch(envDetailWeekProvider);final b=w.days.expand(_naturalBuckets).toList();return (temp:weekTempRanges(b,w),humid:weekHumidRanges(b,w));}),
+ managementInventoryProvider.overrideWith((ref)async=>_inventory),
+ redesignGroupRepositoryProvider.overrideWith((ref)=>RedesignGroupRepository(loadRows:(_)async=>[],rpc:(_,__)async=>throw const ManagementFailure('management_server_unsupported'))),
+ activityClockProvider.overrideWith((ref)=>Stream.value(DateTime.parse('2026-09-15T03:00:00Z'))),
+ activitySelectedDayProvider.overrideWith((ref,scope)=>ActivityWindow.day(2026,9,13)),
+ activitySelectedWeekProvider.overrideWith((ref,scope)=>ActivityWindow.weekContaining(ActivityWindow.day(2026,9,13))),
+ activityDataProvider.overrideWith((ref,query)async=>_naturalActivity()),
+],child:page);
+Widget tab(Widget page,int index)=>Builder(builder:(context)=>Scaffold(extendBody:true,body:page,bottomNavigationBar:GlassDock(items:[for(var i=0;i<4;i++)GlassDockItem(iconAsset:kHomeTabIconAssets[i],label:kHomeTabLabelKeys[i].tr())],currentIndex:index,onSelected:(i)=>context.go(['/home','/camera','/mycre','/'][i]))));
+Widget mycre(bool empty, {bool linked=true})=>Builder(builder:(context)=>MyCreActivityScreen(header:Padding(padding:const EdgeInsets.symmetric(horizontal:12),child:RedesignTabHeader(choices:empty?const[]:const[(id:'p',label:'사육 환경 1'),(id:'p2',label:'사육 환경 2')],selectedId:empty?null:'p',emptyLabel:'',onSelected:(_){})),pet:empty?null:_pet,userId:'fixture-owner',hasCameraConnection:linked,onConnectCamera:()=>context.push('/groups/g'),assignments:[ActivityAssignment(cameraId:'fixture-camera',origin:ActivityOrigin.legacy)],onAddPet:()=>context.push('/pet-add'),onEditPet:()=>context.push('/pet-edit')));
+final router=GoRouter(routes:[
+ GoRoute(path:'/choose-pet',builder:(_,__)=>scoped(const PairingPetSelectionScreen(groupId:'g'))),
+ GoRoute(path:'/',builder:(_,__)=>const Gallery()),GoRoute(path:'/profile',builder:(_,__)=>const Gallery()),
+ GoRoute(path:'/home',builder:(_,__)=>scoped(tab(const HomeScreen(),0))),
+ GoRoute(path:'/home-empty',builder:(_,__)=>scoped(tab(const HomeScreen(),0),empty:true)),
+ GoRoute(path:'/camera',builder:(_,__)=>scoped(tab(const CrecamScreen(),1))),
+ GoRoute(path:'/camera-empty',builder:(_,__)=>scoped(tab(const CrecamScreen(),1),empty:true)),
+ GoRoute(path:'/mycre',builder:(_,__)=>scoped(tab(mycre(false),2))),
+ GoRoute(path:'/mycre-unlinked',builder:(_,__)=>scoped(tab(mycre(false,linked:false),2))),
+ GoRoute(path:'/mycre-empty',builder:(_,__)=>scoped(tab(mycre(true),2),empty:true)),
+ GoRoute(path:'/env-detail',builder:(_,__)=>scoped(const EnvDetailScreen())),
+ GoRoute(path:'/pet-add',builder:(_,__)=>scoped(PetFormScreen(groups:const[PetFormGroupOption(id:'g',name:'사육 환경 1')],onSave:(_,__)async=>throw StateError('QA read-only')))),
+ GoRoute(path:'/my-pets/:id/edit',builder:(_,__)=>scoped(PetFormScreen(original:_pet,onSave:(_,__)async=>throw StateError('QA read-only')))),
+ GoRoute(path:'/pet-edit',builder:(_,__)=>scoped(PetFormScreen(original:_pet,onSave:(_,__)async=>throw StateError('QA read-only')))),
+ GoRoute(path:'/devices/manage',builder:(_,__)=>scoped(const DeviceManagementScreen())),
+ GoRoute(path:'/devices/:kind/:id',builder:(_,s)=>scoped(DeviceDetailScreen(kind:s.pathParameters['kind']=='camera'?ManagementKind.camera:ManagementKind.device,itemId:s.pathParameters['id']!))),
+ GoRoute(path:'/groups/new',builder:(_,__)=>scoped(const GroupEditorScreen())),
+ GoRoute(path:'/groups/:id',builder:(_,s)=>scoped(GroupEditorScreen(groupId:s.pathParameters['id']))),
+]);
+class Gallery extends StatelessWidget {const Gallery({super.key});@override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('시뮬레이터 검수 · 로컬 데이터')),body:ListView(children:[const Padding(padding:EdgeInsets.all(16),child:Text('실제 제품 위젯 / 서버·BLE 연결 없음 / 저장 비활성. 화면 내 계정 버튼으로 목록 복귀.')),
+for(final item in [('연결 후 개체 선택','/choose-pet'),('홈','/home'),('카메라','/camera'),('MyCre','/mycre'),('미연결 MyCre','/mycre-unlinked'),('온습도 상세','/env-detail'),('개체 등록','/pet-add'),('개체 수정','/pet-edit'),('기기 관리','/devices/manage'),('그룹 상세','/groups/g'),('사육장 상세','/devices/device/d'),('카메라 상세','/devices/camera/c'),('빈 홈','/home-empty'),('빈 카메라','/camera-empty'),('빈 MyCre','/mycre-empty')])ListTile(title:Text(item.$1),onTap:()=>context.push(item.$2))]));}
+void main()async {WidgetsFlutterBinding.ensureInitialized();await EasyLocalization.ensureInitialized();runApp(EasyLocalization(supportedLocales:const[Locale('ko')],path:'assets/l10n',startLocale:const Locale('ko'),child:Builder(builder:(context)=>MaterialApp.router(debugShowCheckedModeBanner:false,builder:(context,child)=>Stack(children:[child!,Positioned(left:0,right:0,bottom:8,child:IgnorePointer(child:Center(child:Container(padding:const EdgeInsets.symmetric(horizontal:8,vertical:2),color:Theme.of(context).colorScheme.surface,child:Text('가상 데이터 · 실제 측정 아님',style:Theme.of(context).textTheme.labelSmall)))))]),theme:AppTheme.light,locale:context.locale,supportedLocales:context.supportedLocales,localizationsDelegates:context.localizationDelegates,routerConfig:router))));}

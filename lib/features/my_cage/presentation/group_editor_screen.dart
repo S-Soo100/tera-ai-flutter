@@ -217,17 +217,25 @@ class _GroupEditorBody extends ConsumerWidget {
                                 ManagementLabel(
                                     'management_kind_${kind.name}'.tr()),
                                 const SizedBox(height: 12),
-                                for (final item in inventory.items
-                                    .where((i) => i.key.kind == kind))
-                                  ManagementItemRow(
-                                      item: item,
-                                      groupName:
-                                          inventory.group(item.groupId)?.name,
-                                      selected:
-                                          draft.members.contains(item.key),
-                                      onTap: draft.saving
-                                          ? null
-                                          : () => select(item)),
+                                Material(
+                                  color: context.glass.overlay,
+                                  borderRadius: BorderRadius.circular(12),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: Column(children: [
+                                    for (final item in inventory.items
+                                        .where((i) => i.key.kind == kind))
+                                      ManagementItemRow(
+                                          item: item,
+                                          groupName: inventory
+                                              .group(item.groupId)
+                                              ?.name,
+                                          selected:
+                                              draft.members.contains(item.key),
+                                          onTap: draft.saving
+                                              ? null
+                                              : () => select(item)),
+                                  ]),
+                                ),
                                 const SizedBox(height: 24),
                               ],
                             ],
