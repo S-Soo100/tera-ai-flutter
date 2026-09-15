@@ -267,12 +267,10 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   }
 
   Future<void> _morph() async {
-    final result = await showModalBottomSheet<({String? value})>(
-        context: context,
-        isScrollControlled: true,
-        builder: (_) => const _MorphSearchSheet());
+    final result = await Navigator.of(context).push<String>(
+        MaterialPageRoute(builder: (_) => const _MorphSelectionScreen()));
     if (mounted && result != null) {
-      _change((d) => d.copyWith(morph: result.value));
+      _change((d) => d.copyWith(morph: result));
     }
   }
 
@@ -821,57 +819,93 @@ class PetFormPhoto extends StatelessWidget {
 
 final _morphSearchProvider = StateProvider.autoDispose<String>((ref) => '');
 
-class _MorphSearchSheet extends ConsumerWidget {
-  const _MorphSearchSheet();
+class _MorphSelectionScreen extends ConsumerWidget {
+  const _MorphSelectionScreen();
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final query = ref.watch(_morphSearchProvider).trim().toLowerCase();
     final catalog = ref.watch(morphDataProvider('crested-gecko'));
-    return SafeArea(
-        child: Padding(
-      padding: EdgeInsets.fromLTRB(
-          12, 24, 12, MediaQuery.viewInsetsOf(context).bottom),
-      child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * .65,
+    return Scaffold(
+      backgroundColor: context.glass.surfaceHeader,
+      appBar: petFormAppBar(
+          context, 'pet_form_morph_title'.tr(), () => Navigator.pop(context)),
+      body: SafeArea(
+          top: false,
           child: Column(children: [
-            TextField(
-                autofocus: true,
-                style: petFormText(context),
-                decoration: petFormDecoration(context).copyWith(
-                    hintText: 'pet_form_morph_search'.tr(),
-                    prefixIcon: FigmaIcon.tinted('redesign_v2/search',
-                        color: context.glass.textSecondary, size: 24)),
-                onChanged: (value) =>
-                    ref.read(_morphSearchProvider.notifier).state = value),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 13, 12, 0),
+              child: SizedBox(
+                  height: 65,
+                  child: TextField(
+                    style: petFormText(context),
+                    decoration: petFormDecoration(context).copyWith(
+                        hintText: 'pet_form_morph_search'.tr(),
+                        hintStyle: petFormText(context)
+                            .copyWith(color: context.glass.textTertiary)),
+                    onChanged: (value) =>
+                        ref.read(_morphSearchProvider.notifier).state = value,
+                  )),
+            ),
             Expanded(
                 child: catalog.when(
-                    data: (data) => ListView(children: [
-                          ListTile(
-                              title: Text('pet_form_none'.tr()),
-                              onTap: () =>
-                                  Navigator.pop(context, (value: null))),
-                          // Preserve existing registration choices with separate source IDs.
-                          for (final morph in petRegistrationChoices(data)
-                              .where((m) => '${m.name} ${m.englishName ?? ''}'
-                                  .toLowerCase()
-                                  .contains(query)))
-                            ListTile(
+              data: (data) {
+                final groups = petRegistrationGroups(
+                    petRegistrationChoices(data).where((m) =>
+                        '${m.name} ${m.englishName ?? ''}'
+                            .toLowerCase()
+                            .contains(query)));
+                return ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  children: [
+                    for (final group in groups.entries) ...[
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(12,
+                            group.key == groups.keys.first ? 20 : 16, 12, 0),
+                        child: Text(group.key,
+                            style: petFormText(context)
+                                .copyWith(color: context.glass.textTertiary)),
+                      ),
+                      for (final morph in group.value)
+                        SizedBox(
+                            height: 44,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                  border: Border(
+                                      bottom: BorderSide(
+                                          color: context.glass.border))),
+                              child: InkWell(
                                 key: ValueKey(morph.id),
-                                title: Text(morph.name),
-                                subtitle: morph.englishName == null
-                                    ? null
-                                    : Text(morph.englishName!),
-                                onTap: () => Navigator.pop(
-                                    context, (value: morph.name))),
-                        ]),
-                    loading: () => Center(child: Text('pet_form_loading'.tr())),
-                    error: (_, __) => Center(
-                        child: TextButton(
-                            onPressed: () => ref
-                                .invalidate(morphDataProvider('crested-gecko')),
-                            child: Text('pet_form_retry'.tr()))))),
+                                onTap: () => Navigator.pop(context, morph.name),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(morph.name,
+                                        style: petFormText(context).copyWith(
+                                            fontSize: 18,
+                                            height: 28 / 18,
+                                            letterSpacing: -0.36,
+                                            color:
+                                                context.glass.textSecondary)),
+                                  ),
+                                ),
+                              ),
+                            )),
+                    ]
+                  ],
+                );
+              },
+              loading: () => Center(child: Text('pet_form_loading'.tr())),
+              error: (_, __) => Center(
+                  child: TextButton(
+                onPressed: () =>
+                    ref.invalidate(morphDataProvider('crested-gecko')),
+                child: Text('pet_form_retry'.tr()),
+              )),
+            )),
           ])),
-    ));
+    );
   }
 }
 

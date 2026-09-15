@@ -14,4 +14,15 @@ void main() {
     expect(choices.any((c) => c.id == 'trait:harlequin'), isTrue);
     expect(choices.any((c) => c.id == 'morph:axanthic'), isTrue);
   });
+  test('initial groups sort names and preserve duplicate source labels', () {
+    final groups = petRegistrationGroups([
+      (id: 'morph:lilly', name: '릴리 화이트', englishName: 'Lilly White'),
+      (id: 'trait:a', name: '아잔틱', englishName: null),
+      (id: 'morph:a', name: '아잔틱', englishName: null),
+      (id: 'morph:normal', name: '노말', englishName: null),
+    ]);
+    expect(groups.keys, ['ㄴ', 'ㄹ', 'ㅇ']);
+    expect(groups['ㅇ']!.map((c) => c.id), ['morph:a', 'trait:a']);
+    expect(groups.values.expand((g) => g).length, 4);
+  });
 }
