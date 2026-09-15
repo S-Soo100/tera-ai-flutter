@@ -1,0 +1,64 @@
+[
+  {
+    "type": "Text",
+    "text": "밝기",
+    "rect": [
+      36.0,
+      647.0,
+      321.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "60%",
+    "rect": [
+      36.0,
+      687.5,
+      51.0,
+      21.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      24.0,
+      750.0,
+      168.5,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "이 밝기로 켜기",
+    "rect": [
+      68.1332015991211,
+      760.0,
+      80.23359680175781,
+      20.0
+    ],
+    "style": "null"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      200.5,
+      750.0,
+      168.5,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "끄기",
+    "rect": [
+      272.5503902435303,
+      760.0,
+      24.399219512939453,
+      20.0
+    ],
+    "style": "null"
+  }
+]

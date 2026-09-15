@@ -13,10 +13,14 @@ library;
 import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
+import 'dart:ui' as ui show TextDirection;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/theme/glass_palette.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
 import '../../../core/theme/app_styles.dart';
@@ -422,7 +426,7 @@ Future<void> openLedSheet(
             (ref) => ((seed / 10).round() * 10).clamp(20, 100).toDouble()),
         _ledSubmittedProvider.overrideWith((ref) => false),
       ],
-      child: _LedSheet(dimmable: dimmable),
+      child: LedControlSheet(dimmable: dimmable),
     ),
   );
   if (choice == null || !context.mounted) return;
@@ -459,8 +463,13 @@ class _LedChoice {
 final _ledBrightnessProvider = StateProvider.autoDispose<double>((ref) => 60);
 final _ledSubmittedProvider = StateProvider.autoDispose<bool>((ref) => false);
 
-class _LedSheet extends ConsumerWidget {
-  const _LedSheet({required this.dimmable});
+/// LED 시트 — Figma 1106:4127. 시트 #F4F4F4·안쪽 24, '밝기' 16/500 #949090,
+/// 밝기 행 345×48 r16 흰색(퍼센트 18/600 좌 12, 트랙 6 #E3E3E3·채움 LED색,
+/// 흰 52×32 썸). 원본의 즉시/예약 segment·전원 스위치·작동 시간 칩은
+/// 송신 시점·LED 타이머 계약이 미결(P11)이라 붙이지 않고 기존 켜기/끄기
+/// 버튼(선택 후 적용 송신)을 유지한다.
+class LedControlSheet extends ConsumerWidget {
+  const LedControlSheet({super.key, required this.dimmable});
 
   final bool dimmable;
 
@@ -468,76 +477,155 @@ class _LedSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final brightness = ref.watch(_ledBrightnessProvider);
     final submitted = ref.watch(_ledSubmittedProvider);
+    final glass = context.glass;
     void submit(_LedChoice choice) {
       if (ref.read(_ledSubmittedProvider)) return;
       ref.read(_ledSubmittedProvider.notifier).state = true;
       Navigator.of(context).pop(choice);
     }
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppStyles.spacing16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('home_led_pick_title'.tr(),
-                style: AppStyles.subsectionTitle(context)),
-            const SizedBox(height: AppStyles.spacing12),
-            if (dimmable) ...[
-              Row(
-                children: [
-                  Text('home_led_brightness'.tr(),
-                      style: Theme.of(context).textTheme.labelMedium),
-                  const Spacer(),
-                  Text('unit_percent_fmt'.tr(args: ['${brightness.round()}']),
-                      key: const Key('led_brightness_value'),
-                      style: Theme.of(context).textTheme.titleMedium),
-                ],
-              ),
-              Slider(
-                key: const Key('led_brightness_slider'),
-                value: brightness,
-                min: 20,
-                max: 100,
-                divisions: 8,
-                onChanged: submitted
-                    ? null
-                    : (v) =>
-                        ref.read(_ledBrightnessProvider.notifier).state = v,
-              ),
-              const SizedBox(height: AppStyles.spacing8),
-            ],
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    key: const Key('led_on'),
-                    onPressed: submitted
-                        ? null
-                        : () => submit(dimmable
-                            ? _LedChoice.on(brightness.round())
-                            : const _LedChoice.on()),
-                    child: Text((dimmable
-                            ? 'home_led_apply_brightness'
-                            : 'home_led_turn_on')
-                        .tr()),
-                  ),
-                ),
-                const SizedBox(width: AppStyles.spacing8),
-                Expanded(
-                  child: OutlinedButton(
-                    key: const Key('led_off'),
-                    onPressed:
-                        submitted ? null : () => submit(const _LedChoice.off()),
-                    child: Text('home_led_turn_off'.tr()),
-                  ),
+    final labelStyle = TextStyle(
+        fontFamily: 'Pretendard',
+        fontSize: 16,
+        height: 19.09375 / 16,
+        fontWeight: FontWeight.w500,
+        letterSpacing: -0.32,
+        color: glass.textTertiary);
+
+    return ColoredBox(
+      color: glass.overlay,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (!dimmable)
+                Text('home_led_pick_title'.tr(),
+                    style: AppStyles.subsectionTitle(context)),
+              if (dimmable) ...[
+                Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('home_led_brightness'.tr(), style: labelStyle)),
+                const SizedBox(height: 8),
+                Container(
+                  key: const Key('led_brightness_row'),
+                  height: 48,
+                  padding: const EdgeInsets.only(left: 12, right: 8),
+                  decoration: BoxDecoration(
+                      color: glass.surfaceHeader,
+                      borderRadius: BorderRadius.circular(16)),
+                  child: Row(children: [
+                    SizedBox(
+                        width: 51,
+                        child: Text(
+                            'unit_percent_fmt'
+                                .tr(args: ['${brightness.round()}']),
+                            key: const Key('led_brightness_value'),
+                            style: TextStyle(
+                                fontFamily: 'Pretendard',
+                                fontSize: 18,
+                                height: 21.48046875 / 18,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.36,
+                                color: glass.textSecondary))),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SliderTheme(
+                        data: SliderThemeData(
+                          trackHeight: 6,
+                          activeTrackColor: glass.deviceLed,
+                          inactiveTrackColor: glass.border,
+                          disabledActiveTrackColor: glass.deviceLed,
+                          disabledInactiveTrackColor: glass.border,
+                          thumbShape: const _PillThumbShape(),
+                          overlayShape: SliderComponentShape.noOverlay,
+                          trackShape: const RoundedRectSliderTrackShape(),
+                        ),
+                        child: Slider(
+                          key: const Key('led_brightness_slider'),
+                          value: brightness,
+                          min: 20,
+                          max: 100,
+                          divisions: 8,
+                          onChanged: submitted
+                              ? null
+                              : (v) => ref
+                                  .read(_ledBrightnessProvider.notifier)
+                                  .state = v,
+                        ),
+                      ),
+                    ),
+                  ]),
                 ),
               ],
-            ),
-          ],
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      key: const Key('led_on'),
+                      onPressed: submitted
+                          ? null
+                          : () => submit(dimmable
+                              ? _LedChoice.on(brightness.round())
+                              : const _LedChoice.on()),
+                      child: Text((dimmable
+                              ? 'home_led_apply_brightness'
+                              : 'home_led_turn_on')
+                          .tr()),
+                    ),
+                  ),
+                  const SizedBox(width: AppStyles.spacing8),
+                  Expanded(
+                    child: OutlinedButton(
+                      key: const Key('led_off'),
+                      onPressed: submitted
+                          ? null
+                          : () => submit(const _LedChoice.off()),
+                      child: Text('home_led_turn_off'.tr()),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+}
+
+/// Figma 밝기 썸 — 흰 52×32 r16, 옅은 그림자.
+class _PillThumbShape extends SliderComponentShape {
+  const _PillThumbShape();
+  static const Size _size = Size(52, 32);
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) => _size;
+
+  @override
+  void paint(PaintingContext context, Offset center,
+      {required Animation<double> activationAnimation,
+      required Animation<double> enableAnimation,
+      required bool isDiscrete,
+      required TextPainter labelPainter,
+      required RenderBox parentBox,
+      required SliderThemeData sliderTheme,
+      required ui.TextDirection textDirection,
+      required double value,
+      required double textScaleFactor,
+      required Size sizeWithOverflow}) {
+    final rect = RRect.fromRectAndRadius(
+        Rect.fromCenter(center: center, width: _size.width, height: _size.height),
+        const Radius.circular(16));
+    final canvas = context.canvas;
+    canvas.drawRRect(
+        rect.shift(const Offset(0, 1)),
+        Paint()
+          ..color = Colors.black.withValues(alpha: 0.12)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
+    canvas.drawRRect(rect, Paint()..color = Colors.white);
   }
 }

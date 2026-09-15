@@ -92,14 +92,14 @@ void main() {
     await tester.tap(find.byKey(CageControlGrid.coolFanKey));
     await tester.pump();
     expect(find.text('home_value_none'), findsOneWidget);
-    expect(find.text('home_cooling_pick_title'), findsNothing);
+    expect(find.text('home_cooling_end_label'), findsNothing);
   });
 
   testWidgets('냉각팬 꺼짐 보고 시 냉각팬 전용 시간 선택을 연다', (tester) async {
     await _pump(tester, reading: _reading(fan2: ActuatorState.off));
     await tester.tap(find.byKey(CageControlGrid.coolFanKey));
     await tester.pumpAndSettle();
-    expect(find.text('home_cooling_pick_title'), findsOneWidget);
+    expect(find.text('home_cooling_end_label'), findsOneWidget);
     expect(find.byKey(const Key('fan_timer_30')), findsOneWidget);
   });
 
@@ -156,14 +156,14 @@ void main() {
     await tester.tap(find.byKey(CageControlGrid.ventFanKey));
     await tester.pumpAndSettle();
     // 시트를 열기만 해서는 팬 명령을 보내지 않는다.
-    expect(find.text('home_fan_pick_title'), findsOneWidget);
+    expect(find.text('home_fan_duration_label'), findsOneWidget);
   });
 
   testWidgets('환기팬 꾹 누르기 → 켜기 방식 시트(계속/타이머)', (tester) async {
     await _pump(tester);
     await tester.longPress(find.byKey(CageControlGrid.ventFanKey));
     await tester.pumpAndSettle();
-    expect(find.text('home_fan_pick_title'), findsOneWidget);
+    expect(find.text('home_fan_duration_label'), findsOneWidget);
     expect(find.byKey(const Key('fan_steady_on')), findsOneWidget);
     expect(find.byKey(const Key('fan_timer_30')), findsOneWidget);
   });
@@ -172,7 +172,7 @@ void main() {
     await _pump(tester, online: false);
     await tester.longPress(find.byKey(CageControlGrid.ventFanKey));
     await tester.pumpAndSettle();
-    expect(find.text('home_fan_pick_title'), findsNothing);
+    expect(find.text('home_fan_duration_label'), findsNothing);
   });
 
   testWidgets('LED unavailable(구 펌웨어) → "상태 모름" — 꺼짐으로 칠하지 않는다',
@@ -191,6 +191,6 @@ void main() {
     await _pump(tester, online: false);
     await tester.tap(find.byKey(CageControlGrid.ventFanKey));
     await tester.pumpAndSettle();
-    expect(find.text('home_fan_pick_title'), findsNothing);
+    expect(find.text('home_fan_duration_label'), findsNothing);
   });
 }

@@ -39,6 +39,9 @@ import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controlle
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_screen.dart';
 import '../features/my_cage/device_add_flow_test.dart' show Gateway, device, camera;
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
+import 'package:vivanaut/features/home/presentation/widgets/fan_duration_sheet.dart';
+import 'package:vivanaut/shared/domain/fan_actuator.dart';
 import 'package:vivanaut/features/home/presentation/home_screen.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/my_cage/data/lcd_repository.dart';
@@ -775,6 +778,27 @@ void main() {
     await capture(tester, boundary, 'p08-lcd-empty');
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '도도도네 집');
     await capture(tester, boundary, 'p08-lcd-filled');
+    debugDisableShadows = true;
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('P09 control sheet captures', (tester) async {
+    debugDisableShadows = false;
+    final boundary = GlobalKey();
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    for (final (name, sheet) in [
+      ('p09-fan', const FanDurationSheet()),
+      ('p09-cooling', const FanDurationSheet(actuator: FanActuator.cooling)),
+      ('p09-led', const LedControlSheet(dimmable: true)),
+    ]) {
+      await tester.pumpWidget(shell(
+          boundary,
+          Scaffold(body: Align(alignment: Alignment.bottomCenter, child: sheet))));
+      await capture(tester, boundary, name);
+    }
     debugDisableShadows = true;
     await tester.binding.setSurfaceSize(null);
   });
