@@ -10,6 +10,7 @@ import '../../my_cage/domain/redesign_management.dart';
 import 'my_cre_activity_screen.dart';
 import 'my_pets_providers.dart';
 import 'pet_assignment_providers.dart';
+import '../domain/activity_summary.dart';
 
 /// Selection is an animal ID; only the dropdown label changes with its group.
 class MyPetsScreen extends ConsumerWidget {
@@ -23,9 +24,13 @@ class MyPetsScreen extends ConsumerWidget {
         pets.where((p) => p.id == selectedId).firstOrNull ?? pets.firstOrNull;
     final groups = ref.watch(enclosuresProvider).valueOrNull ?? const [];
     final camerasAsync = ref.watch(camerasProvider);
-    final assignments = selected == null
+    final camera = selected?.enclosureId == null ||
+            camerasAsync.isLoading ||
+            camerasAsync.hasError
         ? null
-        : ref.watch(petCameraAssignmentsProvider(selected.id));
+        : camerasAsync.valueOrNull
+            ?.where((camera) => camera.enclosureId == selected!.enclosureId)
+            .firstOrNull;
     ref.listen(myPetsTabProvider, (_, value) {
       if (value == 1) {
         ref.read(myPetsTabProvider.notifier).state = 0;
@@ -56,20 +61,22 @@ class MyPetsScreen extends ConsumerWidget {
           ? false
           : camerasAsync.isLoading || camerasAsync.hasError
               ? null
-              : camerasAsync.value!
-                  .any((c) => c.enclosureId == selected!.enclosureId),
+              : camera != null,
       onConnectCamera: selected == null
           ? null
           : () => context.push('/device-groups/connect-camera', extra: (
                 groupId: selected.enclosureId,
                 member: ManagementKey(kind: ManagementKind.pet, id: selected.id)
               )),
-      assignments: assignments?.valueOrNull ?? const [],
-      assignmentNotice: assignments?.hasError == true
+      // Display the current camera across the requested dates. Do not claim
+      // historical pet membership or truncate at registration/link dates.
+      assignments: camera == null
+          ? const []
+          : [ActivityAssignment.currentCamera(camera.id)],
+      assignmentNotice: selected?.enclosureId != null && camerasAsync.hasError
           ? TextButton(
-              onPressed: () =>
-                  ref.invalidate(petCameraAssignmentsProvider(selected!.id)),
-              child: Text('activity_history_pending'.tr()))
+              onPressed: () => ref.invalidate(camerasProvider),
+              child: Text('activity_retry'.tr()))
           : null,
       onAddPet: () => context.push('/pet-add'),
       onEditPet: selected == null

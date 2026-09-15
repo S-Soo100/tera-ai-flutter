@@ -59,6 +59,34 @@ void main() {
             .videoClipCount,
         2);
   });
+  test('late former-camera response cannot replace the same pet current camera',
+      () async {
+    final repo = DeferredActivityRepository();
+    final container = ProviderContainer(overrides: [
+      activityRepositoryProvider('user').overrideWith((ref) => repo),
+    ]);
+    addTearDown(container.dispose);
+    final day = ActivityWindow.day(2026, 8, 1);
+    ActivityQuery query(String cameraId) => ActivityQuery(
+        userId: 'user',
+        petId: 'same-pet',
+        window: day,
+        assignments: [ActivityAssignment.currentCamera(cameraId)]);
+    final former = container.read(activityDataProvider(query('a')).future);
+    final current = container.read(activityDataProvider(query('b')).future);
+    expect(repo.requests.map((request) => request.cameraId), ['a', 'b']);
+    expect(repo.requests.every((request) => request.window == day), isTrue);
+    repo.requests[1].result.complete(const ActivityData(videoClipCount: 2));
+    expect((await current).videoClipCount, 2);
+    repo.requests[0].result.complete(const ActivityData(videoClipCount: 9));
+    await former;
+    expect(
+        container
+            .read(activityDataProvider(query('b')))
+            .requireValue
+            .videoClipCount,
+        2);
+  });
   test(
       'requests clip to each real assignment and legacy leaves original window intact',
       () async {

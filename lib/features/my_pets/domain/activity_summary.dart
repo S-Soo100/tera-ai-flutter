@@ -2,7 +2,7 @@ import 'activity_window.dart';
 
 enum ActivityQuality { exact, legacyEstimate, mixed }
 
-enum ActivityOrigin { exact, legacy }
+enum ActivityOrigin { exact, legacy, currentCamera }
 
 enum ActivityObservation {
   complete,
@@ -14,6 +14,7 @@ enum ActivityObservation {
 
 /// A real assignment boundary, or an explicitly inherited legacy scope.
 /// A legacy null start is deliberately not replaced with pet.createdAt.
+/// currentCamera is an unbounded display scope, not historical membership.
 class ActivityAssignment {
   ActivityAssignment(
       {required this.cameraId,
@@ -31,6 +32,9 @@ class ActivityAssignment {
       }
     }
   }
+  ActivityAssignment.currentCamera(String cameraId)
+      : this(cameraId: cameraId, origin: ActivityOrigin.currentCamera);
+
   final String cameraId;
   final DateTime? startUtc;
   final DateTime? endUtc;
