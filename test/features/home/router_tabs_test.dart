@@ -50,6 +50,27 @@ void main() {
   });
 
   group('라우터 조립', () {
+    test('재설계 정적 경로와 종류별 상세 경로가 개체 ID에 가려지지 않는다', () {
+      final router = buildAppRouter(isAuthenticated: () => true);
+      addTearDown(router.dispose);
+      for (final path in [
+        '/devices/add',
+        '/devices/manage',
+        '/devices/device/abc',
+        '/devices/camera/abc',
+        '/groups/new',
+        '/groups/abc',
+        '/my-pets/manage',
+        '/my-pets/reports',
+        '/pet-add',
+      ]) {
+        final match = router.configuration.findMatch(Uri.parse(path));
+        expect(match.isError, isFalse, reason: path);
+        expect(match.pathParameters.containsKey('petId'), isFalse,
+            reason: path);
+      }
+    });
+
     test('GoRouter가 4탭 셸로 구성된다', () {
       final router = buildAppRouter(isAuthenticated: () => true);
       expect(router, isA<GoRouter>());

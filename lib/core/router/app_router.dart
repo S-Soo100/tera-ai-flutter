@@ -5,9 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/my_pets/presentation/my_pets_screen.dart';
-import '../../features/my_pets/presentation/pet_add_screen.dart';
+import '../../features/my_cage/presentation/nightly_report_view.dart';
+import '../../features/my_pets/presentation/pet_form_route.dart';
 import '../../features/my_pets/presentation/pet_detail_screen.dart';
-import '../../features/my_pets/presentation/pet_edit_screen.dart';
+import '../../features/my_cage/presentation/device_management_screen.dart';
+import '../../features/my_cage/presentation/device_add_flow_route.dart';
+import '../../features/my_cage/presentation/device_detail_screen.dart';
+import '../../features/my_cage/presentation/group_editor_screen.dart';
+import '../../features/my_cage/domain/redesign_management.dart';
 import '../../features/my_cage/presentation/crecam_screen.dart';
 import '../../features/my_cage/presentation/smart_cage_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
@@ -128,8 +133,18 @@ GoRouter buildAppRouter({
                 builder: (context, state) => const MyPetsScreen(),
                 routes: [
                   GoRoute(
+                    path: 'manage',
+                    builder: (context, state) => const PetManagementRoute(),
+                  ),
+                  GoRoute(
+                    path: 'reports',
+                    builder: (context, state) => Scaffold(
+                        appBar: AppBar(title: Text('my_pets_tab_report'.tr())),
+                        body: const NightlyReportView()),
+                  ),
+                  GoRoute(
                     path: 'add',
-                    builder: (context, state) => const PetAddScreen(),
+                    builder: (context, state) => const PetFormRoute(),
                   ),
                   // 리포트 카드 → 클립 재생은 셸 밖 `/crecam/motion-clips/:clipId`를
                   // 쓴다 — 셸 안에 두면 가로 전체화면 위에 탭바가 옆으로 그려져
@@ -145,7 +160,7 @@ GoRouter buildAppRouter({
                         path: 'edit',
                         builder: (context, state) {
                           final petId = state.pathParameters['petId'] ?? '';
-                          return PetEditScreen(petId: petId);
+                          return PetFormRoute(petId: petId);
                         },
                       ),
                     ],
@@ -322,8 +337,38 @@ GoRouter buildAppRouter({
       // `/my-pets/add`를 홈에서 push하면 셸 인덱스가 탭3으로 점프하고
       // 뒤로가기가 홈이 아닌 마이크레로 떨어진다(리뷰 2026-09-03).
       GoRoute(
+          path: '/devices/add',
+          builder: (context, state) => const DeviceAddFlowRoute()),
+      GoRoute(
+          path: '/devices/manage',
+          builder: (context, state) => const DeviceManagementScreen()),
+      GoRoute(
+          path: '/devices/:kind/:id',
+          builder: (context, state) {
+            final kind = ManagementKind.values
+                .where((k) =>
+                    k.name == state.pathParameters['kind'] &&
+                    k != ManagementKind.pet)
+                .firstOrNull;
+            if (kind == null) return const ErrorScreen();
+            return DeviceDetailScreen(
+                kind: kind, itemId: state.pathParameters['id']!);
+          }),
+      GoRoute(
+          path: '/groups/new',
+          builder: (context, state) => GroupEditorScreen(
+              initialMember: state.extra is ManagementKey
+                  ? state.extra as ManagementKey
+                  : null)),
+      GoRoute(
+          path: '/groups/:id',
+          builder: (context, state) =>
+              GroupEditorScreen(groupId: state.pathParameters['id'])),
+      GoRoute(
         path: '/pet-add',
-        builder: (context, state) => const PetAddScreen(),
+        builder: (context, state) => PetFormRoute(
+            initialGroupId:
+                state.extra is String ? state.extra as String : null),
       ),
       GoRoute(
         path: '/profile',
