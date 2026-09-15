@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../core/theme/viva_colors.dart';
 import '../../../../shared/widgets/skeleton_loading.dart';
+import 'clip_toast.dart';
 import '../../domain/clip_memo.dart';
 import '../bookmark_controller.dart';
 import '../clip_memo_providers.dart';
@@ -27,6 +28,7 @@ Future<void> toggleClipBookmark(
     return;
   }
   if (!canAdd) return;
+  var saved = false;
   await showClipMemoEditor(context, key: key, saveBookmark: () async {
     if (!context.mounted || ref.read(clipMemoAccountProvider) != owner) {
       return false;
@@ -37,8 +39,14 @@ Future<void> toggleClipBookmark(
     if (!context.mounted || ref.read(clipMemoAccountProvider) != owner) {
       return false;
     }
-    return ref.read(bookmarkControllerProvider(key)).persisted;
+    saved = ref.read(bookmarkControllerProvider(key)).persisted;
+    return saved;
   });
+  // Figma 1081:6803 — 북마크가 실제로 저장된 뒤에만 토스트. 메모만 고친
+  // 경우(saveBookmark 없음)는 여기로 오지 않는다.
+  if (saved && context.mounted && ref.read(clipMemoAccountProvider) == owner) {
+    showClipToast(context, text: 'clip_bookmark_saved_toast'.tr());
+  }
 }
 
 Future<void> showClipMemoEditor(
@@ -168,7 +176,13 @@ class _MemoFormState extends ConsumerState<_MemoForm> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('clip_memo_title'.tr(),
+            // Figma 1081:6727 — 북마크 흐름·새 메모는 '메모 추가', 기존 메모
+            // 편집은 합의된 '메모 수정'.
+            Text(
+                (bookmark || widget.initialMemo == null
+                        ? 'clip_memo_add'
+                        : 'clip_memo_edit')
+                    .tr(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontFamily: 'Pretendard',
@@ -199,7 +213,11 @@ class _MemoFormState extends ConsumerState<_MemoForm> {
                       hintText: 'clip_memo_hint'.tr(),
                       filled: true,
                       fillColor: VivaColors.fillBack,
-                      contentPadding: const EdgeInsets.all(16),
+                      // Figma Field 297×130, 글자 x+17/y+17. 가로는
+                      // OutlineInputBorder gapPadding(4)이 더해져 13으로 맞춘다
+                      // (실측: 글상자 +17, 글리프 +18 = 원본 PNG).
+                      contentPadding:
+                          const EdgeInsets.fromLTRB(13, 17, 13, 17),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: glass.border))),
@@ -315,7 +333,10 @@ class _MemoDialog extends StatelessWidget {
     return Dialog(
         backgroundColor: context.glass.wallpaper,
         surfaceTintColor: context.glass.wallpaper,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        // 가로(1081:6962)는 키보드 위 공간이 모달(205)보다 좁아 세로 여백을
+        // 없앤다. 그래도 모자라면 아래 SingleChildScrollView가 받는다.
+        insetPadding: EdgeInsets.symmetric(
+            horizontal: 24, vertical: size.width > size.height ? 0 : 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ConstrainedBox(
             constraints:
@@ -343,6 +364,10 @@ class _MemoButtons extends StatelessWidget {
                 style: FilledButton.styleFrom(
                     backgroundColor: color,
                     foregroundColor: ClipMemoColors.foreground,
+                    // 비활성(빈 메모)은 관리 화면 버튼과 같은 회색 — 원본은
+                    // 활성 상태만 그렸다.
+                    disabledBackgroundColor: glass.border,
+                    disabledForegroundColor: glass.textTertiary,
                     minimumSize: const Size(0, 44),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     padding:

@@ -166,6 +166,7 @@ class _BookmarkCard extends ConsumerWidget {
             style: TextStyle(
               fontFamily: 'Pretendard',
               fontSize: 16,
+              height: 19.09375 / 16, // Figma 945:4351 Date h19 → 카드 y+27
               fontWeight: FontWeight.w600,
               letterSpacing: 16 * -0.02,
               color: glass.textSecondary,

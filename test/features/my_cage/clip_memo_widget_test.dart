@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:vivanaut/core/theme/app_theme.dart';
+import 'package:vivanaut/core/theme/viva_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/my_cage/data/clip_memo_repository.dart';
@@ -153,5 +155,73 @@ void main() {
     repository.pendingRead!.complete();
     await container.pump();
     expect(await container.read(clipMemoProvider(_key).future), isNull);
+  });
+
+  testWidgets('title: bookmark flow says add', (tester) async {
+    await _pump(tester, _Repository(), bookmark: () async => true);
+    expect(find.text('clip_memo_add'), findsOneWidget);
+    expect(find.text('clip_memo_edit'), findsNothing);
+  });
+  testWidgets('title: new memo without bookmark says add', (tester) async {
+    await _pump(tester, _Repository());
+    expect(find.text('clip_memo_add'), findsOneWidget);
+    expect(find.text('clip_memo_edit'), findsNothing);
+  });
+  testWidgets('title: existing memo says edit, text sits 17 inside the field',
+      (tester) async {
+    final repository = _Repository();
+    await repository.save('a', 'clip', 'existing');
+    await _pump(tester, repository);
+    expect(find.text('clip_memo_edit'), findsOneWidget);
+    expect(find.text('clip_memo_add'), findsNothing);
+    // Figma 1081:6727 — 입력칸 글자는 칸 안쪽 17. 세로는 테스트 폰트(Ahem)
+    // 메트릭이 달라 PNG 실측(clip_memo_capture_test)으로 확인한다.
+    final field = tester.getRect(find.byKey(const Key('clip_memo_input')));
+    final text = tester.getRect(find.text('existing'));
+    expect(text.left - field.left, closeTo(17, 0.5));
+  });
+  testWidgets('memo card menu: 106 wide white sheet, 44 rows, red delete',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final container = ProviderContainer(overrides: [
+      clipMemoAccountProvider.overrideWithValue('a'),
+      clipMemoRepositoryProvider.overrideWith((ref) async => _Repository()),
+    ]);
+    addTearDown(container.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+            theme: AppTheme.light,
+            home: Scaffold(
+                body: Center(
+                    child: ClipMemoCard(
+                        memo: ClipMemo(
+                            clipId: 'clip',
+                            text: 'memo',
+                            colorIndex: 0,
+                            updatedAt: DateTime.utc(2026)),
+                        memoKey: _key))))));
+    await tester.pumpAndSettle();
+    final card = tester.getRect(find.byType(ClipMemoCard));
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    final edit = tester.getRect(find.text('clip_memo_edit'));
+    final delete = tester.getRect(find.text('clip_memo_delete'));
+    final editRow = tester.getRect(find.ancestor(
+        of: find.text('clip_memo_edit'),
+        matching: find.byType(PopupMenuItem<String>)));
+    // Figma 945:4351 — 메뉴 x=카드+6 (106폭, 카드 우측 정렬), y=카드+44,
+    // 행 90×44, 글자 좌 12.
+    expect(editRow.width, 90);
+    expect(editRow.height, 44);
+    expect(editRow.left, closeTo(card.left + 6 + 8, 1));
+    expect(editRow.top, closeTo(card.top + 44 + 4, 1));
+    expect(edit.left - editRow.left, closeTo(12, 0.5));
+    expect(delete.top - edit.top, closeTo(44, 0.5));
+    expect(tester.widget<Text>(find.text('clip_memo_delete')).style!.color,
+        VivaColors.mainDark);
+    expect(tester.widget<Text>(find.text('clip_memo_edit')).style!.fontSize,
+        18);
+    await tester.binding.setSurfaceSize(null);
   });
 }

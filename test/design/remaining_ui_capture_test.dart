@@ -23,6 +23,13 @@ import 'package:vivanaut/shared/domain/actuator_marker.dart';
 import 'package:vivanaut/shared/domain/control_log.dart';
 import 'package:vivanaut/shared/domain/env_day.dart';
 import 'package:vivanaut/shared/domain/week_range.dart';
+import 'package:vivanaut/features/my_cage/data/clip_memo_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/clip_memo.dart';
+import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
+import 'package:vivanaut/features/my_cage/presentation/bookmarks_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_memo_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'package:vivanaut/features/my_cage/data/redesign_group_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/redesign_management.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_management_controller.dart';
@@ -36,6 +43,28 @@ import 'package:vivanaut/features/wiki/presentation/wiki_providers.dart';
 import 'package:vivanaut/shared/widgets/figma_icon.dart';
 
 const _outDir = '/private/tmp/remaining-after';
+
+class _Memos implements ClipMemoRepository {
+  _Memos(this.memos);
+  final Map<String, ClipMemo> memos;
+  @override
+  Future<ClipMemo?> read(String account, String clip) async => memos[clip];
+  @override
+  Future<void> save(String account, String clip, String text) async {}
+  @override
+  Future<void> remove(String account, String clip) async {}
+}
+
+FavoriteClip _fav(String id, DateTime startedAt) => FavoriteClip(
+      clipId: id,
+      cameraId: 'cam-1',
+      startedAt: startedAt,
+      durationSec: 8,
+      filePath: '/tmp/$id.mp4',
+      sizeBytes: 1,
+      favoritedAt: startedAt,
+      ownerId: 'a',
+    );
 
 class _Pets extends PetRepository {
   @override
@@ -279,6 +308,32 @@ void main() {
     await capture(tester, boundary, 'p07-env-log');
     await tester.tap(find.byKey(EnvDetailScreen.segmentWeeklyKey));
     await capture(tester, boundary, 'p07-env-weekly');
+    debugDisableShadows = true;
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('P13 bookmarks captures', (tester) async {
+    debugDisableShadows = false;
+    final boundary = GlobalKey();
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    ClipMemo memo(String id, String text, int color) => ClipMemo(
+        clipId: id, text: text, colorIndex: color, updatedAt: DateTime.utc(2026));
+    await tester.pumpWidget(shell(boundary, const BookmarksScreen(), overrides: [
+      allFavoriteClipsProvider.overrideWith((ref) async => [
+            _fav('c1', DateTime(2026, 8, 12, 0, 50)),
+            _fav('c2', DateTime(2026, 8, 12, 0, 50)),
+            _fav('c3', DateTime(2026, 8, 12, 0, 50)),
+          ]),
+      motionThumbnailFileProvider.overrideWith((ref, clipId) async => null),
+      clipMemoAccountProvider.overrideWithValue('a'),
+      clipMemoRepositoryProvider.overrideWith((ref) async => _Memos({
+            'c1': memo('c1', '눈 귀여워~아아ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ', 1),
+            'c3': memo('c3', '메모를 합니다 메모를 메메메메메메에ㅔㅔㅔㅔㅔㅔㅔ에ㅔㅔㅇ', 0),
+          })),
+    ]));
+    await capture(tester, boundary, 'p13-bookmarks');
+    await tester.tap(find.byType(PopupMenuButton<String>).first);
+    await capture(tester, boundary, 'p13-bookmarks-menu');
     debugDisableShadows = true;
     await tester.binding.setSurfaceSize(null);
   });

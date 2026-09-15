@@ -256,6 +256,7 @@
   "clip_memo_failed": "저장하지 못했습니다. 입력한 내용을 확인하고 다시 시도해 주세요.",
   "clip_memo_load_failed": "메모를 불러오지 못했습니다.",
   "clip_memo_more": "메모 메뉴",
+  "clip_bookmark_saved_toast": "북마크에 저장되었습니다",
   "app_name": "비바나트",
   "app_subtitle": "게코 사육 가이드",
   "tab_home": "Home",
