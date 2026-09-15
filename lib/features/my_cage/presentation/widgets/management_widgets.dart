@@ -197,8 +197,11 @@ class ManagementItemRow extends StatelessWidget {
                             size: 14, color: glass.textTertiary)),
                   ])),
               const SizedBox(width: 8),
-              Flexible(
+              if (item.hardwareId != null || groupName != null)
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .46),
                   child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                     if (item.hardwareId != null)

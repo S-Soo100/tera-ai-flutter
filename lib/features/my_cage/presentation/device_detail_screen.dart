@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
+import '../../../shared/widgets/figma_icon.dart';
 import '../domain/redesign_management.dart';
 import 'device_management_controller.dart';
 import 'group_editor_screen.dart';
@@ -68,27 +69,24 @@ class _DeviceDetailBody extends ConsumerWidget {
     }
 
     Future<void> groups() async {
-      final chosen = await showModalBottomSheet<String>(
-          context: context,
-          backgroundColor: glass.surfaceHeader,
-          builder: (context) => SafeArea(
-              child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: ListView(shrinkWrap: true, children: [
-                    ManagementLabel('management_group_setting'.tr()),
-                    const SizedBox(height: 12),
-                    for (final group in inventory.groups)
-                      Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: ManagementGroupCard(
-                              group: group,
-                              members: inventory.members(group.id),
-                              onTap: () => Navigator.pop(context, group.id))),
-                    ManagementButton(
-                        label: 'management_add_group'.tr(),
-                        onPressed: () => Navigator.pop(context, 'new')),
-                  ]))));
-      if (chosen == null || !context.mounted || chosen == item.groupId) return;
+      final chosen = await Navigator.of(context).push<String>(MaterialPageRoute(
+        builder: (_) => ProviderScope(overrides: [
+          _selectedDeviceGroupProvider.overrideWith((ref) => item.groupId),
+        ], child: _DeviceGroupSettings(item: item, inventory: inventory)),
+      ));
+      if (chosen == null || !context.mounted) return;
+      if (chosen == _removeGroupAction) {
+        if (item.groupId != null &&
+            await managementConfirm(context, 'management_remove_confirm'.tr(),
+                action: 'management_remove'.tr()) &&
+            context.mounted) {
+          await finish(() => ref
+              .read(deviceEditorControllerProvider.notifier)
+              .removeFromGroup(item.groupId!));
+        }
+        return;
+      }
+      if (chosen == item.groupId) return;
       final target = chosen == 'new' ? null : inventory.group(chosen);
       if (item.groupId != null) {
         final accepted = await managementConfirm(
@@ -154,17 +152,6 @@ class _DeviceDetailBody extends ConsumerWidget {
                                             style: managementStyle(context,
                                                 weight: FontWeight.w600)))
                                   ]),
-                                  const SizedBox(height: 12),
-                                  Align(
-                                      alignment: Alignment.centerRight,
-                                      child: Text(
-                                          (item.isOnline == true
-                                                  ? 'management_online'
-                                                  : 'management_offline')
-                                              .tr(),
-                                          style: managementStyle(context,
-                                              size: 14,
-                                              color: glass.textTertiary))),
                                   const SizedBox(height: 24),
                                   Row(children: [
                                     ManagementSymbolBadge(
@@ -236,36 +223,22 @@ class _DeviceDetailBody extends ConsumerWidget {
                                                 weight: FontWeight.w600))),
                                     TextButton(
                                         onPressed: draft.saving ? null : groups,
-                                        child: Text(
-                                            'management_group_setting'.tr(),
-                                            style: managementStyle(context,
-                                                weight: FontWeight.w600))),
+                                        child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                  'management_group_setting'
+                                                      .tr(),
+                                                  style: managementStyle(
+                                                      context,
+                                                      weight: FontWeight.w600)),
+                                              const SizedBox(width: 4),
+                                              FigmaIcon.tinted(
+                                                  FigmaIcons.arrowNext,
+                                                  size: 18,
+                                                  color: glass.textSecondary),
+                                            ])),
                                   ]),
-                                  if (item.groupId != null)
-                                    TextButton(
-                                        onPressed: draft.saving
-                                            ? null
-                                            : () async {
-                                                if (await managementConfirm(
-                                                        context,
-                                                        'management_remove_confirm'
-                                                            .tr(),
-                                                        action:
-                                                            'management_remove'
-                                                                .tr()) &&
-                                                    context.mounted) {
-                                                  await finish(() => ref
-                                                      .read(
-                                                          deviceEditorControllerProvider
-                                                              .notifier)
-                                                      .removeFromGroup(
-                                                          item.groupId!));
-                                                }
-                                              },
-                                        child: Text(
-                                            'management_remove_group'.tr(),
-                                            style: managementStyle(context,
-                                                color: glass.navSelected))),
                                 ])),
                             if (draft.errorKey != null)
                               Padding(
@@ -309,5 +282,106 @@ class _DeviceDetailBody extends ConsumerWidget {
                                       color: glass.navSelected)))),
                       const SizedBox(height: 10),
                     ])))));
+  }
+}
+
+const _removeGroupAction = '__remove_group__';
+final _selectedDeviceGroupProvider =
+    StateProvider.autoDispose<String?>((ref) => null);
+
+/// Membership controls live on the Figma group-settings page, not the device page.
+class _DeviceGroupSettings extends ConsumerWidget {
+  const _DeviceGroupSettings({required this.item, required this.inventory});
+  final ManagementItem item;
+  final ManagementInventory inventory;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(_selectedDeviceGroupProvider);
+    final glass = context.glass;
+    return Scaffold(
+        body: SafeArea(
+            child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(children: [
+        ManagementTopBar(
+            title: 'management_group_setting'.tr(),
+            onBack: () => Navigator.pop(context)),
+        Expanded(
+            child: ListView(padding: const EdgeInsets.only(top: 24), children: [
+          Row(children: [
+            ManagementItemIcon(item.key.kind),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Text(item.name,
+                    style: managementStyle(context, weight: FontWeight.w600))),
+            Flexible(
+                child: Text(item.hardwareId ?? '--',
+                    style: managementStyle(context, weight: FontWeight.w600))),
+          ]),
+          const SizedBox(height: 24),
+          for (final group in inventory.groups)
+            Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Material(
+                  color: glass.overlay,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => ref
+                        .read(_selectedDeviceGroupProvider.notifier)
+                        .state = group.id,
+                    child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(children: [
+                          Expanded(
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                Text(
+                                    group.number == null
+                                        ? 'management_group'.tr()
+                                        : 'management_group_number'.tr(
+                                            namedArgs: {
+                                                'number': '${group.number}'
+                                              }),
+                                    style: managementStyle(context,
+                                        color: glass.textTertiary)),
+                                const SizedBox(height: 12),
+                                Text(group.name,
+                                    style: managementStyle(context,
+                                        weight: FontWeight.w600)),
+                              ])),
+                          FigmaIcon.tinted(
+                              selected == group.id
+                                  ? 'redesign_v2/check_box_400'
+                                  : 'redesign_v2/check_box_outline_blank_400',
+                              size: 24,
+                              color: selected == group.id
+                                  ? glass.navSelected
+                                  : glass.textTertiary),
+                        ])),
+                  ),
+                )),
+          TextButton(
+              onPressed: () => Navigator.pop(context, 'new'),
+              child: Text('management_add_group'.tr(),
+                  style: managementStyle(context, color: glass.navSelected))),
+        ])),
+        ManagementButton(
+            label: 'management_done'.tr(),
+            onPressed: selected == null
+                ? null
+                : () => Navigator.pop(context, selected)),
+        if (item.groupId != null)
+          Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: TextButton(
+                onPressed: () => Navigator.pop(context, _removeGroupAction),
+                child: Text('management_remove_group'.tr(),
+                    style: managementStyle(context,
+                        color: glass.navSelected, weight: FontWeight.w600)),
+              )),
+      ]),
+    )));
   }
 }

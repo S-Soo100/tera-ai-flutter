@@ -208,12 +208,29 @@ class _GroupEditorBody extends ConsumerWidget {
                               const SizedBox(height: 44),
                               ManagementLabel('management_members'.tr()),
                               const SizedBox(height: 12),
-                              for (final kind in ManagementKind.values)
-                                for (final key in draft.members
-                                    .where((m) => m.kind == kind))
-                                  if (inventory.item(key) case final item?)
-                                    ManagementItemRow(
-                                        item: item, showArrow: false),
+                              Material(
+                                color: context.glass.overlay,
+                                borderRadius: BorderRadius.circular(12),
+                                clipBehavior: Clip.antiAlias,
+                                child: Column(children: [
+                                  for (final kind in ManagementKind.values)
+                                    for (final key in draft.members
+                                        .where((m) => m.kind == kind))
+                                      if (inventory.item(key) case final item?)
+                                        ManagementItemRow(
+                                          item: item,
+                                          showArrow: initial.groupId != null,
+                                          onTap: initial.groupId == null ||
+                                                  draft.saving
+                                              ? null
+                                              : () => context.push(item
+                                                          .key.kind ==
+                                                      ManagementKind.pet
+                                                  ? '/my-pets/${item.key.id}/edit'
+                                                  : '/devices/${item.key.kind.name}/${item.key.id}'),
+                                        ),
+                                ]),
+                              ),
                               const SizedBox(height: 8),
                               Container(
                                   height: 52,

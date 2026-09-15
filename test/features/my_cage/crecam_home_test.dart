@@ -463,16 +463,17 @@ void main() {
     expect(find.textContaining('crecam_home_night_activity'), findsNothing);
   });
 
-  testWidgets('최신 하이라이트 밤 묶음 → 오늘 새벽 영상이 있어도 어젯밤 표시', (tester) async {
+  testWidgets('밤 묶음 날짜를 실제 업데이트 날짜로 표시하지 않는다', (tester) async {
     final lastNight = parseDayKey(lastNightDayKey(DateTime.now()));
     await _pump(tester, latestHighlightAt: lastNight);
 
-    expect(find.text('crecam_highlights_last_night'), findsOneWidget);
+    expect(find.text('crecam_update_unavailable'), findsOneWidget);
+    expect(find.text('crecam_highlights_last_night'), findsNothing);
     expect(find.text('crecam_updated_today'), findsNothing);
     expect(find.text('crecam_updated_yesterday'), findsNothing);
   });
 
-  testWidgets('최신 즐겨찾기 시각 → 북마크 카드에 접두어 없는 날짜만 표시', (tester) async {
+  testWidgets('최신 즐겨찾기 시각에 업데이트 접두사를 항상 표시', (tester) async {
     await _pump(tester, favorites: [
       FavoriteClip(
         clipId: 'c1',
@@ -485,7 +486,7 @@ void main() {
         ownerId: 'u1',
       ),
     ]);
-    expect(find.text('time_days_ago'), findsOneWidget);
-    expect(find.text('crecam_updated_days'), findsNothing);
+    expect(find.text('time_days_ago'), findsNothing);
+    expect(find.text('crecam_updated_days'), findsOneWidget);
   });
 }

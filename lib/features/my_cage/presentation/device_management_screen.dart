@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import '../../../core/theme/glass_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
@@ -57,10 +58,20 @@ class DeviceManagementScreen extends ConsumerWidget {
                                         'management_ungrouped'.tr()),
                                     const SizedBox(height: 12),
                                     if (inventory.ungrouped.isEmpty)
-                                      Padding(
+                                      Container(
+                                          constraints: const BoxConstraints(
+                                              minHeight: 64),
+                                          alignment: Alignment.centerLeft,
                                           padding: const EdgeInsets.all(16),
-                                          child:
-                                              Text('management_no_items'.tr()))
+                                          decoration: BoxDecoration(
+                                              color: context.glass.overlay,
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
+                                          child: Text(
+                                              'management_no_items'.tr(),
+                                              style: managementStyle(context,
+                                                  color: context
+                                                      .glass.textTertiary)))
                                     else
                                       for (final item in inventory.ungrouped)
                                         ManagementItemRow(

@@ -362,10 +362,15 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                                                   MainAxisAlignment.center,
                                               children: [
                                                 if (d.sex == sex) ...[
-                                                  FigmaIcon.tinted(
-                                                      'redesign_v2/check',
-                                                      color: p.surfaceHeader,
-                                                      size: 24),
+                                                  SizedBox(
+                                                      width: 24,
+                                                      height: 24,
+                                                      child: Center(
+                                                          child: FigmaIcon.tinted(
+                                                              'redesign_v2/check',
+                                                              color: p
+                                                                  .surfaceHeader,
+                                                              size: 15))),
                                                   const SizedBox(width: 4)
                                                 ],
                                                 Text('pet_form_sex_$sex'.tr(),
@@ -467,9 +472,11 @@ InputDecoration petFormDecoration(BuildContext context) => InputDecoration(
       fillColor: _fieldColor(context),
       contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 23),
       border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: context.glass.border)),
       enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: context.glass.border)),
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: context.glass.textTertiary)),
@@ -542,7 +549,9 @@ class _Selection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
       color: _fieldColor(context),
-      borderRadius: BorderRadius.circular(12),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: context.glass.border)),
       child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
@@ -568,7 +577,10 @@ class _Selection extends StatelessWidget {
                           color: context.glass.navSelected,
                           fontWeight: FontWeight.w600)),
                 FigmaIcon.tinted(icon,
-                    color: context.glass.textSecondary, size: 24),
+                    color: actionLabel != null
+                        ? context.glass.navSelected
+                        : context.glass.deviceOff,
+                    size: 24),
               ]))));
 }
 

@@ -476,7 +476,7 @@ class _DayPlotPainter extends CustomPainter {
         Paint()
           ..color = color
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
+          ..strokeWidth = 4
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round,
       );

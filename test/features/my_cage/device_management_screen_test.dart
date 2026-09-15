@@ -61,7 +61,7 @@ void main() {
     await tester.tap(find.byKey(const Key('management_power_off')));
     expect(calls, 0);
     expect(find.byKey(const Key('management_power_on')), findsOneWidget);
-    expect(find.text('management_offline'), findsOneWidget);
+    expect(find.text('management_offline'), findsNothing);
   });
   testWidgets('canceling a cross-group move keeps the original selected member',
       (tester) async {
@@ -165,4 +165,88 @@ void main() {
       });
     }
   }
+  for (final kind in ManagementKind.values) {
+    testWidgets('group member ${kind.name} opens its own detail without saving',
+        (tester) async {
+      var writes = 0;
+      final item = ManagementItem(
+          key: ManagementKey(kind: kind, id: 'member'),
+          name: 'Member',
+          groupId: 'g');
+      final inventory = ManagementInventory(
+          groups: [const ManagementGroup(id: 'g', name: 'Group')],
+          items: [item]);
+      final repo = RedesignGroupRepository(
+          loadRows: (_) async => [],
+          rpc: (_, __) async {
+            writes++;
+            return null;
+          });
+      final route = kind == ManagementKind.pet
+          ? '/my-pets/member/edit'
+          : '/devices/${kind.name}/member';
+      final router = GoRouter(routes: [
+        GoRoute(
+            path: '/',
+            builder: (_, __) => const GroupEditorScreen(groupId: 'g')),
+        GoRoute(
+            path: route,
+            builder: (_, __) =>
+                const Scaffold(body: Text('member-destination')))
+      ]);
+      addTearDown(router.dispose);
+      await tester.pumpWidget(ProviderScope(
+          overrides: [
+            managementInventoryProvider.overrideWith((ref) async => inventory),
+            redesignGroupRepositoryProvider.overrideWith((ref) => repo)
+          ],
+          child:
+              MaterialApp.router(theme: AppTheme.light, routerConfig: router)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Member'));
+      await tester.pumpAndSettle();
+      expect(find.text('member-destination'), findsOneWidget);
+      expect(writes, 0);
+    });
+  }
+  testWidgets('remove from group lives in settings and cancel sends no write',
+      (tester) async {
+    var writes = 0;
+    final inventory = ManagementInventory(groups: [
+      const ManagementGroup(id: 'g', name: 'Group')
+    ], items: [
+      const ManagementItem(
+          key: ManagementKey(kind: ManagementKind.device, id: 'd'),
+          name: 'Device',
+          groupId: 'g')
+    ]);
+    final repo = RedesignGroupRepository(
+        loadRows: (_) async => [],
+        rpc: (_, __) async {
+          writes++;
+          return null;
+        });
+    final router = GoRouter(routes: [
+      GoRoute(
+          path: '/',
+          builder: (_, __) => const DeviceDetailScreen(
+              kind: ManagementKind.device, itemId: 'd'))
+    ]);
+    addTearDown(router.dispose);
+    await tester.pumpWidget(ProviderScope(overrides: [
+      managementInventoryProvider.overrideWith((ref) async => inventory),
+      redesignGroupRepositoryProvider.overrideWith((ref) => repo)
+    ], child: MaterialApp.router(theme: AppTheme.light, routerConfig: router)));
+    await tester.pumpAndSettle();
+    expect(find.text('management_remove_group'), findsNothing);
+    await tester.tap(find.text('management_group_setting'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('management_remove_group'));
+    await tester.pumpAndSettle();
+    expect(find.text('management_remove_confirm'), findsOneWidget);
+    await tester.tap(find.text('management_cancel'));
+    await tester.pumpAndSettle();
+    expect(writes, 0);
+    expect(find.text('Device'), findsWidgets);
+  });
 }

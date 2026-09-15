@@ -60,7 +60,9 @@ class ActivityBars extends StatelessWidget {
                 top: 0,
                 width: plotWidth,
                 height: 224,
-                child: CustomPaint(painter: _ActivityGrid(glass.border))),
+                child: CustomPaint(
+                    painter:
+                        _ActivityGrid(glass.border, timeDividers: !weekly))),
             for (var tick = 0; tick <= 6; tick++)
               Positioned(
                   right: 0,
@@ -109,10 +111,15 @@ class ActivityBars extends StatelessWidget {
                                               buckets[i].seconds! /
                                               maxSeconds)
                                           .clamp(0, 224),
-                                      color:
-                                          buckets[i].seconds == peak && peak > 0
-                                              ? ActivityColors.peak
-                                              : glass.bodySecondary),
+                                      decoration: BoxDecoration(
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                                top: Radius.circular(20)),
+                                        color: buckets[i].seconds == peak &&
+                                                peak > 0
+                                            ? ActivityColors.peak
+                                            : glass.bodySecondary,
+                                      )),
                                   if (weekly)
                                     Positioned(
                                         bottom: (224 *
@@ -140,13 +147,22 @@ class ActivityBars extends StatelessWidget {
 }
 
 class _ActivityGrid extends CustomPainter {
-  const _ActivityGrid(this.color);
+  const _ActivityGrid(this.color, {required this.timeDividers});
+  final bool timeDividers;
   final Color color;
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
       ..strokeWidth = 1;
+    // Figma time dividers: midnight, 06:00, noon, 18:00.
+    for (var i = 0; timeDividers && i < 4; i++) {
+      final x = size.width * i / 4;
+      for (double y = 0; y < size.height; y += 8) {
+        canvas.drawLine(
+            Offset(x, y), Offset(x, math.min(y + 4, size.height)), paint);
+      }
+    }
     for (var i = 0; i <= 6; i++) {
       final y = size.height * i / 6;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
@@ -154,5 +170,6 @@ class _ActivityGrid extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ActivityGrid oldDelegate) => color != oldDelegate.color;
+  bool shouldRepaint(_ActivityGrid oldDelegate) =>
+      color != oldDelegate.color || timeDividers != oldDelegate.timeDividers;
 }
