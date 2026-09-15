@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show SemanticsValidationResult;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -327,6 +328,14 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
         d.speciesId != null &&
         validatePetName(d.name, peers, excludingId: _session.id) == null &&
         weightError == null;
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final saveBottom = keyboardOpen
+        ? 16.0
+        : (MediaQuery.paddingOf(context).bottom + 16)
+            .clamp(100.0, double.infinity);
+    final scrollBottom =
+        saveBottom + 56 + 24 + (state.errorKey != null ? 64 : 0);
+    final editorScrollPadding = EdgeInsets.fromLTRB(20, 20, 20, scrollBottom);
     final groupNames = {for (final g in widget.groups) g.id: g.name};
     final legacy = _session.initial.speciesId != null &&
         _session.initial.speciesId != 'crested-gecko';
@@ -341,226 +350,260 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
         appBar: petFormAppBar(context, 'pet_form_title'.tr(), _exit),
         body: AbsorbPointer(
             absorbing: state.saving,
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(
-                  12, 16, 12, 24 + MediaQuery.paddingOf(context).bottom),
-              children: [
-                Center(
-                    child: Semantics(
-                        button: true,
-                        label: 'pet_form_photo_add'.tr(),
-                        child: InkWell(
-                          onTap: _photo,
-                          borderRadius: BorderRadius.circular(12),
-                          child: SizedBox(
-                              width: 180,
-                              height: 180,
-                              child: Stack(fit: StackFit.expand, children: [
-                                ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: d.photoPath == null
-                                        ? ColoredBox(
-                                            color: p.outline,
-                                            child: Column(
+            child: Stack(children: [
+              ListView(
+                padding: EdgeInsets.fromLTRB(12, 16, 12, scrollBottom),
+                children: [
+                  Center(
+                      child: Semantics(
+                          button: true,
+                          label: 'pet_form_photo_add'.tr(),
+                          child: InkWell(
+                            onTap: _photo,
+                            borderRadius: BorderRadius.circular(12),
+                            child: SizedBox(
+                                width: 180,
+                                height: 180,
+                                child: Stack(fit: StackFit.expand, children: [
+                                  ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: d.photoPath == null
+                                          ? ColoredBox(
+                                              color: p.outline,
+                                              child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    FigmaIcon.tinted(
+                                                        'redesign_v2/add_photo_alternate',
+                                                        color: p.deviceOff,
+                                                        size: 40),
+                                                    Text(
+                                                        'pet_form_photo_add'
+                                                            .tr(),
+                                                        style: petFormText(
+                                                                context)
+                                                            .copyWith(
+                                                                color: p
+                                                                    .textTertiary,
+                                                                height: 1.75)),
+                                                  ]))
+                                          : PetFormPhoto(
+                                              path: d.photoPath, size: 180)),
+                                  if (d.photoPath != null)
+                                    Positioned(
+                                        right: 12,
+                                        bottom: 12,
+                                        child: Container(
+                                            key: _photoAnchor,
+                                            width: 36,
+                                            height: 36,
+                                            alignment: Alignment.center,
+                                            decoration: BoxDecoration(
+                                                color: p.surfaceTint,
+                                                shape: BoxShape.circle),
+                                            child: FigmaIcon.tinted(
+                                                FigmaIcons.edit,
+                                                color: p.textSecondary,
+                                                size: 36))),
+                                ])),
+                          ))),
+                  const SizedBox(height: 24),
+                  _Field(
+                      label: 'pet_form_name'.tr(),
+                      errorText: nameError?.tr(),
+                      child: TextFormField(
+                        key: const ValueKey('pet-form-name'),
+                        controller: _name,
+                        scrollPadding: editorScrollPadding,
+                        style: petFormText(context),
+                        onChanged: (value) =>
+                            _change((d) => d.copyWith(name: value)),
+                        decoration: petFormDecoration(context,
+                                invalid: nameError != null)
+                            .copyWith(
+                                // Unlike suffixText, the counter stays visible on an
+                                // empty, unfocused field.
+                                suffixIconConstraints: const BoxConstraints(),
+                                suffixIcon: Padding(
+                                  padding: const EdgeInsets.only(right: 17),
+                                  child: Text('${d.name.characters.length}/10',
+                                      style: petFormText(context)
+                                          .copyWith(color: p.textTertiary)),
+                                )),
+                      )),
+                  _Field(
+                      label: 'pet_form_species'.tr(),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            KeyedSubtree(
+                                key: const ValueKey('pet-form-species'),
+                                child: KeyedSubtree(
+                                    key: _speciesAnchor,
+                                    child: _Selection(
+                                        label: legacy
+                                            ? _session.initial.speciesName
+                                            : d.speciesId == null
+                                                ? ''
+                                                : 'pet_form_crested'.tr(),
+                                        icon: 'redesign_v2/arrow_drop_down',
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 17, vertical: 20.5),
+                                        onTap: legacy ? null : _species))),
+                            if (state.submitted && d.speciesId == null)
+                              Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(17, 8, 17, 0),
+                                  child: Text('pet_form_required'.tr(),
+                                      style: petFormText(context).copyWith(
+                                          fontSize: 12, color: p.navSelected))),
+                          ])),
+                  _Field(
+                      label: 'pet_form_morph'.tr(),
+                      child: _Selection(
+                          label: d.morph ?? 'pet_form_none'.tr(),
+                          icon: 'redesign_v2/search',
+                          onTap: legacy ? null : _morph,
+                          muted: d.morph == null)),
+                  _Field(
+                      label: 'pet_form_sex'.tr(),
+                      child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Row(children: [
+                            for (final sex in ['male', 'female', 'unknown'])
+                              Expanded(
+                                  child: Semantics(
+                                      selected: d.sex == sex,
+                                      button: true,
+                                      child: InkWell(
+                                        onTap: () => _change(
+                                            (d) => d.copyWith(sex: sex)),
+                                        child: Container(
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                                color: d.sex == sex
+                                                    ? AppTheme.brandNavy
+                                                    : p.surfaceTint,
+                                                border: (sex == 'male' &&
+                                                            d.sex ==
+                                                                'unknown') ||
+                                                        (sex == 'female' &&
+                                                            d.sex == 'male')
+                                                    ? Border(
+                                                        right: BorderSide(
+                                                            color: p.border))
+                                                    : null),
+                                            child: Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,
                                                 children: [
-                                                  FigmaIcon.tinted(
-                                                      'redesign_v2/add_photo_alternate',
-                                                      color: p.deviceOff,
-                                                      size: 40),
-                                                  Text(
-                                                      'pet_form_photo_add'.tr(),
+                                                  if (d.sex == sex) ...[
+                                                    SizedBox(
+                                                        width: 24,
+                                                        height: 24,
+                                                        child: Center(
+                                                            child: FigmaIcon.tinted(
+                                                                'redesign_v2/check',
+                                                                color: VivaColors
+                                                                    .fillBack,
+                                                                size: 11))),
+                                                    const SizedBox(width: 4)
+                                                  ],
+                                                  Text('pet_form_sex_$sex'.tr(),
                                                       style: petFormText(
                                                               context)
                                                           .copyWith(
-                                                              color: p
-                                                                  .textTertiary,
-                                                              height: 1.75)),
-                                                ]))
-                                        : PetFormPhoto(
-                                            path: d.photoPath, size: 180)),
-                                if (d.photoPath != null)
-                                  Positioned(
-                                      right: 12,
-                                      bottom: 12,
-                                      child: Container(
-                                          key: _photoAnchor,
-                                          width: 36,
-                                          height: 36,
-                                          alignment: Alignment.center,
-                                          decoration: BoxDecoration(
-                                              color: p.surfaceTint,
-                                              shape: BoxShape.circle),
-                                          child: FigmaIcon.tinted(
-                                              FigmaIcons.edit,
-                                              color: p.textSecondary,
-                                              size: 36))),
-                              ])),
-                        ))),
-                const SizedBox(height: 24),
-                _Field(
-                    label: 'pet_form_name'.tr(),
-                    child: TextFormField(
-                      key: const ValueKey('pet-form-name'),
-                      controller: _name,
-                      style: petFormText(context),
-                      onChanged: (value) =>
-                          _change((d) => d.copyWith(name: value)),
-                      decoration: petFormDecoration(context).copyWith(
-                          errorText: nameError?.tr(),
-                          // Unlike suffixText, the counter stays visible on an
-                          // empty, unfocused field.
-                          suffixIconConstraints: const BoxConstraints(),
-                          suffixIcon: Padding(
-                            padding: const EdgeInsets.only(right: 17),
-                            child: Text('${d.name.characters.length}/10',
-                                style: petFormText(context)
-                                    .copyWith(color: p.textTertiary)),
-                          )),
-                    )),
-                _Field(
-                    label: 'pet_form_species'.tr(),
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          KeyedSubtree(
-                              key: const ValueKey('pet-form-species'),
-                              child: KeyedSubtree(
-                                  key: _speciesAnchor,
-                                  child: _Selection(
-                                      label: legacy
-                                          ? _session.initial.speciesName
-                                          : d.speciesId == null
-                                              ? ''
-                                              : 'pet_form_crested'.tr(),
-                                      icon: 'redesign_v2/arrow_drop_down',
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 17, vertical: 20.5),
-                                      onTap: legacy ? null : _species))),
-                          if (state.submitted && d.speciesId == null)
-                            Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(17, 8, 17, 0),
-                                child: Text('pet_form_required'.tr(),
-                                    style: petFormText(context).copyWith(
-                                        fontSize: 12, color: p.navSelected))),
-                        ])),
-                _Field(
-                    label: 'pet_form_morph'.tr(),
-                    child: _Selection(
-                        label: d.morph ?? 'pet_form_none'.tr(),
-                        icon: 'redesign_v2/search',
-                        onTap: legacy ? null : _morph,
-                        muted: d.morph == null)),
-                _Field(
-                    label: 'pet_form_sex'.tr(),
-                    child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Row(children: [
-                          for (final sex in ['male', 'female', 'unknown'])
-                            Expanded(
-                                child: Semantics(
-                                    selected: d.sex == sex,
-                                    button: true,
-                                    child: InkWell(
-                                      onTap: () =>
-                                          _change((d) => d.copyWith(sex: sex)),
-                                      child: Container(
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                              color: d.sex == sex
-                                                  ? AppTheme.brandNavy
-                                                  : p.surfaceTint,
-                                              border: (sex == 'male' &&
-                                                          d.sex == 'unknown') ||
-                                                      (sex == 'female' &&
-                                                          d.sex == 'male')
-                                                  ? Border(
-                                                      right: BorderSide(
-                                                          color: p.border))
-                                                  : null),
-                                          child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                if (d.sex == sex) ...[
-                                                  SizedBox(
-                                                      width: 24,
-                                                      height: 24,
-                                                      child: Center(
-                                                          child: FigmaIcon.tinted(
-                                                              'redesign_v2/check',
-                                                              color: VivaColors
-                                                                  .fillBack,
-                                                              size: 11))),
-                                                  const SizedBox(width: 4)
-                                                ],
-                                                Text('pet_form_sex_$sex'.tr(),
-                                                    style: petFormText(context)
-                                                        .copyWith(
-                                                            color: d.sex == sex
-                                                                ? VivaColors
-                                                                    .fillBack
-                                                                : p.textSecondary)),
-                                              ])),
-                                    ))),
-                        ]))),
-                _dateField(d.birthDate, true),
-                _dateField(d.adoptionDate, false),
-                _Field(
-                    label: 'pet_form_weight'.tr(),
-                    child: TextFormField(
-                      key: const ValueKey('pet-form-weight'),
-                      controller: _weight,
-                      inputFormatters: [const _WeightUnitFormatter()],
-                      style: petFormText(context),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (value) => _change(
-                          (d) => d.copyWith(weight: _weightWithoutUnit(value))),
-                      decoration: petFormDecoration(context)
-                          .copyWith(errorText: weightError?.tr()),
-                    )),
-                _Field(
-                    label: 'pet_form_group'.tr(),
-                    child: _Selection(
-                        label: d.groupId == null
-                            ? 'pet_form_no_group'.tr()
-                            : groupNames[d.groupId] ??
-                                'pet_form_current_group'.tr(),
-                        icon: FigmaIcons.arrowNext,
-                        actionLabel: 'pet_form_group_settings'.tr(),
-                        onTap: _groups,
-                        muted: d.groupId == null)),
-                _Field(
-                    label: 'pet_form_memo'.tr(),
-                    bottom: 12,
-                    child: TextFormField(
-                      controller: _memo,
-                      style: petFormText(context),
-                      minLines: 5,
-                      maxLines: 5,
-                      onChanged: (value) =>
-                          _change((d) => d.copyWith(memo: value)),
-                      decoration: petFormDecoration(context).copyWith(
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 13, vertical: 17.5)),
-                    )),
-                if (state.errorKey != null)
-                  Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                      child: Text(state.errorKey!.tr(),
-                          style: petFormText(context)
-                              .copyWith(color: p.navSelected, fontSize: 12))),
-                petFormButton(
-                    context,
-                    state.saving
-                        ? 'pet_form_saving'.tr()
-                        : 'pet_form_save'.tr(),
-                    canSave ? _save : null),
-              ],
-            )),
+                                                              color: d.sex ==
+                                                                      sex
+                                                                  ? VivaColors
+                                                                      .fillBack
+                                                                  : p.textSecondary)),
+                                                ])),
+                                      ))),
+                          ]))),
+                  _dateField(d.birthDate, true),
+                  _dateField(d.adoptionDate, false),
+                  _Field(
+                      label: 'pet_form_weight'.tr(),
+                      child: TextFormField(
+                        key: const ValueKey('pet-form-weight'),
+                        controller: _weight,
+                        scrollPadding: editorScrollPadding,
+                        inputFormatters: [const _WeightUnitFormatter()],
+                        style: petFormText(context),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        onChanged: (value) => _change((d) =>
+                            d.copyWith(weight: _weightWithoutUnit(value))),
+                        decoration: petFormDecoration(context)
+                            .copyWith(errorText: weightError?.tr()),
+                      )),
+                  _Field(
+                      label: 'pet_form_group'.tr(),
+                      child: _Selection(
+                          label: d.groupId == null
+                              ? 'pet_form_no_group'.tr()
+                              : groupNames[d.groupId] ??
+                                  'pet_form_current_group'.tr(),
+                          icon: FigmaIcons.arrowNext,
+                          actionLabel: 'pet_form_group_settings'.tr(),
+                          onTap: _groups,
+                          muted: d.groupId == null)),
+                  _Field(
+                      label: 'pet_form_memo'.tr(),
+                      bottom: 12,
+                      child: TextFormField(
+                        key: const ValueKey('pet-form-memo'),
+                        controller: _memo,
+                        scrollPadding: editorScrollPadding,
+                        style: petFormText(context),
+                        minLines: 5,
+                        maxLines: 5,
+                        onChanged: (value) =>
+                            _change((d) => d.copyWith(memo: value)),
+                        decoration: petFormDecoration(context).copyWith(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 13, vertical: 17.5)),
+                      )),
+                ],
+              ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: saveBottom,
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (state.errorKey != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Material(
+                            color: p.surfaceHeader,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Semantics(
+                                  liveRegion: true,
+                                  child: Text(state.errorKey!.tr(),
+                                      textAlign: TextAlign.center,
+                                      style: petFormText(context).copyWith(
+                                          color: p.navSelected, fontSize: 12))),
+                            ),
+                          ),
+                        ),
+                      KeyedSubtree(
+                        key: const ValueKey('pet-form-save'),
+                        child: petFormButton(
+                            context,
+                            state.saving
+                                ? 'pet_form_saving'.tr()
+                                : 'pet_form_save'.tr(),
+                            canSave ? _save : null),
+                      ),
+                    ]),
+              ),
+            ])),
       ),
     );
   }
@@ -590,19 +633,30 @@ Color _fieldColor(BuildContext context) =>
         ? VivaColors.fillBack
         : context.glass.overlayFaint;
 
-InputDecoration petFormDecoration(BuildContext context) => InputDecoration(
+InputDecoration petFormDecoration(BuildContext context,
+        {bool invalid = false}) =>
+    InputDecoration(
       filled: true,
       fillColor: _fieldColor(context),
       contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 23),
       border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: context.glass.border)),
+          borderSide: BorderSide(
+              color: invalid
+                  ? Theme.of(context).colorScheme.error
+                  : context.glass.border)),
       enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: context.glass.border)),
+          borderSide: BorderSide(
+              color: invalid
+                  ? Theme.of(context).colorScheme.error
+                  : context.glass.border)),
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: context.glass.textTertiary)),
+          borderSide: BorderSide(
+              color: invalid
+                  ? Theme.of(context).colorScheme.error
+                  : context.glass.textTertiary)),
       errorStyle: petFormText(context)
           .copyWith(fontSize: 12, color: context.glass.navSelected),
     );
@@ -646,10 +700,15 @@ Widget petFormButton(
             child: Text(label)));
 
 class _Field extends StatelessWidget {
-  const _Field({required this.label, required this.child, this.bottom = 24});
+  const _Field(
+      {required this.label,
+      required this.child,
+      this.bottom = 24,
+      this.errorText});
   final String label;
   final Widget child;
   final double bottom;
+  final String? errorText;
   @override
   Widget build(BuildContext context) => Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -659,7 +718,23 @@ class _Field extends StatelessWidget {
             child: Text(label,
                 style: petFormText(context).copyWith(
                     color: context.glass.textTertiary, height: 19 / 16))),
-        child,
+        Semantics(
+            validationResult: errorText == null
+                ? SemanticsValidationResult.none
+                : SemanticsValidationResult.invalid,
+            child: child),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Semantics(
+                liveRegion: true,
+                child: Text(errorText!,
+                    style: petFormText(context).copyWith(
+                        fontSize: 12,
+                        height: 14 / 12,
+                        letterSpacing: -.24,
+                        color: context.glass.navSelected))),
+          ),
       ]));
 }
 

@@ -10,10 +10,12 @@ import 'package:vivanaut/features/my_pets/presentation/my_pets_providers.dart';
 import 'package:vivanaut/features/my_pets/presentation/widgets/pet_form_screen.dart';
 
 class _MemoryPets extends PetRepository {
+  _MemoryPets([this.pets = const []]);
+  final List<Pet> pets;
   @override
   Future<void> clearPets() async {}
   @override
-  List<Pet> getAllPets() => [];
+  List<Pet> getAllPets() => pets;
 }
 
 class _Strings extends AssetLoader {
@@ -48,6 +50,7 @@ class _Strings extends AssetLoader {
         'pet_form_discard': '나가기',
         'pet_form_save_failed': '저장하지 못했습니다.',
         'pet_form_required': '필수항목을 입력해 주세요',
+        'pet_form_duplicate': '중복되지 않는 이름으로 설정해 주세요',
         'pet_form_name_length': '이름은 10자 이내로 입력해 주세요',
       };
 }
@@ -55,6 +58,7 @@ class _Strings extends AssetLoader {
 Future<void> _pump(WidgetTester tester,
     {Pet? original,
     bool failSave = false,
+    List<Pet> peers = const [],
     Future<void> Function(Pet, String?)? save}) async {
   tester.view.physicalSize = const Size(393, 852);
   tester.view.devicePixelRatio = 1;
@@ -63,7 +67,7 @@ Future<void> _pump(WidgetTester tester,
   await tester.pumpWidget(ProviderScope(
       overrides: [
         petListProvider
-            .overrideWith((ref) => PetListNotifier(_MemoryPets(), null)),
+            .overrideWith((ref) => PetListNotifier(_MemoryPets(peers), null)),
       ],
       child: EasyLocalization(
         supportedLocales: const [Locale('ko')],
@@ -251,6 +255,62 @@ void main() {
     await tester.tap(find.text('저장'));
     await tester.pumpAndSettle();
     expect(saved?.weight, 30.125);
+  });
+
+  testWidgets(
+      'save floats across scroll and keyboard while the last memo remains accessible',
+      (tester) async {
+    await _pump(tester,
+        original: Pet(
+            id: 'p',
+            name: '도도',
+            speciesId: 'crested-gecko',
+            speciesName: '크레스티드 게코'));
+    final save = find.byKey(const ValueKey('pet-form-save'));
+    final start = tester.getRect(save);
+    expect(start.top, 696);
+    expect(start.width, 369);
+    await tester.fling(
+        find.byType(ListView).first, const Offset(0, -2500), 2500);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(save), start);
+    final memo = find.byKey(const ValueKey('pet-form-memo'));
+    expect(tester.getRect(memo).bottom, lessThan(start.top));
+    await tester.tap(memo);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+    await tester.fling(
+        find.byType(ListView).first, const Offset(0, -1500), 2000);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(save).bottom, 536);
+    expect(tester.getRect(memo).bottom, lessThan(tester.getRect(save).top));
+    await tester.enterText(memo, '마지막 메모 입력');
+    expect(find.text('마지막 메모 입력'), findsOneWidget);
+  });
+
+  testWidgets('duplicate error has its own gap without shrinking the field',
+      (tester) async {
+    await _pump(tester,
+        original: Pet(
+            id: 'p',
+            name: '도도',
+            speciesId: 'crested-gecko',
+            speciesName: '크레스티드 게코'),
+        peers: [
+          Pet(
+              id: 'other',
+              name: '도도',
+              speciesId: 'crested-gecko',
+              speciesName: '크레스티드 게코')
+        ]);
+    final field = tester.getRect(find.byKey(const ValueKey('pet-form-name')));
+    final message = find.text('중복되지 않는 이름으로 설정해 주세요');
+    final error = tester.getRect(message);
+    expect(field.height, 65);
+    expect(error.left, 24);
+    expect(error.top, field.bottom + 8);
+    expect(tester.widget<Text>(message).style!.letterSpacing, -.24);
   });
 
   testWidgets('failed save remains on form with changed input', (tester) async {
