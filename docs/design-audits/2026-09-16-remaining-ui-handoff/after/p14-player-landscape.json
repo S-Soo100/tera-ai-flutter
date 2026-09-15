@@ -1,0 +1,251 @@
+[
+  {
+    "type": "Text",
+    "text": "2026. 08. 28",
+    "rect": [
+      379.9746856689453,
+      29.0,
+      92.05062866210938,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "오전 10:21",
+    "rect": [
+      396.3377742767334,
+      50.0,
+      59.3244514465332,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3294, green: 0.3294, blue: 0.3294, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      48.0,
+      24.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "close",
+    "rect": [
+      58.0,
+      34.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      540.0,
+      26.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      540.0,
+      26.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/delete",
+    "rect": [
+      550.0,
+      36.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      596.0,
+      26.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      596.0,
+      26.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "download",
+    "rect": [
+      600.0,
+      30.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      648.0,
+      26.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      648.0,
+      26.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "share",
+    "rect": [
+      652.0,
+      30.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      700.0,
+      26.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      700.0,
+      26.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/sticky_note_2",
+    "rect": [
+      704.0,
+      30.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      752.0,
+      26.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      752.0,
+      26.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "bookmark",
+    "rect": [
+      756.0,
+      30.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      48.0,
+      285.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "final_pause",
+    "rect": [
+      48.0,
+      285.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "0:12 / 1:00",
+    "rect": [
+      92.0,
+      294.5,
+      62.79109191894531,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      720.0,
+      285.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "speed_2x",
+    "rect": [
+      720.0,
+      285.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      768.0,
+      285.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "expand",
+    "rect": [
+      768.0,
+      285.0,
+      36.0,
+      36.0
+    ]
+  }
+]
