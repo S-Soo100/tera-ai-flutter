@@ -164,6 +164,7 @@ class _DeviceDetailBody extends ConsumerWidget {
                                           Text('management_power'.tr(),
                                               style: managementStyle(context,
                                                   weight: FontWeight.w600)),
+                                          const SizedBox(height: 4),
                                           Text('management_power_on_label'.tr(),
                                               style: managementStyle(context,
                                                   size: 14,
@@ -219,6 +220,11 @@ class _DeviceDetailBody extends ConsumerWidget {
                                             style: managementStyle(context,
                                                 weight: FontWeight.w600))),
                                     TextButton(
+                                        style: TextButton.styleFrom(
+                                            padding: EdgeInsets.zero,
+                                            minimumSize: const Size(0, 36),
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap),
                                         onPressed: draft.saving ? null : groups,
                                         child: Row(
                                             mainAxisSize: MainAxisSize.min,
@@ -256,6 +262,7 @@ class _DeviceDetailBody extends ConsumerWidget {
                                   .read(deviceEditorControllerProvider.notifier)
                                   .save(inventory))),
                       SizedBox(
+                          width: double.infinity,
                           height: 56,
                           child: TextButton(
                               onPressed: draft.saving
@@ -274,9 +281,10 @@ class _DeviceDetailBody extends ConsumerWidget {
                                     },
                               child: Text('management_delete_device'.tr(),
                                   style: managementStyle(context,
-                                      size: 18,
-                                      weight: FontWeight.w600,
-                                      color: glass.navSelected)))),
+                                          size: 18,
+                                          weight: FontWeight.w600,
+                                          color: glass.navSelected)
+                                      .copyWith(height: 28 / 18)))),
                       const SizedBox(height: 10),
                     ])))));
   }

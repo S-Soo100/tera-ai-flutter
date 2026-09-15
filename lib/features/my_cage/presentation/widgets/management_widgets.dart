@@ -22,13 +22,19 @@ class ManagementTopBar extends StatelessWidget {
         Text(title, style: managementStyle(context, weight: FontWeight.w700)),
         Align(
             alignment: close ? Alignment.centerRight : Alignment.centerLeft,
-            child: IconButton(
-                onPressed: onBack,
-                tooltip: 'management_back'.tr(),
-                icon: FigmaIcon.tinted(
-                    close ? FigmaIcons.close : FigmaIcons.arrowPrevious,
-                    size: 24,
-                    color: context.glass.textPrimary))),
+            child: SizedBox(
+                width: 44,
+                height: 44,
+                child: IconButton(
+                    padding: const EdgeInsets.all(10),
+                    constraints:
+                        const BoxConstraints.tightFor(width: 44, height: 44),
+                    onPressed: onBack,
+                    tooltip: 'management_back'.tr(),
+                    icon: FigmaIcon.tinted(
+                        close ? FigmaIcons.close : FigmaIcons.arrowPrevious,
+                        size: 24,
+                        color: context.glass.textPrimary)))),
       ]));
 }
 
@@ -79,9 +85,10 @@ class ManagementButton extends StatelessWidget {
           child: Text(label,
               textAlign: TextAlign.center,
               style: managementStyle(context,
-                  size: 18,
-                  weight: FontWeight.w600,
-                  color: context.glass.surfaceHeader))));
+                      size: 18,
+                      weight: FontWeight.w600,
+                      color: context.glass.surfaceHeader)
+                  .copyWith(height: 28 / 18))));
 }
 
 class ManagementNameField extends StatelessWidget {
@@ -106,8 +113,7 @@ class ManagementNameField extends StatelessWidget {
       decoration: InputDecoration(
           filled: true,
           fillColor: ManagementColors.nameField(context),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 23),
+          contentPadding: const EdgeInsets.fromLTRB(16, 23, 13, 23),
           counterText: '',
           suffixText: '${Characters(initialName).length}/10',
           suffixStyle:
@@ -128,8 +134,18 @@ class ManagementSymbolBadge extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
           color: context.glass.textSecondary, shape: BoxShape.circle),
-      child:
-          FigmaIcon.tinted(icon, size: 20, color: context.glass.surfaceHeader));
+      child: SizedBox.square(
+          dimension: 20,
+          child: Center(
+              // These exports are cropped to the artwork. Restore their
+              // original size inside Figma's 20pt icon frame.
+              child: FigmaIcon.tinted(icon,
+                  size: switch (icon) {
+                    'redesign_v2/power_settings_new' => 17,
+                    'redesign_v2/workspaces' => 15,
+                    _ => 20,
+                  },
+                  color: context.glass.surfaceHeader))));
 }
 
 class ManagementItemIcon extends StatelessWidget {
