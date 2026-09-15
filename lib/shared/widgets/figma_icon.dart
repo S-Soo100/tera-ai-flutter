@@ -45,6 +45,8 @@ abstract final class FigmaIcons {
   static const envHumidity = 'final_humidity';
   static const close = 'close';
   static const cancel = 'redesign_v2/cancel';
+  /// 44 프레임 export(글리프 17×19 가운데) — 예약 목록 휴지통(Figma 1106:5317).
+  static const trash = 'redesign_v2/delete';
   static const arrowPrevious = 'arrow_previous';
   static const arrowNext = 'arrow_next';
   static const download = 'download';

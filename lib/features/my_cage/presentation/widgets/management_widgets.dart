@@ -12,9 +12,14 @@ class ManagementTopBar extends StatelessWidget {
       required this.title,
       required this.onBack,
       this.close = false,
-      this.onClose});
+      this.onClose,
+      this.trailing});
   final String title;
   final VoidCallback onBack;
+
+  /// 오른쪽 44×44 자리에 두는 임의 버튼(예: 예약 목록 휴지통, Figma 1106:5317).
+  /// [close]·[onClose]와 함께 쓰지 않는다.
+  final Widget? trailing;
 
   /// true면 단일 버튼이 오른쪽 닫기(X)가 된다.
   final bool close;
@@ -43,6 +48,10 @@ class ManagementTopBar extends StatelessWidget {
                         close ? FigmaIcons.close : FigmaIcons.arrowPrevious,
                         size: 24,
                         color: context.glass.textPrimary)))),
+        if (!close && onClose == null && trailing != null)
+          Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(width: 44, height: 44, child: trailing)),
         if (!close && onClose != null)
           Align(
               alignment: Alignment.centerRight,
@@ -55,8 +64,8 @@ class ManagementTopBar extends StatelessWidget {
                       constraints:
                           const BoxConstraints.tightFor(width: 44, height: 44),
                       onPressed: onClose,
-                      tooltip: MaterialLocalizations.of(context)
-                          .closeButtonTooltip,
+                      tooltip:
+                          MaterialLocalizations.of(context).closeButtonTooltip,
                       icon: FigmaIcon.tinted(FigmaIcons.close,
                           size: 24, color: context.glass.textPrimary)))),
       ]));
@@ -100,8 +109,8 @@ class ManagementButton extends StatelessWidget {
   final String? icon;
   @override
   Widget build(BuildContext context) => ConstrainedBox(
-      constraints:
-          BoxConstraints(minWidth: double.infinity, minHeight: compact ? 44 : 56),
+      constraints: BoxConstraints(
+          minWidth: double.infinity, minHeight: compact ? 44 : 56),
       child: FilledButton(
           onPressed: onPressed,
           style: FilledButton.styleFrom(

@@ -2,249 +2,400 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_styles.dart';
+import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/num_format.dart';
-import '../../../shared/widgets/glass_page_shell.dart';
+import '../../../shared/widgets/figma_icon.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
-import '../domain/mist_duration.dart';
+import '../../my_cage/presentation/management_colors.dart';
+import '../../my_cage/presentation/widgets/management_widgets.dart';
 import '../domain/schedule.dart';
+import '../domain/schedule_device.dart';
 import 'schedule_providers.dart';
+import 'widgets/schedule_device_badge.dart';
 import 'widgets/schedule_editor_sheet.dart';
 
-/// PRD §4.2 타이머 & 일정 설정 (풀스크린 모달).
+/// 기기 예약 설정(PRD §4.2.2 일정, Figma 1106:5317 목록 / 1106:7142 빈 목록 /
+/// 1107:10246 삭제 모드 / 1107:9697 삭제 확인).
 ///
-/// **지금은 §4.2.2 "일정"의 시점 예약까지만이다.** 계약에 없는 것은 만들지
-/// 않고 왜 없는지 화면에 밝힌다 — 빈 화면은 고장으로 읽힌다.
+/// 목록은 기기 아이콘 한 줄(시작 시각 정렬)이고, 같은 `pair_id`의 on/off는
+/// 한 예약으로 다룬다(토글·삭제도 둘 다). 추가는 기기 선택(1106:4955) →
+/// 기기별 편집기, 수정은 줄 탭 → 같은 편집기. 휴지통은 다중 선택 삭제 모드.
 ///
-/// | PRD | 상태 |
-/// |---|---|
-/// | §4.2.1 타이머(즉시·일회성) | ✅ 팬 — 제어 그리드의 팬 시트에서 건다 (히터는 보드 미탑재) |
-/// | §4.2.2 일정 — 시점 예약 | ✅ 여기 |
-/// | §4.2.2 시작~종료 구간 | ✅ 편집기 [구간] — 같은 `pair_id`의 on/off 2건, 목록엔 한 줄 |
-/// | §4.2.2 스마트 조건 | ✅ 스킵형 4종 (정지형은 펌웨어 후속 — 하단 각주) |
-///
-/// 상세: `docs/backend-handoff-2026-08-14-summary.md` ·
-/// `docs/plans/2026-08-14-backend-handoff-fan-timer-guard-lcd.md`
-class RoutineSettingsScreen extends ConsumerWidget {
+/// 정지형 가드·히터 타이머가 펌웨어 후속이라는 안내 각주는 원본에 없어
+/// 화면에서 빼고 `docs/design-audits/2026-09-16-remaining-ui-handoff/
+/// RESULTS.md`(P10 결정)로 옮겼다.
+class RoutineSettingsScreen extends ConsumerStatefulWidget {
   const RoutineSettingsScreen({super.key});
 
   static const listKey = Key('routine_schedule_list');
   static const addKey = Key('routine_add_schedule');
-  static const pendingFootnoteKey = Key('routine_pending_footnote');
+  static const deleteModeKey = Key('routine_delete_mode');
+  static const deleteSelectedKey = Key('routine_delete_selected');
+  static const emptyKey = Key('routine_empty_box');
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RoutineSettingsScreen> createState() =>
+      _RoutineSettingsScreenState();
+}
+
+class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
+  bool _deleteMode = false;
+
+  /// 삭제 모드 선택 — 구간은 `pair:<pairId>`, 시점은 `one:<id>`.
+  final Set<String> _selected = {};
+
+  static String _rowId(Object row) => row is SchedulePair
+      ? 'pair:${row.pairId}'
+      : 'one:${(row as Schedule).id}';
+
+  static int _startMinutes(Object row) {
+    final s = row is SchedulePair ? row.on : row as Schedule;
+    return s.hour * 60 + s.minute;
+  }
+
+  /// 같은 pair_id의 on/off는 한 줄(2026-08-18 회신 §3), 시작 시각 순.
+  static List<Object> _rows(List<Schedule> list) =>
+      Schedule.group(list)..sort((a, b) => _startMinutes(a) - _startMinutes(b));
+
+  void _exitDeleteMode() => setState(() {
+        _deleteMode = false;
+        _selected.clear();
+      });
+
+  @override
+  Widget build(BuildContext context) {
     final schedules = ref.watch(schedulesProvider);
+    final glass = context.glass;
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    final rows = _rows(schedules.valueOrNull ?? const []);
+    final selectedCount =
+        rows.where((r) => _selected.contains(_rowId(r))).length;
 
-    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 예약 로직 불변.
-    return GlassPageShell(
+    return PopScope(
+        canPop: !_deleteMode,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _exitDeleteMode();
+        },
         child: Scaffold(
-      appBar: AppBar(title: Text('home_routine_settings'.tr())),
-      // `/home/routines`는 탭 셸 **밖** 최상위 라우트다(app_router.dart '탭 셸
-      // 밖' 참조) — 독이 없으니 FAB를 들어올릴 것도 없다. Scaffold가 세이프
-      // 에어리어는 알아서 반영한다.
-      floatingActionButton: FloatingActionButton.extended(
-        key: addKey,
-        onPressed: () => _add(context, ref),
-        icon: const Icon(Icons.add),
-        label: Text('routine_add'.tr()),
-      ),
-      body: ListView(
-        // 하단 96 = FAB 높이 48 + FAB 기본 마진 16 + 여유 32 — 마지막 예약
-        // 줄이 FAB에 가려지지 않게. (독은 없다 — 위 라우트 주석 참조)
-        padding: const EdgeInsets.fromLTRB(
-            AppStyles.spacing16, AppStyles.spacing16, AppStyles.spacing16, 96),
-        children: [
-          Text('routine_schedule_section'.tr(),
-              style: AppStyles.subsectionTitle(context)),
-          const SizedBox(height: AppStyles.spacing8),
-          schedules.when(
-            loading: () => const SkeletonListLoading(itemCount: 3),
-            error: (e, _) => _ErrorNote(message: '$e'),
-            data: (list) => list.isEmpty
-                ? _EmptyNote()
-                : Column(
-                    key: listKey,
-                    children: [
-                      // 같은 pair_id의 on/off는 한 줄로(2026-08-18 회신 §3).
-                      for (final row in Schedule.group(list))
-                        if (row case final SchedulePair p)
-                          _PairTile(
-                            pair: p,
-                            onToggle: (v) => _guard(
-                                context,
-                                () => ref
-                                    .read(schedulesProvider.notifier)
-                                    .setPairEnabled(p, v)),
-                            onDelete: () => _confirmDeletePair(context, ref, p),
-                            onEdit: () => _editPair(context, ref, p),
-                          )
-                        else if (row case final Schedule s)
-                          _ScheduleTile(
-                            schedule: s,
-                            onToggle: (v) => _guard(
-                                context,
-                                () => ref
-                                    .read(schedulesProvider.notifier)
-                                    .setEnabled(s, v)),
-                            onDelete: () => _confirmDelete(context, ref, s),
-                            onEdit: () => _edit(context, ref, s),
-                          ),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: AppStyles.spacing24),
-          // 계약이 없어 못 만드는 것 — 빈 자리를 이유 없이 두면 고장으로 읽힌다.
-          Text(
-            'routine_pending_footnote'.tr(),
-            key: pendingFootnoteKey,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-        ],
-      ),
-    ));
+            backgroundColor: glass.surfaceTint,
+            body: Stack(children: [
+              SafeArea(
+                  bottom: false,
+                  child: Column(children: [
+                    Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: ManagementTopBar(
+                            title: 'routine_screen_title'.tr(),
+                            onBack: _deleteMode
+                                ? _exitDeleteMode
+                                : () => Navigator.of(context).maybePop(),
+                            trailing: IconButton(
+                                key: RoutineSettingsScreen.deleteModeKey,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints.tightFor(
+                                    width: 44, height: 44),
+                                tooltip: 'routine_delete_title'.tr(),
+                                onPressed: rows.isEmpty
+                                    ? null
+                                    : () => _deleteMode
+                                        ? _exitDeleteMode()
+                                        : setState(() => _deleteMode = true),
+                                icon: FigmaIcon.tinted(FigmaIcons.trash,
+                                    size: 44,
+                                    color: rows.isEmpty
+                                        ? glass.deviceOff
+                                        : glass.textSecondary)))),
+                    Expanded(
+                        child: schedules.when(
+                      loading: () => const Align(
+                          alignment: Alignment.topCenter,
+                          child: Padding(
+                              padding: EdgeInsets.fromLTRB(12, 16, 12, 0),
+                              child: SkeletonListLoading(itemCount: 3))),
+                      error: (e, _) => _ErrorNote(message: '$e'),
+                      // Expanded는 세로를 꽉 채우라고 하므로 상자는 Align으로
+                      // 느슨하게 받아야 64를 지킨다.
+                      data: (list) => rows.isEmpty
+                          ? const Align(
+                              alignment: Alignment.topCenter,
+                              child: Padding(
+                                  padding: EdgeInsets.fromLTRB(12, 16, 12, 0),
+                                  child: _EmptyBox()))
+                          : ListView(
+                              key: RoutineSettingsScreen.listKey,
+                              // 원본 첫 줄 y122 = 헤더 106 + 16. 하단은 플로팅
+                              // CTA(56, 세이프 66 위) + 여유 16.
+                              padding: EdgeInsets.fromLTRB(
+                                  12, 16, 12, bottom + 66 + 56 + 16),
+                              children: [
+                                for (final (i, row) in rows.indexed) ...[
+                                  if (i > 0) const SizedBox(height: 8),
+                                  _row(row, list),
+                                ],
+                              ],
+                            ),
+                    )),
+                  ])),
+              if (!_deleteMode || selectedCount > 0)
+                Positioned(
+                    left: 12,
+                    right: 12,
+                    bottom: bottom + 66,
+                    child: _deleteMode
+                        ? ManagementButton(
+                            key: RoutineSettingsScreen.deleteSelectedKey,
+                            red: true,
+                            label: 'routine_delete_count'
+                                .tr(args: ['$selectedCount']),
+                            onPressed: () => _deleteSelected(rows, schedules))
+                        : ManagementButton(
+                            key: RoutineSettingsScreen.addKey,
+                            label: 'routine_add'.tr(),
+                            onPressed: _add)),
+            ])));
   }
 
-  Future<void> _add(BuildContext context, WidgetRef ref) async {
-    final result = await showScheduleEditor(context);
-    if (result == null || !context.mounted) return;
-    await _guard(
-      context,
-      () => result.isSpan
-          ? ref.read(schedulesProvider.notifier).addSpan(
-                onAction: result.action,
-                offAction: result.offAction!,
-                kind: result.kind,
-                startHour: result.hour,
-                startMinute: result.minute,
-                endHour: result.endHour!,
-                endMinute: result.endMinute!,
-                daysOfWeek: result.daysOfWeek,
-                guard: result.guard,
-              )
-          : ref.read(schedulesProvider.notifier).add(
-                action: result.action,
-                kind: result.kind,
-                hour: result.hour,
-                minute: result.minute,
-                daysOfWeek: result.daysOfWeek,
-                payload: result.payload,
-                guard: result.guard,
-              ),
+  Widget _row(Object row, List<Schedule> all) {
+    final id = _rowId(row);
+    final selected = _selected.contains(id);
+    void toggleSelect() => setState(() {
+          if (!_selected.remove(id)) _selected.add(id);
+        });
+    if (row case final SchedulePair p) {
+      final on = p.on;
+      return _ScheduleRow(
+        key: Key('schedule_pair_${p.pairId}'),
+        device: ScheduleDevice.of(on.action),
+        title: '${on.hhmm}~${p.off.hhmm}',
+        parts: [
+          _repeatLabel(on.kind, on.daysOfWeek),
+          _stateLabel(p.enabled),
+          if (on.guard case final g? when g.enabled) _guardLabel(g),
+          if (p.isSkewed) 'routine_pair_skewed'.tr(),
+        ],
+        enabled: p.enabled,
+        toggleKey: Key('schedule_pair_toggle_${p.pairId}'),
+        checkKey: Key('schedule_pair_check_${p.pairId}'),
+        deleteMode: _deleteMode,
+        selected: selected,
+        onToggle: (v) => _guard(
+            () => ref.read(schedulesProvider.notifier).setPairEnabled(p, v)),
+        onTap: _deleteMode ? toggleSelect : () => _editPair(p),
+      );
+    }
+    final s = row as Schedule;
+    final device = ScheduleDevice.of(s.action);
+    return _ScheduleRow(
+      key: Key('schedule_${s.id}'),
+      device: device,
+      // 분무는 시각만(1106:5317 문법). 켜기/끄기·레거시 동작은 시각 뒤에
+      // 동작 이름을 붙여야 같은 아이콘의 켜기·끄기가 구분된다.
+      title: device == ScheduleDevice.mist
+          ? s.hhmm
+          : '${s.hhmm} ${s.action.displayKey.tr()}',
+      parts: [
+        _repeatLabel(s.kind, s.daysOfWeek),
+        _stateLabel(s.enabled),
+        if (s.guard case final g? when g.enabled) _guardLabel(g),
+      ],
+      enabled: s.enabled,
+      toggleKey: Key('schedule_toggle_${s.id}'),
+      checkKey: Key('schedule_check_${s.id}'),
+      deleteMode: _deleteMode,
+      selected: selected,
+      onToggle: (v) =>
+          _guard(() => ref.read(schedulesProvider.notifier).setEnabled(s, v)),
+      onTap: _deleteMode ? toggleSelect : () => _edit(s, all),
     );
   }
 
-  Future<void> _edit(BuildContext context, WidgetRef ref, Schedule s) async {
-    // `action`은 서버가 수정을 안 받는다. 편집기는 타이밍·가드만 바꾸게 하고,
-    // 동작을 바꾸려면 지우고 새로 만들어야 한다.
+  // ── 추가 ────────────────────────────────────────────────────────────────
+
+  Future<void> _add() async {
+    final result = await Navigator.of(context).push<Object>(MaterialPageRoute(
+        builder: (_) => ScheduleDevicePickerScreen(
+            onPick: (ctx, device) => showScheduleEditor(ctx, device: device))));
+    if (result is! ScheduleDraft || !mounted) return;
+    await _guard(() => result.isSpan
+        ? ref.read(schedulesProvider.notifier).addSpan(
+              onAction: result.action,
+              offAction: result.offAction!,
+              kind: result.kind,
+              startHour: result.hour,
+              startMinute: result.minute,
+              endHour: result.endHour!,
+              endMinute: result.endMinute!,
+              daysOfWeek: result.daysOfWeek,
+              guard: result.guard,
+            )
+        : ref.read(schedulesProvider.notifier).add(
+              action: result.action,
+              kind: result.kind,
+              hour: result.hour,
+              minute: result.minute,
+              daysOfWeek: result.daysOfWeek,
+              payload: result.payload,
+              guard: result.guard,
+            ));
+  }
+
+  // ── 수정 ────────────────────────────────────────────────────────────────
+
+  Future<void> _edit(Schedule s, List<Schedule> all) async {
+    // `action`은 서버가 수정을 안 받는다. 편집기는 타이밍만 바꾸고 가드는
+    // 손대지 않는다(PATCH에 guard 키 생략 → 서버 값 유지).
     final result = await showScheduleEditor(context, initial: s);
-    if (result == null || !context.mounted) return;
-    await _guard(
-      context,
-      () => ref.read(schedulesProvider.notifier).updateTiming(
-            s,
-            kind: result.kind,
-            hour: result.hour,
-            minute: result.minute,
-            daysOfWeek: result.daysOfWeek,
-            payload: result.payload,
-            guard: result.guard,
-            clearGuard: result.clearGuard,
-          ),
-    );
+    if (!mounted) return;
+    switch (result) {
+      case ScheduleDraft():
+        await _guard(() => ref.read(schedulesProvider.notifier).updateTiming(
+              s,
+              kind: result.kind,
+              hour: result.hour,
+              minute: result.minute,
+              daysOfWeek: result.daysOfWeek,
+              payload: result.payload,
+              guard: result.guard,
+              clearGuard: result.clearGuard,
+            ));
+      case ScheduleDeleteRequested():
+        if (!await _confirmDelete(_leavesOrphanOn([s], all))) return;
+        await _guard(() => ref.read(schedulesProvider.notifier).remove(s));
+      case null:
+        return;
+    }
   }
 
-  Future<void> _editPair(
-      BuildContext context, WidgetRef ref, SchedulePair p) async {
+  Future<void> _editPair(SchedulePair p) async {
     final result = await showScheduleEditor(context, initialPair: p);
-    if (result == null || !context.mounted) return;
-    await _guard(
-      context,
-      () => ref.read(schedulesProvider.notifier).updateSpanTiming(
-            p,
-            kind: result.kind,
-            startHour: result.hour,
-            startMinute: result.minute,
-            endHour: result.endHour!,
-            endMinute: result.endMinute!,
-            daysOfWeek: result.daysOfWeek,
-            guard: result.guard,
-            clearGuard: result.clearGuard,
-          ),
-    );
+    if (!mounted) return;
+    switch (result) {
+      case ScheduleDraft():
+        await _guard(
+            () => ref.read(schedulesProvider.notifier).updateSpanTiming(
+                  p,
+                  kind: result.kind,
+                  startHour: result.hour,
+                  startMinute: result.minute,
+                  endHour: result.endHour!,
+                  endMinute: result.endMinute!,
+                  daysOfWeek: result.daysOfWeek,
+                  guard: result.guard,
+                  clearGuard: result.clearGuard,
+                ));
+      case ScheduleDeleteRequested():
+        if (!await _confirmDelete(false)) return;
+        await _guard(() => ref.read(schedulesProvider.notifier).removePair(p));
+      case null:
+        return;
+    }
   }
 
-  /// 구간 삭제 — 서버가 짝을 같이 지운다는 걸 확인문에 밝힌다.
-  Future<void> _confirmDeletePair(
-      BuildContext context, WidgetRef ref, SchedulePair p) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('routine_delete_title'.tr()),
-        content: Text('routine_delete_pair_body'.tr(),
-            key: const Key('routine_delete_pair_body')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('common_cancel'.tr()),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('routine_delete_confirm'.tr()),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !context.mounted) return;
-    await _guard(
-        context, () => ref.read(schedulesProvider.notifier).removePair(p));
+  // ── 삭제 ────────────────────────────────────────────────────────────────
+
+  /// 끄기 예약을 지우는데 짝이 될 켜기 예약이 살아 있으면 경고를 바꾼다 —
+  /// pair_id 없는 낱개(2026-08-18 이전 구간, 웹 콘솔 생성)는 이 목록 검사로만
+  /// 잡을 수 있다. 켜기만 남으면 기기가 켜진 채 방치된다(히터면 과열).
+  static bool _leavesOrphanOn(List<Schedule> deleting, List<Schedule> all) {
+    final deletingIds = deleting.map((e) => e.id).toSet();
+    return deleting.any((s) =>
+        s.action.isOffAction &&
+        all.any((e) =>
+            !deletingIds.contains(e.id) &&
+            e.enabled &&
+            e.action == s.action.onCounterpart));
   }
 
-  Future<void> _confirmDelete(
-      BuildContext context, WidgetRef ref, Schedule s) async {
-    // 끄기 예약을 지우는데 짝이 될 켜기 예약이 살아 있으면 경고를 바꾼다 —
-    // pair_id 없는 낱개(2026-08-18 이전 구간, 웹 콘솔 생성)는 이 목록 검사로만
-    // 잡을 수 있다. 켜기만 남으면 기기가 켜진 채 방치된다(히터면 과열).
-    final others = ref.read(schedulesProvider).valueOrNull ?? const [];
-    final leavesOrphanOn = s.action.isOffAction &&
-        others.any((e) =>
-            e.id != s.id && e.enabled && e.action == s.action.onCounterpart);
+  Future<void> _deleteSelected(
+      List<Object> rows, AsyncValue<List<Schedule>> schedules) async {
+    final targets = rows.where((r) => _selected.contains(_rowId(r))).toList();
+    if (targets.isEmpty) return;
+    final all = schedules.valueOrNull ?? const <Schedule>[];
+    final singles = targets.whereType<Schedule>().toList();
+    if (!await _confirmDelete(_leavesOrphanOn(singles, all))) return;
+    if (!mounted) return;
+    final notifier = ref.read(schedulesProvider.notifier);
+    var failed = false;
+    for (final t in targets) {
+      try {
+        if (t is SchedulePair) {
+          await notifier.removePair(t);
+        } else {
+          await notifier.remove(t as Schedule);
+        }
+        _selected.remove(_rowId(t));
+      } catch (e) {
+        failed = true;
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('routine_action_failed'.tr(args: ['$e']))),
+        );
+        break;
+      }
+    }
+    if (!mounted) return;
+    // 일부 실패면 남은 항목을 서버에서 다시 읽는다 — 성공한 것을 다시 지우지
+    // 않고, 지워졌다고 믿지도 않는다.
+    if (failed) ref.invalidate(schedulesProvider);
+    _exitDeleteMode();
+  }
+
+  /// Figma 1107:9697 — 345×144, 문구 18/500/28 가운데, 취소(검정)·삭제(빨강)
+  /// 142×44 r8 사이 13. 끄기 예약의 켜기 짝이 남으면 문구를 경고로 바꾼다.
+  Future<bool> _confirmDelete(bool leavesOrphanOn) async {
     final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('routine_delete_title'.tr()),
-        content: Text(
-          (leavesOrphanOn
-                  ? 'routine_delete_off_warning'
-                  : 'routine_delete_body')
-              .tr(),
-          key: leavesOrphanOn ? const Key('routine_delete_off_warning') : null,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('common_cancel'.tr()),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('routine_delete_confirm'.tr()),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !context.mounted) return;
-    await _guard(context, () => ref.read(schedulesProvider.notifier).remove(s));
+        context: context,
+        useSafeArea: false,
+        builder: (ctx) => Dialog(
+            backgroundColor: ctx.glass.surfaceHeader,
+            surfaceTintColor: ctx.glass.surfaceHeader,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 345),
+                child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Text(
+                          (leavesOrphanOn
+                                  ? 'routine_delete_off_warning'
+                                  : 'routine_delete_question')
+                              .tr(),
+                          key: leavesOrphanOn
+                              ? const Key('routine_delete_off_warning')
+                              : const Key('routine_delete_question'),
+                          textAlign: TextAlign.center,
+                          style: managementStyle(ctx,
+                                  size: 18, color: ctx.glass.textPrimary)
+                              .copyWith(height: 28 / 18)),
+                      const SizedBox(height: 24),
+                      Row(children: [
+                        Expanded(
+                            child: _ModalButton(
+                                key: const Key('routine_delete_cancel'),
+                                label: 'common_cancel'.tr(),
+                                color: ctx.glass.textPrimary,
+                                onPressed: () => Navigator.pop(ctx, false))),
+                        const SizedBox(width: 13),
+                        Expanded(
+                            child: _ModalButton(
+                                key: const Key('routine_delete_ok'),
+                                label: 'routine_delete_confirm'.tr(),
+                                color: ctx.glass.navSelected,
+                                onPressed: () => Navigator.pop(ctx, true))),
+                      ]),
+                    ])))));
+    return ok == true && mounted;
   }
 
   /// 실패를 삼키지 않는다. 예약은 "됐겠지"로 넘길 수 있는 동작이 아니다 —
   /// 사용자는 기기가 알아서 돌 거라 믿고 신경을 끈다.
-  static Future<void> _guard(
-      BuildContext context, Future<void> Function() run) async {
+  Future<void> _guard(Future<void> Function() run) async {
     try {
       await run();
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('routine_action_failed'.tr(args: ['$e']))),
       );
@@ -252,64 +403,16 @@ class RoutineSettingsScreen extends ConsumerWidget {
   }
 }
 
-/// 예약 목록 한 줄 공용 모양 — 시점([_ScheduleTile])·구간([_PairTile]) 둘 다
-/// 이걸로 그린다. 제목·부제 조각·키·enabled만 다르고 트레일링(스위치+삭제)과
-/// 스타일은 같아야 두 종류가 한 목록에서 어긋나지 않는다.
-class _ScheduleRowTile extends StatelessWidget {
-  const _ScheduleRowTile({
-    required super.key,
-    required this.title,
-    required this.subtitleParts,
-    required this.enabled,
-    required this.toggleKey,
-    required this.deleteKey,
-    required this.onToggle,
-    required this.onDelete,
-    required this.onEdit,
-  });
-
-  final String title;
-  final List<String> subtitleParts;
-  final bool enabled;
-  final Key toggleKey;
-  final Key deleteKey;
-  final ValueChanged<bool> onToggle;
-  final VoidCallback onDelete;
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(title, style: theme.textTheme.titleSmall),
-      subtitle: Text(
-        subtitleParts.join(' · '),
-        style: theme.textTheme.bodySmall
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-      ),
-      onTap: onEdit,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Switch(key: toggleKey, value: enabled, onChanged: onToggle),
-          IconButton(
-            key: deleteKey,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: onDelete,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ── 부제 조각 헬퍼 (시점·구간 공용) ─────────────────────────────────────────
 
+/// 매일 또는 `토 일`(원본 1106:5317 — 요일 사이 공백).
 String _repeatLabel(ScheduleKind kind, List<int> daysOfWeek) {
   if (kind == ScheduleKind.daily) return 'routine_daily'.tr();
-  return daysOfWeek.map((d) => 'routine_day_$d'.tr()).join('·');
+  return ([...daysOfWeek]..sort()).map((d) => 'routine_day_$d'.tr()).join(' ');
 }
+
+String _stateLabel(bool enabled) =>
+    (enabled ? 'device_state_on' : 'device_state_off').tr();
 
 /// `습도>70%면 건너뜀` 식. 키는 `routine_guard_chip_<wire 뒷부분>`.
 String _guardLabel(ScheduleGuard g) {
@@ -318,121 +421,176 @@ String _guardLabel(ScheduleGuard g) {
   return key.tr(args: [formatCompact(g.value, maxFractionDigits: 2)]);
 }
 
-/// 이미 로컬로 바꿔 보관한 값이라 여기서 시차를 더하지 않는다.
-String _formatNext(DateTime at) {
-  final now = DateTime.now();
-  final sameDay =
-      at.year == now.year && at.month == now.month && at.day == now.day;
-  final hhmm = '${at.hour.toString().padLeft(2, '0')}:'
-      '${at.minute.toString().padLeft(2, '0')}';
-  if (sameDay) return 'routine_today_at'.tr(args: [hhmm]);
-  return '${at.month}/${at.day} $hhmm';
-}
-
-String _nextRunLabel(DateTime? at) =>
-    'routine_next_run'.tr(args: [_formatNext(at!)]);
-
-/// 시점 예약 한 줄 — `08:00  분무 2초`.
-class _ScheduleTile extends StatelessWidget {
-  const _ScheduleTile({
-    required this.schedule,
+/// 예약 한 줄 — 369×72 #FAFAFA r12, 아이콘 40, 제목 16/600·부제 14/500,
+/// 스위치 80×32. 삭제 모드면 스위치가 왼쪽으로 밀리고 체크 24가 붙는다
+/// (1107:10246 — 스위치 x285→253, 체크 x341).
+class _ScheduleRow extends StatelessWidget {
+  const _ScheduleRow({
+    required super.key,
+    required this.device,
+    required this.title,
+    required this.parts,
+    required this.enabled,
+    required this.toggleKey,
+    required this.checkKey,
+    required this.deleteMode,
+    required this.selected,
     required this.onToggle,
-    required this.onDelete,
-    required this.onEdit,
+    required this.onTap,
   });
 
-  final Schedule schedule;
+  final ScheduleDevice? device;
+  final String title;
+  final List<String> parts;
+  final bool enabled;
+  final Key toggleKey;
+  final Key checkKey;
+  final bool deleteMode;
+  final bool selected;
   final ValueChanged<bool> onToggle;
-  final VoidCallback onDelete;
-  final VoidCallback onEdit;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final s = schedule;
-    return _ScheduleRowTile(
-      key: Key('schedule_${s.id}'),
-      title: '${s.hhmm}  ${s.action.displayKey.tr()}${_durationSuffix()}',
-      subtitleParts: [
-        _repeatLabel(s.kind, s.daysOfWeek),
-        if (s.guard case final g? when g.enabled) _guardLabel(g),
-        if (s.nextRunAt != null && s.enabled) _nextRunLabel(s.nextRunAt),
-      ],
-      enabled: s.enabled,
-      toggleKey: Key('schedule_toggle_${s.id}'),
-      deleteKey: Key('schedule_delete_${s.id}'),
-      onToggle: onToggle,
-      onDelete: onDelete,
-      onEdit: onEdit,
-    );
-  }
-
-  String _durationSuffix() {
-    final ms = schedule.payload?['duration_ms'];
-    if (ms is! num) return '';
-    return ' ${MistDuration.fromMilliseconds(ms.toInt()).seconds}'
-        '${'routine_seconds_suffix'.tr()}';
+    final glass = context.glass;
+    return Material(
+        color: ManagementColors.buttonForeground(context),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onTap,
+            child: SizedBox(
+                height: 72,
+                child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(children: [
+                      ScheduleDeviceBadge(device),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Text(title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: managementStyle(context,
+                                    weight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Text(parts.join(' · '),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: managementStyle(context, size: 14)),
+                          ])),
+                      const SizedBox(width: 8),
+                      ScheduleSwitch(
+                          key: toggleKey,
+                          value: enabled,
+                          color: scheduleDeviceColor(context, device) ??
+                              glass.textPrimary,
+                          onChanged: onToggle),
+                      if (deleteMode) ...[
+                        const SizedBox(width: 8),
+                        FigmaIcon.tinted(
+                            selected
+                                ? 'redesign_v2/check_box_400'
+                                : 'redesign_v2/check_box_outline_blank_400',
+                            key: checkKey,
+                            size: 24,
+                            color:
+                                selected ? glass.navSelected : glass.deviceOff),
+                      ],
+                    ])))));
   }
 }
 
-/// 구간 한 줄 — `20:00 → 06:00  히터`. 반복·가드는 on행 기준, 다음 실행은
-/// 두 행 중 먼저 오는 쪽. 반쪽 켜짐이면 경고 조각을 붙인다.
-class _PairTile extends StatelessWidget {
-  const _PairTile({
-    required this.pair,
-    required this.onToggle,
-    required this.onDelete,
-    required this.onEdit,
-  });
+/// 원본 Toggle_on/off(1106:5317) — 80×32 r16, 손잡이 50×28 #F4F4F4 여백 2.
+/// 켜짐은 기기색, 꺼짐은 [GlassPalette.deviceOff].
+class ScheduleSwitch extends StatelessWidget {
+  const ScheduleSwitch(
+      {super.key,
+      required this.value,
+      required this.color,
+      required this.onChanged});
 
-  final SchedulePair pair;
-  final ValueChanged<bool> onToggle;
-  final VoidCallback onDelete;
-  final VoidCallback onEdit;
+  final bool value;
+  final Color color;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final on = pair.on;
-    final off = pair.off;
-    final next = _earliest(on.nextRunAt, off.nextRunAt);
-    return _ScheduleRowTile(
-      key: Key('schedule_pair_${pair.pairId}'),
-      // 시점 타일과 같은 조립 규칙(시각 + 라벨) — 화살표는 로케일 중립.
-      title: '${on.hhmm} → ${off.hhmm}  ${on.action.labelKey.tr()}',
-      subtitleParts: [
-        _repeatLabel(on.kind, on.daysOfWeek),
-        if (on.guard case final g? when g.enabled) _guardLabel(g),
-        if (pair.isSkewed) 'routine_pair_skewed'.tr(),
-        if (next != null && pair.enabled) _nextRunLabel(next),
-      ],
-      enabled: pair.enabled,
-      toggleKey: Key('schedule_pair_toggle_${pair.pairId}'),
-      deleteKey: Key('schedule_pair_delete_${pair.pairId}'),
-      onToggle: onToggle,
-      onDelete: onDelete,
-      onEdit: onEdit,
-    );
-  }
-
-  static DateTime? _earliest(DateTime? a, DateTime? b) {
-    if (a == null) return b;
-    if (b == null) return a;
-    return a.isBefore(b) ? a : b;
+    final glass = context.glass;
+    return Semantics(
+        toggled: value,
+        button: true,
+        child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => onChanged(!value),
+            child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 80,
+                height: 32,
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                    color: value ? color : glass.deviceOff,
+                    borderRadius: BorderRadius.circular(16)),
+                child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 150),
+                    alignment:
+                        value ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                        width: 50,
+                        height: 28,
+                        decoration: BoxDecoration(
+                            color: glass.surfaceTint,
+                            borderRadius: BorderRadius.circular(14)))))));
   }
 }
 
-class _EmptyNote extends StatelessWidget {
+class _ModalButton extends StatelessWidget {
+  const _ModalButton(
+      {super.key,
+      required this.label,
+      required this.color,
+      required this.onPressed});
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppStyles.spacing16),
-      child: Text(
-        'routine_schedule_empty'.tr(),
-        style: theme.textTheme.bodyMedium
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => SizedBox(
+      height: 44,
+      child: FilledButton(
+          onPressed: onPressed,
+          style: FilledButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: ManagementColors.buttonForeground(context),
+              padding: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              textStyle: managementStyle(context, weight: FontWeight.w600)
+                  .copyWith(height: 28 / 16)),
+          child: Text(label)));
+}
+
+/// 빈 목록 — 원본 1106:7142 흰 상자 369×64 r12, 문구 16/500/28 #949090.
+class _EmptyBox extends StatelessWidget {
+  const _EmptyBox();
+
+  @override
+  Widget build(BuildContext context) => Container(
+      key: RoutineSettingsScreen.emptyKey,
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(
+          color: context.glass.surfaceHeader,
+          borderRadius: BorderRadius.circular(12)),
+      child: Text('routine_schedule_empty'.tr(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: managementStyle(context, color: context.glass.textTertiary)
+              .copyWith(height: 28 / 16)));
 }
 
 class _ErrorNote extends StatelessWidget {
@@ -444,7 +602,7 @@ class _ErrorNote extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppStyles.spacing16),
+      padding: const EdgeInsets.all(16),
       child: Text(
         'routine_load_failed'.tr(args: [message]),
         style:

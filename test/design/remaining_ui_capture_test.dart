@@ -37,12 +37,16 @@ import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/domain/wifi_access_point.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_screen.dart';
-import '../features/my_cage/device_add_flow_test.dart' show Gateway, device, camera;
+import '../features/my_cage/device_add_flow_test.dart'
+    show Gateway, device, camera;
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivanaut/features/home/presentation/widgets/fan_duration_sheet.dart';
 import 'package:vivanaut/shared/domain/fan_actuator.dart';
 import 'package:vivanaut/features/home/presentation/home_screen.dart';
+import 'package:vivanaut/features/home/presentation/schedule_providers.dart';
+import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart';
+import '../features/home/schedule_fixtures.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/my_cage/data/lcd_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/device.dart';
@@ -296,8 +300,7 @@ Widget shell(GlobalKey boundary, Widget home,
 
 void main() {
   if (!const bool.fromEnvironment('CAPTURE_REMAINING')) {
-    test('opt-in remaining UI captures', () {},
-        skip: 'CAPTURE_REMAINING=true');
+    test('opt-in remaining UI captures', () {}, skip: 'CAPTURE_REMAINING=true');
     return;
   }
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -325,8 +328,7 @@ void main() {
               MorphGeneticsData.fromJson(jsonDecode(
                   File('assets/data/morphs/crested-gecko.json')
                       .readAsStringSync()))),
-          petListProvider
-              .overrideWith((ref) => PetListNotifier(_Pets(), null)),
+          petListProvider.overrideWith((ref) => PetListNotifier(_Pets(), null)),
         ]));
     await tester.pumpAndSettle();
     await tester.tap(find.text('선택 안함').first);
@@ -354,14 +356,14 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.binding.setSurfaceSize(const Size(393, 852));
-    await tester.pumpWidget(shell(boundary, const DeviceManagementScreen(),
-        overrides: [
-          managementInventoryProvider.overrideWith(
-              (ref) async => ManagementInventory(groups: [], items: [])),
-          redesignGroupRepositoryProvider.overrideWith((ref) =>
-              RedesignGroupRepository(
-                  loadRows: (_) async => [], rpc: (_, __) async => null)),
-        ]));
+    await tester
+        .pumpWidget(shell(boundary, const DeviceManagementScreen(), overrides: [
+      managementInventoryProvider.overrideWith(
+          (ref) async => ManagementInventory(groups: [], items: [])),
+      redesignGroupRepositoryProvider.overrideWith((ref) =>
+          RedesignGroupRepository(
+              loadRows: (_) async => [], rpc: (_, __) async => null)),
+    ]));
     await capture(tester, boundary, 'p06-management-empty');
     debugDisableShadows = true;
     await tester.binding.setSurfaceSize(null);
@@ -376,63 +378,63 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     final day = EnvDay.of(DateTime.now().subtract(const Duration(days: 1)));
     final week = WeekRange.containing(day.start);
-    await tester.pumpWidget(shell(boundary, const EnvDetailScreen(),
-        overrides: [
-          currentDeviceIdProvider.overrideWith((ref) async => null),
-          envDetailDayProvider.overrideWith((ref) => day),
-          envDayBucketsProvider.overrideWith((ref) async => [
-                for (var i = 0; i < 48; i++)
-                  TelemetryBucket(
-                      bucket: day.start.add(Duration(minutes: i * 30)),
-                      sampleCount: 600,
-                      tValidCount: 600,
-                      hValidCount: 600,
-                      tAvg: 27.5 + 2.2 * math.sin((i - 12) * math.pi / 48),
-                      tMin: 26,
-                      tMax: 32,
-                      hAvg: 62 - 4 * math.sin((i - 12) * math.pi / 48),
-                      hMin: 55,
-                      hMax: 70)
-              ]),
-          envDayControlLogProvider.overrideWith((ref) async => [
-                ControlLogEntry(
-                    kind: MarkerKind.fan,
-                    state: ControlLogState.on,
-                    at: day.start.add(const Duration(hours: 8)),
-                    temperature: 29.4,
-                    humidity: 60.2),
-                ControlLogEntry(
-                    kind: MarkerKind.fan,
-                    state: ControlLogState.off,
-                    at: day.start.add(const Duration(hours: 9)),
-                    temperature: 27.8,
-                    humidity: 62,
-                    deltaTemperature: -1.6,
-                    deltaHumidity: 1.8),
-                ControlLogEntry(
-                    kind: MarkerKind.mist,
-                    state: ControlLogState.ran,
-                    at: day.start.add(const Duration(hours: 13)),
-                    temperature: 28.8,
-                    humidity: 61),
-              ]),
-          envWeekRowsProvider.overrideWith((ref) async => (
-                temp: [
-                  for (var i = 0; i < 7; i++)
-                    DayMinMax(
-                        day: week.days[i],
-                        min: i == 3 || i == 4 ? 23 : 25.0,
-                        max: i == 1 ? 33 : 30.0)
-                ],
-                humid: [
-                  for (var i = 0; i < 7; i++)
-                    DayMinMax(
-                        day: week.days[i],
-                        min: i == 5 ? 50 : 55.0,
-                        max: i == 2 ? 72 : 65.0)
-                ]
-              )),
-        ]));
+    await tester
+        .pumpWidget(shell(boundary, const EnvDetailScreen(), overrides: [
+      currentDeviceIdProvider.overrideWith((ref) async => null),
+      envDetailDayProvider.overrideWith((ref) => day),
+      envDayBucketsProvider.overrideWith((ref) async => [
+            for (var i = 0; i < 48; i++)
+              TelemetryBucket(
+                  bucket: day.start.add(Duration(minutes: i * 30)),
+                  sampleCount: 600,
+                  tValidCount: 600,
+                  hValidCount: 600,
+                  tAvg: 27.5 + 2.2 * math.sin((i - 12) * math.pi / 48),
+                  tMin: 26,
+                  tMax: 32,
+                  hAvg: 62 - 4 * math.sin((i - 12) * math.pi / 48),
+                  hMin: 55,
+                  hMax: 70)
+          ]),
+      envDayControlLogProvider.overrideWith((ref) async => [
+            ControlLogEntry(
+                kind: MarkerKind.fan,
+                state: ControlLogState.on,
+                at: day.start.add(const Duration(hours: 8)),
+                temperature: 29.4,
+                humidity: 60.2),
+            ControlLogEntry(
+                kind: MarkerKind.fan,
+                state: ControlLogState.off,
+                at: day.start.add(const Duration(hours: 9)),
+                temperature: 27.8,
+                humidity: 62,
+                deltaTemperature: -1.6,
+                deltaHumidity: 1.8),
+            ControlLogEntry(
+                kind: MarkerKind.mist,
+                state: ControlLogState.ran,
+                at: day.start.add(const Duration(hours: 13)),
+                temperature: 28.8,
+                humidity: 61),
+          ]),
+      envWeekRowsProvider.overrideWith((ref) async => (
+            temp: [
+              for (var i = 0; i < 7; i++)
+                DayMinMax(
+                    day: week.days[i],
+                    min: i == 3 || i == 4 ? 23 : 25.0,
+                    max: i == 1 ? 33 : 30.0)
+            ],
+            humid: [
+              for (var i = 0; i < 7; i++)
+                DayMinMax(
+                    day: week.days[i],
+                    min: i == 5 ? 50 : 55.0,
+                    max: i == 2 ? 72 : 65.0)
+            ]
+          )),
+    ]));
     await capture(tester, boundary, 'p07-env-daily');
     await tester.drag(
         find.byType(SingleChildScrollView).first, const Offset(0, -420));
@@ -451,8 +453,12 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.binding.setSurfaceSize(const Size(393, 852));
     ClipMemo memo(String id, String text, int color) => ClipMemo(
-        clipId: id, text: text, colorIndex: color, updatedAt: DateTime.utc(2026));
-    await tester.pumpWidget(shell(boundary, const BookmarksScreen(), overrides: [
+        clipId: id,
+        text: text,
+        colorIndex: color,
+        updatedAt: DateTime.utc(2026));
+    await tester
+        .pumpWidget(shell(boundary, const BookmarksScreen(), overrides: [
       allFavoriteClipsProvider.overrideWith((ref) async => [
             _fav('c1', DateTime(2026, 8, 12, 0, 50)),
             _fav('c2', DateTime(2026, 8, 12, 0, 50)),
@@ -488,8 +494,7 @@ void main() {
 
     addTearDown(tester.view.reset);
     await size(const Size(393, 852));
-    await tester.pumpWidget(shell(
-        boundary,
+    await tester.pumpWidget(shell(boundary,
         const ClipPlaylistPlayerScreen(clipId: 'b', playlist: ['a', 'b', 'c']),
         overrides: [
           currentUserProvider.overrideWithValue(null),
@@ -533,8 +538,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.binding.setSurfaceSize(const Size(393, 852));
-    await tester.pumpWidget(shell(
-        boundary,
+    await tester.pumpWidget(shell(boundary,
         const ClipPlaylistPlayerScreen(clipId: 'b', playlist: ['a', 'b', 'c']),
         overrides: [
           currentUserProvider.overrideWithValue(null),
@@ -572,20 +576,22 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     final controller = _FlowController(
         const DeviceAddState(candidates: [device, camera], busy: true));
-    await tester.pumpWidget(shell(boundary, const DeviceAddFlowScreen(flowKey: 'cap'),
-        overrides: [
-          deviceAddAccountProvider.overrideWithValue('a'),
-          deviceAddFlowProvider('cap').overrideWith((ref) => controller),
-        ]));
+    await tester.pumpWidget(
+        shell(boundary, const DeviceAddFlowScreen(flowKey: 'cap'), overrides: [
+      deviceAddAccountProvider.overrideWithValue('a'),
+      deviceAddFlowProvider('cap').overrideWith((ref) => controller),
+    ]));
     await capture(tester, boundary, 'p03-scan-busy', settle: false);
     controller.set(const DeviceAddState(candidates: [device, camera]));
     await capture(tester, boundary, 'p03-scan-unselected');
     controller.set(const DeviceAddState(
-        candidates: [device, camera], selected: {PairTargetKind.device: device}));
+        candidates: [device, camera],
+        selected: {PairTargetKind.device: device}));
     await capture(tester, boundary, 'p03-scan-one');
     controller.set(const DeviceAddState());
     await capture(tester, boundary, 'p03-scan-none');
-    controller.set(const DeviceAddState(step: DeviceAddStep.networks, networks: [
+    controller
+        .set(const DeviceAddState(step: DeviceAddStep.networks, networks: [
       WifiAccessPoint(no: 1, ssid: 'iptime_office', rssi: -30, channel: 1),
       WifiAccessPoint(no: 2, ssid: 'SK_WIFIGIGA88', rssi: -50, channel: 6),
       WifiAccessPoint(no: 3, ssid: 'SK_WIFIGIGA66', rssi: -60, channel: 6),
@@ -707,25 +713,22 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await tester.pumpWidget(shell(
         boundary,
-        PetFormScreen(
-            groups: const [
-              PetFormGroupOption(
-                  id: 'g1',
-                  name: '마뱀이네 집',
-                  number: 1,
-                  hasDevice: true,
-                  hasCamera: true),
-              PetFormGroupOption(
-                  id: 'g2',
-                  name: '도도도의 집',
-                  number: 2,
-                  hasDevice: true,
-                  hasCamera: true),
-            ],
-            onSave: (_, __) async {}),
+        PetFormScreen(groups: const [
+          PetFormGroupOption(
+              id: 'g1',
+              name: '마뱀이네 집',
+              number: 1,
+              hasDevice: true,
+              hasCamera: true),
+          PetFormGroupOption(
+              id: 'g2',
+              name: '도도도의 집',
+              number: 2,
+              hasDevice: true,
+              hasCamera: true),
+        ], onSave: (_, __) async {}),
         overrides: [
-          petListProvider
-              .overrideWith((ref) => PetListNotifier(_Pets(), null)),
+          petListProvider.overrideWith((ref) => PetListNotifier(_Pets(), null)),
         ]));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('그룹 설정'), 300,
@@ -757,22 +760,22 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.binding.setSurfaceSize(const Size(393, 852));
-    await tester.pumpWidget(shell(boundary, const Scaffold(body: HomeLcdRow()),
-        overrides: [
-          lcdRepositoryProvider.overrideWithValue(_Lcd()),
-          currentSetProvider.overrideWith((ref) async => EnclosureSet(
-              enclosure: Enclosure(
-                  id: 'e1', name: '1번', createdAt: DateTime(2026, 8, 1)),
-              device: Device(
-                  id: 'd1',
-                  ownerId: null,
-                  enclosureId: null,
-                  name: null,
-                  isOnline: true,
-                  lastSeenAt: null),
-              camera: null,
-              pet: null)),
-        ]));
+    await tester.pumpWidget(
+        shell(boundary, const Scaffold(body: HomeLcdRow()), overrides: [
+      lcdRepositoryProvider.overrideWithValue(_Lcd()),
+      currentSetProvider.overrideWith((ref) async => EnclosureSet(
+          enclosure:
+              Enclosure(id: 'e1', name: '1번', createdAt: DateTime(2026, 8, 1)),
+          device: Device(
+              id: 'd1',
+              ownerId: null,
+              enclosureId: null,
+              name: null,
+              isOnline: true,
+              lastSeenAt: null),
+          camera: null,
+          pet: null)),
+    ]));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(HomeLcdRow.rowKey));
     await capture(tester, boundary, 'p08-lcd-empty');
@@ -796,8 +799,61 @@ void main() {
     ]) {
       await tester.pumpWidget(shell(
           boundary,
-          Scaffold(body: Align(alignment: Alignment.bottomCenter, child: sheet))));
+          Scaffold(
+              body: Align(alignment: Alignment.bottomCenter, child: sheet))));
       await capture(tester, boundary, name);
+    }
+    debugDisableShadows = true;
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('P10 schedule captures', (tester) async {
+    debugDisableShadows = false;
+    final boundary = GlobalKey();
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    Future<void> open(List<dynamic> items) async {
+      await tester.pumpWidget(
+          shell(boundary, const RoutineSettingsScreen(), overrides: [
+        scheduleRepositoryProvider
+            .overrideWithValue(FakeScheduleRepo(items.cast())),
+        currentDeviceIdProvider.overrideWith((ref) async => 'd1'),
+      ]));
+      await tester.pumpAndSettle();
+    }
+
+    await open(const []);
+    await capture(tester, boundary, 'p10-empty');
+    await open(figmaScheduleRows());
+    await capture(tester, boundary, 'p10-list');
+    await tester.tap(find.byKey(RoutineSettingsScreen.deleteModeKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('schedule_pair_check_f')));
+    await tester.tap(find.byKey(const Key('schedule_pair_check_l')));
+    await capture(tester, boundary, 'p10-delete-mode');
+    await tester.tap(find.byKey(RoutineSettingsScreen.deleteSelectedKey));
+    await capture(tester, boundary, 'p10-delete-modal');
+    await tester.tap(find.byKey(const Key('routine_delete_cancel')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('뒤로'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('schedule_pair_f')));
+    await capture(tester, boundary, 'p10-editor-edit-fan');
+    await tester.tap(find.byTooltip('뒤로'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(RoutineSettingsScreen.addKey));
+    await capture(tester, boundary, 'p10-picker');
+    for (final d in ['fan', 'led', 'cool', 'mist']) {
+      await tester.tap(find.byKey(Key('routine_device_$d')));
+      await tester.pumpAndSettle();
+      if (d == 'cool') {
+        await tester.tap(find.byKey(const Key('routine_after_120')));
+      }
+      await capture(tester, boundary, 'p10-editor-$d');
+      await tester.tap(find.byTooltip('뒤로'));
+      await tester.pumpAndSettle();
     }
     debugDisableShadows = true;
     await tester.binding.setSurfaceSize(null);

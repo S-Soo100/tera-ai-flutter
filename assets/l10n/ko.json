@@ -834,7 +834,7 @@
   "home_routine_empty": "루틴 설정은 준비 중이에요",
   "routine_pending_footnote": "가동 중 자동 정지(예: 목표 온도 도달 시 히터 OFF)와 히터 타이머는 기기 펌웨어 지원을 기다리고 있어요.",
   "routine_schedule_section": "일정 (반복 예약)",
-  "routine_schedule_empty": "아직 예약이 없어요. 아래 + 버튼으로 추가해보세요.",
+  "routine_schedule_empty": "예약이 없습니다. 예약을 추가해 주세요.",
   "routine_load_failed": "예약을 불러오지 못했어요 — {}",
   "routine_action_failed": "처리하지 못했어요 — {}",
   "routine_add": "예약 추가",
@@ -985,5 +985,15 @@
   "device_add_link_existing": "기존 기기와 연결",
   "env_log_load_failed": "제어 기록을 불러오지 못했어요.",
   "device_module_label": "사육장",
-  "device_camera_label": "카메라"
+  "device_camera_label": "카메라",
+  "routine_screen_title": "기기 예약 설정",
+  "routine_delete_count": "{}개 항목 삭제",
+  "routine_delete_question": "예약을 삭제하시겠습니까?",
+  "routine_pick_device_title": "어떤 기기의 예약을 추가할까요?",
+  "routine_device_title_fmt": "{} 예약",
+  "routine_start": "시작",
+  "routine_end": "종료",
+  "routine_am": "오전",
+  "routine_pm": "오후",
+  "routine_editor_save": "저장"
 }

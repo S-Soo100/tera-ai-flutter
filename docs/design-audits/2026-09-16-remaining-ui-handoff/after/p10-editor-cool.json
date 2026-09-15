@@ -1,0 +1,809 @@
+[
+  {
+    "type": "Text",
+    "text": "기기 예약 설정",
+    "rect": [
+      54.358123779296875,
+      74.5,
+      87.78375244140625,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      -86.25,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_previous",
+    "rect": [
+      -76.25,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      238.75,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      238.75,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/delete",
+    "rect": [
+      238.75,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      122.0,
+      369.0,
+      72.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "fan_on",
+    "rect": [
+      -70.25,
+      138.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "12:00~15:30",
+    "rect": [
+      -22.25,
+      138.0,
+      90.4800033569336,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "토 일 · 켜짐",
+    "rect": [
+      -22.25,
+      161.0,
+      60.1037483215332,
+      17.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      202.0,
+      369.0,
+      72.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "led_on",
+    "rect": [
+      -70.25,
+      218.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "12:00~15:30",
+    "rect": [
+      -22.25,
+      218.0,
+      90.4800033569336,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "토 일 · 꺼짐",
+    "rect": [
+      -22.25,
+      241.0,
+      60.1037483215332,
+      17.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      282.0,
+      369.0,
+      72.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "cool_on",
+    "rect": [
+      -70.25,
+      298.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "12:00~15:30",
+    "rect": [
+      -22.25,
+      298.0,
+      90.4800033569336,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "토 일 · 켜짐",
+    "rect": [
+      -22.25,
+      321.0,
+      60.1037483215332,
+      17.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      -86.25,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": true
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "예약 추가",
+    "rect": [
+      65.9009780883789,
+      710.0,
+      64.69804382324219,
+      28.0
+    ],
+    "style": "TextStyle(debugLabel: (((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, baseline: ideographic, height: 1.6x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "",
+    "rect": [
+      98.25,
+      74.5,
+      0.0,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      -86.25,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_previous",
+    "rect": [
+      -76.25,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "어떤 기기의 예약을 추가할까요?",
+    "rect": [
+      -86.25,
+      120.0,
+      369.0,
+      21.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      161.0,
+      180.5,
+      72.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "fan_on",
+    "rect": [
+      -70.25,
+      177.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "환기팬",
+    "rect": [
+      -22.25,
+      187.5,
+      100.5,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      102.25,
+      161.0,
+      180.5,
+      72.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "mist_on",
+    "rect": [
+      118.25,
+      177.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "분무",
+    "rect": [
+      166.25,
+      187.5,
+      100.5,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      -86.25,
+      241.0,
+      180.5,
+      72.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "cool_on",
+    "rect": [
+      -70.25,
+      257.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "냉각팬",
+    "rect": [
+      -22.25,
+      267.5,
+      100.5,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      102.25,
+      241.0,
+      180.5,
+      72.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "led_on",
+    "rect": [
+      118.25,
+      257.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "LED",
+    "rect": [
+      166.25,
+      267.5,
+      100.5,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "냉각팬 예약",
+    "rect": [
+      161.04593658447266,
+      74.5,
+      70.90812683105469,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_previous",
+    "rect": [
+      22.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "시작",
+    "rect": [
+      36.0,
+      118.0,
+      333.0,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'routine_start_am'>]",
+    "rect": [
+      24.0,
+      165.0,
+      86.0,
+      35.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "오전",
+    "rect": [
+      53.49187469482422,
+      173.0,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'routine_start_pm'>]",
+    "rect": [
+      24.0,
+      200.0,
+      86.0,
+      35.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "오후",
+    "rect": [
+      53.49187469482422,
+      208.0,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'routine_start_hour_up'>]",
+    "rect": [
+      130.0,
+      141.0,
+      108.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "12",
+    "rect": [
+      171.74171829223633,
+      185.5,
+      24.516563415527344,
+      29.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 24.0, weight: 600, letterSpacing: -0.5, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'routine_start_hour_down'>]",
+    "rect": [
+      130.0,
+      235.0,
+      108.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": ":",
+    "rect": [
+      246.47046875953674,
+      185.5,
+      6.059062480926514,
+      29.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 24.0, weight: 600, letterSpacing: -0.5, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'routine_start_minute_up'>]",
+    "rect": [
+      261.0,
+      141.0,
+      108.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "00",
+    "rect": [
+      300.1518745422363,
+      185.5,
+      29.696250915527344,
+      29.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 24.0, weight: 600, letterSpacing: -0.5, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'routine_start_minute_down'>]",
+    "rect": [
+      261.0,
+      235.0,
+      108.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "종료",
+    "rect": [
+      36.0,
+      283.0,
+      333.0,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      24.0,
+      310.0,
+      111.0,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "30분 뒤",
+    "rect": [
+      54.40937423706055,
+      322.5,
+      50.181251525878906,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      141.0,
+      310.0,
+      111.0,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "1시간 뒤",
+    "rect": [
+      170.98749923706055,
+      322.5,
+      51.025001525878906,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      258.0,
+      310.0,
+      111.0,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "2시간 뒤",
+    "rect": [
+      286.83124923706055,
+      322.5,
+      53.337501525878906,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "반복",
+    "rect": [
+      36.0,
+      378.0,
+      333.0,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      24.0,
+      405.0,
+      45.857142857142854,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "월",
+    "rect": [
+      40.17450877598354,
+      417.5,
+      13.508125305175781,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      73.85714285714286,
+      405.0,
+      45.857142857142854,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "화",
+    "rect": [
+      90.0316516331264,
+      417.5,
+      13.508125305175781,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      123.71428571428571,
+      405.0,
+      45.857142857142854,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "수",
+    "rect": [
+      139.88879449026925,
+      417.5,
+      13.508125305175781,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      173.57142857142856,
+      405.0,
+      45.857142857142854,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "목",
+    "rect": [
+      189.74593734741208,
+      417.5,
+      13.508125305175781,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      223.42857142857142,
+      405.0,
+      45.857142857142854,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "금",
+    "rect": [
+      239.60308020455494,
+      417.5,
+      13.508125305175781,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      273.2857142857143,
+      405.0,
+      45.857142857142854,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "토",
+    "rect": [
+      289.46022306169783,
+      417.5,
+      13.508125305175781,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      323.1428571428571,
+      405.0,
+      45.857142857142854,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "일",
+    "rect": [
+      339.31736591884066,
+      417.5,
+      13.508125305175781,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": true
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "저장",
+    "rect": [
+      181.30335903167725,
+      710.0,
+      30.393281936645508,
+      28.0
+    ],
+    "style": "TextStyle(debugLabel: (((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, baseline: ideographic, height: 1.6x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  }
+]
