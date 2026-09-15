@@ -1,0 +1,368 @@
+[
+  {
+    "type": "Text",
+    "text": "그룹 설정",
+    "icon": null,
+    "rect": [
+      167.79999923706055,
+      74.5,
+      57.400001525878906,
+      19.0
+    ],
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "크랑이 캠",
+    "icon": null,
+    "rect": [
+      72.0,
+      130.5,
+      142.5,
+      19.0
+    ],
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "p4cam-real",
+    "icon": null,
+    "rect": [
+      226.5,
+      130.5,
+      142.5,
+      19.0
+    ],
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "그룹 1",
+    "icon": null,
+    "rect": [
+      28.0,
+      198.0,
+      37.454376220703125,
+      19.0
+    ],
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "마뱀이네 집",
+    "icon": null,
+    "rect": [
+      28.0,
+      233.0,
+      71.01750183105469,
+      19.0
+    ],
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "그룹 추가",
+    "icon": null,
+    "rect": [
+      56.0,
+      288.5,
+      57.618751525878906,
+      19.0
+    ],
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ffc00306"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "완료",
+    "icon": null,
+    "rect": [
+      181.30335903167725,
+      710.0,
+      30.393281936645508,
+      28.0
+    ],
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "ffffffff"
+    }
+  },
+  {
+    "type": "Text",
+    "text": "그룹에서 제외",
+    "icon": null,
+    "rect": [
+      148.9543342590332,
+      766.0,
+      95.0913314819336,
+      28.0
+    ],
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "ffc00306"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "arrow_previous",
+    "rect": [
+      22.0,
+      72.0,
+      24.0,
+      24.0
+    ],
+    "color": "ff1e1e1e"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "nav_camera",
+    "rect": [
+      32.0,
+      130.0,
+      20.0,
+      20.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "nav_home",
+    "rect": [
+      217.0,
+      215.0,
+      20.0,
+      20.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "nav_camera",
+    "rect": [
+      261.0,
+      215.0,
+      20.0,
+      20.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "nav_mycre",
+    "rect": [
+      305.0,
+      215.0,
+      20.0,
+      20.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "redesign_v2/check_box_300",
+    "rect": [
+      341.0,
+      213.0,
+      24.0,
+      24.0
+    ],
+    "color": "ffc00306"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "add",
+    "rect": [
+      28.0,
+      286.0,
+      24.0,
+      24.0
+    ],
+    "color": "ffc00306"
+  },
+  {
+    "type": "ManagementButton",
+    "text": null,
+    "icon": null,
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "text": null,
+    "icon": null,
+    "rect": [
+      24.0,
+      122.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "text": null,
+    "icon": null,
+    "rect": [
+      209.0,
+      207.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "text": null,
+    "icon": null,
+    "rect": [
+      253.0,
+      207.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "text": null,
+    "icon": null,
+    "rect": [
+      297.0,
+      207.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "TextButton",
+    "text": null,
+    "icon": null,
+    "rect": [
+      136.9543342590332,
+      752.0,
+      119.0913314819336,
+      56.0
+    ]
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "icon": null,
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      852.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "icon": null,
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ],
+    "color": "0"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "icon": null,
+    "rect": [
+      12.0,
+      186.0,
+      369.0,
+      78.0
+    ],
+    "color": "fff4f4f4"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "icon": null,
+    "rect": [
+      12.0,
+      272.0,
+      369.0,
+      52.0
+    ],
+    "color": "fff4f4f4"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "icon": null,
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "color": "ff1e1e1e"
+  },
+  {
+    "type": "Material",
+    "text": null,
+    "icon": null,
+    "rect": [
+      136.9543342590332,
+      752.0,
+      119.0913314819336,
+      56.0
+    ],
+    "color": "0"
+  }
+]
