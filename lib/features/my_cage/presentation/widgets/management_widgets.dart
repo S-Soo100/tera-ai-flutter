@@ -19,7 +19,9 @@ class ManagementTopBar extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(
       height: 44,
       child: Stack(alignment: Alignment.center, children: [
-        Text(title, style: managementStyle(context, weight: FontWeight.w700)),
+        Text(title,
+            style: managementStyle(context,
+                weight: FontWeight.w700, color: context.glass.textPrimary)),
         Align(
             alignment: close ? Alignment.centerRight : Alignment.centerLeft,
             child: SizedBox(
@@ -79,7 +81,7 @@ class ManagementButton extends StatelessWidget {
               backgroundColor:
                   red ? context.glass.navSelected : context.glass.textPrimary,
               disabledBackgroundColor: context.glass.border,
-              foregroundColor: context.glass.surfaceHeader,
+              foregroundColor: ManagementColors.buttonForeground(context),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12))),
           child: Text(label,
@@ -87,7 +89,7 @@ class ManagementButton extends StatelessWidget {
               style: managementStyle(context,
                       size: 18,
                       weight: FontWeight.w600,
-                      color: context.glass.surfaceHeader)
+                      color: ManagementColors.buttonForeground(context))
                   .copyWith(height: 28 / 18))));
 }
 

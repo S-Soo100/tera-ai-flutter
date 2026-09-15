@@ -404,7 +404,9 @@ class _DeviceGroupSettings extends ConsumerWidget {
                             const SizedBox(width: 4),
                             Text('management_add_group'.tr(),
                                 style: managementStyle(context,
-                                    color: glass.navSelected)),
+                                        weight: FontWeight.w600,
+                                        color: glass.navSelected)
+                                    .copyWith(height: 28 / 16)),
                           ]))))),
         ])),
         ManagementButton(
@@ -414,6 +416,7 @@ class _DeviceGroupSettings extends ConsumerWidget {
                 : () => Navigator.pop(context, selected)),
         if (item.groupId != null)
           SizedBox(
+              width: double.infinity,
               height: 56,
               child: TextButton(
                 onPressed: () => Navigator.pop(context, _removeGroupAction),
