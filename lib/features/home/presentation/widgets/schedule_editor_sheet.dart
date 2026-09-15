@@ -51,6 +51,7 @@ class ScheduleDraft {
 /// 구간 예약에서 고르는 기기. 분무는 정량([ScheduleAction.mist])이라 구간이 없다.
 enum _SpanActuator {
   fan(ScheduleAction.fanOn, ScheduleAction.fanOff),
+  fan2(ScheduleAction.fan2On, ScheduleAction.fan2Off),
   heater(ScheduleAction.heaterOn, ScheduleAction.heaterOff),
   led(ScheduleAction.ledOn, ScheduleAction.ledOff);
 

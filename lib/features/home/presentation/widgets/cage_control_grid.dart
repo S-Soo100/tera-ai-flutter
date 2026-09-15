@@ -7,6 +7,7 @@ import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/domain/telemetry_reading.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../../../../shared/widgets/figma_icon.dart';
+import '../../../../shared/domain/fan_actuator.dart';
 import '../cage_control_actions.dart';
 import '../../domain/mist_duration.dart' show MistDuration;
 import '../home_control_providers.dart';
@@ -25,8 +26,7 @@ import '../home_control_providers.dart';
 ///
 /// **사육장 제어의 유일한 진입점**이며, 탭 동작은 전부 기존
 /// [cage_control_actions] 경유(히터 2단 안전확인·분무 5초 잠금이 거기 있다).
-/// 냉각팬·히터팬은 **미배선**(terra-server 계약 없음, 2026-09-02 기획 B.3) —
-/// 탭하면 "준비 중" 안내만 낸다. **절대 toggle 명령을 만들지 말 것.**
+/// 냉각팬은 fan2 계약을 사용하며 미보고이면 비활성화한다.
 class CageControlGrid extends ConsumerWidget {
   const CageControlGrid({super.key});
 
@@ -54,6 +54,8 @@ class CageControlGrid extends ConsumerWidget {
     final mistOn = t?.relay == ActuatorState.on || mistLocked;
 
     final fanOn = t?.fan == ActuatorState.on;
+    final coolOn = t?.fan2 == ActuatorState.on;
+    final coolAvailable = t != null && t.fan2 != ActuatorState.unavailable;
     final ledOn = t?.led == ActuatorState.on;
     // 히터 타일 노출 조건 — 켜짐 또는 안전잠금(둘 다 "꺼야/풀어야 할 상태").
     final heaterVisible =
@@ -94,17 +96,24 @@ class CageControlGrid extends ConsumerWidget {
             ? () => mistOnce(context, ref, deviceId, MistDuration.threeSeconds)
             : null,
       ),
-      // ③ 냉각팬 — API 없음, 미배선(UI만). 글리프는 Figma 원본 mode_cool —
-      // export가 28 마커 기준(패딩 포함)이라 40으로 키우면 실측 비율이 된다.
+      // ③ 냉각팬 — 실제 fan2 상태, 선택/타이머는 환기팬과 분리.
       _DeviceTile(
         key: coolFanKey,
         name: 'device_cool_fan'.tr(),
-        status: 'device_status_pending'.tr(),
-        glyph: const FigmaIcon.metric(FigmaIcons.coolOff, size: 40),
-        active: false,
-        tileColor: glass.surfaceTint,
-        iconCircleColor: glass.deviceOff,
-        onTap: () => _notReady(context),
+        status: coolAvailable ? _stateLabel(t.fan2) : 'home_value_none'.tr(),
+        glyph: FigmaIcon.metric(coolOn ? FigmaIcons.coolOn : FigmaIcons.coolOff,
+            size: 40),
+        active: coolOn,
+        tileColor: coolOn ? glass.deviceCoolBg : glass.surfaceTint,
+        iconCircleColor: coolOn ? glass.deviceCool : glass.deviceOff,
+        onTap: online && coolAvailable
+            ? () => handleFanTap(context, ref, deviceId, t,
+                actuator: FanActuator.cooling)
+            : null,
+        onLongPress: online && coolAvailable
+            ? () => openFanSheet(context, ref, deviceId,
+                actuator: FanActuator.cooling)
+            : null,
       ),
       // ④ LED — `telemetry.led`/`led_brightness`만 믿는다(2026-08-18 회신 §4).
       // 구 펌웨어(unavailable)는 "상태 모름"으로 말하고 켜기/끄기 시트를 연다.
@@ -112,7 +121,6 @@ class CageControlGrid extends ConsumerWidget {
         key: ledKey,
         name: 'device_led'.tr(),
         status: _ledLabel(t),
-        // Figma도 lightbulb — Material 동형이라 SVG 교체 불필요.
         glyph: FigmaIcon.metric(ledOn ? FigmaIcons.ledOn : FigmaIcons.ledOff,
             size: 40),
         active: ledOn,
@@ -180,14 +188,6 @@ class CageControlGrid extends ConsumerWidget {
       iconCircleColor: heaterOn ? glass.deviceHeat : glass.deviceOff,
       onTap: online ? () => handleHeaterTap(context, ref, deviceId, t) : null,
     );
-  }
-
-  static void _notReady(BuildContext context) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('home_device_not_ready'.tr())),
-      );
   }
 
   /// 켜짐 + 밝기 보고(MOSFET)면 `60%`, on/off면 켜짐/꺼짐, 모르면 "상태 모름".

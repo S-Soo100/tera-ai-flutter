@@ -16,6 +16,9 @@ enum CommandAction {
   // 히터에서는 과열로 이어진다. 절대 명령은 멱등이라 그 위험이 없다.
   fanOn,
   fanOff,
+  fan2On,
+  fan2Off,
+  fan2Toggle,
   heaterOn,
   heaterOff,
   relayOn,
@@ -47,6 +50,12 @@ extension CommandActionWire on CommandAction {
         return 'fan_on';
       case CommandAction.fanOff:
         return 'fan_off';
+      case CommandAction.fan2On:
+        return 'fan2_on';
+      case CommandAction.fan2Off:
+        return 'fan2_off';
+      case CommandAction.fan2Toggle:
+        return 'fan2_toggle';
       case CommandAction.heaterOn:
         return 'heater_on';
       case CommandAction.heaterOff:
@@ -86,6 +95,12 @@ extension CommandActionWire on CommandAction {
         return CommandAction.fanOn;
       case 'fan_off':
         return CommandAction.fanOff;
+      case 'fan2_on':
+        return CommandAction.fan2On;
+      case 'fan2_off':
+        return CommandAction.fan2Off;
+      case 'fan2_toggle':
+        return CommandAction.fan2Toggle;
       case 'heater_on':
         return CommandAction.heaterOn;
       case 'heater_off':

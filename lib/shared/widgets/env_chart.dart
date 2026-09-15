@@ -572,6 +572,7 @@ class _MarkerRow extends StatelessWidget {
   static const _svg = {
     MarkerKind.mist: FigmaIcons.shower,
     MarkerKind.fan: FigmaIcons.modeFan,
+    MarkerKind.cooling: FigmaIcons.modeCool,
   };
 
   static const _fallbackIcon = {
@@ -582,6 +583,7 @@ class _MarkerRow extends StatelessWidget {
   static const _labelKey = {
     MarkerKind.mist: 'stats_marker_mist',
     MarkerKind.fan: 'stats_marker_fan',
+    MarkerKind.cooling: 'device_cool_fan',
     MarkerKind.heater: 'stats_marker_heater',
     MarkerKind.led: 'stats_marker_led',
   };

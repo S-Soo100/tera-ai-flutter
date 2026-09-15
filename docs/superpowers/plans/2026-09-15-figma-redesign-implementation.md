@@ -40,7 +40,7 @@
 | 6 | MyCre·연결 이력·legacy 승계 | 1/2, P1 활동 구간·coverage |
 | 7 | 화면 대조·실기기·회귀·출시 기록 | 각 기능 통합 완료 |
 
-3/5의 독립 앱 작업은 외부 회신 전에 진행할 수 있다. 미지원 API를 가짜 성공으로 연결하지 않는다. 2026-09-15 사용자가 이관훈님과 petcam-lab에 요청서를 직접 전달했다고 확인했다. 회신 대기이며 중복 발송하지 않는다. 현재 1A/1B의 에셋·흰 배경 기반 작업에 착수했으며 전체 레이아웃 검수는 남아 있다.
+3/5의 독립 앱 작업은 외부 회신 전에 진행할 수 있다. 미지원 API를 가짜 성공으로 연결하지 않는다. 2026-09-15 이관훈님 회신 2건 수신, petcam-lab 작업 진행 중(사용자 확인). 중복 발송하지 않는다. 1A/1B 에셋·흰 배경 기반에 이어 3의 fan2/LED/LCD와 2B의 메모 저장소 기반을 구현했다. [회신 반영·검증 기록](../../design-audits/2026-09-15-redesign-controls-and-replies.md). 메모 provider/UI, 전체 레이아웃 검수와 서버 계약 통합은 남아 있다.
 
 ## 1. 디자인 기준·에셋 연결
 
@@ -164,10 +164,10 @@ void verifyMemoContract(ClipMemoRepository Function() buildRepository) {
 **Modify:** `lib/features/home/presentation/home_screen.dart`, `widgets/cage_control_grid.dart`, `cage_control_actions.dart`, `widgets/fan_duration_sheet.dart`, `env_detail_screen.dart`, `env_detail_providers.dart`, `routine_settings_screen.dart`, `widgets/schedule_editor_sheet.dart`, `lib/features/my_cage/domain/telemetry_reading.dart`, `device_command.dart`, `lib/shared/domain/actuator_marker.dart`, `control_log.dart`, `lib/features/home/domain/schedule.dart`, timer/notification의 해당 fan 소비처, `lib/features/my_cage/presentation/widgets/lcd_setting_tile.dart`.
 
 - [ ] Home 사육장 없음/사육장만/통합/기기별 오프라인 상태를 fixture로 검증하고 단일 스크롤 배치를 적용한다.
-- [ ] telemetry 모델에 fan2를 추가하고 null→unavailable을 보존한다. command·schedule enum과 wire 역변환·off counterpart·구간 UI·marker/log 종류에 fan2를 함께 등록한다.
-- [ ] fan 실행 로직을 대상 actuator로 분리한다. 환기팬과 냉각팬의 선택 저장·진행 중 타이머·알림 취소가 섞이지 않게 식별자를 확장한다. 명시 시작 전에는 명령 0회.
-- [ ] LED 선택창 20~100/10% 단위, 실제 tile은 보고값을 표시한다. 보고값이 선택 단계 사이면 UI 선택값만 가장 가까운 단계로 초기화하며 명시 적용 전에는 장치 상태를 바꾸지 않는다.
-- [ ] LCD maxLength와 카운터를 20으로 바꾸고 이름 중복 검증을 적용하지 않는다. 저장 대상을 이름 수정과 분리한다.
+- [x] telemetry 모델에 fan2를 추가하고 null→unavailable을 보존한다. command·schedule enum과 wire 역변환·off counterpart·구간 UI·marker/log 종류에 fan2를 함께 등록한다.
+- [x] fan 실행 로직을 대상 actuator로 분리한다. 환기팬과 냉각팬의 선택 저장·진행 중 타이머·알림 취소가 섞이지 않게 식별자를 확장한다. 명시 시작 전에는 명령 0회.
+- [x] LED 선택창 20~100/10% 단위, 실제 tile은 보고값을 표시한다. 보고값이 선택 단계 사이면 UI 선택값만 가장 가까운 단계로 초기화하며 명시 적용 전에는 장치 상태를 바꾸지 않는다.
+- [x] LCD maxLength와 카운터를 20으로 바꾸고 이름 중복 검증을 적용하지 않는다. 저장 대상을 이름 수정과 분리한다.
 - [ ] 온습도 결측 선 끊김·과거 가중 평균·요일 min/max·사용자 scroll 보존을 적용한다. 제어 로그는 승인된 근사치 계산, missing 값의 우측 칸을 `--`로 유지하고 원본 실행 결과를 확인한다.
 - [ ] 제어 log 계산은 시작/종료 짝을 시간순으로 처리하고 표시는 최신순. 자정을 넘는 종료도 필요한 직전 시작을 조회해 매칭하며 없으면 변화량 `--`.
 - [ ] 일정 기존 자료를 유지하고 fan2 on/off·구간·guard 구분을 확장한다. 수정에서 서버가 허용하지 않는 action 변경을 보내지 않는다. 시간/요일 변경과 구간 양쪽 활성화/삭제 실패를 함께 검증한다.

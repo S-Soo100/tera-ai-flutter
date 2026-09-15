@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../domain/fan_timer_notification_plan.dart';
+import '../domain/fan_actuator.dart';
 import 'local_notifications.dart';
 
 final fanTimerNotificationServiceProvider =
@@ -43,8 +44,9 @@ class FanTimerNotificationService {
       switch (plan) {
         case ScheduleFanDone p:
           await _schedule(deviceId, p);
-        case CancelFanDone():
-          await _core.plugin.cancel(id: notificationIdFor(deviceId));
+        case CancelFanDone p:
+          await _core.plugin
+              .cancel(id: notificationIdFor(deviceId, actuator: p.actuator));
       }
     } catch (e, st) {
       debugPrint('[fan-timer-notif] $action failed: $e\n$st');
@@ -61,18 +63,19 @@ class FanTimerNotificationService {
     String deviceId, {
     DateTime? endsAt,
     int? minutes,
+    FanActuator actuator = FanActuator.ventilation,
   }) async {
     try {
       await _core.ensureInitialized();
-      final id = notificationIdFor(deviceId);
+      final id = notificationIdFor(deviceId, actuator: actuator);
       if (endsAt == null || !endsAt.isAfter(DateTime.now())) {
         await _core.plugin.cancel(id: id);
         return;
       }
       await _core.plugin.zonedSchedule(
         id: id,
-        title: 'notif_fan_timer_done_title'.tr(),
-        body: 'notif_fan_timer_done_body'.tr(args: ['${minutes ?? 0}']),
+        title: _titleKey(actuator).tr(),
+        body: _bodyKey(actuator).tr(args: ['${minutes ?? 0}']),
         // 여기는 상대가 아니라 **절대 시각**이다 — 타이머를 시작한 폰과 같은
         // 종료 시각(issued_at + duration_ms)에 울려야 한다.
         scheduledDate: tz.TZDateTime.from(endsAt, tz.local),
@@ -87,9 +90,9 @@ class FanTimerNotificationService {
   Future<void> _schedule(String deviceId, ScheduleFanDone plan) async {
     await _core.requestPermission();
     await _core.plugin.zonedSchedule(
-      id: notificationIdFor(deviceId),
-      title: 'notif_fan_timer_done_title'.tr(),
-      body: 'notif_fan_timer_done_body'.tr(args: ['${plan.minutes}']),
+      id: notificationIdFor(deviceId, actuator: plan.actuator),
+      title: _titleKey(plan.actuator).tr(),
+      body: _bodyKey(plan.actuator).tr(args: ['${plan.minutes}']),
       // 이름 있는 시간대가 필요 없다 — 상대 시간 예약이라 tz.local이 무엇으로
       // 잡혀 있든 "지금 + duration"의 절대 시각은 같다.
       scheduledDate: tz.TZDateTime.now(tz.local).add(plan.duration),
@@ -97,6 +100,13 @@ class FanTimerNotificationService {
       androidScheduleMode: await _core.scheduleMode(),
     );
   }
+
+  String _titleKey(FanActuator actuator) => actuator == FanActuator.cooling
+      ? 'notif_cooling_timer_done_title'
+      : 'notif_fan_timer_done_title';
+  String _bodyKey(FanActuator actuator) => actuator == FanActuator.cooling
+      ? 'notif_cooling_timer_done_body'
+      : 'notif_fan_timer_done_body';
 
   NotificationDetails _details() => NotificationDetails(
         android: AndroidNotificationDetails(

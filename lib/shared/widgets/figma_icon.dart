@@ -68,6 +68,16 @@ abstract final class FigmaIcons {
   static const ledOn = 'led_on';
   static const ledOff = 'led_off';
 
+  // 기록 36px / 차트 28px 전용 export. 40px 홈 아이콘을 축소하지 않는다.
+  static String fanBadge({required bool on, required bool compact}) =>
+      'redesign_v2/${compact ? '2828' : '3636'}/${on ? 'mode_fan_2' : 'mode_fan_off'}';
+  static String coolingBadge({required bool on, required bool compact}) =>
+      'redesign_v2/${compact ? '2828' : '3636'}/${on ? 'mode_cool' : 'mode_cool_off'}';
+  static String ledBadge({required bool on, required bool compact}) =>
+      'redesign_v2/${compact ? '2828' : '3636'}/${on ? 'lightbulb' : 'light_off'}';
+  static String mistBadge({required bool compact}) =>
+      'redesign_v2/${compact ? '2828' : '3636'}/humidity_high';
+
   static const thermometer = 'thermometer';
   static const waterDrop = 'water_drop';
   static const shower = 'shower';

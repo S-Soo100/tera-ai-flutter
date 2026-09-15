@@ -139,6 +139,8 @@ void main() {
           'mist',
           'fan_on',
           'fan_off',
+          'fan2_on',
+          'fan2_off',
           'heater_on',
           'heater_off',
           'led_on',

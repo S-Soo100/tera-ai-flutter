@@ -9,8 +9,14 @@ Talk to Figma `wvkqunn6` 재접속 및 7개 섹션 조회 성공. 기존 FCM 작
 `main`의 `1389e8e`에서 `.worktrees/redesign-20260915` / `codex/figma-redesign-20260915`를 생성했다.
 현재 공통 흰 배경·SVG runtime 70개·PNG 배율·Camera 진입 아이콘 2개 기반 구현을 저장했다.
 세부 완료 범위와 후속 작업은 [실측·구현 기록](../design-audits/2026-09-15-redesign-frame-matrix.md)을 따른다.
-전체 화면 재설계는 진행 중이다. 외부 회신·운영 DB·실기기 검증 상태는 여전히 대기다.
-아래 1~6절은 직전 기획 저장 시점의 이력이며, 구현 미착수라는 과거 문구는 이 최신 상태로 대체한다.
+이어 fan2 실제 상태/제어/일정/타이머, LED 20~100/10% 단위, LCD 20자,
+ACK 결과 검증, 제어 기록 36px/차트 28px SVG와 로컬 메모 저장소 기반을 구현했다.
+[세부 구현·회신 계약](../design-audits/2026-09-15-redesign-controls-and-replies.md)을 읽는다.
+관련 테스트 194개 통과. `flutter analyze --no-pub --no-fatal-infos` 오류 0·경고 0,
+기존 info 10. 버전 `0.105.0+209`. 전체 화면 재설계와 실기기 검증은 진행 중이다.
+이관훈님 회신 2건 수신, petcam-lab은 사용자 확인상 작업 진행 중이다.
+회신의 soft unlink/원자 그룹/온습도 count/푸시 보완은 배포 완료가 아니다. 운영 DB는 변경하지 않았다.
+아래 1~6절의 기획 저장 시점 이력 중 구현 미착수·양측 회신 대기 문구는 이 최신 상태로 대체한다.
 
 ## 1. 현재 목표·단계·권한
 

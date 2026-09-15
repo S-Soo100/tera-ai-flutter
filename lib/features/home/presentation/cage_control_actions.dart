@@ -26,7 +26,9 @@ import '../../my_cage/domain/telemetry_reading.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../../my_cage/presentation/widgets/heater_lock_dialog.dart';
 import '../../../shared/services/fan_timer_notification_service.dart';
+import '../../../shared/domain/fan_actuator.dart';
 import '../data/fan_choice_store.dart';
+import '../data/fan_timer_notification_resync.dart';
 import '../domain/fan_timer_duration.dart';
 import '../domain/mist_duration.dart';
 import '../domain/mist_lock.dart';
@@ -62,29 +64,37 @@ void _watchCommandAck(
   DeviceCommand command,
 ) {
   final client = ref.read(supabaseClientProvider);
+  final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
   Timer(kCommandAckGrace + const Duration(seconds: 1), () async {
     Map<String, dynamic>? row;
     try {
       row = await client
           .from('commands')
-          .select('status')
+          .select('status, result')
           .eq('id', command.id)
           .maybeSingle();
     } catch (_) {
       return; // 조회 실패는 유실 확정이 아니다 — 겁주지 않는다.
     }
     final status = row?['status'] as String?;
-    // 전달 실패 = 기기에 닿지 못한 상태 전부. pending/sent(미ACK 잔류)에 더해
-    // 서버가 만료 마킹을 먼저 붙인 경우(expired, 예정된 lost — 펌웨어 회신
-    // 2026-09-07 §6.3)도 같은 뜻이다. acked/rejected는 기기가 받았다는
-    // 뜻이라 제외.
     const undelivered = {'pending', 'sent', 'expired', 'lost'};
-    if (!undelivered.contains(status)) return;
-    messenger.showSnackBar(
-      SnackBar(content: Text('module_command_no_ack'.tr())),
-    );
+    final failed =
+        status == 'rejected' || (status == 'acked' && row?['result'] != 'ok');
+    if (messenger.mounted && (failed || undelivered.contains(status))) {
+      messenger.showSnackBar(SnackBar(
+          content: Text(
+        (failed ? 'module_command_failed' : 'module_command_no_ack').tr(),
+      )));
+    }
     // 화면을 떠났으면 ref가 죽어 있다 — 칩은 어차피 다음 진입 때 새로 계산된다.
     if (context.mounted) ref.invalidate(runningTimersProvider);
+    if (FanActuator.values
+        .any((a) => a.actions.contains(command.action.toWire()))) {
+      // 실패한 시작은 예약을 내리고, 실패한 종료는 이전 유효 타이머를 복구한다.
+      // 최신 이력으로 계산하므로 더 나중에 보낸 명령의 알림을 지우지 않는다.
+      await FanTimerNotificationResync(client, timerNotifs)
+          .run([command.deviceId]);
+    }
   });
 }
 
@@ -186,20 +196,26 @@ Future<void> handleFanTap(
   BuildContext context,
   WidgetRef ref,
   String deviceId,
-  TelemetryReading? telemetry,
-) async {
+  TelemetryReading? telemetry, {
+  FanActuator actuator = FanActuator.ventilation,
+}) async {
   // 서비스를 await 전에 잡아 둔다 — 전송 중 화면을 떠나도 예약된 로컬 알림은
   // 취소/등록돼야 한다(ref는 unmount 후 못 쓴다).
   final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
 
-  final isOn = telemetry?.fan == ActuatorState.on;
+  final state =
+      actuator == FanActuator.cooling ? telemetry?.fan2 : telemetry?.fan;
+  if (actuator == FanActuator.cooling &&
+      (state == null || state == ActuatorState.unavailable)) {
+    return;
+  }
+  final isOn = state == ActuatorState.on;
   if (isOn) {
-    final sent =
-        await sendCageCommand(context, ref, deviceId, CommandAction.fanOff);
+    final sent = await sendCageCommand(
+        context, ref, deviceId, CommandActionWire.fromWire(actuator.offAction));
     // 타이머 가동 중이었다면 취소된 것 — 예약된 완료 알림도 함께 내린다.
     if (sent) {
-      await timerNotifs.onFanCommandSent(
-          deviceId, CommandAction.fanOff.toWire(), null);
+      await timerNotifs.onFanCommandSent(deviceId, actuator.offAction, null);
     }
     // 칩을 깨워 내린다.
     // await 뒤라 mounted 재확인 — 전송 중 화면을 떠났으면 ref는 죽어 있다.
@@ -207,7 +223,7 @@ Future<void> handleFanTap(
     return;
   }
 
-  await openFanSheet(context, ref, deviceId);
+  await openFanSheet(context, ref, deviceId, actuator: actuator);
 }
 
 final _fanInteractionProvider =
@@ -217,9 +233,11 @@ final _fanInteractionProvider =
 Future<void> openFanSheet(
   BuildContext context,
   WidgetRef ref,
-  String deviceId,
-) async {
-  final lock = ref.read(_fanInteractionProvider(deviceId).notifier);
+  String deviceId, {
+  FanActuator actuator = FanActuator.ventilation,
+}) async {
+  final choiceKey = actuator.storageKey(deviceId);
+  final lock = ref.read(_fanInteractionProvider(choiceKey).notifier);
   if (lock.state) return;
   lock.state = true;
   final store = ref.read(fanChoiceStoreProvider);
@@ -230,22 +248,27 @@ Future<void> openFanSheet(
       builder: (_) => ProviderScope(
         overrides: [
           fanDurationSelectionProvider
-              .overrideWith((ref) => store.load(deviceId))
+              .overrideWith((ref) => store.load(choiceKey))
         ],
-        child: const FanDurationSheet(),
+        child: FanDurationSheet(actuator: actuator),
       ),
     );
     if (picked == null || !context.mounted) return;
     if (ref.read(currentDeviceIdProvider).valueOrNull != deviceId ||
-        !ref.read(moduleOnlineProvider(deviceId))) {
+        !ref.read(moduleOnlineProvider(deviceId)) ||
+        (actuator == FanActuator.cooling &&
+            (ref.read(telemetryStreamProvider(deviceId)).valueOrNull?.fan2 ??
+                    ActuatorState.unavailable) ==
+                ActuatorState.unavailable)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('home_fan_target_changed'.tr())),
       );
       return;
     }
     // No awaited settings write between the final target check and dispatch.
-    await _startFan(context, ref, deviceId, picked.$1, offerChange: false);
-    await store.save(deviceId, picked.$1);
+    await _startFan(context, ref, deviceId, picked.$1,
+        offerChange: false, actuator: actuator);
+    await store.save(choiceKey, picked.$1);
   } finally {
     if (lock.mounted) lock.state = false;
   }
@@ -261,6 +284,7 @@ Future<void> _startFan(
   String deviceId,
   FanTimerDuration? duration, {
   required bool offerChange,
+  FanActuator actuator = FanActuator.ventilation,
 }) async {
   // await 전에 잡는다 — 전송 중 화면을 떠나도 알림 예약/스낵바는 살아야 한다.
   final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
@@ -270,7 +294,7 @@ Future<void> _startFan(
     context,
     ref,
     deviceId,
-    CommandAction.fanOn,
+    CommandActionWire.fromWire(actuator.onAction),
     payload: duration?.payload,
   );
   // 타이머면 만료 시각에 완료 알림을 예약하고, '계속 켜기'면 기존 예약을
@@ -278,7 +302,7 @@ Future<void> _startFan(
   if (sent) {
     await timerNotifs.onFanCommandSent(
       deviceId,
-      CommandAction.fanOn.toWire(),
+      actuator.onAction,
       duration == null ? null : duration.minutes * 60000,
     );
   }
@@ -293,14 +317,22 @@ Future<void> _startFan(
     ..showSnackBar(
       SnackBar(
         content: Text(duration == null
-            ? 'home_fan_started_steady'.tr()
-            : 'home_fan_started_timer'.tr(args: [duration.labelKey.tr()])),
+            ? (actuator == FanActuator.cooling
+                    ? 'home_cooling_started_steady'
+                    : 'home_fan_started_steady')
+                .tr()
+            : (actuator == FanActuator.cooling
+                    ? 'home_cooling_started_timer'
+                    : 'home_fan_started_timer')
+                .tr(args: [duration.labelKey.tr()])),
         action: offerChange
             ? SnackBarAction(
                 label: 'home_fan_change'.tr(),
                 // 누르는 시점에 화면이 떠났을 수 있다 — ref도 함께 죽는다.
                 onPressed: () {
-                  if (context.mounted) openFanSheet(context, ref, deviceId);
+                  if (context.mounted) {
+                    openFanSheet(context, ref, deviceId, actuator: actuator);
+                  }
                 },
               )
             : null,
@@ -380,13 +412,27 @@ Future<void> openLedSheet(
       ?.where((d) => d.id == deviceId)
       .firstOrNull;
   final dimmable = device?.ledDimmable ?? false;
-  // 0 이하는 "꺼짐"이지 밝기가 아니다 — 시드로 쓰면 1%로 열린다.
+  // 보고값은 바꾸지 않고 시트의 선택 값만 20~100, 10% 단위로 맞춘다.
   final seed = (currentBrightness ?? 0) > 0 ? currentBrightness! : 60;
   final choice = await showModalBottomSheet<_LedChoice>(
     context: context,
-    builder: (ctx) => _LedSheet(dimmable: dimmable, initialBrightness: seed),
+    builder: (ctx) => ProviderScope(
+      overrides: [
+        _ledBrightnessProvider.overrideWith(
+            (ref) => ((seed / 10).round() * 10).clamp(20, 100).toDouble()),
+        _ledSubmittedProvider.overrideWith((ref) => false),
+      ],
+      child: _LedSheet(dimmable: dimmable),
+    ),
   );
   if (choice == null || !context.mounted) return;
+  if (ref.read(currentDeviceIdProvider).valueOrNull != deviceId ||
+      !ref.read(moduleOnlineProvider(deviceId))) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('home_fan_target_changed'.tr())),
+    );
+    return;
+  }
   await sendCageCommand(
     context,
     ref,
@@ -410,21 +456,24 @@ class _LedChoice {
   final int? brightness;
 }
 
-class _LedSheet extends StatefulWidget {
-  const _LedSheet({required this.dimmable, required this.initialBrightness});
+final _ledBrightnessProvider = StateProvider.autoDispose<double>((ref) => 60);
+final _ledSubmittedProvider = StateProvider.autoDispose<bool>((ref) => false);
+
+class _LedSheet extends ConsumerWidget {
+  const _LedSheet({required this.dimmable});
 
   final bool dimmable;
-  final int initialBrightness;
 
   @override
-  State<_LedSheet> createState() => _LedSheetState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final brightness = ref.watch(_ledBrightnessProvider);
+    final submitted = ref.watch(_ledSubmittedProvider);
+    void submit(_LedChoice choice) {
+      if (ref.read(_ledSubmittedProvider)) return;
+      ref.read(_ledSubmittedProvider.notifier).state = true;
+      Navigator.of(context).pop(choice);
+    }
 
-class _LedSheetState extends State<_LedSheet> {
-  late double _brightness = widget.initialBrightness.clamp(1, 100).toDouble();
-
-  @override
-  Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(AppStyles.spacing16),
@@ -435,24 +484,27 @@ class _LedSheetState extends State<_LedSheet> {
             Text('home_led_pick_title'.tr(),
                 style: AppStyles.subsectionTitle(context)),
             const SizedBox(height: AppStyles.spacing12),
-            if (widget.dimmable) ...[
+            if (dimmable) ...[
               Row(
                 children: [
                   Text('home_led_brightness'.tr(),
                       style: Theme.of(context).textTheme.labelMedium),
                   const Spacer(),
-                  Text('unit_percent_fmt'.tr(args: ['${_brightness.round()}']),
+                  Text('unit_percent_fmt'.tr(args: ['${brightness.round()}']),
                       key: const Key('led_brightness_value'),
                       style: Theme.of(context).textTheme.titleMedium),
                 ],
               ),
               Slider(
                 key: const Key('led_brightness_slider'),
-                value: _brightness,
-                min: 1,
+                value: brightness,
+                min: 20,
                 max: 100,
-                divisions: 99,
-                onChanged: (v) => setState(() => _brightness = v),
+                divisions: 8,
+                onChanged: submitted
+                    ? null
+                    : (v) =>
+                        ref.read(_ledBrightnessProvider.notifier).state = v,
               ),
               const SizedBox(height: AppStyles.spacing8),
             ],
@@ -461,10 +513,12 @@ class _LedSheetState extends State<_LedSheet> {
                 Expanded(
                   child: OutlinedButton(
                     key: const Key('led_on'),
-                    onPressed: () => Navigator.of(context).pop(widget.dimmable
-                        ? _LedChoice.on(_brightness.round())
-                        : const _LedChoice.on()),
-                    child: Text((widget.dimmable
+                    onPressed: submitted
+                        ? null
+                        : () => submit(dimmable
+                            ? _LedChoice.on(brightness.round())
+                            : const _LedChoice.on()),
+                    child: Text((dimmable
                             ? 'home_led_apply_brightness'
                             : 'home_led_turn_on')
                         .tr()),
@@ -474,8 +528,8 @@ class _LedSheetState extends State<_LedSheet> {
                 Expanded(
                   child: OutlinedButton(
                     key: const Key('led_off'),
-                    onPressed: () =>
-                        Navigator.of(context).pop(const _LedChoice.off()),
+                    onPressed:
+                        submitted ? null : () => submit(const _LedChoice.off()),
                     child: Text('home_led_turn_off'.tr()),
                   ),
                 ),

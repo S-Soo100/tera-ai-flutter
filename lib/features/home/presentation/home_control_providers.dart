@@ -126,7 +126,7 @@ Future<List<Map<String, dynamic>>> fetchCommandRows(
     // lte면 자정 정각 명령이 이틀 페이지에 이중 계상된다.
     final rows = await client
         .from('commands')
-        .select('id, action, status, issued_at')
+        .select('id, action, status, result, issued_at')
         .eq('device_id', deviceId)
         .eq('status', 'acked')
         .gte('issued_at', from.toUtc().toIso8601String())

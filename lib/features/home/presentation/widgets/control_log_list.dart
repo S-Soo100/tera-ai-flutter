@@ -6,19 +6,40 @@ import '../../../../shared/domain/actuator_marker.dart';
 import '../../../../shared/domain/am_pm_time.dart';
 import '../../../../shared/domain/control_log.dart';
 import '../../../../shared/domain/num_format.dart';
+import '../../../../shared/widgets/figma_icon.dart';
 
 /// 기기 종류 → 아이콘. **홈 제어 그리드([CageControlGrid])와 같은 그림**을
 /// 쓴다 — 그리드에서 누른 버튼과 기록의 아이콘이 다르면 같은 기기로 안 읽힌다.
-IconData controlKindIcon(MarkerKind kind) => switch (kind) {
-      MarkerKind.fan => Icons.wind_power,
-      MarkerKind.mist => Icons.water_drop,
-      MarkerKind.heater => Icons.local_fire_department,
-      MarkerKind.led => Icons.lightbulb,
-    };
+Widget controlEntryIcon(
+    ControlLogEntry entry, GlassPalette glass, double size) {
+  final off = entry.state == ControlLogState.off;
+  final compact = size == 28;
+  final asset = switch (entry.kind) {
+    MarkerKind.fan => FigmaIcons.fanBadge(on: !off, compact: compact),
+    MarkerKind.cooling => FigmaIcons.coolingBadge(on: !off, compact: compact),
+    MarkerKind.mist =>
+      off ? FigmaIcons.mistOff : FigmaIcons.mistBadge(compact: compact),
+    MarkerKind.led => FigmaIcons.ledBadge(on: !off, compact: compact),
+    MarkerKind.heater => null,
+  };
+  if (asset != null) return FigmaIcon.metric(asset, size: size);
+  // 히터는 기존 안전 제어용 아이콘 유지(새 Figma 제어 타일에는 없음).
+  return Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: controlEntryColor(entry, glass),
+      shape: BoxShape.circle,
+    ),
+    child: Icon(Icons.local_fire_department,
+        size: size / 2, color: glass.deviceGlyph),
+  );
+}
 
 /// 기기 종류 → 이름 키 (계획서 §A.5 — fan=환기팬, heater=히터팬).
 String controlKindNameKey(MarkerKind kind) => switch (kind) {
       MarkerKind.fan => 'device_vent_fan',
+      MarkerKind.cooling => 'device_cool_fan',
       MarkerKind.mist => 'device_mist',
       MarkerKind.heater => 'device_heat_fan',
       MarkerKind.led => 'device_led',
@@ -31,6 +52,7 @@ Color controlEntryColor(ControlLogEntry e, GlassPalette glass) =>
         ? glass.deviceOff
         : switch (e.kind) {
             MarkerKind.fan => glass.deviceFan,
+            MarkerKind.cooling => glass.deviceCool,
             MarkerKind.mist => glass.deviceMist,
             MarkerKind.heater => glass.deviceHeat,
             MarkerKind.led => glass.deviceLed,
@@ -128,16 +150,7 @@ class _LogRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: controlEntryColor(entry, glass),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(controlKindIcon(entry.kind),
-              size: 18, color: glass.deviceGlyph),
-        ),
+        controlEntryIcon(entry, glass, 36),
         const SizedBox(width: 12),
         Expanded(
           child: Column(

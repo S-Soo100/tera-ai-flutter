@@ -45,6 +45,8 @@ enum ScheduleAction {
   // `schedules` 화이트리스트에 들어와 [selectable]에도 올랐다(§2.1).
   fanOn('fan_on'),
   fanOff('fan_off'),
+  fan2On('fan2_on'),
+  fan2Off('fan2_off'),
   heaterOn('heater_on'),
   heaterOff('heater_off'),
   relayOn('relay_on'),
@@ -64,6 +66,8 @@ enum ScheduleAction {
     mist,
     fanOn,
     fanOff,
+    fan2On,
+    fan2Off,
     heaterOn,
     heaterOff,
     ledOn,
@@ -77,6 +81,7 @@ enum ScheduleAction {
   /// 건너뛰어지면 기기가 켜진 채 남는다(히터면 과열). 편집기·삭제 경고가 쓴다.
   bool get isOffAction =>
       this == ScheduleAction.fanOff ||
+      this == ScheduleAction.fan2Off ||
       this == ScheduleAction.heaterOff ||
       this == ScheduleAction.ledOff ||
       this == ScheduleAction.relayOff;
@@ -86,6 +91,8 @@ enum ScheduleAction {
     switch (this) {
       case ScheduleAction.fanOff:
         return ScheduleAction.fanOn;
+      case ScheduleAction.fan2Off:
+        return ScheduleAction.fan2On;
       case ScheduleAction.heaterOff:
         return ScheduleAction.heaterOn;
       case ScheduleAction.ledOff:
@@ -117,6 +124,10 @@ enum ScheduleAction {
         return 'routine_action_fan_on';
       case ScheduleAction.fanOff:
         return 'routine_action_fan_off';
+      case ScheduleAction.fan2On:
+        return 'routine_action_fan2_on';
+      case ScheduleAction.fan2Off:
+        return 'routine_action_fan2_off';
       case ScheduleAction.heaterOn:
         return 'routine_action_heater_on';
       case ScheduleAction.heaterOff:
@@ -138,6 +149,9 @@ enum ScheduleAction {
       case ScheduleAction.fanOn:
       case ScheduleAction.fanOff:
         return 'module_actuator_fan';
+      case ScheduleAction.fan2On:
+      case ScheduleAction.fan2Off:
+        return 'device_cool_fan';
       case ScheduleAction.heaterToggle:
       case ScheduleAction.heaterOn:
       case ScheduleAction.heaterOff:

@@ -12,6 +12,7 @@ Map<String, dynamic> row(
     'id': '${action}_${localAt.millisecondsSinceEpoch}',
     'action': action,
     'status': status,
+    'result': 'ok',
     // 실 DB처럼 UTC 문자열로 준다 — 파서가 .toLocal()을 하는지 검증.
     'issued_at': localAt.toUtc().toIso8601String(),
   };

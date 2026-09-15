@@ -52,6 +52,9 @@ const _entryByAction = <String, ({MarkerKind kind, ControlLogState state})>{
   'fan_on': (kind: MarkerKind.fan, state: ControlLogState.on),
   'fan_off': (kind: MarkerKind.fan, state: ControlLogState.off),
   'fan_toggle': (kind: MarkerKind.fan, state: ControlLogState.ran),
+  'fan2_on': (kind: MarkerKind.cooling, state: ControlLogState.on),
+  'fan2_off': (kind: MarkerKind.cooling, state: ControlLogState.off),
+  'fan2_toggle': (kind: MarkerKind.cooling, state: ControlLogState.ran),
 
   'heater_on': (kind: MarkerKind.heater, state: ControlLogState.on),
   'heater_off': (kind: MarkerKind.heater, state: ControlLogState.off),
@@ -99,7 +102,7 @@ List<ControlLogEntry> buildControlLog({
   // 파싱 + 시간 오름차순 정렬 (델타 짝짓기는 시간순이 전제다).
   final parsed = <({MarkerKind kind, ControlLogState state, DateTime at})>[];
   for (final r in commandRows) {
-    if (r['status'] != 'acked') continue;
+    if (r['status'] != 'acked' || r['result'] != 'ok') continue;
     final entry = _entryByAction[r['action'] as String?];
     if (entry == null) continue;
     final raw = r['issued_at'] == null

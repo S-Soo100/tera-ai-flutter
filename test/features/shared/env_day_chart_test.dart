@@ -5,6 +5,7 @@ import 'package:vivanaut/shared/domain/actuator_marker.dart';
 import 'package:vivanaut/shared/domain/axis_bounds.dart';
 import 'package:vivanaut/shared/domain/control_log.dart';
 import 'package:vivanaut/shared/domain/env_chart_data.dart';
+import 'package:vivanaut/shared/widgets/figma_icon.dart';
 
 EnvChartData _data({bool empty = false}) {
   final tempAxis = AxisBounds.forValues([20, 30]);
@@ -83,9 +84,13 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(EnvDayChart.chartKey), findsOneWidget);
-      expect(find.byIcon(Icons.wind_power), findsOneWidget);
-      expect(find.byIcon(Icons.water_drop), findsOneWidget);
-      expect(find.byIcon(Icons.lightbulb), findsNothing); // 창 밖
+      Finder icon(String name) =>
+          find.byWidgetPredicate((w) => w is FigmaIcon && w.name == name);
+      expect(
+          icon(FigmaIcons.fanBadge(on: true, compact: true)), findsOneWidget);
+      expect(icon(FigmaIcons.mistBadge(compact: true)), findsOneWidget);
+      expect(icon(FigmaIcons.ledBadge(on: true, compact: true)),
+          findsNothing); // 창 밖
       // X축 눈금 4개 (오전 12시/6시/오후 12시/6시 — 미초기화 tr()은 키 반환).
       expect(find.text('home_chart_time_am'), findsNWidgets(2));
       expect(find.text('home_chart_time_pm'), findsNWidgets(2));

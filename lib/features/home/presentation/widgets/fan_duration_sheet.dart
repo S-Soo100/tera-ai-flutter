@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../shared/domain/fan_actuator.dart';
 import '../../domain/fan_timer_duration.dart';
 
 final fanDurationSelectionProvider =
@@ -11,7 +12,8 @@ final _submittedProvider = StateProvider.autoDispose<bool>((ref) => false);
 
 /// Options only change selection. Only Start returns an executable choice.
 class FanDurationSheet extends ConsumerWidget {
-  const FanDurationSheet({super.key});
+  const FanDurationSheet({super.key, this.actuator = FanActuator.ventilation});
+  final FanActuator actuator;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,7 +26,11 @@ class FanDurationSheet extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('home_fan_pick_title'.tr(),
+            Text(
+                (actuator == FanActuator.cooling
+                        ? 'home_cooling_pick_title'
+                        : 'home_fan_pick_title')
+                    .tr(),
                 style: AppStyles.subsectionTitle(context)),
             const SizedBox(height: AppStyles.spacing16),
             Wrap(

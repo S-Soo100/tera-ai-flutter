@@ -1,5 +1,5 @@
 /// 차트에 찍는 기기 동작 종류. PRD §3.4 "분무(💦), 팬(🔵), 히터(🔥), LED(💡)".
-enum MarkerKind { mist, fan, heater, led }
+enum MarkerKind { mist, fan, heater, led, cooling }
 
 /// PRD §3.4 기기 동작 마커.
 ///
@@ -41,6 +41,9 @@ class ActuatorMarker {
     'fan_toggle': MarkerKind.fan,
     'fan_on': MarkerKind.fan,
     'fan_off': MarkerKind.fan,
+    'fan2_toggle': MarkerKind.cooling,
+    'fan2_on': MarkerKind.cooling,
+    'fan2_off': MarkerKind.cooling,
 
     'heater_toggle': MarkerKind.heater,
     'heater_on': MarkerKind.heater,
@@ -55,7 +58,7 @@ class ActuatorMarker {
   static List<ActuatorMarker> fromCommands(List<Map<String, dynamic>> rows) {
     final out = <ActuatorMarker>[];
     for (final r in rows) {
-      if (r['status'] != 'acked') continue;
+      if (r['status'] != 'acked' || r['result'] != 'ok') continue;
       final kind = _kindByAction[r['action'] as String?];
       if (kind == null) continue;
       final at = r['issued_at'] == null

@@ -19,7 +19,7 @@
 - 새 디자인·동작의 확정 기준은 [`docs/superpowers/specs/2026-09-15-figma-redesign-approved-design.md`](docs/superpowers/specs/2026-09-15-figma-redesign-approved-design.md)다. 해당 재설계 구현에서는 아래 과거 결정과 충돌할 경우 이 확정 기획을 우선한다.
 - [7단계 구현계획](docs/superpowers/plans/2026-09-15-figma-redesign-implementation.md), [서버 담당·직접 수행 구분](docs/handoffs/2026-09-15-redesign-server-work-split.md)을 함께 읽는다.
 - 사용자가 Flutter 구현 시작을 지시했다. `codex/figma-redesign-20260915` 작업 트리에서 공통 흰 배경·SVG runtime 70개·PNG 배율 등록과 카메라 진입 아이콘 2개를 구현했다. [실측·검증·남은 작업](docs/design-audits/2026-09-15-redesign-frame-matrix.md)을 따른다. 전체 화면 구현은 진행 중이며 신규 DB는 미변경이다.
-- 2026-09-15 사용자가 이관훈님과 petcam-lab에 요청서를 직접 전달했다고 확인했다. 현재 회신 대기이며 계약이 필요한 기능은 회신 후 통합한다.
+- 2026-09-15 이관훈님 회신 2건을 받았고 사용자가 petcam-lab 작업 진행 중임을 확인했다. 신규 API·SQL·푸시는 제안/보완 필요 상태이며 배포 완료가 아니다. fan2·LED·LCD 및 메모 저장소 기반 구현은 [회신 반영·제어 구현 기록](docs/design-audits/2026-09-15-redesign-controls-and-replies.md)을 따른다. 신규 DB 변경·서버 배포는 실행하지 않았다.
 - 재개 시 [재설계 세션 체크포인트](docs/handoffs/2026-09-15-redesign-session-checkpoint.md)를 먼저 읽는다. 최신 그룹명 우선 표시·첫 기본 이름 번호 1 규칙과 외부 전달 상태를 보존한다.
 
 ## Final Design 사용자 변경 결정 (2026-09-14)

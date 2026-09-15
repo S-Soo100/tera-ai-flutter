@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../shared/services/fan_timer_notification_service.dart';
+import '../../../shared/domain/fan_actuator.dart';
 import '../domain/running_timer.dart';
 
 class FanTimerNotificationResync {
@@ -26,28 +27,33 @@ class FanTimerNotificationResync {
   /// 내린다. 기기 하나의 실패가 나머지를 막지 않는다.
   Future<void> run(Iterable<String> deviceIds) async {
     for (final deviceId in deviceIds) {
-      try {
-        // runningTimersProvider(칩)와 같은 쿼리 — 판정 소스를 하나로 유지.
-        final rows = await _client
-            .from('commands')
-            .select('id, device_id, action, status, payload, issued_at')
-            .eq('device_id', deviceId)
-            .inFilter('action', ['fan_on', 'fan_off', 'fan_toggle'])
-            .order('issued_at', ascending: false)
-            .limit(10);
-        final t = RunningTimer.fanTimerFrom(
-          (rows as List)
-              .map((e) => Map<String, dynamic>.from(e as Map))
-              .toList(),
-          DateTime.now(),
-        );
-        await _service.resyncTimer(
-          deviceId,
-          endsAt: t?.endsAt,
-          minutes: t?.durationMinutes,
-        );
-      } catch (e) {
-        debugPrint('[fan-timer-notif] resync query failed for $deviceId: $e');
+      for (final actuator in FanActuator.values) {
+        try {
+          // runningTimersProvider(칩)와 같은 쿼리 — 판정 소스를 하나로 유지.
+          final rows = await _client
+              .from('commands')
+              .select(
+                  'id, device_id, action, status, result, payload, issued_at')
+              .eq('device_id', deviceId)
+              .inFilter('action', actuator.actions)
+              .order('issued_at', ascending: false)
+              .limit(10);
+          final t = RunningTimer.fanTimerFrom(
+            (rows as List)
+                .map((e) => Map<String, dynamic>.from(e as Map))
+                .toList(),
+            DateTime.now(),
+            actuator: actuator,
+          );
+          await _service.resyncTimer(
+            deviceId,
+            endsAt: t?.endsAt,
+            minutes: t?.durationMinutes,
+            actuator: actuator,
+          );
+        } catch (e) {
+          debugPrint('[fan-timer-notif] resync query failed for $deviceId: $e');
+        }
       }
     }
   }

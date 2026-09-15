@@ -287,19 +287,7 @@ class _EnvDayChartState extends State<EnvDayChart> {
             message:
                 '${formatAmPmTime(spots[i].e.at)} ${controlKindNameKey(spots[i].e.kind).tr()}',
             triggerMode: TooltipTriggerMode.tap,
-            child: Container(
-              width: EnvDayChart.markerSize,
-              height: EnvDayChart.markerSize,
-              decoration: BoxDecoration(
-                color: controlEntryColor(spots[i].e, glass),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                controlKindIcon(spots[i].e.kind),
-                size: 15,
-                color: glass.deviceGlyph,
-              ),
-            ),
+            child: controlEntryIcon(spots[i].e, glass, EnvDayChart.markerSize),
           ),
         ),
     ];
