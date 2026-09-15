@@ -44,6 +44,7 @@ abstract final class FigmaIcons {
   static const envTemperature = 'final_temperature';
   static const envHumidity = 'final_humidity';
   static const close = 'close';
+  static const cancel = 'redesign_v2/cancel';
   static const arrowPrevious = 'arrow_previous';
   static const arrowNext = 'arrow_next';
   static const download = 'download';

@@ -1,0 +1,95 @@
+{
+ "tasks": [
+  {
+   "id": "P01",
+   "title": "모프 검색",
+   "status": "수정 완료",
+   "pairs": [
+    {
+     "figma": "figma/1043-4873.png",
+     "before": "app/widget-morph-initial-search.png",
+     "after": "after/p01-morph-search-b.png",
+     "label": "ㅂ 검색 (원본은 타 종 예시 이름, 앱은 크레스티드 카탈로그)"
+    },
+    {
+     "figma": "figma/1043-5003.png",
+     "before": "app/widget-morph-no-result.png",
+     "after": "after/p01-morph-no-result.png",
+     "label": "검색 결과 없음"
+    },
+    {
+     "figma": null,
+     "before": null,
+     "after": "after/p01-morph-search-initial.png",
+     "label": "ㄹ 초성 검색"
+    },
+    {
+     "figma": null,
+     "before": null,
+     "after": "after/p01-morph-search-english.png",
+     "label": "영문 검색 (강조 없음)"
+    },
+    {
+     "figma": null,
+     "before": null,
+     "after": "after/p01-morph-cleared.png",
+     "label": "지우기 X 후 전체 목록"
+    }
+   ],
+   "measurements": [
+    [
+     "검색창",
+     "x12 y119 w369 h65 r12 #FAFAFA/#E3E3E3",
+     "x12 y119 w369 h65 (승인 29번 유지)",
+     "일치"
+    ],
+    [
+     "검색어 지우기 X",
+     "x340 y139.5 24×24 #B4AEAE",
+     "x340 y139.5 24×24 deviceOff(#B4AEAE), 탭 44×44",
+     "일치"
+    ],
+    [
+     "결과 행",
+     "x12 y188 w369 h44, 하단선 #E3E3E3",
+     "x12 y188 w369 h44, 하단선 border",
+     "일치"
+    ],
+    [
+     "행 텍스트",
+     "x24 y195.5 18/500/28/-0.36 #3C3C3C",
+     "x24 y196 18/500/28/-0.36 textSecondary",
+     "y 0.5pt 차이(행 44 내 28 중앙)"
+    ],
+    [
+     "강조색",
+     "#C00306",
+     "navSelected(#C00306)",
+     "일치"
+    ],
+    [
+     "강조 범위",
+     "ㅂ→비·블(첫 음절)·디아블로 블랑코(두 곳)·벤·바 — 원본 내부 불일치(블레이징 블리자드는 첫 블만)",
+     "모든 초성 일치 음절 강조",
+     "규칙 통일, 원본 예시와 부분 차이 기록"
+    ],
+    [
+     "무결과 문구",
+     "x24 y200 w345 h19 16/500/19.09/-0.32 #949090 중앙",
+     "x24 y200 w345 h19 16/500/19/-0.32 textTertiary 중앙",
+     "일치"
+    ],
+    [
+     "정렬",
+     "원본 예시: 비, 블랙 홀, 블레이징…, 디아블로…, 라벤더, 수퍼 노바",
+     "첫 일치 위치 → 이름 → id",
+     "원본 예시 순서는 규칙 불명, 앱은 규칙 고정"
+    ]
+   ],
+   "notes": [
+    "원본 예시의 타 종 모프 이름은 앱 카탈로그에 넣지 않았다.",
+    "캡처는 위젯 테스트 fixture(393×852, SafeArea 62/34)이며 실기기 키보드는 시뮬레이터에서 별도 확인."
+   ]
+  }
+ ]
+}

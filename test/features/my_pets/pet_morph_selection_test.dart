@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
+import 'package:vivanaut/core/theme/viva_colors.dart';
+import 'package:vivanaut/shared/widgets/figma_icon.dart';
 import 'package:vivanaut/features/my_pets/data/pet_repository.dart';
 import 'package:vivanaut/features/my_pets/domain/pet.dart';
 import 'package:vivanaut/features/wiki/domain/morph_genetics.dart';
@@ -123,7 +125,57 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Lilly White');
     await tester.pumpAndSettle();
     expect(find.text('릴리 화이트'), findsOneWidget);
-    await tester.tap(find.byType(IconButton).first);
+    await tester.tap(find.byTooltip('뒤로'));
+    await tester.pumpAndSettle();
+    expect(find.text('릴리 화이트'), findsOneWidget);
+
+    // P01 — initial-consonant search drops sections and highlights matches.
+    await tester.tap(find.text('릴리 화이트'));
+    await tester.pumpAndSettle();
+    final clear = find.byKey(const ValueKey('pet-form-morph-clear'));
+    expect(clear, findsNothing);
+    await tester.enterText(find.byType(TextField), 'ㄹ');
+    await tester.pumpAndSettle();
+    Finder header(String jamo) =>
+        find.byWidgetPredicate((w) => w is Text && w.data == jamo);
+    expect(header('ㄹ'), findsNothing);
+    expect(find.text('루왁'), findsOneWidget);
+    expect(find.text('릴리 화이트'), findsOneWidget);
+    expect(find.text('노말'), findsNothing);
+    final rich = tester.widget<Text>(find.text('루왁')).textSpan! as TextSpan;
+    expect(rich.children!.first.style!.color, VivaColors.mainDark);
+    expect(rich.children!.first.toPlainText(), '루');
+    expect(rich.children![1].style?.color, isNull);
+    expect(find.text('라벤더'), findsOneWidget);
+    expect(tester.getTopLeft(find.byKey(const ValueKey('trait:lavender'))),
+        const Offset(12, 188));
+    expect(tester.getSize(find.byKey(const ValueKey('trait:lavender'))),
+        const Size(369, 44));
+    expect(tester.getTopLeft(find.text('라벤더')).dx, 24);
+    final clearIcon =
+        find.descendant(of: clear, matching: find.byType(FigmaIcon));
+    expect(tester.getTopLeft(clearIcon), const Offset(340, 139.5));
+    expect(tester.getSize(clearIcon), const Size(24, 24));
+
+    await tester.enterText(find.byType(TextField), '없는모프검색');
+    await tester.pumpAndSettle();
+    final empty = find.text('일치하는 모프가 없습니다');
+    expect(empty, findsOneWidget);
+    expect(tester.getTopLeft(empty), const Offset(24, 200));
+    expect(tester.getSize(empty), const Size(345, 19));
+    expect(find.byKey(const ValueKey('trait:lavender')), findsNothing);
+    expect(find.byKey(const ValueKey('morph:normal')), findsNothing);
+
+    await tester.tap(clear);
+    await tester.pumpAndSettle();
+    expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        isEmpty);
+    expect(clear, findsNothing);
+    expect(header('ㄴ'), findsOneWidget);
+    expect(find.text('노말'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('뒤로'));
     await tester.pumpAndSettle();
     expect(find.text('릴리 화이트'), findsOneWidget);
     expect(tester.takeException(), isNull);

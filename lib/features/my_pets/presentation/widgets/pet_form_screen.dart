@@ -819,14 +819,34 @@ class PetFormPhoto extends StatelessWidget {
 
 final _morphSearchProvider = StateProvider.autoDispose<String>((ref) => '');
 
-class _MorphSelectionScreen extends ConsumerWidget {
+class _MorphSelectionScreen extends ConsumerStatefulWidget {
   const _MorphSelectionScreen();
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final query = ref.watch(_morphSearchProvider).trim().toLowerCase();
+  ConsumerState<_MorphSelectionScreen> createState() =>
+      _MorphSelectionScreenState();
+}
+
+class _MorphSelectionScreenState extends ConsumerState<_MorphSelectionScreen> {
+  final _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _clear() {
+    _search.clear();
+    ref.read(_morphSearchProvider.notifier).state = '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final query = ref.watch(_morphSearchProvider).trim();
     final catalog = ref.watch(morphDataProvider('crested-gecko'));
+    final glass = context.glass;
     return Scaffold(
-      backgroundColor: context.glass.surfaceHeader,
+      backgroundColor: glass.surfaceHeader,
       appBar: petFormAppBar(
           context, 'pet_form_morph_title'.tr(), () => Navigator.pop(context)),
       body: SafeArea(
@@ -837,11 +857,31 @@ class _MorphSelectionScreen extends ConsumerWidget {
               child: SizedBox(
                   height: 65,
                   child: TextField(
+                    controller: _search,
                     style: petFormText(context),
                     decoration: petFormDecoration(context).copyWith(
                         hintText: 'pet_form_morph_search'.tr(),
                         hintStyle: petFormText(context)
-                            .copyWith(color: context.glass.textTertiary)),
+                            .copyWith(color: glass.textTertiary),
+                        // Figma 1043:4873 — X 24 at x340 (field right inset 17).
+                        suffixIconConstraints:
+                            const BoxConstraints(minWidth: 24, minHeight: 24),
+                        suffixIcon: query.isEmpty
+                            ? null
+                            : Padding(
+                                padding: const EdgeInsets.only(right: 7),
+                                child: IconButton(
+                                  key: const ValueKey('pet-form-morph-clear'),
+                                  style: IconButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      fixedSize: const Size(44, 44),
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap),
+                                  tooltip: 'pet_form_morph_clear'.tr(),
+                                  onPressed: _clear,
+                                  icon: FigmaIcon.tinted(FigmaIcons.cancel,
+                                      color: glass.deviceOff, size: 24),
+                                ))),
                     onChanged: (value) =>
                         ref.read(_morphSearchProvider.notifier).state = value,
                   )),
@@ -849,50 +889,51 @@ class _MorphSelectionScreen extends ConsumerWidget {
             Expanded(
                 child: catalog.when(
               data: (data) {
-                final groups = petRegistrationGroups(
-                    petRegistrationChoices(data).where((m) =>
-                        '${m.name} ${m.englishName ?? ''}'
-                            .toLowerCase()
-                            .contains(query)));
+                final choices = petRegistrationChoices(data);
+                if (query.isEmpty) {
+                  final groups = petRegistrationGroups(choices);
+                  return ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    children: [
+                      for (final group in groups.entries) ...[
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(12,
+                              group.key == groups.keys.first ? 20 : 16, 12, 0),
+                          child: Text(group.key,
+                              style: petFormText(context)
+                                  .copyWith(color: glass.textTertiary)),
+                        ),
+                        for (final morph in group.value)
+                          _MorphRow(id: morph.id, name: morph.name),
+                      ]
+                    ],
+                  );
+                }
+                final hits = petRegistrationSearch(choices, query);
+                if (hits.isEmpty) {
+                  // Figma 1043:5003 — Title x12/y184/w369/h35, text y200 h19.
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                      child: SizedBox(
+                          width: double.infinity,
+                          child: Text('pet_form_morph_empty'.tr(),
+                              textAlign: TextAlign.center,
+                              style: petFormText(context)
+                                  .copyWith(color: glass.textTertiary))),
+                    ),
+                  );
+                }
+                // Figma 1043:4873 — SelectList y184, first row y188.
                 return ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
                   children: [
-                    for (final group in groups.entries) ...[
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(12,
-                            group.key == groups.keys.first ? 20 : 16, 12, 0),
-                        child: Text(group.key,
-                            style: petFormText(context)
-                                .copyWith(color: context.glass.textTertiary)),
-                      ),
-                      for (final morph in group.value)
-                        SizedBox(
-                            height: 44,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                  border: Border(
-                                      bottom: BorderSide(
-                                          color: context.glass.border))),
-                              child: InkWell(
-                                key: ValueKey(morph.id),
-                                onTap: () => Navigator.pop(context, morph.name),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(morph.name,
-                                        style: petFormText(context).copyWith(
-                                            fontSize: 18,
-                                            height: 28 / 18,
-                                            letterSpacing: -0.36,
-                                            color:
-                                                context.glass.textSecondary)),
-                                  ),
-                                ),
-                              ),
-                            )),
-                    ]
+                    for (final hit in hits)
+                      _MorphRow(
+                          id: hit.choice.id,
+                          name: hit.choice.name,
+                          ranges: hit.ranges),
                   ],
                 );
               },
@@ -906,6 +947,65 @@ class _MorphSelectionScreen extends ConsumerWidget {
             )),
           ])),
     );
+  }
+}
+
+/// One 44pt catalog row. Matched rune [ranges] are drawn in `navSelected`
+/// (Figma #C00306); everything else keeps the approved secondary text colour.
+class _MorphRow extends StatelessWidget {
+  const _MorphRow({required this.id, required this.name, this.ranges = const []});
+  final String id;
+  final String name;
+  final List<(int, int)> ranges;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    final base = petFormText(context).copyWith(
+        fontSize: 18,
+        height: 28 / 18,
+        letterSpacing: -0.36,
+        color: glass.textSecondary);
+    return SizedBox(
+        height: 44,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: glass.border))),
+          child: InkWell(
+            key: ValueKey(id),
+            onTap: () => Navigator.pop(context, name),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text.rich(
+                    _highlighted(name, ranges, base, glass.navSelected)),
+              ),
+            ),
+          ),
+        ));
+  }
+
+  static TextSpan _highlighted(
+      String name, List<(int, int)> ranges, TextStyle base, Color accent) {
+    if (ranges.isEmpty) return TextSpan(text: name, style: base);
+    final runes = name.runes.toList();
+    final spans = <TextSpan>[];
+    var cursor = 0;
+    for (final (start, end) in ranges) {
+      if (start > cursor) {
+        spans.add(
+            TextSpan(text: String.fromCharCodes(runes.sublist(cursor, start))));
+      }
+      spans.add(TextSpan(
+          text: String.fromCharCodes(runes.sublist(start, end)),
+          style: TextStyle(color: accent)));
+      cursor = end;
+    }
+    if (cursor < runes.length) {
+      spans.add(TextSpan(text: String.fromCharCodes(runes.sublist(cursor))));
+    }
+    return TextSpan(style: base, children: spans);
   }
 }
 
