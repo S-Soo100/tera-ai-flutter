@@ -55,6 +55,10 @@ class ActivityBars extends StatelessWidget {
         fontWeight: FontWeight.w500,
         color: glass.deviceOff);
     final peak = buckets.fold<double>(0, (v, b) => math.max(v, b.seconds ?? 0));
+    final minimum = buckets
+        .map((bucket) => bucket.seconds)
+        .whereType<double>()
+        .fold<double>(double.infinity, math.min);
     return SizedBox(
         height: 256,
         child: LayoutBuilder(builder: (context, constraints) {
@@ -127,7 +131,9 @@ class ActivityBars extends StatelessWidget {
                                         color: buckets[i].seconds == peak &&
                                                 peak > 0
                                             ? ActivityColors.peak
-                                            : glass.bodySecondary,
+                                            : buckets[i].seconds == minimum
+                                                ? glass.deviceOff
+                                                : glass.bodySecondary,
                                       )),
                                   if (weekly)
                                     Positioned(
