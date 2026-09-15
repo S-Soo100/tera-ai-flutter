@@ -18,7 +18,8 @@
 
 - 새 디자인·동작의 확정 기준은 [`docs/superpowers/specs/2026-09-15-figma-redesign-approved-design.md`](docs/superpowers/specs/2026-09-15-figma-redesign-approved-design.md)다. 해당 재설계 구현에서는 아래 과거 결정과 충돌할 경우 이 확정 기획을 우선한다.
 - [7단계 구현계획](docs/superpowers/plans/2026-09-15-figma-redesign-implementation.md), [서버 담당·직접 수행 구분](docs/handoffs/2026-09-15-redesign-server-work-split.md)을 함께 읽는다.
-- 현재 승인·완료 범위는 원본 에셋 보관과 기획·계획 문서 저장이다. 문서의 후속 앱 구현·DB 변경·외부 요청은 실행 완료된 것으로 취급하지 않는다.
+- 현재 완료 범위는 원본 에셋 보관과 기획·계획·전달 문서 저장이다. 2026-09-15 사용자가 이관훈님과 petcam-lab에 요청서를 직접 전달했다고 확인했다. 현재 회신 대기이며 앱 구현·신규 DB 변경은 미착수다.
+- 재개 시 [재설계 세션 체크포인트](docs/handoffs/2026-09-15-redesign-session-checkpoint.md)를 먼저 읽는다. 최신 그룹명 우선 표시·첫 기본 이름 번호 1 규칙과 외부 전달 상태를 보존한다.
 
 ## Final Design 사용자 변경 결정 (2026-09-14)
 
