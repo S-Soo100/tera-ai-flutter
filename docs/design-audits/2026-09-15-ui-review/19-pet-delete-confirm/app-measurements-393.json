@@ -1,0 +1,270 @@
+[
+  {
+    "type": "Material",
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      852.0
+    ],
+    "color": "ffffffff",
+    "shape": null
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      156.0,
+      40.524375915527344,
+      19.0
+    ],
+    "text": "크랑이",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.1875,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      172.52437591552734,
+      157.0,
+      35.338829040527344,
+      17.0
+    ],
+    "text": "미구분",
+    "align": null,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.1875,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      183.0,
+      143.46852111816406,
+      17.0
+    ],
+    "text": "아잔틱 릴리 화이트 | 21.0g",
+    "align": null,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.1875,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      329.0,
+      158.0,
+      40.0,
+      40.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "Material",
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      106.0
+    ],
+    "color": "ffffffff",
+    "shape": null
+  },
+  {
+    "type": "Material",
+    "rect": [
+      8.0,
+      64.0,
+      40.0,
+      40.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      148.8265609741211,
+      74.5,
+      95.34687805175781,
+      19.0
+    ],
+    "text": "개체 추가 · 관리",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.1875,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      738.0,
+      369.0,
+      56.0
+    ],
+    "color": "ff1e1e1e",
+    "shape": "RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      164.05097579956055,
+      755.5,
+      64.8980484008789,
+      21.0
+    ],
+    "text": "개체 추가",
+    "align": null,
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.1875,
+      "spacing": -0.32,
+      "color": "ffffffff"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      56.5,
+      346.0,
+      280.0,
+      188.0
+    ],
+    "color": "ffe3e6ee",
+    "shape": "RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.circular(28.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      80.5,
+      370.0,
+      232.0,
+      32.0
+    ],
+    "text": "개체를 삭제할까요?",
+    "align": null,
+    "style": {
+      "size": 24.0,
+      "weight": 400,
+      "height": 1.33,
+      "spacing": 0.0,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      80.5,
+      418.0,
+      232.0,
+      20.0
+    ],
+    "text": "크레 활동 데이터, 그래프도 삭제됩니다.",
+    "align": null,
+    "style": {
+      "size": 14.0,
+      "weight": 400,
+      "height": 1.43,
+      "spacing": 0.25,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "TextButton",
+    "rect": [
+      164.18359375,
+      462.0,
+      64.0,
+      48.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      164.18359375,
+      466.0,
+      64.0,
+      40.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      183.98398399353027,
+      476.0,
+      24.399219512939453,
+      20.0
+    ],
+    "text": "취소",
+    "align": null,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.43,
+      "spacing": 0.1,
+      "color": "ff192553"
+    }
+  },
+  {
+    "type": "TextButton",
+    "rect": [
+      236.18359375,
+      462.0,
+      76.31640625,
+      48.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      236.18359375,
+      466.0,
+      76.31640625,
+      40.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      248.18359375,
+      476.0,
+      52.31640625,
+      20.0
+    ],
+    "text": "개체 삭제",
+    "align": null,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.43,
+      "spacing": 0.1,
+      "color": "ff192553"
+    }
+  }
+]
