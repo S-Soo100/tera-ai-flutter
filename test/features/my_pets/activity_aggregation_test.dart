@@ -113,7 +113,9 @@ void main() {
     expect(week.average.seconds, 600);
     expect(week.average.completedDays, 1);
   });
-  test('estimated intervals never become an exact completed observation', () {
+  test(
+      'estimated intervals: not exact, but counted in the average as estimated',
+      () {
     final result = summarize([
       ActivityInterval(
           cameraId: 'a',
@@ -129,7 +131,12 @@ void main() {
     ]);
     expect(result.seconds, 180);
     expect(result.isEstimated, isTrue);
-    expect(previousActivityAverage(day.shiftDays(1), [result]).seconds, isNull);
+    expect(result.isExact, isFalse);
+    // 2026-09-16 사용자 결정: 추정일도 추정값 그대로 평균에 들어가고 '추정' 표기.
+    final average = previousActivityAverage(day.shiftDays(1), [result]);
+    expect(average.seconds, 180);
+    expect(average.completedDays, 1);
+    expect(average.isEstimated, isTrue);
   });
   test('assumedCoverage: 연결 기간의 지난 시간은 완료, 영상 없는 날은 0, 오늘은 진행 중', () {
     final now = utc('2026-09-15T03:00:00Z');

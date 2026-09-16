@@ -182,6 +182,8 @@ class MyCreActivityScreen extends ConsumerWidget {
                             _Summary(
                                 total: unlinked ? 0 : daily.seconds,
                                 average: unlinked ? 0 : average.seconds,
+                                averageEstimated:
+                                    !unlinked && average.isEstimated,
                                 weekly: false),
                             const SizedBox(height: 12),
                             if (dayAsync.isLoading)
@@ -223,6 +225,8 @@ class MyCreActivityScreen extends ConsumerWidget {
                             _Summary(
                                 total: unlinked ? 0 : weekly.seconds,
                                 average: unlinked ? 0 : weekly.average.seconds,
+                                averageEstimated:
+                                    !unlinked && weekly.average.isEstimated,
                                 weekly: true),
                             const SizedBox(height: 12),
                             if (weekAsync.isLoading)
@@ -315,24 +319,51 @@ class _DateRow extends StatelessWidget {
 
 class _Summary extends StatelessWidget {
   const _Summary(
-      {required this.total, required this.average, required this.weekly});
+      {required this.total,
+      required this.average,
+      required this.weekly,
+      this.averageEstimated = false});
   final double? total;
   final double? average;
   final bool weekly;
+
+  /// 평균 분모에 추정(legacy) 활동일이 섞였다 — 숫자 옆에 '추정' 표기
+  /// (2026-09-16 사용자 결정: 추정값도 평균에 포함).
+  final bool averageEstimated;
   @override
   Widget build(BuildContext context) {
-    Widget value(double? seconds, String label, Color color) => Expanded(
+    Widget value(double? seconds, String label, Color color,
+            {bool estimated = false}) =>
+        Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(activityDuration(seconds),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -.56,
-                  height: 1.2,
-                  color: color)),
+          Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Flexible(
+                    child: Text(activityDuration(seconds),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -.56,
+                            height: 1.2,
+                            color: color))),
+                if (estimated && seconds != null) ...[
+                  const SizedBox(width: 4),
+                  Text('activity_estimated'.tr(),
+                      key: Key(weekly
+                          ? 'activity_week_average_estimated'
+                          : 'activity_day_average_estimated'),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: -.28,
+                          color: context.glass.textTertiary)),
+                ],
+              ]),
           const SizedBox(height: 4),
           Text(label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -349,7 +380,8 @@ class _Summary extends StatelessWidget {
           value(
               average,
               (weekly ? 'activity_week_average' : 'activity_day_average').tr(),
-              context.glass.textTertiary),
+              context.glass.textTertiary,
+              estimated: averageEstimated),
         ]));
   }
 }

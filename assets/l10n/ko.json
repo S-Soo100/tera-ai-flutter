@@ -228,7 +228,7 @@
   "activity_hour_12": "오후 12시",
   "activity_hour_18": "오후 6시",
   "activity_estimated": "추정",
-  "activity_estimated_notice": "과거 영상 기반 추정 활동이 포함되어 있습니다. 관측 완료를 확인할 수 없어 평균은 표시하지 않습니다.",
+  "activity_estimated_notice": "과거 영상 기반 추정 활동이 포함되어 있습니다. 평균에도 추정값이 들어갑니다.",
   "activity_legacy_reports": "이전 야간 리포트 보기",
   "activity_empty": "개체를 추가하고\n카메라와 연동해 활동 리포트를 받아보세요",
   "activity_add_pet": "개체 추가하기",

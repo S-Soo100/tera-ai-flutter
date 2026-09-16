@@ -130,13 +130,26 @@ class ActivityDaySummary extends ActivityBucket {
       required super.isEstimated,
       required this.hours});
   final List<ActivityBucket> hours;
-  bool get isComplete => state == ActivityObservation.complete && !isEstimated;
+
+  /// 평균 분모에 드는 날. **2026-09-16 사용자 결정**: 추정(legacy) 영상만 있는
+  /// 날도 추정값 그대로 평균에 넣는다 — 추정일을 빼고 빈 날만 0으로 세면
+  /// 추정 데이터만 있는 계정의 평균이 늘 0·`--`가 된다(시뮬 확인).
+  bool get isComplete => state == ActivityObservation.complete;
+
+  /// 완료이면서 추정이 섞이지 않은 날(정확 관측).
+  bool get isExact => isComplete && !isEstimated;
 }
 
 class ActivityAverage {
-  const ActivityAverage({required this.seconds, required this.completedDays});
+  const ActivityAverage(
+      {required this.seconds,
+      required this.completedDays,
+      this.isEstimated = false});
   final double? seconds;
   final int completedDays;
+
+  /// 분모에 추정(legacy) 활동일이 하나라도 있으면 true — 화면은 '추정' 표기.
+  final bool isEstimated;
 }
 
 class ActivityWeekSummary {
@@ -160,6 +173,7 @@ ActivityAverage previousActivityAverage(
 ActivityAverage _average(Iterable<ActivityDaySummary> values) {
   final days = values.toList();
   return ActivityAverage(
+      isEstimated: days.any((d) => d.isEstimated),
       seconds: days.isEmpty
           ? null
           : days.fold<double>(0, (sum, d) => sum + (d.seconds ?? 0)) /
