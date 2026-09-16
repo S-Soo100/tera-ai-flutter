@@ -13,7 +13,6 @@ library;
 import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'dart:ui' as ui show TextDirection;
 
 import 'package:flutter/material.dart';
 
@@ -21,6 +20,8 @@ import '../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/glass_palette.dart';
+import '../domain/led_timer_duration.dart';
+import 'widgets/led_brightness_row.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
 import '../../../core/theme/app_styles.dart';
@@ -425,6 +426,7 @@ Future<void> openLedSheet(
         _ledBrightnessProvider.overrideWith(
             (ref) => ((seed / 10).round() * 10).clamp(20, 100).toDouble()),
         _ledSubmittedProvider.overrideWith((ref) => false),
+        _ledDurationProvider.overrideWith((ref) => null),
       ],
       child: LedControlSheet(dimmable: dimmable),
     ),
@@ -442,32 +444,57 @@ Future<void> openLedSheet(
     ref,
     deviceId,
     choice.on ? CommandAction.ledOn : CommandAction.ledOff,
-    // 릴레이 보드엔 brightness를 싣지 않는다 — 서버·펌웨어가 무시하긴 하지만
-    // 실DB `led_*` 이력에 의미 없는 payload를 남기지 않는다.
-    payload: choice.on && dimmable && choice.brightness != null
-        ? {'brightness': choice.brightness}
-        : null,
+    payload: ledCommandPayload(
+        on: choice.on,
+        dimmable: dimmable,
+        brightness: choice.brightness,
+        duration: choice.duration),
   );
 }
 
+/// LED 명령 payload. 릴레이 보드엔 brightness를 싣지 않는다 — 서버·펌웨어가
+/// 무시하긴 하지만 실DB `led_*` 이력에 의미 없는 payload를 남기지 않는다.
+/// 작동 시간(`duration_ms`)은 2026-09-16 사용자 결정으로 계약 확인 전 미리
+/// 싣는다([LedTimerDuration]). 끄기·'계속'·비대상이면 null.
+Map<String, dynamic>? ledCommandPayload(
+    {required bool on,
+    required bool dimmable,
+    int? brightness,
+    LedTimerDuration? duration}) {
+  if (!on) return null;
+  final payload = <String, dynamic>{
+    if (dimmable && brightness != null) 'brightness': brightness,
+    if (duration != null) 'duration_ms': duration.milliseconds,
+  };
+  return payload.isEmpty ? null : payload;
+}
+
 class _LedChoice {
-  const _LedChoice.on([this.brightness]) : on = true;
+  const _LedChoice.on([this.brightness, this.duration]) : on = true;
   const _LedChoice.off()
       : on = false,
-        brightness = null;
+        brightness = null,
+        duration = null;
 
   final bool on;
   final int? brightness;
+
+  /// null = 계속(자동 꺼짐 없음).
+  final LedTimerDuration? duration;
 }
 
 final _ledBrightnessProvider = StateProvider.autoDispose<double>((ref) => 60);
 final _ledSubmittedProvider = StateProvider.autoDispose<bool>((ref) => false);
 
+/// 작동 시간 선택 — null = 계속(Figma 기본 선택).
+final _ledDurationProvider =
+    StateProvider.autoDispose<LedTimerDuration?>((ref) => null);
+
 /// LED 시트 — Figma 1106:4127. 시트 #F4F4F4·안쪽 24, '밝기' 16/500 #949090,
-/// 밝기 행 345×48 r16 흰색(퍼센트 18/600 좌 12, 트랙 6 #E3E3E3·채움 LED색,
-/// 흰 52×32 썸). 원본의 즉시/예약 segment·전원 스위치·작동 시간 칩은
-/// 송신 시점·LED 타이머 계약이 미결(P11)이라 붙이지 않고 기존 켜기/끄기
-/// 버튼(선택 후 적용 송신)을 유지한다.
+/// 밝기 행 345×48 r16 흰색([LedBrightnessRow]), '작동 시간' 칩 62.2×4 + '계속'
+/// 80(44 r16, 선택=LED색 16/700 #FAFAFA, 간격 4). 즉시/예약 segment·전원
+/// 스위치는 2026-09-16 사용자 결정(기존 유지)으로 붙이지 않고 켜기/끄기
+/// 버튼(선택 후 적용 송신)을 유지한다. 작동 시간은 계약 확인 전 미리 구현.
 class LedControlSheet extends ConsumerWidget {
   const LedControlSheet({super.key, required this.dimmable});
 
@@ -477,7 +504,42 @@ class LedControlSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final brightness = ref.watch(_ledBrightnessProvider);
     final submitted = ref.watch(_ledSubmittedProvider);
+    final duration = ref.watch(_ledDurationProvider);
     final glass = context.glass;
+    Widget chip(
+        {required Key key,
+        required String label,
+        required bool active,
+        required VoidCallback onTap,
+        double? width}) {
+      final child = Material(
+          color: active ? glass.deviceLed : glass.surfaceHeader,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+              key: key,
+              borderRadius: BorderRadius.circular(16),
+              onTap: submitted ? null : onTap,
+              child: SizedBox(
+                  height: 44,
+                  child: Center(
+                      child: Text(label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontFamily: 'Pretendard',
+                              fontSize: 16,
+                              height: 19.09375 / 16,
+                              fontWeight:
+                                  active ? FontWeight.w700 : FontWeight.w600,
+                              letterSpacing: -0.32,
+                              color: active
+                                  ? glass.buttonForeground
+                                  : glass.textSecondary))))));
+      return width == null
+          ? Expanded(child: child)
+          : SizedBox(width: width, child: child);
+    }
+
     void submit(_LedChoice choice) {
       if (ref.read(_ledSubmittedProvider)) return;
       ref.read(_ledSubmittedProvider.notifier).state = true;
@@ -509,57 +571,42 @@ class LedControlSheet extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text('home_led_brightness'.tr(), style: labelStyle)),
                 const SizedBox(height: 8),
-                Container(
-                  key: const Key('led_brightness_row'),
-                  height: 48,
-                  padding: const EdgeInsets.only(left: 12, right: 8),
-                  decoration: BoxDecoration(
-                      color: glass.surfaceHeader,
-                      borderRadius: BorderRadius.circular(16)),
-                  child: Row(children: [
-                    SizedBox(
-                        width: 51,
-                        child: Text(
-                            'unit_percent_fmt'
-                                .tr(args: ['${brightness.round()}']),
-                            key: const Key('led_brightness_value'),
-                            style: TextStyle(
-                                fontFamily: 'Pretendard',
-                                fontSize: 18,
-                                height: 21.48046875 / 18,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: -0.36,
-                                color: glass.textSecondary))),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SliderTheme(
-                        data: SliderThemeData(
-                          trackHeight: 6,
-                          activeTrackColor: glass.deviceLed,
-                          inactiveTrackColor: glass.border,
-                          disabledActiveTrackColor: glass.deviceLed,
-                          disabledInactiveTrackColor: glass.border,
-                          thumbShape: const _PillThumbShape(),
-                          overlayShape: SliderComponentShape.noOverlay,
-                          trackShape: const RoundedRectSliderTrackShape(),
-                        ),
-                        child: Slider(
-                          key: const Key('led_brightness_slider'),
-                          value: brightness,
-                          min: 20,
-                          max: 100,
-                          divisions: 8,
-                          onChanged: submitted
-                              ? null
-                              : (v) => ref
-                                  .read(_ledBrightnessProvider.notifier)
-                                  .state = v,
-                        ),
-                      ),
-                    ),
-                  ]),
-                ),
+                LedBrightnessRow(
+                    key: const Key('led_brightness_row'),
+                    valueKey: const Key('led_brightness_value'),
+                    sliderKey: const Key('led_brightness_slider'),
+                    value: brightness,
+                    onChanged: submitted
+                        ? null
+                        : (v) => ref
+                            .read(_ledBrightnessProvider.notifier)
+                            .state = v),
               ],
+              const SizedBox(height: 24),
+              // 작동 시간 — Figma 1106:4127 y251 라벨, y278 칩 44.
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child:
+                      Text('home_led_duration_label'.tr(), style: labelStyle)),
+              const SizedBox(height: 8),
+              Row(children: [
+                for (final d in LedTimerDuration.values) ...[
+                  chip(
+                      key: Key('led_timer_${d.minutes}'),
+                      label: d.labelKey.tr(),
+                      active: duration == d,
+                      onTap: () =>
+                          ref.read(_ledDurationProvider.notifier).state = d),
+                  const SizedBox(width: 4),
+                ],
+                chip(
+                    key: const Key('led_steady'),
+                    label: 'home_fan_steady_on'.tr(),
+                    active: duration == null,
+                    width: 80,
+                    onTap: () =>
+                        ref.read(_ledDurationProvider.notifier).state = null),
+              ]),
               const SizedBox(height: 24),
               Row(
                 children: [
@@ -568,9 +615,8 @@ class LedControlSheet extends ConsumerWidget {
                       key: const Key('led_on'),
                       onPressed: submitted
                           ? null
-                          : () => submit(dimmable
-                              ? _LedChoice.on(brightness.round())
-                              : const _LedChoice.on()),
+                          : () => submit(_LedChoice.on(
+                              dimmable ? brightness.round() : null, duration)),
                       child: Text((dimmable
                               ? 'home_led_apply_brightness'
                               : 'home_led_turn_on')
@@ -594,38 +640,5 @@ class LedControlSheet extends ConsumerWidget {
         ),
       ),
     );
-  }
-}
-
-/// Figma 밝기 썸 — 흰 52×32 r16, 옅은 그림자.
-class _PillThumbShape extends SliderComponentShape {
-  const _PillThumbShape();
-  static const Size _size = Size(52, 32);
-
-  @override
-  Size getPreferredSize(bool isEnabled, bool isDiscrete) => _size;
-
-  @override
-  void paint(PaintingContext context, Offset center,
-      {required Animation<double> activationAnimation,
-      required Animation<double> enableAnimation,
-      required bool isDiscrete,
-      required TextPainter labelPainter,
-      required RenderBox parentBox,
-      required SliderThemeData sliderTheme,
-      required ui.TextDirection textDirection,
-      required double value,
-      required double textScaleFactor,
-      required Size sizeWithOverflow}) {
-    final rect = RRect.fromRectAndRadius(
-        Rect.fromCenter(center: center, width: _size.width, height: _size.height),
-        const Radius.circular(16));
-    final canvas = context.canvas;
-    canvas.drawRRect(
-        rect.shift(const Offset(0, 1)),
-        Paint()
-          ..color = Colors.black.withValues(alpha: 0.12)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
-    canvas.drawRRect(rect, Paint()..color = Colors.white);
   }
 }

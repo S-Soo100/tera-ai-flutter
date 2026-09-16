@@ -110,11 +110,15 @@ class _FakeRepo implements ScheduleRepository {
         ':d=${daysOfWeek.join(',')}'
         '${guard == null ? '' : ':guard=${guard.type.wire}>${guard.value}'}');
     pairIds.add(pairId);
+    payloads.add(payload);
     return _schedule(id: 'new-${calls.length}', pairId: pairId);
   }
 
   /// create마다 받은 pair_id(시점 예약이면 null).
   final List<String?> pairIds = [];
+
+  /// create마다 받은 payload.
+  final List<Map<String, dynamic>?> payloads = [];
 }
 
 Schedule _schedule({
@@ -294,35 +298,123 @@ void main() {
         '12');
   });
 
-  testWidgets('냉각팬 예약 — 종료는 시작 + 30분/1시간/2시간, 기본 30분', (tester) async {
+  testWidgets('냉각팬 예약 — fan2_on 한 건 + payload.duration_ms(기본 30분, 2시간 선택)',
+      (tester) async {
+    // 2026-09-16 사용자 결정: pair 대신 duration payload(서버 지원은 요청 문서).
     final repo = _FakeRepo();
     await _pump(tester, repo);
     await _openEditor(tester, 'cool');
     await _save(tester);
-    var creates = repo.calls.where((c) => c.startsWith('create:')).toList();
-    expect(creates[0], startsWith('create:fan2_on:12:00'));
-    expect(creates[1], startsWith('create:fan2_off:12:30'));
+    expect(repo.calls.where((c) => c.startsWith('create:')).toList(),
+        ['create:fan2_on:12:00:d=']);
+    expect(repo.payloads, [
+      {'duration_ms': 1800000}
+    ]);
+    expect(repo.pairIds, [null]);
 
     await _openEditor(tester, 'cool');
-    await tester.tap(find.byKey(const Key('routine_after_120')));
-    await tester.pump();
-    await _save(tester);
-    creates = repo.calls.where((c) => c.startsWith('create:')).toList();
-    expect(creates[3], startsWith('create:fan2_off:14:00'));
-  });
-
-  testWidgets('냉각팬 종료는 자정을 넘기면 다음날 시각이 된다', (tester) async {
-    final repo = _FakeRepo();
-    await _pump(tester, repo);
-    await _openEditor(tester, 'cool');
-    // 오후 12 → 11시 = 23:00, +2시간 = 01:00.
     await tester.tap(find.byKey(const Key('routine_start_hour_down')));
     await tester.tap(find.byKey(const Key('routine_after_120')));
     await tester.pump();
     await _save(tester);
-    final creates = repo.calls.where((c) => c.startsWith('create:')).toList();
-    expect(creates[0], startsWith('create:fan2_on:23:00'));
-    expect(creates[1], startsWith('create:fan2_off:01:00'));
+    expect(repo.calls.last, 'create:fan2_on:23:00:d=');
+    expect(repo.payloads.last, {'duration_ms': 7200000});
+  });
+
+  testWidgets('냉각팬 duration 예약 목록·수정 — 12:00~13:00, 칩 복원, PATCH에 duration',
+      (tester) async {
+    final repo = _FakeRepo(items: [
+      Schedule(
+        id: 'c',
+        deviceId: 'd1',
+        action: ScheduleAction.fan2On,
+        payload: const {'duration_ms': 3600000},
+        kind: ScheduleKind.daily,
+        hour: 12,
+        minute: 0,
+        daysOfWeek: const [],
+        enabled: true,
+        guard: null,
+        pairId: null,
+        nextRunAt: null,
+        lastRunAt: null,
+      ),
+    ]);
+    await _pump(tester, repo);
+    expect(find.textContaining('12:00~13:00'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('schedule_c')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('routine_after_60')), findsOneWidget);
+    expect(find.byKey(const Key('routine_end_hour')), findsNothing);
+    await tester.tap(find.byKey(const Key('routine_after_30')));
+    await tester.pump();
+    await _save(tester);
+    final patch = repo.calls.firstWhere((c) => c.startsWith('patch:c'));
+    expect(patch, contains('duration_ms: 1800000'));
+  });
+
+  testWidgets('LED 예약 추가 — brightness 50이 켜기 행 payload에만 실린다', (tester) async {
+    final repo = _FakeRepo();
+    await _pump(tester, repo);
+    await _openEditor(tester, 'led');
+    expect(find.byKey(const Key('routine_brightness_row')), findsOneWidget);
+    final slider = tester
+        .widget<Slider>(find.byKey(const Key('routine_brightness_slider')));
+    expect(slider.value, 50);
+    slider.onChanged!(80);
+    await tester.pump();
+    await _save(tester);
+    expect(repo.calls.where((c) => c.startsWith('create:')).toList(),
+        ['create:led_on:12:00:d=', 'create:led_off:14:00:d=']);
+    expect(repo.payloads, [
+      {'brightness': 80},
+      null
+    ]);
+  });
+
+  testWidgets('LED 구간 수정 — 저장된 밝기를 복원하고 on PATCH에만 brightness', (tester) async {
+    final repo = _FakeRepo(items: [
+      Schedule(
+        id: 'on',
+        deviceId: 'd1',
+        action: ScheduleAction.ledOn,
+        payload: const {'brightness': 70},
+        kind: ScheduleKind.daily,
+        hour: 8,
+        minute: 0,
+        daysOfWeek: const [],
+        enabled: true,
+        guard: null,
+        pairId: 'p1',
+        nextRunAt: null,
+        lastRunAt: null,
+      ),
+      _schedule(
+          id: 'off', action: ScheduleAction.ledOff, hour: 20, pairId: 'p1'),
+    ]);
+    await _pump(tester, repo);
+    await tester.tap(find.byKey(const Key('schedule_pair_p1')));
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .widget<Slider>(find.byKey(const Key('routine_brightness_slider')))
+            .value,
+        70);
+    await _save(tester);
+    final patches = repo.calls.where((c) => c.startsWith('patch:')).toList();
+    expect(patches[0], startsWith('patch:on:'));
+    expect(patches[0], contains('brightness: 70'));
+    expect(patches[1], startsWith('patch:off:'));
+    expect(patches[1].contains('brightness'), isFalse);
+  });
+
+  testWidgets('환기팬 예약은 payload 없이 만든다', (tester) async {
+    final repo = _FakeRepo();
+    await _pump(tester, repo);
+    await _openEditor(tester, 'fan');
+    expect(find.byKey(const Key('routine_brightness_row')), findsNothing);
+    await _save(tester);
+    expect(repo.payloads, [null, null]);
   });
 
   testWidgets('요일 칩을 고르면 weekly, 안 고르면 daily', (tester) async {

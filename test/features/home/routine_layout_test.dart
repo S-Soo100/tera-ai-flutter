@@ -208,6 +208,22 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('LED 편집기 — 밝기 라벨 448, 행 475 345×48, 반복 547/574', (tester) async {
+    await pump(tester, const []);
+    await tester.tap(find.byKey(RoutineSettingsScreen.addKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('routine_device_led')));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(find.text('밝기')).topLeft, const Offset(36, 448));
+    expect(tester.getRect(find.byKey(const Key('routine_brightness_row'))),
+        const Rect.fromLTWH(24, 475, 345, 48));
+    expect(find.text('50%'), findsOneWidget);
+    expect(tester.getRect(find.text('50%')).left, 36);
+    expect(tester.getRect(find.text('반복')).top, 547);
+    expect(tester.getRect(find.byKey(const Key('routine_day_1'))).top, 574);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('냉각팬 편집기 — 종료 칩 111×44 @ y310, 반복 378/405', (tester) async {
     await pump(tester, const []);
     await tester.tap(find.byKey(RoutineSettingsScreen.addKey));

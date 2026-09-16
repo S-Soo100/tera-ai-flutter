@@ -104,6 +104,8 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
     required int endMinute,
     required List<int> daysOfWeek,
     ScheduleGuard? guard,
+    // 켜기 행에만 싣는 payload(예: LED `brightness`, 2026-09-16 미리 구현).
+    Map<String, dynamic>? payload,
   }) async {
     final deviceId = _deviceId;
     if (deviceId == null) return;
@@ -116,6 +118,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
       hour: startHour,
       minute: startMinute,
       daysOfWeek: daysOfWeek,
+      payload: payload,
       guard: guard,
       pairId: pairId,
     );
@@ -202,6 +205,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
     required List<int> daysOfWeek,
     ScheduleGuard? guard,
     bool clearGuard = false,
+    Map<String, dynamic>? payload,
   }) async {
     final origOn = p.on;
     await updateTiming(
@@ -210,6 +214,7 @@ class SchedulesNotifier extends AutoDisposeAsyncNotifier<List<Schedule>> {
       hour: startHour,
       minute: startMinute,
       daysOfWeek: daysOfWeek,
+      payload: payload,
       guard: guard,
       clearGuard: clearGuard,
     );

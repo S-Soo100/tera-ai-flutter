@@ -188,11 +188,7 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
     return _ScheduleRow(
       key: Key('schedule_${s.id}'),
       device: device,
-      // 분무는 시각만(1106:5317 문법). 켜기/끄기·레거시 동작은 시각 뒤에
-      // 동작 이름을 붙여야 같은 아이콘의 켜기·끄기가 구분된다.
-      title: device == ScheduleDevice.mist
-          ? s.hhmm
-          : '${s.hhmm} ${s.action.displayKey.tr()}',
+      title: _singleTitle(s, device),
       parts: [
         _repeatLabel(s.kind, s.daysOfWeek),
         _stateLabel(s.enabled),
@@ -227,6 +223,7 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
               endMinute: result.endMinute!,
               daysOfWeek: result.daysOfWeek,
               guard: result.guard,
+              payload: result.payload,
             )
         : ref.read(schedulesProvider.notifier).add(
               action: result.action,
@@ -282,6 +279,7 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
                   daysOfWeek: result.daysOfWeek,
                   guard: result.guard,
                   clearGuard: result.clearGuard,
+                  payload: result.payload,
                 ));
       case ScheduleDeleteRequested():
         if (!await _confirmDelete(false)) return;
@@ -409,6 +407,21 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
 String _repeatLabel(ScheduleKind kind, List<int> daysOfWeek) {
   if (kind == ScheduleKind.daily) return 'routine_daily'.tr();
   return ([...daysOfWeek]..sort()).map((d) => 'routine_day_$d'.tr()).join(' ');
+}
+
+/// 분무는 시각만(1106:5317 문법), 냉각팬 duration 예약(fan2_on + duration_ms)은
+/// "12:00~12:30", 그 외 켜기/끄기·레거시 동작은 시각 뒤에 동작 이름을 붙여야
+/// 같은 아이콘의 켜기·끄기가 구분된다.
+String _singleTitle(Schedule s, ScheduleDevice? device) {
+  if (device == ScheduleDevice.mist) return s.hhmm;
+  final ms = s.payload?['duration_ms'];
+  if (s.action == ScheduleAction.fan2On && ms is num && ms > 0) {
+    final end = (s.hour * 60 + s.minute + ms ~/ 60000) % (24 * 60);
+    final hh = (end ~/ 60).toString().padLeft(2, '0');
+    final mm = (end % 60).toString().padLeft(2, '0');
+    return '${s.hhmm}~$hh:$mm';
+  }
+  return '${s.hhmm} ${s.action.displayKey.tr()}';
 }
 
 String _stateLabel(bool enabled) =>

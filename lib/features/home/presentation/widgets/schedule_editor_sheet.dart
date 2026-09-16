@@ -8,6 +8,7 @@ import '../../../my_cage/presentation/widgets/management_widgets.dart';
 import '../../domain/mist_duration.dart';
 import '../../domain/schedule.dart';
 import '../../domain/schedule_device.dart';
+import 'led_brightness_row.dart';
 import 'schedule_device_badge.dart';
 
 /// 편집기가 돌려주는 결과 — 저장([ScheduleDraft]) 또는 하단 "예약 삭제"
@@ -126,6 +127,10 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
   int? _coolMinutes;
   late final Set<int> _days;
 
+  /// LED 구간 예약의 밝기(%) — Figma 1107:8758 밝기 행, 기본 50. 켜기 행
+  /// `payload.brightness`로 싣는다(2026-09-16 계약 확인 전 미리 구현).
+  double _brightness = 50;
+
   bool get _isEdit => widget.initial != null || widget.initialPair != null;
 
   ScheduleAction get _action =>
@@ -139,18 +144,38 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
     final pair = widget.initialPair;
     final base = widget.initial ?? pair?.on;
     _device = widget.device ?? ScheduleDevice.of(_action);
+    // 냉각팬 duration 예약(fan2_on + payload.duration_ms 한 건)은 시점이 아니라
+    // duration 편집기로 연다(2026-09-16 미리 구현 — pair 대신 payload).
+    final singleDurationMs =
+        (widget.initial?.payload?['duration_ms'] as num?)?.toInt();
+    final singleCool = widget.initial?.action == ScheduleAction.fan2On &&
+        singleDurationMs != null &&
+        singleDurationMs > 0;
     _kind = pair != null
         ? (_device?.kind == ScheduleEditorKind.duration
             ? ScheduleEditorKind.duration
             : ScheduleEditorKind.span)
         : widget.initial != null
-            ? ScheduleEditorKind.point
+            ? (singleCool
+                ? ScheduleEditorKind.duration
+                : ScheduleEditorKind.point)
             : widget.device!.kind;
+    final savedBrightness =
+        ((pair?.on ?? widget.initial)?.payload?['brightness'] as num?)
+            ?.toDouble();
+    if (savedBrightness != null) {
+      _brightness =
+          ((savedBrightness / 10).round() * 10).clamp(20, 100).toDouble();
+    }
     // Figma 예시(오후 12:00 → 오후 2:00)를 새 예약의 출발값으로 쓴다.
     _start = _Clock(base?.hour ?? 12, base?.minute ?? 0);
     _end = _Clock(pair?.off.hour ?? 14, pair?.off.minute ?? 0);
     if (_kind == ScheduleEditorKind.duration) {
-      if (pair == null) {
+      if (singleCool) {
+        final minutes = singleDurationMs ~/ 60000;
+        _coolMinutes =
+            ScheduleDevice.coolDurations.contains(minutes) ? minutes : null;
+      } else if (pair == null) {
         _coolMinutes = ScheduleDevice.coolDurations.first;
       } else {
         // 기존 구간 길이가 30/60/120분이면 그 칩, 아니면 미선택(고르기 전엔
@@ -201,6 +226,21 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
             ));
       case ScheduleEditorKind.span:
       case ScheduleEditorKind.duration:
+        if (_kind == ScheduleEditorKind.duration && pair == null) {
+          // 새 냉각팬 예약·duration 단건 수정: fan2_on 한 건 + duration_ms
+          // (2026-09-16 사용자 결정 — 서버 duration 지원은 요청 문서로 확인).
+          Navigator.pop(
+              context,
+              ScheduleDraft(
+                action: widget.initial?.action ?? _device!.onAction,
+                kind: kind,
+                hour: _start.hour24,
+                minute: _start.minute,
+                daysOfWeek: days,
+                payload: {'duration_ms': _coolMinutes! * 60000},
+              ));
+          return;
+        }
         var endHour = _end.hour24;
         var endMinute = _end.minute;
         if (_kind == ScheduleEditorKind.duration) {
@@ -220,7 +260,9 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
               endHour: endHour,
               endMinute: endMinute,
               daysOfWeek: days,
-              payload: null,
+              payload: _device == ScheduleDevice.led
+                  ? {'brightness': _brightness.round()}
+                  : null,
             ));
     }
   }
@@ -264,6 +306,24 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
                                         clock: _end,
                                         accent: accent,
                                         onChanged: () => setState(() {}))),
+                              ],
+                              if (_kind == ScheduleEditorKind.span &&
+                                  _device == ScheduleDevice.led) ...[
+                                const SizedBox(height: 24),
+                                // Figma 1107:8758 — 밝기 y447.5, 행 y474.5.
+                                _Section(
+                                    label: 'home_led_brightness'.tr(),
+                                    gap: 8,
+                                    child: LedBrightnessRow(
+                                        key:
+                                            const Key('routine_brightness_row'),
+                                        valueKey: const Key(
+                                            'routine_brightness_value'),
+                                        sliderKey: const Key(
+                                            'routine_brightness_slider'),
+                                        value: _brightness,
+                                        onChanged: (v) =>
+                                            setState(() => _brightness = v))),
                               ],
                               if (_kind == ScheduleEditorKind.duration) ...[
                                 const SizedBox(height: 24),

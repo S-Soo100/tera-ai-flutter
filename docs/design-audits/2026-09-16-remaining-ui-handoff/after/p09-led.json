@@ -4,7 +4,7 @@
     "text": "밝기",
     "rect": [
       36.0,
-      647.0,
+      552.0,
       321.0,
       19.0
     ],
@@ -15,11 +15,127 @@
     "text": "60%",
     "rect": [
       36.0,
-      687.5,
+      592.5,
       51.0,
       21.0
     ],
     "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "작동 시간",
+    "rect": [
+      36.0,
+      651.0,
+      321.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'led_timer_30'>]",
+    "rect": [
+      24.0,
+      678.0,
+      62.25,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "30분",
+    "rect": [
+      38.52687454223633,
+      690.5,
+      33.196250915527344,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'led_timer_60'>]",
+    "rect": [
+      90.25,
+      678.0,
+      62.25,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "1시간",
+    "rect": [
+      104.35499954223633,
+      690.5,
+      34.040000915527344,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'led_timer_120'>]",
+    "rect": [
+      156.5,
+      678.0,
+      62.25,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "2시간",
+    "rect": [
+      169.45656204223633,
+      690.5,
+      36.336875915527344,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'led_timer_180'>]",
+    "rect": [
+      222.75,
+      678.0,
+      62.25,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "3시간",
+    "rect": [
+      235.47218704223633,
+      690.5,
+      36.805625915527344,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'led_steady'>]",
+    "rect": [
+      289.0,
+      678.0,
+      80.0,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "계속",
+    "rect": [
+      315.4918746948242,
+      690.5,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, height: 1.2x)"
   },
   {
     "type": "InkWell",

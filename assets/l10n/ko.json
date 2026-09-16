@@ -994,5 +994,7 @@
   "routine_end": "종료",
   "routine_am": "오전",
   "routine_pm": "오후",
-  "routine_editor_save": "저장"
+  "routine_editor_save": "저장",
+  "home_timer_3h": "3시간",
+  "home_led_duration_label": "작동 시간"
 }

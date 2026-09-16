@@ -762,7 +762,7 @@
   },
   {
     "type": "Text",
-    "text": "반복",
+    "text": "밝기",
     "rect": [
       36.0,
       448.0,
@@ -772,10 +772,32 @@
     "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
   },
   {
+    "type": "Text",
+    "text": "50%",
+    "rect": [
+      36.0,
+      488.5,
+      51.0,
+      21.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "반복",
+    "rect": [
+      36.0,
+      547.0,
+      333.0,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
     "type": "InkWell",
     "rect": [
       24.0,
-      475.0,
+      574.0,
       45.857142857142854,
       44.0
     ]
@@ -785,7 +807,7 @@
     "text": "월",
     "rect": [
       40.17450877598354,
-      487.5,
+      586.5,
       13.508125305175781,
       19.0
     ],
@@ -795,7 +817,7 @@
     "type": "InkWell",
     "rect": [
       73.85714285714286,
-      475.0,
+      574.0,
       45.857142857142854,
       44.0
     ]
@@ -805,7 +827,7 @@
     "text": "화",
     "rect": [
       90.0316516331264,
-      487.5,
+      586.5,
       13.508125305175781,
       19.0
     ],
@@ -815,7 +837,7 @@
     "type": "InkWell",
     "rect": [
       123.71428571428571,
-      475.0,
+      574.0,
       45.857142857142854,
       44.0
     ]
@@ -825,7 +847,7 @@
     "text": "수",
     "rect": [
       139.88879449026925,
-      487.5,
+      586.5,
       13.508125305175781,
       19.0
     ],
@@ -835,7 +857,7 @@
     "type": "InkWell",
     "rect": [
       173.57142857142856,
-      475.0,
+      574.0,
       45.857142857142854,
       44.0
     ]
@@ -845,7 +867,7 @@
     "text": "목",
     "rect": [
       189.74593734741208,
-      487.5,
+      586.5,
       13.508125305175781,
       19.0
     ],
@@ -855,7 +877,7 @@
     "type": "InkWell",
     "rect": [
       223.42857142857142,
-      475.0,
+      574.0,
       45.857142857142854,
       44.0
     ]
@@ -865,7 +887,7 @@
     "text": "금",
     "rect": [
       239.60308020455494,
-      487.5,
+      586.5,
       13.508125305175781,
       19.0
     ],
@@ -875,7 +897,7 @@
     "type": "InkWell",
     "rect": [
       273.2857142857143,
-      475.0,
+      574.0,
       45.857142857142854,
       44.0
     ]
@@ -885,7 +907,7 @@
     "text": "토",
     "rect": [
       289.46022306169783,
-      487.5,
+      586.5,
       13.508125305175781,
       19.0
     ],
@@ -895,7 +917,7 @@
     "type": "InkWell",
     "rect": [
       323.1428571428571,
-      475.0,
+      574.0,
       45.857142857142854,
       44.0
     ]
@@ -905,7 +927,7 @@
     "text": "일",
     "rect": [
       339.31736591884066,
-      487.5,
+      586.5,
       13.508125305175781,
       19.0
     ],
