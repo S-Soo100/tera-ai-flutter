@@ -2,7 +2,7 @@
 
 사용자 지시("응답은 아직 안 왔지만, 응답이 와서 수정이 되었다고 가정하고 개발 진행")에 따라 앱이 **미리 구현한 서버·펌웨어 계약**을 한 곳에 모은다.
 
-**2026-09-16 통합 회신 수신** ([원문](../references/2026-09-16-backend-delivery-reply.md)). 대조 결과를 "회신 결과" 열에 적었다. **결정 답신([reply-2](2026-09-16-lee-gwanhun-reply-2-decisions.md))과 답신 1·SQL 초안 폴더는 2026-09-16 사용자가 직접 전달 완료.** secret은 사용자가 별도 채널로 전달(앱 팀 미관여). 다음 대기: 소프트 해제 배포 통보, RPC 초안 검토 결과, 히터 400 적용, skipped는 서버도 구현 완료(스위치 `PUSH_EVENT_SKIPPED_ENABLED` 꺼짐) → [발송 시작 신호](2026-09-16-lee-gwanhun-skipped-go-signal.md) **2026-09-16 Slack DM으로 전달 완료**(사용자 지시로 Claude가 발송). secret은 사용자가 별도 채널로 전달 예정. 히터는 예약 400 + 직접 INSERT `rejected/unsupported_action`으로 서버 차단 완료. 아직 사용자 결정이 필요한 줄은 굵게 표시.
+**2026-09-16 통합 회신 수신** ([원문](../references/2026-09-16-backend-delivery-reply.md)). 대조 결과를 "회신 결과" 열에 적었다. **결정 답신([reply-2](2026-09-16-lee-gwanhun-reply-2-decisions.md))과 답신 1·SQL 초안 폴더는 2026-09-16 사용자가 직접 전달 완료.** secret은 사용자가 별도 채널로 전달(앱 팀 미관여). 다음 대기: 소프트 해제 배포 통보, RPC 초안 검토 결과, 히터 400 적용, skipped는 서버도 구현 완료(스위치 `PUSH_EVENT_SKIPPED_ENABLED` 꺼짐) → [발송 시작 신호](2026-09-16-lee-gwanhun-skipped-go-signal.md) **2026-09-16 Slack DM으로 전달 완료**(사용자 지시로 Claude가 발송). secret은 2026-09-16 사용자가 별도 채널로 전달 완료(값은 앱 팀 문서·채팅에 없음). 서버 활성화·스테이징 3+1종 검증 회신 대기. 히터는 예약 400 + 직접 INSERT `rejected/unsupported_action`으로 서버 차단 완료. 아직 사용자 결정이 필요한 줄은 굵게 표시.
 
 | # | 회신 결과 | 앱 조치 |
 |---|---|---|
