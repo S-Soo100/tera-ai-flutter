@@ -20,7 +20,6 @@ import '../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/glass_palette.dart';
-import '../domain/led_timer_duration.dart';
 import 'widgets/led_brightness_row.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
@@ -417,8 +416,6 @@ Future<void> openLedSheet(
       ?.where((d) => d.id == deviceId)
       .firstOrNull;
   final dimmable = device?.ledDimmable ?? false;
-  // await 전에 잡아 둔다 — 전송 중 화면을 떠나도 타이머 알림은 걸거나 내려야 한다.
-  final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
   // 보고값은 바꾸지 않고 시트의 선택 값만 20~100, 10% 단위로 맞춘다.
   final seed = (currentBrightness ?? 0) > 0 ? currentBrightness! : 60;
   final choice = await showModalBottomSheet<_LedChoice>(
@@ -428,7 +425,6 @@ Future<void> openLedSheet(
         _ledBrightnessProvider.overrideWith(
             (ref) => ((seed / 10).round() * 10).clamp(20, 100).toDouble()),
         _ledSubmittedProvider.overrideWith((ref) => false),
-        _ledDurationProvider.overrideWith((ref) => null),
       ],
       child: LedControlSheet(dimmable: dimmable),
     ),
@@ -441,67 +437,46 @@ Future<void> openLedSheet(
     );
     return;
   }
-  final payload = ledCommandPayload(
-      on: choice.on,
-      dimmable: dimmable,
-      brightness: choice.brightness,
-      duration: choice.duration);
-  final action = choice.on ? CommandAction.ledOn : CommandAction.ledOff;
-  final sent =
-      await sendCageCommand(context, ref, deviceId, action, payload: payload);
-  // 팬 타이머와 같은 문법 — 작동 시간이 있으면 만료 시각에 완료 알림을 예약하고,
-  // '계속'·끄기는 기존 예약을 내린다. 판단은 서비스 쪽 plan이 한다.
-  if (sent) {
-    await timerNotifs.onFanCommandSent(
-        deviceId, action.toWire(), payload?['duration_ms'] as int?);
-  }
-  // 진행 칩을 깨운다(시작·대체·취소 모두). await 뒤라 mounted 재확인.
-  if (context.mounted) ref.invalidate(runningTimersProvider);
+  await sendCageCommand(
+    context,
+    ref,
+    deviceId,
+    choice.on ? CommandAction.ledOn : CommandAction.ledOff,
+    payload: ledCommandPayload(
+        on: choice.on, dimmable: dimmable, brightness: choice.brightness),
+  );
 }
 
 /// LED 명령 payload. 릴레이 보드엔 brightness를 싣지 않는다 — 서버·펌웨어가
 /// 무시하긴 하지만 실DB `led_*` 이력에 의미 없는 payload를 남기지 않는다.
-/// 작동 시간(`duration_ms`)은 2026-09-16 사용자 결정으로 계약 확인 전 미리
-/// 싣는다([LedTimerDuration]). 끄기·'계속'·비대상이면 null.
+/// 끄기·비대상이면 null. `duration_ms`는 싣지 않는다 — 펌웨어가 LED에서는
+/// 읽지 않고 그냥 켠 뒤 `ok`를 보내 아무도 "안 꺼짐"을 알 수 없다(2026-09-16
+/// 회신 §1.4, A안 확정).
 Map<String, dynamic>? ledCommandPayload(
-    {required bool on,
-    required bool dimmable,
-    int? brightness,
-    LedTimerDuration? duration}) {
+    {required bool on, required bool dimmable, int? brightness}) {
   if (!on) return null;
-  final payload = <String, dynamic>{
-    if (dimmable && brightness != null) 'brightness': brightness,
-    if (duration != null) 'duration_ms': duration.milliseconds,
-  };
-  return payload.isEmpty ? null : payload;
+  if (!dimmable || brightness == null) return null;
+  return {'brightness': brightness};
 }
 
 class _LedChoice {
-  const _LedChoice.on([this.brightness, this.duration]) : on = true;
+  const _LedChoice.on([this.brightness]) : on = true;
   const _LedChoice.off()
       : on = false,
-        brightness = null,
-        duration = null;
+        brightness = null;
 
   final bool on;
   final int? brightness;
-
-  /// null = 계속(자동 꺼짐 없음).
-  final LedTimerDuration? duration;
 }
 
 final _ledBrightnessProvider = StateProvider.autoDispose<double>((ref) => 60);
 final _ledSubmittedProvider = StateProvider.autoDispose<bool>((ref) => false);
 
-/// 작동 시간 선택 — null = 계속(Figma 기본 선택).
-final _ledDurationProvider =
-    StateProvider.autoDispose<LedTimerDuration?>((ref) => null);
-
 /// LED 시트 — Figma 1106:4127. 시트 #F4F4F4·안쪽 24, '밝기' 16/500 #949090,
-/// 밝기 행 345×48 r16 흰색([LedBrightnessRow]), '작동 시간' 칩 62.2×4 + '계속'
-/// 80(44 r16, 선택=LED색 16/700 #FAFAFA, 간격 4). 즉시/예약 segment·전원
+/// 밝기 행 345×48 r16 흰색([LedBrightnessRow]). 즉시/예약 segment·전원
 /// 스위치는 2026-09-16 사용자 결정(기존 유지)으로 붙이지 않고 켜기/끄기
-/// 버튼(선택 후 적용 송신)을 유지한다. 작동 시간은 계약 확인 전 미리 구현.
+/// 버튼(선택 후 적용 송신)을 유지한다. Figma의 '작동 시간' 칩은 펌웨어
+/// 미지원(회신 §1.4)으로 A안(제거) 확정 — 되살리려면 펌웨어 LED 타이머 선행.
 class LedControlSheet extends ConsumerWidget {
   const LedControlSheet({super.key, required this.dimmable});
 
@@ -511,41 +486,7 @@ class LedControlSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final brightness = ref.watch(_ledBrightnessProvider);
     final submitted = ref.watch(_ledSubmittedProvider);
-    final duration = ref.watch(_ledDurationProvider);
     final glass = context.glass;
-    Widget chip(
-        {required Key key,
-        required String label,
-        required bool active,
-        required VoidCallback onTap,
-        double? width}) {
-      final child = Material(
-          color: active ? glass.deviceLed : glass.surfaceHeader,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-              key: key,
-              borderRadius: BorderRadius.circular(16),
-              onTap: submitted ? null : onTap,
-              child: SizedBox(
-                  height: 44,
-                  child: Center(
-                      child: Text(label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontFamily: 'Pretendard',
-                              fontSize: 16,
-                              height: 19.09375 / 16,
-                              fontWeight:
-                                  active ? FontWeight.w700 : FontWeight.w600,
-                              letterSpacing: -0.32,
-                              color: active
-                                  ? glass.buttonForeground
-                                  : glass.textSecondary))))));
-      return width == null
-          ? Expanded(child: child)
-          : SizedBox(width: width, child: child);
-    }
 
     void submit(_LedChoice choice) {
       if (ref.read(_ledSubmittedProvider)) return;
@@ -590,31 +531,6 @@ class LedControlSheet extends ConsumerWidget {
                             .state = v),
               ],
               const SizedBox(height: 24),
-              // 작동 시간 — Figma 1106:4127 y251 라벨, y278 칩 44.
-              Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child:
-                      Text('home_led_duration_label'.tr(), style: labelStyle)),
-              const SizedBox(height: 8),
-              Row(children: [
-                for (final d in LedTimerDuration.values) ...[
-                  chip(
-                      key: Key('led_timer_${d.minutes}'),
-                      label: d.labelKey.tr(),
-                      active: duration == d,
-                      onTap: () =>
-                          ref.read(_ledDurationProvider.notifier).state = d),
-                  const SizedBox(width: 4),
-                ],
-                chip(
-                    key: const Key('led_steady'),
-                    label: 'home_fan_steady_on'.tr(),
-                    active: duration == null,
-                    width: 80,
-                    onTap: () =>
-                        ref.read(_ledDurationProvider.notifier).state = null),
-              ]),
-              const SizedBox(height: 24),
               Row(
                 children: [
                   Expanded(
@@ -623,7 +539,7 @@ class LedControlSheet extends ConsumerWidget {
                       onPressed: submitted
                           ? null
                           : () => submit(_LedChoice.on(
-                              dimmable ? brightness.round() : null, duration)),
+                              dimmable ? brightness.round() : null)),
                       child: Text((dimmable
                               ? 'home_led_apply_brightness'
                               : 'home_led_turn_on')

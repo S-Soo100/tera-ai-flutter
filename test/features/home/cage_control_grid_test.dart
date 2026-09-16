@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivanaut/features/home/domain/led_timer_duration.dart';
 import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivanaut/features/home/presentation/widgets/cage_control_grid.dart';
@@ -196,46 +195,23 @@ void main() {
     expect(find.text('home_fan_duration_label'), findsNothing);
   });
 
-  test('LED payload — 작동 시간은 duration_ms, 계속은 없음, 릴레이 보드는 brightness 제외', () {
-    expect(
-        ledCommandPayload(
-            on: true, dimmable: true, brightness: 60, duration: null),
+  test(
+      'LED payload — 밝기 보드만 brightness, 릴레이 보드·끄기는 null, duration_ms 없음(회신 §1.4)',
+      () {
+    expect(ledCommandPayload(on: true, dimmable: true, brightness: 60),
         {'brightness': 60});
     expect(
-        ledCommandPayload(
-            on: true,
-            dimmable: true,
-            brightness: 60,
-            duration: LedTimerDuration.h1),
-        {'brightness': 60, 'duration_ms': 3600000});
+        ledCommandPayload(on: true, dimmable: false, brightness: 60), isNull);
     expect(
-        ledCommandPayload(
-            on: true,
-            dimmable: false,
-            brightness: 60,
-            duration: LedTimerDuration.h3),
-        {'duration_ms': 10800000});
-    expect(ledCommandPayload(on: true, dimmable: false), isNull);
-    expect(
-        ledCommandPayload(
-            on: false,
-            dimmable: true,
-            brightness: 60,
-            duration: LedTimerDuration.m30),
-        isNull);
+        ledCommandPayload(on: false, dimmable: true, brightness: 60), isNull);
   });
 
-  testWidgets('LED 시트 작동 시간 칩 — 30분/1시간/2시간/3시간/계속, 기본 계속', (tester) async {
+  testWidgets('LED 시트에 작동 시간 칩이 없다 — A안(2026-09-16)', (tester) async {
     await _pump(tester);
     await tester.tap(find.byKey(CageControlGrid.ledKey));
     await tester.pumpAndSettle();
-    for (final m in [30, 60, 120, 180]) {
-      expect(find.byKey(Key('led_timer_$m')), findsOneWidget);
-    }
-    expect(find.byKey(const Key('led_steady')), findsOneWidget);
-    expect(find.text('home_led_duration_label'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('led_timer_60')));
-    await tester.pump();
-    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('led_steady')), findsNothing);
+    expect(find.byKey(const Key('led_timer_60')), findsNothing);
+    expect(find.byKey(const Key('led_on')), findsOneWidget);
   });
 }

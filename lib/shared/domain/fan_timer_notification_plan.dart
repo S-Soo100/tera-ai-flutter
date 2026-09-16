@@ -20,18 +20,15 @@ sealed class FanTimerNotificationPlan {
   /// - `fan_on` duration 없음(계속 켜기) → **취소** — duration 없는 fan_on은
   ///   진행 중 타이머를 대체(소멸)시킨다. `handleFanTap`의 invalidate와 같은 이유.
   /// - `fan_off` → 취소 (타이머 취소도 fan_off다)
-  /// - `led_on`/`led_off`도 같은 규칙 (2026-09-16 LED 작동 시간, 계약 확인 전)
-  /// - 그 외(무관한 명령, `*_toggle` 포함) → null(알림에 영향 없음)
+  /// - 그 외(팬 무관, fan_toggle 포함) → null(알림에 영향 없음). LED는
+  ///   펌웨어에 타이머가 없어(2026-09-16 회신 §1.4) 대상이 아니다.
   static FanTimerNotificationPlan? of(String action, int? durationMs) {
     final actuator = action.startsWith('fan2_')
         ? FanActuator.cooling
-        : action.startsWith('led_')
-            ? FanActuator.led
-            : FanActuator.ventilation;
+        : FanActuator.ventilation;
     switch (action) {
       case 'fan_on':
       case 'fan2_on':
-      case 'led_on':
         if (durationMs != null && durationMs > 0) {
           return ScheduleFanDone(
             minutes: durationMs ~/ 60000,
@@ -42,7 +39,6 @@ sealed class FanTimerNotificationPlan {
         return CancelFanDone(actuator: actuator);
       case 'fan_off':
       case 'fan2_off':
-      case 'led_off':
         return CancelFanDone(actuator: actuator);
       default:
         return null;

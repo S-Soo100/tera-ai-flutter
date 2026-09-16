@@ -101,16 +101,12 @@ class FanTimerNotificationService {
     );
   }
 
-  String _titleKey(FanActuator actuator) => switch (actuator) {
-        FanActuator.cooling => 'notif_cooling_timer_done_title',
-        FanActuator.led => 'notif_led_timer_done_title',
-        FanActuator.ventilation => 'notif_fan_timer_done_title',
-      };
-  String _bodyKey(FanActuator actuator) => switch (actuator) {
-        FanActuator.cooling => 'notif_cooling_timer_done_body',
-        FanActuator.led => 'notif_led_timer_done_body',
-        FanActuator.ventilation => 'notif_fan_timer_done_body',
-      };
+  String _titleKey(FanActuator actuator) => actuator == FanActuator.cooling
+      ? 'notif_cooling_timer_done_title'
+      : 'notif_fan_timer_done_title';
+  String _bodyKey(FanActuator actuator) => actuator == FanActuator.cooling
+      ? 'notif_cooling_timer_done_body'
+      : 'notif_fan_timer_done_body';
 
   NotificationDetails _details() => NotificationDetails(
         android: AndroidNotificationDetails(
