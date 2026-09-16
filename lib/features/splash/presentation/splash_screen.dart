@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../auth/data/login_prefs_repository.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -24,7 +25,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await Future.delayed(const Duration(seconds: 1));
     if (!mounted) return;
 
-    final session = Supabase.instance.client.auth.currentSession;
+    final auth = Supabase.instance.client.auth;
+    var session = auth.currentSession;
+    // 로그인 화면의 "자동 로그인"을 끈 채 로그인했으면 다음 실행에서 세션을
+    // 끊고 다시 묻는다(2026-09-16 Figma 로그인 재설계, 계획 B3).
+    if (session != null && !ref.read(loginPrefsProvider).autoLogin) {
+      try {
+        await auth.signOut();
+      } catch (_) {
+        // 오프라인이면 서버 세션은 남아도 로컬은 지워진다 — 로그인으로 보낸다.
+      }
+      session = null;
+      if (!mounted) return;
+    }
     if (session != null) {
       context.go('/home');
     } else {

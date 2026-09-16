@@ -1,0 +1,147 @@
+[
+  {
+    "type": "Text",
+    "text": "아이디",
+    "rect": [
+      24.0,
+      178.64,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "EditableText",
+    "text": "vivanaut@gmail.com",
+    "rect": [
+      29.0,
+      232.64,
+      335.0,
+      19.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "vivanaut@gmail.com",
+    "rect": [
+      29.0,
+      232.64,
+      335.0,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).merge(unknown)).merge(unknown)).merge(unknown), inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "비밀번호",
+    "rect": [
+      24.0,
+      298.64,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "EditableText",
+    "text": "**********",
+    "rect": [
+      29.0,
+      352.64,
+      307.0,
+      19.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "영문+숫자+특수문자 6자~12자",
+    "rect": [
+      29.0,
+      352.64,
+      307.0,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).merge(unknown)).merge(unknown)).merge(unknown), inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/visibility",
+    "rect": [
+      340.0,
+      350.14,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/check_box_400",
+    "rect": [
+      20.0,
+      406.64,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "자동 로그인",
+    "rect": [
+      48.0,
+      410.14,
+      62.23601531982422,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": true
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "로그인",
+    "rect": [
+      173.70503997802734,
+      710.0,
+      45.58992004394531,
+      28.0
+    ],
+    "style": "null"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      752.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "계정이 없으신가요? 회원가입",
+    "rect": [
+      107.9859390258789,
+      770.5,
+      177.0281219482422,
+      19.0
+    ],
+    "style": "null"
+  }
+]
