@@ -186,3 +186,5 @@ e1712d3 feat: LED 작동 시간 칩·예약 LED 밝기·냉각팬 예약 duratio
 
 
 [2026-09-16-lee-gwanhun-reply-groups-and-push.md](../../handoffs/2026-09-16-lee-gwanhun-reply-groups-and-push.md) — 이관훈님 9/15 회신 2건(재설계·푸시)에 대한 답신. 그룹·이름 규칙은 서버에 없고(회신 §3) RPC 초안은 앱 팀 작성·백엔드 적용으로 합의됐으나(§4.3) 초안 전달 기록이 없어 `supabase/drafts/20260915_*.sql` 5개를 이 문서로 전달한다. 회신이 기다리던 앱 팀 답(이름 비교 규칙·기기 이름 중복 범위·푸시 6건)을 포함. 운영 DB에는 `redesign_` 함수가 없음을 2026-09-16 읽기 전용 조회로 확인. 사용자 확인 필요 결정: ended=A안, timer 미전송, guard 스킵 2차, 무응답 실패 알림 필요(예약 한정), 이름 대소문자 구분 유지.
+
+[2026-09-16-assumed-server-contracts.md](../../handoffs/2026-09-16-assumed-server-contracts.md) — 사용자 지시로 회신 전 가정 구현한 계약 7건 원장(LED 작동 시간 칩·알림, 소프트 해제 REST, unlinked_at 필터, 푸시 outcome/result). 커밋 `bb453d4`(0.108.0+265) · `fb01a48`(0.108.1+266) · 푸시 검증기 커밋. 회신 대조 시 이 표로 "그대로/수정/되돌림"을 정한다.
