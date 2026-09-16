@@ -32,6 +32,11 @@ import '../../features/community/presentation/community_player_screen.dart';
 import '../../features/community/presentation/clip_select_screen.dart';
 import '../../features/community/presentation/compose_screen.dart';
 import '../../features/community/presentation/blocked_users_screen.dart';
+import '../../features/profile/presentation/account_screen.dart';
+import '../../features/profile/presentation/community_profile_screen.dart';
+import '../../features/profile/presentation/notification_settings_screen.dart';
+import '../../features/profile/presentation/password_change_screen.dart';
+import '../../features/profile/presentation/withdraw_screen.dart';
 import '../../features/community/presentation/user_posts_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -410,10 +415,33 @@ GoRouter buildAppRouter({
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
         routes: [
+          // 마이 페이지 하위(Figma 1142:8859, 2026-09-16).
+          GoRoute(
+            path: 'community',
+            builder: (context, state) => const CommunityProfileScreen(),
+          ),
           // 커뮤니티 차단 관리 (Task 12)
           GoRoute(
             path: 'blocked',
             builder: (context, state) => const BlockedUsersScreen(),
+          ),
+          GoRoute(
+            path: 'notifications',
+            builder: (context, state) => const NotificationSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'account',
+            builder: (context, state) => const AccountScreen(),
+            routes: [
+              GoRoute(
+                path: 'password',
+                builder: (context, state) => const PasswordChangeScreen(),
+              ),
+              GoRoute(
+                path: 'withdraw',
+                builder: (context, state) => const WithdrawScreen(),
+              ),
+            ],
           ),
         ],
       ),

@@ -26,12 +26,14 @@ class ProfileNotifier extends AsyncNotifier<UserProfile?> {
   Future<void> updateProfile({
     String? displayName,
     String? experience,
+    bool? experienceHidden,
     List<String>? preferredSpecies,
   }) async {
     final repo = ref.read(profileRepositoryProvider);
     await repo.updateProfile(
       displayName: displayName,
       experience: experience,
+      experienceHidden: experienceHidden,
       preferredSpecies: preferredSpecies,
     );
     ref.invalidateSelf();

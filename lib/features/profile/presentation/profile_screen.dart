@@ -1,344 +1,237 @@
-import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
+
+import '../../../core/theme/glass_palette.dart';
 import '../../../core/theme/theme_mode_provider.dart';
-import '../../../shared/widgets/glass_page_shell.dart';
+import '../../../shared/widgets/figma_icon.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
-import '../../auth/data/auth_repository.dart';
+import '../../community/presentation/community_providers.dart';
+import '../../my_cage/presentation/management_colors.dart';
+import '../../my_cage/presentation/widgets/management_widgets.dart';
 import '../../notification/presentation/notification_providers.dart';
-import '../../notification/presentation/push_providers.dart';
 import '../domain/user_profile.dart';
 import 'profile_providers.dart';
+import 'widgets/my_page_widgets.dart';
 
-class ProfileScreen extends ConsumerStatefulWidget {
+/// 마이 페이지(Figma MyPage 1142:8860 / 1142:8956). 라우트 `/profile`.
+///
+/// 커뮤니티 설정: 프로필 카드(→ `/profile/community`) + 차단한 사용자(→
+/// `/profile/blocked`, 오른쪽 N명). 앱 설정: 알림(→ `/profile/notifications`) ·
+/// 내 계정(→ `/profile/account`) · 버전 정보 — 여기까지 원본 좌표(348/420/492).
+/// 그 아래는 원본에 없는 행: 받은 알림(→ `/notifications`, 알림 내역 화면이 갈
+/// 곳이 없어 남긴다, 미읽음 점 유지) · 화면 모드(사용자 결정 전까지 유지) ·
+/// 디자인 랩(개발 빌드만). 로그아웃은 내 계정 화면으로 옮겼다.
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
+  static const profileCardKey = Key('mypage_profile_card');
+  static const blockedRowKey = Key('mypage_blocked_row');
+  static const inboxRowKey = Key('profile_notifications_tile');
+  static const notificationsRowKey = Key('mypage_notifications_row');
+  static const accountRowKey = Key('mypage_account_row');
+  static const versionRowKey = Key('mypage_version_row');
+  static const themeRowKey = Key('mypage_theme_row');
+
   @override
-  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final glass = context.glass;
+    final profile = ref.watch(profileNotifierProvider);
+    final blockedCount =
+        ref.watch(blockedProfilesProvider).valueOrNull?.length ?? 0;
+    final version = ref.watch(appVersionProvider).valueOrNull;
+    final unread = ref.watch(unreadNotificationCountProvider);
+    final iconColor = ManagementColors.buttonForeground(context);
+
+    return MyPageScaffold(
+      title: 'mypage_title'.tr(),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        MyPageSectionTitle('mypage_section_community'.tr()),
+        profile.when(
+          loading: () => const SkeletonLoading(
+              width: double.infinity, height: 76, borderRadius: 12),
+          error: (e, _) => _ProfileCard(profile: null, onTap: null),
+          data: (p) => _ProfileCard(
+              profile: p, onTap: () => context.push('/profile/community')),
+        ),
+        const SizedBox(height: 8),
+        MyPageRow(
+            key: blockedRowKey,
+            title: 'mypage_blocked_title'.tr(),
+            subtitle: 'mypage_blocked_subtitle'.tr(),
+            icon: MyPageRasterIcon('person_cancel', color: iconColor),
+            trailingText: 'mypage_blocked_count_fmt'.tr(args: ['$blockedCount']),
+            onTap: () => context.push('/profile/blocked')),
+        const SizedBox(height: 24),
+        MyPageSectionTitle('mypage_section_app'.tr()),
+        MyPageRow(
+            key: notificationsRowKey,
+            title: 'mypage_notifications_title'.tr(),
+            subtitle: 'mypage_notifications_subtitle'.tr(),
+            icon: MyPageRasterIcon('notifications', color: iconColor),
+            onTap: () => context.push('/profile/notifications')),
+        const SizedBox(height: 8),
+        MyPageRow(
+            key: accountRowKey,
+            title: 'mypage_account_title'.tr(),
+            subtitle: 'mypage_account_subtitle'.tr(),
+            icon: FigmaIcon.tinted(FigmaIcons.person,
+                size: 24, color: iconColor),
+            onTap: () => context.push('/profile/account')),
+        const SizedBox(height: 8),
+        // 최신 판정(스토어 API·원격 설정)은 후속 — 지금은 버전만 보여주고, 탭하면
+        // 원본 모달 문구 대신 판정 불가를 말하지 않도록 화살표 없이 둔다(RESULTS C7).
+        MyPageRow(
+            key: versionRowKey,
+            title: 'mypage_version_title'.tr(),
+            icon: MyPageRasterIcon('info_i', color: iconColor),
+            trailingText: version == null ? '…' : _formatVersion(version),
+            showArrow: false),
+        const SizedBox(height: 8),
+        MyPageRow(
+            key: inboxRowKey,
+            title: 'mypage_inbox_title'.tr(),
+            subtitle: 'mypage_inbox_subtitle'.tr(),
+            icon: MyPageRasterIcon('notifications', color: iconColor),
+            badge: unread > 0
+                ? Container(
+                    key: const Key('profile_notifications_dot'),
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                        color: glass.navSelected, shape: BoxShape.circle))
+                : null,
+            onTap: () => context.push('/notifications')),
+        const SizedBox(height: 8),
+        MyPageRow(
+            key: themeRowKey,
+            title: 'mypage_theme_title'.tr(),
+            subtitle: 'mypage_theme_subtitle'.tr(),
+            icon: Icon(Icons.brightness_6_outlined, size: 24, color: iconColor),
+            trailingText: _themeLabel(ref.watch(themeModeProvider)),
+            onTap: () => _pickTheme(context, ref)),
+        if (kDebugMode) ...[
+          const SizedBox(height: 8),
+          MyPageRow(
+              title: 'mypage_dev_title'.tr(),
+              subtitle: 'mypage_dev_subtitle'.tr(),
+              icon: Icon(Icons.palette_outlined, size: 24, color: iconColor),
+              onTap: () => context.push('/design-test')),
+        ],
+      ]),
+    );
+  }
+
+  /// `0.110.0+275` → `0.110.0 (275)`(Figma "0.90.3 (173)").
+  static String _formatVersion(String v) {
+    final i = v.indexOf('+');
+    if (i < 0) return v;
+    return 'mypage_version_fmt'
+        .tr(args: [v.substring(0, i), v.substring(i + 1)]);
+  }
+
+  static String _themeLabel(ThemeMode m) => switch (m) {
+        ThemeMode.system => 'profile_theme_system'.tr(),
+        ThemeMode.light => 'profile_theme_light'.tr(),
+        ThemeMode.dark => 'profile_theme_dark'.tr(),
+      };
+
+  Future<void> _pickTheme(BuildContext context, WidgetRef ref) async {
+    final picked = await showModalBottomSheet<ThemeMode>(
+        context: context,
+        backgroundColor: context.glass.overlay,
+        builder: (ctx) => SafeArea(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              for (final m in ThemeMode.values)
+                ListTile(
+                    title: Text(_themeLabel(m),
+                        style: managementStyle(ctx, weight: FontWeight.w600)),
+                    trailing: ref.read(themeModeProvider) == m
+                        ? FigmaIcon.tinted('redesign_v2/check',
+                            size: 24, color: ctx.glass.navSelected)
+                        : null,
+                    onTap: () => Navigator.pop(ctx, m)),
+            ])));
+    if (picked != null) await ref.read(themeModeProvider.notifier).set(picked);
+  }
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  final _nameController = TextEditingController();
-  String _experience = 'beginner';
-  bool _isUploading = false;
-  bool _isSaving = false;
-  String? _initializedForId;
-  bool _isLoggingOut = false;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  void _initFromProfile(UserProfile? profile) {
-    // 계정 id가 바뀌면 재초기화 → 로그아웃 없는 계정 전환 시 옛 계정 값 잔존/오염 저장 방지
-    if (profile == null || profile.id == _initializedForId) return;
-    _initializedForId = profile.id;
-    _nameController.text = profile.displayName ?? '';
-    _experience = profile.experience ?? 'beginner';
-  }
-
-  Future<void> _pickAndUploadAvatar() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 80,
-    );
-    if (image == null) return;
-
-    setState(() => _isUploading = true);
-    try {
-      await ref
-          .read(profileNotifierProvider.notifier)
-          .uploadAvatar(File(image.path));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('profile_avatar_updated'.tr())),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isUploading = false);
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    setState(() => _isSaving = true);
-    try {
-      await ref.read(profileNotifierProvider.notifier).updateProfile(
-            displayName: _nameController.text.trim(),
-            experience: _experience,
-          );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('profile_saved'.tr())),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  Future<void> _logout() async {
-    if (_isLoggingOut) return;
-    _isLoggingOut = true;
-    final auth = ref.read(authRepositoryProvider);
-    try {
-      await ref.read(pushLifecycleControllerProvider).logout(auth.signOut);
-      if (mounted) context.go('/login');
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('auth_logout_error'.tr())));
-      }
-    } finally {
-      _isLoggingOut = false;
-    }
-  }
+/// 프로필 카드 369×76 흰색 r12(선 없음): 아바타 52 왼쪽 12 → 16 → 닉네임
+/// 16/700 + 사육 경험 태그(40×24 흰색 r12, 14/700 `#D61619`) / 부제 14/500,
+/// 오른쪽 arrow 18(오른쪽 12).
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({required this.profile, required this.onTap});
+  final UserProfile? profile;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final profileAsync = ref.watch(profileNotifierProvider);
-    // GlassPageShell **위** 컨텍스트 캡처지만, 전역이 다크 고정이라(app.dart)
-    // 셸 안팎의 팔레트가 같다 — 셸이 바꾸는 건 배경 투명뿐이다.
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    // A안 경량 전환 — 배경·표면 톤만 유리 문법으로. 프로필/로그아웃 로직 불변.
-    return GlassPageShell(
-        child: Scaffold(
-      appBar: AppBar(title: Text('profile_title'.tr())),
-      body: profileAsync.when(
-        loading: () => const SkeletonPageLoading(cardCount: 3),
-        error: (e, _) => Center(child: Text('$e')),
-        data: (profile) {
-          _initFromProfile(profile);
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                // 아바타
-                GestureDetector(
-                  onTap: _isUploading ? null : _pickAndUploadAvatar,
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundColor: colorScheme.surfaceContainerHigh,
-                        backgroundImage: profile?.avatarUrl != null
-                            ? CachedNetworkImageProvider(profile!.avatarUrl!)
-                            : null,
-                        child: profile?.avatarUrl == null
-                            ? Icon(Icons.person,
-                                size: 48, color: colorScheme.onSurfaceVariant)
-                            : null,
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: CircleAvatar(
-                          radius: 18,
-                          backgroundColor: colorScheme.primary,
-                          child: _isUploading
-                              ? const SkeletonLoading(
-                                  width: 16, height: 16, borderRadius: 8)
-                              : Icon(Icons.camera_alt,
-                                  size: 18, color: colorScheme.onPrimary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // 닉네임
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: 'profile_display_name'.tr(),
-                    prefixIcon: const Icon(Icons.person_outlined),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // 경험 레벨
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('profile_experience'.tr(),
-                      style: theme.textTheme.labelLarge),
-                ),
-                const SizedBox(height: 8),
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(
-                        value: 'beginner',
-                        label: Text('profile_exp_beginner'.tr())),
-                    ButtonSegment(
-                        value: 'intermediate',
-                        label: Text('profile_exp_intermediate'.tr())),
-                    ButtonSegment(
-                        value: 'expert',
-                        label: Text('profile_exp_expert'.tr())),
-                  ],
-                  selected: {_experience},
-                  onSelectionChanged: (v) =>
-                      setState(() => _experience = v.first),
-                ),
-                const SizedBox(height: 24),
-
-                // 저장 버튼
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _isSaving ? null : _saveProfile,
-                    child: _isSaving
-                        ? const SkeletonLoading(
-                            width: 20, height: 20, borderRadius: 10)
-                        : Text('profile_save'.tr()),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                const Divider(),
-                const SizedBox(height: 16),
-
-                // 화면 모드 (시스템/라이트/다크). 프로필 저장과 무관하게 즉시
-                // 적용·저장된다(Hive `app_settings/theme_mode`).
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('profile_theme_mode'.tr(),
-                      style: theme.textTheme.labelLarge),
-                ),
-                const SizedBox(height: 8),
-                SegmentedButton<ThemeMode>(
-                  segments: [
-                    ButtonSegment(
-                        value: ThemeMode.system,
-                        icon: const Icon(Icons.brightness_auto_outlined),
-                        label: Text('profile_theme_system'.tr())),
-                    ButtonSegment(
-                        value: ThemeMode.light,
-                        icon: const Icon(Icons.light_mode_outlined),
-                        label: Text('profile_theme_light'.tr())),
-                    ButtonSegment(
-                        value: ThemeMode.dark,
-                        icon: const Icon(Icons.dark_mode_outlined),
-                        label: Text('profile_theme_dark'.tr())),
-                  ],
-                  selected: {ref.watch(themeModeProvider)},
-                  onSelectionChanged: (v) =>
-                      ref.read(themeModeProvider.notifier).set(v.first),
-                ),
-                const SizedBox(height: 24),
-
-                const Divider(),
-                const SizedBox(height: 8),
-
-                // 알림 — 홈 헤더 🔔이 PRD 재설계(2026-09-02)로 빠지면서
-                // 진입점이 여기로 왔다. 미읽음 뱃지도 같이 이사.
-                ListTile(
-                  key: const Key('profile_notifications_tile'),
-                  leading: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(Icons.notifications_none,
-                          color: colorScheme.onSurfaceVariant),
-                      if (ref.watch(unreadNotificationCountProvider) > 0)
-                        Positioned(
-                          right: -1,
-                          top: -1,
-                          child: Container(
-                            key: const Key('profile_notifications_dot'),
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: colorScheme.error,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  title: Text('home_notifications'.tr()),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/notifications'),
-                ),
-
-                // 커뮤니티에서 차단한 사용자 관리 (Task 12)
-                ListTile(
-                  leading:
-                      Icon(Icons.block, color: colorScheme.onSurfaceVariant),
-                  title: Text('community_blocked_users'.tr()),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/profile/blocked'),
-                ),
-
-                // 디자인 검토용. 실사용 기능이 아니라 로그아웃 위에 조용히 둔다.
-                ListTile(
-                  leading: Icon(Icons.palette_outlined,
-                      color: colorScheme.onSurfaceVariant),
-                  title: Text('dev_chart_lab_title'.tr()),
-                  subtitle: Text('dev_chart_lab_entry_desc'.tr()),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/dev/chart-lab'),
-                ),
-
-                // 디자인 비교(A/B 랩) — 로그인 후에도 볼 수 있게(2026-08-14 저녁,
-                // B안 프로덕션 채택 결정 (2)). 롤백 위치:
-                // docs/design-test-rollout-plan.md §2.4
-                ListTile(
-                  leading: Icon(Icons.compare_outlined,
-                      color: colorScheme.onSurfaceVariant),
-                  title: Text('login_design_preview'.tr()),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/design-test'),
-                ),
-
-                // 로그아웃
-                ListTile(
-                  leading: Icon(Icons.logout, color: colorScheme.error),
-                  title: Text('auth_logout'.tr(),
-                      style: TextStyle(color: colorScheme.error)),
-                  onTap: _logout,
-                ),
-
-                // 앱 버전
-                ListTile(
-                  leading: Icon(Icons.info_outlined,
-                      color: colorScheme.onSurfaceVariant),
-                  title: Text('profile_app_version'.tr()),
-                  subtitle: Text(
-                    ref.watch(appVersionProvider).when(
-                          data: (v) => 'v$v',
-                          loading: () => '…',
-                          error: (_, __) => '—',
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    ));
+    final glass = context.glass;
+    final name = (profile?.displayName?.trim().isNotEmpty ?? false)
+        ? profile!.displayName!
+        : 'mypage_profile_default_name'.tr();
+    final exp = profile?.experience;
+    final badge = profile?.experienceHidden == true
+        ? 'commu_profile_exp_hidden'.tr()
+        : experienceLabelKey(exp)?.tr();
+    final subtitle = experienceDescKey(exp)?.tr() ??
+        'mypage_profile_add_experience'.tr();
+    return Material(
+        key: ProfileScreen.profileCardKey,
+        color: glass.surfaceHeader,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onTap,
+            child: SizedBox(
+                height: 76,
+                child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(children: [
+                      MyPageAvatar(size: 52, imageUrl: profile?.avatarUrl),
+                      const SizedBox(width: 16),
+                      Expanded(
+                          child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Row(children: [
+                              Flexible(
+                                  child: Text(name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: managementStyle(context,
+                                          weight: FontWeight.w700))),
+                              if (badge != null) ...[
+                                const SizedBox(width: 4),
+                                Container(
+                                    height: 24,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8),
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                        color: glass.surfaceTint,
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    child: Text(badge,
+                                        style: managementStyle(context,
+                                            size: 14,
+                                            weight: FontWeight.w700,
+                                            color: glass.liveRed))),
+                              ],
+                            ]),
+                            const SizedBox(height: 8),
+                            Text(subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: managementStyle(context,
+                                    size: 14, color: glass.textTertiary)),
+                          ])),
+                      const SizedBox(width: 8),
+                      FigmaIcon.tinted(FigmaIcons.arrowNext,
+                          size: 18, color: glass.textSecondary),
+                    ])))));
   }
 }

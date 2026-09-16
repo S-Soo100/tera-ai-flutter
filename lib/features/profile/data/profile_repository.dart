@@ -26,9 +26,12 @@ class ProfileRepository {
     return UserProfile.fromJson(data);
   }
 
+  /// [experienceHidden]은 `experience_hidden` 컬럼이 있는 프로젝트에서만 넘길
+  /// 것([UserProfile.experienceHiddenSupported]) — 없는 컬럼은 400이다.
   Future<void> updateProfile({
     String? displayName,
     String? experience,
+    bool? experienceHidden,
     List<String>? preferredSpecies,
     String? timezone,
   }) async {
@@ -40,6 +43,9 @@ class ProfileRepository {
     };
     if (displayName != null) updates['display_name'] = displayName;
     if (experience != null) updates['experience'] = experience;
+    if (experienceHidden != null) {
+      updates['experience_hidden'] = experienceHidden;
+    }
     if (preferredSpecies != null)
       updates['preferred_species'] = preferredSpecies;
     if (timezone != null) updates['timezone'] = timezone;
