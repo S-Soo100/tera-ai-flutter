@@ -996,5 +996,13 @@
   "routine_pm": "오후",
   "routine_editor_save": "저장",
   "home_timer_3h": "3시간",
-  "home_led_duration_label": "작동 시간"
+  "home_led_duration_label": "작동 시간",
+  "device_add_join_title_device": "연결한 사육장과 함께 사용할까요?",
+  "device_add_join_title_camera": "연결한 카메라와 함께 사용할까요?",
+  "device_add_join_subtitle": "카메라로 사육장을 보며 제어할 수 있어요",
+  "device_add_join_confirm": "함께 사용하기",
+  "device_add_join_separate": "따로 사용하기",
+  "pet_form_link_title": "도마뱀과 기기를 연결합니다",
+  "pet_form_link_subtitle": "도마뱀의 활동 리포트를 받아볼수 있어요",
+  "pet_form_link_confirm": "이 사육 환경에서 키우기"
 }

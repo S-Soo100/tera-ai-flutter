@@ -65,6 +65,9 @@ abstract final class FigmaIcons {
   /// 2026-09-16 디자이너 전달). 24 프레임 가운데 size 12로 그린다.
   static const keyboardArrowUp = 'redesign_v2/keyboard_arrow_up';
   static const keyboardArrowDown = 'redesign_v2/keyboard_arrow_down';
+  /// 연결 확인 카드(990:7508 home / camera_video 20) — 탭바 export를 재사용.
+  static const homeGlyph = 'nav_home';
+  static const cameraGlyph = 'nav_camera';
   static const arrowPrevious = 'arrow_previous';
   static const arrowNext = 'arrow_next';
   static const download = 'download';

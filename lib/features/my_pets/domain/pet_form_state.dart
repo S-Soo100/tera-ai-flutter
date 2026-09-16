@@ -32,9 +32,14 @@ class PetFormGroupOption {
       required this.name,
       this.number,
       this.hasDevice = false,
-      this.hasCamera = false});
+      this.hasCamera = false,
+      this.deviceName,
+      this.cameraName});
   final String id;
   final String name;
+
+  /// 등록 완료 뒤 연결 카드(Figma 994:13307)에 보이는 기기 이름.
+  final String? deviceName, cameraName;
 
   /// 목록 순서 기반 자동 이름 번호(Figma 1043:3649 AutoName '그룹 N').
   final int? number;

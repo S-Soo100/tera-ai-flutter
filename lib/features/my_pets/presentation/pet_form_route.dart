@@ -96,7 +96,9 @@ class PetFormRoute extends ConsumerWidget {
               name: group.name,
               number: index + 1,
               hasDevice: sets[group.id]?.device != null,
-              hasCamera: sets[group.id]?.camera != null)
+              hasCamera: sets[group.id]?.camera != null,
+              deviceName: sets[group.id]?.device?.name,
+              cameraName: sets[group.id]?.camera?.name)
     ];
     final save = ref.watch(petProfileAndGroupSaveProvider);
     return petId == null

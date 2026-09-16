@@ -49,7 +49,8 @@ void main() {
   });
 
   final saved = <(Pet, String?)>[];
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester,
+      {List<PetFormGroupOption> groups = _groups}) async {
     saved.clear();
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;
@@ -78,12 +79,9 @@ void main() {
                     home: Builder(
                         builder: (context) => Scaffold(
                             body: TextButton(
-                                onPressed: () => Navigator.of(context)
-                                    .push(MaterialPageRoute<void>(
-                                        builder: (_) => PetFormScreen(
-                                            groups: _groups,
-                                            onSave: (pet, group) async =>
-                                                saved.add((pet, group))))),
+                                onPressed: () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                        builder: (_) => PetFormScreen(groups: groups, onSave: (pet, group) async => saved.add((pet, group))))),
                                 child: const Text('open')))))))));
     await tester.pumpAndSettle();
     await tester.tap(find.text('open'));
@@ -105,7 +103,8 @@ void main() {
     final title = tester.getRect(find.text('도마뱀을 어느 환경에서 키울까요?'));
     expect(title.top, 228);
     expect(tester.getRect(find.text('도마뱀의 활동 리포트를 받아볼수 있어요')).top, 257);
-    final card1 = tester.getRect(find.byKey(const ValueKey('pet-form-group-g1')));
+    final card1 =
+        tester.getRect(find.byKey(const ValueKey('pet-form-group-g1')));
     expect(card1, const Rect.fromLTWH(24, 300, 345, 78));
     expect(tester.getRect(find.byKey(const ValueKey('pet-form-group-g2'))).top,
         386);
@@ -120,8 +119,7 @@ void main() {
     final circles = find.descendant(
         of: find.byKey(const ValueKey('pet-form-group-g1')),
         matching: find.byWidgetPredicate((w) =>
-            w is Container &&
-            w.constraints?.maxWidth == 36 ||
+            w is Container && w.constraints?.maxWidth == 36 ||
             (w is SizedBox && w.width == 36)));
     expect(circles, findsNWidgets(2));
     expect(tester.getRect(circles.at(0)).left, 241);
@@ -130,7 +128,8 @@ void main() {
     // 미선택은 CTA 비활성, 카드 선택 후 활성 → 폼에 그룹 이름 반영.
     final confirm = find.byKey(const ValueKey('pet-form-group-confirm'));
     expect(tester.getRect(confirm), const Rect.fromLTWH(12, 696, 369, 56));
-    expect(tester.getRect(find.byKey(const ValueKey('pet-form-group-later'))).top,
+    expect(
+        tester.getRect(find.byKey(const ValueKey('pet-form-group-later'))).top,
         752);
     expect(
         tester
@@ -176,12 +175,92 @@ void main() {
     expect(tester.getRect(find.text('이어서 사육장과 카메라를 추가해 주세요')).top, 425);
     expect(tester.getRect(find.byKey(const ValueKey('pet-form-done-devices'))),
         const Rect.fromLTWH(12, 696, 369, 56));
-    expect(tester.getRect(find.byKey(const ValueKey('pet-form-done-later'))).top,
+    expect(
+        tester.getRect(find.byKey(const ValueKey('pet-form-done-later'))).top,
         752);
     await tester.tap(find.byKey(const ValueKey('pet-form-done-later')));
     await tester.pumpAndSettle();
     expect(find.text('open'), findsOneWidget);
     expect(saved.length, 1);
     expect(tester.takeException(), isNull);
+  });
+
+  const _single = [
+    PetFormGroupOption(
+        id: 'g1',
+        name: '마뱀이네 집',
+        number: 1,
+        hasDevice: true,
+        hasCamera: true,
+        deviceName: 'viva-iot-ㅁㅁㅁㅁ',
+        cameraName: 'FB2_P4_CAM-ㅁㅁㅁㅁ'),
+  ];
+
+  Future<void> register(WidgetTester tester) async {
+    // 그룹 선택 뒤엔 폼이 아래로 스크롤돼 위 칸들이 ListView 밖이다 — 끌어올린다.
+    await tester.dragUntilVisible(find.byKey(const ValueKey('pet-form-name')),
+        find.byType(Scrollable).first, const Offset(0, 300));
+    await tester.enterText(find.byKey(const ValueKey('pet-form-name')), '도도');
+    await tester.dragUntilVisible(
+        find.byKey(const ValueKey('pet-form-species')),
+        find.byType(Scrollable).first,
+        const Offset(0, 300));
+    await tester.tap(find.byKey(const ValueKey('pet-form-species')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('크레스티드 게코').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('pet-form-save')));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('기기가 있는 그룹이 하나면 등록 뒤 연결 카드(994:13307) — 좌표·배정', (tester) async {
+    await pump(tester, groups: _single);
+    await register(tester);
+    expect(saved.length, 1);
+    expect(find.byKey(const ValueKey('pet-form-done-devices')), findsNothing);
+    expect(tester.getRect(find.text('도마뱀과 기기를 연결합니다')).top, 266);
+    expect(tester.getRect(find.text('도마뱀의 활동 리포트를 받아볼수 있어요')).top,
+        closeTo(295, 0.5));
+    final device = tester.getRect(find.text('사육장'));
+    expect(device.left, 88);
+    expect(device.top, closeTo(360.5, 0.5));
+    expect(tester.getRect(find.text('viva-iot-ㅁㅁㅁㅁ')).right, 353);
+    expect(tester.getRect(find.text('카메라')).top, closeTo(424.5, 0.5));
+    final circles = find.byWidgetPredicate(
+        (w) => w is Container && w.constraints?.maxWidth == 36);
+    expect(tester.getRect(circles.first), const Rect.fromLTWH(40, 352, 36, 36));
+    expect(tester.getRect(find.byKey(const ValueKey('pet-form-link-confirm'))),
+        const Rect.fromLTWH(12, 696, 369, 56));
+    expect(
+        tester.getRect(find.byKey(const ValueKey('pet-form-done-later'))).top,
+        752);
+    await tester.tap(find.byKey(const ValueKey('pet-form-link-confirm')));
+    await tester.pumpAndSettle();
+    expect(saved.length, 2);
+    expect(saved[1].$2, 'g1');
+    expect(find.text('open'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('연결 카드에서 나중에 하기는 배정 없이 닫힌다', (tester) async {
+    await pump(tester, groups: _single);
+    await register(tester);
+    await tester.tap(find.byKey(const ValueKey('pet-form-done-later')));
+    await tester.pumpAndSettle();
+    expect(saved.length, 1);
+    expect(find.text('open'), findsOneWidget);
+  });
+
+  testWidgets('폼에서 그룹을 이미 골랐으면 연결 카드 없이 완료 화면', (tester) async {
+    await pump(tester, groups: _single);
+    await openGroups(tester);
+    await tester.tap(find.byKey(const ValueKey('pet-form-group-g1')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('pet-form-group-confirm')));
+    await tester.pumpAndSettle();
+    await register(tester);
+    expect(saved.single.$2, 'g1');
+    expect(find.byKey(const ValueKey('pet-form-done-devices')), findsOneWidget);
+    expect(find.text('도마뱀과 기기를 연결합니다'), findsNothing);
   });
 }

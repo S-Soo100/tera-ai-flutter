@@ -13,6 +13,7 @@ import '../../../../core/theme/glass_palette.dart';
 import '../../../../core/theme/viva_colors.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../../my_cage/domain/redesign_management.dart';
+import '../../../my_cage/presentation/widgets/link_confirm_screen.dart';
 import '../../../my_cage/presentation/widgets/management_widgets.dart';
 import '../../../wiki/presentation/wiki_providers.dart';
 import '../../domain/pet.dart';
@@ -299,12 +300,26 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
 
   Future<void> _save() async {
     FocusScope.of(context).unfocus();
+    final PetFormSave persist =
+        widget.onSave ?? ref.read(petFormDefaultSaveProvider);
+    Pet? savedPet;
     final saved = await ref.read(petFormProvider(_session).notifier).save(
-        persist: widget.onSave ?? ref.read(petFormDefaultSaveProvider),
+        persist: (pet, groupId) async {
+          await persist(pet, groupId);
+          savedPet = pet;
+        },
         storePhoto: ref.read(petFormPhotoStoreProvider),
         peers: ref.read(petListProvider));
     if (saved && mounted) {
       final isNew = widget.original == null;
+      // 그룹을 안 고르고 등록했는데 기기가 있는 그룹이 딱 하나면 연결 카드
+      // (Figma 994:13307, 2026-09-16 사용자 결정). 여러 개·없음이면 완료 화면.
+      final groupId = ref.read(petFormProvider(_session)).draft.groupId;
+      final candidates = groupId == null
+          ? widget.groups.where((g) => g.hasDevice || g.hasCamera).toList()
+          : const <PetFormGroupOption>[];
+      final link = candidates.length == 1 ? candidates.single : null;
+      final pet = savedPet;
       // PopScope receives the committed state before leaving.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -312,7 +327,11 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
           // Figma 1035:2735 — 신규 등록 성공에만 완료 화면. 폼 라우트를 교체하므로
           // 뒤로가기로 폼에 돌아와 같은 개체를 또 만들지 않는다.
           Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
-              builder: (_) => const _PetRegisteredScreen()));
+              builder: (_) => _PetRegisteredScreen(
+                  link: link,
+                  onLink: link == null || pet == null
+                      ? null
+                      : () => persist(pet, link.id))));
         } else {
           Navigator.of(context).pop();
         }
@@ -960,7 +979,8 @@ class _MorphSelectionScreenState extends ConsumerState<_MorphSelectionScreen> {
 /// One 44pt catalog row. Matched rune [ranges] are drawn in `navSelected`
 /// (Figma #C00306); everything else keeps the approved secondary text colour.
 class _MorphRow extends StatelessWidget {
-  const _MorphRow({required this.id, required this.name, this.ranges = const []});
+  const _MorphRow(
+      {required this.id, required this.name, this.ranges = const []});
   final String id;
   final String name;
   final List<(int, int)> ranges;
@@ -1060,8 +1080,7 @@ class _GroupSelectionScreenState extends State<_GroupSelectionScreen> {
     final safeTop = MediaQuery.paddingOf(context).top;
     return Scaffold(
         backgroundColor: glass.surfaceHeader,
-        body: SafeArea(
-            child: LayoutBuilder(builder: (context, constraints) {
+        body: SafeArea(child: LayoutBuilder(builder: (context, constraints) {
           final titleTop = constraints.maxHeight < 650
               ? 24.0
               : (228 - safeTop).clamp(24.0, constraints.maxHeight * .3);
@@ -1102,8 +1121,7 @@ class _GroupSelectionScreenState extends State<_GroupSelectionScreen> {
                       label: 'pairing_pet_primary_action'.tr(),
                       onPressed: _selected == null
                           ? null
-                          : () =>
-                              Navigator.pop(context, (value: _selected))),
+                          : () => Navigator.pop(context, (value: _selected))),
                   SizedBox(
                       height: 56,
                       child: TextButton(
@@ -1187,20 +1205,48 @@ class _GroupCard extends StatelessWidget {
 /// 신규 등록 완료 — Figma 1035:2735. 체크 64 y308, 제목 y396, 부제 y425,
 /// '기기 추가 하기' y696 → 기기 추가 흐름, '나중에 하기' y752 → 목록으로.
 class _PetRegisteredScreen extends StatelessWidget {
-  const _PetRegisteredScreen();
+  const _PetRegisteredScreen({this.link, this.onLink});
+
+  /// 기기가 있는 유일한 그룹 — 있으면 완료 화면 대신 연결 카드(994:13307).
+  final PetFormGroupOption? link;
+  final Future<void> Function()? onLink;
 
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
     final safeTop = MediaQuery.paddingOf(context).top;
+    if (link case final group? when onLink != null) {
+      return LinkConfirmScreen(
+          title: 'pet_form_link_title'.tr(),
+          subtitle: 'pet_form_link_subtitle'.tr(),
+          rows: [
+            if (group.hasDevice)
+              LinkConfirmRow(
+                  icon: FigmaIcons.homeGlyph,
+                  label: 'management_kind_device'.tr(),
+                  name: group.deviceName ?? 'management_kind_device'.tr()),
+            if (group.hasCamera)
+              LinkConfirmRow(
+                  icon: FigmaIcons.cameraGlyph,
+                  label: 'management_kind_camera'.tr(),
+                  name: group.cameraName ?? 'management_kind_camera'.tr()),
+          ],
+          primaryKey: const ValueKey('pet-form-link-confirm'),
+          secondaryKey: const ValueKey('pet-form-done-later'),
+          primaryLabel: 'pet_form_link_confirm'.tr(),
+          secondaryLabel: 'pairing_pet_later'.tr(),
+          failureText: (e) =>
+              e is PetFormValidationException ? e.key.tr() : '$e',
+          onPrimary: onLink!);
+    }
     return Scaffold(
         backgroundColor: glass.surfaceHeader,
         body: SafeArea(
             child: Stack(children: [
           Padding(
               padding: EdgeInsets.only(
-                  top: math.min(308 - safeTop,
-                      MediaQuery.sizeOf(context).height * 0.29)),
+                  top: math.min(
+                      308 - safeTop, MediaQuery.sizeOf(context).height * 0.29)),
               child: Column(children: [
                 Center(
                     child: FigmaIcon.tinted('redesign_v2/check_circle',

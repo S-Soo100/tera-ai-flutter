@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/figma_icon.dart';
@@ -10,6 +11,9 @@ import '../domain/device_add_flow.dart';
 import '../domain/pair_target_kind.dart';
 import '../domain/redesign_management.dart';
 import 'device_add_flow_controller.dart';
+import 'widgets/link_confirm_screen.dart';
+import '../data/redesign_group_repository.dart';
+import 'device_management_controller.dart';
 import 'management_colors.dart';
 import 'widgets/management_widgets.dart';
 
@@ -63,6 +67,88 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       return;
     }
     if (password != null) _password.text = password;
+  }
+
+  /// 단독 성공 뒤 반대 종류 기기만 있는 그룹이 딱 하나면 합류 카드(Figma
+  /// 990:7508)를 한 번 띄운다 — 2026-09-16 사용자 결정. 여러 개면 기존
+  /// '기존 기기와 연결'(그룹 편집기) 경로.
+  bool _joinPrompted = false;
+  String? _joinedGroupId;
+
+  Future<void> _maybeOfferJoin(DeviceAddState state) async {
+    final registered =
+        state.results.values.where((r) => r.registeredId != null).toList();
+    if (_joinPrompted || registered.length != 1) return;
+    _joinPrompted = true;
+    final result = registered.single;
+    final newKind = result.candidate.kind == PairTargetKind.device
+        ? ManagementKind.device
+        : ManagementKind.camera;
+    final otherKind = newKind == ManagementKind.device
+        ? ManagementKind.camera
+        : ManagementKind.device;
+    final ManagementInventory inventory;
+    try {
+      inventory = await ref.read(managementInventoryProvider.future);
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+    final candidates = [
+      for (final g in inventory.groups)
+        if (inventory.members(g.id).any((i) => i.key.kind == otherKind) &&
+            !inventory.members(g.id).any((i) => i.key.kind == newKind))
+          g
+    ];
+    if (candidates.length != 1) return;
+    final group = candidates.single;
+    final other =
+        inventory.members(group.id).firstWhere((i) => i.key.kind == otherKind);
+    final newKey = ManagementKey(kind: newKind, id: result.registeredId!);
+    final deviceName =
+        newKind == ManagementKind.device ? result.candidate.name : other.name;
+    final cameraName =
+        newKind == ManagementKind.camera ? result.candidate.name : other.name;
+    final joined = await Navigator.of(context).push<bool>(MaterialPageRoute(
+        builder: (_) => LinkConfirmScreen(
+              title: (otherKind == ManagementKind.device
+                      ? 'device_add_join_title_device'
+                      : 'device_add_join_title_camera')
+                  .tr(),
+              subtitle: 'device_add_join_subtitle'.tr(),
+              rows: [
+                LinkConfirmRow(
+                    icon: FigmaIcons.homeGlyph,
+                    label: 'management_kind_device'.tr(),
+                    name: deviceName),
+                LinkConfirmRow(
+                    icon: FigmaIcons.cameraGlyph,
+                    label: 'management_kind_camera'.tr(),
+                    name: cameraName),
+              ],
+              primaryKey: const Key('device_add_join'),
+              secondaryKey: const Key('device_add_separate'),
+              primaryLabel: 'device_add_join_confirm'.tr(),
+              secondaryLabel: 'device_add_join_separate'.tr(),
+              failureText: (e) => e is ManagementFailure
+                  ? e.key.tr()
+                  : 'management_save_failed'.tr(),
+              onPrimary: () async {
+                final repo = ref.read(redesignGroupRepositoryProvider);
+                if (repo == null) {
+                  throw const ManagementFailure('management_auth_changed');
+                }
+                await repo.saveGroup(
+                    GroupEditDraft(
+                        groupId: group.id,
+                        name: group.name,
+                        members: {other.key, newKey},
+                        expectedGroups: {other.key: group.id, newKey: null}),
+                    requestId: const Uuid().v4());
+                ref.invalidate(managementInventoryProvider);
+              },
+            )));
+    if (joined == true && mounted) setState(() => _joinedGroupId = group.id);
   }
 
   Future<void> _close() async {
@@ -169,6 +255,11 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       }
     });
     ref.listen(deviceAddFlowProvider(_key), (previous, next) {
+      if (next.step == DeviceAddStep.results) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_maybeOfferJoin(next));
+        });
+      }
       if (previous?.step == DeviceAddStep.connecting &&
           next.step == DeviceAddStep.results) {
         ++_fillGeneration;
@@ -237,7 +328,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: EdgeInsets.fromLTRB(
-                      12, 16, 12, _footerBottom(footer.length, keyboard) +
+                      12,
+                      16,
+                      12,
+                      _footerBottom(footer.length, keyboard) +
                           56.0 * footer.length +
                           (above == null ? 0 : 29) +
                           16),
@@ -276,9 +370,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
 
   /// 하단 CTA 아래 여백(SafeArea 안). 원본: 단일 CTA 696~752 → 852-34-752=66,
   /// 보조 포함 752~808 → 10, 키보드 위 43(982:3174).
-  double _footerBottom(int buttons, bool keyboard) => keyboard
-      ? 43
-      : (66.0 - 56.0 * (buttons - 1)).clamp(10.0, 66.0);
+  double _footerBottom(int buttons, bool keyboard) =>
+      keyboard ? 43 : (66.0 - 56.0 * (buttons - 1)).clamp(10.0, 66.0);
 
   /// 뒤로가기 의미: 비밀번호→네트워크 목록, 네트워크→기기 검색, 그 외 중단 확인.
   Future<void> _back(
@@ -381,10 +474,9 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 12),
                             child: Row(children: [
-                              ManagementItemIcon(
-                                  c.kind == PairTargetKind.device
-                                      ? ManagementKind.device
-                                      : ManagementKind.camera),
+                              ManagementItemIcon(c.kind == PairTargetKind.device
+                                  ? ManagementKind.device
+                                  : ManagementKind.camera),
                               const SizedBox(width: 12),
                               Text(_kind(c.kind),
                                   style: managementStyle(context,
@@ -400,8 +492,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                         overflow: TextOverflow.ellipsis,
                                         style: managementStyle(context,
                                             weight: FontWeight.w600,
-                                            color:
-                                                context.glass.textPrimary)),
+                                            color: context.glass.textPrimary)),
                                     const SizedBox(height: 4),
                                     Row(
                                         mainAxisAlignment:
@@ -409,8 +500,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                         children: [
                                           Flexible(
                                               child: Text(
-                                                  'device_add_signal'.tr(
-                                                      args: ['${c.rssi}']),
+                                                  'device_add_signal'
+                                                      .tr(args: ['${c.rssi}']),
                                                   style: managementStyle(
                                                       context,
                                                       size: 14,
@@ -454,8 +545,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       else
         ManagementButton(
             key: const Key('device_add_continue'),
-            label:
-                'device_add_selected'.tr(args: ['${state.selected.length}']),
+            label: 'device_add_selected'.tr(args: ['${state.selected.length}']),
             onPressed: controller.loadNetworks),
     ];
     // Figma 990:7601 — 1개 선택 시에만 안내(y667).
@@ -618,8 +708,9 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       ManagementButton(
           key: const Key('device_add_connect'),
           label: 'device_add_connect'.tr(),
-          onPressed:
-              busy ? null : () => controller.connect(_ssid.text, _password.text)),
+          onPressed: busy
+              ? null
+              : () => controller.connect(_ssid.text, _password.text)),
     ];
     return (body, footer, null);
   }
@@ -656,8 +747,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       // Figma 982:3643 — 체크 64 y308(상단바 없음: 62+16+230), 제목 y396(+24),
       // 부제 y425(+8). 작은 화면은 비율로 줄인다.
       SizedBox(
-          height: math.min(topBar ? 186 : 230,
-              MediaQuery.sizeOf(context).height * 0.27)),
+          height: math.min(
+              topBar ? 186 : 230, MediaQuery.sizeOf(context).height * 0.27)),
       Center(
           child: FigmaIcon.tinted(
               confirmed > 0
@@ -675,7 +766,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       const SizedBox(height: 8),
       if (!retry && !pending && confirmed > 0)
         Text(
-            (confirmed == 2
+            (confirmed == 2 || _joinedGroupId != null
                     ? 'device_add_done_subtitle'
                     : state.results[PairTargetKind.device]?.registeredId != null
                         ? 'device_add_continue_camera_subtitle'
@@ -686,7 +777,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                 .copyWith(height: 19.09375 / 16))
       else
         for (final result in state.results.values) _result(context, result),
-      if (confirmed == 1 && !pending)
+      if (confirmed == 1 && !pending && _joinedGroupId == null)
         _PairingTextButton(
             key: const Key('device_add_link_existing'),
             onPressed: state.busy
@@ -721,7 +812,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
         ManagementButton(
             label: 'device_add_retry_group'.tr(),
             onPressed: state.busy ? null : controller.groupConfirmed),
-      if (confirmed == 1 && !pending)
+      if (confirmed == 1 && !pending && _joinedGroupId == null)
         ManagementButton(
             key: const Key('device_add_continue_kind'),
             label: (state.results[PairTargetKind.device]?.registeredId != null
@@ -729,11 +820,13 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                     : 'device_add_continue_device')
                 .tr(),
             onPressed: state.busy ? null : controller.continueAdding),
-      if (confirmed == 2 && !state.groupError)
+      if ((confirmed == 2 && !state.groupError) || _joinedGroupId != null)
         ManagementButton(
             key: const Key('device_add_pet'),
             label: 'device_add_pet'.tr(),
-            onPressed: state.busy ? null : () => _petChoice(state.groupId)),
+            onPressed: state.busy
+                ? null
+                : () => _petChoice(state.groupId ?? _joinedGroupId)),
       _PairingTextButton(
           key: const Key('device_add_later'),
           onPressed: state.busy ? null : _home,

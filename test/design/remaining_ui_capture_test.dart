@@ -49,6 +49,7 @@ import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart
 import '../features/home/schedule_fixtures.dart';
 import 'package:vivanaut/features/my_cage/presentation/highlights_screen.dart';
 import '../features/my_cage/highlight_fixtures.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/link_confirm_screen.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/my_cage/data/lcd_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/device.dart';
@@ -883,6 +884,50 @@ void main() {
             .overrideWith((ref, id) => id == 'g0c1' || id == 'g0c5'),
         currentUserProvider.overrideWith((ref) => null),
       ]));
+      await capture(tester, boundary, name);
+    }
+    debugDisableShadows = true;
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('P02/P05 link confirm card captures', (tester) async {
+    debugDisableShadows = false;
+    final boundary = GlobalKey();
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final rows = [
+      LinkConfirmRow(
+          icon: FigmaIcons.homeGlyph, label: '사육장', name: 'viva-iot-ㅁㅁㅁㅁ'),
+      LinkConfirmRow(
+          icon: FigmaIcons.cameraGlyph, label: '카메라', name: 'FB2_P4_CAM-ㅁㅁㅁㅁ'),
+    ];
+    for (final (name, title, subtitle, primary, secondary) in [
+      (
+        'p05-join-card',
+        '연결한 사육장과 함께 사용할까요?',
+        '카메라로 사육장을 보며 제어할 수 있어요',
+        '함께 사용하기',
+        '따로 사용하기'
+      ),
+      (
+        'p02-pet-link-card',
+        '도마뱀과 기기를 연결합니다',
+        '도마뱀의 활동 리포트를 받아볼수 있어요',
+        '이 사육 환경에서 키우기',
+        '나중에 하기'
+      ),
+    ]) {
+      await tester.pumpWidget(shell(
+          boundary,
+          LinkConfirmScreen(
+              title: title,
+              subtitle: subtitle,
+              rows: rows,
+              primaryLabel: primary,
+              secondaryLabel: secondary,
+              onPrimary: () async {})));
       await capture(tester, boundary, name);
     }
     debugDisableShadows = true;

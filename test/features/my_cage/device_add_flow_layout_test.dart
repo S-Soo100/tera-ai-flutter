@@ -13,6 +13,9 @@ import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/domain/wifi_access_point.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_screen.dart';
+import 'package:vivanaut/features/my_cage/data/redesign_group_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/redesign_management.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_management_controller.dart';
 import 'package:vivanaut/shared/widgets/figma_icon.dart';
 import 'device_add_flow_test.dart' show Gateway, device, camera;
 
@@ -71,7 +74,7 @@ void main() {
   });
 
   Future<_Controller> pump(WidgetTester tester, DeviceAddState initial,
-      {double keyboard = 0}) async {
+      {double keyboard = 0, List<Override> overrides = const []}) async {
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -88,6 +91,7 @@ void main() {
                 overrides: [
                   deviceAddAccountProvider.overrideWithValue('a'),
                   deviceAddFlowProvider('t').overrideWith((ref) => controller),
+                  ...overrides,
                 ],
                 child: MaterialApp(
                     theme: AppTheme.light,
@@ -113,8 +117,8 @@ void main() {
 
   testWidgets('scan: rescan CTA at y696, N개 추가 after select, hint at y667',
       (tester) async {
-    final c = await pump(
-        tester, const DeviceAddState(candidates: [device, camera]));
+    final c =
+        await pump(tester, const DeviceAddState(candidates: [device, camera]));
     final rescan = rectOf(tester, const Key('device_add_rescan'));
     expect(rescan, const Rect.fromLTWH(12, 696, 369, 56));
     expect(
@@ -158,8 +162,8 @@ void main() {
     c.set(const DeviceAddState(busy: true));
     await tester.pump();
     expect(find.text('주변 기기를 검색하고 있어요'), findsOneWidget);
-    final spinner = find.byWidgetPredicate((w) =>
-        w is FigmaIcon && w.name == 'redesign_v2/progress_activity');
+    final spinner = find.byWidgetPredicate(
+        (w) => w is FigmaIcon && w.name == 'redesign_v2/progress_activity');
     expect(tester.getSize(spinner), const Size(20, 20));
     expect(tester.getRect(spinner).top, closeTo(122.5, 0.5));
     // 스캔 중 CTA 비활성.
@@ -194,7 +198,8 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('credentials: field 184/65, remember 261, CTA 696 or above keyboard',
+  testWidgets(
+      'credentials: field 184/65, remember 261, CTA 696 or above keyboard',
       (tester) async {
     await pump(tester,
         const DeviceAddState(step: DeviceAddStep.credentials, ssid: 'home'));
@@ -221,8 +226,8 @@ void main() {
         const DeviceAddState(step: DeviceAddStep.credentials, ssid: 'home'),
         keyboard: 287);
     // Figma 982:3174 — 키보드(565) 위 43 → CTA 466.
-    expect(rectOf(tester, const Key('device_add_connect')).top,
-        closeTo(466, 0.5));
+    expect(
+        rectOf(tester, const Key('device_add_connect')).top, closeTo(466, 0.5));
     expect(tester.takeException(), isNull);
   });
 
@@ -233,8 +238,8 @@ void main() {
     final overlay = find.byKey(const Key('device_add_connecting_overlay'));
     expect(overlay, findsOneWidget);
     expect(tester.getSize(overlay), const Size(393, 852));
-    final spinner = find.byWidgetPredicate((w) =>
-        w is FigmaIcon && w.name == 'redesign_v2/progress_activity');
+    final spinner = find.byWidgetPredicate(
+        (w) => w is FigmaIcon && w.name == 'redesign_v2/progress_activity');
     expect(tester.getSize(spinner), const Size(62, 62));
     expect(tester.getCenter(spinner).dx, 196.5);
     expect(find.text('WiFi 연결 중'), findsOneWidget);
@@ -255,8 +260,8 @@ void main() {
         (w) => w is FigmaIcon && w.name == 'redesign_v2/check_circle');
     expect(tester.getRect(icon), const Rect.fromLTWH(164.5, 308, 64, 64));
     expect(tester.getRect(find.text('사육장 추가완료')).top, 396);
-    expect(tester.getRect(find.text('이어서 카메라를 추가해 주세요')).top,
-        closeTo(425, 0.5));
+    expect(
+        tester.getRect(find.text('이어서 카메라를 추가해 주세요')).top, closeTo(425, 0.5));
     expect(rectOf(tester, const Key('device_add_continue_kind')),
         const Rect.fromLTWH(12, 696, 369, 56));
     expect(rectOf(tester, const Key('device_add_later')).top, 752);
@@ -284,5 +289,100 @@ void main() {
     expect(find.byKey(const Key('device_add_error_modal')), findsNothing);
     expect(find.byKey(const Key('device_add_connect')), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  /// 사육장 하나만 있는 그룹 + 카메라 단독 성공 → 합류 카드(990:7508).
+  List<Override> joinOverrides(List<Map<String, Object?>> rpcCalls) => [
+        managementInventoryProvider
+            .overrideWith((ref) async => ManagementInventory(groups: const [
+                  ManagementGroup(id: 'g1', name: '마뱀이네 집', number: 1)
+                ], items: const [
+                  ManagementItem(
+                      key: ManagementKey(kind: ManagementKind.device, id: 'd1'),
+                      name: 'viva-iot-ㅁㅁㅁㅁ',
+                      groupId: 'g1'),
+                ])),
+        redesignGroupRepositoryProvider
+            .overrideWith((ref) => RedesignGroupRepository(
+                loadRows: (_) async => [],
+                rpc: (name, params) async {
+                  rpcCalls.add({'name': name, ...params});
+                  return {'group_id': 'g1'};
+                })),
+      ];
+
+  Future<_Controller> pumpJoin(
+      WidgetTester tester, List<Map<String, Object?>> rpcCalls) async {
+    final c = await pump(tester,
+        const DeviceAddState(step: DeviceAddStep.connecting, ssid: 'home'),
+        overrides: joinOverrides(rpcCalls));
+    c.set(const DeviceAddState(step: DeviceAddStep.results, results: {
+      PairTargetKind.camera: DeviceAddResult(
+          candidate: camera,
+          outcome: DeviceAddOutcome.registered,
+          registeredId: 'c1'),
+    }));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    return c;
+  }
+
+  testWidgets('join card: 카메라 단독 성공 + 사육장 그룹 1개 → 990:7508 좌표, 함께 사용하기 = 그룹 저장',
+      (tester) async {
+    final rpc = <Map<String, Object?>>[];
+    await pumpJoin(tester, rpc);
+    expect(tester.getRect(find.text('연결한 사육장과 함께 사용할까요?')).top, 266);
+    expect(tester.getRect(find.text('카메라로 사육장을 보며 제어할 수 있어요')).top,
+        closeTo(295, 0.5));
+    expect(tester.getRect(find.text('viva-iot-ㅁㅁㅁㅁ')).right, 353);
+    expect(tester.getRect(find.text('FB2_P4_CAM')).right, 353);
+    expect(tester.getRect(find.text('사육장')).left, 88);
+    expect(rectOf(tester, const Key('device_add_join')),
+        const Rect.fromLTWH(12, 696, 369, 56));
+    expect(rectOf(tester, const Key('device_add_separate')).top, 752);
+    await tester.tap(find.byKey(const Key('device_add_join')));
+    await tester.pumpAndSettle();
+    expect(rpc, hasLength(1));
+    expect(rpc.single['name'], 'redesign_save_group_v1');
+    expect(rpc.single['p_group_id'], 'g1');
+    expect(rpc.single['p_device_id'], 'd1');
+    expect(rpc.single['p_camera_id'], 'c1');
+    // 결과 화면으로 돌아오면 개체 선택 CTA, 기존 기기 연결/이어서 추가는 없다.
+    expect(find.byKey(const Key('device_add_pet')), findsOneWidget);
+    expect(find.byKey(const Key('device_add_link_existing')), findsNothing);
+    expect(find.byKey(const Key('device_add_continue_kind')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('join card: 따로 사용하기 → 저장 없이 기존 결과 화면', (tester) async {
+    final rpc = <Map<String, Object?>>[];
+    await pumpJoin(tester, rpc);
+    await tester.tap(find.byKey(const Key('device_add_separate')));
+    await tester.pumpAndSettle();
+    expect(rpc, isEmpty);
+    expect(find.byKey(const Key('device_add_link_existing')), findsOneWidget);
+    expect(find.byKey(const Key('device_add_continue_kind')), findsOneWidget);
+    expect(find.byKey(const Key('device_add_pet')), findsNothing);
+  });
+
+  testWidgets('join card: 후보 그룹이 없으면 카드 없이 결과 화면', (tester) async {
+    final c = await pump(tester,
+        const DeviceAddState(step: DeviceAddStep.connecting, ssid: 'home'),
+        overrides: [
+          managementInventoryProvider.overrideWith((ref) async =>
+              ManagementInventory(groups: const [], items: const [])),
+        ]);
+    c.set(const DeviceAddState(step: DeviceAddStep.results, results: {
+      PairTargetKind.camera: DeviceAddResult(
+          candidate: camera,
+          outcome: DeviceAddOutcome.registered,
+          registeredId: 'c1'),
+    }));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('device_add_join')), findsNothing);
+    expect(find.byKey(const Key('device_add_link_existing')), findsOneWidget);
   });
 }
