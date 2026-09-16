@@ -417,6 +417,8 @@ Future<void> openLedSheet(
       ?.where((d) => d.id == deviceId)
       .firstOrNull;
   final dimmable = device?.ledDimmable ?? false;
+  // await 전에 잡아 둔다 — 전송 중 화면을 떠나도 타이머 알림은 걸거나 내려야 한다.
+  final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
   // 보고값은 바꾸지 않고 시트의 선택 값만 20~100, 10% 단위로 맞춘다.
   final seed = (currentBrightness ?? 0) > 0 ? currentBrightness! : 60;
   final choice = await showModalBottomSheet<_LedChoice>(
@@ -439,17 +441,22 @@ Future<void> openLedSheet(
     );
     return;
   }
-  await sendCageCommand(
-    context,
-    ref,
-    deviceId,
-    choice.on ? CommandAction.ledOn : CommandAction.ledOff,
-    payload: ledCommandPayload(
-        on: choice.on,
-        dimmable: dimmable,
-        brightness: choice.brightness,
-        duration: choice.duration),
-  );
+  final payload = ledCommandPayload(
+      on: choice.on,
+      dimmable: dimmable,
+      brightness: choice.brightness,
+      duration: choice.duration);
+  final action = choice.on ? CommandAction.ledOn : CommandAction.ledOff;
+  final sent =
+      await sendCageCommand(context, ref, deviceId, action, payload: payload);
+  // 팬 타이머와 같은 문법 — 작동 시간이 있으면 만료 시각에 완료 알림을 예약하고,
+  // '계속'·끄기는 기존 예약을 내린다. 판단은 서비스 쪽 plan이 한다.
+  if (sent) {
+    await timerNotifs.onFanCommandSent(
+        deviceId, action.toWire(), payload?['duration_ms'] as int?);
+  }
+  // 진행 칩을 깨운다(시작·대체·취소 모두). await 뒤라 mounted 재확인.
+  if (context.mounted) ref.invalidate(runningTimersProvider);
 }
 
 /// LED 명령 payload. 릴레이 보드엔 brightness를 싣지 않는다 — 서버·펌웨어가

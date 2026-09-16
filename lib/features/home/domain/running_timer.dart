@@ -42,10 +42,10 @@ class RunningTimer {
 
   bool isActive(DateTime now) => remaining(now) > Duration.zero;
 
-  /// `commands` 이력 → 진행 중 팬 타이머 (A안: `issued_at + duration_ms`).
+  /// `commands` 이력 → 진행 중 타이머 (A안: `issued_at + duration_ms`).
   ///
-  /// [rows]는 fan 계열(`fan_on`/`fan_off`/`fan_toggle`) 명령을 **`issued_at`
-  /// 내림차순**으로 담는다. 최신 유효 명령이 duration 붙은 `fan_on`이고 아직 안
+  /// [rows]는 [actuator]의 계열(`fan_on`/`fan_off`/`fan_toggle`, LED면
+  /// `led_*`) 명령을 **`issued_at` 내림차순**으로 담는다. 최신 유효 명령이 duration 붙은 `fan_on`이고 아직 안
   /// 끝났을 때만 타이머다 — 그 뒤에 off/toggle이 왔으면 취소된 것이고,
   /// `rejected`/`expired`는 기기에 닿지 않았으니 없는 셈 친다.
   ///

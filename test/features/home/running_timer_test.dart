@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/home/domain/running_timer.dart';
+import 'package:vivanaut/shared/domain/fan_actuator.dart';
 
 RunningTimer _t(DateTime endsAt) => RunningTimer(
       id: 't1',
@@ -145,6 +146,29 @@ void main() {
 
     test('빈 목록 → null', () {
       expect(RunningTimer.fanTimerFrom(const [], now), isNull);
+    });
+
+    test(
+        'LED 작동 시간 — led_on+duration_ms → LED 타이머, 뒤의 led_off면 취소 (2026-09-16)',
+        () {
+      final on =
+          cmd('led_on', 'acked', '2026-08-14T11:30:00Z', durationMs: 3600000);
+      final t = RunningTimer.fanTimerFrom([on], now, actuator: FanActuator.led);
+      expect(t, isNotNull);
+      expect(t!.actuatorLabelKey, 'module_actuator_led');
+      expect(t.durationMinutes, 60);
+      expect(t.remaining(now), const Duration(minutes: 30));
+      // 팬 명령은 LED 타이머 판정에 섞이지 않는다.
+      expect(
+          RunningTimer.fanTimerFrom(
+              [cmd('fan_off', 'acked', '2026-08-14T11:40:00Z'), on], now,
+              actuator: FanActuator.led),
+          isNotNull);
+      expect(
+          RunningTimer.fanTimerFrom(
+              [cmd('led_off', 'acked', '2026-08-14T11:40:00Z'), on], now,
+              actuator: FanActuator.led),
+          isNull);
     });
   });
 }
