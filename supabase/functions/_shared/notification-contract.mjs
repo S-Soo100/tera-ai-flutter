@@ -3,6 +3,7 @@ const notificationTypes = new Set([
   'device.action.started',
   'device.action.ended',
   'device.action.failed',
+  'device.action.skipped',
   'community.comment',
   'community.like_digest',
   'notice.published',
@@ -86,6 +87,8 @@ function validateDeviceEvent(type, payload) {
     'device.action.started': ['started', 'succeeded'],
     'device.action.ended': ['ended', 'succeeded'],
     'device.action.failed': ['failed', 'failed'],
+    // 가드 스킵(source='guard'): 2026-09-16 결정 답신 §4. guard 객체는 선택.
+    'device.action.skipped': ['skipped', 'skipped'],
   }[type];
   if (
     payload.execution_phase !== expected[0] ||
@@ -97,6 +100,9 @@ function validateDeviceEvent(type, payload) {
     if (payload[field] !== undefined && payload[field] !== null && !hasText(payload[field])) {
       return `device action ${field} must be text when present`;
     }
+  }
+  if (payload.guard !== undefined && payload.guard !== null && !hasObject(payload.guard)) {
+    return 'device action guard must be an object when present';
   }
   return null;
 }

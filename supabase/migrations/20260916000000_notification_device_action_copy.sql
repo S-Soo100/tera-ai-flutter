@@ -1,9 +1,28 @@
--- 2026-09-16: device.action.* 알림 문구에 기기 이름·동작 라벨을 넣고, 무응답
+-- 2026-09-16: device.action.skipped(가드 스킵) 타입을 허용하고, device.action.*
+-- 알림 문구에 기기 이름·동작 라벨을 넣고, 무응답
 -- (no_ack/expired/lost)·busy 실패를 구분한다. 9/15 푸시 회신 §4·§5.3에 대한
 -- 답신(docs/handoffs/2026-09-16-lee-gwanhun-reply-groups-and-push.md §3)의
 -- payload(outcome/result 분리, device_name)를 전제로 한다. 트리거는 그대로
 -- 두고 함수 본문만 교체한다. 다른 type의 문구는 20260915 마이그레이션과 같다.
 -- 운영 적용은 서버 푸시 구현 착수와 함께 한다(미적용 상태로 커밋됨).
+
+-- 가드 스킵 타입 추가(2026-09-16 결정 답신 §4). 인라인 CHECK의 자동 이름을 교체한다.
+ALTER TABLE public.notification_events
+  DROP CONSTRAINT IF EXISTS notification_events_type_check;
+ALTER TABLE public.notification_events
+  ADD CONSTRAINT notification_events_type_check CHECK (type IN (
+    'highlight.ready',
+    'device.action.started',
+    'device.action.ended',
+    'device.action.failed',
+    'device.action.skipped',
+    'community.comment',
+    'community.like_digest',
+    'notice.published',
+    'maintenance.water_tank',
+    'safety.alert',
+    'safety.recovered'
+  ));
 
 CREATE OR REPLACE FUNCTION public.notification_event_after_insert()
 RETURNS TRIGGER
@@ -65,6 +84,18 @@ BEGIN
       ELSE
         v_body := format('%s의 %s 예약을 실행하지 못했어요. 사육장 상태를 확인해 주세요.', v_device_name, v_action_label);
       END IF;
+      v_route := '/home/routines';
+    WHEN 'device.action.skipped' THEN
+      v_title := '예약 동작을 건너뛰었어요';
+      v_body := CASE
+        WHEN NEW.payload -> 'guard' ->> 'metric' = 'temperature' THEN
+          format('%s의 %s 예약이 온도 조건(%s℃)에 걸려 실행되지 않았어요.', v_device_name, v_action_label,
+                 COALESCE(NEW.payload -> 'guard' ->> 'value', '-'))
+        WHEN NEW.payload -> 'guard' ->> 'metric' = 'humidity' THEN
+          format('%s의 %s 예약이 습도 조건(%s%%)에 걸려 실행되지 않았어요.', v_device_name, v_action_label,
+                 COALESCE(NEW.payload -> 'guard' ->> 'value', '-'))
+        ELSE format('%s의 %s 예약이 스마트 가드 조건에 걸려 실행되지 않았어요.', v_device_name, v_action_label)
+      END;
       v_route := '/home/routines';
     WHEN 'community.comment' THEN
       v_title := '내 게시물에 새 댓글이 달렸어요';

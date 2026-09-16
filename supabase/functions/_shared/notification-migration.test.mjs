@@ -161,3 +161,9 @@ test('device action copy migration keeps the trigger function name and distingui
   // 다른 type 문구는 원본과 동일해야 한다 — 하이라이트 한 줄로 대표 확인.
   assert.match(deviceCopyMigration, /v_route := '\/crecam\/highlights'/);
 });
+
+test('device action copy migration admits the guard-skipped type and its copy', () => {
+  assert.match(deviceCopyMigration, /DROP CONSTRAINT IF EXISTS notification_events_type_check/);
+  assert.match(deviceCopyMigration, /'device\.action\.skipped',\s+'community\.comment'/);
+  assert.match(deviceCopyMigration, /WHEN 'device\.action\.skipped' THEN/);
+});
