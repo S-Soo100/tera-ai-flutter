@@ -104,7 +104,8 @@ class _ToggleRow extends StatelessWidget {
     return Container(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         decoration: BoxDecoration(
-            color: glass.surfaceHeader, borderRadius: BorderRadius.circular(12)),
+            color: glass.surfaceHeader,
+            borderRadius: BorderRadius.circular(12)),
         child: Row(children: [
           Expanded(
               child: Column(

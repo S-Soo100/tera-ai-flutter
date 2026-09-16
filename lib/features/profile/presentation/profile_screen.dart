@@ -62,7 +62,8 @@ class ProfileScreen extends ConsumerWidget {
             title: 'mypage_blocked_title'.tr(),
             subtitle: 'mypage_blocked_subtitle'.tr(),
             icon: MyPageRasterIcon('person_cancel', color: iconColor),
-            trailingText: 'mypage_blocked_count_fmt'.tr(args: ['$blockedCount']),
+            trailingText:
+                'mypage_blocked_count_fmt'.tr(args: ['$blockedCount']),
             onTap: () => context.push('/profile/blocked')),
         const SizedBox(height: 24),
         MyPageSectionTitle('mypage_section_app'.tr()),
@@ -77,8 +78,8 @@ class ProfileScreen extends ConsumerWidget {
             key: accountRowKey,
             title: 'mypage_account_title'.tr(),
             subtitle: 'mypage_account_subtitle'.tr(),
-            icon: FigmaIcon.tinted(FigmaIcons.person,
-                size: 24, color: iconColor),
+            icon:
+                FigmaIcon.tinted(FigmaIcons.person, size: 24, color: iconColor),
             onTap: () => context.push('/profile/account')),
         const SizedBox(height: 8),
         // 최신 판정(스토어 API·원격 설정)은 후속 — 지금은 버전만 보여주고, 탭하면
@@ -139,11 +140,12 @@ class ProfileScreen extends ConsumerWidget {
       };
 
   Future<void> _pickTheme(BuildContext context, WidgetRef ref) async {
+    final notifier = ref.read(themeModeProvider.notifier); // await 전에 잡는다
     final picked = await showModalBottomSheet<ThemeMode>(
         context: context,
         backgroundColor: context.glass.overlay,
         builder: (ctx) => SafeArea(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
               for (final m in ThemeMode.values)
                 ListTile(
                     title: Text(_themeLabel(m),
@@ -154,7 +156,7 @@ class ProfileScreen extends ConsumerWidget {
                         : null,
                     onTap: () => Navigator.pop(ctx, m)),
             ])));
-    if (picked != null) await ref.read(themeModeProvider.notifier).set(picked);
+    if (picked != null) await notifier.set(picked);
   }
 }
 
@@ -176,8 +178,8 @@ class _ProfileCard extends StatelessWidget {
     final badge = profile?.experienceHidden == true
         ? 'commu_profile_exp_hidden'.tr()
         : experienceLabelKey(exp)?.tr();
-    final subtitle = experienceDescKey(exp)?.tr() ??
-        'mypage_profile_add_experience'.tr();
+    final subtitle =
+        experienceDescKey(exp)?.tr() ?? 'mypage_profile_add_experience'.tr();
     return Material(
         key: ProfileScreen.profileCardKey,
         color: glass.surfaceHeader,

@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../auth/data/login_prefs_repository.dart';
+import '../../notification/presentation/push_providers.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -31,7 +32,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     // 끊고 다시 묻는다(2026-09-16 Figma 로그인 재설계, 계획 B3).
     if (session != null && !ref.read(loginPrefsProvider).autoLogin) {
       try {
-        await auth.signOut();
+        // 내 계정 화면의 로그아웃과 같은 경로 — 푸시 기기 비활성화·토큰 삭제
+        // 뒤에 signOut(리뷰 2026-09-16: 직접 signOut은 기기 행을 남긴다).
+        await ref.read(pushLifecycleControllerProvider).logout(auth.signOut);
       } catch (_) {
         // 오프라인이면 서버 세션은 남아도 로컬은 지워진다 — 로그인으로 보낸다.
       }

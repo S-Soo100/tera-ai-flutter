@@ -83,13 +83,14 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('pw_change_done'.tr())));
       Navigator.of(context).maybePop();
-    } on AuthException catch (e) {
+    } on WrongCurrentPasswordException {
       if (!mounted) return;
-      final wrongCurrent = e.statusCode == '400' ||
-          e.message.toLowerCase().contains('invalid login credentials');
+      await showVivaModal(context, message: 'pw_change_current_mismatch'.tr());
+    } on AuthException catch (e) {
+      // 새 비밀번호가 거절된 경우(same_password 등) — 서버 사유를 그대로 보인다.
+      if (!mounted) return;
       await showVivaModal(context,
-          message: (wrongCurrent ? 'pw_change_current_mismatch' : 'pw_change_failed')
-              .tr());
+          message: '${'pw_change_failed'.tr()}\n${e.message}');
     } catch (_) {
       if (!mounted) return;
       await showVivaModal(context, message: 'pw_change_failed'.tr());

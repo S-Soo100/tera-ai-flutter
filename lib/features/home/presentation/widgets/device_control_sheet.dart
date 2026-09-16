@@ -117,6 +117,20 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   ScheduleDraft? _draft;
   bool _saving = false;
 
+  /// 명령 왕복 중 잠금 — 스위치·칩 연타로 두 번 보내지 않는다(리뷰 2026-09-16,
+  /// 구 FanDurationSheet의 submitted 잠금과 같은 역할).
+  bool _sending = false;
+
+  Future<void> _locked(Future<void> Function() run) async {
+    if (_sending) return;
+    setState(() => _sending = true);
+    try {
+      await run();
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
   FanActuator? get _actuator => switch (widget.device) {
         ScheduleDevice.fan => FanActuator.ventilation,
         ScheduleDevice.cool => FanActuator.cooling,
@@ -181,37 +195,40 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
     return true;
   }
 
-  Future<void> _fanPower(bool on) async {
-    final actuator = _actuator!;
-    if (!_targetStillValid()) return;
-    if (!on) {
-      await stopFan(context, ref, widget.deviceId, actuator: actuator);
-      return;
-    }
-    final choice = _fanChoice;
-    await startFan(context, ref, widget.deviceId, choice, actuator: actuator);
-    await ref
-        .read(fanChoiceStoreProvider)
-        .save(actuator.storageKey(widget.deviceId), choice);
-  }
+  Future<void> _fanPower(bool on) => _locked(() async {
+        final actuator = _actuator!;
+        if (!_targetStillValid()) return;
+        if (!on) {
+          await stopFan(context, ref, widget.deviceId, actuator: actuator);
+          return;
+        }
+        final choice = _fanChoice;
+        // await 뒤에 ref를 쓰지 않도록 저장소를 먼저 잡는다(시트가 닫힐 수 있다).
+        final store = ref.read(fanChoiceStoreProvider);
+        final key = actuator.storageKey(widget.deviceId);
+        await startFan(context, ref, widget.deviceId, choice,
+            actuator: actuator);
+        await store.save(key, choice);
+      });
 
   Future<void> _fanChip(FanTimerDuration? d, bool on) async {
+    if (_sending) return;
     setState(() => _fanChoice = d);
     // 켜진 채 바꾸면 그 값으로 다시 켠다(타이머 교체). 꺼져 있으면 선택만.
     if (on) await _fanPower(true);
   }
 
-  Future<void> _ledPower(bool on) async {
-    if (!_targetStillValid()) return;
-    await sendCageCommand(
-      context,
-      ref,
-      widget.deviceId,
-      on ? CommandAction.ledOn : CommandAction.ledOff,
-      payload: ledCommandPayload(
-          on: on, dimmable: _dimmable, brightness: _brightness.round()),
-    );
-  }
+  Future<void> _ledPower(bool on) => _locked(() async {
+        if (!_targetStillValid()) return;
+        await sendCageCommand(
+          context,
+          ref,
+          widget.deviceId,
+          on ? CommandAction.ledOn : CommandAction.ledOff,
+          payload: ledCommandPayload(
+              on: on, dimmable: _dimmable, brightness: _brightness.round()),
+        );
+      });
 
   Future<void> _saveDraft() async {
     final draft = _draft;
@@ -318,11 +335,17 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
       ActuatorState.off => 'device_state_off'.tr(),
       _ => 'device_state_unknown'.tr(),
     };
+    // 구 펌웨어(LED unavailable)는 상태를 모른다 — 모르는 상태를 뒤집는 스위치
+    // 대신 켜기/끄기를 따로 내놓는다(CLAUDE.md LED 규칙, 리뷰 2026-09-16).
+    final unknown = widget.device == ScheduleDevice.led &&
+        (state == null || state == ActuatorState.unavailable);
     final children = <Widget>[
       _PowerRow(
           label: 'home_sheet_power_fmt'.tr(args: [stateLabel]),
           on: on,
           accent: accent,
+          enabled: !_sending,
+          unknown: unknown,
           onChanged: (v) => switch (widget.device) {
                 ScheduleDevice.led => _ledPower(v),
                 _ => _fanPower(v),
@@ -343,6 +366,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                         label: d.labelKey.tr(),
                         selected: _fanChoice == d,
                         accent: accent,
+                        enabled: !_sending,
                         onTap: () => _fanChip(d, on))),
               ],
               const SizedBox(width: 4),
@@ -353,6 +377,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                       label: 'home_fan_steady_on'.tr(),
                       selected: _fanChoice == null,
                       accent: accent,
+                      enabled: !_sending,
                       onTap: () => _fanChip(null, on))),
             ])));
       case ScheduleDevice.cool:
@@ -382,6 +407,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                                   .tr(args: [d.labelKey.tr()]),
                               selected: _fanChoice == d,
                               accent: accent,
+                              enabled: !_sending,
                               onTap: () => _fanChip(d, on))),
                     ],
                   ]),
@@ -586,11 +612,19 @@ class _PowerRow extends StatelessWidget {
       {required this.label,
       required this.on,
       required this.accent,
-      required this.onChanged});
+      required this.onChanged,
+      this.enabled = true,
+      this.unknown = false});
   final String label;
   final bool on;
   final Color accent;
   final ValueChanged<bool> onChanged;
+
+  /// 명령 왕복 중 false — 스위치 탭을 무시한다.
+  final bool enabled;
+
+  /// 상태 모름(구 펌웨어) — 스위치 대신 켜기/끄기 버튼 둘.
+  final bool unknown;
 
   @override
   Widget build(BuildContext context) {
@@ -611,11 +645,24 @@ class _PowerRow extends StatelessWidget {
                       size: 18,
                       weight: FontWeight.w600,
                       color: glass.textSecondary))),
-          ScheduleSwitch(
-              key: DeviceControlSheet.powerSwitchKey,
-              value: on,
-              color: accent,
-              onChanged: onChanged),
+          if (unknown) ...[
+            _MiniButton(
+                key: const Key('led_on'),
+                label: 'home_led_turn_on'.tr(),
+                color: accent,
+                onPressed: enabled ? () => onChanged(true) : null),
+            const SizedBox(width: 4),
+            _MiniButton(
+                key: const Key('led_off'),
+                label: 'home_led_turn_off'.tr(),
+                color: glass.deviceOff,
+                onPressed: enabled ? () => onChanged(false) : null),
+          ] else
+            ScheduleSwitch(
+                key: DeviceControlSheet.powerSwitchKey,
+                value: on,
+                color: accent,
+                onChanged: enabled ? onChanged : (_) {}),
         ]));
   }
 }
@@ -647,5 +694,34 @@ class _SheetCta extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12)),
               textStyle: managementStyle(context, weight: FontWeight.w600)
                   .copyWith(height: 28 / 16)),
+          child: Text(label)));
+}
+
+/// 상태 모름 LED의 켜기/끄기 — 스위치 자리(32 높이)에 맞춘 작은 버튼.
+class _MiniButton extends StatelessWidget {
+  const _MiniButton(
+      {super.key,
+      required this.label,
+      required this.color,
+      required this.onPressed});
+  final String label;
+  final Color color;
+  final VoidCallback? onPressed;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+      height: 32,
+      child: FilledButton(
+          onPressed: onPressed,
+          style: FilledButton.styleFrom(
+              backgroundColor: color,
+              disabledBackgroundColor: context.glass.border,
+              foregroundColor: ManagementColors.buttonForeground(context),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              textStyle:
+                  managementStyle(context, size: 14, weight: FontWeight.w600)),
           child: Text(label)));
 }

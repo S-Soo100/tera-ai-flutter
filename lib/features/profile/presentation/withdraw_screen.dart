@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show FunctionException;
 
 import '../../../core/theme/glass_palette.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../notification/presentation/push_providers.dart';
 import '../../my_cage/presentation/widgets/management_widgets.dart';
 import 'widgets/my_page_widgets.dart';
 
@@ -28,8 +29,12 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
     if (_busy) return;
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
+    final auth = ref.read(authRepositoryProvider);
+    final push = ref.read(pushLifecycleControllerProvider);
     try {
-      await ref.read(authRepositoryProvider).deleteAccount();
+      await auth.deleteAccount();
+      // 로그아웃과 같은 경로로 푸시 기기 정리 후 세션 종료.
+      await push.logout(auth.signOut);
       if (mounted) context.go('/login');
     } on FunctionException {
       messenger

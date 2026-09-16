@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/home/domain/running_timer.dart';
+import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivanaut/features/home/domain/schedule.dart';
 import 'package:vivanaut/features/home/domain/schedule_device.dart';
 import 'package:vivanaut/features/home/presentation/widgets/device_control_sheet.dart';
@@ -96,6 +97,7 @@ void main() {
     await tester.pump();
     expect(sent.single.$1, CommandAction.fanOn);
     expect(sent.single.$2, {'duration_ms': 7200000});
+    await tester.pump(const Duration(milliseconds: 100)); // 왕복 잠금 해제
     await tester.tap(find.byKey(DeviceControlSheet.powerSwitchKey));
     await tester.pump();
     expect(sent.last.$1, CommandAction.fanOff);
@@ -211,5 +213,42 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ScheduleEditorBody), findsNothing);
     expect(find.byKey(DeviceControlSheet.mistStartKey), findsOneWidget);
+  });
+
+  testWidgets('LED 상태 모름(구 펌웨어) — 스위치 대신 켜기/끄기, 끄기는 led_off',
+      (tester) async {
+    final sent = await _pump(tester, ScheduleDevice.led,
+        led: ActuatorState.unavailable);
+    expect(find.byKey(DeviceControlSheet.powerSwitchKey), findsNothing);
+    expect(find.byKey(const Key('led_on')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('led_off')));
+    await tester.pump();
+    expect(sent.single.$1, CommandAction.ledOff);
+    await _flush(tester);
+  });
+
+  testWidgets('전원 스위치 연타 — 왕복 중에는 한 번만 보낸다', (tester) async {
+    final sent = await _pump(tester, ScheduleDevice.fan);
+    await tester.tap(find.byKey(DeviceControlSheet.powerSwitchKey));
+    await tester.tap(find.byKey(DeviceControlSheet.powerSwitchKey));
+    await tester.pump();
+    expect(sent.length, 1);
+    await _flush(tester);
+  });
+
+  testWidgets('분무 — 실행 취소하면 안 보내고, 창이 지나면 mist 3000ms', (tester) async {
+    final sent = await _pump(tester, ScheduleDevice.mist);
+    await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
+    await tester.pump();
+    expect(cancelPendingMist(kTestDeviceId), isTrue);
+    await tester.pump(const Duration(seconds: 3));
+    expect(sent, isEmpty);
+    // 5초 잠금이 없으니 바로 다시 누를 수 있다.
+    await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
+    await tester.pump(kMistUndoWindow + const Duration(milliseconds: 100));
+    expect(sent.single.$1, CommandAction.mist);
+    expect(sent.single.$2, {'duration_ms': 3000});
+    await tester.pump(const Duration(seconds: 6)); // 잠금 타이머
+    await _flush(tester);
   });
 }

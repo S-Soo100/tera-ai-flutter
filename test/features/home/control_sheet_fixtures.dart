@@ -52,6 +52,8 @@ class FakeSender extends ModuleCommandSender {
   Future<DeviceCommand> send(String deviceId, CommandAction action,
       {Map<String, dynamic>? payload, int? ttlSec}) async {
     log.add((action, payload));
+    // 실제 왕복처럼 한 틱 기다린다 — 연타 잠금 테스트가 이 사이를 본다.
+    await Future<void>.delayed(const Duration(milliseconds: 50));
     return DeviceCommand(
         id: 'c${log.length}',
         deviceId: deviceId,

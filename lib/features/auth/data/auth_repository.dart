@@ -65,7 +65,13 @@ class AuthRepository {
       {required String current, required String next}) async {
     final email = _client.auth.currentUser?.email;
     if (email == null) throw StateError('로그인이 필요합니다');
-    await _client.auth.signInWithPassword(email: email, password: current);
+    try {
+      await _client.auth.signInWithPassword(email: email, password: current);
+    } on AuthException catch (e) {
+      // 재로그인 단계의 실패만 "현재 비밀번호 불일치"다 — updateUser의 400
+      // (same_password 등)과 섞이지 않게 구분한다(리뷰 2026-09-16).
+      throw WrongCurrentPasswordException(e);
+    }
     await _client.auth.updateUser(UserAttributes(password: next));
   }
 
@@ -73,8 +79,17 @@ class AuthRepository {
   /// 지울 수 없어 Edge Function `delete-account`(service role) 에 위임한다 —
   /// 2026-09-16 현재 **미배포**(이관훈님 합의 필요, 계획 C6). 없으면
   /// [FunctionException]이 올라오고 화면이 "아직 준비되지 않았다"고 말한다.
+  /// 삭제만 한다 — 이어지는 로그아웃은 호출자가 푸시 기기 정리 경로
+  /// (`pushLifecycleController.logout`)로 수행한다.
   Future<void> deleteAccount() async {
     await _client.functions.invoke('delete-account');
-    await _client.auth.signOut();
   }
+}
+
+/// [AuthRepository.changePassword]의 재로그인 단계 실패 — 현재 비밀번호 불일치.
+class WrongCurrentPasswordException implements Exception {
+  const WrongCurrentPasswordException(this.cause);
+  final AuthException cause;
+  @override
+  String toString() => 'WrongCurrentPasswordException(${cause.message})';
 }

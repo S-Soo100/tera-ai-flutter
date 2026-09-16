@@ -93,8 +93,8 @@ class _CommunityProfileScreenState
           );
       if (!mounted) return;
       _initializedForId = null;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('commu_profile_saved'.tr())));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('commu_profile_saved'.tr())));
       Navigator.of(context).maybePop();
     } on PostgrestException catch (e) {
       if (!mounted) return;
@@ -218,14 +218,13 @@ class _ExperienceToggle extends StatelessWidget {
         child: SizedBox(
             height: 60,
             child: Row(children: [
-              for (final (i, e) in
-                  _CommunityProfileScreenState._experiences.indexed)
+              for (final (i, e)
+                  in _CommunityProfileScreenState._experiences.indexed)
                 Expanded(
                     child: Material(
                         key: CommunityProfileScreen.experienceKey(e),
-                        color: value == e
-                            ? AppTheme.brandNavy
-                            : glass.surfaceTint,
+                        color:
+                            value == e ? AppTheme.brandNavy : glass.surfaceTint,
                         shape: value == e
                             ? null
                             : Border(
@@ -243,8 +242,9 @@ class _ExperienceToggle extends StatelessWidget {
                                   if (value == e) ...[
                                     FigmaIcon.tinted('redesign_v2/check',
                                         size: 24,
-                                        color: ManagementColors
-                                            .buttonForeground(context)),
+                                        color:
+                                            ManagementColors.buttonForeground(
+                                                context)),
                                     const SizedBox(width: 4),
                                   ],
                                   Column(

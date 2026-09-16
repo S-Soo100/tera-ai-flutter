@@ -19,7 +19,6 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
 import '../../../core/supabase/supabase_provider.dart';
 import '../../my_cage/domain/device_command.dart';
 import '../../my_cage/domain/actuator_state.dart';
@@ -63,9 +62,24 @@ void _watchCommandAck(
   WidgetRef ref,
   ScaffoldMessengerState messenger,
   DeviceCommand command,
-) {
-  final client = ref.read(supabaseClientProvider);
-  final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
+) =>
+    _watchCommandAckWith(
+        ProviderScope.containerOf(context, listen: false), messenger, command,
+        invalidate: () {
+      // 화면을 떠났으면 ref가 죽어 있다 — 칩은 어차피 다음 진입 때 새로 계산된다.
+      if (context.mounted) ref.invalidate(runningTimersProvider);
+    });
+
+/// [_watchCommandAck]의 컨테이너 버전 — 시트가 닫힌 뒤에도 살아 있어야 하는
+/// 분무 대기([mistWithUndo])가 쓴다.
+void _watchCommandAckWith(
+  ProviderContainer container,
+  ScaffoldMessengerState messenger,
+  DeviceCommand command, {
+  VoidCallback? invalidate,
+}) {
+  final client = container.read(supabaseClientProvider);
+  final timerNotifs = container.read(fanTimerNotificationServiceProvider);
   Timer(kCommandAckGrace + const Duration(seconds: 1), () async {
     Map<String, dynamic>? row;
     try {
@@ -87,8 +101,7 @@ void _watchCommandAck(
         (failed ? 'module_command_failed' : 'module_command_no_ack').tr(),
       )));
     }
-    // 화면을 떠났으면 ref가 죽어 있다 — 칩은 어차피 다음 진입 때 새로 계산된다.
-    if (context.mounted) ref.invalidate(runningTimersProvider);
+    invalidate?.call();
     if (FanActuator.values
         .any((a) => a.actions.contains(command.action.toWire()))) {
       // 실패한 시작은 예약을 내리고, 실패한 종료는 이전 유효 타이머를 복구한다.
@@ -280,8 +293,21 @@ Future<void> mistOnce(
   WidgetRef ref,
   String deviceId,
   MistDuration duration,
-) async {
-  final lockNotifier = ref.read(mistLockProvider(deviceId).notifier);
+) =>
+    sendMistWith(ProviderScope.containerOf(context, listen: false),
+        ScaffoldMessenger.of(context), deviceId, duration,
+        toastContext: context);
+
+/// [mistOnce]의 컨테이너 버전. [toastContext]는 토스트를 얹을 Overlay용이며
+/// unmount됐으면 토스트만 생략한다 — 명령은 그와 무관하게 보낸다.
+Future<void> sendMistWith(
+  ProviderContainer container,
+  ScaffoldMessengerState messenger,
+  String deviceId,
+  MistDuration duration, {
+  BuildContext? toastContext,
+}) async {
+  final lockNotifier = container.read(mistLockProvider(deviceId).notifier);
   lockNotifier.state = MistLock.startingAt(DateTime.now());
   // 만료를 깨우는 주체를 명시적으로 둔다. 예전엔 무관한 provider(telemetry
   // 3초 틱)가 우연히 리빌드해 주기를 기다렸고, 그게 멈추면 버튼이 잠긴 채
@@ -289,27 +315,25 @@ Future<void> mistOnce(
   Timer(MistLock.duration, () {
     lockNotifier.state = const MistLock(lockedUntil: null);
   });
-  // await 전에 잡는다 — sendCageCommand와 같은 이유.
-  final messenger = ScaffoldMessenger.of(context);
+  void toast(String key, {String? icon}) {
+    final c = toastContext;
+    if (c != null && c.mounted) {
+      showClipToast(c, text: key.tr(), icon: icon ?? 'redesign_v2/check');
+    }
+  }
+
   try {
-    final command = await ref.read(moduleCommandSenderProvider.notifier).send(
-          deviceId,
-          CommandAction.mist,
-          payload: duration.payload,
-        );
+    final command = await container
+        .read(moduleCommandSenderProvider.notifier)
+        .send(deviceId, CommandAction.mist, payload: duration.payload);
     // mist 자체도 유실될 수 있다 — 분사가 안 됐는데 "분사했어요"로 끝나면
     // 사육 환경(습도)에 대한 거짓 확신이 된다.
-    if (context.mounted) _watchCommandAck(context, ref, messenger, command);
+    _watchCommandAckWith(container, messenger, command);
     // Figma 1106:6646 토스트 "분무가 실행되었습니다".
-    if (context.mounted) {
-      showClipToast(context, text: 'home_mist_done_toast'.tr());
-    }
+    toast('home_mist_done_toast');
   } catch (e, st) {
     debugPrint('[cage-control] mist failed: $e\n$st');
-    if (context.mounted) {
-      showClipToast(context,
-          text: 'home_mist_failed_toast'.tr(), icon: FigmaIcons.cancel);
-    }
+    toast('home_mist_failed_toast', icon: FigmaIcons.cancel);
   }
 }
 
@@ -320,52 +344,72 @@ final mistPendingProvider =
 /// 실행 취소 창 길이 — Figma 1106:6790 스낵바 "잠시 후 분무가 실행됩니다 · 2초".
 const kMistUndoWindow = Duration(seconds: 2);
 
+/// 진행 중인 분무 대기 — 테스트·취소용. 기기별 하나만.
+final _pendingMist = <String, Completer<bool>>{};
+
 /// 시트 "1회 분사 시작"(계획 A5, 디자이너 메모 "터치→비활성→스낵바→완료
 /// 토스트→재활성"): 바로 보내지 않고 [kMistUndoWindow] 동안 스낵바에
-/// '실행 취소'를 둔다. 창이 지나면 [mistOnce]가 3초 분무를 보낸다. 취소하면
-/// 토스트 "분무 실행을 취소했습니다". 대기 중·잠금 중엔 다시 누를 수 없다.
+/// '실행 취소'를 둔다. 창이 지나면 3초 분무를 보낸다. 취소하면 토스트
+/// "분무 실행을 취소했습니다". 대기 중·잠금 중엔 다시 누를 수 없다.
 ///
-/// 시트가 닫혀도 대기는 계속된다 — 누른 의도는 명시적이었고 스낵바 취소는
-/// 홈 화면에 남아 있다.
+/// **취소는 '실행 취소' 버튼뿐이다.** 스낵바가 스와이프·다른 스낵바로 닫혀도
+/// 대기 창은 그대로 흐른다(닫힘 사유에 의미를 두지 않는다). 시트가 닫혀도
+/// 대기는 계속되고 명령은 나간다 — 누른 의도는 명시적이었고, 컨테이너·루트
+/// 메신저를 잡아 두므로 시트 context에 기대지 않는다(리뷰 2026-09-16).
 Future<void> mistWithUndo(
   BuildContext context,
   WidgetRef ref,
   String deviceId,
 ) async {
   final pending = ref.read(mistPendingProvider(deviceId).notifier);
-  if (pending.state || ref.read(mistLockProvider(deviceId)).isLocked(DateTime.now())) {
+  if (pending.state ||
+      ref.read(mistLockProvider(deviceId)).isLocked(DateTime.now())) {
     return;
   }
   pending.state = true;
+  final container = ProviderScope.containerOf(context, listen: false);
   final messenger = ScaffoldMessenger.of(context);
-  var cancelled = false;
+  // 시트가 닫혀도 살아 있는 context — 토스트 Overlay용.
+  final rootContext = Navigator.of(context, rootNavigator: true).context;
+  final done = Completer<bool>(); // true = 취소
+  _pendingMist[deviceId] = done;
+  final timer = Timer(kMistUndoWindow, () {
+    if (!done.isCompleted) done.complete(false);
+  });
   final controller = messenger.showSnackBar(SnackBar(
-    duration: kMistUndoWindow + const Duration(milliseconds: 300),
+    duration: kMistUndoWindow,
     content: Text('home_mist_pending'.tr()),
     action: SnackBarAction(
-        label: 'home_mist_undo'.tr(), onPressed: () => cancelled = true),
+        label: 'home_mist_undo'.tr(),
+        onPressed: () {
+          if (!done.isCompleted) done.complete(true);
+        }),
   ));
-  final reason = await Future.any<SnackBarClosedReason>([
-    controller.closed,
-    Future.delayed(kMistUndoWindow, () => SnackBarClosedReason.timeout),
-  ]);
-  if (cancelled || reason == SnackBarClosedReason.action) {
-    if (pending.mounted) pending.state = false;
-    if (context.mounted) {
-      showClipToast(context,
+  final cancelled = await done.future;
+  timer.cancel();
+  _pendingMist.remove(deviceId);
+  if (pending.mounted) pending.state = false;
+  if (cancelled) {
+    controller.close();
+    if (rootContext.mounted) {
+      showClipToast(rootContext,
           text: 'home_mist_cancelled_toast'.tr(), icon: FigmaIcons.cancel);
     }
     return;
   }
-  messenger.hideCurrentSnackBar();
-  if (pending.mounted) pending.state = false;
-  if (!context.mounted) return;
-  await mistOnce(context, ref, deviceId, MistDuration.threeSeconds);
+  controller.close();
+  await sendMistWith(container, messenger, deviceId, MistDuration.threeSeconds,
+      toastContext: rootContext);
 }
 
-// 분무 지속시간 선택 시트(openMistSheet)·mistDurationProvider는 2026-09-07
-// 사용자 지시로 폐지 — 홈 분무 타일은 무조건 3초 분사(cage_control_grid).
-// 예약 편집기의 분무 시간 선택(schedule_editor_sheet)은 별개로 유지된다.
+/// 테스트용 — 대기 중인 분무를 코드에서 취소한다. 없으면 false.
+@visibleForTesting
+bool cancelPendingMist(String deviceId) {
+  final c = _pendingMist[deviceId];
+  if (c == null || c.isCompleted) return false;
+  c.complete(true);
+  return true;
+}
 
 /// LED 명령 payload. 릴레이 보드엔 brightness를 싣지 않는다 — 서버·펌웨어가
 /// 무시하긴 하지만 실DB `led_*` 이력에 의미 없는 payload를 남기지 않는다.

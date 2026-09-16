@@ -25,12 +25,12 @@ class MyPageRasterIcon extends StatelessWidget {
   final double size;
   final Color color;
   @override
-  Widget build(BuildContext context) => Image.asset(
-      'assets/icons/redesign_v2/png/$name.png',
-      width: size,
-      height: size,
-      color: color,
-      filterQuality: FilterQuality.medium);
+  Widget build(BuildContext context) =>
+      Image.asset('assets/icons/redesign_v2/png/$name.png',
+          width: size,
+          height: size,
+          color: color,
+          filterQuality: FilterQuality.medium);
 }
 
 class MyPageSectionTitle extends StatelessWidget {
@@ -40,8 +40,7 @@ class MyPageSectionTitle extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
       padding: const EdgeInsets.only(left: 12, bottom: 8),
       child: Text(text,
-          style:
-              managementStyle(context, color: context.glass.textTertiary)));
+          style: managementStyle(context, color: context.glass.textTertiary)));
 }
 
 /// 목록 행. [icon]은 36 원 안에 그릴 24 위젯. [subtitle]이 없으면 제목만
@@ -232,9 +231,9 @@ class MyPageCta extends StatelessWidget {
                     ManagementColors.buttonForeground(context),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
-                textStyle: managementStyle(context,
-                        size: 18, weight: FontWeight.w600)
-                    .copyWith(height: 28 / 18, letterSpacing: -0.36)),
+                textStyle:
+                    managementStyle(context, size: 18, weight: FontWeight.w600)
+                        .copyWith(height: 28 / 18, letterSpacing: -0.36)),
             child: Text(label)));
   }
 }

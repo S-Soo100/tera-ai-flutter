@@ -47,19 +47,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final prefs = ref.read(loginPrefsProvider);
     _emailController.text = prefs.lastEmail ?? '';
     _autoLogin = prefs.autoLogin;
-    _emailController.addListener(_onChanged);
-    _passwordController.addListener(_onChanged);
+    // 고치기 시작하면 **그 칸의** 오류만 지운다(다른 칸 오류는 유지 — 리뷰
+    // 2026-09-16). CTA 활성도 글자 수에 달려 있어 매 입력마다 다시 그린다.
+    _emailController.addListener(() => setState(() => _emailError = null));
+    _passwordController
+        .addListener(() => setState(() => _passwordError = null));
   }
-
-  void _onChanged() => setState(() {
-        // 고치기 시작하면 그 칸의 오류는 지운다. 서버 오류도 재입력 시 사라진다.
-        if (_emailError != null && _emailController.text.isNotEmpty) {
-          _emailError = null;
-        }
-        if (_passwordError != null && _passwordController.text.isNotEmpty) {
-          _passwordError = null;
-        }
-      });
 
   @override
   void dispose() {
@@ -80,8 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() {
       _emailError =
           _emailPattern.hasMatch(email) ? null : 'login_email_invalid'.tr();
-      _passwordError =
-          password.length >= 6 ? null : 'login_password_rule'.tr();
+      _passwordError = password.length >= 6 ? null : 'login_password_rule'.tr();
     });
     return _emailError == null && _passwordError == null;
   }
@@ -90,15 +82,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_canSubmit || !_validate()) return;
     FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
+    // await 뒤에 ref를 쓰지 않도록 먼저 잡는다(화면이 떠날 수 있다).
+    final prefs = ref.read(loginPrefsProvider);
+    final auth = ref.read(authRepositoryProvider);
+    final autoLogin = _autoLogin;
     try {
       final email = _emailController.text.trim();
-      await ref.read(authRepositoryProvider).signIn(
-            email: email,
-            password: _passwordController.text,
-          );
-      await ref
-          .read(loginPrefsProvider)
-          .save(email: email, autoLogin: _autoLogin);
+      await auth.signIn(email: email, password: _passwordController.text);
+      await prefs.save(email: email, autoLogin: autoLogin);
       if (mounted) context.go('/home');
     } on AuthException catch (e) {
       if (!mounted) return;

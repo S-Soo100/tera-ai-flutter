@@ -164,6 +164,11 @@ void main() {
         _rect(tester, find.byKey(const ValueKey('login-password-error')));
     expect(pwError.right, 373);
     expect(pwError.center.dy, closeTo(418.6, 0.8));
+    // 다른 칸을 고쳐도 이 칸 오류는 남는다.
+    await tester.enterText(find.byKey(const ValueKey('login-password')), '123456');
+    await tester.pump();
+    expect(find.text('올바른 이메일 형식을 입력해 주세요'), findsOneWidget);
+    expect(find.byKey(const ValueKey('login-password-error')), findsNothing);
     // 고치기 시작하면 오류가 사라진다.
     await tester.enterText(
         find.byKey(const ValueKey('login-email')), 'vivanaut@gmail.com');
