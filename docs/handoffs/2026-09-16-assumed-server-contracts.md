@@ -6,20 +6,20 @@
 
 | # | 회신 결과 | 앱 조치 |
 |---|---|---|
-| 1 | ⛔ **미지원.** 펌웨어가 `led_on`의 `duration_ms`를 읽지 않고 `ok`만 보냄. MOSFET 보드는 타이머 슬롯 없음. A(앱 칩 제거, 권장)/B(펌웨어 추가, 플래그·상한 결정)/C(서버 지연 off, 비권장) | **사용자 결정 대기.** A면 칩·진행 칩·알림·`FanActuator.led` 제거 |
+| 1 | ⛔ **미지원.** 펌웨어가 `led_on`의 `duration_ms`를 읽지 않고 `ok`만 보냄. MOSFET 보드는 타이머 슬롯 없음 | **A안 확정(사용자, 2026-09-16).** 칩·진행 칩·알림·`FanActuator.led` 제거 완료(`40a55fc`, 0.108.2+267) |
 | 2 | ✅ 지원. 릴레이 보드는 무시(400 아님). `brightness: 0`은 꺼짐 → 하한 20% 앱 강제 | 그대로. 앱은 이미 20~100 clamp(시트·편집기 모두) |
 | 3 | ✅ 지원(상한 2h, `fan_on`도 동일). ack `state: "TIMER"`, `fan2_off`가 자동 OFF도 취소 | 그대로. pair 복귀 불필요 |
-| 4 | ⏸️ **소프트 해제 미구현.** "API 동작이 바뀌므로 합의 후 진행", 서버 우선순위 1. `redesign_unlink_device_v1` 연결 경로는 설계 뒤 통보 | **설계 합의 필요.** 앱은 `POST /devices\|cameras/{id}/unlink` + `unlinked_at`을 제안한 상태. 미배포 동안 "서버 미지원" 표시 유지 |
+| 4 | ⏸️ **소프트 해제 미구현.** "API 동작이 바뀌므로 합의 후 진행", 서버 우선순위 1. `redesign_unlink_device_v1` 연결 경로는 설계 뒤 통보 | **앱 제안을 확정안으로 답신**([결정 답신 §1](2026-09-16-lee-gwanhun-reply-2-decisions.md)). 미배포 동안 "서버 미지원" 표시 유지 |
 | 5 | ⏸️ 4와 같음 | 컬럼 생기면 자동 적용, 그 전 무영향 |
-| 6 | ⏸️ **초안 5개를 아직 못 읽음**("저장소 밖, 경로/파일 필요"). 트리거 방식 통합 동의. 그룹 이름 UNIQUE `(owner_id, btrim(name))`는 적용 완료·409 | 바탕화면 `이관훈님_전달_2026-09-16` 폴더 전송 필요. RPC는 초안대로 23505를 유지하면 인덱스와 일치 |
+| 6 | ⏸️ **초안 5개를 아직 못 읽음**("저장소 밖, 경로/파일 필요"). 트리거 방식 통합 동의. 그룹 이름 UNIQUE `(owner_id, btrim(name))`는 적용 완료·409 | 결정 답신과 함께 폴더 전송(사용자). RPC는 초안대로 23505를 유지하면 인덱스와 일치 |
 | 7 | ✅ 6건 전부 반영·배포. `no_ack` 30초(설정값), `expired`/`unknown_device`도 `failed`. secret 수령 전엔 발송 안 함 | 검증기와 일치. `PUSH_EVENT_INGEST_SECRET` 안전 채널 전달만 남음(앱 팀이 아니라 사용자) |
 
 ## 회신에서 새로 나온 앱 조치
 
 | 항목 | 회신 | 앱 현재 상태 |
 |---|---|---|
-| 지표별 유효 표본 수 | `telemetry_30m.t_a_count/h_a_count/t_b_count/h_b_count` 배포. 2026-09-15 이전 버킷은 null. B센서는 전 기기 유효 0 → `t_b_avg` null. KST 일평균은 `bucket + 9h`로 묶기 | **불일치.** 앱은 `t_a_valid_count`/`h_a_valid_count` 이름을 읽는다(`telemetry_bucket.dart`) → 컬럼명 매핑 필요 |
-| 히터 | 두 보드 모두 펌웨어 미구현, 항상 `unknown_action`. UI 노출 금지. 서버 400 차단 여부 질문 | 홈 타일·예약 기기 선택은 이미 숨김. 구 사육장 탭 `actuator_controls`에 히터 버튼이 남아 있음 → 제거 검토 |
+| 지표별 유효 표본 수 | `telemetry_30m.t_a_count/h_a_count/t_b_count/h_b_count` 배포. 2026-09-15 이전 버킷은 null. B센서는 전 기기 유효 0 → `t_b_avg` null. KST 일평균은 `bucket + 9h`로 묶기 | 매핑 완료(`64adbde`, 0.108.3+268). 구 이름은 폴백으로 유지 |
+| 히터 | 두 보드 모두 펌웨어 미구현, 항상 `unknown_action`. UI 노출 금지. 서버 400 차단 여부 질문 | 홈 타일·예약 기기 선택은 이미 숨김. 구 사육장 탭 히터 타일 제거 완료(`43b742d`, 0.108.4+269). 서버 400 차단 요청함 |
 | 냉각팬 | 릴레이 보드는 `fan2_*` 코드 없음 → `telemetry.fan2 != null`로 노출 판별 | 이미 적용(홈 타일 `--`, 탭 시 무시) |
 | `busy`/`error` | 원인 구분 불가, 같은 문구. 재시도는 새 `msg_id` | 앱은 매 명령 새 UUID. 문구는 `module_command_failed` 하나 |
 | 그룹 이름 409 | REST `POST/PATCH /enclosures` 위반 시 409 | 앱 그룹 저장은 RPC(23505 매핑). 구 `enclosure_repository`의 직접 insert/update는 409 아닌 23505를 받게 되며 별도 매핑 없음(일반 실패 표시) |
