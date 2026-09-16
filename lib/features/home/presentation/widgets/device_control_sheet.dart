@@ -17,8 +17,13 @@ import '../../domain/schedule_device.dart';
 import '../cage_control_actions.dart';
 import '../home_control_providers.dart';
 import '../routine_settings_screen.dart'
-    show ScheduleRow, ScheduleSwitch, scheduleRepeatLabel, scheduleRows,
-        scheduleSingleTitle, scheduleStateLabel;
+    show
+        ScheduleRow,
+        ScheduleSwitch,
+        scheduleRepeatLabel,
+        scheduleRows,
+        scheduleSingleTitle,
+        scheduleStateLabel;
 import '../schedule_draft_apply.dart';
 import '../schedule_providers.dart';
 import 'led_brightness_row.dart';
@@ -74,6 +79,7 @@ class DeviceControlSheet extends ConsumerStatefulWidget {
   final ScheduleDevice device;
   final DeviceControlTab initialTab;
 
+  static const surfaceKey = Key('device_sheet_surface');
   static const segmentKey = Key('device_sheet_segment');
   static const immediateTabKey = Key('device_sheet_tab_immediate');
   static const scheduledTabKey = Key('device_sheet_tab_scheduled');
@@ -90,7 +96,9 @@ class DeviceControlSheet extends ConsumerStatefulWidget {
 
 /// 예약 탭의 편집 대상 — 새 예약([device]) 또는 기존([single]/[pair]).
 class _Editing {
-  const _Editing.add() : single = null, pair = null;
+  const _Editing.add()
+      : single = null,
+        pair = null;
   const _Editing.single(this.single) : pair = null;
   const _Editing.pair(this.pair) : single = null;
   final Schedule? single;
@@ -254,28 +262,33 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
-      child: ColoredBox(
-        color: glass.overlay,
-        child: SingleChildScrollView(
-          // 원본 마지막 요소 아래 52 = 18 + 홈 인디케이터 34.
-          padding: EdgeInsets.fromLTRB(24, 24, 24, 18 + bottomInset),
-          child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _Segment(
-                    tab: _tab,
-                    onChanged: (t) => setState(() {
-                          _tab = t;
-                          _editing = null;
-                          _draft = null;
-                        })),
-                const SizedBox(height: 24),
-                if (_tab == DeviceControlTab.immediate)
-                  _immediate(context, accent)
-                else
-                  _scheduled(context, accent),
-              ]),
+      // 원본 BottomSheet 위 모서리 24(export PNG 실측: y24부터 전폭 채움).
+      child: ClipRRect(
+        key: DeviceControlSheet.surfaceKey,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: ColoredBox(
+          color: glass.overlay,
+          child: SingleChildScrollView(
+            // 원본 마지막 요소 아래 52 = 18 + 홈 인디케이터 34.
+            padding: EdgeInsets.fromLTRB(24, 24, 24, 18 + bottomInset),
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _Segment(
+                      tab: _tab,
+                      onChanged: (t) => setState(() {
+                            _tab = t;
+                            _editing = null;
+                            _draft = null;
+                          })),
+                  const SizedBox(height: 24),
+                  if (_tab == DeviceControlTab.immediate)
+                    _immediate(context, accent)
+                  else
+                    _scheduled(context, accent),
+                ]),
+          ),
         ),
       ),
     );
@@ -397,9 +410,8 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   }
 
   Widget _mist(BuildContext context, Color accent) {
-    final locked = ref
-        .watch(mistLockProvider(widget.deviceId))
-        .isLocked(DateTime.now());
+    final locked =
+        ref.watch(mistLockProvider(widget.deviceId)).isLocked(DateTime.now());
     final pending = ref.watch(mistPendingProvider(widget.deviceId));
     return _SheetCta(
         key: DeviceControlSheet.mistStartKey,
@@ -426,30 +438,28 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
         // 목록이 비어 있으면 바로 편집기(Figma 1106:6415/5648/4890/5524).
         (schedules.hasValue && rows.isEmpty ? const _Editing.add() : null);
     if (editing != null) {
-      return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ScheduleEditorBody(
-                key: ValueKey(
-                    'sheet-editor-${editing.single?.id ?? editing.pair?.pairId ?? 'new'}'),
-                device: editing.single == null && editing.pair == null
-                    ? widget.device
-                    : null,
-                initial: editing.single,
-                initialPair: editing.pair,
-                onChanged: (d) => setState(() => _draft = d)),
-            const SizedBox(height: 24),
-            _SheetCta(
-                key: DeviceControlSheet.saveScheduleKey,
-                label: 'home_sheet_save_schedule'.tr(),
-                color: accent,
-                onPressed: _draft == null || _saving
-                    ? null
-                    : () {
-                        _editing ??= editing;
-                        _saveDraft();
-                      }),
-          ]);
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        ScheduleEditorBody(
+            key: ValueKey(
+                'sheet-editor-${editing.single?.id ?? editing.pair?.pairId ?? 'new'}'),
+            device: editing.single == null && editing.pair == null
+                ? widget.device
+                : null,
+            initial: editing.single,
+            initialPair: editing.pair,
+            onChanged: (d) => setState(() => _draft = d)),
+        const SizedBox(height: 24),
+        _SheetCta(
+            key: DeviceControlSheet.saveScheduleKey,
+            label: 'home_sheet_save_schedule'.tr(),
+            color: accent,
+            onPressed: _draft == null || _saving
+                ? null
+                : () {
+                    _editing ??= editing;
+                    _saveDraft();
+                  }),
+      ]);
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       for (final (i, row) in rows.indexed) ...[
@@ -548,9 +558,8 @@ class _Segment extends StatelessWidget {
                       child: Text(label,
                           style: managementStyle(context,
                               size: 14,
-                              weight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
+                              weight:
+                                  selected ? FontWeight.w700 : FontWeight.w600,
                               color: selected
                                   ? glass.textSecondary
                                   : glass.bodySecondary))))));

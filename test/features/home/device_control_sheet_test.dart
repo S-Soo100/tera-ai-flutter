@@ -51,6 +51,12 @@ void main() {
     expect(find.byKey(DeviceControlSheet.segmentKey), findsOneWidget);
     expect(find.byKey(DeviceControlSheet.powerRowKey), findsOneWidget);
     expect(find.text('home_sheet_power_fmt'), findsOneWidget);
+    // 원본 시트 위 모서리 24.
+    expect(
+        tester
+            .widget<ClipRRect>(find.byKey(DeviceControlSheet.surfaceKey))
+            .borderRadius,
+        const BorderRadius.vertical(top: Radius.circular(24)));
     expect(find.byKey(const Key('fan_timer_10')), findsOneWidget);
     expect(find.byKey(const Key('fan_steady_on')), findsOneWidget);
     await tester.tap(find.byKey(const Key('fan_timer_60')));
