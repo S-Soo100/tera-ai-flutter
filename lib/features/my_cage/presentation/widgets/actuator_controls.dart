@@ -10,7 +10,6 @@ import '../../domain/device_command.dart';
 import '../../domain/telemetry_reading.dart';
 import '../../../../shared/services/fan_timer_notification_service.dart';
 import '../supabase_module_providers.dart';
-import 'heater_lock_dialog.dart';
 
 /// 액추에이터 제어 카드 (Supabase commands/telemetry 기반).
 ///
@@ -176,14 +175,8 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _HeaterTile(
-                heaterState: telemetry.heater,
-                isBusy: hasPending,
-                onTap: () => _handleHeaterTap(context, device, telemetry),
-              ),
-            ),
+            // 히터 타일은 2026-09-16 회신 §4.1로 제거 — 두 보드 모두 펌웨어
+            // 미구현이라 항상 unknown_action. 배선은 홈과 같이 보드가 생기면 복귀.
           ],
         ),
         const SizedBox(height: 12),
@@ -285,57 +278,6 @@ class _ActuatorControlsState extends ConsumerState<ActuatorControls> {
       if (!mounted) return;
       _showErrorOn(messenger);
     }
-  }
-
-  // ── 히터 탭 처리 ─────────────────────────────────────────────────────────────
-
-  Future<void> _handleHeaterTap(
-    BuildContext context,
-    Device device,
-    TelemetryReading telemetry,
-  ) async {
-    // 잠긴 상태면 해제 다이얼로그 먼저
-    if (telemetry.heaterLocked) {
-      await showHeaterLockDialog(context, ref, deviceId: device.id);
-      return;
-    }
-
-    // 히터 조작은 위험 액션 — 확인 다이얼로그
-    final isOn = telemetry.heater == ActuatorState.on;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('module_heater_confirm_title'.tr()),
-        content: Text((isOn
-                ? 'module_heater_confirm_body_off'
-                : 'module_heater_confirm_body_on')
-            .tr()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('module_heater_confirm_cancel'.tr()),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.warning,
-              foregroundColor: Colors.white,
-            ),
-            child: Text('module_heater_confirm_yes'.tr()),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    if (!mounted) return;
-
-    // 절대 상태 명령. 뒤집기는 기기 상태를 전제하는데, 그 전제가 어긋나면
-    // 끄려던 조작이 켠다 — 히터에서는 과열이다.
-    // ignore: use_build_context_synchronously
-    await _sendCommand(context, device,
-        isOn ? CommandAction.heaterOff : CommandAction.heaterOn);
-    // 명령 결과는 commandUpdatesProvider listen에서 처리됨.
-    // rejected_locked 응답 시 _handleCommandResult → 잠금 다이얼로그.
   }
 
   // ── LED 전원 켜기 ────────────────────────────────────────────────────────────
@@ -598,139 +540,6 @@ class _ActuatorTile extends StatelessWidget {
 }
 
 // ── iOS 제어센터 스타일: 히터 타일 (가로 한 row + 잠금 아이콘 인라인) ─────────
-
-class _HeaterTile extends StatelessWidget {
-  const _HeaterTile({
-    required this.heaterState,
-    required this.isBusy,
-    required this.onTap,
-  });
-
-  final HeaterState heaterState;
-  final bool isBusy;
-  final VoidCallback onTap;
-
-  static const _amber = AppTheme.warning;
-  static const _amberBg = Color(0xFFFFF3E0);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    final isOn = heaterState.state == ActuatorState.on;
-    final isUnavailable = heaterState.state == ActuatorState.unavailable;
-    final locked = heaterState.locked;
-
-    final Color tileBg = locked
-        ? _amberBg
-        : isUnavailable
-            ? cs.surfaceContainerHigh
-            : isOn
-                ? _amber
-                : cs.surfaceContainerHighest;
-
-    final Color iconBgColor = locked
-        ? _amber.withValues(alpha: 0.2)
-        : isUnavailable
-            ? cs.surfaceContainerHighest
-            : isOn
-                ? Colors.white.withValues(alpha: 0.25)
-                : _amber.withValues(alpha: 0.12);
-
-    final Color iconColor = locked
-        ? _amber
-        : isUnavailable
-            ? cs.outline
-            : isOn
-                ? Colors.white
-                : _amber;
-
-    final Color labelColor = locked
-        ? _amber
-        : isUnavailable
-            ? cs.outline
-            : isOn
-                ? Colors.white
-                : cs.onSurface;
-
-    final String stateLabel = locked
-        ? 'module_actuator_state_locked'.tr()
-        : isUnavailable
-            ? ''
-            : isOn
-                ? 'module_actuator_state_on'.tr()
-                : 'module_actuator_state_off'.tr();
-
-    return GestureDetector(
-      onTap: isBusy ? null : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: tileBg,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          children: [
-            // 원형 아이콘 뱃지
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: iconBgColor,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.whatshot_outlined,
-                  size: 16,
-                  color: iconColor,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            // 라벨
-            Expanded(
-              child: Text(
-                'module_actuator_heater'.tr(),
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: labelColor,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            // 상태 + 잠금 아이콘 + BusyDot
-            if (stateLabel.isNotEmpty)
-              Text(
-                stateLabel,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: labelColor.withValues(alpha: 0.80),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            if (locked) ...[
-              const SizedBox(width: 4),
-              Icon(Icons.lock_outline, size: 13, color: _amber),
-            ],
-            if (isBusy) ...[
-              const SizedBox(width: 4),
-              _BusyDot(color: labelColor),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── iOS 제어센터 스타일: LED 통합 타일 (전폭, 켜기/끄기 토글) ─────────────────
-//
-// off:         [아이콘] LED (Spacer) [켜기]
-// on:          [아이콘] LED (Spacer) [끄기]
-// unavailable: [아이콘] LED (Spacer) [켜기] [끄기]  ← 상태를 모르니 둘 다
 
 class _LedTile extends StatelessWidget {
   const _LedTile({
