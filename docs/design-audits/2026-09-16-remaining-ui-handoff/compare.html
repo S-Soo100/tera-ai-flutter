@@ -1,7 +1,7 @@
 <!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>남은 UI · 수정 전후 비교</title>
 <style>body{font:15px/1.6 -apple-system,sans-serif;background:#f3f3f3;color:#222;margin:24px}main{max-width:1300px;margin:auto}nav{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}a{color:#19376c}section{background:#fff;border-radius:16px;padding:24px;margin:24px 0}.pair{display:flex;gap:16px;overflow:auto;align-items:flex-start;margin:12px 0}figure{margin:0;flex:0 0 auto;width:393px}img{width:393px;height:auto;display:block;border:1px solid #ddd;background:#fff}figcaption{font-size:13px;margin:6px 0;color:#444}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #ddd;padding:6px 8px;vertical-align:top;text-align:left}th{background:#f7f7f7}.note{background:#fff0d5;padding:12px 16px;border-radius:12px;font-size:14px}.status{font-size:13px;color:#555}</style>
 <main><h1>남은 UI · 원본/수정 전/수정 후 비교</h1>
-<div class="note">원본(figma/)·수정 전(app/, 570c0c0)·수정 후(after/, 위젯 테스트 fixture 393×852, SafeArea 62/34)를 같은 폭으로 놓았다. 회색 영상·썸네일·기기명·날짜는 fixture 값이며 실제 데이터가 아니다. 측정값은 Figma specs와 위젯 렌더 rect/PNG 픽셀 경계 비교다. 실기기 키보드·회전·BLE·서버는 별도 검증 항목이다(RESULTS.md).</div>
+<div class="note">원본(figma/)·수정 전(app/, 570c0c0)·수정 후(after/, 위젯 테스트 fixture 393×852, SafeArea 62/34)를 같은 폭으로 놓았다. 회색 영상·썸네일·기기명·날짜는 fixture 값이며 실제 데이터가 아니다. 측정값은 Figma specs와 위젯 렌더 rect/PNG 픽셀 경계 비교다. 실기기 키보드·회전·BLE·서버는 별도 검증 항목이다(RESULTS.md). 2026-09-16 결정 대화 반영분(LCD 그림·화살표·LED 작동 시간·예약 밝기·냉각팬 duration·연결 카드) 포함.</div>
 <nav><a href="#P01">P01</a> · <a href="#P02">P02</a> · <a href="#P03">P03</a> · <a href="#P04">P04</a> · <a href="#P05">P05</a> · <a href="#P06">P06</a> · <a href="#P07">P07</a> · <a href="#P08">P08</a> · <a href="#P09">P09</a> · <a href="#P10">P10</a> · <a href="#P12">P12</a> · <a href="#P13">P13</a> · <a href="#P14">P14</a> · <a href="#P15">P15</a> · <a href="#P16">P16</a> · <a href="RESULTS.md">RESULTS.md</a></nav>
 <section id="P01"><h2>P01 — 모프 검색</h2><p class="status">상태: 수정 완료</p>
 <div class="pair">
@@ -57,6 +57,12 @@
 <figure><img src="after/p02-pet-done.png" loading="lazy" alt="수정 후"><figcaption>수정 후 · after/p02-pet-done.png</figcaption></figure>
 </div>
 <p class="status">신규 등록 완료</p>
+<div class="pair">
+<figure><img src="figma/994-13307.png" loading="lazy" alt="원본 Figma"><figcaption>원본 Figma · figma/994-13307.png</figcaption></figure>
+<figure><img src="app/widget-pet-group-picker.png" loading="lazy" alt="수정 전"><figcaption>수정 전 · app/widget-pet-group-picker.png</figcaption></figure>
+<figure><img src="after/p02-pet-link-card.png" loading="lazy" alt="수정 후"><figcaption>수정 후 · after/p02-pet-link-card.png</figcaption></figure>
+</div>
+<p class="status">그룹 미선택 등록 + 기기 있는 그룹 1개 → 연결 카드(2026-09-16 사용자 결정으로 구현)</p>
 <table><tr><th>항목</th><th>원본</th><th>수정 후</th><th>판정</th></tr>
 <tr><td>제목/부제</td><td>24/228 18/600 중앙, 257 16/500 #626262</td><td>228/257</td><td>일치</td></tr>
 <tr><td>그룹 카드</td><td>345×78 r12 #F4F4F4 x24 y300/386, 자동 이름 16/500 #949090 (40,312), 이름 16/600 (40,347)</td><td>동일</td><td>일치 — 이전 ListTile 바텀시트</td></tr>
@@ -64,6 +70,7 @@
 <tr><td>CTA</td><td>이 사육 환경에서 키우기 y696(미선택 비활성), 나중에 하기 y752</td><td>동일</td><td>일치</td></tr>
 <tr><td>완료 화면</td><td>체크 64 (164.5,308), 도마뱀 추가 완료 y396, 부제 y425, 기기 추가 하기 y696, 나중에 하기 y752</td><td>동일</td><td>일치 — 신설</td></tr>
 <tr><td>기기 결합 확인(994:13307·990:7508)</td><td>도마뱀과 기기를 연결합니다 / 연결한 사육장과 함께 사용할까요? 카드</td><td>미구현 — 기존 그룹 편집 경로 유지</td><td>P11 결정 대기(자동 결합 정책)</td></tr>
+<tr><td>연결 카드 994:13307</td><td>제목 y266, 부제 y295, 목록 345×128 y338, &quot;이 사육 환경에서 키우기&quot; 696 + 나중에 하기 752</td><td>LinkConfirmScreen 공용 — 102~291/269~283, 목록 24/338, 원 40/352, CTA 12/696 (픽셀 동일). 확인=개체를 그 그룹에 배정(기존 저장 경로), 그룹을 폼에서 골랐거나 후보가 0·2개 이상이면 기존 완료 화면</td><td>일치</td></tr>
 </table>
 <ul><li>자동 이름 &quot;그룹 N&quot;은 목록 순서 번호. 그룹 해제는 이 화면에 없고 사육장 연동 화면이 담당(원본에 그룹 없음 카드 없음).</li><li>저장 재시도 시 동일 개체 ID 재사용은 기존 세션 규칙 그대로.</li></ul>
 </section>
@@ -177,12 +184,19 @@
 <figure><img src="after/p05-pet-single.png" loading="lazy" alt="수정 후"><figcaption>수정 후 · after/p05-pet-single.png</figcaption></figure>
 </div>
 <p class="status">개체 한 마리 (확인형 제목)</p>
+<div class="pair">
+<figure><img src="figma/990-7508.png" loading="lazy" alt="원본 Figma"><figcaption>원본 Figma · figma/990-7508.png</figcaption></figure>
+<figure><img src="app/widget-pairing-done-device.png" loading="lazy" alt="수정 전"><figcaption>수정 전 · app/widget-pairing-done-device.png</figcaption></figure>
+<figure><img src="after/p05-join-card.png" loading="lazy" alt="수정 후"><figcaption>수정 후 · after/p05-join-card.png</figcaption></figure>
+</div>
+<p class="status">카메라 단독 성공 + 사육장 그룹 1개 → 합류 카드(2026-09-16 사용자 결정으로 구현)</p>
 <table><tr><th>항목</th><th>원본</th><th>수정 후</th><th>판정</th></tr>
 <tr><td>완료 블록</td><td>체크 64 (164.5,308), 제목 y396 18/600, 부제 y425 16/500 #626262</td><td>308/396/425</td><td>일치 — 이전 Spacer 배분</td></tr>
 <tr><td>완료 CTA</td><td>y696 + 나중에 하기 y752</td><td>696/752(글자 710/766)</td><td>일치</td></tr>
-<tr><td>기존 기기와 연결</td><td>원본 없음</td><td>부제 아래 텍스트 버튼 유지(승인 경로)</td><td>유지</td></tr>
+<tr><td>기존 기기와 연결</td><td>원본 없음</td><td>후보 그룹 1개면 990:7508 카드(함께=그룹 저장 RPC, 따로=결과 화면). 여러 개면 기존 텍스트 버튼 유지</td><td>확정(2026-09-16)</td></tr>
 <tr><td>개체 제목</td><td>여러 마리 y174 / 한 마리 y266, 부제 +29</td><td>174/203, 266/295</td><td>일치</td></tr>
 <tr><td>개체 카드</td><td>345×112 r12 #F4F4F4 x24, 사진 80 r4, 이름 x136 y+34 16/700, 태그 40×24 r12 14/700 #D61619, 체크 24 x329 y+16</td><td>이름 136/281, 태그 209/282, 상세 308.5, 체크 329/262</td><td>일치(1pt)</td></tr>
+<tr><td>합류 카드</td><td>흰 바탕, 제목 18/600 y266·부제 16/500 y295, 목록 345×128 r12 #F4F4F4 y338(원 36 #3C3C3C x40, 라벨 x88, 이름 우 353), CTA 696 + 텍스트 752</td><td>LinkConfirmScreen — 제목 81~312/269~283, 목록 24/338~368/465, 원 40/352, CTA 12/696 (픽셀 동일)</td><td>일치</td></tr>
 </table>
 <ul><li>긴 이름/모프는 축소하지 않고 말줄임, 목록은 CTA 뒤로 스크롤(하단 여백 138).</li><li>부분 성공/등록 대기/실패 재시도는 원본 프레임이 없어 기존 복구 흐름을 새 footer 안에 유지.</li></ul>
 </section>
@@ -263,7 +277,7 @@
 </table>
 <ul><li>일간 곡선·마커 위치는 fixture 데이터에 따른다. 시뮬레이터 확인은 로그인·기기 연결 필요.</li></ul>
 </section>
-<section id="P08"><h2>P08 — LCD 문구 전체 화면</h2><p class="status">상태: 수정 완료(일러스트 자산 대기)</p>
+<section id="P08"><h2>P08 — LCD 문구 전체 화면</h2><p class="status">상태: 수정 완료</p>
 <div class="pair">
 <figure><img src="figma/1081-3160.png" loading="lazy" alt="원본 Figma"><figcaption>원본 Figma · figma/1081-3160.png</figcaption></figure>
 <figure><img src="app/widget-lcd.png" loading="lazy" alt="수정 전"><figcaption>수정 전 · app/widget-lcd.png</figcaption></figure>
@@ -277,17 +291,17 @@
 <p class="status">입력 (OS 키보드 미재현)</p>
 <table><tr><th>항목</th><th>원본</th><th>수정 후</th><th>판정</th></tr>
 <tr><td>헤더</td><td>뒤로 44 x12, 제목 모듈 화면 표시 문구 16/700 y74.5</td><td>137.4/74.5</td><td>일치</td></tr>
-<tr><td>모듈 그림</td><td>345×171 (24,118) 벡터 illustration</td><td>빈 자리 369×171 y118</td><td>자산 대기(P17) — 새로 그리지 않음</td></tr>
+<tr><td>모듈 그림</td><td>345×171 (24,118) 벡터 illustration</td><td>LCDx3.png(1035×513, x3) 345×171 @24/118</td><td>일치 — 2026-09-16 디자이너 export</td></tr>
 <tr><td>안내</td><td>16/500 #626262 2줄 y305 중앙</td><td>y305 2줄</td><td>일치</td></tr>
 <tr><td>입력</td><td>369×65 r12 #FAFAFA/#E3E3E3 y359, 글자 x29 16/500, 카운터 14/20 #949090 우 17</td><td>y359, 글자 29/382, 카운터 우 364</td><td>일치</td></tr>
 <tr><td>완료 CTA</td><td>y696 #E3E3E3(비활성)/#1E1E1E, 키보드 위 36(y473)</td><td>696, 비활성=빈 문구·마지막 성공값과 동일·전송 중</td><td>일치</td></tr>
-<tr><td>기본값 복원</td><td>원본 없음</td><td>y752 텍스트 버튼, 키보드 시 숨김</td><td>P11 노출 위치 결정 대기</td></tr>
+<tr><td>기본값 복원</td><td>원본 없음</td><td>제거(완료 단독 y696)</td><td>확정(2026-09-16 사용자 결정: 제거)</td></tr>
 <tr><td>중복 오류 문구</td><td>숨은 레이어 &quot;중복되지 않는 이름으로…&quot;</td><td>미구현(LCD는 중복 허용·기기 이름과 독립)</td><td>계획서 지시대로 제외</td></tr>
 <tr><td>현재 문구 읽기</td><td>계약 없음</td><td>세션 메모리의 마지막 성공값만 미리 채움, 기기 이름으로 채우지 않음</td><td>서버 읽기 계약 없음 명시</td></tr>
 </table>
 <ul><li>20자 상한(공백 포함·grapheme)과 전송 중 잠금은 기존 테스트로 유지.</li></ul>
 </section>
-<section id="P09"><h2>P09 — 환기팬·냉각팬·LED 제어</h2><p class="status">상태: 부분 수정(표시만, 송신 구조는 P11 대기)</p>
+<section id="P09"><h2>P09 — 환기팬·냉각팬·LED 제어</h2><p class="status">상태: 수정 완료(즉시/예약 segment·전원 스위치는 사용자 결정으로 미적용)</p>
 <div class="pair">
 <figure><img src="figma/1106-4296.png" loading="lazy" alt="원본 Figma"><figcaption>원본 Figma · figma/1106-4296.png</figcaption></figure>
 <figure><img src="app/widget-fan-duration.png" loading="lazy" alt="수정 전"><figcaption>수정 전 · app/widget-fan-duration.png</figcaption></figure>
@@ -309,12 +323,12 @@
 <tr><td>시트/라벨</td><td>#F4F4F4, 안쪽 24, 라벨 16/500 #949090 x36</td><td>동일</td><td>일치</td></tr>
 <tr><td>환기팬 칩</td><td>44 r16 흰색, 62.25×4 + 계속 80, 간격 4, 글자 x39.6/104.4/170.1/235.4/315</td><td>39.9/104.6/170.6/235.7, 계속 80 고정</td><td>일치</td></tr>
 <tr><td>냉각팬 칩</td><td>112.3×3 (30분 뒤/1시간 뒤/2시간 뒤), 종료 라벨 + 안내 14/500</td><td>54.9/171/286.2, 종료·안내 문구</td><td>일치 — 이전 10분·계속 노출</td></tr>
-<tr><td>LED 밝기 행</td><td>345×48 r16 흰색, % 18/600 x36, 트랙 6 #E3E3E3·채움 #E89E00, 썸 52×32 흰색</td><td>동일(썸 커스텀 shape)</td><td>일치</td></tr>
-<tr><td>즉시/예약 segment·전원 스위치</td><td>345×32 segment, 전원 · 켜짐 + 80×32 스위치</td><td>미구현</td><td>P11 송신 시점 결정 대기</td></tr>
-<tr><td>LED 작동 시간 칩</td><td>30분/1시간/2시간/3시간/계속</td><td>미구현</td><td>P11 LED 타이머 계약 대기</td></tr>
+<tr><td>LED 밝기 행</td><td>345×48 r16 흰색, % 18/600 x36, 트랙 6 #E3E3E3·채움 #E89E00, 썸 52×32 흰색</td><td>동일(썸 커스텀 shape)</td><td>일치 — 범위 20~100(승인값)이라 50% 썸 위치는 원본(0~100 기준 가운데)보다 18 왼쪽</td></tr>
+<tr><td>즉시/예약 segment·전원 스위치</td><td>345×32 segment, 전원 · 켜짐 + 80×32 스위치</td><td>미구현</td><td>사용자 결정(2026-09-16): 기존 유지, 넣지 않음</td></tr>
+<tr><td>LED 작동 시간 칩</td><td>30분/1시간/2시간/3시간/계속</td><td>구현 — 칩 62.2×4 + 계속 80 @24/90.2/156.5/222.8/289, 라벨→칩 27</td><td>일치 — 2026-09-16 미리 구현(led_on + duration_ms, 서버 확인 요청)</td></tr>
 <tr><td>시작 버튼</td><td>원본 없음</td><td>기존 확정(선택→시작 송신) 유지</td><td>P11</td></tr>
 </table>
-<ul><li>칩 선택은 송신하지 않고 시작에서만 보낸다. 밝기 드래그마다 명령을 보내지 않는다(적용 버튼).</li></ul>
+<ul><li>칩 선택은 송신하지 않고 시작에서만 보낸다. 밝기 드래그마다 명령을 보내지 않는다(적용 버튼).</li><li>2026-09-16: 작동 시간 칩 선택은 송신하지 않고 켜기(적용) 시 duration_ms로 함께 보낸다. 계속=duration 없음.</li></ul>
 </section>
 <section id="P10"><h2>P10 — 기기 예약 설정(목록·삭제·기기 선택·편집기)</h2><p class="status">상태: 수정 완료(부분 — 아래 결정 대기 참조)</p>
 <div class="pair">
@@ -389,11 +403,11 @@
 <tr><td>편집기 시간</td><td>라벨 16/500 #949090 x36 y117.5, 오전/오후 86×70 r8 (35씩, 선택=기기색+#FAFAFA 700), 시·분 108×70 #E3E3E3 r8 24/600, 화살표 24, 콜론 x246</td><td>라벨 36/118, 오전오후 24/165, 시 130/165, 분 261/165, 콜론 중심 249.5</td><td>일치(0.5)</td></tr>
 <tr><td>편집기 종료·반복</td><td>종료 y282.5, 반복 y447.5, 요일 칩 45.9×44 r16 간격 3.95 (냉각팬: 종료 칩 111×44 3개 y310, 반복 y378/405; 분무: 반복 y283/310)</td><td>종료 283, 반복 448/475, 냉각 310·378·405, 분무 283·310</td><td>일치(0.5)</td></tr>
 <tr><td>편집기 CTA</td><td>저장 369×56 y696; 수정은 y696 + &#x27;예약 삭제&#x27; 18/600 #C00306 y752(글자 중심 779)</td><td>696 / 752(중심 780)</td><td>일치</td></tr>
-<tr><td>LED 밝기 행</td><td>345×48 흰 r16, 50% + 슬라이더</td><td>미구현</td><td>P11 — LED brightness payload 예약 저장 계약 확인 후</td></tr>
-<tr><td>제어 시트 예약 탭</td><td>1106:5524 등 즉시/예약 segment 안 예약 작동</td><td>미구현</td><td>P11 — 제어 스위치/segment 송신 시점 결정과 함께</td></tr>
+<tr><td>LED 밝기 행</td><td>345×48 흰 r16, 50% + 슬라이더</td><td>구현 — 라벨 36/448, 행 24/475 345×48, 50% @36, 반복 547/574</td><td>일치 — 2026-09-16 미리 구현(켜기 행 payload.brightness, 서버 확인 요청)</td></tr>
+<tr><td>제어 시트 예약 탭</td><td>1106:5524 등 즉시/예약 segment 안 예약 작동</td><td>미구현</td><td>사용자 결정(2026-09-16): 넣지 않음</td></tr>
 <tr><td>펌웨어 대기 각주</td><td>원본 없음</td><td>화면에서 제거, RESULTS.md P10 결정에 기록</td><td>확정</td></tr>
 </table>
-<ul><li>같은 pair_id의 on/off는 한 항목으로 세고 토글·삭제도 둘 다 처리한다. 다중 삭제는 목록(시작 시각) 순으로 지우고, 실패하면 거기서 멈춰 남은 목록을 서버에서 다시 읽는다(성공한 항목 재삭제 없음).</li><li>편집기는 12시간제(오전/오후 + 1~12시, 분 5분 단위)로 입력받아 24시간제로 보낸다. 원본의 &#x27;오후 14:00&#x27; 예시는 반영하지 않았다. 새 예약 출발값은 원본 예시(오후 12:00 → 오후 2:00).</li><li>요일 칩을 하나도 안 고르면 daily, 고르면 weekly. 냉각팬 종료는 시작 + 30/60/120분(자정 넘김은 다음날)으로 fan2_on/fan2_off 짝을 만든다 — payload duration_ms 계약이 아니라 기존 pair 계약을 쓴다. 기존 냉각팬 구간 길이가 세 값 밖이면 칩을 고르기 전엔 저장이 잠긴다.</li><li>새 분무 예약의 분사 시간은 원본 편집기에 선택지가 없어 홈 타일과 같은 3초를 보낸다. 기존 예약의 duration_ms는 그대로 둔다.</li><li>편집기는 가드(스마트 조건) UI가 없다 — 기존 가드는 PATCH에 싣지 않아 서버 값이 유지되고, 켜진 가드는 목록 부제에 계속 보인다. 끄기 예약을 지울 때 켜기 짝이 살아 있으면 확인창 문구가 경고로 바뀐다(기존 안전장치 유지).</li><li>히터·레거시 toggle/relay 예약은 새로 만들 수 없지만 목록(히터색 원 + Material 불꽃, 레거시는 부품 아이콘)·수정·삭제는 된다. 시점 예약은 제목에 동작 이름을 붙여 켜기/끄기를 구분한다.</li><li>keyboard_arrow_up/down export가 레포에 없어 Material Symbols 24 그리드 경로를 CustomPainter로 그렸다(P17 표). 분무 강조색은 아이콘 export와 같은 #2E408C(humidAccent).</li></ul>
+<ul><li>같은 pair_id의 on/off는 한 항목으로 세고 토글·삭제도 둘 다 처리한다. 다중 삭제는 목록(시작 시각) 순으로 지우고, 실패하면 거기서 멈춰 남은 목록을 서버에서 다시 읽는다(성공한 항목 재삭제 없음).</li><li>편집기는 12시간제(오전/오후 + 1~12시, 분 5분 단위)로 입력받아 24시간제로 보낸다. 원본의 &#x27;오후 14:00&#x27; 예시는 반영하지 않았다. 새 예약 출발값은 원본 예시(오후 12:00 → 오후 2:00).</li><li>요일 칩을 하나도 안 고르면 daily, 고르면 weekly. 냉각팬 예약은 2026-09-16 사용자 결정으로 fan2_on 한 건 + payload.duration_ms(30/60/120분)로 저장한다(서버 duration 지원 확인 요청). 목록은 12:00~12:30처럼 종료를 계산해 보이고, 기존 fan2 on/off 짝 예약은 그대로 표시·수정된다(세 값 밖이면 칩을 고르기 전엔 저장 잠금).</li><li>새 분무 예약의 분사 시간은 원본 편집기에 선택지가 없어 홈 타일과 같은 3초를 보낸다. 기존 예약의 duration_ms는 그대로 둔다.</li><li>편집기는 가드(스마트 조건) UI가 없다 — 기존 가드는 PATCH에 싣지 않아 서버 값이 유지되고, 켜진 가드는 목록 부제에 계속 보인다. 끄기 예약을 지울 때 켜기 짝이 살아 있으면 확인창 문구가 경고로 바뀐다(기존 안전장치 유지).</li><li>히터·레거시 toggle/relay 예약은 새로 만들 수 없지만 목록(히터색 원 + Material 불꽃, 레거시는 부품 아이콘)·수정·삭제는 된다. 시점 예약은 제목에 동작 이름을 붙여 켜기/끄기를 구분한다.</li><li>keyboard_arrow_up/down은 2026-09-16 디자이너 export(글리프 12×7)를 size 12로 24 행 가운데 그린다. 분무 강조색은 아이콘 export와 같은 #2E408C(humidAccent).</li></ul>
 </section>
 <section id="P12"><h2>P12 — 하이라이트 목록(날짜 헤더 + 3열 그리드)</h2><p class="status">상태: 수정 완료</p>
 <div class="pair">
@@ -474,12 +488,12 @@
 <tr><td>세로 스트립</td><td>y716 h48, 썸 40×40 r4 118/236, 현재 54×40 169.5, 하단 여백 88(안전 34+54)</td><td>썸 118~157/236~275, 현재 170~223, 행 720~760</td><td>일치 — 이전 28×40/현재 40×48/하단 58</td></tr>
 <tr><td>가로 상단</td><td>닫기 44 원 (48,24) 그림 24 (58,34); 날짜 알약 130×48 (361,24) 16/700·14/600 #545454; 액션 알약 276×48 (528,24): 삭제 (540,26) 44, 아이콘 36 x600/652/704/756 y30</td><td>닫기 58/34, 날짜 380/29·50, 삭제 그림 550/36, 아이콘 600/652/704/756 y30</td><td>일치 — 이전 세로형 상단바 재사용</td></tr>
 <tr><td>가로 하단</td><td>그라데이션 237~393, 시크 y265~281 (48~804), 컨트롤 y285 h36 (재생 48, 시각 92, 2X 720, 확대 768), 스트립 (48,325) 510×48 좌측 정렬</td><td>동일(시크 슬라이더 내부 여백 12 제외)</td><td>일치</td></tr>
-<tr><td>가로 축소 아이콘</td><td>zoom_in_map 36</td><td>expand 유지 (자산 미확보)</td><td>자산 대기(P17)</td></tr>
+<tr><td>가로 축소 아이콘</td><td>zoom_in_map 36 @768/285</td><td>redesign_v2/zoom_in_map 36 @768/285 (세로는 expand=zoom_out_map)</td><td>일치 — 기존 &quot;자산 미확보&quot; 기록 정정(레포에 있었음)</td></tr>
 <tr><td>가로 안전영역</td><td>원본 프레임은 인셋 0, 좌우 48 여백</td><td>SafeArea 최소 48/24/48/20 — 노치 기기는 좌우 59로 밀림</td><td>실기기 확인 필요</td></tr>
-<tr><td>+10s 칩</td><td>77×34 r24 #1E1E1E, 14/600 #FAFAFA + fast_forward 26, 탭한 쪽</td><td>34 r24, 문구만, 탭한 절반 가운데, 0.8초</td><td>글리프 자산 대기(P17)</td></tr>
+<tr><td>+10s 칩</td><td>77×34 r24 #1E1E1E, 안쪽 8, 14/600 #FAFAFA + 4 + fast_forward 26, 탭한 쪽</td><td>76.6×34, 문구 30.6 + 4 + 글리프 26(되감기는 좌우 반전), 탭한 절반 가운데, 0.8초</td><td>일치(0.4)</td></tr>
 <tr><td>회전</td><td>동일 VideoPlayerController·재생 위치 유지</td><td>기존 orientation provider 유지, 테스트 통과</td><td>일치</td></tr>
 </table>
-<ul><li>영상 R2 삭제 없음, 계정별 숨김 유지. 하이라이트 자동 다음·2x·seek·재생목록 추가 로드 보존(기존 테스트 16개 통과).</li><li>실기기 회전·노치·홈 인디케이터는 시뮬레이터 로그인 후 확인.</li></ul>
+<ul><li>영상 R2 삭제 없음, 계정별 숨김 유지. 하이라이트 자동 다음·2x·seek·재생목록 추가 로드 보존(기존 테스트 16개 통과).</li><li>실기기 회전·노치·홈 인디케이터는 시뮬레이터 로그인 후 확인.</li><li>2026-09-16 회귀: 320×568 세로에서 하단 54 여백이 11px overflow → 본문 높이 7.6%로 비율화(393×852에서는 54 유지).</li></ul>
 </section>
 <section id="P15"><h2>P15 — 메모 모달·토스트</h2><p class="status">상태: 수정 완료</p>
 <div class="pair">
