@@ -25,7 +25,7 @@
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS public.redesign_group_requests (
-  user_id uuid NOT NULL REFERENCES auth.users(id),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   request_id uuid NOT NULL,
   operation text NOT NULL,
   payload jsonb NOT NULL,
@@ -37,15 +37,16 @@ ALTER TABLE public.redesign_group_requests ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.redesign_group_requests FROM anon, authenticated;
 
 CREATE TABLE IF NOT EXISTS public.redesign_group_counters (
-  user_id uuid PRIMARY KEY REFERENCES auth.users(id), last_number bigint NOT NULL
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE, last_number bigint NOT NULL
 );
 ALTER TABLE public.redesign_group_counters ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.redesign_group_counters FROM anon,authenticated;
 
 ALTER TABLE public.enclosures ADD COLUMN IF NOT EXISTS group_number bigint;
--- Soft unlink (backend reply 2026-09-15 §2.5): terra-server stamps unlinked_at
--- via POST /devices|cameras/{id}/unlink and revokes the MQTT account. Group
--- writers below treat unlinked rows as absent; rows, clips and telemetry stay.
+-- Soft unlink (deployed 2026-09-16): terra-server stamps unlinked_at via
+-- POST /devices|cameras/{id}/unlink and revokes the MQTT account. Group writers
+-- below treat unlinked rows as absent (B4); rows, clips and telemetry stay.
+-- Columns already exist in production; IF NOT EXISTS keeps the draft replayable.
 ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS unlinked_at timestamptz;
 ALTER TABLE public.cameras ADD COLUMN IF NOT EXISTS unlinked_at timestamptz;
 -- Populate existing ordinals only after a catalog/duplicate audit. Never use
@@ -226,14 +227,9 @@ BEGIN
   RETURN jsonb_build_object('id',p_item_id);
 END $$;
 
-CREATE OR REPLACE FUNCTION public.redesign_unlink_device_v1(p_kind text,p_item_id uuid,p_request_id uuid)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
-BEGIN
-  -- Not used by the app since 2026-09-16: unlink goes through terra-server
-  -- REST (POST /devices|cameras/{id}/unlink) because MQTT account revocation
-  -- lives there. Kept as a guard so nobody improvises owner_id=NULL or DELETE.
-  RAISE EXCEPTION 'unlink is served by terra-server REST, not this RPC' USING ERRCODE='0A000';
-END $$;
+-- N2 (backend review 2026-09-16): no unlink RPC. Device/camera unlink is
+-- terra-server REST POST /devices|cameras/{id}/unlink (deployed 2026-09-16).
+DROP FUNCTION IF EXISTS public.redesign_unlink_device_v1(text,uuid,uuid);
 
 REVOKE ALL ON FUNCTION public.redesign_require_owner_lock() FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.redesign_validate_name(text) FROM PUBLIC,anon,authenticated;
@@ -243,11 +239,9 @@ REVOKE ALL ON FUNCTION public.redesign_cleanup_empty_groups(uuid,uuid[]) FROM PU
 REVOKE ALL ON FUNCTION public.redesign_save_group_v1(uuid,text,uuid,uuid,uuid,jsonb,uuid) FROM PUBLIC,anon;
 REVOKE ALL ON FUNCTION public.redesign_remove_group_member_v1(text,uuid,uuid,uuid) FROM PUBLIC,anon;
 REVOKE ALL ON FUNCTION public.redesign_rename_item_v1(text,uuid,text) FROM PUBLIC,anon;
-REVOKE ALL ON FUNCTION public.redesign_unlink_device_v1(text,uuid,uuid) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.redesign_save_group_v1(uuid,text,uuid,uuid,uuid,jsonb,uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.redesign_remove_group_member_v1(text,uuid,uuid,uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.redesign_rename_item_v1(text,uuid,text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.redesign_unlink_device_v1(text,uuid,uuid) TO authenticated;
 
 -- Deliberate rollback: this is a review artifact, never a deployable migration.
 ROLLBACK;

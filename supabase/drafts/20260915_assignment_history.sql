@@ -5,12 +5,19 @@ begin;
 -- A removed profile remains available to its original activity/media records.
 -- The application and restrictive SELECT policy hide tombstoned profiles.
 alter table public.pets add column if not exists deleted_at timestamptz;
+-- B3 (backend review 2026-09-16): account deletion must cascade like devices/
+-- cameras/enclosures already do. Production pets_user_id_fkey had no ON DELETE.
+alter table public.pets drop constraint if exists pets_user_id_fkey;
+alter table public.pets add constraint pets_user_id_fkey
+  foreign key (user_id) references auth.users(id) on delete cascade;
 create table if not exists public.pet_camera_assignments (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id),
+  user_id uuid not null references auth.users(id) on delete cascade,
   pet_id uuid references public.pets(id) on delete set null,
   pet_identity uuid not null,
-  camera_id uuid not null references public.cameras(id) on delete restrict,
+  -- B2 (backend review 2026-09-16): hard DELETE /cameras means "records too",
+  -- so history rows go with it. Soft unlink never deletes the camera row.
+  camera_id uuid not null references public.cameras(id) on delete cascade,
   group_id uuid references public.enclosures(id) on delete set null,
   start_at timestamptz,
   end_at timestamptz,
@@ -55,7 +62,10 @@ revoke all on function public.redesign_reconcile_assignments(uuid,timestamptz) f
 -- cameras, not each pet. Keep /my-pets/reports unchanged. Import legacy_inherited
 -- rows only from an audited pre-cutover scope; unknown starts remain NULL, never
 -- pet.created_at. Newly registered animals never receive legacy rows.
--- All non-app writers must use the same owner lock and call this helper. Current
--- REST DELETE devices/cameras is NOT compatible (hard cascade); soft unlink and
--- historical-owner access need the backend owner's separate deployment.
+-- Non-app writers (terra-server service_role, web console) cannot join the
+-- auth.uid() owner lock. 20260916_relationship_triggers.sql calls this helper
+-- from cameras/pets row triggers so every path (PATCH enclosure_id, REST
+-- unlink, DELETE /enclosures SET NULL) keeps history current. Soft unlink is
+-- deployed (POST /devices|cameras/{id}/unlink, 2026-09-16); hard DELETE stays
+-- operator-only and cascades history by B2.
 rollback;

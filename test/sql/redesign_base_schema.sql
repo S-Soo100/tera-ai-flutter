@@ -57,7 +57,9 @@ CREATE TABLE IF NOT EXISTS "public"."devices" (
     "last_seen_at" timestamp with time zone,
     "is_online" boolean DEFAULT false NOT NULL,
     "enclosure_id" "uuid",
-    "capabilities" "jsonb"
+    "capabilities" "jsonb",
+    "unlinked_at" timestamp with time zone,
+    "unlink_request_id" "uuid"
 );
 CREATE TABLE IF NOT EXISTS "public"."cameras" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -78,7 +80,10 @@ CREATE TABLE IF NOT EXISTS "public"."cameras" (
     "last_seen_at" timestamp with time zone,
     "is_online" boolean DEFAULT false NOT NULL,
     "rotate_180" boolean DEFAULT false NOT NULL,
-    "capabilities" "jsonb"
+    "capabilities" "jsonb",
+    "clip_stats" "jsonb",
+    "unlinked_at" timestamp with time zone,
+    "unlink_request_id" "uuid"
 );
 CREATE TABLE IF NOT EXISTS "public"."motion_clips" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
