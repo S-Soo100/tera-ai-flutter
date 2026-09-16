@@ -26,9 +26,6 @@ class _FakeCameraRepo implements CameraRepository {
   Future<TerraCamera?> getById(String id) async => null;
 
   @override
-  Future<void> delete(String id) async {}
-
-  @override
   Future<void> assignEnclosure(String cameraId, String? enclosureId) async {}
 }
 

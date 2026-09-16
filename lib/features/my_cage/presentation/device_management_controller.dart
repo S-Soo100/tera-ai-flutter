@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:uuid/uuid.dart';
+import '../../../core/network/terra_rest_client.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/redesign_group_repository.dart';
@@ -15,7 +16,8 @@ final redesignGroupRepositoryProvider =
   final user = ref.watch(currentUserProvider.select((u) => u?.id));
   if (user == null) return null;
   return RedesignGroupRepository.supabase(
-      ref.watch(supabaseClientProvider), user);
+      ref.watch(supabaseClientProvider), user,
+      rest: ref.watch(terraRestClientProvider));
 });
 final managementInventoryProvider =
     FutureProvider.autoDispose<ManagementInventory>((ref) {

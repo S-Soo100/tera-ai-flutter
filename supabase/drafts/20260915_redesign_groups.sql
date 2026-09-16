@@ -43,6 +43,11 @@ ALTER TABLE public.redesign_group_counters ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.redesign_group_counters FROM anon,authenticated;
 
 ALTER TABLE public.enclosures ADD COLUMN IF NOT EXISTS group_number bigint;
+-- Soft unlink (backend reply 2026-09-15 §2.5): terra-server stamps unlinked_at
+-- via POST /devices|cameras/{id}/unlink and revokes the MQTT account. Group
+-- writers below treat unlinked rows as absent; rows, clips and telemetry stay.
+ALTER TABLE public.devices ADD COLUMN IF NOT EXISTS unlinked_at timestamptz;
+ALTER TABLE public.cameras ADD COLUMN IF NOT EXISTS unlinked_at timestamptz;
 -- Populate existing ordinals only after a catalog/duplicate audit. Never use
 -- the current list index as a live ordinal. Never rename existing names here.
 
@@ -80,9 +85,9 @@ RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pub
 DECLARE found_group uuid; found_id uuid;
 BEGIN
   IF p_kind='device' THEN
-    SELECT id,enclosure_id INTO found_id,found_group FROM public.devices WHERE id=p_id AND owner_id=p_owner FOR UPDATE;
+    SELECT id,enclosure_id INTO found_id,found_group FROM public.devices WHERE id=p_id AND owner_id=p_owner AND unlinked_at IS NULL FOR UPDATE;
   ELSIF p_kind='camera' THEN
-    SELECT id,enclosure_id INTO found_id,found_group FROM public.cameras WHERE id=p_id AND owner_id=p_owner FOR UPDATE;
+    SELECT id,enclosure_id INTO found_id,found_group FROM public.cameras WHERE id=p_id AND owner_id=p_owner AND unlinked_at IS NULL FOR UPDATE;
   ELSIF p_kind='pet' THEN
     SELECT id,enclosure_id INTO found_id,found_group FROM public.pets WHERE id=p_id AND user_id=p_owner AND deleted_at IS NULL FOR UPDATE;
   ELSE RAISE EXCEPTION 'unknown member kind' USING ERRCODE='22023'; END IF;
@@ -212,8 +217,8 @@ DECLARE owner uuid:=public.redesign_require_owner_lock(); wanted text:=public.re
 BEGIN
   IF p_kind NOT IN ('device','camera') THEN RAISE EXCEPTION 'invalid device kind' USING ERRCODE='22023'; END IF;
   PERFORM public.redesign_owned_member_group(owner,p_kind,p_item_id);
-  IF EXISTS(SELECT 1 FROM public.devices WHERE owner_id=owner AND btrim(name)=wanted AND NOT(p_kind='device' AND id=p_item_id))
-    OR EXISTS(SELECT 1 FROM public.cameras WHERE owner_id=owner AND btrim(name)=wanted AND NOT(p_kind='camera' AND id=p_item_id)) THEN
+  IF EXISTS(SELECT 1 FROM public.devices WHERE owner_id=owner AND unlinked_at IS NULL AND btrim(name)=wanted AND NOT(p_kind='device' AND id=p_item_id))
+    OR EXISTS(SELECT 1 FROM public.cameras WHERE owner_id=owner AND unlinked_at IS NULL AND btrim(name)=wanted AND NOT(p_kind='camera' AND id=p_item_id)) THEN
     RAISE EXCEPTION 'duplicate device name' USING ERRCODE='23505';
   END IF;
   IF p_kind='device' THEN UPDATE public.devices SET name=wanted WHERE id=p_item_id AND owner_id=owner;
@@ -224,10 +229,10 @@ END $$;
 CREATE OR REPLACE FUNCTION public.redesign_unlink_device_v1(p_kind text,p_item_id uuid,p_request_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
 BEGIN
-  -- Requires historical ownership/access ledger plus revocation of future
-  -- device commands and pairing ownership. Do not improvise owner_id=NULL or
-  -- delete rows while /activity/intervals checks CURRENT camera ownership.
-  RAISE EXCEPTION 'history-preserving unlink contract unavailable' USING ERRCODE='0A000';
+  -- Not used by the app since 2026-09-16: unlink goes through terra-server
+  -- REST (POST /devices|cameras/{id}/unlink) because MQTT account revocation
+  -- lives there. Kept as a guard so nobody improvises owner_id=NULL or DELETE.
+  RAISE EXCEPTION 'unlink is served by terra-server REST, not this RPC' USING ERRCODE='0A000';
 END $$;
 
 REVOKE ALL ON FUNCTION public.redesign_require_owner_lock() FROM PUBLIC,anon,authenticated;

@@ -53,14 +53,17 @@ class SupabaseModuleControlRepository {
 
   // ── 디바이스 목록 ──────────────────────────────────────────────────────────
 
-  /// RLS가 본인 소유 디바이스만 반환.
+  /// RLS가 본인 소유 디바이스만 반환. 소프트 해제된 기기(`unlinked_at`,
+  /// 2026-09-16 가정 계약)는 앱에서 거른다 — 컬럼 미배포면 null이라 전부 남는다.
   Future<List<Device>> listDevices() async {
     final rows = await _supabase
         .from('devices')
         .select()
         .order('last_seen_at', ascending: false);
     return (rows as List)
-        .map((r) => Device.fromJson(r as Map<String, dynamic>))
+        .cast<Map<String, dynamic>>()
+        .where((r) => r['unlinked_at'] == null)
+        .map(Device.fromJson)
         .toList();
   }
 

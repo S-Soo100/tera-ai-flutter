@@ -1,10 +1,18 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/network/terra_rest_client.dart';
 import '../domain/redesign_management.dart';
 
 typedef ManagementRowsLoader = Future<List<Map<String, Object?>>> Function(
     String table);
 typedef ManagementRpc = Future<Object?> Function(
     String name, Map<String, Object?> params);
+
+/// 기기 등록 해제(소프트 해제) 호출. 2026-09-16 가정 계약 — terra-server
+/// `POST /devices/{uuid}/unlink` · `POST /cameras/{uuid}/unlink`, body
+/// `{"request_id": uuid}`. 서버가 `unlinked_at`을 찍고 MQTT 계정을 회수하며
+/// 원본 기록(영상·텔레메트리·소유권)은 보존한다(회신 2026-09-15 §2.5).
+typedef ManagementUnlink = Future<void> Function(
+    ManagementKind kind, String id, String requestId);
 
 class ManagementFailure implements Exception {
   const ManagementFailure(this.key);
@@ -15,34 +23,55 @@ class ManagementFailure implements Exception {
 /// atomic redesign RPC contract; missing RPCs never fall back to direct writes.
 class RedesignGroupRepository {
   RedesignGroupRepository(
-      {required ManagementRowsLoader loadRows, required ManagementRpc rpc})
+      {required ManagementRowsLoader loadRows,
+      required ManagementRpc rpc,
+      ManagementUnlink? unlink})
       : _loadRows = loadRows,
-        _rpc = rpc;
-  factory RedesignGroupRepository.supabase(
-      SupabaseClient client, String userId) {
+        _rpc = rpc,
+        _unlink = unlink;
+  factory RedesignGroupRepository.supabase(SupabaseClient client, String userId,
+      {TerraRestClient? rest}) {
     void requireOwner() {
       if (client.auth.currentUser?.id != userId) {
         throw const ManagementFailure('management_auth_changed');
       }
     }
 
-    return RedesignGroupRepository(loadRows: (table) async {
-      requireOwner();
-      final rows = await client
-          .from(table)
-          .select()
-          .eq(table == 'pets' ? 'user_id' : 'owner_id', userId);
-      requireOwner();
-      return rows;
-    }, rpc: (name, params) async {
-      requireOwner();
-      final Object? result = await client.rpc(name, params: params);
-      requireOwner();
-      return result;
-    });
+    return RedesignGroupRepository(
+        loadRows: (table) async {
+          requireOwner();
+          final rows = await client
+              .from(table)
+              .select()
+              .eq(table == 'pets' ? 'user_id' : 'owner_id', userId);
+          requireOwner();
+          return rows;
+        },
+        rpc: (name, params) async {
+          requireOwner();
+          final Object? result = await client.rpc(name, params: params);
+          requireOwner();
+          return result;
+        },
+        unlink: rest == null
+            ? null
+            : (kind, id, requestId) async {
+                requireOwner();
+                final segment = switch (kind) {
+                  ManagementKind.device => 'devices',
+                  ManagementKind.camera => 'cameras',
+                  ManagementKind.pet =>
+                    throw const ManagementFailure('management_save_failed'),
+                };
+                await rest.post('/$segment/$id/unlink', {
+                  'request_id': requestId,
+                });
+                requireOwner();
+              });
   }
   final ManagementRowsLoader _loadRows;
   final ManagementRpc _rpc;
+  final ManagementUnlink? _unlink;
 
   Future<ManagementInventory> load() async {
     final (groups, devices, cameras, pets) = await (
@@ -71,8 +100,12 @@ class RedesignGroupRepository {
             number:
                 row['group_number'] is int ? row['group_number'] as int : null)
     ], items: [
-      for (final row in devices) item(row, ManagementKind.device),
-      for (final row in cameras) item(row, ManagementKind.camera),
+      // 소프트 해제된 기기(`unlinked_at` 있음)는 뺀다 — 회신 §2.5 "목록 조회에서
+      // 해제된 기기를 제외". 컬럼이 아직 없으면 null이라 전부 남는다.
+      for (final row in devices)
+        if (row['unlinked_at'] == null) item(row, ManagementKind.device),
+      for (final row in cameras)
+        if (row['unlinked_at'] == null) item(row, ManagementKind.camera),
       for (final row in pets)
         if (row['deleted_at'] == null) item(row, ManagementKind.pet)
     ]);
@@ -141,16 +174,28 @@ class RedesignGroupRepository {
     }
   }
 
+  /// 기기 등록 해제 — terra-server REST(소프트 해제)만 쓴다. 직접 DELETE나
+  /// 테이블 UPDATE로 우회하지 않는다(hard delete는 기록을 cascade 삭제한다).
   Future<void> unlink(ManagementKey key, {required String requestId}) async {
-    final result = await _call('redesign_unlink_device_v1', {
-      'p_kind': key.kind.name,
-      'p_item_id': key.id,
-      'p_request_id': requestId
-    });
-    if (result is! Map<String, Object?> || result['unlinked'] != true) {
-      {
-        throw const ManagementFailure('management_save_failed');
+    final unlink = _unlink;
+    if (unlink == null) {
+      throw const ManagementFailure('management_server_unsupported');
+    }
+    try {
+      await unlink(key.kind, key.id, requestId);
+    } on ManagementFailure {
+      rethrow;
+    } on TerraRestException catch (error) {
+      // 404/405: 해제 endpoint 미배포(또는 소유 아님 — 서버는 소유권 위반도 404).
+      if (error.statusCode == 404 || error.statusCode == 405) {
+        throw const ManagementFailure('management_server_unsupported');
       }
+      if (error.statusCode == 401 || error.statusCode == 403) {
+        throw const ManagementFailure('management_auth_changed');
+      }
+      throw const ManagementFailure('management_save_failed');
+    } catch (_) {
+      throw const ManagementFailure('management_save_failed');
     }
   }
 

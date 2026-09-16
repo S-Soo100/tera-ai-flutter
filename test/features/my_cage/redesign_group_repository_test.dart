@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:vivanaut/core/network/terra_rest_client.dart';
 import 'package:vivanaut/features/my_cage/data/redesign_group_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/redesign_management.dart';
 
@@ -135,7 +136,7 @@ void main() {
         throwsA(isA<ManagementFailure>()));
   });
   test(
-      'missing RPC is unsupported, never falls back to direct delete or update',
+      'unlink without a REST path is unsupported, never falls back to RPC, delete or update',
       () async {
     var calls = 0;
     final repo = RedesignGroupRepository(
@@ -150,6 +151,64 @@ void main() {
         throwsA(isA<ManagementFailure>()
             .having((e) => e.key, 'key', 'management_server_unsupported')));
     await Future<void>.delayed(Duration.zero);
-    expect(calls, 1);
+    expect(calls, 0);
+  });
+  test('unlink calls the soft-unlink REST path once and maps server errors',
+      () async {
+    final calls = <String>[];
+    final repo = RedesignGroupRepository(
+        loadRows: (_) async => [],
+        rpc: (_, __) async => throw StateError('no rpc'),
+        unlink: (kind, id, requestId) async =>
+            calls.add('${kind.name}/$id/$requestId'));
+    await repo.unlink(const ManagementKey(kind: ManagementKind.camera, id: 'c'),
+        requestId: 'r');
+    expect(calls, ['camera/c/r']);
+    Future<void> failing(int status) async =>
+        throw TerraRestException(status, 'x');
+    for (final (status, key) in [
+      (404, 'management_server_unsupported'),
+      (405, 'management_server_unsupported'),
+      (401, 'management_auth_changed'),
+      (500, 'management_save_failed'),
+    ]) {
+      final failingRepo = RedesignGroupRepository(
+          loadRows: (_) async => [],
+          rpc: (_, __) async => null,
+          unlink: (_, __, ___) => failing(status));
+      await expectLater(
+          failingRepo.unlink(
+              const ManagementKey(kind: ManagementKind.device, id: 'd'),
+              requestId: 'r'),
+          throwsA(isA<ManagementFailure>().having((e) => e.key, 'key', key)),
+          reason: '$status');
+    }
+  });
+  test('inventory hides soft-unlinked devices and cameras', () async {
+    final repo = RedesignGroupRepository(
+        loadRows: (table) async => switch (table) {
+              'enclosures' => [],
+              'devices' => [
+                  {'id': 'd-live', 'name': '사육장 1', 'device_id': 'terra-1'},
+                  {
+                    'id': 'd-gone',
+                    'name': '사육장 2',
+                    'device_id': 'terra-2',
+                    'unlinked_at': '2026-09-16T00:00:00Z'
+                  },
+                ],
+              'cameras' => [
+                  {
+                    'id': 'c-gone',
+                    'name': '카메라 1',
+                    'camera_id': 'p4cam-1',
+                    'unlinked_at': '2026-09-16T00:00:00Z'
+                  },
+                ],
+              _ => <Map<String, Object?>>[],
+            },
+        rpc: (_, __) async => null);
+    final inventory = await repo.load();
+    expect(inventory.items.map((i) => i.key.id), ['d-live']);
   });
 }
