@@ -1,5 +1,11 @@
 # 다음 세션 계획 — 기기 예약·컨트롤 바텀시트, 로그인, 마이페이지 (Figma 대조)
 
+> **2026-09-16 저녁 구현 완료(0.111.0+276).** 결과·결정표·비교 PNG는
+> [`docs/design-audits/2026-09-16-sheets-login-mypage/RESULTS.md`](../../design-audits/2026-09-16-sheets-login-mypage/RESULTS.md),
+> 서버 의존 3건(experience_hidden 컬럼·notification_preferences+dispatcher·delete-account 함수)은
+> [`docs/handoffs/2026-09-16-mypage-server-requests.md`](../../handoffs/2026-09-16-mypage-server-requests.md).
+> 아래 "사용자 확인 필요" 항목은 권장안으로 진행했고 RESULTS §2·§4에 확인 요청으로 남겼다.
+
 작성: 2026-09-16, Claude (사용자 지시 "신규 세션에서 세 섹션 수정 계획")
 
 ## 0. 시작 전 전제

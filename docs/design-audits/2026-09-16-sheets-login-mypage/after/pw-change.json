@@ -1,0 +1,186 @@
+[
+  {
+    "type": "Text",
+    "text": "비밀번호 변경",
+    "rect": [
+      154.29187393188477,
+      74.5,
+      84.41625213623047,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_previous",
+    "rect": [
+      22.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "현재 비밀번호",
+    "rect": [
+      24.0,
+      122.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "EditableText",
+    "text": "",
+    "rect": [
+      29.0,
+      176.0,
+      307.0,
+      19.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/visibility",
+    "rect": [
+      340.0,
+      173.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "새로운 비밀번호",
+    "rect": [
+      24.0,
+      258.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "EditableText",
+    "text": "",
+    "rect": [
+      29.0,
+      312.0,
+      307.0,
+      19.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "영문+숫자+특수문자 6자~12자",
+    "rect": [
+      29.0,
+      312.0,
+      307.0,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).merge(unknown)).merge(unknown)).merge(unknown), inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/visibility",
+    "rect": [
+      340.0,
+      309.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "비밀번호 확인",
+    "rect": [
+      24.0,
+      378.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "EditableText",
+    "text": "",
+    "rect": [
+      29.0,
+      432.0,
+      307.0,
+      19.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "영문+숫자+특수문자 6자~12자",
+    "rect": [
+      29.0,
+      432.0,
+      307.0,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).merge(unknown)).merge(unknown)).merge(unknown), inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/visibility",
+    "rect": [
+      340.0,
+      429.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": false
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "변경",
+    "rect": [
+      181.30335903167725,
+      710.0,
+      30.393281936645508,
+      28.0
+    ],
+    "style": "null"
+  }
+]
