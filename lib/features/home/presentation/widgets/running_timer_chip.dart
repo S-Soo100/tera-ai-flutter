@@ -10,8 +10,9 @@ import '../../../../shared/domain/fan_actuator.dart';
 import '../../domain/running_timer.dart';
 import '../home_control_providers.dart';
 
-/// 1초 tick. autoDispose라 홈을 떠나면 타이머가 멈춘다.
-final _secondTickProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
+/// 1초 tick. autoDispose라 홈을 떠나면 타이머가 멈춘다. 제어 타일의 카운트다운
+/// 부제([CageControlGrid])도 이걸 구독한다 — 타이머가 있을 때만.
+final secondTickProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
   yield DateTime.now();
   yield* Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
 });
@@ -89,7 +90,7 @@ class RunningTimerChip extends ConsumerWidget {
     final timers = ref.watch(runningTimersProvider).valueOrNull ?? const [];
     if (timers.isEmpty) return const SizedBox.shrink();
 
-    final now = ref.watch(_secondTickProvider).valueOrNull ?? DateTime.now();
+    final now = ref.watch(secondTickProvider).valueOrNull ?? DateTime.now();
     final active = timers.where((t) => t.isActive(now)).toList();
     if (active.isEmpty) return const SizedBox.shrink();
 

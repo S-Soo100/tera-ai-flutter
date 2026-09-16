@@ -19,11 +19,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/glass_palette.dart';
-import 'widgets/led_brightness_row.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
-import '../../../core/theme/app_styles.dart';
 import '../../my_cage/domain/device_command.dart';
 import '../../my_cage/domain/actuator_state.dart';
 import '../../my_cage/domain/telemetry_reading.dart';
@@ -38,8 +35,8 @@ import '../domain/mist_duration.dart';
 import '../domain/mist_lock.dart';
 import '../domain/running_timer.dart';
 import 'widgets/running_timer_chip.dart';
-import 'widgets/fan_duration_sheet.dart';
-import 'home_control_providers.dart';
+import '../../my_cage/presentation/widgets/clip_toast.dart';
+import '../../../shared/widgets/figma_icon.dart';
 
 /// 분무 중복 클릭 락. **기기별로 분리한다** — 전역이면 A 사육장에서 분무한 뒤
 /// B 사육장으로 스와이프해도 B의 버튼이 잠긴다.
@@ -194,100 +191,37 @@ Future<void> handleHeaterTap(
   );
 }
 
-/// 꺼짐은 시간 선택 후 시작, 켜짐은 즉시 fan_off.
-/// 타이머 만료 OFF는 펌웨어가 책임진다.
-Future<void> handleFanTap(
-  BuildContext context,
-  WidgetRef ref,
-  String deviceId,
-  TelemetryReading? telemetry, {
-  FanActuator actuator = FanActuator.ventilation,
-}) async {
-  // 서비스를 await 전에 잡아 둔다 — 전송 중 화면을 떠나도 예약된 로컬 알림은
-  // 취소/등록돼야 한다(ref는 unmount 후 못 쓴다).
-  final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
-
-  final state =
-      actuator == FanActuator.cooling ? telemetry?.fan2 : telemetry?.fan;
-  if (actuator == FanActuator.cooling &&
-      (state == null || state == ActuatorState.unavailable)) {
-    return;
-  }
-  final isOn = state == ActuatorState.on;
-  if (isOn) {
-    final sent = await sendCageCommand(
-        context, ref, deviceId, CommandActionWire.fromWire(actuator.offAction));
-    // 타이머 가동 중이었다면 취소된 것 — 예약된 완료 알림도 함께 내린다.
-    if (sent) {
-      await timerNotifs.onFanCommandSent(deviceId, actuator.offAction, null);
-    }
-    // 칩을 깨워 내린다.
-    // await 뒤라 mounted 재확인 — 전송 중 화면을 떠났으면 ref는 죽어 있다.
-    if (context.mounted) ref.invalidate(runningTimersProvider);
-    return;
-  }
-
-  await openFanSheet(context, ref, deviceId, actuator: actuator);
-}
-
-final _fanInteractionProvider =
-    StateProvider.family<bool, String>((ref, id) => false);
-
-/// 직전 값은 선택 제안일 뿐이며 명시적 시작 전에는 명령을 보내지 않는다.
-Future<void> openFanSheet(
+/// 켜진 팬을 끈다 — `fan_off`/`fan2_off` 절대 명령. 타이머가 돌고 있었다면
+/// 취소된 것이라 예약된 완료 알림도 내리고 타일 카운트다운을 깨운다.
+/// 홈 제어 시트(`DeviceControlSheet`)의 전원 스위치가 부른다.
+Future<void> stopFan(
   BuildContext context,
   WidgetRef ref,
   String deviceId, {
   FanActuator actuator = FanActuator.ventilation,
 }) async {
-  final choiceKey = actuator.storageKey(deviceId);
-  final lock = ref.read(_fanInteractionProvider(choiceKey).notifier);
-  if (lock.state) return;
-  lock.state = true;
-  final store = ref.read(fanChoiceStoreProvider);
-  try {
-    final picked = await showModalBottomSheet<(FanTimerDuration?,)>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => ProviderScope(
-        overrides: [
-          fanDurationSelectionProvider
-              .overrideWith((ref) => store.load(choiceKey))
-        ],
-        child: FanDurationSheet(actuator: actuator),
-      ),
-    );
-    if (picked == null || !context.mounted) return;
-    if (ref.read(currentDeviceIdProvider).valueOrNull != deviceId ||
-        !ref.read(moduleOnlineProvider(deviceId)) ||
-        (actuator == FanActuator.cooling &&
-            (ref.read(telemetryStreamProvider(deviceId)).valueOrNull?.fan2 ??
-                    ActuatorState.unavailable) ==
-                ActuatorState.unavailable)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('home_fan_target_changed'.tr())),
-      );
-      return;
-    }
-    // No awaited settings write between the final target check and dispatch.
-    await _startFan(context, ref, deviceId, picked.$1,
-        offerChange: false, actuator: actuator);
-    await store.save(choiceKey, picked.$1);
-  } finally {
-    if (lock.mounted) lock.state = false;
+  // 서비스를 await 전에 잡아 둔다 — 전송 중 화면을 떠나도 예약된 로컬 알림은
+  // 취소돼야 한다(ref는 unmount 후 못 쓴다).
+  final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
+  final sent = await sendCageCommand(
+      context, ref, deviceId, CommandActionWire.fromWire(actuator.offAction));
+  if (sent) {
+    await timerNotifs.onFanCommandSent(deviceId, actuator.offAction, null);
   }
+  // await 뒤라 mounted 재확인 — 전송 중 화면을 떠났으면 ref는 죽어 있다.
+  if (context.mounted) ref.invalidate(runningTimersProvider);
 }
 
 /// `fan_on`(+타이머) 전송 + 완료 알림 예약 + 칩 갱신 + 켜짐 스낵바.
 ///
-/// [offerChange]면 스낵바에 '변경' 액션을 붙여 [openFanSheet]로 보낸다 —
-/// 원탭(직전 설정) 경로에서 "그 설정이 아니었는데"의 수습로다.
-Future<void> _startFan(
+/// 홈 제어 시트의 전원 스위치(꺼짐→켜짐)와 작동 시간 칩(켜진 채 변경)이
+/// 부른다. 선택만으로는 보내지 않는다(2026-09-14 결정) — 스위치·칩 탭이
+/// 명시적 시작이다.
+Future<void> startFan(
   BuildContext context,
   WidgetRef ref,
   String deviceId,
   FanTimerDuration? duration, {
-  required bool offerChange,
   FanActuator actuator = FanActuator.ventilation,
 }) async {
   // await 전에 잡는다 — 전송 중 화면을 떠나도 알림 예약/스낵바는 살아야 한다.
@@ -329,17 +263,6 @@ Future<void> _startFan(
                     ? 'home_cooling_started_timer'
                     : 'home_fan_started_timer')
                 .tr(args: [duration.labelKey.tr()])),
-        action: offerChange
-            ? SnackBarAction(
-                label: 'home_fan_change'.tr(),
-                // 누르는 시점에 화면이 떠났을 수 있다 — ref도 함께 죽는다.
-                onPressed: () {
-                  if (context.mounted) {
-                    openFanSheet(context, ref, deviceId, actuator: actuator);
-                  }
-                },
-              )
-            : null,
       ),
     );
 }
@@ -377,75 +300,72 @@ Future<void> mistOnce(
     // mist 자체도 유실될 수 있다 — 분사가 안 됐는데 "분사했어요"로 끝나면
     // 사육 환경(습도)에 대한 거짓 확신이 된다.
     if (context.mounted) _watchCommandAck(context, ref, messenger, command);
-    messenger.showSnackBar(
-      SnackBar(
-          content: Text('home_mist_sent'.tr(args: ['${duration.seconds}']))),
-    );
+    // Figma 1106:6646 토스트 "분무가 실행되었습니다".
+    if (context.mounted) {
+      showClipToast(context, text: 'home_mist_done_toast'.tr());
+    }
   } catch (e, st) {
     debugPrint('[cage-control] mist failed: $e\n$st');
-    messenger.showSnackBar(
-      SnackBar(content: Text('home_mist_failed'.tr())),
-    );
+    if (context.mounted) {
+      showClipToast(context,
+          text: 'home_mist_failed_toast'.tr(), icon: FigmaIcons.cancel);
+    }
   }
+}
+
+/// 분무 대기 창(실행 취소 가능) — 기기별. 시트 CTA가 비활성 근거로 읽는다.
+final mistPendingProvider =
+    StateProvider.family<bool, String>((ref, deviceId) => false);
+
+/// 실행 취소 창 길이 — Figma 1106:6790 스낵바 "잠시 후 분무가 실행됩니다 · 2초".
+const kMistUndoWindow = Duration(seconds: 2);
+
+/// 시트 "1회 분사 시작"(계획 A5, 디자이너 메모 "터치→비활성→스낵바→완료
+/// 토스트→재활성"): 바로 보내지 않고 [kMistUndoWindow] 동안 스낵바에
+/// '실행 취소'를 둔다. 창이 지나면 [mistOnce]가 3초 분무를 보낸다. 취소하면
+/// 토스트 "분무 실행을 취소했습니다". 대기 중·잠금 중엔 다시 누를 수 없다.
+///
+/// 시트가 닫혀도 대기는 계속된다 — 누른 의도는 명시적이었고 스낵바 취소는
+/// 홈 화면에 남아 있다.
+Future<void> mistWithUndo(
+  BuildContext context,
+  WidgetRef ref,
+  String deviceId,
+) async {
+  final pending = ref.read(mistPendingProvider(deviceId).notifier);
+  if (pending.state || ref.read(mistLockProvider(deviceId)).isLocked(DateTime.now())) {
+    return;
+  }
+  pending.state = true;
+  final messenger = ScaffoldMessenger.of(context);
+  var cancelled = false;
+  final controller = messenger.showSnackBar(SnackBar(
+    duration: kMistUndoWindow + const Duration(milliseconds: 300),
+    content: Text('home_mist_pending'.tr()),
+    action: SnackBarAction(
+        label: 'home_mist_undo'.tr(), onPressed: () => cancelled = true),
+  ));
+  final reason = await Future.any<SnackBarClosedReason>([
+    controller.closed,
+    Future.delayed(kMistUndoWindow, () => SnackBarClosedReason.timeout),
+  ]);
+  if (cancelled || reason == SnackBarClosedReason.action) {
+    if (pending.mounted) pending.state = false;
+    if (context.mounted) {
+      showClipToast(context,
+          text: 'home_mist_cancelled_toast'.tr(), icon: FigmaIcons.cancel);
+    }
+    return;
+  }
+  messenger.hideCurrentSnackBar();
+  if (pending.mounted) pending.state = false;
+  if (!context.mounted) return;
+  await mistOnce(context, ref, deviceId, MistDuration.threeSeconds);
 }
 
 // 분무 지속시간 선택 시트(openMistSheet)·mistDurationProvider는 2026-09-07
 // 사용자 지시로 폐지 — 홈 분무 타일은 무조건 3초 분사(cage_control_grid).
 // 예약 편집기의 분무 시간 선택(schedule_editor_sheet)은 별개로 유지된다.
-
-/// LED 켜기/끄기 시트 — 보드 능력에 따라 밝기 슬라이더가 붙는다.
-///
-/// **밝기는 `Device.ledDimmable`(MOSFET 보드)일 때만** 보여준다. 릴레이 보드는
-/// `brightness`를 무시하고 켜기만 하므로(2026-08-18 백엔드 회신 §2) 슬라이더를
-/// 띄우면 아무 효과 없는 UI가 된다 — 2026-08-12에 그래서 걷어냈던 것이다.
-/// 펌웨어가 아직 capabilities를 보고하지 않아 당분간은 전부 on/off로 보이고,
-/// 보고가 붙거나 운영자가 DB를 갱신하면 그 기기만 슬라이더가 열린다.
-///
-/// 토글이 아니라 **켜기/끄기를 따로 고르게** 한다. `telemetry.led`가 생겨
-/// (회신 §4) 현재 상태는 알 수 있지만, 구 펌웨어는 여전히 안 보내므로 모르는
-/// 상태를 뒤집는 버튼은 두지 않는다.
-Future<void> openLedSheet(
-  BuildContext context,
-  WidgetRef ref,
-  String deviceId, {
-  int? currentBrightness,
-}) async {
-  final device = ref
-      .read(deviceListProvider)
-      .valueOrNull
-      ?.where((d) => d.id == deviceId)
-      .firstOrNull;
-  final dimmable = device?.ledDimmable ?? false;
-  // 보고값은 바꾸지 않고 시트의 선택 값만 20~100, 10% 단위로 맞춘다.
-  final seed = (currentBrightness ?? 0) > 0 ? currentBrightness! : 60;
-  final choice = await showModalBottomSheet<_LedChoice>(
-    context: context,
-    builder: (ctx) => ProviderScope(
-      overrides: [
-        _ledBrightnessProvider.overrideWith(
-            (ref) => ((seed / 10).round() * 10).clamp(20, 100).toDouble()),
-        _ledSubmittedProvider.overrideWith((ref) => false),
-      ],
-      child: LedControlSheet(dimmable: dimmable),
-    ),
-  );
-  if (choice == null || !context.mounted) return;
-  if (ref.read(currentDeviceIdProvider).valueOrNull != deviceId ||
-      !ref.read(moduleOnlineProvider(deviceId))) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('home_fan_target_changed'.tr())),
-    );
-    return;
-  }
-  await sendCageCommand(
-    context,
-    ref,
-    deviceId,
-    choice.on ? CommandAction.ledOn : CommandAction.ledOff,
-    payload: ledCommandPayload(
-        on: choice.on, dimmable: dimmable, brightness: choice.brightness),
-  );
-}
 
 /// LED 명령 payload. 릴레이 보드엔 brightness를 싣지 않는다 — 서버·펌웨어가
 /// 무시하긴 하지만 실DB `led_*` 이력에 의미 없는 payload를 남기지 않는다.
@@ -457,111 +377,4 @@ Map<String, dynamic>? ledCommandPayload(
   if (!on) return null;
   if (!dimmable || brightness == null) return null;
   return {'brightness': brightness};
-}
-
-class _LedChoice {
-  const _LedChoice.on([this.brightness]) : on = true;
-  const _LedChoice.off()
-      : on = false,
-        brightness = null;
-
-  final bool on;
-  final int? brightness;
-}
-
-final _ledBrightnessProvider = StateProvider.autoDispose<double>((ref) => 60);
-final _ledSubmittedProvider = StateProvider.autoDispose<bool>((ref) => false);
-
-/// LED 시트 — Figma 1106:4127. 시트 #F4F4F4·안쪽 24, '밝기' 16/500 #949090,
-/// 밝기 행 345×48 r16 흰색([LedBrightnessRow]). 즉시/예약 segment·전원
-/// 스위치는 2026-09-16 사용자 결정(기존 유지)으로 붙이지 않고 켜기/끄기
-/// 버튼(선택 후 적용 송신)을 유지한다. Figma의 '작동 시간' 칩은 펌웨어
-/// 미지원(회신 §1.4)으로 A안(제거) 확정 — 되살리려면 펌웨어 LED 타이머 선행.
-class LedControlSheet extends ConsumerWidget {
-  const LedControlSheet({super.key, required this.dimmable});
-
-  final bool dimmable;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final brightness = ref.watch(_ledBrightnessProvider);
-    final submitted = ref.watch(_ledSubmittedProvider);
-    final glass = context.glass;
-
-    void submit(_LedChoice choice) {
-      if (ref.read(_ledSubmittedProvider)) return;
-      ref.read(_ledSubmittedProvider.notifier).state = true;
-      Navigator.of(context).pop(choice);
-    }
-
-    final labelStyle = TextStyle(
-        fontFamily: 'Pretendard',
-        fontSize: 16,
-        height: 19.09375 / 16,
-        fontWeight: FontWeight.w500,
-        letterSpacing: -0.32,
-        color: glass.textTertiary);
-
-    return ColoredBox(
-      color: glass.overlay,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (!dimmable)
-                Text('home_led_pick_title'.tr(),
-                    style: AppStyles.subsectionTitle(context)),
-              if (dimmable) ...[
-                Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('home_led_brightness'.tr(), style: labelStyle)),
-                const SizedBox(height: 8),
-                LedBrightnessRow(
-                    key: const Key('led_brightness_row'),
-                    valueKey: const Key('led_brightness_value'),
-                    sliderKey: const Key('led_brightness_slider'),
-                    value: brightness,
-                    onChanged: submitted
-                        ? null
-                        : (v) => ref
-                            .read(_ledBrightnessProvider.notifier)
-                            .state = v),
-              ],
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      key: const Key('led_on'),
-                      onPressed: submitted
-                          ? null
-                          : () => submit(_LedChoice.on(
-                              dimmable ? brightness.round() : null)),
-                      child: Text((dimmable
-                              ? 'home_led_apply_brightness'
-                              : 'home_led_turn_on')
-                          .tr()),
-                    ),
-                  ),
-                  const SizedBox(width: AppStyles.spacing8),
-                  Expanded(
-                    child: OutlinedButton(
-                      key: const Key('led_off'),
-                      onPressed: submitted
-                          ? null
-                          : () => submit(const _LedChoice.off()),
-                      child: Text('home_led_turn_off'.tr()),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

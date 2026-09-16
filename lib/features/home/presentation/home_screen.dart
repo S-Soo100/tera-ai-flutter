@@ -15,7 +15,6 @@ import 'widgets/cage_control_grid.dart';
 import 'widgets/device_offline_notice.dart';
 import 'widgets/env_summary_card.dart';
 import 'widgets/home_header_bar.dart';
-import 'widgets/running_timer_chip.dart';
 import 'widgets/top_fixed_area.dart';
 
 /// 홈 탭 — Figma `vivanaut app` Home (668:833) **단일 스크롤**.
@@ -30,8 +29,9 @@ import 'widgets/top_fixed_area.dart';
 /// dispose되면 재연결(수초)이 걸린다. 홈 콘텐츠는 한 화면 남짓이라 전체
 /// keep-alive 비용이 없다.
 ///
-/// [RunningTimerChip]·[DeviceOfflineNotice]는 **그리드 위**에 남긴다 — 타이머
-/// 진행·오프라인 사유 고지는 안전 기능이다(회색 버튼만 두면 고장으로 읽힌다).
+/// [DeviceOfflineNotice]는 **그리드 위**에 남긴다 — 오프라인 사유 고지는 안전
+/// 기능이다(회색 버튼만 두면 고장으로 읽힌다). 타이머 진행은 상단 칩 대신
+/// 제어 타일 부제 카운트다운으로 보인다(2026-09-16, Figma 1107:7995).
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -95,7 +95,6 @@ class HomeScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: _gap),
                             // 칩·오프라인 고지는 자체 패딩(16)을 가진 기존 위젯 그대로다.
-                            const RunningTimerChip(),
                             const DeviceOfflineNotice(),
                             const Padding(
                               padding:

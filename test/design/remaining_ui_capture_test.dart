@@ -40,9 +40,9 @@ import 'package:vivanaut/features/my_cage/presentation/device_add_flow_screen.da
 import '../features/my_cage/device_add_flow_test.dart'
     show Gateway, device, camera;
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
-import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
-import 'package:vivanaut/features/home/presentation/widgets/fan_duration_sheet.dart';
-import 'package:vivanaut/shared/domain/fan_actuator.dart';
+import 'package:vivanaut/features/home/presentation/widgets/device_control_sheet.dart';
+import 'package:vivanaut/features/home/domain/schedule_device.dart';
+import '../features/home/control_sheet_fixtures.dart' as ctl;
 import 'package:vivanaut/features/home/presentation/home_screen.dart';
 import 'package:vivanaut/features/home/presentation/schedule_providers.dart';
 import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart';
@@ -52,7 +52,9 @@ import '../features/my_cage/highlight_fixtures.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/link_confirm_screen.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/my_cage/data/lcd_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/actuator_state.dart';
 import 'package:vivanaut/features/my_cage/domain/device.dart';
+import 'package:vivanaut/features/my_cage/domain/device_command.dart';
 import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivanaut/features/my_cage/data/clip_memo_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/clip_memo.dart';
@@ -795,15 +797,39 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.binding.setSurfaceSize(const Size(393, 852));
-    for (final (name, sheet) in [
-      ('p09-fan', const FanDurationSheet()),
-      ('p09-cooling', const FanDurationSheet(actuator: FanActuator.cooling)),
-      ('p09-led', const LedControlSheet(dimmable: true)),
+    final sent = <(CommandAction, Map<String, dynamic>?)>[];
+    for (final (name, device, telemetry, dimmable, tab) in [
+      ('p09-fan-off', ScheduleDevice.fan, ctl.reading(), false,
+          DeviceControlTab.immediate),
+      ('p09-fan-on', ScheduleDevice.fan,
+          ctl.reading(fan: ActuatorState.on), false,
+          DeviceControlTab.immediate),
+      ('p09-cooling', ScheduleDevice.cool,
+          ctl.reading(fan2: ActuatorState.off), false,
+          DeviceControlTab.immediate),
+      ('p09-led-on', ScheduleDevice.led,
+          ctl.reading(led: ActuatorState.on, ledBrightness: 50), true,
+          DeviceControlTab.immediate),
+      ('p09-mist', ScheduleDevice.mist, ctl.reading(), false,
+          DeviceControlTab.immediate),
+      ('p09-led-schedule-editor', ScheduleDevice.led, ctl.reading(), true,
+          DeviceControlTab.scheduled),
+      ('p09-cooling-schedule-editor', ScheduleDevice.cool,
+          ctl.reading(fan2: ActuatorState.off), false,
+          DeviceControlTab.scheduled),
     ]) {
       await tester.pumpWidget(shell(
           boundary,
           Scaffold(
-              body: Align(alignment: Alignment.bottomCenter, child: sheet))));
+              body: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: DeviceControlSheet(
+                      deviceId: ctl.kTestDeviceId,
+                      device: device,
+                      initialTab: tab))),
+          overrides: ctl.controlOverrides(
+              sent: sent, telemetry: telemetry, dimmable: dimmable)));
+      await tester.pumpAndSettle();
       await capture(tester, boundary, name);
     }
     debugDisableShadows = true;

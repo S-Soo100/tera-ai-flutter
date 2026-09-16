@@ -100,3 +100,14 @@ String formatRemaining(Duration d) {
   if (m > 0) return '$m분 $s초';
   return '$s초';
 }
+
+/// 타일 부제용 짧은 카운트다운 — Figma 타일 "30m 56s 뒤 꺼짐", "1h 20m 뒤 꺼짐"
+/// (1107:7995 Button/Enabled). 시간이 있으면 초는 생략한다.
+String formatCountdownShort(Duration d) {
+  final h = d.inHours;
+  final m = d.inMinutes % 60;
+  final s = d.inSeconds % 60;
+  if (h > 0) return '${h}h ${m}m';
+  if (m > 0) return '${m}m ${s}s';
+  return '${s}s';
+}

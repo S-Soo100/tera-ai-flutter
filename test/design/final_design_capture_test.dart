@@ -22,7 +22,6 @@ import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
 import 'package:vivanaut/features/home/presentation/env_detail_screen.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
-import 'package:vivanaut/features/home/presentation/widgets/fan_duration_sheet.dart';
 import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
 import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
@@ -197,14 +196,6 @@ void main() {
     await tester.tap(find.byKey(EnvDetailScreen.segmentWeeklyKey));
     await tester.pumpAndSettle();
     await capture(tester, 'widget-env-weekly');
-    await pump(
-        tester,
-        const Scaffold(
-            body: Align(
-                alignment: Alignment.bottomCenter, child: FanDurationSheet())),
-        []);
-    await tester.pumpAndSettle();
-    await capture(tester, 'widget-fan-duration');
     await tester.pumpWidget(const SizedBox());
   });
   testWidgets('세로 가로 왕복은 동일 플레이어 유지, 작은 화면 overflow 없음', (tester) async {

@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivanaut/features/home/presentation/widgets/cage_control_grid.dart';
+import 'package:vivanaut/features/home/presentation/widgets/device_control_sheet.dart';
+import 'package:vivanaut/features/home/presentation/widgets/running_timer_chip.dart';
+import 'package:vivanaut/features/home/domain/running_timer.dart';
 import 'package:vivanaut/features/my_cage/domain/actuator_state.dart';
 import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:vivanaut/features/my_cage/domain/telemetry_reading.dart';
@@ -41,10 +44,12 @@ Future<void> _pump(
   TelemetryReading? reading,
   bool online = true,
   bool dimmable = false,
+  List<RunningTimer> timers = const [],
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        runningTimersProvider.overrideWith((ref) async => timers),
         currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
         telemetryStreamProvider
             .overrideWith((ref, id) => Stream.value(reading ?? _reading())),
@@ -88,57 +93,54 @@ void main() {
     expect(find.text('device_led'), findsOneWidget);
   });
 
-  testWidgets('냉각팬 미보고는 --로 남으며 탭해도 실행 시트를 열지 않는다', (tester) async {
+  testWidgets('냉각팬 미보고는 --로 남으며 탭해도 시트를 열지 않는다', (tester) async {
     await _pump(tester);
     await tester.tap(find.byKey(CageControlGrid.coolFanKey));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('home_value_none'), findsOneWidget);
-    expect(find.text('home_cooling_end_label'), findsNothing);
+    expect(find.byKey(DeviceControlSheet.segmentKey), findsNothing);
   });
 
-  testWidgets('냉각팬 꺼짐 보고 시 냉각팬 전용 시간 선택을 연다', (tester) async {
+  testWidgets('냉각팬 꺼짐 보고 시 냉각팬 제어 시트(종료 칩)를 연다', (tester) async {
     await _pump(tester, reading: _reading(fan2: ActuatorState.off));
     await tester.tap(find.byKey(CageControlGrid.coolFanKey));
     await tester.pumpAndSettle();
+    expect(find.byKey(DeviceControlSheet.segmentKey), findsOneWidget);
     expect(find.text('home_cooling_end_label'), findsOneWidget);
     expect(find.byKey(const Key('fan_timer_30')), findsOneWidget);
   });
 
-  testWidgets('밝기 보고 75는 유지하고 선택 값만 80으로 시작, 20~100 10단위', (tester) async {
+  testWidgets('LED 탭 → 제어 시트, 밝기 보드면 슬라이더(보고 75 → 시드 80), 닫기만 하면 명령 없음',
+      (tester) async {
     await _pump(tester,
         dimmable: true,
         reading: _reading(led: ActuatorState.on, ledBrightness: 75));
     await tester.tap(find.byKey(CageControlGrid.ledKey));
     await tester.pumpAndSettle();
-    final slider =
-        tester.widget<Slider>(find.byKey(const Key('led_brightness_slider')));
+    final slider = tester
+        .widget<Slider>(find.byKey(DeviceControlSheet.brightnessSliderKey));
     expect(slider.value, 80);
     expect(slider.min, 20);
     expect(slider.max, 100);
     expect(slider.divisions, 8);
-    slider.onChanged!(20);
-    await tester.pump();
-    expect(tester.widget<Slider>(find.byType(Slider)).value, 20);
-    final context = tester.element(find.byKey(const Key('led_on')));
+    final context = tester.element(find.byKey(DeviceControlSheet.powerRowKey));
     expect(
         ProviderScope.containerOf(context)
             .read(telemetryStreamProvider(_deviceId))
             .valueOrNull
             ?.ledBrightness,
         75);
-    // 선택 후 닫기만 하면 서버 명령 없이 원래 화면으로 돌아온다.
     Navigator.of(context).pop();
     await tester.pumpAndSettle();
     expect(find.byType(Slider), findsNothing);
   });
 
-  testWidgets('밝기 미지원 기기는 슬라이더 없이 켜기/끄기만 표시', (tester) async {
+  testWidgets('밝기 미지원 기기는 슬라이더 없이 전원 행만', (tester) async {
     await _pump(tester);
     await tester.tap(find.byKey(CageControlGrid.ledKey));
     await tester.pumpAndSettle();
     expect(find.byType(Slider), findsNothing);
-    expect(find.byKey(const Key('led_on')), findsOneWidget);
-    expect(find.byKey(const Key('led_off')), findsOneWidget);
+    expect(find.byKey(DeviceControlSheet.powerRowKey), findsOneWidget);
   });
 
   testWidgets('히터 켜짐 → 히터팬 타일 노출 + handleHeaterTap 경유(2단 안전확인)',
@@ -152,28 +154,30 @@ void main() {
     expect(find.text('module_heater_confirm_title'), findsOneWidget);
   });
 
-  testWidgets('환기팬(꺼짐) 탭은 실행 전 시간 선택 시트를 연다', (tester) async {
+  testWidgets('환기팬 탭 → 제어 시트(즉시/예약 segment·전원·작동 시간). 열기만으로는 명령 없음',
+      (tester) async {
     await _pump(tester);
     await tester.tap(find.byKey(CageControlGrid.ventFanKey));
     await tester.pumpAndSettle();
-    // 시트를 열기만 해서는 팬 명령을 보내지 않는다.
-    expect(find.text('home_fan_duration_label'), findsOneWidget);
-  });
-
-  testWidgets('환기팬 꾹 누르기 → 켜기 방식 시트(계속/타이머)', (tester) async {
-    await _pump(tester);
-    await tester.longPress(find.byKey(CageControlGrid.ventFanKey));
-    await tester.pumpAndSettle();
+    expect(find.byKey(DeviceControlSheet.segmentKey), findsOneWidget);
+    expect(find.byKey(DeviceControlSheet.powerRowKey), findsOneWidget);
     expect(find.text('home_fan_duration_label'), findsOneWidget);
     expect(find.byKey(const Key('fan_steady_on')), findsOneWidget);
     expect(find.byKey(const Key('fan_timer_30')), findsOneWidget);
   });
 
-  testWidgets('오프라인이면 환기팬 꾹 누르기도 무반응', (tester) async {
-    await _pump(tester, online: false);
-    await tester.longPress(find.byKey(CageControlGrid.ventFanKey));
+  testWidgets('분무 탭 → 제어 시트("1회 분사 시작"), 즉시 분사하지 않는다', (tester) async {
+    await _pump(tester);
+    await tester.tap(find.byKey(CageControlGrid.mistKey));
     await tester.pumpAndSettle();
-    expect(find.text('home_fan_duration_label'), findsNothing);
+    expect(find.byKey(DeviceControlSheet.mistStartKey), findsOneWidget);
+  });
+
+  testWidgets('오프라인이면 배선 타일 탭 무반응(시트 없음)', (tester) async {
+    await _pump(tester, online: false);
+    await tester.tap(find.byKey(CageControlGrid.ventFanKey));
+    await tester.pumpAndSettle();
+    expect(find.byKey(DeviceControlSheet.segmentKey), findsNothing);
   });
 
   testWidgets('LED unavailable(구 펌웨어) → "상태 모름" — 꺼짐으로 칠하지 않는다',
@@ -188,11 +192,26 @@ void main() {
     expect(find.text('redesign_led_on_brightness'), findsOneWidget);
   });
 
-  testWidgets('오프라인이면 배선 타일 탭 무반응(시트 없음)', (tester) async {
-    await _pump(tester, online: false);
-    await tester.tap(find.byKey(CageControlGrid.ventFanKey));
-    await tester.pumpAndSettle();
-    expect(find.text('home_fan_duration_label'), findsNothing);
+  testWidgets('환기팬 타이머 진행 중 → 타일 부제 "켜짐 · Nm Ns 뒤 꺼짐"', (tester) async {
+    await _pump(tester, reading: _reading(fan: ActuatorState.on), timers: [
+      RunningTimer(
+          id: 't',
+          deviceId: _deviceId,
+          actuatorLabelKey: 'module_actuator_fan',
+          durationMinutes: 30,
+          endsAt: DateTime.now().add(const Duration(minutes: 20, seconds: 5)))
+    ]);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('home_tile_on_with_fmt'), findsOneWidget);
+    expect(find.text('home_timer_running'), findsNothing);
+  });
+
+  test('formatCountdownShort — 1h 20m / 30m 56s / 7s', () {
+    expect(formatCountdownShort(const Duration(hours: 1, minutes: 20, seconds: 3)),
+        '1h 20m');
+    expect(formatCountdownShort(const Duration(minutes: 30, seconds: 56)),
+        '30m 56s');
+    expect(formatCountdownShort(const Duration(seconds: 7)), '7s');
   });
 
   test(
@@ -204,14 +223,5 @@ void main() {
         ledCommandPayload(on: true, dimmable: false, brightness: 60), isNull);
     expect(
         ledCommandPayload(on: false, dimmable: true, brightness: 60), isNull);
-  });
-
-  testWidgets('LED 시트에 작동 시간 칩이 없다 — A안(2026-09-16)', (tester) async {
-    await _pump(tester);
-    await tester.tap(find.byKey(CageControlGrid.ledKey));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('led_steady')), findsNothing);
-    expect(find.byKey(const Key('led_timer_60')), findsNothing);
-    expect(find.byKey(const Key('led_on')), findsOneWidget);
   });
 }

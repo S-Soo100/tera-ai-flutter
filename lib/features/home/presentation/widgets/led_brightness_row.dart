@@ -13,6 +13,7 @@ class LedBrightnessRow extends StatelessWidget {
       {super.key,
       required this.value,
       required this.onChanged,
+      this.onChangeEnd,
       this.valueKey,
       this.sliderKey});
 
@@ -20,6 +21,9 @@ class LedBrightnessRow extends StatelessWidget {
 
   /// null이면 잠금(전송 중).
   final ValueChanged<double>? onChanged;
+
+  /// 손을 뗀 순간 — 제어 시트가 켜진 LED의 밝기를 여기서 보낸다(드래그 중엔 안 보냄).
+  final ValueChanged<double>? onChangeEnd;
   final Key? valueKey;
   final Key? sliderKey;
 
@@ -65,6 +69,7 @@ class LedBrightnessRow extends StatelessWidget {
               max: 100,
               divisions: 8,
               onChanged: onChanged,
+              onChangeEnd: onChangeEnd,
             ),
           ),
         ),
