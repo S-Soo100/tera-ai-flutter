@@ -32,9 +32,12 @@ Future<void> showLcdSheet(
   WidgetRef ref,
   String deviceId,
 ) {
-  return Navigator.of(context).push<void>(MaterialPageRoute(
-      builder: (_) => _LcdScreen(
-          deviceId: deviceId, repo: ref.read(lcdRepositoryProvider))));
+  // 탭 셸 밖(루트)으로 띄운다 — 원본 1081:3160은 전체 화면이고 독이 없다
+  // (시뮬 확인 2026-09-16: 탭 내비게이터로 띄우면 독이 남는다).
+  return Navigator.of(context, rootNavigator: true).push<void>(
+      MaterialPageRoute(
+          builder: (_) => _LcdScreen(
+              deviceId: deviceId, repo: ref.read(lcdRepositoryProvider))));
 }
 
 /// Figma 1081:3160 — 헤더 44(뒤로 + 제목 16/700), 모듈 그림 345×171 y118,

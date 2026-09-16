@@ -53,6 +53,8 @@ class LedBrightnessRow extends StatelessWidget {
               disabledActiveTrackColor: glass.deviceLed,
               disabledInactiveTrackColor: glass.border,
               thumbShape: const PillThumbShape(),
+              // 원본 트랙에는 눈금이 없다(시뮬 확인 2026-09-16).
+              tickMarkShape: SliderTickMarkShape.noTickMark,
               overlayShape: SliderComponentShape.noOverlay,
               trackShape: const RoundedRectSliderTrackShape(),
             ),
