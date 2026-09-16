@@ -201,7 +201,9 @@ class _PetManagementCard extends StatelessWidget {
               position: PopupMenuPosition.under,
               // PopupMenuPosition.under subtracts half the icon padding.
               offset: const Offset(8, 8),
-              constraints: const BoxConstraints.tightFor(width: 140),
+              // 140은 최소 폭이다 — 고정(tightFor)하면 "개체 정보 수정"(18pt)이
+              // 두 줄로 잘린다(2026-09-16 시뮬 실측). 내용에 맞춰 넓어지게 둔다.
+              constraints: const BoxConstraints(minWidth: 140),
               menuPadding:
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               color: p.surfaceHeader,
@@ -229,6 +231,9 @@ class _PetManagementCard extends StatelessWidget {
                                   Border(bottom: BorderSide(color: p.border)))
                           : null,
                       child: Text('pet_form_$action'.tr(),
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.visible,
                           style: managementStyle(context,
                                   size: 18,
                                   color: action == 'delete'

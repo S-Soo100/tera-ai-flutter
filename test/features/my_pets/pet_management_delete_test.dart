@@ -161,4 +161,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(adds, 1);
   });
+
+  testWidgets('popup menu grows to fit "개체 정보 수정" on one line (2026-09-16)',
+      (tester) async {
+    await _open(tester, '크랑이', (_) async => fail('must not delete'),
+        openMenu: false);
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    final label = find.text('개체 정보 수정');
+    final labelRect = tester.getRect(label);
+    final cell = tester.getRect(
+        find.ancestor(of: label, matching: find.byType(Container)).first);
+    // 한 줄(28pt)이고, 글자가 셀 안에 다 들어간다 — tightFor(140)이면 넘친다.
+    expect(labelRect.height, 28);
+    expect(labelRect.right, lessThanOrEqualTo(cell.right - 12 + 0.5));
+  });
 }
