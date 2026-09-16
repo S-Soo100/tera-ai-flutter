@@ -10,6 +10,10 @@
 ### 제거
 - 구 카메라 상세 화면의 카메라 삭제 버튼을 없앴습니다. 이 버튼은 카메라 행을 실제로 지워 영상 기록까지 함께 삭제됐습니다(회신 §2.1).
 
+### 변경 (서버 계약)
+- 푸시 이벤트 수신 검증기(`notification-ingest`)를 9/16 답신 내용대로 바꿨습니다. `execution_source`는 `schedule`만 받고, 성공/실패 판정은 `outcome`(succeeded/failed), 펌웨어 원문은 `result`(ok/busy/no_ack…)로 분리하며, `device_id`(UUID) 옆에 `device_key`(MQTT client id)를 선택 필드로 받습니다. 이전 형식(`result`에 succeeded/failed, `timer` 소스)은 400으로 거부합니다.
+- 예약 동작 알림 문구에 기기 이름과 동작(환기팬 켜기·LED 끄기 등)을 넣고, 기기 무응답(`no_ack`/`expired`/`lost`)은 "다시 시도" 대신 "기기 연결 상태를 확인해 주세요"로, `busy`는 "다른 동작 중"으로 구분하는 마이그레이션(`20260916000000_notification_device_action_copy.sql`)을 추가했습니다. **운영 DB에는 아직 적용하지 않았습니다.** 서버 푸시 구현 착수 시 함께 적용합니다.
+
 ## 0.108.0+265 — 2026-09-16
 
 ### 추가

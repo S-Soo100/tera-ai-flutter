@@ -6,6 +6,10 @@ const migration = readFileSync(
   new URL('../../migrations/20260915000000_fcm_notifications.sql', import.meta.url),
   'utf8',
 );
+const deviceCopyMigration = readFileSync(
+  new URL('../../migrations/20260916000000_notification_device_action_copy.sql', import.meta.url),
+  'utf8',
+);
 const ingest = readFileSync(
   new URL('../notification-ingest/index.ts', import.meta.url),
   'utf8',
@@ -146,4 +150,14 @@ test('dispatcher charges the global send budget before a send can later throw', 
     dispatch.indexOf('budget.sends += 1;') < dispatch.indexOf('await sendFirebaseMessage'),
     'a send attempt must consume budget before subsequent RPC/finalize failures',
   );
+});
+
+test('device action copy migration keeps the trigger function name and distinguishes no-ack failures', () => {
+  assert.match(deviceCopyMigration, /CREATE OR REPLACE FUNCTION public\.notification_event_after_insert\(\)/);
+  assert.doesNotMatch(deviceCopyMigration, /CREATE TRIGGER/);
+  assert.match(deviceCopyMigration, /NEW\.payload ->> 'device_name'/);
+  assert.match(deviceCopyMigration, /v_result IN \('no_ack', 'expired', 'lost', 'sent', 'unknown_device'\)/);
+  assert.match(deviceCopyMigration, /WHEN 'led_on' THEN 'LED 켜기'/);
+  // 다른 type 문구는 원본과 동일해야 한다 — 하이라이트 한 줄로 대표 확인.
+  assert.match(deviceCopyMigration, /v_route := '\/crecam\/highlights'/);
 });

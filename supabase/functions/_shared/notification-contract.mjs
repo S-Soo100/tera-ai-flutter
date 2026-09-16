@@ -59,6 +59,13 @@ function requireText(payload, keys) {
   return keys.every((key) => hasText(payload[key]));
 }
 
+// Contract agreed in the 2026-09-16 reply to terra-server (docs/handoffs/
+// 2026-09-16-lee-gwanhun-reply-groups-and-push.md §3): only schedule-sourced
+// commands are published, `outcome` carries the app verdict, `result` carries
+// the raw firmware word (ok/busy/no_ack/...), and `device_id` is the UUID with
+// the MQTT client id alongside as `device_key`.
+const optionalTextFields = ['result', 'device_key', 'schedule_id', 'enclosure_id', 'device_name', 'error_code'];
+
 function validateDeviceEvent(type, payload) {
   if (!requireText(payload, [
     'command_id',
@@ -66,13 +73,13 @@ function validateDeviceEvent(type, payload) {
     'execution_source',
     'execution_phase',
     'action',
-    'result',
+    'outcome',
   ])) {
     return 'device action payload is incomplete';
   }
 
-  if (!['schedule', 'timer'].includes(payload.execution_source)) {
-    return 'device action execution_source must be schedule or timer';
+  if (payload.execution_source !== 'schedule') {
+    return 'device action execution_source must be schedule';
   }
 
   const expected = {
@@ -82,9 +89,14 @@ function validateDeviceEvent(type, payload) {
   }[type];
   if (
     payload.execution_phase !== expected[0] ||
-    payload.result !== expected[1]
+    payload.outcome !== expected[1]
   ) {
-    return 'device action type, execution_phase, and result must match';
+    return 'device action type, execution_phase, and outcome must match';
+  }
+  for (const field of optionalTextFields) {
+    if (payload[field] !== undefined && payload[field] !== null && !hasText(payload[field])) {
+      return `device action ${field} must be text when present`;
+    }
   }
   return null;
 }

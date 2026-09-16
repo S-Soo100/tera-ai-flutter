@@ -14,12 +14,44 @@ const validDeviceEvent = {
     execution_source: 'schedule',
     execution_phase: 'started',
     action: 'fan_on',
-    result: 'succeeded',
+    outcome: 'succeeded',
+    result: 'ok',
+    device_key: 'terra-1a2b3c4d',
   },
 };
 
 test('accepts a matching scheduled action event', () => {
   assert.equal(validateNotificationEvent(validDeviceEvent).ok, true);
+});
+
+test('accepts failed events carrying the raw firmware result and no-ack expiry', () => {
+  for (const result of ['busy', 'no_ack', 'expired', undefined]) {
+    const event = {
+      ...validDeviceEvent,
+      event_id: 'command:c1:failed',
+      type: 'device.action.failed',
+      payload: {
+        ...validDeviceEvent.payload,
+        execution_phase: 'failed',
+        outcome: 'failed',
+        result,
+      },
+    };
+    assert.equal(validateNotificationEvent(event).ok, true, String(result));
+  }
+});
+
+test('rejects the legacy result-only verdict, the timer source, and non-text optionals', () => {
+  const { outcome: _outcome, ...legacyPayload } = { ...validDeviceEvent.payload, result: 'succeeded' };
+  assert.equal(validateNotificationEvent({ ...validDeviceEvent, payload: legacyPayload }).status, 400);
+  assert.equal(validateNotificationEvent({
+    ...validDeviceEvent,
+    payload: { ...validDeviceEvent.payload, execution_source: 'timer' },
+  }).status, 400);
+  assert.equal(validateNotificationEvent({
+    ...validDeviceEvent,
+    payload: { ...validDeviceEvent.payload, device_key: 42 },
+  }).status, 400);
 });
 
 test('rejects a mismatched phase and unsupported source', () => {
