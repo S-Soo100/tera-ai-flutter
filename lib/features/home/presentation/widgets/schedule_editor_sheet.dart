@@ -70,6 +70,9 @@ class ScheduleDeleteRequested extends ScheduleEditorResult {
 ///
 /// 새 예약은 [device]로 종류가 정해지고, 수정([initial] 시점 / [initialPair]
 /// 구간)은 동작을 못 바꾼다 — 서버가 `action` 수정을 안 받는다.
+///
+/// 폼 본문은 [ScheduleEditorBody]다 — 홈 제어 시트의 예약 탭(Figma
+/// 1106:5524/5648/4890/6415)이 같은 본문을 시트 안에 인라인으로 쓴다.
 Future<ScheduleEditorResult?> showScheduleEditor(
   BuildContext context, {
   ScheduleDevice? device,
@@ -95,9 +98,82 @@ class ScheduleEditorScreen extends StatefulWidget {
   State<ScheduleEditorScreen> createState() => _ScheduleEditorScreenState();
 }
 
+class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
+  ScheduleDraft? _draft;
+
+  bool get _isEdit => widget.initial != null || widget.initialPair != null;
+
+  ScheduleDevice? get _device =>
+      widget.device ??
+      ScheduleDevice.of(
+          widget.initial?.action ?? widget.initialPair!.on.action);
+
+  String _title() {
+    final name = _device?.nameKey.tr() ??
+        (widget.initial?.action ?? widget.initialPair!.on.action)
+            .displayKey
+            .tr();
+    return 'routine_device_title_fmt'.tr(args: [name]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    return Scaffold(
+        backgroundColor: glass.surfaceTint,
+        body: Stack(children: [
+          SafeArea(
+              bottom: false,
+              child: Column(children: [
+                Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: ManagementTopBar(
+                        title: _title(), onBack: () => Navigator.pop(context))),
+                Expanded(
+                    child: SingleChildScrollView(
+                        // 원본 x24, 첫 라벨 y117.5(헤더 61.5+44+12).
+                        padding: EdgeInsets.fromLTRB(24, 12, 24,
+                            bottom + (_isEdit ? 122 : 66) + 56 + 24),
+                        child: ScheduleEditorBody(
+                            device: widget.device,
+                            initial: widget.initial,
+                            initialPair: widget.initialPair,
+                            onChanged: (d) => setState(() => _draft = d)))),
+              ])),
+          Positioned(
+              left: 12,
+              right: 12,
+              bottom: bottom + (_isEdit ? 10 : 66),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                ManagementButton(
+                    key: const Key('routine_save'),
+                    label: 'routine_editor_save'.tr(),
+                    onPressed: _draft == null
+                        ? null
+                        : () => Navigator.pop(context, _draft)),
+                if (_isEdit)
+                  SizedBox(
+                      height: 56,
+                      width: double.infinity,
+                      child: TextButton(
+                          key: const Key('routine_delete'),
+                          onPressed: () => Navigator.pop(
+                              context, const ScheduleDeleteRequested()),
+                          style: TextButton.styleFrom(
+                              foregroundColor: glass.navSelected,
+                              // 원본 1107:9325 글자 실측 61×14 → 18/600.
+                              textStyle: managementStyle(context,
+                                  size: 18, weight: FontWeight.w600)),
+                          child: Text('routine_delete_title'.tr()))),
+              ])),
+        ]));
+  }
+}
+
 /// 12시간제 한 칸 — 오전/오후 + 1~12시 + 분. 서버 24시간제와 여기서만 오간다.
-class _Clock {
-  _Clock(int hour24, this.minute)
+class ScheduleClock {
+  ScheduleClock(int hour24, this.minute)
       : pm = hour24 >= 12,
         hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
 
@@ -105,33 +181,57 @@ class _Clock {
   int hour12;
   int minute;
 
+  /// 분 화살표 한 칸 — 디자이너 메모 "시각 설정 분: 10분 단위 ±"(2026-09-16).
+  static const minuteStep = 10;
+
   int get hour24 => (hour12 % 12) + (pm ? 12 : 0);
 
   /// 시는 1~12를 돈다. 오전/오후는 버튼이 따로 있어 시가 넘어가도 안 바뀐다.
   void stepHour(int delta) =>
       hour12 = ((hour12 - 1 + delta) % 12 + 12) % 12 + 1;
 
-  /// 분은 5분 단위로 돈다. 5분 단위가 아닌 기존 값은 화살표 한 번에 가까운
-  /// 5분 눈금으로 들어간다.
+  /// 분은 [minuteStep] 단위로 돈다. 눈금 밖의 기존 값은 화살표 한 번에 가까운
+  /// 눈금으로 들어간다.
   void stepMinute(int delta) {
-    final base = delta > 0 ? (minute ~/ 5) * 5 : ((minute + 4) ~/ 5) * 5;
-    minute = ((base + delta * 5) % 60 + 60) % 60;
+    const st = minuteStep;
+    final base =
+        delta > 0 ? (minute ~/ st) * st : ((minute + st - 1) ~/ st) * st;
+    minute = ((base + delta * st) % 60 + 60) % 60;
   }
 }
 
-class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
+/// 예약 편집 폼 본문(시작·종료·밝기·종료 칩·반복). 값이 바뀔 때마다
+/// [onChanged]로 현재 초안을 알린다 — 저장 불가 상태(냉각팬 종료 미선택)면
+/// null. 첫 프레임 뒤에도 한 번 알린다. 저장 버튼은 호출자가 그린다(전체
+/// 화면은 플로팅, 제어 시트는 폼 아래 인라인).
+class ScheduleEditorBody extends StatefulWidget {
+  const ScheduleEditorBody(
+      {super.key,
+      this.device,
+      this.initial,
+      this.initialPair,
+      required this.onChanged});
+
+  final ScheduleDevice? device;
+  final Schedule? initial;
+  final SchedulePair? initialPair;
+  final ValueChanged<ScheduleDraft?> onChanged;
+
+  @override
+  State<ScheduleEditorBody> createState() => _ScheduleEditorBodyState();
+}
+
+class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
   late final ScheduleDevice? _device;
   late final ScheduleEditorKind _kind;
-  late final _Clock _start;
-  late final _Clock _end;
+  late final ScheduleClock _start;
+  late final ScheduleClock _end;
   int? _coolMinutes;
   late final Set<int> _days;
 
   /// LED 구간 예약의 밝기(%) — Figma 1107:8758 밝기 행, 기본 50. 켜기 행
   /// `payload.brightness`로 싣는다(2026-09-16 계약 확인 전 미리 구현).
   double _brightness = 50;
-
-  bool get _isEdit => widget.initial != null || widget.initialPair != null;
 
   ScheduleAction get _action =>
       widget.initial?.action ??
@@ -168,8 +268,8 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
           ((savedBrightness / 10).round() * 10).clamp(20, 100).toDouble();
     }
     // Figma 예시(오후 12:00 → 오후 2:00)를 새 예약의 출발값으로 쓴다.
-    _start = _Clock(base?.hour ?? 12, base?.minute ?? 0);
-    _end = _Clock(pair?.off.hour ?? 14, pair?.off.minute ?? 0);
+    _start = ScheduleClock(base?.hour ?? 12, base?.minute ?? 0);
+    _end = ScheduleClock(pair?.off.hour ?? 14, pair?.off.minute ?? 0);
     if (_kind == ScheduleEditorKind.duration) {
       if (singleCool) {
         final minutes = singleDurationMs ~/ 60000;
@@ -181,65 +281,63 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
         // 기존 구간 길이가 30/60/120분이면 그 칩, 아니면 미선택(고르기 전엔
         // 저장 불가) — 원본에 없는 값을 만들어 넣지 않는다.
         final diff = ((pair.off.hour * 60 + pair.off.minute) -
-                    (pair.on.hour * 60 + pair.on.minute)) %
-                (24 * 60) +
-            0;
+                (pair.on.hour * 60 + pair.on.minute)) %
+            (24 * 60);
         _coolMinutes =
             ScheduleDevice.coolDurations.contains(diff) ? diff : null;
       }
     }
     _days = {...?base?.daysOfWeek};
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onChanged(_draft());
+    });
   }
 
   bool get _valid =>
       _kind != ScheduleEditorKind.duration || _coolMinutes != null;
 
+  void _update(VoidCallback change) {
+    setState(change);
+    widget.onChanged(_draft());
+  }
+
   Color _accent(BuildContext context) =>
       scheduleDeviceColor(context, _device) ?? context.glass.textPrimary;
 
-  String _title() {
-    final name = _device?.nameKey.tr() ?? _action.displayKey.tr();
-    return 'routine_device_title_fmt'.tr(args: [name]);
-  }
-
-  void _save() {
+  ScheduleDraft? _draft() {
+    if (!_valid) return null;
     final kind = _days.isEmpty ? ScheduleKind.daily : ScheduleKind.weekly;
     final days = _days.toList()..sort();
     final pair = widget.initialPair;
     switch (_kind) {
       case ScheduleEditorKind.point:
         final action = _action;
-        Navigator.pop(
-            context,
-            ScheduleDraft(
-              action: action,
-              kind: kind,
-              hour: _start.hour24,
-              minute: _start.minute,
-              daysOfWeek: days,
-              // 원본 편집기엔 분사 시간 선택이 없다 — 새 분무 예약은 홈 타일과
-              // 같은 3초, 기존 예약은 저장된 값을 그대로 둔다.
-              payload: widget.initial?.payload ??
-                  (action.requiresDuration
-                      ? {'duration_ms': MistDuration.threeSeconds.milliseconds}
-                      : null),
-            ));
+        return ScheduleDraft(
+          action: action,
+          kind: kind,
+          hour: _start.hour24,
+          minute: _start.minute,
+          daysOfWeek: days,
+          // 원본 편집기엔 분사 시간 선택이 없다 — 새 분무 예약은 홈 타일과
+          // 같은 3초, 기존 예약은 저장된 값을 그대로 둔다.
+          payload: widget.initial?.payload ??
+              (action.requiresDuration
+                  ? {'duration_ms': MistDuration.threeSeconds.milliseconds}
+                  : null),
+        );
       case ScheduleEditorKind.span:
       case ScheduleEditorKind.duration:
         if (_kind == ScheduleEditorKind.duration && pair == null) {
           // 새 냉각팬 예약·duration 단건 수정: fan2_on 한 건 + duration_ms
           // (2026-09-16 사용자 결정 — 서버 duration 지원은 요청 문서로 확인).
-          Navigator.pop(
-              context,
-              ScheduleDraft(
-                action: widget.initial?.action ?? _device!.onAction,
-                kind: kind,
-                hour: _start.hour24,
-                minute: _start.minute,
-                daysOfWeek: days,
-                payload: {'duration_ms': _coolMinutes! * 60000},
-              ));
-          return;
+          return ScheduleDraft(
+            action: widget.initial?.action ?? _device!.onAction,
+            kind: kind,
+            hour: _start.hour24,
+            minute: _start.minute,
+            daysOfWeek: days,
+            payload: {'duration_ms': _coolMinutes! * 60000},
+          );
         }
         var endHour = _end.hour24;
         var endMinute = _end.minute;
@@ -249,159 +347,106 @@ class _ScheduleEditorScreenState extends State<ScheduleEditorScreen> {
           endHour = total ~/ 60;
           endMinute = total % 60;
         }
-        Navigator.pop(
-            context,
-            ScheduleDraft(
-              action: pair?.on.action ?? _device!.onAction,
-              offAction: pair?.off.action ?? _device!.offAction,
-              kind: kind,
-              hour: _start.hour24,
-              minute: _start.minute,
-              endHour: endHour,
-              endMinute: endMinute,
-              daysOfWeek: days,
-              payload: _device == ScheduleDevice.led
-                  ? {'brightness': _brightness.round()}
-                  : null,
-            ));
+        return ScheduleDraft(
+          action: pair?.on.action ?? _device!.onAction,
+          offAction: pair?.off.action ?? _device!.offAction,
+          kind: kind,
+          hour: _start.hour24,
+          minute: _start.minute,
+          endHour: endHour,
+          endMinute: endMinute,
+          daysOfWeek: days,
+          payload: _device == ScheduleDevice.led
+              ? {'brightness': _brightness.round()}
+              : null,
+        );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final glass = context.glass;
     final accent = _accent(context);
-    final bottom = MediaQuery.paddingOf(context).bottom;
-    return Scaffold(
-        backgroundColor: glass.surfaceTint,
-        body: Stack(children: [
-          SafeArea(
-              bottom: false,
-              child: Column(children: [
-                Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: ManagementTopBar(
-                        title: _title(), onBack: () => Navigator.pop(context))),
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      ScheduleSection(
+          label: 'routine_start'.tr(),
+          child: ScheduleTimeRow(
+              prefix: 'routine_start',
+              clock: _start,
+              accent: accent,
+              onChanged: () => _update(() {}))),
+      if (_kind == ScheduleEditorKind.span) ...[
+        const SizedBox(height: 24),
+        ScheduleSection(
+            label: 'routine_end'.tr(),
+            child: ScheduleTimeRow(
+                prefix: 'routine_end',
+                clock: _end,
+                accent: accent,
+                onChanged: () => _update(() {}))),
+      ],
+      if (_kind == ScheduleEditorKind.span &&
+          _device == ScheduleDevice.led) ...[
+        const SizedBox(height: 24),
+        // Figma 1107:8758 — 밝기 y447.5, 행 y474.5.
+        ScheduleSection(
+            label: 'home_led_brightness'.tr(),
+            gap: 8,
+            child: LedBrightnessRow(
+                key: const Key('routine_brightness_row'),
+                valueKey: const Key('routine_brightness_value'),
+                sliderKey: const Key('routine_brightness_slider'),
+                value: _brightness,
+                onChanged: (v) => _update(() => _brightness = v))),
+      ],
+      if (_kind == ScheduleEditorKind.duration) ...[
+        const SizedBox(height: 24),
+        ScheduleSection(
+            label: 'routine_end'.tr(),
+            gap: 8,
+            child: Row(children: [
+              for (final (i, m) in ScheduleDevice.coolDurations.indexed) ...[
+                if (i > 0) const SizedBox(width: 6),
                 Expanded(
-                    child: SingleChildScrollView(
-                        // 원본 x24, 첫 라벨 y117.5(헤더 61.5+44+12).
-                        padding: EdgeInsets.fromLTRB(24, 12, 24,
-                            bottom + (_isEdit ? 122 : 66) + 56 + 24),
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _Section(
-                                  label: 'routine_start'.tr(),
-                                  child: _TimeRow(
-                                      prefix: 'routine_start',
-                                      clock: _start,
-                                      accent: accent,
-                                      onChanged: () => setState(() {}))),
-                              if (_kind == ScheduleEditorKind.span) ...[
-                                const SizedBox(height: 24),
-                                _Section(
-                                    label: 'routine_end'.tr(),
-                                    child: _TimeRow(
-                                        prefix: 'routine_end',
-                                        clock: _end,
-                                        accent: accent,
-                                        onChanged: () => setState(() {}))),
-                              ],
-                              if (_kind == ScheduleEditorKind.span &&
-                                  _device == ScheduleDevice.led) ...[
-                                const SizedBox(height: 24),
-                                // Figma 1107:8758 — 밝기 y447.5, 행 y474.5.
-                                _Section(
-                                    label: 'home_led_brightness'.tr(),
-                                    gap: 8,
-                                    child: LedBrightnessRow(
-                                        key:
-                                            const Key('routine_brightness_row'),
-                                        valueKey: const Key(
-                                            'routine_brightness_value'),
-                                        sliderKey: const Key(
-                                            'routine_brightness_slider'),
-                                        value: _brightness,
-                                        onChanged: (v) =>
-                                            setState(() => _brightness = v))),
-                              ],
-                              if (_kind == ScheduleEditorKind.duration) ...[
-                                const SizedBox(height: 24),
-                                _Section(
-                                    label: 'routine_end'.tr(),
-                                    gap: 8,
-                                    child: Row(children: [
-                                      for (final (i, m) in ScheduleDevice
-                                          .coolDurations.indexed) ...[
-                                        if (i > 0) const SizedBox(width: 6),
-                                        Expanded(
-                                            child: _Chip(
-                                                key: Key('routine_after_$m'),
-                                                label: 'home_timer_later_fmt'
-                                                    .tr(args: [
-                                                  (m < 60
-                                                          ? 'home_timer_${m}m'
-                                                          : 'home_timer_${m ~/ 60}h')
-                                                      .tr()
-                                                ]),
-                                                selected: _coolMinutes == m,
-                                                accent: accent,
-                                                onTap: () => setState(
-                                                    () => _coolMinutes = m))),
-                                      ],
-                                    ])),
-                              ],
-                              const SizedBox(height: 24),
-                              _Section(
-                                  label: 'routine_field_repeat'.tr(),
-                                  gap: 8,
-                                  child: Row(children: [
-                                    for (var d = 1; d <= 7; d++) ...[
-                                      if (d > 1) const SizedBox(width: 4),
-                                      Expanded(
-                                          child: _Chip(
-                                              key: Key('routine_day_$d'),
-                                              label: 'routine_day_$d'.tr(),
-                                              selected: _days.contains(d),
-                                              accent: accent,
-                                              onTap: () => setState(() =>
-                                                  _days.contains(d)
-                                                      ? _days.remove(d)
-                                                      : _days.add(d)))),
-                                    ],
-                                  ])),
-                            ]))),
-              ])),
-          Positioned(
-              left: 12,
-              right: 12,
-              bottom: bottom + (_isEdit ? 10 : 66),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                ManagementButton(
-                    key: const Key('routine_save'),
-                    label: 'routine_editor_save'.tr(),
-                    onPressed: _valid ? _save : null),
-                if (_isEdit)
-                  SizedBox(
-                      height: 56,
-                      width: double.infinity,
-                      child: TextButton(
-                          key: const Key('routine_delete'),
-                          onPressed: () => Navigator.pop(
-                              context, const ScheduleDeleteRequested()),
-                          style: TextButton.styleFrom(
-                              foregroundColor: glass.navSelected,
-                              // 원본 1107:9325 글자 실측 61×14 → 18/600.
-                              textStyle: managementStyle(context,
-                                  size: 18, weight: FontWeight.w600)),
-                          child: Text('routine_delete_title'.tr()))),
-              ])),
-        ]));
+                    child: ScheduleChoiceChip(
+                        key: Key('routine_after_$m'),
+                        label: 'home_timer_later_fmt'.tr(args: [
+                          (m < 60
+                                  ? 'home_timer_${m}m'
+                                  : 'home_timer_${m ~/ 60}h')
+                              .tr()
+                        ]),
+                        selected: _coolMinutes == m,
+                        accent: accent,
+                        onTap: () => _update(() => _coolMinutes = m))),
+              ],
+            ])),
+      ],
+      const SizedBox(height: 24),
+      ScheduleSection(
+          label: 'routine_field_repeat'.tr(),
+          gap: 8,
+          child: Row(children: [
+            for (var d = 1; d <= 7; d++) ...[
+              if (d > 1) const SizedBox(width: 4),
+              Expanded(
+                  child: ScheduleChoiceChip(
+                      key: Key('routine_day_$d'),
+                      label: 'routine_day_$d'.tr(),
+                      selected: _days.contains(d),
+                      accent: accent,
+                      onTap: () => _update(() => _days.contains(d)
+                          ? _days.remove(d)
+                          : _days.add(d)))),
+            ],
+          ])),
+    ]);
   }
 }
 
-class _Section extends StatelessWidget {
-  const _Section({required this.label, required this.child, this.gap = 4});
+/// 라벨(16/500 #949090, 왼쪽 12) + [gap] + 내용.
+class ScheduleSection extends StatelessWidget {
+  const ScheduleSection(
+      {super.key, required this.label, required this.child, this.gap = 4});
   final String label;
   final Widget child;
   final double gap;
@@ -419,14 +464,15 @@ class _Section extends StatelessWidget {
 }
 
 /// 오전/오후 86×70 + 시 108×118 + ":" + 분 108×118 = 345 (Figma 1106:7234).
-class _TimeRow extends StatelessWidget {
-  const _TimeRow(
-      {required this.prefix,
+class ScheduleTimeRow extends StatelessWidget {
+  const ScheduleTimeRow(
+      {super.key,
+      required this.prefix,
       required this.clock,
       required this.accent,
       required this.onChanged});
   final String prefix;
-  final _Clock clock;
+  final ScheduleClock clock;
   final Color accent;
   final VoidCallback onChanged;
 
@@ -541,27 +587,43 @@ class _Picker extends StatelessWidget {
 }
 
 /// 44 높이 r16 칩 — 선택은 기기색 바탕 + 흰 글자(오전/오후와 같은 문법).
-class _Chip extends StatelessWidget {
-  const _Chip(
+/// 제어 시트의 작동 시간 칩(Figma 1106:4296)도 같은 규격이다. [enabled]가
+/// false면 회색 면(#E3E3E3)·회색 글자(잠금 프레임 1106:6362 문법).
+class ScheduleChoiceChip extends StatelessWidget {
+  const ScheduleChoiceChip(
       {super.key,
       required this.label,
       required this.selected,
       required this.accent,
-      required this.onTap});
+      required this.onTap,
+      this.enabled = true});
   final String label;
   final bool selected;
   final Color accent;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
+    final fill = !enabled
+        ? (selected ? glass.deviceOff : glass.border)
+        : selected
+            ? accent
+            : glass.surfaceHeader;
+    final fg = !enabled
+        ? (selected
+            ? ManagementColors.buttonForeground(context)
+            : glass.textTertiary)
+        : selected
+            ? ManagementColors.buttonForeground(context)
+            : glass.textSecondary;
     return Material(
-        color: selected ? accent : glass.surfaceHeader,
+        color: fill,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: onTap,
+            onTap: enabled ? onTap : null,
             child: SizedBox(
                 height: 44,
                 child: Center(
@@ -571,8 +633,6 @@ class _Chip extends StatelessWidget {
                         style: managementStyle(context,
                             weight:
                                 selected ? FontWeight.w700 : FontWeight.w600,
-                            color: selected
-                                ? ManagementColors.buttonForeground(context)
-                                : glass.textSecondary))))));
+                            color: fg))))));
   }
 }

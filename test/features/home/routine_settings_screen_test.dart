@@ -264,13 +264,13 @@ void main() {
     final repo = _FakeRepo();
     await _pump(tester, repo);
     await _openEditor(tester, 'led');
-    // 오후 12 → 시 +1 = 오후 1시(13:00), 분 -1 = 55분.
+    // 오후 12 → 시 +1 = 오후 1시(13:00), 분 -1 = 50분(10분 단위, 2026-09-16).
     await tester.tap(find.byKey(const Key('routine_start_hour_up')));
     await tester.tap(find.byKey(const Key('routine_start_minute_down')));
     await tester.pump();
     expect(find.text('1'), findsWidgets);
-    expect(find.text('55'), findsOneWidget);
-    // 오전으로 바꾸면 01:55. 종료는 오전 11시 → 11:00.
+    expect(find.text('50'), findsOneWidget);
+    // 오전으로 바꾸면 01:50. 종료는 오전 11시 → 11:00.
     await tester.tap(find.byKey(const Key('routine_start_am')));
     await tester.tap(find.byKey(const Key('routine_end_am')));
     await tester.tap(find.byKey(const Key('routine_end_hour_down')));
@@ -279,7 +279,7 @@ void main() {
     await tester.pump();
     await _save(tester);
     final creates = repo.calls.where((c) => c.startsWith('create:')).toList();
-    expect(creates[0], startsWith('create:led_on:01:55'));
+    expect(creates[0], startsWith('create:led_on:01:50'));
     expect(creates[1], startsWith('create:led_off:11:00'));
   });
 
@@ -497,7 +497,7 @@ void main() {
     expect(patches[0], startsWith('patch:on:'));
     expect(patches[0], contains('time_of_day: 08:00'));
     expect(patches[1], startsWith('patch:off:'));
-    expect(patches[1], contains('time_of_day: 20:05'));
+    expect(patches[1], contains('time_of_day: 20:10'));
   });
 
   testWidgets('냉각팬 구간 편집 — 30/60/120분이 아니면 칩을 고르기 전엔 저장이 잠긴다', (tester) async {

@@ -10,6 +10,7 @@ import '../../my_cage/presentation/management_colors.dart';
 import '../../my_cage/presentation/widgets/management_widgets.dart';
 import '../domain/schedule.dart';
 import '../domain/schedule_device.dart';
+import 'schedule_draft_apply.dart';
 import 'schedule_providers.dart';
 import 'widgets/schedule_device_badge.dart';
 import 'widgets/schedule_editor_sheet.dart';
@@ -48,14 +49,8 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
       ? 'pair:${row.pairId}'
       : 'one:${(row as Schedule).id}';
 
-  static int _startMinutes(Object row) {
-    final s = row is SchedulePair ? row.on : row as Schedule;
-    return s.hour * 60 + s.minute;
-  }
-
   /// 같은 pair_id의 on/off는 한 줄(2026-08-18 회신 §3), 시작 시각 순.
-  static List<Object> _rows(List<Schedule> list) =>
-      Schedule.group(list)..sort((a, b) => _startMinutes(a) - _startMinutes(b));
+  static List<Object> _rows(List<Schedule> list) => scheduleRows(list);
 
   void _exitDeleteMode() => setState(() {
         _deleteMode = false;
@@ -163,13 +158,13 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
         });
     if (row case final SchedulePair p) {
       final on = p.on;
-      return _ScheduleRow(
+      return ScheduleRow(
         key: Key('schedule_pair_${p.pairId}'),
         device: ScheduleDevice.of(on.action),
         title: '${on.hhmm}~${p.off.hhmm}',
         parts: [
-          _repeatLabel(on.kind, on.daysOfWeek),
-          _stateLabel(p.enabled),
+          scheduleRepeatLabel(on.kind, on.daysOfWeek),
+          scheduleStateLabel(p.enabled),
           if (on.guard case final g? when g.enabled) _guardLabel(g),
           if (p.isSkewed) 'routine_pair_skewed'.tr(),
         ],
@@ -185,13 +180,13 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
     }
     final s = row as Schedule;
     final device = ScheduleDevice.of(s.action);
-    return _ScheduleRow(
+    return ScheduleRow(
       key: Key('schedule_${s.id}'),
       device: device,
-      title: _singleTitle(s, device),
+      title: scheduleSingleTitle(s, device),
       parts: [
-        _repeatLabel(s.kind, s.daysOfWeek),
-        _stateLabel(s.enabled),
+        scheduleRepeatLabel(s.kind, s.daysOfWeek),
+        scheduleStateLabel(s.enabled),
         if (s.guard case final g? when g.enabled) _guardLabel(g),
       ],
       enabled: s.enabled,
@@ -212,28 +207,7 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
         builder: (_) => ScheduleDevicePickerScreen(
             onPick: (ctx, device) => showScheduleEditor(ctx, device: device))));
     if (result is! ScheduleDraft || !mounted) return;
-    await _guard(() => result.isSpan
-        ? ref.read(schedulesProvider.notifier).addSpan(
-              onAction: result.action,
-              offAction: result.offAction!,
-              kind: result.kind,
-              startHour: result.hour,
-              startMinute: result.minute,
-              endHour: result.endHour!,
-              endMinute: result.endMinute!,
-              daysOfWeek: result.daysOfWeek,
-              guard: result.guard,
-              payload: result.payload,
-            )
-        : ref.read(schedulesProvider.notifier).add(
-              action: result.action,
-              kind: result.kind,
-              hour: result.hour,
-              minute: result.minute,
-              daysOfWeek: result.daysOfWeek,
-              payload: result.payload,
-              guard: result.guard,
-            ));
+    await _guard(() => applyScheduleDraft(ref, result));
   }
 
   // ── 수정 ────────────────────────────────────────────────────────────────
@@ -245,16 +219,7 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
     if (!mounted) return;
     switch (result) {
       case ScheduleDraft():
-        await _guard(() => ref.read(schedulesProvider.notifier).updateTiming(
-              s,
-              kind: result.kind,
-              hour: result.hour,
-              minute: result.minute,
-              daysOfWeek: result.daysOfWeek,
-              payload: result.payload,
-              guard: result.guard,
-              clearGuard: result.clearGuard,
-            ));
+        await _guard(() => applyScheduleDraft(ref, result, editing: s));
       case ScheduleDeleteRequested():
         if (!await _confirmDelete(_leavesOrphanOn([s], all))) return;
         await _guard(() => ref.read(schedulesProvider.notifier).remove(s));
@@ -268,19 +233,7 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
     if (!mounted) return;
     switch (result) {
       case ScheduleDraft():
-        await _guard(
-            () => ref.read(schedulesProvider.notifier).updateSpanTiming(
-                  p,
-                  kind: result.kind,
-                  startHour: result.hour,
-                  startMinute: result.minute,
-                  endHour: result.endHour!,
-                  endMinute: result.endMinute!,
-                  daysOfWeek: result.daysOfWeek,
-                  guard: result.guard,
-                  clearGuard: result.clearGuard,
-                  payload: result.payload,
-                ));
+        await _guard(() => applyScheduleDraft(ref, result, editingPair: p));
       case ScheduleDeleteRequested():
         if (!await _confirmDelete(false)) return;
         await _guard(() => ref.read(schedulesProvider.notifier).removePair(p));
@@ -403,8 +356,19 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
 
 // ── 부제 조각 헬퍼 (시점·구간 공용) ─────────────────────────────────────────
 
+/// 같은 pair_id의 on/off는 한 줄(2026-08-18 회신 §3), 시작 시각 순 — 디자이너
+/// 메모 "예약 목록 정렬: 시작 시각". 홈 제어 시트의 예약 탭도 같은 순서다.
+List<Object> scheduleRows(List<Schedule> list) {
+  int start(Object row) {
+    final s = row is SchedulePair ? row.on : row as Schedule;
+    return s.hour * 60 + s.minute;
+  }
+
+  return Schedule.group(list)..sort((a, b) => start(a) - start(b));
+}
+
 /// 매일 또는 `토 일`(원본 1106:5317 — 요일 사이 공백).
-String _repeatLabel(ScheduleKind kind, List<int> daysOfWeek) {
+String scheduleRepeatLabel(ScheduleKind kind, List<int> daysOfWeek) {
   if (kind == ScheduleKind.daily) return 'routine_daily'.tr();
   return ([...daysOfWeek]..sort()).map((d) => 'routine_day_$d'.tr()).join(' ');
 }
@@ -412,7 +376,7 @@ String _repeatLabel(ScheduleKind kind, List<int> daysOfWeek) {
 /// 분무는 시각만(1106:5317 문법), 냉각팬 duration 예약(fan2_on + duration_ms)은
 /// "12:00~12:30", 그 외 켜기/끄기·레거시 동작은 시각 뒤에 동작 이름을 붙여야
 /// 같은 아이콘의 켜기·끄기가 구분된다.
-String _singleTitle(Schedule s, ScheduleDevice? device) {
+String scheduleSingleTitle(Schedule s, ScheduleDevice? device) {
   if (device == ScheduleDevice.mist) return s.hhmm;
   final ms = s.payload?['duration_ms'];
   if (s.action == ScheduleAction.fan2On && ms is num && ms > 0) {
@@ -424,7 +388,7 @@ String _singleTitle(Schedule s, ScheduleDevice? device) {
   return '${s.hhmm} ${s.action.displayKey.tr()}';
 }
 
-String _stateLabel(bool enabled) =>
+String scheduleStateLabel(bool enabled) =>
     (enabled ? 'device_state_on' : 'device_state_off').tr();
 
 /// `습도>70%면 건너뜀` 식. 키는 `routine_guard_chip_<wire 뒷부분>`.
@@ -437,8 +401,8 @@ String _guardLabel(ScheduleGuard g) {
 /// 예약 한 줄 — 369×72 #FAFAFA r12, 아이콘 40, 제목 16/600·부제 14/500,
 /// 스위치 80×32. 삭제 모드면 스위치가 왼쪽으로 밀리고 체크 24가 붙는다
 /// (1107:10246 — 스위치 x285→253, 체크 x341).
-class _ScheduleRow extends StatelessWidget {
-  const _ScheduleRow({
+class ScheduleRow extends StatelessWidget {
+  const ScheduleRow({
     required super.key,
     required this.device,
     required this.title,
