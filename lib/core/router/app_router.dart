@@ -389,6 +389,23 @@ GoRouter buildAppRouter({
             initialGroupId:
                 state.extra is String ? state.extra as String : null),
       ),
+      // 셸 밖 개체 상세·수정. 루트 화면(기기 관리·그룹 편집기)에서 셸 안
+      // `/my-pets/:id`를 push하면 go_router가 셸 페이지를 한 번 더 만들어
+      // `!keyReservation.contains(key)` 단언이 터지고, 그 예외가 내비게이터를
+      // 잠가(`_debugLocked`) 이후 모든 뒤로가기가 죽는다(2026-09-16 시뮬 실측).
+      // 탭 안에서는 계속 `/my-pets/...`, 루트에서는 이 경로를 쓴다.
+      GoRoute(
+        path: '/pets/:petId',
+        builder: (context, state) =>
+            PetDetailScreen(petId: state.pathParameters['petId'] ?? ''),
+        routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) =>
+                PetFormRoute(petId: state.pathParameters['petId'] ?? ''),
+          ),
+        ],
+      ),
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),

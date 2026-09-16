@@ -43,7 +43,10 @@ class PetDetailScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: '수정',
-            onPressed: () => context.push('/my-pets/$petId/edit'),
+            // 탭 안(`/my-pets/:id`)이든 루트(`/pets/:id`)든 현재 위치 아래로 push —
+            // 루트에서 셸 경로를 push하면 페이지 키 중복으로 내비게이터가 잠긴다.
+            onPressed: () => context
+                .push('${GoRouterState.of(context).matchedLocation}/edit'),
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),

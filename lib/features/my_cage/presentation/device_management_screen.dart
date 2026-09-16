@@ -40,7 +40,8 @@ class DeviceManagementScreen extends ConsumerWidget {
                                     if (inventory.groups.isEmpty)
                                       // Figma 990:11767 — 369x64 #F4F4F4 r12.
                                       Container(
-                                          key: const Key('management_no_groups'),
+                                          key:
+                                              const Key('management_no_groups'),
                                           constraints: const BoxConstraints(
                                               minHeight: 64),
                                           alignment: Alignment.centerLeft,
@@ -61,14 +62,14 @@ class DeviceManagementScreen extends ConsumerWidget {
                                           const SizedBox(height: 8),
                                         ManagementGroupCard(
                                             group: group,
-                                            members: inventory.members(group.id),
-                                            onTap: () => context.push(
-                                                '/groups/${group.id}')),
+                                            members:
+                                                inventory.members(group.id),
+                                            onTap: () => context
+                                                .push('/groups/${group.id}')),
                                       ],
                                     SizedBox(
-                                        height: inventory.groups.isEmpty
-                                            ? 32
-                                            : 36),
+                                        height:
+                                            inventory.groups.isEmpty ? 32 : 36),
                                     ManagementLabel(
                                         'management_ungrouped'.tr()),
                                     const SizedBox(height: 12),
@@ -93,13 +94,14 @@ class DeviceManagementScreen extends ConsumerWidget {
                                         borderRadius: BorderRadius.circular(12),
                                         clipBehavior: Clip.antiAlias,
                                         child: Column(children: [
-                                          for (final item in inventory.ungrouped)
+                                          for (final item
+                                              in inventory.ungrouped)
                                             ManagementItemRow(
                                                 item: item,
                                                 onTap: () => context.push(item
                                                             .key.kind ==
                                                         ManagementKind.pet
-                                                    ? '/my-pets/${item.key.id}'
+                                                    ? '/pets/${item.key.id}'
                                                     : '/devices/${item.key.kind.name}/${item.key.id}')),
                                         ]),
                                       ),

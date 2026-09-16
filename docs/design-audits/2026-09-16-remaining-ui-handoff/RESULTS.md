@@ -190,3 +190,5 @@ e1712d3 feat: LED 작동 시간 칩·예약 LED 밝기·냉각팬 예약 duratio
 [2026-09-16-assumed-server-contracts.md](../../handoffs/2026-09-16-assumed-server-contracts.md) — 사용자 지시로 회신 전 가정 구현한 계약 7건 원장(LED 작동 시간 칩·알림, 소프트 해제 REST, unlinked_at 필터, 푸시 outcome/result). 커밋 `bb453d4`(0.108.0+265) · `fb01a48`(0.108.1+266) · 푸시 검증기 커밋. 회신 대조 시 이 표로 "그대로/수정/되돌림"을 정한다.
 
 [2026-09-16-lee-gwanhun-reply-2-decisions.md](../../handoffs/2026-09-16-lee-gwanhun-reply-2-decisions.md) — 이관훈님 9/16 통합 회신([원문](../../references/2026-09-16-backend-delivery-reply.md))에 대한 결정 답신. LED 타이머 A안(칩 제거, `40a55fc`), 소프트 해제 REST 확정안, 히터 400 차단 요청, `no_ack` 30초 수용, `device.action.skipped` 정의(앱 수신 준비 뒤 발송). 회신 반영 커밋: 유효 표본 수 컬럼명 `64adbde`, 구 탭 히터 제거 `43b742d`. P09·§10-4의 "LED 작동 시간 칩 미리 구현"은 이 결정으로 철회됨.
+
+**2026-09-16 스크린샷 검수 중 발견·수정**: 그룹 편집기 소속 개체 탭 → go_router `!keyReservation.contains(key)`(셸 페이지 키 중복) → `_handlePopPage` null check → 내비게이터 `_debugLocked` 고착 → 뒤로가기 전멸. 루트 화면 전용 `/pets/:id(/edit)` 신설, 기기 관리·그룹 편집기 push 경로 변경, 개체 상세의 수정 버튼은 현재 위치 기준 상대 push. 회귀 테스트 `management_pet_routes_test.dart`. 바탕화면 `비바나트_스크린샷_2026-09-16` 18장은 이 수정 전 캡처이나 해당 화면(11~17)의 표시 자체는 동일하다.

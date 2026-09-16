@@ -250,7 +250,7 @@ void main() {
             return null;
           });
       final route = kind == ManagementKind.pet
-          ? '/my-pets/member/edit'
+          ? '/pets/member/edit' // 루트 화면은 셸 밖 개체 경로(2026-09-16)
           : '/devices/${kind.name}/member';
       final router = GoRouter(routes: [
         GoRoute(

@@ -293,7 +293,7 @@ class _GroupEditorBody extends ConsumerWidget {
                                                 : () => context.push(item
                                                             .key.kind ==
                                                         ManagementKind.pet
-                                                    ? '/my-pets/${item.key.id}/edit'
+                                                    ? '/pets/${item.key.id}/edit'
                                                     : '/devices/${item.key.kind.name}/${item.key.id}'),
                                           ),
                                   ]),
@@ -323,9 +323,9 @@ class _GroupEditorBody extends ConsumerWidget {
                                           const SizedBox(width: 4),
                                           Text('management_add_change'.tr(),
                                               style: managementStyle(context,
-                                                  weight: FontWeight.w600,
-                                                  color: context
-                                                      .glass.navSelected)
+                                                      weight: FontWeight.w600,
+                                                      color: context
+                                                          .glass.navSelected)
                                                   .copyWith(height: 28 / 16))
                                         ]))),
                               ],
