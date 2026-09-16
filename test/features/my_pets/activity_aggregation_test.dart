@@ -131,4 +131,36 @@ void main() {
     expect(result.isEstimated, isTrue);
     expect(previousActivityAverage(day.shiftDays(1), [result]).seconds, isNull);
   });
+  test('assumedCoverage: 연결 기간의 지난 시간은 완료, 영상 없는 날은 0, 오늘은 진행 중', () {
+    final now = utc('2026-09-15T03:00:00Z');
+    final linked = ActivityAssignment(
+        cameraId: 'a', startUtc: utc('2026-09-10T00:00:00Z'), endUtc: null);
+    ActivityDaySummary dayOf(int d) {
+      final window = ActivityWindow.day(2026, 9, d);
+      return aggregateActivityDay(
+          window: window,
+          assignments: [linked],
+          intervals: const [],
+          coverage:
+              assumedCoverage(assignments: [linked], window: window, now: now),
+          now: now);
+    }
+
+    // 연결 전 날짜는 완료가 아니다.
+    expect(dayOf(9).state, ActivityObservation.beforeConnection);
+    // 연결 뒤 지난 날: 영상 없음 → 완료 + 0.
+    final quiet = dayOf(12);
+    expect(quiet.state, ActivityObservation.complete);
+    expect(quiet.seconds, 0);
+    expect(quiet.isComplete, isTrue);
+    // 진행 중인 오늘(KST 9/15 = UTC 9/14 15:00~)은 완료가 아니다.
+    final today = dayOf(15);
+    expect(today.state, ActivityObservation.inProgress);
+    expect(today.isComplete, isFalse);
+    // 평균 분모에 조용한 날이 들어간다.
+    final average = previousActivityAverage(ActivityWindow.day(2026, 9, 15),
+        [for (var d = 8; d <= 14; d++) dayOf(d)]);
+    expect(average.completedDays, 4); // 9/11~9/14 (9/10은 KST 경계상 부분)
+    expect(average.seconds, 0);
+  });
 }

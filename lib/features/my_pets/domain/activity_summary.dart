@@ -80,6 +80,34 @@ class ActivityCoverage {
   final ActivityObservation state;
 }
 
+/// 서버 수집 coverage 계약이 없을 때의 관측 완료 가정 — **2026-09-16 사용자 결정**.
+///
+/// 카메라는 움직임이 있을 때만 녹화하므로 영상이 없는 날은 "조용한 날(활동 0)"이
+/// 정상 동작이다. 그래서 카메라가 연결된 기간의 **이미 지난 시간은 전부 관측
+/// 완료**로 보고, 영상이 없는 날은 활동 0으로 평균에 넣는다. 카메라가 꺼져 있던
+/// 날도 0으로 들어가는 오차는 감수하기로 했고, 온라인 구간 계약은 요청하지
+/// 않는다. 서버가 coverage를 주면 그 값이 우선한다(호출부가 비어 있을 때만 쓴다).
+///
+/// 09-15 확정("미수집은 제외")과 petcam-lab 계약 노트("no_video를 0으로 세지
+/// 말 것")를 사용자가 이 결정으로 바꿨다 — RESULTS.md §10 12번.
+List<ActivityCoverage> assumedCoverage(
+    {required List<ActivityAssignment> assignments,
+    required ActivityWindow window,
+    required DateTime now}) {
+  final upper = now.isBefore(window.endUtc) ? now.toUtc() : window.endUtc;
+  return [
+    for (final a in assignments)
+      if (_clip(a.startUtc ?? window.startUtc, a.endUtc ?? upper,
+              window.startUtc, upper)
+          case final span?)
+        ActivityCoverage(
+            cameraId: a.cameraId,
+            startUtc: span.start,
+            endUtc: span.end,
+            state: ActivityObservation.complete),
+  ];
+}
+
 class ActivityBucket {
   const ActivityBucket(
       {required this.window,

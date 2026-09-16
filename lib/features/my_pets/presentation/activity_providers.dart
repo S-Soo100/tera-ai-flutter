@@ -93,6 +93,14 @@ final activityDataProvider = FutureProvider.autoDispose
           ifAbsent: () => reason.value);
     }
   }
+  // 서버가 coverage를 안 주면 연결 기간의 지난 시간을 관측 완료로 가정한다
+  // (2026-09-16 사용자 결정, [assumedCoverage] 주석).
+  if (coverage.isEmpty) {
+    coverage.addAll(assumedCoverage(
+        assignments: query.assignments,
+        window: query.window,
+        now: DateTime.now().toUtc()));
+  }
   return ActivityData(
       intervals: List.unmodifiable(intervals),
       coverage: List.unmodifiable(coverage),
