@@ -9,15 +9,21 @@ import 'package:flutter_svg/flutter_svg.dart';
 class FigmaIcon extends StatelessWidget {
   /// 파일이 가진 색을 그대로 쓴다. 온도 `#F85478`·습도 `#00B2F3`처럼 **의미가
   /// 붙은 색**은 라이트/다크가 같아야 해서 건드리지 않는다.
-  const FigmaIcon.metric(this.name, {super.key, this.size = 20}) : color = null;
+  const FigmaIcon.metric(this.name, {super.key, this.size = 20})
+      : color = null,
+        height = null;
 
   /// 단색으로 칠해 쓴다. 배경 대비가 테마마다 달라지는 자리에 쓴다.
   const FigmaIcon.tinted(this.name,
-      {super.key, required Color this.color, this.size = 20});
+      {super.key, required Color this.color, this.size = 20, this.height});
 
   /// `assets/icons/{name}.svg`의 파일명(확장자 제외).
   final String name;
   final double size;
+
+  /// 정사각이 아닌 글리프 export(예: keyboard_arrow 12×7)의 세로. null이면 [size].
+  /// SvgPicture는 세로 상자에 맞춰 가로를 늘리므로 비율을 명시해야 한다.
+  final double? height;
   final Color? color;
 
   @override
@@ -25,7 +31,7 @@ class FigmaIcon extends StatelessWidget {
     return SvgPicture.asset(
       'assets/icons/$name.svg',
       width: size,
-      height: size,
+      height: height ?? size,
       colorFilter:
           color == null ? null : ColorFilter.mode(color!, BlendMode.srcIn),
     );
@@ -54,6 +60,11 @@ abstract final class FigmaIcons {
 
   /// ±10초 피드백 칩 글리프 26(Figma 941:1928 Toast_V). 되감기는 좌우 반전.
   static const fastForward = 'redesign_v2/fast_forward';
+
+  /// 예약 편집기 시·분 화살표 — 글리프만 12×7 export(Figma 1107:7955/7960,
+  /// 2026-09-16 디자이너 전달). 24 프레임 가운데 size 12로 그린다.
+  static const keyboardArrowUp = 'redesign_v2/keyboard_arrow_up';
+  static const keyboardArrowDown = 'redesign_v2/keyboard_arrow_down';
   static const arrowPrevious = 'arrow_previous';
   static const arrowNext = 'arrow_next';
   static const download = 'download';
@@ -118,6 +129,12 @@ abstract final class FigmaImages {
   );
   static const emptyEnclosure = ExactAssetImage(
     'assets/figma/2026-09-15/images/Empty_03x3.png',
+    scale: 3,
+  );
+
+  /// LCD 문구 화면 모듈 그림(Figma 1081:3474, 345×171 → 1035×513 x3).
+  static const lcdModule = ExactAssetImage(
+    'assets/figma/2026-09-15/images/LCDx3.png',
     scale: 3,
   );
   static const petPlaceholder = ExactAssetImage(

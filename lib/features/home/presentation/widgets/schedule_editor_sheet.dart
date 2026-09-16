@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/glass_palette.dart';
+import '../../../../shared/widgets/figma_icon.dart';
 import '../../../my_cage/presentation/management_colors.dart';
 import '../../../my_cage/presentation/widgets/management_widgets.dart';
 import '../../domain/mist_duration.dart';
@@ -453,10 +454,13 @@ class _Picker extends StatelessWidget {
             width: 108,
             height: 24,
             child: Center(
-                child: CustomPaint(
-                    size: const Size(24, 24),
-                    painter:
-                        _ChevronPainter(up: up, color: glass.textSecondary)))));
+                child: FigmaIcon.tinted(
+                    up
+                        ? FigmaIcons.keyboardArrowUp
+                        : FigmaIcons.keyboardArrowDown,
+                    size: 12,
+                    height: 7,
+                    color: glass.textSecondary))));
     return Column(mainAxisSize: MainAxisSize.min, children: [
       arrow('${prefix}_up', true),
       Container(
@@ -474,43 +478,6 @@ class _Picker extends StatelessWidget {
       arrow('${prefix}_down', false),
     ]);
   }
-}
-
-/// Figma keyboard_arrow_up/down(Material Symbols 24 그리드) — 레포에 export가
-/// 없어 같은 경로 좌표를 직접 그린다(P17 표 기록).
-class _ChevronPainter extends CustomPainter {
-  const _ChevronPainter({required this.up, required this.color});
-  final bool up;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final s = size.width / 24;
-    final path = Path();
-    if (up) {
-      path
-        ..moveTo(7.41 * s, 15.41 * s)
-        ..lineTo(12 * s, 10.83 * s)
-        ..lineTo(16.59 * s, 15.41 * s)
-        ..lineTo(18 * s, 14 * s)
-        ..lineTo(12 * s, 8 * s)
-        ..lineTo(6 * s, 14 * s)
-        ..close();
-    } else {
-      path
-        ..moveTo(7.41 * s, 8.59 * s)
-        ..lineTo(12 * s, 13.17 * s)
-        ..lineTo(16.59 * s, 8.59 * s)
-        ..lineTo(18 * s, 10 * s)
-        ..lineTo(12 * s, 16 * s)
-        ..lineTo(6 * s, 10 * s)
-        ..close();
-    }
-    canvas.drawPath(path, Paint()..color = color);
-  }
-
-  @override
-  bool shouldRepaint(_ChevronPainter old) => old.up != up || old.color != color;
 }
 
 /// 44 높이 r16 칩 — 선택은 기기색 바탕 + 흰 글자(오전/오후와 같은 문법).

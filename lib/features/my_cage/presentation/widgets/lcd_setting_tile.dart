@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/widgets/figma_icon.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../data/lcd_repository.dart';
@@ -94,15 +95,18 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: EdgeInsets.fromLTRB(
-                    12, 12, 12, keyboard ? 36 + 56 + 16 : 10 + 112 + 16),
+                    12, 12, 12, (keyboard ? 36 : 66) + 56 + 16),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // 모듈 illustration 자리(345×171). 원본 하위 노드 SVG/x3
-                      // PNG를 아직 확보하지 못해 비워 둔다(P17 자산 목록) —
-                      // 새로 그리거나 다른 아이콘으로 대체하지 않는다.
-                      const SizedBox(
-                          key: Key('lcd_illustration_slot'), height: 171),
+                      // 모듈 그림 345×171 @x24 (Figma 1081:3474, x3 PNG).
+                      const Center(
+                          child: Image(
+                              key: Key('lcd_illustration_slot'),
+                              image: FigmaImages.lcdModule,
+                              width: 345,
+                              height: 171,
+                              fit: BoxFit.contain)),
                       const SizedBox(height: 16),
                       Text('lcd_screen_description'.tr(),
                           textAlign: TextAlign.center,
@@ -149,7 +153,9 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
             Positioned(
                 left: 12,
                 right: 12,
-                bottom: keyboard ? 36 : 10,
+                // 원본 1081:3160 — 완료 단독 y696(세이프 66 위), 키보드 위 36.
+                // 기본값 복원 버튼은 원본에 없어 제거(2026-09-16 사용자 결정).
+                bottom: keyboard ? 36 : 66,
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   SizedBox(
                       width: double.infinity,
@@ -160,7 +166,7 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
                                   _text.text.trim().isEmpty ||
                                   _text.text == last
                               ? null
-                              : () => _send(clear: false),
+                              : _send,
                           style: FilledButton.styleFrom(
                               backgroundColor: glass.textPrimary,
                               disabledBackgroundColor: glass.border,
@@ -174,25 +180,12 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
                                       size: 18, weight: FontWeight.w600)
                                   .copyWith(height: 28 / 18)),
                           child: Text('lcd_done'.tr()))),
-                  if (!keyboard)
-                    SizedBox(
-                        height: 56,
-                        child: TextButton(
-                            key: const Key('lcd_reset'),
-                            onPressed: sending ? null : () => _send(clear: true),
-                            style: TextButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 56),
-                                foregroundColor: glass.textSecondary,
-                                textStyle: managementStyle(context,
-                                        size: 18, weight: FontWeight.w600)
-                                    .copyWith(height: 28 / 18)),
-                            child: Text('lcd_reset'.tr()))),
                 ])),
           ])),
         ])));
   }
 
-  Future<void> _send({required bool clear}) async {
+  Future<void> _send() async {
     if (!mounted) return;
     final sending = ref.read(_lcdSendingProvider(_identity).notifier);
     if (sending.state) return;
@@ -204,13 +197,8 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
     final ok = await submitAndClose(
       context,
       () async {
-        if (clear) {
-          await widget.repo.clear(widget.deviceId);
-          last.state = '';
-        } else {
-          await widget.repo.setText(widget.deviceId, text);
-          last.state = text;
-        }
+        await widget.repo.setText(widget.deviceId, text);
+        last.state = text;
       },
       successKey: 'lcd_sent',
       failureKey: 'lcd_failed',

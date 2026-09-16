@@ -83,18 +83,6 @@ void main() {
     expect(find.byType(SnackBar), findsOneWidget);
   });
 
-  testWidgets('기본값 복원은 clear를 부른다 — 빈 텍스트 전송이 아니라', (tester) async {
-    final repo = _FakeLcdRepo();
-    await _pump(tester, repo);
-
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('lcd_reset')));
-    await tester.pumpAndSettle();
-
-    expect(repo.calls, ['clear:d1']);
-  });
-
   testWidgets('20자 상한 — 붙여넣기 후 전송도 20자 이내다', (tester) async {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo);
@@ -151,7 +139,7 @@ void main() {
     expect(repo.calls, ['set:d1:123456789 123456789 ']);
   });
 
-  testWidgets('전송 중 연속 적용은 한 번만 보내고 입력과 복원을 잠근다', (tester) async {
+  testWidgets('전송 중 연속 적용은 한 번만 보내고 입력을 잠근다', (tester) async {
     final pending = Completer<void>();
     final repo = _FakeLcdRepo(pending: pending);
     await _pump(tester, repo);
@@ -177,11 +165,6 @@ void main() {
             .widget<FilledButton>(find.byKey(const Key('lcd_apply')))
             .onPressed,
         isNull);
-    expect(
-        tester
-            .widget<TextButton>(find.byKey(const Key('lcd_reset')))
-            .onPressed,
-        isNull);
 
     pending.complete();
     await tester.pumpAndSettle();
@@ -195,7 +178,7 @@ void main() {
     expect(find.byKey(HomeLcdRow.rowKey), findsNothing);
   });
 
-  testWidgets('P08 전체 화면 좌표 — 그림 자리 118, 안내 305, 입력 359, 완료 696/복원 752',
+  testWidgets('P08 전체 화면 좌표 — 그림 자리 118, 안내 305, 입력 359, 완료 696 단독',
       (tester) async {
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;
@@ -228,7 +211,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(BottomSheet), findsNothing);
     expect(tester.getRect(find.byKey(const Key('lcd_illustration_slot'))),
-        const Rect.fromLTWH(12, 118, 369, 171));
+        const Rect.fromLTWH(24, 118, 345, 171));
     expect(tester.getRect(find.text('lcd_screen_description')).top, 305);
     // 번역 없는 테스트라 안내가 1줄(원본 2줄 → 359). 상대 간격 16으로 확인.
     final field = tester.getRect(find.byKey(const Key('lcd_field')));
@@ -240,16 +223,19 @@ void main() {
     expect(find.text('0/20'), findsOneWidget);
     expect(tester.getRect(find.byKey(const Key('lcd_apply'))),
         const Rect.fromLTWH(12, 696, 369, 56));
-    expect(tester.getRect(find.byKey(const Key('lcd_reset'))).top, 752);
     // 수정 없음(빈 문구)이면 완료 비활성, 입력하면 활성.
     expect(
-        tester.widget<FilledButton>(find.byKey(const Key('lcd_apply'))).onPressed,
+        tester
+            .widget<FilledButton>(find.byKey(const Key('lcd_apply')))
+            .onPressed,
         isNull);
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '도도도네 집');
     await tester.pump();
     expect(find.text('6/20'), findsOneWidget);
     expect(
-        tester.widget<FilledButton>(find.byKey(const Key('lcd_apply'))).onPressed,
+        tester
+            .widget<FilledButton>(find.byKey(const Key('lcd_apply')))
+            .onPressed,
         isNotNull);
     expect(tester.takeException(), isNull);
   });

@@ -322,6 +322,16 @@
     ]
   },
   {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/keyboard_arrow_up",
+    "rect": [
+      178.0,
+      149.5,
+      12.0,
+      7.0
+    ]
+  },
+  {
     "type": "Text",
     "text": "12",
     "rect": [
@@ -340,6 +350,16 @@
       235.0,
       108.0,
       24.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/keyboard_arrow_down",
+    "rect": [
+      178.0,
+      243.5,
+      12.0,
+      7.0
     ]
   },
   {
@@ -364,6 +384,16 @@
     ]
   },
   {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/keyboard_arrow_up",
+    "rect": [
+      309.0,
+      149.5,
+      12.0,
+      7.0
+    ]
+  },
+  {
     "type": "Text",
     "text": "00",
     "rect": [
@@ -382,6 +412,16 @@
       235.0,
       108.0,
       24.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/keyboard_arrow_down",
+    "rect": [
+      309.0,
+      243.5,
+      12.0,
+      7.0
     ]
   },
   {
@@ -448,6 +488,16 @@
     ]
   },
   {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/keyboard_arrow_up",
+    "rect": [
+      178.0,
+      314.5,
+      12.0,
+      7.0
+    ]
+  },
+  {
     "type": "Text",
     "text": "3",
     "rect": [
@@ -466,6 +516,16 @@
       400.0,
       108.0,
       24.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/keyboard_arrow_down",
+    "rect": [
+      178.0,
+      408.5,
+      12.0,
+      7.0
     ]
   },
   {
@@ -490,6 +550,16 @@
     ]
   },
   {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/keyboard_arrow_up",
+    "rect": [
+      309.0,
+      314.5,
+      12.0,
+      7.0
+    ]
+  },
+  {
     "type": "Text",
     "text": "30",
     "rect": [
@@ -508,6 +578,16 @@
       400.0,
       108.0,
       24.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/keyboard_arrow_down",
+    "rect": [
+      309.0,
+      408.5,
+      12.0,
+      7.0
     ]
   },
   {

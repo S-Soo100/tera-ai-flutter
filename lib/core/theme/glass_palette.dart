@@ -86,6 +86,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     required this.surfaceTint,
     required this.segmentTrack,
     required this.surfaceHeader,
+    required this.menuShadow,
     required this.envTempValue,
     required this.envHumidValue,
     required this.envTempPeak,
@@ -225,6 +226,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   final Color navSelected;
   final Color navUnselected;
   final Color surfaceHeader; // 상세 상단바·제어기록 섹션 배경
+  final Color
+      menuShadow; // 헤더 드롭다운 그림자 — Figma 1107:10552 X0 Y0 blur20 #919497 30%
 
   // ── 표면 위 타이포 (Pretendard 명시 — 공용 위젯은 테마 밖에서도 쓰인다) ──
   // 색만 팔레트에서 오고 크기·굵기는 두 모드 공통이다.
@@ -327,6 +330,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     surfaceTint: Color(0xFF1A2032),
     segmentTrack: Color(0xFF1E2438),
     surfaceHeader: Color(0xFF0E1322),
+    menuShadow: Color(0x66000000), // 다크는 Figma 미정의 — 검정 40% 도출값
     envTempValue: Color(0xFFF85478),
     envHumidValue: Color(0xFF768AD6),
     envTempPeak: Color(0xFFF85478),
@@ -399,6 +403,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     surfaceTint: VivaColors.fillButton,
     segmentTrack: VivaColors.fillButton,
     surfaceHeader: Colors.white,
+    menuShadow: Color(0x4D919497), // 2026-09-16 디자이너 effect 값(30%)
     envTempValue: Color(0xFFF85478),
     envHumidValue: Color(0xFF00B2F3),
     envTempPeak: Color(0xFFF85478),
@@ -469,6 +474,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     Color? surfaceTint,
     Color? segmentTrack,
     Color? surfaceHeader,
+    Color? menuShadow,
     Color? envTempValue,
     Color? envHumidValue,
     Color? envTempPeak,
@@ -538,6 +544,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       surfaceTint: surfaceTint ?? this.surfaceTint,
       segmentTrack: segmentTrack ?? this.segmentTrack,
       surfaceHeader: surfaceHeader ?? this.surfaceHeader,
+      menuShadow: menuShadow ?? this.menuShadow,
       envTempValue: envTempValue ?? this.envTempValue,
       envHumidValue: envHumidValue ?? this.envHumidValue,
       envTempPeak: envTempPeak ?? this.envTempPeak,
@@ -615,6 +622,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       surfaceTint: c(surfaceTint, other.surfaceTint),
       segmentTrack: c(segmentTrack, other.segmentTrack),
       surfaceHeader: c(surfaceHeader, other.surfaceHeader),
+      menuShadow: c(menuShadow, other.menuShadow),
       envTempValue: c(envTempValue, other.envTempValue),
       envHumidValue: c(envHumidValue, other.envHumidValue),
       envTempPeak: c(envTempPeak, other.envTempPeak),

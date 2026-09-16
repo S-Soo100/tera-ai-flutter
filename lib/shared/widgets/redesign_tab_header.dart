@@ -49,8 +49,10 @@ class RedesignTabHeader extends StatelessWidget {
                           tooltip:
                               choices.firstWhere((c) => c.id == selected).label,
                           offset: const Offset(0, 44),
-                          elevation: 6,
-                          shadowColor: glass.textPrimary.withValues(alpha: .12),
+                          // Figma 1107:10552 Drop shadow X0 Y0 blur20 spread0
+                          // #919497 30%. Material 그림자는 방향성이 있어 근사.
+                          elevation: 8,
+                          shadowColor: glass.menuShadow,
                           constraints:
                               const BoxConstraints.tightFor(width: 200),
                           menuPadding: const EdgeInsets.symmetric(
@@ -152,7 +154,9 @@ class RedesignTabHeader extends StatelessWidget {
                   iconSize: 44,
                   offset: const Offset(0, 44),
                   padding: EdgeInsets.zero,
-                  elevation: 0,
+                  // 1056:3009 SelectList — 세트 드롭다운과 같은 그림자로 본다.
+                  elevation: 8,
+                  shadowColor: glass.menuShadow,
                   onSelected: (route) => context.push(route),
                   itemBuilder: (_) => [
                         PopupMenuItem(

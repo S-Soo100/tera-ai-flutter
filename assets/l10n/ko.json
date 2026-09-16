@@ -854,7 +854,6 @@
   "lcd_hint": "예: 밥 6시",
   "lcd_length_hint": "최대 20자",
   "lcd_apply": "적용",
-  "lcd_reset": "기본값 복원",
   "lcd_sent": "LCD에 전송했어요. 잠시 뒤 기기 화면에 반영됩니다.",
   "lcd_failed": "LCD 전송에 실패했어요 — {}",
   "lcd_no_device": "연결된 제어 기기가 없어요",
