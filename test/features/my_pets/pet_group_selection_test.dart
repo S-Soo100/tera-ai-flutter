@@ -185,7 +185,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  const _single = [
+  const singleGroup = [
     PetFormGroupOption(
         id: 'g1',
         name: '마뱀이네 집',
@@ -214,7 +214,7 @@ void main() {
   }
 
   testWidgets('기기가 있는 그룹이 하나면 등록 뒤 연결 카드(994:13307) — 좌표·배정', (tester) async {
-    await pump(tester, groups: _single);
+    await pump(tester, groups: singleGroup);
     await register(tester);
     expect(saved.length, 1);
     expect(find.byKey(const ValueKey('pet-form-done-devices')), findsNothing);
@@ -243,7 +243,7 @@ void main() {
   });
 
   testWidgets('연결 카드에서 나중에 하기는 배정 없이 닫힌다', (tester) async {
-    await pump(tester, groups: _single);
+    await pump(tester, groups: singleGroup);
     await register(tester);
     await tester.tap(find.byKey(const ValueKey('pet-form-done-later')));
     await tester.pumpAndSettle();
@@ -252,7 +252,7 @@ void main() {
   });
 
   testWidgets('폼에서 그룹을 이미 골랐으면 연결 카드 없이 완료 화면', (tester) async {
-    await pump(tester, groups: _single);
+    await pump(tester, groups: singleGroup);
     await openGroups(tester);
     await tester.tap(find.byKey(const ValueKey('pet-form-group-g1')));
     await tester.pump();
