@@ -182,8 +182,12 @@ void main() {
   testWidgets('알림 설정 — 토글 저장, 마케팅 동의 일자', (tester) async {
     await pump(tester, const NotificationSettingsScreen(), overrides());
     expect(tester.getRect(find.text('기능 설정')).top, closeTo(118.5, 1));
-    expect(tester.getRect(find.byKey(NotificationSettingsScreen.highlightKey)),
-        const Rect.fromLTWH(12, 145.5, 369, 72));
+    // 행은 원본 72이되 부제가 두 줄로 접히면 커질 수 있다(잘라내지 않는다).
+    final row =
+        tester.getRect(find.byKey(NotificationSettingsScreen.highlightKey));
+    expect(row.topLeft, const Offset(12, 145.5));
+    expect(row.width, 369);
+    expect(row.height, greaterThanOrEqualTo(72));
     await tester.tap(find.descendant(
         of: find.byKey(NotificationSettingsScreen.marketingKey),
         matching: find.byType(ScheduleSwitch)));

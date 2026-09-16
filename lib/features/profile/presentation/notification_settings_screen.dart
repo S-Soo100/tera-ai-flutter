@@ -70,6 +70,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         _date(prefs.marketingAgreedAt!)
                       ])}\n${'notif_settings_marketing_desc'.tr()}'
                 : 'notif_settings_marketing_desc'.tr(),
+            // 원본(1142:9613) 마케팅 행은 동의 전에도 12/16 두 줄 상자.
             small: true,
             value: prefs.marketing,
             onChanged: n.setMarketing),
@@ -115,8 +116,10 @@ class _ToggleRow extends StatelessWidget {
                     style: managementStyle(context, weight: FontWeight.w600)
                         .copyWith(height: 19.09 / 16)),
                 const SizedBox(height: 4),
+                // 실기기 서체 폭이 원본보다 넓으면 한 줄이 안 들어가므로 줄바꿈을
+                // 허용한다(잘라서 "…"로 두지 않는다).
                 Text(subtitle,
-                    maxLines: small ? 2 : 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: managementStyle(context,
                             size: small ? 12 : 14, color: glass.textTertiary)

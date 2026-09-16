@@ -51,6 +51,9 @@ Future<void> openDeviceControlSheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
+    // 탭 셸(StatefulShellRoute) 안에서 열리므로 루트 내비게이터에 띄워야
+    // 하단 탭바까지 덮는다(Figma BottomSheet는 화면 바닥에서 시작).
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => DeviceControlSheet(
