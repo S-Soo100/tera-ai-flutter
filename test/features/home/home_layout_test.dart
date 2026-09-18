@@ -104,7 +104,7 @@ GoRouter _router() => GoRouter(
     );
 
 void main() {
-  testWidgets('단일 스크롤 구성 — 헤더/라이브 자리/요약 카드/그리드/일정 설정', (tester) async {
+  testWidgets('단일 스크롤 구성 — 헤더/라이브 자리/요약 카드/그리드/기기 예약 설정', (tester) async {
     await _pump(tester);
     expect(find.byType(HomeHeaderBar), findsOneWidget);
     // 캠 없는 세트 → 라이브 자리는 안내 한 줄로 접힌다.
@@ -139,7 +139,7 @@ void main() {
     expect(find.text('home_fan_duration_title'), findsNothing);
   });
 
-  testWidgets('일정 설정 로우 탭 → /home/routines', (tester) async {
+  testWidgets('기기 예약 설정 로우 탭 → /home/routines', (tester) async {
     await _pump(tester);
     await tester.ensureVisible(find.byKey(HomeScreen.scheduleRowKey));
     await tester.tap(find.byKey(HomeScreen.scheduleRowKey));

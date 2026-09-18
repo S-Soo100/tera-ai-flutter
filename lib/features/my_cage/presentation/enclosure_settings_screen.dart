@@ -58,7 +58,7 @@ class EnclosureSettingsScreen extends StatelessWidget {
               onTap: () => context.push('/smart-cage/enclosures'),
             ),
             // 목표 온습도·화면 뒤집기는 환경설정(EnvSettingsScreen)으로 이동
-            // (2026-09-08). LCD 문구 진입점은 홈 '일정 설정' 하단(2026-09-07).
+            // (2026-09-08). LCD 문구 진입점은 홈 '기기 예약 설정' 하단(2026-09-07).
           ],
         ),
       ),

@@ -22,7 +22,7 @@ import 'widgets/top_fixed_area.dart';
 /// PRD 재설계 1단계(2026-09-02, §4.1): 서브탭·타임라인·개체 프로필 분기 폐기.
 /// 위→아래(마진 12, 섹션 간격 12):
 /// 헤더(44) → 라이브(369×271) → 온습도 요약 카드(탭→`/env-detail`) →
-/// 제어 그리드 5타일 → 일정 설정.
+/// 제어 그리드 5타일 → 기기 예약 설정.
 ///
 /// 스크롤은 [SingleChildScrollView] + Column이다 — ListView는 스크롤 아웃된
 /// 자식을 dispose하는데, 최상단 라이브([TopFixedArea]/WebRtcLiveView)가
@@ -120,7 +120,7 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// 일정 설정 — Figma A.4 ⑤ (라벨 14 Medium + 로우 h51 surfaceTint radius 12).
+/// 기기 예약 설정(2026-09-19 '일정 설정'에서 통일, Figma 1107:10445) — Figma A.4 ⑤ (라벨 14 Medium + 로우 h51 surfaceTint radius 12).
 class _ScheduleSection extends StatelessWidget {
   const _ScheduleSection();
 
