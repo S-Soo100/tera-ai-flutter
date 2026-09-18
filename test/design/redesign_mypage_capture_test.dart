@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:vivanaut/features/community/presentation/blocked_users_screen.dart';
+import 'package:vivanaut/features/notification/data/push_messaging_service.dart';
+import 'package:vivanaut/features/notification/presentation/push_providers.dart';
 import 'package:vivanaut/features/profile/domain/user_profile.dart';
 import 'package:vivanaut/features/profile/presentation/account_screen.dart';
 import 'package:vivanaut/features/profile/presentation/community_profile_screen.dart';
@@ -51,6 +53,11 @@ void main() {
           overrides(profile: profile)),
       ('commu-block', const BlockedUsersScreen(), overrides(blocked: 5)),
       ('push-alarm', const NotificationSettingsScreen(), overrides()),
+      // 기기 알림 꺼짐 안내(2026-09-18, Figma 밖 — 기획 공유용).
+      ('push-alarm-system-off', const NotificationSettingsScreen(), [
+        ...overrides(),
+        pushPermissionProvider.overrideWith((ref) => PushPermission.denied),
+      ]),
       ('my-account', const AccountScreen(), overrides()),
       ('pw-change', const PasswordChangeScreen(), overrides()),
       ('withdraw', const WithdrawScreen(), overrides()),

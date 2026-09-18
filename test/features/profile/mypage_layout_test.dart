@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vivanaut/features/notification/presentation/push_providers.dart';
+import 'package:vivanaut/features/notification/data/push_messaging_service.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/community/presentation/community_providers.dart';
@@ -217,5 +219,54 @@ void main() {
     expect(tester.getRect(find.byKey(NotificationSettingsScreen.likeKey)).height,
         closeTo(72, 0.5));
     expect(tester.takeException(), isNull);
+  });
+
+  group('기기 알림 꺼짐 안내 (2026-09-18)', () {
+    Future<void> pumpWith(WidgetTester tester, PushPermission p) => pump(
+        tester,
+        const NotificationSettingsScreen(),
+        [...overrides(), pushPermissionProvider.overrideWith((ref) => p)]);
+
+    double featureOpacity(WidgetTester tester) => tester
+        .widget<Opacity>(
+            find.byKey(NotificationSettingsScreen.featureSectionKey))
+        .opacity;
+
+    testWidgets('거절 상태 — 안내 + 설정 열기, 기능 토글 흐리게·조작 불가',
+        (tester) async {
+      await pumpWith(tester, PushPermission.denied);
+      expect(find.byKey(NotificationSettingsScreen.systemOffKey), findsOneWidget);
+      expect(find.text('기기 알림이 꺼져 있어요'), findsOneWidget);
+      expect(find.text('설정 열기'), findsOneWidget);
+      expect(featureOpacity(tester), 0.4);
+      expect(
+          tester
+              .widget<IgnorePointer>(find.descendant(
+                  of: find.byKey(NotificationSettingsScreen.featureSectionKey),
+                  matching: find.byType(IgnorePointer)).first)
+              .ignoring,
+          isTrue);
+      // 수신 동의는 동의 기록이라 계속 조작 가능.
+      await tester.tap(find.descendant(
+          of: find.byKey(NotificationSettingsScreen.marketingKey),
+          matching: find.byType(ScheduleSwitch)));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('수신 동의 20'), findsOneWidget);
+    });
+
+    testWidgets('아직 안 물음 — 버튼은 알림 허용', (tester) async {
+      await pumpWith(tester, PushPermission.notDetermined);
+      expect(find.text('알림 허용'), findsOneWidget);
+      expect(featureOpacity(tester), 0.4);
+    });
+
+    testWidgets('허용됨·iOS(미지원) — 안내 없음, 토글 그대로', (tester) async {
+      for (final p in [PushPermission.authorized, PushPermission.unavailable]) {
+        await pumpWith(tester, p);
+        expect(find.byKey(NotificationSettingsScreen.systemOffKey), findsNothing,
+            reason: '$p');
+        expect(featureOpacity(tester), 1, reason: '$p');
+      }
+    });
   });
 }

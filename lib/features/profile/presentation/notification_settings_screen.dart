@@ -5,7 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../home/presentation/routine_settings_screen.dart'
     show ScheduleSwitch;
+import '../../my_cage/presentation/management_colors.dart';
 import '../../my_cage/presentation/widgets/management_widgets.dart';
+import '../../notification/data/push_messaging_service.dart';
+import '../../notification/presentation/push_providers.dart';
 import '../data/notification_preferences_repository.dart';
 import 'widgets/my_page_widgets.dart';
 
@@ -22,37 +25,63 @@ class NotificationSettingsScreen extends ConsumerWidget {
   static const likeKey = Key('notif_toggle_like');
   static const newsKey = Key('notif_toggle_news');
   static const marketingKey = Key('notif_toggle_marketing');
+  static const systemOffKey = Key('notif_system_off');
+  static const featureSectionKey = Key('notif_feature_section');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final prefs = ref.watch(notificationPrefsProvider);
+    // 앱 복귀 시 PushLifecycleObserver가 권한을 다시 읽어 이 값을 갱신한다.
+    final permission = ref.watch(pushPermissionProvider);
+    final systemOff = permission == PushPermission.denied ||
+        permission == PushPermission.notDetermined;
     final n = ref.read(notificationPrefsProvider.notifier);
     return MyPageScaffold(
       title: 'notif_settings_title'.tr(),
       // 원본 첫 라벨 y118.5 = 헤더 106 + 12.5.
       padding: const EdgeInsets.fromLTRB(12, 12.5, 12, 24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (systemOff) ...[
+          _SystemOffNotice(
+              permission: permission,
+              onAllow: () => requestPushPermission(ref, retry: true)),
+          const SizedBox(height: 24),
+        ],
         MyPageSectionTitle('notif_settings_section_features'.tr()),
-        _ToggleRow(
-            key: highlightKey,
-            title: 'notif_settings_highlight'.tr(),
-            subtitle: 'notif_settings_highlight_desc'.tr(),
-            value: prefs.highlight,
-            onChanged: (v) => n.update(prefs.copyWith(highlight: v))),
-        const SizedBox(height: 8),
-        _ToggleRow(
-            key: commentKey,
-            title: 'notif_settings_comment'.tr(),
-            subtitle: 'notif_settings_comment_desc'.tr(),
-            value: prefs.comment,
-            onChanged: (v) => n.update(prefs.copyWith(comment: v))),
-        const SizedBox(height: 8),
-        _ToggleRow(
-            key: likeKey,
-            title: 'notif_settings_like'.tr(),
-            subtitle: 'notif_settings_like_desc'.tr(),
-            value: prefs.like,
-            onChanged: (v) => n.update(prefs.copyWith(like: v))),
+        // 기기 알림이 꺼져 있으면 기능 알림 토글은 동작하지 않으므로 흐리게·조작
+        // 불가로 보인다. 저장된 선택은 그대로라 허용하고 돌아오면 바로 살아난다.
+        // 수신 동의(아래)는 동의 기록이라 기기 알림과 무관하게 조작할 수 있다.
+        Opacity(
+          key: featureSectionKey,
+          opacity: systemOff ? 0.4 : 1,
+          child: IgnorePointer(
+            ignoring: systemOff,
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _ToggleRow(
+                      key: highlightKey,
+                      title: 'notif_settings_highlight'.tr(),
+                      subtitle: 'notif_settings_highlight_desc'.tr(),
+                      value: prefs.highlight,
+                      onChanged: (v) => n.update(prefs.copyWith(highlight: v))),
+                  const SizedBox(height: 8),
+                  _ToggleRow(
+                      key: commentKey,
+                      title: 'notif_settings_comment'.tr(),
+                      subtitle: 'notif_settings_comment_desc'.tr(),
+                      value: prefs.comment,
+                      onChanged: (v) => n.update(prefs.copyWith(comment: v))),
+                  const SizedBox(height: 8),
+                  _ToggleRow(
+                      key: likeKey,
+                      title: 'notif_settings_like'.tr(),
+                      subtitle: 'notif_settings_like_desc'.tr(),
+                      value: prefs.like,
+                      onChanged: (v) => n.update(prefs.copyWith(like: v))),
+                ]),
+          ),
+        ),
         const SizedBox(height: 24),
         MyPageSectionTitle('notif_settings_section_consent'.tr()),
         _ToggleRow(
@@ -141,5 +170,64 @@ class _ToggleRow extends StatelessWidget {
           ScheduleSwitch(
               value: value, color: glass.navSelected, onChanged: onChanged),
         ]));
+  }
+}
+
+/// 기기(시스템) 알림이 꺼져 있다는 안내(2026-09-18 사용자 결정 — Figma 밖).
+/// 앱 안 토글이 켜져 있어도 알림이 오지 않는 이유와 해결 버튼을 한곳에 둔다.
+/// 한 번도 묻지 않았으면 시스템 팝업("알림 허용"), 거절했으면 앱 설정("설정 열기").
+class _SystemOffNotice extends StatelessWidget {
+  const _SystemOffNotice({required this.permission, required this.onAllow});
+  final PushPermission permission;
+  final VoidCallback onAllow;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    final label = permission == PushPermission.notDetermined
+        ? 'notif_settings_system_off_allow'
+        : 'notif_settings_system_off_open';
+    return Container(
+      key: NotificationSettingsScreen.systemOffKey,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+          color: glass.surfaceHeader, borderRadius: BorderRadius.circular(12)),
+      child: Row(children: [
+        Expanded(
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('notif_settings_system_off_title'.tr(),
+                    style: managementStyle(context,
+                            weight: FontWeight.w600, color: glass.textPrimary)
+                        .copyWith(height: 19.09 / 16)),
+                const SizedBox(height: 4),
+                Text('notif_settings_system_off_body'.tr(),
+                    style: managementStyle(context,
+                            size: 14, color: glass.textTertiary)
+                        .copyWith(height: 16.7 / 14)),
+              ]),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          height: 36,
+          child: FilledButton(
+            key: const Key('notif_system_off_action'),
+            onPressed: onAllow,
+            style: FilledButton.styleFrom(
+              backgroundColor: glass.navSelected,
+              foregroundColor: ManagementColors.buttonForeground(context),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              textStyle:
+                  managementStyle(context, size: 14, weight: FontWeight.w600),
+            ),
+            child: Text(label.tr(), maxLines: 1, softWrap: false),
+          ),
+        ),
+      ]),
+    );
   }
 }
