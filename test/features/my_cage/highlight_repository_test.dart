@@ -248,4 +248,96 @@ void main() {
       expect(await repo(client).listFeatured(cameraId: cameraId), isEmpty);
     });
   });
+
+  group('listPassedPage — 전체 영상 목록(규칙 O 전부)', () {
+    test('since·until·cursor·limit을 보내고 커서를 그대로 돌려준다', () async {
+      http.Request? captured;
+      final client = MockClient((req) async {
+        captured = req;
+        return http.Response(
+          jsonEncode({
+            'camera_id': cameraId,
+            'highlights': [
+              {
+                'clip_id': 'c1',
+                'camera_id': cameraId,
+                'started_at': '2026-09-07T15:00:00Z',
+                'duration_sec': 12.5,
+              },
+            ],
+            'has_more': true,
+            'next_cursor': 'opaque-token',
+          }),
+          200,
+        );
+      });
+      final page = await repo(client).listPassedPage(
+        cameraId: cameraId,
+        since: DateTime.utc(2026, 9, 7),
+        until: DateTime.utc(2026, 9, 8),
+        cursor: 'prev-token',
+        limit: 500,
+      );
+      expect(captured!.url.path, '/highlights');
+      expect(captured!.url.queryParameters, {
+        'camera_id': cameraId,
+        'limit': '100',
+        'since': '2026-09-07T00:00:00.000Z',
+        'until': '2026-09-08T00:00:00.000Z',
+        'cursor': 'prev-token',
+      });
+      expect(page.clipIds, ['c1']);
+      expect(page.oldestStartedAt, DateTime.utc(2026, 9, 7, 15));
+      expect(page.nextCursor, 'opaque-token');
+      expect(page.hasMore, isTrue);
+    });
+
+    test('범위·커서가 없으면 그 쿼리를 보내지 않는다', () async {
+      http.Request? captured;
+      final client = MockClient((req) async {
+        captured = req;
+        return http.Response(
+            jsonEncode({'camera_id': cameraId, 'highlights': []}), 200);
+      });
+      final page = await repo(client).listPassedPage(cameraId: cameraId);
+      expect(captured!.url.queryParameters,
+          {'camera_id': cameraId, 'limit': '60'});
+      expect(page.clipIds, isEmpty);
+      expect(page.hasMore, isFalse);
+      expect(page.nextCursor, isNull);
+    });
+
+    test('다른 카메라의 응답은 통째로 버린다', () async {
+      final client = MockClient((_) async => http.Response(
+          jsonEncode({
+            'camera_id': 'other',
+            'highlights': [
+              {
+                'clip_id': 'x',
+                'camera_id': 'other',
+                'started_at': '2026-09-07T15:00:00Z'
+              }
+            ],
+            'has_more': true,
+            'next_cursor': 't',
+          }),
+          200));
+      final page = await repo(client).listPassedPage(cameraId: cameraId);
+      expect(page.clipIds, isEmpty);
+      expect(page.hasMore, isFalse);
+    });
+
+    test('404는 빈 페이지, 504는 BackendException', () async {
+      expect(
+          (await repo(MockClient((_) async => http.Response('', 404)))
+                  .listPassedPage(cameraId: cameraId))
+              .clipIds,
+          isEmpty);
+      expect(
+          repo(MockClient((_) async => http.Response('timeout', 504)))
+              .listPassedPage(cameraId: cameraId),
+          throwsA(isA<BackendException>()
+              .having((e) => e.statusCode, 'statusCode', 504)));
+    });
+  });
 }

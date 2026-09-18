@@ -6,6 +6,18 @@ import 'package:http/http.dart' as http;
 import '../domain/nightly_highlight.dart';
 import 'camera_exceptions.dart';
 
+/// `/highlights` 한 페이지의 통과 클립 참조 — 전체 영상 목록용(정책 v2).
+/// [nextCursor]는 서버 불투명 커서라 앱이 해석·조립하지 않는다.
+/// [oldestStartedAt]은 이 페이지에서 가장 오래된 항목 시각(UTC) — 앱측
+/// 범위 재필터가 "더 넘길 필요가 있는지" 판단하는 데 쓴다.
+typedef PassedClipRefPage = ({
+  List<String> clipIds,
+  List<DateTime> startedAts,
+  DateTime? oldestStartedAt,
+  String? nextCursor,
+  bool hasMore,
+});
+
 /// petcam-api 하이라이트(어젯밤 리포트) 조회. 보기 전용 — 확정(사람 판정)은
 /// 관리자 라벨러 웹 몫.
 ///
@@ -63,6 +75,79 @@ class HighlightRepository {
     }
     if (resp.statusCode == 404) return const [];
     throw BackendException(resp.statusCode, resp.body);
+  }
+
+  /// 전체 영상 목록 기본 페이지 크기(기존 motion_clips 피드와 동일).
+  static const defaultPassedPageSize = 60;
+
+  /// 규칙 O + 사람 확정 O **전부**를 최신순 cursor 페이지로 — 카메라 탭 전체
+  /// 영상 목록(정책 v2, 2026-09-19). [since] 포함 하한, [until] 미포함 상한
+  /// (서버 미배포 동안은 무시된다 — 호출부가 상한을 한 번 더 거른다).
+  Future<PassedClipRefPage> listPassedPage({
+    required String cameraId,
+    DateTime? since,
+    DateTime? until,
+    String? cursor,
+    int limit = defaultPassedPageSize,
+  }) async {
+    limit = limit.clamp(1, maxLimit);
+    final token = await _tokenProvider();
+    final uri = Uri.parse('$_baseUrl/highlights').replace(
+      queryParameters: {
+        'camera_id': cameraId,
+        'limit': '$limit',
+        if (since != null) 'since': since.toUtc().toIso8601String(),
+        if (until != null) 'until': until.toUtc().toIso8601String(),
+        if (cursor != null) 'cursor': cursor,
+      },
+    );
+    final resp = await _client.get(uri,
+        headers: {if (token != null) 'Authorization': 'Bearer $token'});
+    const PassedClipRefPage empty = (
+      clipIds: <String>[],
+      startedAts: <DateTime>[],
+      oldestStartedAt: null,
+      nextCursor: null,
+      hasMore: false,
+    );
+    if (resp.statusCode == 404) return empty;
+    if (resp.statusCode != 200) {
+      throw BackendException(resp.statusCode, resp.body);
+    }
+    final decoded = jsonDecode(resp.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw BackendException(resp.statusCode, 'Unexpected body: ${resp.body}');
+    }
+    final body = decoded;
+    final responseCameraId = body['camera_id'];
+    if (responseCameraId != null && responseCameraId != cameraId) {
+      debugPrint('[passed-clips] discarded mismatched response: '
+          'requested=$cameraId, response=$responseCameraId');
+      return empty;
+    }
+    final ids = <String>[];
+    final times = <DateTime>[];
+    final rawList = body['highlights'];
+    for (final raw in rawList is List ? rawList : const <Object?>[]) {
+      if (raw is! Map<String, dynamic>) continue;
+      final rawId = raw['clip_id'];
+      final id = rawId is String ? rawId : '';
+      final at = DateTime.tryParse('${raw['started_at']}')?.toUtc();
+      if (id.isEmpty || at == null) continue;
+      if (responseCameraId == null && raw['camera_id'] != cameraId) continue;
+      ids.add(id);
+      times.add(at);
+    }
+    final next = body['next_cursor'];
+    return (
+      clipIds: ids,
+      startedAts: times,
+      oldestStartedAt: times.isEmpty
+          ? null
+          : times.reduce((a, b) => a.isBefore(b) ? a : b),
+      nextCursor: next is String && next.isNotEmpty ? next : null,
+      hasMore: body['has_more'] == true,
+    );
   }
 
   /// 하루(20:00 KST 경계) 단위 ⭐ 대표+후보 — GET /highlights/featured
