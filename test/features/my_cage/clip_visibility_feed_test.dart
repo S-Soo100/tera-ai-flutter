@@ -73,7 +73,8 @@ class _Highlights extends HighlightRepository {
           NightlyHighlight(
               clipId: id,
               cameraId: 'cam',
-              startedAt: DateTime.utc(2026),
+              // 정책 v2: 하이라이트는 밤 구간(D 20:00~D+1 08:00 KST)만 남는다.
+              startedAt: DateTime.utc(2026, 9, 15, 15),
               tier: 'featured',
               dayKey: '2026-09-15')
       ];
@@ -97,6 +98,8 @@ void main() {
       clipVisibilityRepositoryProvider.overrideWithValue(visibility),
       favoriteClipRepositoryProvider.overrideWithValue(favorites),
       highlightRepositoryProvider.overrideWithValue(_Highlights()),
+      // 공개 게이트(D+2 08:00 KST)를 이미 지난 시각으로 고정.
+      highlightClockProvider.overrideWithValue(() => DateTime.utc(2030)),
       selectedCrecamCameraProvider.overrideWith((ref) => 'cam'),
     ]);
     addTearDown(container.dispose);

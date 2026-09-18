@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/my_cage/domain/highlight_group.dart';
+import 'package:vivanaut/features/my_cage/domain/highlight_night_policy.dart';
 import 'package:vivanaut/features/my_cage/domain/highlight_publication.dart';
 import 'package:vivanaut/features/my_cage/domain/nightly_highlight.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
@@ -18,26 +19,25 @@ ProviderContainer _container(List<NightlyHighlight> highlights) {
 }
 
 void main() {
-  // 서버에 공개 시각이 없으면 "촬영된 밤의 다음 날"을 올라온 날로 본다 —
-  // 밤 촬영분은 07:00 경계 다음 날 아침에 묶여 올라온다(2026-09-19 사용자
-  // 결정, 9/14 "촬영시각으로 대체 금지"를 카메라 탭 카드에 한해 대체).
-  test('공개 시각이 없으면 촬영된 밤의 다음 날을 올라온 날로 제공한다', () async {
-    final older = NightlyHighlight(
-      clipId: 'older',
-      startedAt: DateTime(2026, 9, 13, 23),
+  // 정책 v2(2026-09-19): 공개 시각 = 밤이 시작한 날 D의 D+2일 08:00 KST.
+  // 9/13 밤 묶음은 9/15 08:00 KST(=9/14 23:00 UTC)에 올라온 것으로 본다.
+  test('공개 시각이 없으면 D+2일 08:00 KST를 올라온 시각으로 제공한다', () async {
+    final h = NightlyHighlight(
+      clipId: 'a',
+      startedAt: DateTime.utc(2026, 9, 13, 15).toLocal(),
       tier: 'featured',
       dayKey: '2026-09-13',
     );
-    final latest = NightlyHighlight(
-      clipId: 'latest',
-      startedAt: DateTime(2026, 9, 14, 1),
-      tier: 'featured',
-      dayKey: '2026-09-13',
-    );
-
+    // 실제 provider 체인에서는 applyNightPolicy가 publication을 붙여 준다.
+    final group = groupByDay(applyNightPolicy([h], DateTime.utc(2026, 9, 20)));
+    final container = ProviderContainer(overrides: [
+      highlightGroupsProvider.overrideWith((ref) async => group),
+      highlightClockProvider.overrideWithValue(() => DateTime.utc(2026, 9, 20)),
+    ]);
+    addTearDown(container.dispose);
     expect(
-      await _container([older, latest]).read(latestHighlightAtProvider.future),
-      DateTime(2026, 9, 14),
+      await container.read(latestHighlightAtProvider.future),
+      DateTime.utc(2026, 9, 14, 23).toLocal(),
     );
   });
 

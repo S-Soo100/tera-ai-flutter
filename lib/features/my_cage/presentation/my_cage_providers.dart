@@ -25,6 +25,7 @@ import '../domain/clip.dart';
 import '../domain/clip_media_url.dart';
 import '../domain/favorite_clip.dart';
 import '../domain/highlight_group.dart';
+import '../domain/highlight_night_policy.dart';
 import '../domain/motion_clip.dart';
 import '../domain/nightly_highlight.dart';
 import '../domain/nightly_report.dart';
@@ -419,6 +420,10 @@ final highlightRepositoryProvider = Provider<HighlightRepository>((ref) {
   );
 });
 
+/// 하이라이트 공개 게이트가 보는 시계. 테스트가 고정 시각을 주입한다.
+final highlightClockProvider =
+    Provider<DateTime Function()>((ref) => DateTime.now);
+
 /// 어젯밤 요약 — 어젯밤 day_key(20:00 경계)의 ⭐ 대표 + 활동시간 합(22~06시).
 /// 계정 전환 시 재조회.
 ///
@@ -534,34 +539,23 @@ final crecamResolvedDayProvider =
   return DateTime(latest.year, latest.month, latest.day);
 });
 
-/// 마지막 하이라이트가 **올라온 날** — 카메라 탭 하이라이트 카드의
-/// "업데이트 N일 전"(2026-09-19 사용자 결정: 다 본 뒤에도 마지막 날짜를 알린다).
-///
-/// 1순위: 서버 공개 배치의 `published_at`(공개된 것 중 최신). 2순위(현재 서버
-/// 미지원이라 실제로는 이쪽): 최신 밤 묶음 day_key의 **다음 날** — 밤 촬영분은
-/// 07:00 경계 다음 날 아침에 묶여 올라온다. 개별 [NightlyHighlight.startedAt]은
-/// 쓰지 않는다(오늘 새벽 영상 때문에 전날 밤 묶음이 흔들린다).
-/// 9/14 "촬영시각을 도착으로 대체 금지"는 이 카드에 한해 위 추정으로 대체됐다.
-/// [highlightGroupsProvider]에서 파생 — 에러는 에러로 전파(리뷰 2026-09-04).
+/// 마지막 하이라이트가 **공개된 시각** — 카메라 탭 하이라이트 카드의
+/// "업데이트 N일 전". 정책 v2(2026-09-19): 공개 = D+2일 08:00 KST.
+/// [highlightGroupsProvider]가 이미 공개된 항목만 남기고 publication(서버 값
+/// 또는 앱 합성)을 붙여 주므로 그 최댓값을 읽는다. 에러는 에러로 전파.
 final latestHighlightAtProvider =
     FutureProvider.autoDispose<DateTime?>((ref) async {
   final groups = await ref.watch(highlightGroupsProvider.future);
-  if (groups.isEmpty) return null;
-  final now = DateTime.now();
   DateTime? published;
   for (final group in groups) {
     for (final h in group.featured) {
-      final p = h.publication;
-      if (p == null || !p.availableAt(now)) continue;
-      final at = p.publishedAt.toLocal();
-      if (published == null || at.isAfter(published)) published = at;
+      final at = h.publication?.publishedAt.toLocal();
+      if (at != null && (published == null || at.isAfter(published))) {
+        published = at;
+      }
     }
   }
-  if (published != null) return published;
-  final night = parseDayKey(groups.first.dayKey);
-  return night == null
-      ? null
-      : DateTime(night.year, night.month, night.day + 1);
+  return published;
 });
 
 /// 전체 즐겨찾기(favoritedAt desc — repository가 정렬). 엔트리 카드 최신
@@ -596,12 +590,24 @@ final _highlightGroupsForCameraProvider = FutureProvider.autoDispose
     .family<List<DayHighlightGroup>, String>((ref, cameraId) async {
   ref.watch(currentUserProvider.select((u) => u?.id)); // 계정 격리
   final repo = ref.watch(highlightRepositoryProvider);
+  final clock = ref.watch(highlightClockProvider);
+  // 화면을 켠 채 08:00 KST를 넘기면 새 밤 묶음이 열려야 한다(정책 v2).
+  final publishTimer = Timer(
+    nextPublishAfter(clock()).difference(clock().toUtc()) +
+        const Duration(seconds: 1),
+    ref.invalidateSelf,
+  );
+  ref.onDispose(publishTimer.cancel);
   Future<List<DayHighlightGroup>> fetch() async {
     final list = await repo.listFeatured(
       cameraId: cameraId,
       tier: 'featured',
     );
-    return groupByDay(list.where((h) => h.clipId.isNotEmpty).toList());
+    // 밤 구간만 · D+2일 08:00 KST 이후만 · publication 합성(정책 v2).
+    return groupByDay(applyNightPolicy(
+      list.where((h) => h.clipId.isNotEmpty).toList(),
+      clock(),
+    ));
   }
 
   try {
