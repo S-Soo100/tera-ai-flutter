@@ -1,15 +1,21 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../../home/presentation/home_set_providers.dart';
 import '../../my_cage/presentation/my_cage_providers.dart';
 import '../../my_pets/domain/pet.dart';
 import '../../my_pets/presentation/my_pets_providers.dart';
+import '../../notification/domain/push_consent_flow.dart';
+import '../../notification/presentation/push_pre_popup.dart';
 import '../../profile/presentation/profile_providers.dart';
 import '../data/community_post_publisher.dart' show ClipExpiredException;
 import '../domain/community_post.dart';
@@ -144,7 +150,21 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           );
       if (!mounted) return;
       await ref.read(communityFeedProvider.notifier).refresh();
-      if (mounted) context.go('/community');
+      if (!mounted) return;
+      // Figma 권한 요청(1179:4464) 커뮤니티 시점: 게시물을 올린 뒤 피드에서 묻는다.
+      // 이 화면은 곧 닫히므로 루트 내비게이터 아래에서 띄운다(주제별 1회).
+      final root = ref.read(routerProvider).routerDelegate.navigatorKey;
+      final flow = ref.read(currentUserProvider) == null
+          ? null
+          : ref.read(pushConsentFlowProvider);
+      context.go('/community');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final rootContext = root.currentContext;
+        if (flow != null && rootContext != null && rootContext.mounted) {
+          unawaited(
+              askPushConsentWith(rootContext, flow, PushTopic.community));
+        }
+      });
     } on ClipExpiredException {
       // 회신 2026-08-31 §3 — 원본 만료는 정상 케이스: 실패가 아니라 안내
       if (mounted) {

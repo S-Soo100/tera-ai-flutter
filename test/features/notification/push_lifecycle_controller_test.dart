@@ -59,12 +59,12 @@ class FakePushMessaging implements PushMessagingPort {
 }
 
 class MemoryPushPreferences implements PushPreferences {
-  bool seen = false;
+  final asked = <String>{};
   @override
-  bool get explanationSeen => seen;
+  bool promptAsked(String topic) => asked.contains(topic);
   @override
-  Future<void> markExplanationSeen() async {
-    seen = true;
+  Future<void> markPromptAsked(String topic) async {
+    asked.add(topic);
   }
 
   @override

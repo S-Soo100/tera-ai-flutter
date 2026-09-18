@@ -2,20 +2,28 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
 abstract interface class PushPreferences {
-  bool get explanationSeen;
-  Future<void> markExplanationSeen();
+  /// 맥락 프리팝업(하이라이트·커뮤니티)을 이미 물었나 — 주제별 1회.
+  bool promptAsked(String topic);
+  Future<void> markPromptAsked(String topic);
   Future<String> installationId();
 }
 
 class HivePushPreferences implements PushPreferences {
   Future<String>? _installation;
-  @override
-  bool get explanationSeen =>
-      Hive.box('app_settings').get('push_explanation_seen') == true;
+  /// 박스가 안 열려 있으면(위젯 테스트) "이미 물음"으로 본다 — 팝업을 띄우지
+  /// 않는 쪽이 안전하다. 앱은 main에서 `app_settings`를 항상 연다.
+  Box<dynamic>? get _settings =>
+      Hive.isBoxOpen('app_settings') ? Hive.box('app_settings') : null;
 
   @override
-  Future<void> markExplanationSeen() =>
-      Hive.box('app_settings').put('push_explanation_seen', true);
+  bool promptAsked(String topic) {
+    final box = _settings;
+    return box == null || box.get('push_prompt_asked_$topic') == true;
+  }
+
+  @override
+  Future<void> markPromptAsked(String topic) async =>
+      _settings?.put('push_prompt_asked_$topic', true);
 
   @override
   Future<String> installationId() =>

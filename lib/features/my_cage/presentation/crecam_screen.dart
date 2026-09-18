@@ -17,6 +17,8 @@ import '../../../shared/widgets/figma_icon.dart';
 import '../../../shared/widgets/redesign_tab_header.dart';
 import '../../../shared/widgets/redesign_empty_state.dart';
 import '../../home/domain/group_display_label.dart';
+import '../../notification/domain/push_consent_flow.dart';
+import '../../notification/presentation/push_pre_popup.dart';
 
 /// 카메라 탭 Camera Home — Figma 668:427 (2026-09-04 재설계 T2, 전면 재작성).
 ///
@@ -103,12 +105,28 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
     return false;
   }
 
+  /// Figma 권한 요청(1179:4464) 하이라이트 시점: 카메라 연결 + 영상 1개 이상 +
+  /// 카메라 탭이 실제로 보일 때(비활성 탭은 indexedStack이 TickerMode를 끈다,
+  /// 위에 다른 화면이 덮여 있으면 isCurrent가 false). 주제별 1회는 흐름이 막는다.
+  void _maybeAskHighlightPush(bool hasCamera) {
+    final query = ref.watch(clipFeedQueryProvider);
+    final hasClip = query != null &&
+        ref.watch(clipFeedProvider(query)
+            .select((state) => state.items.isNotEmpty));
+    final visible = TickerMode.of(context) &&
+        (ModalRoute.of(context)?.isCurrent ?? true);
+    if (hasCamera && hasClip && visible) {
+      schedulePushConsent(context, ref, PushTopic.highlight);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(clipVisibilityEntryRefreshProvider('camera'));
     final cameras = ref.watch(camerasProvider);
     final groups = ref.watch(enclosuresProvider).valueOrNull ?? const [];
     final selectedCamera = ref.watch(selectedCrecamCameraProvider);
+    _maybeAskHighlightPush(cameras.valueOrNull?.isNotEmpty ?? false);
     return GlassTabShell(
       child: Column(
         children: [
