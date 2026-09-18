@@ -98,8 +98,9 @@ class CrecamDetailTopBar extends StatelessWidget {
                   child: IconButton(
                     key: calendarButtonKey,
                     padding: EdgeInsets.zero,
-                    icon: FigmaIcon.tinted(FigmaIcons.calendar,
-                        size: 20, color: glass.textPrimary),
+                    // Figma 945:4296 calendar_month 20, #3C3C3C(Labels/Secondary).
+                    icon: FigmaIcon.tinted(FigmaIcons.calendarMonth,
+                        size: 20, color: glass.textSecondary),
                     tooltip: 'crecam_home_period'.tr(),
                     onPressed: onCalendarTap,
                   ),
@@ -138,7 +139,6 @@ class CrecamDetailHeaderArea extends StatelessWidget {
 
         foregroundDecoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: glass.outline)),
-
         ),
         child: SafeArea(bottom: false, child: child),
       ),

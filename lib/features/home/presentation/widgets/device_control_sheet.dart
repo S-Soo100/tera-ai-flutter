@@ -61,6 +61,9 @@ Future<void> openDeviceControlSheet(
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
+    // Figma 시트 프레임(1107:7996·8469·8134)은 뒤 화면을 어둡게 하지 않고 시트
+    // 상단 그림자로만 구분한다(2026-09-18 사용자 결정). 바깥 탭 닫힘은 유지.
+    barrierColor: Colors.transparent,
     builder: (_) => DeviceControlSheet(
         deviceId: deviceId, device: device, initialTab: initialTab),
   );
@@ -279,32 +282,41 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
-      // 원본 BottomSheet 위 모서리 24(export PNG 실측: y24부터 전폭 채움).
-      child: ClipRRect(
-        key: DeviceControlSheet.surfaceKey,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        child: ColoredBox(
-          color: glass.overlay,
-          child: SingleChildScrollView(
-            // 원본 마지막 요소 아래 52 = 18 + 홈 인디케이터 34.
-            padding: EdgeInsets.fromLTRB(24, 24, 24, 18 + bottomInset),
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _Segment(
-                      tab: _tab,
-                      onChanged: (t) => setState(() {
-                            _tab = t;
-                            _editing = null;
-                            _draft = null;
-                          })),
-                  const SizedBox(height: 24),
-                  if (_tab == DeviceControlTab.immediate)
-                    _immediate(context, accent)
-                  else
-                    _scheduled(context, accent),
-                ]),
+      // 딤이 없어 시트와 뒤 화면은 그림자로만 구분한다. 원본 시트 export에
+      // 그림자 여백 20이 붙지만 MCP가 effect 값을 주지 않아, 디자이너가 준
+      // 드롭다운 그림자(blur20 #919497 30%)를 재사용한 근사값이다.
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [BoxShadow(color: glass.menuShadow, blurRadius: 20)],
+        ),
+        // 원본 BottomSheet 위 모서리 24(export PNG 실측: y24부터 전폭 채움).
+        child: ClipRRect(
+          key: DeviceControlSheet.surfaceKey,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: ColoredBox(
+            color: glass.overlay,
+            child: SingleChildScrollView(
+              // 원본 마지막 요소 아래 52 = 18 + 홈 인디케이터 34.
+              padding: EdgeInsets.fromLTRB(24, 24, 24, 18 + bottomInset),
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _Segment(
+                        tab: _tab,
+                        onChanged: (t) => setState(() {
+                              _tab = t;
+                              _editing = null;
+                              _draft = null;
+                            })),
+                    const SizedBox(height: 24),
+                    if (_tab == DeviceControlTab.immediate)
+                      _immediate(context, accent)
+                    else
+                      _scheduled(context, accent),
+                  ]),
+            ),
           ),
         ),
       ),

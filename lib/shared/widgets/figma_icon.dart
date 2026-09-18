@@ -65,6 +65,7 @@ abstract final class FigmaIcons {
   /// 2026-09-16 디자이너 전달). 24 프레임 가운데 size 12로 그린다.
   static const keyboardArrowUp = 'redesign_v2/keyboard_arrow_up';
   static const keyboardArrowDown = 'redesign_v2/keyboard_arrow_down';
+
   /// 연결 확인 카드(990:7508 home / camera_video 20) — 탭바 export를 재사용.
   static const homeGlyph = 'nav_home';
   static const cameraGlyph = 'nav_camera';
@@ -78,6 +79,10 @@ abstract final class FigmaIcons {
   static const speed2x = 'speed_2x';
   static const expand = 'expand';
   static const calendar = 'calendar';
+
+  /// 하이라이트·북마크 상단바 달력(Figma calendar_month 20, 날짜 점 있음).
+  /// 카메라 탭 '기간 설정'의 빈 달력([calendar])과 다른 글리프다.
+  static const calendarMonth = 'redesign_v2/calendar_month';
   static const bookmarkBadge = 'bookmark_badge';
   static const dropdown = 'dropdown';
   static const add = 'add';
