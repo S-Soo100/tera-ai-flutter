@@ -3,9 +3,25 @@
 > **단일 진실 소스.** 사육장(`terra-iot`)·카메라(`FB2_P4_CAM`) 기판을 Wi-Fi에 연결하는 BLE 규격과 앱 구현 계약.
 > 원본 스펙: `~/Desktop/사육장 ble_protocol.md`, `~/Desktop/camera BLE_WIFI_PROVISIONING.md`
 > 관련 문서: terra-server IoT 계약 `~/Downloads/APP_INTEGRATION.md`, DB 스키마 `docs/supabase-schema.md`
-> 최종 갱신: 2026-07-02
+> 최종 갱신: 2026-09-18 (사육장 앱 경유 등록 복원 — 펌웨어 요청서 `~/Desktop/APP_REQUEST_DEVICE_PAIRING_2026-09-17.md`)
 
-## 0. 페어링 아키텍처 결정 (가장 중요)
+## 0-A. 2026-09-18 개정 — 사육장은 기기가 직접 서버 등록 (현행)
+
+펌웨어 대조 결과 **사육장 펌웨어는 처음부터 `NAME:`+JWT를 받아 기기가 `POST /devices/pair`를 호출하는 방식**이었다. 2026-07-02 개편에서 앱이 이 명령을 빼면서(아래 §0 (a) 방식) 9/7 이후 신규 등록이 0건이 됐다(펌웨어는 `NAME:`이 없으면 조용히 등록을 건너뜀).
+
+| 대상 | 앱 → 기기 시퀀스 | 완료 판정 |
+|---|---|---|
+| 사육장 `terra-iot` | `UNPAIR` → `SSID:` → `PASS:` → `NAME:<기본 이름>` → `JWT_BEGIN <길이>` → `JWT:<≤200자>`×N(60ms 간격) → `CONNECT` | `PAIR_OK <device_id>` / `PAIR_FAIL <사유>`(펌웨어 §2-1 이후). 그전엔 `WIFI_OK` 뒤 30초간 3초마다 기기 목록을 조회해 **새 id**가 뜨면 성공, 못 찾으면 "등록 미확인" |
+| 카메라 `FB2_P4_CAM` | `SSID:` → `PASS:` → `CONNECT` (변경 없음) | `WIFI_OK`. 펌웨어가 `NAME:`/`JWT:`를 받기 전(§2-3)이라 앱 등록 불가, 플래시 때 개발 계정 자동 등록. `UNPAIR`도 보내지 않는다(등록이 지워질 수 있음) |
+
+- 응답 확인: `NAME_OK`·`JWT_BEGIN_OK`·`JWT_OK <길이>`를 각 3초 기다리고, 없거나 `ERR:`거나 길이가 다르면 **`CONNECT`하지 않고 실패** 표시(등록을 건너뛴 채 Wi-Fi만 붙는 상태 방지). `UNPAIR`는 미지원 펌웨어의 `ERR:UNKNOWN_CMD`·무응답을 삼키고 진행한다.
+- JWT: 등록 직전에 `refreshSession()`으로 갱신한 access token(`freshAccessTokenProvider`). 갱신 실패 시 유효한 현재 토큰, 없으면 "로그인 필요".
+- 기본 이름: `사육장 1`부터, 내 기기 이름에서 쓰는 번호는 건너뜀(`nextDefaultDeviceName`, 재설계 확정 기획 §7).
+- 그룹 배정: 등록 요청에 그룹 id가 없어 등록 뒤 사육장 연동 화면에서 배정(Supabase 직결 UPDATE, RLS owner). 펌웨어 `ENC:`(§2-4)가 생기면 시퀀스에 추가 검토.
+- 로그: 모든 송수신을 `[BLE] ->`/`[BLE] <-`로 `debugPrint`(PASS·JWT 값은 마스킹) — 펌웨어 담당 요청 "알림 로그 한 벌" 수집용.
+- 구현: `BlePairingRepository.sendWifiCredentials(registration:)`, `PairingRegistrar`(`wifi_provisioning_view.dart`), `DevicePairingScreen`. 테스트 `test/my_cage/ble_registration_sequence_test.dart`.
+
+## 0. 페어링 아키텍처 결정 (2026-07-02 — 사육장은 §0-A로 대체, 카메라는 유지)
 
 **앱의 역할은 "기판을 Wi-Fi에 붙이는 것"까지다.** 기기 인증 토큰 발급·서버 등록(owner 바인딩)은 앱이 하지 않는다.
 
@@ -59,6 +75,10 @@
 | `SSID:<이름>` | 최대 32자 | 접속할 SSID |
 | `PASS:<비번>` | 최대 64자 | Wi-Fi 비밀번호 |
 | `CONNECT` | SSID 필수 | 설정값으로 연결 시도 |
+| `UNPAIR` | 사육장, 펌웨어 §2-2 | 저장된 서버 자격증명 삭제 → `UNPAIR_OK`. 다음 `CONNECT`에서 새로 등록 |
+| `NAME:<이름>` | 사육장 | 등록 시 기기 이름 → `NAME_OK` |
+| `JWT_BEGIN <길이>` | 사육장 | JWT 수신 시작 → `JWT_BEGIN_OK` |
+| `JWT:<청크>` | ≤200자, 사육장 | JWT 조각. 다 받으면 `JWT_OK <길이>` |
 
 ### 기기 → 앱 (TX notify)
 
@@ -67,6 +87,7 @@
         실패: SCAN_FAIL / NO_AP_FOUND(사육장)
 [설정]  SSID_OK / PASS_OK
 [연결]  CONNECTING → WIFI_OK | WIFI_FAIL
+[등록]  UNPAIR_OK / NAME_OK / JWT_BEGIN_OK / JWT_OK <길이> / PAIR_OK <device_id> | PAIR_FAIL <401|timeout|no_name|server_5xx> (PAIR_* 는 펌웨어 §2-1 이후)
 [에러]  ERR:NO_SSID / ERR:UNKNOWN_CMD / ERR:NO_CONNECT_CB(카메라)
 ```
 
@@ -114,7 +135,7 @@
 | 카메라 페어링 화면 | `camera_pairing_screen.dart` → 라우트 `/crecam/cameras/pair` |
 | 비밀번호 자동저장·자동채움 | `lib/features/my_cage/data/wifi_credentials_store.dart` (2026-09-11) |
 
-**앱 흐름:** BLE 스캔(이름 필터) → 기기 선택 → BLE 연결 → `SCAN` → AP 목록 표시 → 선택 + 비번 입력 → `SSID`/`PASS`/`CONNECT` → `WIFI_OK` → 기기 목록 provider invalidate(사전 등록된 기기가 뜸).
+**앱 흐름:** BLE 스캔(이름 필터) → 기기 선택 → BLE 연결 → `SCAN` → AP 목록 표시 → 선택 + 비번 입력 → (사육장: `UNPAIR` 선행 + `NAME`/`JWT` 삽입, §0-A) `SSID`/`PASS`/`CONNECT` → `WIFI_OK` → (사육장: 등록 확인 `registering` → 완료 또는 미확인) → 기기 목록 provider invalidate.
 
 **비밀번호 자동저장·자동채움 (2026-09-11):** `WifiCredentialsStore`가 SSID→비밀번호 맵을 `flutter_secure_storage`(iOS Keychain / Android Keystore)에 보관한다. 저장 시점은 **`WIFI_OK` 수신 후뿐** — 틀린 비밀번호가 남지 않고, 같은 SSID 재성공 시 최신 값으로 덮어쓴다. AP 선택·수동 SSID 입력 시 저장값을 자동 채우고(사용자가 수정하면 안내 문구 제거), AP 목록에는 "비밀번호 저장됨" 배지가 뜬다. 사육장·카메라가 같은 `WifiProvisioningView`를 쓰므로 한쪽에서 성공한 비밀번호를 다른 쪽 페어링에서 바로 재사용한다. 기기 로컬 저장(계정 무관·동기화 없음), 저장 실패는 조용히 무시(편의 기능이지 페어링 요건이 아님).
 

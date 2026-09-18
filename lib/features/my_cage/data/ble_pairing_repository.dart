@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../domain/pair_target_kind.dart';
@@ -11,7 +12,7 @@ import '../domain/wifi_access_point.dart';
 /// 기기 BLE 서비스 UUID (scan 필터, 사육장·카메라 공통)
 const _kServiceUuid = '12345678-1234-1234-1234-123456789abc';
 
-/// RX characteristic (write): SCAN / SSID / PASS / CONNECT 전달
+/// RX characteristic (write): SCAN / UNPAIR / SSID / PASS / NAME / JWT / CONNECT 전달
 const _kRxUuid = '12345678-1234-1234-1234-123456789abe';
 
 /// TX characteristic (notify): 기기 응답 수신
@@ -19,6 +20,12 @@ const _kTxUuid = '12345678-1234-1234-1234-123456789abd';
 
 /// BLE write 사이 대기 시간
 const _kWriteDelayMs = 60;
+
+/// JWT 청크 최대 길이 (펌웨어 계약 2026-09-17: `JWT:<청크 ≤200자>`).
+const _kJwtChunkSize = 200;
+
+/// 등록 명령(UNPAIR/NAME/JWT_BEGIN/JWT) 응답 대기 기본 시간.
+const _kAckTimeout = Duration(seconds: 3);
 
 /// BLE 연결 재시도 최대 횟수 (Android status=133 GATT_ERROR 등 일시적 실패 대응)
 const _kConnectMaxAttempts = 3;
@@ -63,6 +70,18 @@ class BleWifiOk extends BlePairingEvent {}
 /// WiFi 연결 실패 (WIFI_FAIL).
 class BleWifiFail extends BlePairingEvent {}
 
+/// 서버 등록 성공 (`PAIR_OK <device_id>`) — 펌웨어 §2-1 이후.
+class BlePairOk extends BlePairingEvent {
+  final String deviceId;
+  BlePairOk({required this.deviceId});
+}
+
+/// 서버 등록 실패 (`PAIR_FAIL <사유>`) — 사유: `401`/`timeout`/`no_name`/`server_5xx`.
+class BlePairFail extends BlePairingEvent {
+  final String reason;
+  BlePairFail({required this.reason});
+}
+
 /// 에러 수신 (ERR:<code>).
 class BlePairingErr extends BlePairingEvent {
   final String code;
@@ -73,6 +92,36 @@ class BlePairingErr extends BlePairingEvent {
 class BlePairingUnknown extends BlePairingEvent {
   final String raw;
   BlePairingUnknown({required this.raw});
+}
+
+// ── 서버 등록 정보 ─────────────────────────────────────────────────────────────
+
+/// Wi-Fi와 함께 기기에 넘기는 서버 등록 정보.
+///
+/// 기기는 `CONNECT` 후 이 JWT로 `POST /devices/pair`를 직접 호출한다
+/// (앱 요청서 2026-09-17). `NAME:`이 없으면 펌웨어가 **조용히** 등록을 건너뛴다.
+class BleRegistration {
+  final String name;
+  final String jwt;
+  const BleRegistration({required this.name, required this.jwt});
+}
+
+/// 등록 명령에 기기가 기대한 응답을 주지 않았다.
+/// [stage]: `name` / `jwt_begin` / `jwt`. [detail]: 받은 ERR 코드·길이 불일치 등.
+class BleRegistrationException implements Exception {
+  final String stage;
+  final String? detail;
+  const BleRegistrationException(this.stage, [this.detail]);
+
+  @override
+  String toString() =>
+      detail == null ? 'registration:$stage' : 'registration:$stage($detail)';
+}
+
+class _ReplyWaiter {
+  final bool Function(String msg) matches;
+  final Completer<String> completer = Completer<String>();
+  _ReplyWaiter(this.matches);
 }
 
 // ── 스캔 결과 (BLE 기기 목록) ──────────────────────────────────────────────────
@@ -92,6 +141,11 @@ class BleDeviceScanResult {
 // ── Repository ───────────────────────────────────────────────────────────────────
 
 class BlePairingRepository {
+  BlePairingRepository({this.ackTimeout = _kAckTimeout});
+
+  /// 등록 명령 응답 대기 시간 (테스트에서 짧게 주입).
+  final Duration ackTimeout;
+
   BluetoothDevice? _connectedDevice;
   BluetoothCharacteristic? _rxChar;
   BluetoothCharacteristic? _txChar;
@@ -101,6 +155,19 @@ class BlePairingRepository {
 
   /// WiFi 스캔 AP 누적 버퍼. SCAN_END에 확정 후 비운다.
   final List<WifiAccessPoint> _apBuffer = [];
+
+  /// 등록 명령의 응답을 기다리는 중이면 non-null. 응답(또는 ERR)은 이 대기자가
+  /// 소비하고 이벤트 스트림으로 흘리지 않는다 — 구 펌웨어가 `UNPAIR`에
+  /// `ERR:UNKNOWN_CMD`로 답해도 화면이 실패로 넘어가지 않게.
+  _ReplyWaiter? _waiter;
+
+  /// 테스트 전용: RX write를 가로챈다(실 BLE 없이 시퀀스 검증).
+  @visibleForTesting
+  Future<void> Function(String text)? debugWriteOverride;
+
+  /// 테스트 전용: 기기 TX notify를 흉내 낸다.
+  @visibleForTesting
+  void debugInjectTx(String msg) => _onRawTx(msg);
 
   /// TX notify 이벤트 스트림 (외부 소비).
   Stream<BlePairingEvent> get events => _eventController.stream;
@@ -199,7 +266,7 @@ class BlePairingRepository {
       if (data.isEmpty) return;
       final msg = utf8.decode(data, allowMalformed: true).trim();
       if (msg.isEmpty) return;
-      _dispatchTxMessage(msg);
+      _onRawTx(msg);
     });
   }
 
@@ -236,6 +303,18 @@ class BlePairingRepository {
   }
 
   // ── TX 메시지 파싱 → 이벤트 디스패치 ──────────────────────────────────────────
+
+  void _onRawTx(String msg) {
+    // 펌웨어 담당이 요청한 "알림 로그 한 벌"(요청서 §1-2) 수집용.
+    debugPrint('[BLE] <- $msg');
+    final w = _waiter;
+    if (w != null && (w.matches(msg) || msg.startsWith('ERR:'))) {
+      _waiter = null;
+      if (!w.completer.isCompleted) w.completer.complete(msg);
+      return;
+    }
+    _dispatchTxMessage(msg);
+  }
 
   void _dispatchTxMessage(String msg) {
     // ── 스캔 흐름 ──
@@ -295,6 +374,16 @@ class BlePairingRepository {
       return;
     }
 
+    // ── 서버 등록 결과 (펌웨어 §2-1) ──
+    if (msg == 'PAIR_OK' || msg.startsWith('PAIR_OK ')) {
+      _eventController.add(BlePairOk(deviceId: msg.substring(7).trim()));
+      return;
+    }
+    if (msg == 'PAIR_FAIL' || msg.startsWith('PAIR_FAIL ')) {
+      _eventController.add(BlePairFail(reason: msg.substring(9).trim()));
+      return;
+    }
+
     // ── 에러 ──
     if (msg.startsWith('ERR:')) {
       _eventController.add(BlePairingErr(code: msg.substring(4)));
@@ -340,21 +429,101 @@ class BlePairingRepository {
     await _write(rx, 'SCAN');
   }
 
-  // ── WiFi 자격증명 전송 (SSID → PASS → CONNECT) ────────────────────────────────
+  // ── WiFi 자격증명 전송 ─────────────────────────────────────────────────────────
 
+  /// Wi-Fi 자격증명을 보내고 `CONNECT`한다.
+  ///
+  /// [registration]이 있으면 서버 등록 시퀀스를 끼운다(요청서 2026-09-17):
+  /// `UNPAIR` → `SSID:` → `PASS:` → `NAME:` → `JWT_BEGIN <길이>` →
+  /// `JWT:<≤200자>`×N → `CONNECT`.
+  /// - `UNPAIR`: 저장된 자격증명을 지워 삭제·타 계정 기기도 그 자리에서 재등록되게
+  ///   한다. 미지원 펌웨어(`ERR:UNKNOWN_CMD`)·무응답이어도 계속 진행한다.
+  /// - `NAME_OK`·`JWT_BEGIN_OK`·`JWT_OK <길이>`가 안 오면
+  ///   [BleRegistrationException]을 던지고 `CONNECT`하지 않는다 — 등록을 조용히
+  ///   건너뛴 채 Wi-Fi만 붙는 상태를 만들지 않기 위해서다.
   Future<void> sendWifiCredentials({
     required String ssid,
     required String password,
+    BleRegistration? registration,
   }) async {
-    final rx = _requireRx();
+    final rx = debugWriteOverride == null ? _requireRx() : null;
+    Future<void> write(String text) => _writeCmd(rx, text);
+    Future<void> pause() =>
+        Future<void>.delayed(const Duration(milliseconds: _kWriteDelayMs));
 
-    await _write(rx, 'SSID:$ssid');
-    await Future<void>.delayed(const Duration(milliseconds: _kWriteDelayMs));
+    if (registration != null) {
+      final reply = await _writeAndAwait(write, 'UNPAIR', (m) => m == 'UNPAIR_OK');
+      debugPrint('[BLE] UNPAIR reply: ${reply ?? 'timeout'}');
+      await pause();
+    }
 
-    await _write(rx, 'PASS:$password');
-    await Future<void>.delayed(const Duration(milliseconds: _kWriteDelayMs));
+    await write('SSID:$ssid');
+    await pause();
 
-    await _write(rx, 'CONNECT');
+    await write('PASS:$password');
+    await pause();
+
+    if (registration != null) {
+      final name = await _writeAndAwait(
+          write, 'NAME:${registration.name}', (m) => m == 'NAME_OK');
+      _expectReply('name', name, 'NAME_OK');
+      await pause();
+
+      final jwt = registration.jwt;
+      final begin = await _writeAndAwait(write, 'JWT_BEGIN ${jwt.length}',
+          (m) => m == 'JWT_BEGIN_OK' || m.startsWith('JWT_BEGIN_OK '));
+      _expectReply('jwt_begin', begin, 'JWT_BEGIN_OK');
+      await pause();
+
+      // 응답 대기자는 청크 전에 걸고(빠른 응답 유실 방지), 시간은 마지막 청크
+      // 뒤부터 잰다(청크 수에 따라 전송 시간이 달라서).
+      final done = _listenFor((m) => m == 'JWT_OK' || m.startsWith('JWT_OK '));
+      for (var i = 0; i < jwt.length; i += _kJwtChunkSize) {
+        final end = (i + _kJwtChunkSize).clamp(0, jwt.length);
+        await write('JWT:${jwt.substring(i, end)}');
+        await pause();
+      }
+      final ok = await _awaitReply(done);
+      _expectReply('jwt', ok, 'JWT_OK');
+      final received = int.tryParse(ok!.substring(6).trim());
+      if (received != jwt.length) {
+        throw BleRegistrationException('jwt', 'length $received/${jwt.length}');
+      }
+    }
+
+    await write('CONNECT');
+  }
+
+  /// [cmd]를 쓰고 [matches] 응답(또는 ERR)을 기다린다. 시간 초과면 null.
+  Future<String?> _writeAndAwait(Future<void> Function(String) write,
+      String cmd, bool Function(String) matches) async {
+    final waiter = _listenFor(matches);
+    await write(cmd);
+    return _awaitReply(waiter);
+  }
+
+  /// 다음 [matches] 응답(또는 ERR)을 가로챌 대기자를 건다.
+  _ReplyWaiter _listenFor(bool Function(String) matches) =>
+      _waiter = _ReplyWaiter(matches);
+
+  /// [ackTimeout] 안에 온 응답. 시간 초과면 대기자를 풀고 null.
+  Future<String?> _awaitReply(_ReplyWaiter w) async {
+    try {
+      return await w.completer.future.timeout(ackTimeout);
+    } on TimeoutException {
+      if (identical(_waiter, w)) _waiter = null;
+      return null;
+    }
+  }
+
+  void _expectReply(String stage, String? reply, String okPrefix) {
+    if (reply == null) throw BleRegistrationException(stage, 'timeout');
+    if (reply.startsWith('ERR:')) {
+      throw BleRegistrationException(stage, reply.substring(4));
+    }
+    if (!reply.startsWith(okPrefix)) {
+      throw BleRegistrationException(stage, reply);
+    }
   }
 
   BluetoothCharacteristic _requireRx() {
@@ -369,12 +538,26 @@ class BlePairingRepository {
     await char.write(utf8.encode(text), withoutResponse: false);
   }
 
+  /// 등록 시퀀스용 write. 비밀번호·JWT는 로그에 남기지 않는다.
+  Future<void> _writeCmd(BluetoothCharacteristic? rx, String text) async {
+    final masked = text.startsWith('PASS:')
+        ? 'PASS:***'
+        : text.startsWith('JWT:')
+            ? 'JWT:<${text.length - 4}>'
+            : text;
+    debugPrint('[BLE] -> $masked');
+    final override = debugWriteOverride;
+    if (override != null) return override(text);
+    await _write(rx!, text);
+  }
+
   // ── 연결 해제 + 리소스 정리 ───────────────────────────────────────────────────
 
   Future<void> disconnect() async {
     await _txSubscription?.cancel();
     _txSubscription = null;
     _apBuffer.clear();
+    _waiter = null;
 
     if (_connectedDevice != null) {
       try {

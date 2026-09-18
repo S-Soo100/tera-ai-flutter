@@ -9,7 +9,8 @@ import 'widgets/wifi_provisioning_view.dart';
 /// 사육장 모듈 WiFi 프로비저닝 화면.
 ///
 /// 실제 상태머신/UI는 [WifiProvisioningView]에 공통화되어 있고, 이 화면은
-/// 사육장(`PairTargetKind.device`) 필터와 완료 후 처리(디바이스 목록 갱신)만
+/// 사육장(`PairTargetKind.device`) 필터와 완료 후 처리(디바이스 목록 갱신),
+/// 그리고 서버 등록 설정([PairingRegistrar] — 이름·JWT 전달 후 등록 확인)을
 /// 지정한다.
 class DevicePairingScreen extends ConsumerWidget {
   const DevicePairingScreen({super.key});
@@ -27,6 +28,16 @@ class DevicePairingScreen extends ConsumerWidget {
           kind: PairTargetKind.device,
           doneSubtitleKey: 'ble_done_subtitle',
           onProvisioned: () => ref.invalidate(deviceListProvider),
+          registrar: PairingRegistrar(
+            freshAccessToken: ref.read(freshAccessTokenProvider),
+            listRegistered: () async {
+              final devices = await ref
+                  .read(supabaseModuleControlRepositoryProvider)
+                  .listDevices();
+              return [for (final d in devices) (id: d.id, name: d.name)];
+            },
+            namePrefix: 'device_default_name_prefix'.tr(),
+          ),
         ),
       ),
     );

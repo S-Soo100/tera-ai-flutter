@@ -34,6 +34,25 @@ final deviceListProvider =
   return ref.watch(supabaseModuleControlRepositoryProvider).listDevices();
 });
 
+// ── 기기 등록용 access token ───────────────────────────────────────────────────
+
+/// BLE로 기기에 넘길 access token. **등록 직전에 갱신**한다 — 기기가 이 토큰으로
+/// `POST /devices/pair`를 호출하는데 만료 토큰이면 401이고 앱엔 알림이 없다
+/// (요청서 2026-09-17 §1-3). 갱신 실패 시 아직 유효한 현재 토큰으로 대체한다.
+final freshAccessTokenProvider = Provider<Future<String?> Function()>((ref) {
+  final auth = ref.watch(supabaseClientProvider).auth;
+  return () async {
+    try {
+      final res = await auth.refreshSession();
+      final token = res.session?.accessToken;
+      if (token != null && token.isNotEmpty) return token;
+    } catch (_) {}
+    final session = auth.currentSession;
+    if (session == null || session.isExpired) return null;
+    return session.accessToken;
+  };
+});
+
 // ── 선택된 디바이스 ID (PR4: device 선택 UI에서 갱신) ─────────────────────────
 
 /// null = 선택 없음(자동). 복수 device 선택 칩 탭 시 갱신.

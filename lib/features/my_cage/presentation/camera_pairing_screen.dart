@@ -10,6 +10,10 @@ import 'widgets/wifi_provisioning_view.dart';
 ///
 /// [DevicePairingScreen]과 동일한 [WifiProvisioningView]를 재사용하되,
 /// 카메라(`PairTargetKind.camera`) 필터와 완료 후 카메라 목록 갱신만 지정한다.
+///
+/// 등록 설정(`registrar`)은 넘기지 않는다 — 카메라 펌웨어가 `NAME:`/`JWT:`를
+/// 아직 받지 않아(요청서 2026-09-17 §2-3) 앱 등록 경로가 없고, `UNPAIR`를 보내면
+/// 플래시 때 개발 계정으로 된 등록만 지워질 수 있다. §2-3 배포 후 사육장처럼 연결.
 class CameraPairingScreen extends ConsumerWidget {
   const CameraPairingScreen({super.key});
 

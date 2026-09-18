@@ -10,6 +10,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../data/ble_pairing_repository.dart';
 import '../../data/ble_pairing_repository_demo.dart';
 import '../../data/wifi_credentials_store.dart';
+import '../../domain/default_device_name.dart';
 import '../../domain/pair_target_kind.dart';
 import '../../domain/wifi_access_point.dart';
 
@@ -28,8 +29,14 @@ enum _Step {
   /// SSID/PASS/CONNECT 전송 후 CONNECTING 대기
   connecting,
 
-  /// WIFI_OK — 완료
+  /// WIFI_OK 후 서버 등록 확인 대기(PAIR_OK 또는 목록에 새 기기)
+  registering,
+
+  /// WIFI_OK — 완료 (등록 모드면 등록 확인까지 끝난 뒤)
   done,
+
+  /// Wi-Fi는 붙었지만 제한 시간 안에 서버 등록을 확인하지 못함
+  unconfirmed,
 
   /// WIFI_FAIL / ERR / 연결 오류 — 실패
   failed,
@@ -105,6 +112,33 @@ class _ProvState {
       );
 }
 
+// ── 서버 등록 설정 ───────────────────────────────────────────────────────────────
+
+/// 등록 확인 폴링 간격·한도. 요청서 §3: `WIFI_OK` 뒤 10초쯤이면 목록에 뜬다.
+const _kRegisterPollInterval = Duration(seconds: 3);
+const _kRegisterPollTimeout = Duration(seconds: 30);
+
+/// 기기에 이름·JWT를 넘겨 기기가 직접 서버 등록하게 하는 설정(요청서 2026-09-17).
+///
+/// [WifiProvisioningView.registrar]가 null이면 Wi-Fi만 전달한다 — 카메라는
+/// 펌웨어가 `NAME:`/`JWT:`를 받기 전(§2-3)이라 이 경로를 쓰지 않는다.
+class PairingRegistrar {
+  const PairingRegistrar({
+    required this.freshAccessToken,
+    required this.listRegistered,
+    required this.namePrefix,
+  });
+
+  /// 등록 직전에 갱신한 access token. 만료 토큰이면 서버가 401을 준다.
+  final Future<String?> Function() freshAccessToken;
+
+  /// 내 계정에 등록된 기기 (id, 이름). 새 기기 감지·기본 이름 계산에 쓴다.
+  final Future<List<({String id, String? name})>> Function() listRegistered;
+
+  /// 기본 이름 접두 (`사육장` → `사육장 1`).
+  final String namePrefix;
+}
+
 // ── 공통 프로비저닝 뷰 ──────────────────────────────────────────────────────────
 
 /// 사육장/카메라 공용 WiFi 프로비저닝 위젯.
@@ -118,11 +152,13 @@ class WifiProvisioningView extends ConsumerStatefulWidget {
     required this.kind,
     required this.doneSubtitleKey,
     this.onProvisioned,
+    this.registrar,
   });
 
   final PairTargetKind kind;
   final String doneSubtitleKey;
   final VoidCallback? onProvisioned;
+  final PairingRegistrar? registrar;
 
   @override
   ConsumerState<WifiProvisioningView> createState() =>
@@ -150,6 +186,12 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
   StreamSubscription<BlePairingEvent>? _eventSub;
   StreamSubscription<BluetoothAdapterState>? _adapterSub;
 
+  /// 등록 전 내 기기 id — 이후 목록에 없던 id가 뜨면 등록 성공으로 본다.
+  Set<String> _knownDeviceIds = const {};
+  Timer? _registerPoll;
+  DateTime? _registerDeadline;
+  bool _registerPollBusy = false;
+
   @override
   void initState() {
     super.initState();
@@ -165,6 +207,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
     _scanSub?.cancel();
     _eventSub?.cancel();
     _adapterSub?.cancel();
+    _registerPoll?.cancel();
     _repo.dispose();
     _ssidController.dispose();
     _passwordController.dispose();
@@ -412,11 +455,41 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
       _state = _state.copyWith(step: _Step.connecting).clearedError();
     });
 
+    BleRegistration? registration;
+    final registrar = widget.registrar;
+    if (registrar != null) {
+      try {
+        final jwt = await registrar.freshAccessToken();
+        final existing = await registrar.listRegistered();
+        if (!mounted) return;
+        if (jwt == null || jwt.isEmpty) {
+          _fail('ble_no_jwt'.tr());
+          return;
+        }
+        _knownDeviceIds = existing.map((d) => d.id).toSet();
+        registration = BleRegistration(
+          name: nextDefaultDeviceName(
+            registrar.namePrefix,
+            existing.map((d) => d.name),
+          ),
+          jwt: jwt,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        _fail('ble_register_prepare_error'.tr(args: [e.toString()]));
+        return;
+      }
+    }
+
     try {
       await _repo.sendWifiCredentials(
         ssid: _ssidController.text.trim(),
         password: _passwordController.text,
+        registration: registration,
       );
+    } on BleRegistrationException catch (e) {
+      if (!mounted) return;
+      _fail('ble_register_rejected'.tr(args: [e.toString()]));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -476,10 +549,26 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
 
       case BleWifiOk():
         _saveCredentialsOnSuccess();
-        setState(() {
-          _state = _state.copyWith(step: _Step.done);
-        });
-        widget.onProvisioned?.call();
+        if (widget.registrar != null) {
+          // Wi-Fi 성공 ≠ 등록 성공. 기기가 서버에 등록됐는지 확인할 때까지
+          // 완료로 표시하지 않는다(재설계 확정 기획 §7).
+          setState(() {
+            _state = _state.copyWith(step: _Step.registering);
+          });
+          _startRegisterPoll();
+        } else {
+          setState(() {
+            _state = _state.copyWith(step: _Step.done);
+          });
+          widget.onProvisioned?.call();
+        }
+
+      case BlePairOk():
+        _finishRegistered();
+
+      case BlePairFail(:final reason):
+        _registerPoll?.cancel();
+        _fail(_pairFailMessage(reason));
 
       case BleWifiFail():
         setState(() {
@@ -503,6 +592,72 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
     }
   }
 
+  void _fail(String message) {
+    setState(() {
+      _state = _state.copyWith(step: _Step.failed, errorMessage: message);
+    });
+  }
+
+  String _pairFailMessage(String reason) => switch (reason) {
+        '401' => 'ble_pair_fail_auth'.tr(),
+        'timeout' => 'ble_pair_fail_timeout'.tr(),
+        'no_name' => 'ble_pair_fail_no_name'.tr(),
+        'server_5xx' => 'ble_pair_fail_server'.tr(),
+        _ => 'ble_pair_fail'.tr(args: [reason]),
+      };
+
+  // ── 서버 등록 확인 (PAIR_OK 전까지의 우회: 목록 폴링, 요청서 §3) ────────────
+
+  void _startRegisterPoll() {
+    _registerPoll?.cancel();
+    _registerDeadline = DateTime.now().add(_kRegisterPollTimeout);
+    _registerPoll = Timer.periodic(_kRegisterPollInterval, (_) {
+      _checkRegistered();
+    });
+  }
+
+  Future<void> _checkRegistered() async {
+    final registrar = widget.registrar;
+    if (registrar == null || _registerPollBusy) return;
+    if (_state.step != _Step.registering) {
+      _registerPoll?.cancel();
+      return;
+    }
+    _registerPollBusy = true;
+    try {
+      final list = await registrar.listRegistered();
+      if (!mounted || _state.step != _Step.registering) return;
+      if (list.any((d) => !_knownDeviceIds.contains(d.id))) {
+        _finishRegistered();
+        return;
+      }
+    } catch (_) {
+      // 일시적 조회 실패는 다음 주기에 다시 본다.
+    } finally {
+      _registerPollBusy = false;
+    }
+    if (!mounted || _state.step != _Step.registering) return;
+    final deadline = _registerDeadline;
+    if (deadline != null && DateTime.now().isAfter(deadline)) {
+      _registerPoll?.cancel();
+      setState(() {
+        _state = _state.copyWith(step: _Step.unconfirmed);
+      });
+      // 늦게라도 등록됐을 수 있으니 목록은 새로 받게 한다.
+      widget.onProvisioned?.call();
+    }
+  }
+
+  void _finishRegistered() {
+    _registerPoll?.cancel();
+    if (!mounted) return;
+    if (_state.step == _Step.done) return;
+    setState(() {
+      _state = _state.copyWith(step: _Step.done);
+    });
+    widget.onProvisioned?.call();
+  }
+
   /// WIFI_OK 시점의 자격증명을 보안 저장소에 남긴다(다음 페어링 자동채움용).
   /// 연결에 성공한 값만 저장하므로 틀린 비밀번호가 쌓이지 않는다.
   void _saveCredentialsOnSuccess() {
@@ -516,6 +671,7 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
   // ── 재시도 ────────────────────────────────────────────────────────────────────
 
   void _retry() {
+    _registerPoll?.cancel();
     _eventSub?.cancel();
     _repo.disconnect();
     _ssidController.clear();
@@ -562,11 +718,23 @@ class _WifiProvisioningViewState extends ConsumerState<WifiProvisioningView> {
           onBack: _rescanWifi,
         ),
       _Step.connecting => _ConnectingBody(
+          titleKey: 'ble_connecting',
           ssid: _ssidController.text.trim(),
         ),
+      _Step.registering => _ConnectingBody(
+          titleKey: 'ble_registering',
+          ssid: 'ble_registering_subtitle'.tr(),
+        ),
       _Step.done => _DoneBody(
+          titleKey: widget.registrar != null
+              ? 'ble_registered_title'
+              : 'ble_wifi_connected',
           subtitleKey: widget.doneSubtitleKey,
           onFinish: () => Navigator.of(context).maybePop(),
+        ),
+      _Step.unconfirmed => _UnconfirmedBody(
+          onRetry: _retry,
+          onClose: () => Navigator.of(context).maybePop(),
         ),
       _Step.failed => _FailedBody(
           message: _state.errorMessage ?? 'ble_pairing_failed'.tr(),
@@ -1082,8 +1250,9 @@ class _CredentialsBodyState extends State<_CredentialsBody> {
 // ── 연결 중 화면 (shimmer) ───────────────────────────────────────────────────────
 
 class _ConnectingBody extends StatelessWidget {
-  const _ConnectingBody({required this.ssid});
+  const _ConnectingBody({required this.titleKey, required this.ssid});
 
+  final String titleKey;
   final String ssid;
 
   @override
@@ -1099,7 +1268,7 @@ class _ConnectingBody extends StatelessWidget {
           Icon(Icons.wifi_find_rounded, size: 64, color: cs.primary),
           const SizedBox(height: 24),
           Text(
-            'ble_connecting'.tr(),
+            titleKey.tr(),
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -1124,8 +1293,13 @@ class _ConnectingBody extends StatelessWidget {
 // ── 완료 화면 ─────────────────────────────────────────────────────────────────
 
 class _DoneBody extends StatelessWidget {
-  const _DoneBody({required this.subtitleKey, required this.onFinish});
+  const _DoneBody({
+    required this.titleKey,
+    required this.subtitleKey,
+    required this.onFinish,
+  });
 
+  final String titleKey;
   final String subtitleKey;
   final VoidCallback onFinish;
 
@@ -1154,7 +1328,7 @@ class _DoneBody extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'ble_wifi_connected'.tr(),
+            titleKey.tr(),
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -1174,6 +1348,66 @@ class _DoneBody extends StatelessWidget {
             child: FilledButton(
               onPressed: onFinish,
               child: Text('ble_done_button'.tr()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 등록 미확인 화면 ─────────────────────────────────────────────────────────────
+
+/// Wi-Fi는 붙었지만 서버 등록을 확인하지 못함. 실패로 단정하지도, 성공으로
+/// 표시하지도 않는다 — 이미 등록됐던 기기는 초기화가 필요할 수 있음을 알린다.
+class _UnconfirmedBody extends StatelessWidget {
+  const _UnconfirmedBody({required this.onRetry, required this.onClose});
+
+  final VoidCallback onRetry;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.help_outline_rounded, size: 64, color: cs.primary),
+          const SizedBox(height: 24),
+          Text(
+            'ble_register_unconfirmed_title'.tr(),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'ble_register_unconfirmed_body'.tr(),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurface.withValues(alpha: 0.6),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 20),
+              label: Text('ble_retry'.tr()),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: onClose,
+              child: Text('ble_close'.tr()),
             ),
           ),
         ],
