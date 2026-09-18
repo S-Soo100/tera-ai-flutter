@@ -88,6 +88,33 @@ class NightlyHighlight {
   bool get isHumanConfirmed => source == 'human';
   bool get isFeatured => tier == 'featured';
 
+  /// 공개 메타만 바꾼 사본 — 서버가 publication을 주지 않을 때 앱이 day_key로
+  /// 합성한 값을 붙인다([applyNightPolicy], 정책 v2 2026-09-19).
+  NightlyHighlight withPublication(HighlightPublication value) =>
+      NightlyHighlight(
+        clipId: clipId,
+        publication: value,
+        startedAt: startedAt,
+        cameraId: cameraId,
+        cameraName: cameraName,
+        durationSec: durationSec,
+        source: source,
+        reason: reason,
+        ruleVersion: ruleVersion,
+        decidedAt: decidedAt,
+        tier: tier,
+        dayKey: dayKey,
+        activitySec: activitySec,
+        behaviorFlagged: behaviorFlagged,
+        episodeRank: episodeRank,
+        episodeHourRank: episodeHourRank,
+        episodeClipCount: episodeClipCount,
+        episodeActivitySec: episodeActivitySec,
+        episodeStartedAt: episodeStartedAt,
+        episodeEndedAt: episodeEndedAt,
+        playFromSec: playFromSec,
+      );
+
   factory NightlyHighlight.fromJson(Map<String, dynamic> j) {
     final episode = j['episode'] is Map<String, dynamic>
         ? j['episode'] as Map<String, dynamic>
