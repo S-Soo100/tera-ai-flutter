@@ -114,15 +114,22 @@ class _EnvColumn extends StatelessWidget {
         // Figma 668:866 실측 4 (현재값끝 2652 → 최고최저 2656) — 카드 h69의
         // 구성분(12+24+4+17+12).
         const SizedBox(height: 4),
-        Text(
-          minMax,
-          style: TextStyle(
-            fontFamily: 'Pretendard',
-            fontSize: 14,
-            height: 1.193359375,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 14 * -0.02,
-            color: glass.textTertiary,
+        // 좁은 폰에서 줄바꿈 대신 한 줄 유지 — 공간이 모자랄 때만 축소(키우지 않음).
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            minMax,
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 14,
+              height: 1.193359375,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 14 * -0.02,
+              color: glass.textTertiary,
+            ),
           ),
         ),
       ],

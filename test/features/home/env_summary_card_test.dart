@@ -103,4 +103,21 @@ void main() {
     await _pump(tester, deviceId: null);
     expect(find.byKey(EnvSummaryCard.cardKey), findsNothing);
   });
+
+  testWidgets('min/max line never wraps on a narrow phone — it scales down',
+      (tester) async {
+    tester.view.physicalSize = const Size(280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await _pump(tester);
+    final lines = find.descendant(
+        of: find.byType(FittedBox), matching: find.byType(Text));
+    expect(lines, findsNWidgets(2));
+    for (final e in lines.evaluate()) {
+      final text = e.widget as Text;
+      expect(text.maxLines, 1);
+      expect(text.softWrap, false);
+    }
+    expect(tester.takeException(), isNull);
+  });
 }
