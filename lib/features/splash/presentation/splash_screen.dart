@@ -6,6 +6,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../auth/data/login_prefs_repository.dart';
 import '../../notification/presentation/push_providers.dart';
 
+/// 스플래시 워드마크 폭. 네이티브 스플래시(`assets/splash/*`, 4배율 760px)와
+/// 같아야 전환 때 크기가 튀지 않는다. Android 12+ 원형 마스크(지름 192dp)에
+/// 잘리지 않는 최대 폭이라 로그인 로고(200)보다 조금 작다(2026-09-19).
+const double kSplashWordmarkWidth = 190;
+
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -48,14 +53,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 네이티브 스플래시(flutter_native_splash, 같은 워드마크 200pt 중앙)와
+    // 네이티브 스플래시(flutter_native_splash, 같은 워드마크 190 중앙)와
     // 같은 모습으로 이어지게 워드마크만 중앙에 둔다 — 전환 때 튀지 않게.
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
         child: Image.asset(
           'assets/images/splash_vivanaut.png',
-          width: 200,
+          width: kSplashWordmarkWidth,
           fit: BoxFit.contain,
         ),
       ),

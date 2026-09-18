@@ -1,7 +1,7 @@
 name: vivanaut
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.114.3+289
+version: 0.114.4+290
 
 environment:
   sdk: ^3.5.0
@@ -101,9 +101,13 @@ flutter_launcher_icons:
 flutter_native_splash:
   # 빨간 로고라 기존 진초록(#1B5E20) 배경은 대비가 나빠 흰색으로 바꾼다.
   color: "#FFFFFF"
-  # vivanaut 워드마크(Figma 로그인 로고 1134:5937, 800px=4배율 → 200pt, 로그인과 같은 폭).
-  image: assets/images/splash_vivanaut.png
-  # Android 12+는 원형 아이콘 마스크라 워드마크가 잘린다 — 심볼만 쓴다.
+  # vivanaut 워드마크(Figma 로그인 로고 1134:5937) 760px=4배율 → 190pt.
+  # 세 스플래시(iOS·Android 11 이하·Android 12+)와 Flutter SplashScreen을
+  # 같은 폭 190으로 맞춰 한 화면으로 이어지게 한다(2026-09-19).
+  image: assets/splash/splash_vivanaut_native.png
+  # Android 12+는 288dp 캔버스 중 지름 192dp 원만 보인다. 심볼만 두면
+  # "큰 심볼 → 작은 워드마크"로 스플래시가 두 번 보여(사용자 보고), 1152px
+  # 캔버스 한가운데 같은 워드마크 190dp(원 안 최대 폭)를 넣었다.
   android_12:
     color: "#FFFFFF"
-    image: assets/images/logo.png
+    image: assets/splash/splash_vivanaut_android12.png

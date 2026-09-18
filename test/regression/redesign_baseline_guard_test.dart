@@ -42,11 +42,22 @@ void main() {
         reason: '2026-09-04 삭제된 옛 제어 그리드');
     expect(read('lib/app.dart'), isNot(contains('PushPermissionPrompt')),
         reason: '로그인 직후 일괄 권한 시트는 폐지(Figma 권한 요청)');
-    expect(read('pubspec.yaml'),
-        contains('image: assets/images/splash_vivanaut.png'),
+    // 네이티브 스플래시 3종(iOS·Android 11 이하·Android 12+)과 Flutter
+    // SplashScreen이 같은 워드마크·같은 폭(190)이어야 한 화면으로 이어진다.
+    // Android 12+에 심볼만 두면 "큰 심볼 → 작은 워드마크" 스플래시 두 번으로
+    // 보인다(2026-09-19 사용자 보고).
+    final pubspec = read('pubspec.yaml');
+    expect(pubspec, contains('image: assets/splash/splash_vivanaut_native.png'),
         reason: '스플래시는 vivanaut 워드마크');
-    expect(read('pubspec.yaml'), isNot(contains('logo_stacked.png')),
+    expect(pubspec, contains('image: assets/splash/splash_vivanaut_android12.png'),
+        reason: 'Android 12+ 스플래시도 워드마크(원형 안 190dp)');
+    expect(pubspec, isNot(contains('image: assets/images/logo.png')),
+        reason: 'Android 12+ 옛 심볼 스플래시 — 스플래시가 두 번 보인다');
+    expect(pubspec, isNot(contains('logo_stacked.png')),
         reason: '옛 terra ai 스플래시');
+    expect(read('lib/features/splash/presentation/splash_screen.dart'),
+        contains('kSplashWordmarkWidth'),
+        reason: 'Flutter 스플래시 폭을 네이티브와 같은 상수로');
   });
 
   test('앱 버전이 재설계 병합(0.111.4+280) 아래로 내려가지 않는다', () {
