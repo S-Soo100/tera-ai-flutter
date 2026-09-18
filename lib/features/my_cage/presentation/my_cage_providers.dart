@@ -534,15 +534,34 @@ final crecamResolvedDayProvider =
   return DateTime(latest.year, latest.month, latest.day);
 });
 
-/// 하이라이트 상세의 최신 **밤 묶음 날짜** —
-/// [highlightGroupsProvider]에서 파생(리뷰 2026-09-04: 같은 API를 limit만
-/// 다르게 2회 치던 것을 1회로, 에러를 null("아직 없어요")로 뭉개던 것을
-/// 에러로 전파). 개별 대표 영상의 [NightlyHighlight.startedAt]을 쓰면 오늘
-/// 새벽 영상 때문에 전날 밤 묶음이 "오늘"로 보이므로 서버 day_key를 쓴다.
+/// 마지막 하이라이트가 **올라온 날** — 카메라 탭 하이라이트 카드의
+/// "업데이트 N일 전"(2026-09-19 사용자 결정: 다 본 뒤에도 마지막 날짜를 알린다).
+///
+/// 1순위: 서버 공개 배치의 `published_at`(공개된 것 중 최신). 2순위(현재 서버
+/// 미지원이라 실제로는 이쪽): 최신 밤 묶음 day_key의 **다음 날** — 밤 촬영분은
+/// 07:00 경계 다음 날 아침에 묶여 올라온다. 개별 [NightlyHighlight.startedAt]은
+/// 쓰지 않는다(오늘 새벽 영상 때문에 전날 밤 묶음이 흔들린다).
+/// 9/14 "촬영시각을 도착으로 대체 금지"는 이 카드에 한해 위 추정으로 대체됐다.
+/// [highlightGroupsProvider]에서 파생 — 에러는 에러로 전파(리뷰 2026-09-04).
 final latestHighlightAtProvider =
     FutureProvider.autoDispose<DateTime?>((ref) async {
   final groups = await ref.watch(highlightGroupsProvider.future);
-  return groups.isEmpty ? null : parseDayKey(groups.first.dayKey);
+  if (groups.isEmpty) return null;
+  final now = DateTime.now();
+  DateTime? published;
+  for (final group in groups) {
+    for (final h in group.featured) {
+      final p = h.publication;
+      if (p == null || !p.availableAt(now)) continue;
+      final at = p.publishedAt.toLocal();
+      if (published == null || at.isAfter(published)) published = at;
+    }
+  }
+  if (published != null) return published;
+  final night = parseDayKey(groups.first.dayKey);
+  return night == null
+      ? null
+      : DateTime(night.year, night.month, night.day + 1);
 });
 
 /// 전체 즐겨찾기(favoritedAt desc — repository가 정렬). 엔트리 카드 최신

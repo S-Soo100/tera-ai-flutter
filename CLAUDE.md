@@ -40,7 +40,7 @@
 - 꺼진 환기팬은 시간 선택→시작으로 실행. 선택/취소만으로 명령을 보내지 않는다. 일정 & 타이머 문구는 ‘일정’. → **2026-09-19 사용자 결정으로 홈 진입 문구는 ‘기기 예약 설정’으로 통일**(Figma 1107:10445·예약 화면 제목과 일치, `redesign_home_schedule_settings`).
 - 카메라 영상 기본 전체 기간, 60개 복합 커서 pagination, 로컬 썸네일 200MB 캐시. 카메라 상태 갱신이 feed를 초기화하지 않는다.
 - 오늘 온습도는 유효한 실시간, 과거는 지표별 valid count를 사용한 평균. 서버 count 미지원은 `--`, 마지막 값/단순 평균 대체 금지.
-- 공개 하이라이트 배치의 실제 재생 진전으로 읽음 처리. 공개 배치/시각은 현재 서버 미지원이며 촬영시각을 도착으로 대체하지 않는다. 상세 계약은 `docs/plans/2026-09-14-data-contract-check.md`.
+- 공개 하이라이트 배치의 실제 재생 진전으로 읽음 처리. 공개 배치/시각은 현재 서버 미지원이며 촬영시각을 도착으로 대체하지 않는다. → **예외(2026-09-19 사용자 결정): 카메라 탭 하이라이트 카드는 "업데이트 N일 전"을 표시** — 서버 `published_at`이 있으면 그 값, 없으면 최신 밤 묶음 day_key의 **다음 날**을 올라온 날로 본다(`latestHighlightAtProvider`). 하이라이트 목록 헤더·도착 배너는 기존 규칙 유지. 상세 계약은 `docs/plans/2026-09-14-data-contract-check.md`.
 - Final Design runtime SVG의 불투명 alpha mask는 흰 mask로 정규화한다. 원본 export는 보존한다. 신규 역할색은 `envTempValue/envHumidValue`, `envTempPeak/envHumidPeak`, `envBarNeutral/envBarMinimum`, `navSelected/navUnselected`.
 
 ## 프로젝트 개요

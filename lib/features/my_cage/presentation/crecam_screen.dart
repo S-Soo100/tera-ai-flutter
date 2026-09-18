@@ -111,10 +111,10 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
   void _maybeAskHighlightPush(bool hasCamera) {
     final query = ref.watch(clipFeedQueryProvider);
     final hasClip = query != null &&
-        ref.watch(clipFeedProvider(query)
-            .select((state) => state.items.isNotEmpty));
-    final visible = TickerMode.of(context) &&
-        (ModalRoute.of(context)?.isCurrent ?? true);
+        ref.watch(
+            clipFeedProvider(query).select((state) => state.items.isNotEmpty));
+    final visible =
+        TickerMode.of(context) && (ModalRoute.of(context)?.isCurrent ?? true);
     if (hasCamera && hasClip && visible) {
       schedulePushConsent(context, ref, PushTopic.highlight);
     }
@@ -238,7 +238,6 @@ class _EntryCards extends ConsumerWidget {
             title: 'crecam_home_highlights'.tr(),
             latestAt: highlightAt,
             emptyLabel: 'crecam_update_unknown'.tr(),
-            dateStyle: _EntryDateStyle.highlightNight,
             onTap: () => context.push('/crecam/highlights'),
           ),
         ),
@@ -249,7 +248,6 @@ class _EntryCards extends ConsumerWidget {
             iconAsset: FigmaIcons.bookmarkCheck,
             title: 'crecam_home_bookmarks'.tr(),
             latestAt: bookmarkAt,
-            dateStyle: _EntryDateStyle.update,
             onTap: () => context.push('/crecam/bookmarks'),
           ),
         ),
@@ -260,7 +258,6 @@ class _EntryCards extends ConsumerWidget {
 
 /// Figma 945:4171/4179: 최소 높이 72, 40px 진회색 아이콘 배경.
 /// 긴 업데이트 문구는 가용 폭에 맞춰 축소해 한 줄로 전부 표시한다.
-enum _EntryDateStyle { update, highlightNight }
 
 class _EntryCard extends StatelessWidget {
   const _EntryCard({
@@ -269,7 +266,6 @@ class _EntryCard extends StatelessWidget {
     required this.title,
     required this.latestAt,
     this.emptyLabel,
-    this.dateStyle = _EntryDateStyle.update,
     required this.onTap,
   });
 
@@ -277,7 +273,6 @@ class _EntryCard extends StatelessWidget {
   final String iconAsset;
   final String title;
   final String? emptyLabel;
-  final _EntryDateStyle dateStyle;
 
   /// 최신 항목 시각. data(null) = 항목 없음("아직 없어요").
   final AsyncValue<DateTime?> latestAt;
@@ -367,7 +362,7 @@ class _EntryCard extends StatelessWidget {
       data: (at) {
         final base = at == null
             ? emptyLabel ?? 'crecam_home_no_updates'.tr()
-            : _updateLabel(at, style: dateStyle);
+            : _updateLabel(at);
         return FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
@@ -378,11 +373,9 @@ class _EntryCard extends StatelessWidget {
   }
 }
 
-String _updateLabel(DateTime at, {required _EntryDateStyle style}) {
-  if (style == _EntryDateStyle.highlightNight) {
-    // day_key is a filming-night label, never a publication timestamp.
-    return 'crecam_update_unavailable'.tr();
-  }
+/// 하이라이트·북마크 공통 "업데이트 오늘/어제/N일 전". 하이라이트의 [at]은
+/// 올라온 날([latestHighlightAtProvider] — 공개 시각 또는 촬영 밤 다음 날).
+String _updateLabel(DateTime at) {
   final days = calendarDaysAgo(at, DateTime.now());
 
   return days <= 0

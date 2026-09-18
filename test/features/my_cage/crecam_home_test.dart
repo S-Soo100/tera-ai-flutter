@@ -16,12 +16,10 @@ import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
-import 'package:vivanaut/features/my_cage/domain/highlight_group.dart';
 import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivanaut/features/my_cage/domain/nightly_report.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/presentation/crecam_screen.dart';
-import 'package:vivanaut/features/my_cage/presentation/highlights_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/camera_live_area.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
@@ -463,14 +461,24 @@ void main() {
     expect(find.textContaining('crecam_home_night_activity'), findsNothing);
   });
 
-  testWidgets('밤 묶음 날짜를 실제 업데이트 날짜로 표시하지 않는다', (tester) async {
-    final lastNight = parseDayKey(lastNightDayKey(DateTime.now()));
-    await _pump(tester, latestHighlightAt: lastNight);
+  // 2026-09-19 사용자 결정: 하이라이트를 다 봤어도 마지막으로 올라온 날을
+  // 북마크와 같은 "업데이트 N일 전" 형식으로 알린다(provider가 올라온 날을 준다).
+  testWidgets('하이라이트 카드도 마지막으로 올라온 날을 업데이트 문구로 표시', (tester) async {
+    final now = DateTime.now();
+    await _pump(tester,
+        latestHighlightAt: DateTime(now.year, now.month, now.day - 5, 7));
 
-    expect(find.text('crecam_update_unavailable'), findsOneWidget);
-    expect(find.text('crecam_highlights_last_night'), findsNothing);
-    expect(find.text('crecam_updated_today'), findsNothing);
-    expect(find.text('crecam_updated_yesterday'), findsNothing);
+    expect(find.text('crecam_updated_days'), findsOneWidget);
+    expect(find.text('crecam_update_unavailable'), findsNothing);
+    expect(find.text('crecam_update_unknown'), findsNothing);
+  });
+
+  testWidgets('하이라이트가 오늘 올라왔으면 업데이트 오늘', (tester) async {
+    final now = DateTime.now();
+    await _pump(tester,
+        latestHighlightAt: DateTime(now.year, now.month, now.day));
+
+    expect(find.text('crecam_updated_today'), findsOneWidget);
   });
 
   testWidgets('최신 즐겨찾기 시각에 업데이트 접두사를 항상 표시', (tester) async {
