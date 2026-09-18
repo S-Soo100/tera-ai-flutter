@@ -182,16 +182,40 @@ void main() {
   testWidgets('알림 설정 — 토글 저장, 마케팅 동의 일자', (tester) async {
     await pump(tester, const NotificationSettingsScreen(), overrides());
     expect(tester.getRect(find.text('기능 설정')).top, closeTo(118.5, 1));
-    // 행은 원본 72이되 부제가 두 줄로 접히면 커질 수 있다(잘라내지 않는다).
+    // 부제는 줄바꿈 없이 한 줄(좁으면 축소) — 행은 원본 72 그대로.
     final row =
         tester.getRect(find.byKey(NotificationSettingsScreen.highlightKey));
     expect(row.topLeft, const Offset(12, 145.5));
     expect(row.width, 369);
-    expect(row.height, greaterThanOrEqualTo(72));
+    expect(row.height, closeTo(72, 0.5));
     await tester.tap(find.descendant(
         of: find.byKey(NotificationSettingsScreen.marketingKey),
         matching: find.byType(ScheduleSwitch)));
     await tester.pumpAndSettle();
     expect(find.textContaining('수신 동의 20'), findsOneWidget);
+  });
+
+  testWidgets('알림 설정 부제는 좁은 폰에서도 줄바꿈되지 않는다', (tester) async {
+    await pump(tester, const NotificationSettingsScreen(), overrides());
+    tester.view.physicalSize = const Size(320, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpAndSettle();
+    for (final key in [
+      NotificationSettingsScreen.highlightKey,
+      NotificationSettingsScreen.marketingKey,
+    ]) {
+      final lines = find.descendant(
+          of: find.byKey(key),
+          matching: find.descendant(
+              of: find.byType(FittedBox), matching: find.byType(Text)));
+      expect(lines, findsWidgets);
+      for (final e in lines.evaluate()) {
+        expect((e.widget as Text).maxLines, 1);
+      }
+    }
+    expect(tester.getRect(find.byKey(NotificationSettingsScreen.likeKey)).height,
+        closeTo(72, 0.5));
+    expect(tester.takeException(), isNull);
   });
 }

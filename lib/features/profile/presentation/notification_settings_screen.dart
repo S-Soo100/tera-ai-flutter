@@ -117,14 +117,24 @@ class _ToggleRow extends StatelessWidget {
                     style: managementStyle(context, weight: FontWeight.w600)
                         .copyWith(height: 19.09 / 16)),
                 const SizedBox(height: 4),
-                // 실기기 서체 폭이 원본보다 넓으면 한 줄이 안 들어가므로 줄바꿈을
-                // 허용한다(잘라서 "…"로 두지 않는다).
-                Text(subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: managementStyle(context,
-                            size: small ? 12 : 14, color: glass.textTertiary)
-                        .copyWith(height: small ? 16 / 12 : 16.7 / 14)),
+                // 좁은 폰에서 어절 중간 줄바꿈("받는 알\n림") 대신 줄마다 한 줄을
+                // 유지하고 공간이 모자랄 때만 축소한다(2026-09-18 사용자 결정).
+                // 마케팅 동의 일자처럼 의도된 줄(\n)은 그대로 나눈다.
+                // 줄 상자 높이는 고정 — 축소돼도 행 높이(원본 72)가 변하지 않게.
+                for (final line in subtitle.split('\n'))
+                  SizedBox(
+                      height: small ? 16 : 16.7,
+                      child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(line,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: managementStyle(context,
+                                      size: small ? 12 : 14,
+                                      color: glass.textTertiary)
+                                  .copyWith(
+                                      height: small ? 16 / 12 : 16.7 / 14)))),
               ])),
           // 원본 글줄 폭 251.5는 369 안에서 간격 4여야 한 줄로 들어간다.
           const SizedBox(width: 4),
