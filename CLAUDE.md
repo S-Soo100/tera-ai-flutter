@@ -14,7 +14,9 @@
 >
 > 아직 옛 브랜드가 남은 곳: `assets/images/logo_wordmark.png`(영상 워터마크에 `terra.ai`), 앱 아이콘, 저장소명 `tera-ai-flutter`, git 원격.
 
-## Figma 재설계 사용자 확정 (2026-09-15, 구현 중)
+## Figma 재설계 사용자 확정 (2026-09-15) — main 병합 완료 (2026-09-18)
+
+- **⚠️ 브랜치 규칙 (2026-09-18 사고 후 확정):** 재설계는 `81a5f25`(0.111.4+280)로 **main에 병합됐고 main이 유일한 기준**이다. 재설계 138커밋이 별도 worktree 브랜치에만 있어 main 빌드가 구화면으로 보인 사고가 있었다. ① 새 작업 브랜치·worktree는 **반드시 현재 main에서** 만든다 ② 작업 브랜치는 오래 두지 말고 끝나면 즉시 main에 병합·삭제한다(화면 확인은 main 빌드로) ③ `tools/git-hooks/pre-push`가 `81a5f25`를 포함하지 않는 브랜치 push를 **차단**하고, `post-checkout`이 경고한다. 정리된 옛 브랜치는 `archive/*` 태그로 보관(`codex/figma-redesign-20260915`, `feat/prd-redesign`, `feat/highlights-petcam-api`, `feat/knowledge-graph-layer`). **`origin/codex/clarity-policy`는 main에 없는 Clarity 분석 커밋 1개가 남은 재설계 이전 브랜치** — 그대로 병합하지 말고, 쓸 때는 main 위로 옮겨(cherry-pick) 화면 충돌을 확인한다.
 
 - **페이지별 필수 수치 검수 (2026-09-16 사용자 추가 지시):** 모든 페이지에서 Figma와 같은 논리 화면 크기/SafeArea로 간격·패딩, 폰트 크기/굵기/줄높이/자간, 실제 ColorSystem 색상, 아이콘 프레임과 내부 그림 크기/정렬, 버튼 위치/활성 조건/터치 영역을 확인한다. 시각적으로 비슷하다는 이유만으로 통과시키지 않는다. 원본 및 앱 측정값·수정 전후 캡처와 차이를 기록하고, 차이가 남으면 보고 후 확정한다. 원본이 확인되지 않은 항목을 검수 완료로 간주하지 않는다.
 
@@ -24,7 +26,7 @@
 
 - 새 디자인·동작의 확정 기준은 [`docs/superpowers/specs/2026-09-15-figma-redesign-approved-design.md`](docs/superpowers/specs/2026-09-15-figma-redesign-approved-design.md)다. 해당 재설계 구현에서는 아래 과거 결정과 충돌할 경우 이 확정 기획을 우선한다.
 - [7단계 구현계획](docs/superpowers/plans/2026-09-15-figma-redesign-implementation.md), [서버 담당·직접 수행 구분](docs/handoffs/2026-09-15-redesign-server-work-split.md)을 함께 읽는다.
-- 사용자가 전체 자동 구현을 승인했다. `codex/figma-redesign-20260915` 작업 트리에 Home·Camera·MyCre·통합 BLE·그룹/개체 관리·메모/계정별 숨김 UI와 저장소·라우트를 구현했다. [구현 결과와 검증](docs/design-audits/2026-09-15-redesign-implementation-results.md)을 현재 상태 기준으로 읽는다.
+- 사용자가 전체 자동 구현을 승인했다. (구)`codex/figma-redesign-20260915` 작업 트리(2026-09-18 main 병합 후 삭제)에 Home·Camera·MyCre·통합 BLE·그룹/개체 관리·메모/계정별 숨김 UI와 저장소·라우트를 구현했다. [구현 결과와 검증](docs/design-audits/2026-09-15-redesign-implementation-results.md)을 현재 상태 기준으로 읽는다.
 - petcam-lab은 `owner-activity-v1` API 배포를 완료했다. [수신 계약](docs/references/2026-09-15-petcam-activity-handoff.md). 이관훈님 회신의 soft unlink/공통 그룹 write/온습도 count/푸시 보완은 미배포다. 앱 전용 SQL은 `supabase/drafts/`에 검토용으로 저장하고 격리 DB에서 검증했으며 **운영 DB는 변경하지 않았다**. UI 구현과 운영 사용 완료를 구분한다.
 - 재개 시 [재설계 세션 체크포인트](docs/handoffs/2026-09-15-redesign-session-checkpoint.md)를 먼저 읽는다. 최신 그룹명 우선 표시·첫 기본 이름 번호 1 규칙과 외부 전달 상태를 보존한다.
 - **2026-09-16 저녁: 로그인·기기 제어 시트·마이페이지 구현(0.109.0~0.111.0).** 결과·결정표 [`docs/design-audits/2026-09-16-sheets-login-mypage/RESULTS.md`](docs/design-audits/2026-09-16-sheets-login-mypage/RESULTS.md). 홈 제어 타일 탭 = `DeviceControlSheet`(즉시/예약 segment, **전원 스위치가 명시적 시작/정지 — 칩·슬라이더는 선택만**, 분무는 "1회 분사 시작"+2초 실행 취소, 타이머는 타일 부제 카운트다운·상단 칩 폐지). 공용 입력은 `VivaTextField`/`VivaCheckRow`, 확인 모달은 `showVivaModal`. 마이페이지는 `/profile` + `community`·`blocked`·`notifications`·`account(/password,/withdraw)`. 서버 의존 3건은 [요청서](docs/handoffs/2026-09-16-mypage-server-requests.md). Figma 이미지는 talk-to-figma 소켓(3055)에 직접 붙는 스크립트로 파일 저장(MCP 결과는 화면 표시만) — `docs/design-audits/2026-09-16-sheets-login-mypage/RESULTS.md` §3.

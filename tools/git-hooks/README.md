@@ -26,3 +26,16 @@ chmod +x tools/git-hooks/*
 
 - 의도적 우회: `git push --no-verify`
 - docs/chore/style 등 `lib/` 무변경 push는 버전 없이 통과.
+
+### 재설계 기준선 가드 (2026-09-18)
+
+push하는 **브랜치**가 Figma 재설계 병합 커밋 `81a5f25`(0.111.4+280)를 포함하지 않으면 차단한다.
+재설계 이전 main에서 갈라진 브랜치를 push·병합하면 화면이 구버전으로 돌아가기 때문이다
+(재설계 138커밋이 별도 worktree에만 있어 main 빌드가 구화면이던 사고의 재발 방지). 태그(`archive/*` 등)는 검사하지 않는다.
+
+- 해결: `git merge main` 또는 main 기준으로 브랜치 재생성
+- 의도적 우회: `git push --no-verify`
+
+## post-checkout
+
+브랜치를 체크아웃했는데 위 기준선이 없으면 **경고만** 출력한다(차단 없음). 구브랜치·worktree로 앱을 빌드하기 전에 알아채기 위함.

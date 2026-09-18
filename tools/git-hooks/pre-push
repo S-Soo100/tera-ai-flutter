@@ -9,9 +9,16 @@
 #       - 빌드번호(+N)는 항상 +1
 # 역할: 이 훅은 "버전 안 올리고 코드 push" 사고를 막는 가드일 뿐, 직접 bump하지 않는다
 #       (pre-push 시점엔 push할 ref가 이미 확정돼 commit을 끼워넣을 수 없음).
+# 추가(2026-09-18): Figma 재설계 기준선 가드 — push하는 브랜치가 재설계 병합 커밋
+#       (redesign-baseline)을 포함하지 않으면 차단. 재설계 이전 main에서 갈라진 브랜치를
+#       push·병합해 화면이 구버전으로 돌아가는 사고 방지(재설계가 138커밋 동안 별도
+#       worktree에만 있어 main 빌드가 구화면이던 사고의 재발 방지).
 # 우회: git push --no-verify
 #
 set -uo pipefail
+
+# Figma 재설계를 main에 병합한 커밋(0.111.4+280). 이후 모든 브랜치는 이걸 포함해야 한다.
+redesign_baseline="81a5f25"
 
 zero="0000000000000000000000000000000000000000"
 blocked=0
@@ -19,6 +26,22 @@ blocked=0
 while read -r local_ref local_sha remote_ref remote_sha; do
   # 브랜치 삭제 push 무시
   [ "$local_sha" = "$zero" ] && continue
+
+  # 브랜치 push면 재설계 기준선 포함 여부 확인(태그 — archive/* 등 — 는 제외)
+  case "$local_ref" in
+    refs/tags/*) ;;
+    *)
+      if git cat-file -e "${redesign_baseline}^{commit}" 2>/dev/null &&
+         ! git merge-base --is-ancestor "$redesign_baseline" "$local_sha"; then
+        echo "✋ pre-push 차단: ${local_ref#refs/heads/} 에 Figma 재설계 병합(${redesign_baseline})이 없습니다." >&2
+        echo "   재설계 이전 main에서 갈라진 브랜치라 push·병합하면 화면이 구버전으로 돌아갑니다." >&2
+        echo "   → 먼저 main을 병합하거나(git merge main) main 기준으로 다시 브랜치를 만드세요." >&2
+        echo "   → 의도적 우회: git push --no-verify" >&2
+        blocked=1
+        continue
+      fi
+      ;;
+  esac
   # 신규 브랜치(원격에 추적본 없음)는 검사 생략
   [ "$remote_sha" = "$zero" ] && continue
 
