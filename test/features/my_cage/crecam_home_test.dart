@@ -400,7 +400,8 @@ void main() {
 
   testWidgets('클립 0건 날짜 → 빈 상태 문구 (명시 선택은 자동으로 안 갈아탄다)', (tester) async {
     await _pump(tester, clips: const []);
-    expect(find.text('crecam_home_empty_day'), findsOneWidget);
+    // 정책 v2: 통과분만 보이므로 "이 기간엔 뚜렷한 움직임이 없다"로 이유를 밝힌다.
+    expect(find.text('crecam_home_empty_range'), findsOneWidget);
   });
 
   // ── 기간 미선택(자동) — 최근 영상 날짜 해석 (2026-09-07) ─────────────────
@@ -417,7 +418,7 @@ void main() {
     expect(find.text('2026. 8. 31'), findsOneWidget);
     expect(find.text('crecam_home_period'), findsOneWidget);
     expect(find.text('time_am_fmt'), findsNWidgets(2));
-    expect(find.text('crecam_home_empty_day'), findsNothing);
+    expect(find.text('crecam_home_empty_range'), findsNothing);
   });
 
   testWidgets('기간 미선택 + 클립 0건 카메라 → 오늘(기본 라벨) + 빈 상태', (tester) async {

@@ -36,9 +36,11 @@ class ClipFeedSlivers extends ConsumerWidget {
                 ? CrecamErrorRetry(onRetry: controller.refresh)
                 : Center(
                     child: Text(
+                        // 정책 v2: 통과분만 보이므로 빈 이유를 밝힌다.
+                        // empty_day는 북마크·하이라이트가 공유해 따로 둔다.
                         (key.range == null
                                 ? 'crecam_home_empty_all'
-                                : 'crecam_home_empty_day')
+                                : 'crecam_home_empty_range')
                             .tr(),
                         style: TextStyle(color: context.glass.textTertiary))),
       ));
