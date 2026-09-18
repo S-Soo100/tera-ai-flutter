@@ -60,6 +60,21 @@ void main() {
         reason: 'Flutter 스플래시 폭을 네이티브와 같은 상수로');
   });
 
+  test('하이라이트 정책 v2 — 전체 목록은 통과분, 하이라이트는 공개 게이트', () {
+    final feed =
+        File('lib/features/my_cage/presentation/clip_feed_controller.dart')
+            .readAsStringSync();
+    final player =
+        File('lib/features/my_cage/presentation/player_view_providers.dart')
+            .readAsStringSync();
+    final providers =
+        File('lib/features/my_cage/presentation/my_cage_providers.dart')
+            .readAsStringSync();
+    expect(feed, contains('passedClipFeedSourceProvider'));
+    expect(player, contains('passedClipFeedSourceProvider'));
+    expect(providers, contains('applyNightPolicy('));
+  });
+
   test('앱 버전이 재설계 병합(0.111.4+280) 아래로 내려가지 않는다', () {
     final match = RegExp(r'^version:\s*[\d.]+\+(\d+)', multiLine: true)
         .firstMatch(read('pubspec.yaml'));
