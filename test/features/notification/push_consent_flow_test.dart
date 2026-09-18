@@ -83,4 +83,38 @@ void main() {
     expect(h.flow.claim(PushTopic.community), isTrue);
     expect(h.seen, {PushTopic.highlight, PushTopic.community});
   });
+
+  group('사육장 알림(기기 등록 직후) — 앱 안 토글 없이 시스템 권한만', () {
+    test('시스템 권한을 아직 안 물었거나 거절했을 때만 묻는다', () async {
+      for (final (p, expected) in [
+        (PushPermission.notDetermined, true),
+        (PushPermission.denied, true),
+        (PushPermission.authorized, false),
+        (PushPermission.unavailable, false),
+      ]) {
+        expect(await _Harness(p).flow.canAsk(PushTopic.device), expected,
+            reason: '$p');
+      }
+    });
+
+    test('다른 주제는 권한 상태와 무관하게 물을 수 있다', () async {
+      final h = _Harness(PushPermission.authorized);
+      expect(await h.flow.canAsk(PushTopic.highlight), isTrue);
+      expect(await h.flow.canAsk(PushTopic.community), isTrue);
+    });
+
+    test('받기는 시스템 권한만 요청하고 토글은 건드리지 않는다', () async {
+      final h = _Harness(PushPermission.notDetermined);
+      await h.flow.resolve(PushTopic.device, accept: true);
+      expect(h.requests, [false]);
+      expect(h.topics, isEmpty);
+    });
+
+    test('받지 않기는 닫기만 — 재설정 안내도 없다', () async {
+      final h = _Harness(PushPermission.denied);
+      expect(await h.flow.resolve(PushTopic.device, accept: false), isFalse);
+      expect(h.topics, isEmpty);
+      expect(h.requests, isEmpty);
+    });
+  });
 }

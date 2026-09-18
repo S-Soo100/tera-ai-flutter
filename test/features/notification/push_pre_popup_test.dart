@@ -72,6 +72,10 @@ void main() {
                             onPressed: () => askPushConsent(
                                 context, ref, PushTopic.community),
                             child: const Text('ask-community')),
+                        TextButton(
+                            onPressed: () => askPushConsent(
+                                context, ref, PushTopic.device),
+                            child: const Text('ask-device')),
                       ]))),
             ))));
     await tester.pumpAndSettle();
@@ -152,5 +156,34 @@ void main() {
     await pump(tester, PushPermission.notDetermined, signedIn: false);
     await ask(tester, 'highlight');
     expect(find.text('하이라이트 영상 알림을 켜시겠습니까?'), findsNothing);
+  });
+
+  testWidgets('사육장 — 권한 미요청이면 묻고 받기는 시스템 팝업만', (tester) async {
+    final (messaging, repo, preferences) =
+        await pump(tester, PushPermission.notDetermined);
+    await ask(tester, 'device');
+    expect(find.text('사육장 알림을 켜시겠습니까?'), findsOneWidget);
+    await tester.tap(find.text('알림 받기'));
+    await tester.pumpAndSettle();
+    expect(messaging.requests, 1);
+    expect(repo.saved.highlight, isTrue, reason: '토글은 그대로');
+    expect(preferences.asked, {'device'});
+  });
+
+  testWidgets('사육장 — 이미 허용됐으면 묻지 않고 기회도 소모하지 않는다',
+      (tester) async {
+    final (_, _, preferences) = await pump(tester, PushPermission.authorized);
+    await ask(tester, 'device');
+    expect(find.text('사육장 알림을 켜시겠습니까?'), findsNothing);
+    expect(preferences.asked, isEmpty);
+  });
+
+  testWidgets('사육장 — 받지 않기는 닫기만(수신 거부 완료 없음)', (tester) async {
+    final (messaging, _, _) = await pump(tester, PushPermission.denied);
+    await ask(tester, 'device');
+    await tester.tap(find.text('알림 받지 않기'));
+    await tester.pumpAndSettle();
+    expect(find.text('수신 거부 완료'), findsNothing);
+    expect(messaging.requests, 0);
   });
 }

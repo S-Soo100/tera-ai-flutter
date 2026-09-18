@@ -10,6 +10,14 @@ enum PushTopic {
 
   /// 커뮤니티에 게시물을 올린 뒤. 댓글·좋아요 두 알림을 함께 켜고 끈다.
   community,
+
+  /// 사육장 기기 등록 직후(2026-09-18 사용자 추가 — Figma 밖). 예약 작동 결과·
+  /// 안전 알림은 앱 안 토글이 없어 **시스템 권한만** 다룬다: 권한이 없을 때만
+  /// 묻고, 받지 않기는 닫기만 한다(마이페이지에 되돌릴 토글이 없으므로 안내 없음).
+  device;
+
+  /// 마이페이지 > 알림에 대응하는 토글이 있나.
+  bool get hasToggle => this != device;
 }
 
 /// 프리팝업 선택을 시스템 권한 상태에 따라 처리한다(Figma 요청 시나리오).
@@ -47,13 +55,23 @@ class PushConsentFlow {
     return true;
   }
 
+  /// 지금 물을 만한가. 토글 없는 주제(사육장)는 시스템 권한이 아직 없을 때만
+  /// — 이미 허용됐거나 시스템 권한이 없는 플랫폼(iOS)이면 물어도 바뀌는 게 없다.
+  Future<bool> canAsk(PushTopic topic) async {
+    if (topic.hasToggle) return true;
+    final permission = await currentPermission();
+    return permission == PushPermission.notDetermined ||
+        permission == PushPermission.denied;
+  }
+
   /// 선택을 적용한다. "수신 거부 완료" 안내를 띄워야 하면 true.
   Future<bool> resolve(PushTopic topic, {required bool accept}) async {
     final permission = await currentPermission();
-    await setTopic(topic, accept);
+    if (topic.hasToggle) await setTopic(topic, accept);
     if (!accept) {
-      return permission == PushPermission.authorized ||
-          permission == PushPermission.unavailable;
+      return topic.hasToggle &&
+          (permission == PushPermission.authorized ||
+              permission == PushPermission.unavailable);
     }
     if (permission == PushPermission.notDetermined) {
       await requestPermission();

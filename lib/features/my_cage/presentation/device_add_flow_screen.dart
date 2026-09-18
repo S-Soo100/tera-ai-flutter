@@ -7,6 +7,8 @@ import 'package:uuid/uuid.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/figma_icon.dart';
+import '../../notification/domain/push_consent_flow.dart';
+import '../../notification/presentation/push_pre_popup.dart';
 import '../domain/device_add_flow.dart';
 import '../domain/pair_target_kind.dart';
 import '../domain/redesign_management.dart';
@@ -256,8 +258,17 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     });
     ref.listen(deviceAddFlowProvider(_key), (previous, next) {
       if (next.step == DeviceAddStep.results) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) unawaited(_maybeOfferJoin(next));
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (!mounted) return;
+          await _maybeOfferJoin(next);
+          // 사육장 등록 직후 알림 권한(2026-09-18 사용자 추가) — 합류 확인이
+          // 끝난 뒤 결과 화면 위에서 묻는다. 권한이 이미 있으면 flow가 건너뛴다.
+          final deviceRegistered = next.results.values.any((r) =>
+              r.candidate.kind == PairTargetKind.device &&
+              r.outcome == DeviceAddOutcome.registered);
+          if (deviceRegistered && context.mounted) {
+            unawaited(askPushConsent(context, ref, PushTopic.device));
+          }
         });
       }
       if (previous?.step == DeviceAddStep.connecting &&

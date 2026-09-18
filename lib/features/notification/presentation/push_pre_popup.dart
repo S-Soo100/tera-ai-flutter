@@ -26,6 +26,7 @@ final pushConsentFlowProvider = Provider<PushConsentFlow>((ref) {
           switch (topic) {
             PushTopic.highlight => prefs.copyWith(highlight: on),
             PushTopic.community => prefs.copyWith(comment: on, like: on),
+            PushTopic.device => prefs, // 토글 없음 — flow가 호출하지 않는다
           });
     },
     isAsked: (topic) => preferences.promptAsked(topic.name),
@@ -45,6 +46,9 @@ Future<void> askPushConsent(
 /// 받아 두고 루트 내비게이터 [context]로 띄운다. 로그인 여부는 호출자가 확인.
 Future<void> askPushConsentWith(
     BuildContext context, PushConsentFlow flow, PushTopic topic) async {
+  // 권한 확인이 끝나기 전에 claim하지 않는다 — 사육장 주제는 이미 허용된 기기에서
+  // "물음"으로 소모되면 나중에 권한이 꺼져도 다시 못 묻는다.
+  if (!await flow.canAsk(topic) || !context.mounted) return;
   if (!flow.claim(topic)) return;
   final accept = await showDialog<bool>(
     context: context,
