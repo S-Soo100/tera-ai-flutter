@@ -9,6 +9,24 @@ import '../../../../shared/domain/env_chart_data.dart';
 import '../../../../shared/domain/num_format.dart';
 import 'control_log_list.dart';
 
+/// Split a telemetry line wherever at least one 30-minute bucket is absent.
+/// Each metric uses its own points, so one failed sensor never bridges a gap.
+List<List<({double x, double y})>> environmentLineSegments(
+  List<({double x, double y})> points, {
+  required double maxGap,
+}) {
+  final segments = <List<({double x, double y})>>[];
+  for (final point in points) {
+    if (!point.x.isFinite || !point.y.isFinite) continue;
+    if (segments.isEmpty || point.x - segments.last.last.x > maxGap + 1e-9) {
+      segments.add([point]);
+    } else {
+      segments.last.add(point);
+    }
+  }
+  return segments;
+}
+
 /// 겹치는 마커 중심 x들을 **최소 [minGap] 간격**으로 벌린다 (계획서 §A.5).
 ///
 /// [centers]는 오름차순 픽셀 좌표. 앞에서 뒤로 밀어 간격을 확보하고, 끝을
@@ -41,7 +59,7 @@ List<double> resolveMarkerCenters(
 ///
 /// 홈·통계의 [EnvChart](393pt 프레임 고정)와 다른 물건이다 — 하루를 통째로
 /// 담아 옆으로 넘겨 본다. Y축 라벨은 **스크롤 밖 고정 오버레이**(좌 온도·우
-/// 습도, 흰 바닥 마스크)라 차트가 라벨 밑으로 흘러 들어간다(Figma Hide 구조).
+/// 습도)라 차트가 라벨 밑으로 흘러 들어간다. 양끝 12px만 클리핑한다.
 ///
 /// 마커 행은 [ControlLogEntry]를 쓴다 — [ActuatorMarker]는 방향(on/off)이
 /// 없어 꺼짐 마커를 [GlassPalette.deviceOff]로 못 칠한다.
@@ -80,19 +98,19 @@ class EnvDayChart extends StatefulWidget {
   static const double markerSize = 28;
   static const double markerMinGap = 22;
 
-  /// Y 눈금은 항상 6개([AxisBounds.divisions]+1) — 격자 5칸.
-  static const double rowStep = 36;
-  static const double gridSpan = rowStep * AxisBounds.divisions; // 180
-  static const double footroom = 8;
-  static const double plotHeight = gridSpan + footroom; // 188
+  /// Y 눈금은 항상 6개([AxisBounds.defaultDivisions]+1) — 격자 5칸.
+  static const double rowStep = 32;
+  static const double gridSpan = rowStep * AxisBounds.defaultDivisions; // 160
+  // Figma labels sit at the bottom of each 32px row. Keep one row above
+  // the highest tick, and map both the curves and scrub dots to those ticks.
+  static const double plotHeight = gridSpan + rowStep; // 192
 
-  static const double axisHeight = 20;
+  static const double axisHeight = 32;
   static const double totalHeight = markerBand + plotHeight + axisHeight;
 
-  /// 고정 Y축 라벨 컬럼 폭 (흰 바닥 마스크 포함).
-  // "28.0°"(소수 축)가 12pt로 ~36px — 34면 왼쪽으로 흘러 잘린다.
+  /// The graph clips at 12px screen insets; labels overlay the plot.
+  static const double plotInset = 12;
   static const double yLabelWidth = 42;
-  static const double labelHeight = 14;
 
   @override
   State<EnvDayChart> createState() => _EnvDayChartState();
@@ -131,9 +149,7 @@ class _EnvDayChartState extends State<EnvDayChart> {
       return;
     }
     final viewport = _controller.position.viewportDimension;
-    final target = (EnvDayChart.yLabelWidth +
-            f * EnvDayChart.contentWidth -
-            (viewport - EnvDayChart.yLabelWidth))
+    final target = (f * EnvDayChart.contentWidth - viewport)
         .clamp(0.0, _controller.position.maxScrollExtent);
     _controller.jumpTo(target);
   }
@@ -153,7 +169,9 @@ class _EnvDayChartState extends State<EnvDayChart> {
       fontFamily: 'Pretendard',
       fontSize: 12,
       fontWeight: FontWeight.w500,
-      color: glass.textTertiary,
+      color: glass.deviceOff,
+      letterSpacing: -.24,
+      height: 1.193359375,
     );
 
     return SizedBox(
@@ -162,11 +180,11 @@ class _EnvDayChartState extends State<EnvDayChart> {
       child: Stack(
         children: [
           Positioned.fill(
+            left: EnvDayChart.plotInset,
+            right: EnvDayChart.plotInset,
             child: SingleChildScrollView(
               controller: _controller,
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: EnvDayChart.yLabelWidth),
               child: SizedBox(
                 width: EnvDayChart.contentWidth,
                 height: EnvDayChart.totalHeight,
@@ -180,7 +198,7 @@ class _EnvDayChartState extends State<EnvDayChart> {
               ),
             ),
           ),
-          // Y축 라벨 — 스크롤 밖 고정 + 흰 바닥 마스크(Figma Hide 구조).
+          // Y축 라벨은 스크롤 밖 고정. 그래프는 12px 안쪽까지 그린다.
           _axisOverlay(
             glass: glass,
             left: true,
@@ -214,6 +232,8 @@ class _EnvDayChartState extends State<EnvDayChart> {
           height: EnvDayChart.plotHeight,
           child: CustomPaint(
             painter: _DayPlotPainter(
+              maxGap: const Duration(minutes: 30).inMicroseconds /
+                  widget.data.to.difference(widget.data.from).inMicroseconds,
               tempPoints: widget.data.tempPoints,
               humidPoints: widget.data.humidPoints,
               tempColor: glass.tempAccent,
@@ -239,8 +259,8 @@ class _EnvDayChartState extends State<EnvDayChart> {
             children: [
               for (var i = 0; i < 4; i++)
                 Positioned(
-                  left: i / 4 * EnvDayChart.contentWidth,
-                  top: 4,
+                  left: i / 4 * EnvDayChart.contentWidth + 4,
+                  top: 10,
                   child: Text(_hourLabel(i * 6), style: labelStyle),
                 ),
             ],
@@ -282,24 +302,13 @@ class _EnvDayChartState extends State<EnvDayChart> {
       for (var i = 0; i < spots.length; i++)
         Positioned(
           left: centers[i] - EnvDayChart.markerSize / 2,
-          top: 0,
+          // Figma 1081:4873 — 28 마커가 32 띠 가운데(y+2).
+          top: (EnvDayChart.markerBand - EnvDayChart.markerSize) / 2,
           child: Tooltip(
             message:
                 '${formatAmPmTime(spots[i].e.at)} ${controlKindNameKey(spots[i].e.kind).tr()}',
             triggerMode: TooltipTriggerMode.tap,
-            child: Container(
-              width: EnvDayChart.markerSize,
-              height: EnvDayChart.markerSize,
-              decoration: BoxDecoration(
-                color: controlEntryColor(spots[i].e, glass),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                controlKindIcon(spots[i].e.kind),
-                size: 15,
-                color: glass.deviceGlyph,
-              ),
-            ),
+            child: controlEntryIcon(spots[i].e, glass, EnvDayChart.markerSize),
           ),
         ),
     ];
@@ -363,8 +372,8 @@ class _EnvDayChartState extends State<EnvDayChart> {
     );
   }
 
-  /// 고정 Y축 라벨 컬럼. 라벨 **중앙**이 격자선에 온다(EnvChart와 같은 규칙 —
-  /// spaceBetween으로 흘리면 위아래 라벨이 반 칸 밀린다).
+  /// Fixed labels overlay the plot, matching Figma's 32px bottom-aligned rows.
+  /// IgnorePointer keeps scrubbing available even beneath long decimal labels.
   Widget _axisOverlay({
     required GlassPalette glass,
     required bool left,
@@ -373,37 +382,25 @@ class _EnvDayChartState extends State<EnvDayChart> {
     required TextStyle style,
   }) {
     if (axis == null) return const SizedBox.shrink();
-    final ticks = axis.ticks.reversed.toList(); // 위 → 아래
-
+    final ticks = axis.ticks.reversed.toList();
     return Positioned(
-      left: left ? 0 : null,
-      right: left ? null : 0,
+      left: left ? EnvDayChart.plotInset : null,
+      right: left ? null : EnvDayChart.plotInset,
       top: EnvDayChart.markerBand,
       height: EnvDayChart.plotHeight,
       width: EnvDayChart.yLabelWidth,
-      // 흰 바닥 마스크 — 차트가 라벨 밑으로 흐를 때 글자가 뭉개지지 않게.
-      child: ColoredBox(
-        color: glass.wallpaper,
-        child: Stack(
-          children: [
-            for (var i = 0; i < ticks.length; i++)
-              Positioned(
-                top: i * EnvDayChart.rowStep - EnvDayChart.labelHeight / 2,
-                left: left ? null : 2,
-                right: left ? 2 : null,
-                child: SizedBox(
-                  height: EnvDayChart.labelHeight,
-                  child: Text(
-                    format(ticks[i], axis.decimals),
-                    style: style,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.visible,
-                  ),
-                ),
+      child: IgnorePointer(
+        child: Column(children: [
+          for (final tick in ticks)
+            SizedBox(
+              height: EnvDayChart.rowStep,
+              child: Align(
+                alignment: left ? Alignment.bottomLeft : Alignment.bottomRight,
+                child: Text(format(tick, axis.decimals),
+                    style: style, maxLines: 1, softWrap: false),
               ),
-          ],
-        ),
+            ),
+        ]),
       ),
     );
   }
@@ -413,6 +410,7 @@ class _EnvDayChartState extends State<EnvDayChart> {
 /// 프레임 고정 전제의 fl_chart 배선보다 좌표를 직접 잡는 편이 정확하다.
 class _DayPlotPainter extends CustomPainter {
   const _DayPlotPainter({
+    required this.maxGap,
     required this.tempPoints,
     required this.humidPoints,
     required this.tempColor,
@@ -425,6 +423,7 @@ class _DayPlotPainter extends CustomPainter {
     required this.scrubDotFill,
   });
 
+  final double maxGap;
   final List<({double x, double y})> tempPoints;
   final List<({double x, double y})> humidPoints;
   final Color tempColor;
@@ -436,8 +435,9 @@ class _DayPlotPainter extends CustomPainter {
   final Color scrubLineColor;
   final Color scrubDotFill;
 
-  /// 정규화 y(0~1) → 픽셀. 1이 첫 격자선(위), 0이 마지막 격자선.
-  static double _dy(double norm) => (1 - norm) * EnvDayChart.gridSpan;
+  /// 정규화 y(0~1) → 픽셀. 1은 첫 눈금선, 0은 마지막 눈금선.
+  static double _dy(double norm) =>
+      EnvDayChart.rowStep + (1 - norm) * EnvDayChart.gridSpan;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -446,23 +446,50 @@ class _DayPlotPainter extends CustomPainter {
       ..color = gridColor
       ..strokeWidth = 1
       ..isAntiAlias = false;
-    for (var i = 0; i <= AxisBounds.divisions; i++) {
+    for (var i = 0; i <= AxisBounds.defaultDivisions + 1; i++) {
       final y = i * EnvDayChart.rowStep;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
     }
 
+    // Six-hour boundaries are solid; their three-hour midpoints are dotted.
+    // This painter scrolls with the same 524px time coordinate as the series.
+    for (var hour = 0; hour <= 24; hour += 3) {
+      final x = hour / 24 * size.width;
+      final bottom = size.height + EnvDayChart.axisHeight;
+      if (hour % 6 == 0) {
+        canvas.drawLine(
+            Offset(x, -EnvDayChart.markerBand), Offset(x, bottom), grid);
+      } else {
+        for (double y = -EnvDayChart.markerBand; y < size.height; y += 4) {
+          canvas.drawLine(
+              Offset(x, y),
+              Offset(x, (y + 2).clamp(-EnvDayChart.markerBand, size.height)),
+              grid);
+        }
+      }
+    }
+    for (final y in [-EnvDayChart.markerBand, size.height]) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
+    }
+    canvas.drawLine(Offset(0, size.height + EnvDayChart.axisHeight),
+        Offset(size.width, size.height + EnvDayChart.axisHeight), grid);
+
     void drawLinePath(List<({double x, double y})> pts, Color color) {
       if (pts.length < 2) return; // 점 하나짜리 선은 보이지 않는다.
-      final path = Path()..moveTo(pts.first.x * size.width, _dy(pts.first.y));
-      for (final p in pts.skip(1)) {
-        path.lineTo(p.x * size.width, _dy(p.y));
+      final path = Path();
+      for (final segment in environmentLineSegments(pts, maxGap: maxGap)) {
+        if (segment.length < 2) continue;
+        path.moveTo(segment.first.x * size.width, _dy(segment.first.y));
+        for (final p in segment.skip(1)) {
+          path.lineTo(p.x * size.width, _dy(p.y));
+        }
       }
       canvas.drawPath(
         path,
         Paint()
           ..color = color
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
+          ..strokeWidth = 4
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round,
       );
@@ -497,6 +524,7 @@ class _DayPlotPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DayPlotPainter old) =>
+      old.maxGap != maxGap ||
       old.tempPoints != tempPoints ||
       old.humidPoints != humidPoints ||
       old.tempColor != tempColor ||

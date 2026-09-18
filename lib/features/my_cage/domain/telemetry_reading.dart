@@ -13,6 +13,7 @@ class TelemetryReading {
   final bool bOk;
   final ActuatorState relay;
   final ActuatorState fan;
+  final ActuatorState fan2;
   final ActuatorState heaterState;
   final bool heaterLocked;
 
@@ -40,6 +41,7 @@ class TelemetryReading {
     required this.heaterLocked,
     required this.ts,
     this.led = ActuatorState.unavailable,
+    this.fan2 = ActuatorState.unavailable,
     this.ledBrightness,
   });
 
@@ -54,6 +56,7 @@ class TelemetryReading {
       bOk: j['b_ok'] as bool? ?? false,
       relay: _parseActuator(j['relay']),
       fan: _parseActuator(j['fan']),
+      fan2: _parseActuator(j['fan2']),
       heaterState: _parseActuator(j['heater_state']),
       heaterLocked: j['heater_locked'] as bool? ?? false,
       led: _parseActuator(j['led']),

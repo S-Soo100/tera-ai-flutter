@@ -1,0 +1,972 @@
+[
+  {
+    "type": "Material",
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      852.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      182.99187469482422,
+      74.5,
+      27.016250610351562,
+      19.0
+    ],
+    "text": "그룹",
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ],
+    "color": "0"
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      22.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      24.0,
+      122.0,
+      345.0,
+      21.0
+    ],
+    "text": "사육 환경 1",
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.36,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      24.0,
+      151.0,
+      345.0,
+      17.0
+    ],
+    "text": "이 그룹에 추가할 기기와 개체를 1개씩 선택하세요",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff626262"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      24.0,
+      192.0,
+      345.0,
+      19.0
+    ],
+    "text": "사육장",
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      223.0,
+      369.0,
+      192.0
+    ],
+    "color": "fff4f4f4"
+  },
+  {
+    "type": "ManagementItemRow",
+    "rect": [
+      12.0,
+      223.0,
+      369.0,
+      64.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      28.0,
+      236.75,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      36.0,
+      244.75,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      234.75,
+      51.025001525878906,
+      19.0
+    ],
+    "text": "사육장 1",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      257.75,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      281.72156143188477,
+      246.25,
+      47.278438568115234,
+      17.0
+    ],
+    "text": "크랑이네",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      242.75,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "ManagementItemRow",
+    "rect": [
+      12.0,
+      287.0,
+      369.0,
+      64.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      28.0,
+      300.75,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      36.0,
+      308.75,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      298.75,
+      53.321876525878906,
+      19.0
+    ],
+    "text": "사육장 2",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      321.75,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      229.85530853271484,
+      309.25,
+      99.14469146728516,
+      19.0
+    ],
+    "text": "viva-iot-0002",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      306.75,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "ManagementItemRow",
+    "rect": [
+      12.0,
+      351.0,
+      369.0,
+      64.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      28.0,
+      364.75,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      36.0,
+      372.75,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      362.75,
+      53.790626525878906,
+      19.0
+    ],
+    "text": "사육장 3",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      385.75,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      229.38655853271484,
+      373.25,
+      99.61344146728516,
+      19.0
+    ],
+    "text": "viva-iot-0003",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      370.75,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      24.0,
+      439.0,
+      345.0,
+      19.0
+    ],
+    "text": "카메라",
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      470.0,
+      369.0,
+      192.0
+    ],
+    "color": "fff4f4f4"
+  },
+  {
+    "type": "ManagementItemRow",
+    "rect": [
+      12.0,
+      470.0,
+      369.0,
+      64.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      28.0,
+      483.75,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      36.0,
+      491.75,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      481.75,
+      71.01750183105469,
+      19.0
+    ],
+    "text": "관찰 카메라",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      504.75,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      281.72156143188477,
+      493.25,
+      47.278438568115234,
+      17.0
+    ],
+    "text": "크랑이네",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      489.75,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "ManagementItemRow",
+    "rect": [
+      12.0,
+      534.0,
+      369.0,
+      64.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      28.0,
+      547.75,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      36.0,
+      555.75,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      545.75,
+      53.29875183105469,
+      19.0
+    ],
+    "text": "camera",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      568.75,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      553.75,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "ManagementItemRow",
+    "rect": [
+      12.0,
+      598.0,
+      369.0,
+      64.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      28.0,
+      611.75,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      36.0,
+      619.75,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      609.75,
+      53.790626525878906,
+      19.0
+    ],
+    "text": "카메라 3",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      632.75,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      187.0734405517578,
+      620.25,
+      141.9265594482422,
+      19.0
+    ],
+    "text": "FB2_P4_CAM-0003",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      617.75,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      24.0,
+      686.0,
+      345.0,
+      19.0
+    ],
+    "text": "개체",
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      717.0,
+      369.0,
+      128.0
+    ],
+    "color": "fff4f4f4"
+  },
+  {
+    "type": "ManagementItemRow",
+    "rect": [
+      12.0,
+      717.0,
+      369.0,
+      64.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      28.0,
+      730.75,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      36.0,
+      738.75,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      728.75,
+      40.524375915527344,
+      19.0
+    ],
+    "text": "크랑이",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      751.75,
+      11.7173433303833,
+      17.0
+    ],
+    "text": "--",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      281.72156143188477,
+      740.25,
+      47.278438568115234,
+      17.0
+    ],
+    "text": "크랑이네",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      736.75,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "ManagementItemRow",
+    "rect": [
+      12.0,
+      781.0,
+      369.0,
+      64.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      28.0,
+      794.75,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      36.0,
+      802.75,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      792.75,
+      23.461875915527344,
+      19.0
+    ],
+    "text": "pet",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      815.75,
+      11.7173433303833,
+      17.0
+    ],
+    "text": "--",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      800.75,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": false
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "color": "ffe3e3e3"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      181.30335903167725,
+      710.0,
+      30.393281936645508,
+      28.0
+    ],
+    "text": "선택",
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "fffafafa"
+    }
+  },
+  {
+    "type": "Dialog",
+    "rect": [
+      0.0,
+      62.0,
+      393.0,
+      756.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      24.0,
+      340.0,
+      345.0,
+      200.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      48.0,
+      364.0,
+      297.0,
+      84.0
+    ],
+    "text": "선택한 관찰 카메라은 크랑이네에 포함돼 있습니다.\n사육 환경 1 그룹으로 변경하시겠습니까?",
+    "style": {
+      "size": 18.0,
+      "weight": 500,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      48.0,
+      472.0,
+      142.5,
+      44.0
+    ],
+    "enabled": true
+  },
+  {
+    "type": "Material",
+    "rect": [
+      48.0,
+      472.0,
+      142.5,
+      44.0
+    ],
+    "color": "ff1e1e1e"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      104.05335903167725,
+      486.0,
+      30.393281936645508,
+      16.0
+    ],
+    "text": "취소",
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "fffafafa"
+    }
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      202.5,
+      472.0,
+      142.5,
+      44.0
+    ],
+    "enabled": true
+  },
+  {
+    "type": "Material",
+    "rect": [
+      202.5,
+      472.0,
+      142.5,
+      44.0
+    ],
+    "color": "ffc00306"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      258.55335903167725,
+      486.0,
+      30.393281936645508,
+      16.0
+    ],
+    "text": "변경",
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "fffafafa"
+    }
+  }
+]

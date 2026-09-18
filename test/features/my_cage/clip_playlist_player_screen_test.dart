@@ -1,3 +1,5 @@
+import 'package:vivanaut/features/my_cage/data/clip_visibility_repository.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_visibility_providers.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'dart:io';
@@ -63,21 +65,28 @@ Future<void> _pump(
   MotionClipCursor? nextCursor,
   bool hasMore = false,
   PlayerFeedPageLoader? feedLoader,
+  ClipVisibilityRepository? visibilityRepository,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        currentUserProvider.overrideWithValue(feedLoader == null
-            ? null
-            : User(
-                id: 'owner-1',
-                appMetadata: const {},
-                userMetadata: const {},
-                aud: 'authenticated',
-                createdAt: '2026-01-01')),
+        clipVisibilityAccountProvider
+            .overrideWithValue(visibilityRepository == null ? null : 'owner-1'),
+        if (visibilityRepository != null)
+          clipVisibilityRepositoryProvider
+              .overrideWithValue(visibilityRepository),
+        currentUserProvider.overrideWithValue(
+            feedLoader == null && visibilityRepository == null
+                ? null
+                : User(
+                    id: 'owner-1',
+                    appMetadata: const {},
+                    userMetadata: const {},
+                    aud: 'authenticated',
+                    createdAt: '2026-01-01')),
         if (feedLoader != null)
           playerFeedPageLoaderProvider.overrideWith((ref, query) => feedLoader),
-        if (feedLoader != null)
+        if (feedLoader != null || visibilityRepository != null)
           bookmarkControllerProvider.overrideWith((ref, key) =>
               BookmarkController(initial: false, persist: (_) async {})),
         motionThumbnailFileProvider.overrideWith((ref, key) async => null),
@@ -105,7 +114,74 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
+class _VisibilityRepository implements ClipVisibilityRepository {
+  final ids = <String>{};
+  bool fail = false;
+  @override
+  Future<Set<String>> hiddenClipIds(String account) async => {...ids};
+  @override
+  Future<void> hide(String account, String clip) async {
+    if (fail) throw StateError('table not deployed');
+    ids.add(clip);
+  }
+}
+
 void main() {
+  testWidgets('all hidden loaded feed clips continue into the next raw page',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final repository = _VisibilityRepository()..ids.add('a');
+    var calls = 0;
+    await _pump(tester,
+        clipId: 'a',
+        playlist: ['a'],
+        source: ClipPlaybackSource.feed,
+        cameraId: 'cam-1',
+        visibilityRepository: repository,
+        hasMore: true,
+        nextCursor: (startedAt: DateTime.utc(2026), id: 'a'),
+        feedLoader: (_) async {
+      calls++;
+      return (items: [_clip('b')], nextCursor: null, hasMore: false);
+    });
+    expect(calls, 1);
+    expect(find.text('clip_hide_empty'), findsNothing);
+    expect(find.byKey(const Key('clip_hide_button')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('delete failure retains queue, retry removes only current clip',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final repository = _VisibilityRepository()..fail = true;
+    await _pump(tester,
+        clipId: 'a', playlist: ['a', 'b'], visibilityRepository: repository);
+    await tester.tap(find.byKey(const Key('clip_hide_button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'clip_hide_action'));
+    await tester.pumpAndSettle();
+    expect(find.text('clip_hide_failed'), findsOneWidget);
+    expect(repository.ids, isEmpty);
+    repository.fail = false;
+    await tester.tap(find.widgetWithText(FilledButton, 'clip_hide_action'));
+    await tester.pumpAndSettle();
+    expect(repository.ids, {'a'});
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byKey(ClipPlaylistPlayerScreen.paginationKey), findsNothing);
+    expect(find.byKey(const Key('clip_hide_button')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets(
+      'last hidden clip leaves empty player without loading saved original',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final repository = _VisibilityRepository()..ids.add('a');
+    await _pump(tester, clipId: 'a', visibilityRepository: repository);
+    expect(find.text('clip_hide_empty'), findsOneWidget);
+    expect(find.byKey(const Key('clip_hide_button')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('전체 피드는 현재 위치가 끝에서 멀면 다음 페이지를 미리 받지 않는다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     final ids = [for (var i = 1; i <= 60; i++) 'c$i'];
@@ -191,13 +267,13 @@ void main() {
     final actionPill = find.byKey(ClipPlaylistPlayerScreen.actionPillKey);
     expect(previous, findsOneWidget);
     expect(next, findsOneWidget);
-    expect(tester.getSize(navigation), const Size(308, 48));
+    expect(tester.getSize(navigation), const Size(360, 48));
     expect(tester.getCenter(navigation).dx, closeTo(393 / 2, 0.5));
-    expect(tester.getSize(actionPill), const Size(164, 48));
+    expect(tester.getSize(actionPill), const Size(216, 48));
     expect(tester.getSize(previous), const Size.square(48));
     expect(tester.getSize(next), const Size.square(48));
-    expect(tester.getCenter(previous).dx, closeTo(66.5, 0.5));
-    expect(tester.getCenter(next).dx, closeTo(326.5, 0.5));
+    expect(tester.getCenter(previous).dx, closeTo(40.5, 0.5));
+    expect(tester.getCenter(next).dx, closeTo(352.5, 0.5));
 
     final previousIcon = tester.widget<FigmaIcon>(
       find.descendant(of: previous, matching: find.byType(FigmaIcon)),
@@ -231,9 +307,9 @@ void main() {
     final navigation =
         find.byKey(ClipPlaylistPlayerScreen.navigationActionsKey);
     expect(next, findsOneWidget);
-    expect(tester.getSize(navigation), const Size(308, 48));
+    expect(tester.getSize(navigation), const Size(360, 48));
     expect(tester.getCenter(navigation).dx, closeTo(393 / 2, 0.5));
-    expect(tester.getCenter(next).dx, closeTo(326.5, 0.5));
+    expect(tester.getCenter(next).dx, closeTo(352.5, 0.5));
 
     await tester.tap(next);
     await tester.pumpAndSettle();
@@ -241,9 +317,9 @@ void main() {
     final previous = find.byKey(ClipPlaylistPlayerScreen.prevArrowKey);
     expect(previous, findsOneWidget);
     expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsNothing);
-    expect(tester.getSize(navigation), const Size(308, 48));
+    expect(tester.getSize(navigation), const Size(360, 48));
     expect(tester.getCenter(navigation).dx, closeTo(393 / 2, 0.5));
-    expect(tester.getCenter(previous).dx, closeTo(66.5, 0.5));
+    expect(tester.getCenter(previous).dx, closeTo(40.5, 0.5));
   });
 
   testWidgets('재생목록 없음(단일 클립) — 페이지네이션을 그리지 않는다', (tester) async {

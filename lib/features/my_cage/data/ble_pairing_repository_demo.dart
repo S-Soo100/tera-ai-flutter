@@ -83,16 +83,11 @@ class DemoBlePairingRepository extends BlePairingRepository {
   Future<void> sendWifiCredentials({
     required String ssid,
     required String password,
-    BleRegistration? registration,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     _demoEvents.add(BleConnecting());
     await Future<void>.delayed(const Duration(milliseconds: 2800));
     _demoEvents.add(BleWifiOk());
-    if (registration != null) {
-      await Future<void>.delayed(const Duration(milliseconds: 1500));
-      _demoEvents.add(BlePairOk(deviceId: 'demo-device'));
-    }
   }
 
   @override

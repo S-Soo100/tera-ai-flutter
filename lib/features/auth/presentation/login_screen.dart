@@ -2,11 +2,26 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/glass_palette.dart';
+import '../../../core/theme/viva_colors.dart';
+import '../../../shared/widgets/figma_icon.dart';
+import '../../../shared/widgets/viva_check_row.dart';
+import '../../../shared/widgets/viva_text_field.dart';
 import '../data/auth_repository.dart';
+import '../data/login_prefs_repository.dart';
 
+/// 로그인 — Figma `Login` 1133:5712·1134:6114·1134:6259·1134:6472·1134:6617.
+///
+/// 393 프레임 기준: 로고 200×48.6 y98(안전영역 62 + 36) → 32 → 아이디 → 24 →
+/// 비밀번호 → 12 → 체크 행(자동 로그인 · 오른쪽 비밀번호 규칙 오류) →
+/// 플로팅 CTA 369×56 y696(하단 100), 키보드가 열리면 키보드 위 12.
+/// CTA는 두 칸이 모두 채워졌을 때만 켜진다(비어 있으면 `#E3E3E3`).
+///
+/// 검증(계획 B5): 아이디는 이메일 형식, 비밀번호는 6자 이상만 막는다 —
+/// 기존 계정의 비밀번호가 "영문+숫자+특수문자 6~12자" 규칙을 만족한다는 보장이
+/// 없어 로그인에서 그 규칙을 강제하면 잠긴다(규칙은 가입 화면 몫). 규칙 문구는
+/// 힌트와 짧은 비밀번호 오류에만 쓴다. 서버 인증 실패도 같은 자리에 적는다.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -17,185 +32,244 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  final _passwordFocus = FocusNode();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _autoLogin = true;
+  String? _emailError;
+  String? _passwordError;
+
+  static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   @override
   void initState() {
     super.initState();
-    final lastEmail =
-        Hive.box('app_settings').get('last_login_email') as String?;
-    if (lastEmail != null) {
-      _emailController.text = lastEmail;
-    }
+    final prefs = ref.read(loginPrefsProvider);
+    _emailController.text = prefs.lastEmail ?? '';
+    _autoLogin = prefs.autoLogin;
+    // 고치기 시작하면 **그 칸의** 오류만 지운다(다른 칸 오류는 유지 — 리뷰
+    // 2026-09-16). CTA 활성도 글자 수에 달려 있어 매 입력마다 다시 그린다.
+    _emailController.addListener(() => setState(() => _emailError = null));
+    _passwordController
+        .addListener(() => setState(() => _passwordError = null));
   }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _passwordFocus.dispose();
     super.dispose();
   }
 
+  bool get _canSubmit =>
+      !_isLoading &&
+      _emailController.text.trim().isNotEmpty &&
+      _passwordController.text.isNotEmpty;
+
+  bool _validate() {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    setState(() {
+      _emailError =
+          _emailPattern.hasMatch(email) ? null : 'login_email_invalid'.tr();
+      _passwordError = password.length >= 6 ? null : 'login_password_rule'.tr();
+    });
+    return _emailError == null && _passwordError == null;
+  }
+
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_canSubmit || !_validate()) return;
+    FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
+    // await 뒤에 ref를 쓰지 않도록 먼저 잡는다(화면이 떠날 수 있다).
+    final prefs = ref.read(loginPrefsProvider);
+    final auth = ref.read(authRepositoryProvider);
+    final autoLogin = _autoLogin;
     try {
       final email = _emailController.text.trim();
-      await ref.read(authRepositoryProvider).signIn(
-            email: email,
-            password: _passwordController.text,
-          );
-      await Hive.box('app_settings').put('last_login_email', email);
+      await auth.signIn(email: email, password: _passwordController.text);
+      await prefs.save(email: email, autoLogin: autoLogin);
       if (mounted) context.go('/home');
     } on AuthException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _passwordError = _messageFor(e));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _passwordError = 'login_failed_generic'.tr());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  /// Supabase 오류를 한글로. 자격 증명 오류(400)만 구분하고 나머지는 일반 문구.
+  static String _messageFor(AuthException e) {
+    final code = e.statusCode;
+    final msg = e.message.toLowerCase();
+    if (code == '400' || msg.contains('invalid login credentials')) {
+      return 'login_invalid_credentials'.tr();
+    }
+    if (msg.contains('email not confirmed')) {
+      return 'login_email_not_confirmed'.tr();
+    }
+    return 'login_failed_generic'.tr();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final glass = context.glass;
+    // Scaffold 안에서는 viewInsets가 제거되므로 여기서 읽는다.
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    // Figma: 키보드 없을 때 CTA 하단이 화면 아래 100(752/852)이고 그 아래 56에
+    // 가입 링크가 붙는다(다른 화면의 y752 보조 행과 같은 자리). 키보드 위 12.
+    final ctaBottom = keyboardOpen
+        ? 12.0
+        : (100.0 - safeBottom - 56).clamp(10.0, double.infinity);
+    final passwordErrorInRow = _passwordError;
 
     return Scaffold(
+      backgroundColor: glass.surfaceHeader,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 심볼 단독 + 현행 브랜드명 텍스트 (구 logo_stacked에는
-                  // "terra ai" 워드마크가 박혀 있어 교체 — 2026-08-14 리브랜딩)
-                  Center(
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      width: 104,
-                    ),
+        child: Stack(children: [
+          AutofillGroup(
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(
+                  12, 36, 12, ctaBottom + 56 + (keyboardOpen ? 0 : 56) + 24),
+              children: [
+                Center(
+                  child: Image.asset(
+                    'assets/images/logo_vivanaut_wordmark.png',
+                    key: const ValueKey('login-logo'),
+                    width: 200,
+                    height: 48.64,
+                    fit: BoxFit.contain,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'app_name'.tr(),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.brandRed,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'auth_login_subtitle'.tr(),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 48),
-
-                  // 이메일
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: 'auth_email'.tr(),
-                      prefixIcon: const Icon(Icons.email_outlined),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return 'auth_email_required'.tr();
-                      }
-                      if (!v.contains('@')) return 'auth_email_invalid'.tr();
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 비밀번호
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'auth_password'.tr(),
-                      prefixIcon: const Icon(Icons.lock_outlined),
-                      suffixIcon: IconButton(
-                        icon: Icon(
+                ),
+                const SizedBox(height: 32),
+                VivaTextField(
+                  fieldKey: const ValueKey('login-email'),
+                  label: 'login_id_label'.tr(),
+                  controller: _emailController,
+                  hintText: 'login_id_hint'.tr(),
+                  errorText: _emailError,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.username],
+                  onSubmitted: (_) => _passwordFocus.requestFocus(),
+                ),
+                VivaTextField(
+                  fieldKey: const ValueKey('login-password'),
+                  label: 'auth_password'.tr(),
+                  controller: _passwordController,
+                  focusNode: _passwordFocus,
+                  hintText: 'login_password_rule'.tr(),
+                  errorText: passwordErrorInRow,
+                  showErrorBelow: false,
+                  obscureText: _obscurePassword,
+                  keyboardType: TextInputType.visiblePassword,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.password],
+                  onSubmitted: (_) => _login(),
+                  gapBelow: 12,
+                  suffix: GestureDetector(
+                    key: const ValueKey('login-password-visibility'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    child: Semantics(
+                      button: true,
+                      label: (_obscurePassword
+                              ? 'login_show_password'
+                              : 'login_hide_password')
+                          .tr(),
+                      child: FigmaIcon.tinted(
                           _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                              ? 'redesign_v2/visibility'
+                              : 'redesign_v2/visibility_off',
+                          size: 24,
+                          color: glass.deviceOff),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: SizedBox(
+                    height: 24,
+                    child: Row(children: [
+                      VivaCheckRow(
+                          key: const ValueKey('login-auto-login'),
+                          label: 'login_auto_login'.tr(),
+                          value: _autoLogin,
+                          onChanged: (v) => setState(() => _autoLogin = v)),
+                      const SizedBox(width: 8),
+                      if (passwordErrorInRow != null)
+                        Expanded(
+                          child: Semantics(
+                            liveRegion: true,
+                            child: Text(passwordErrorInRow,
+                                key: const ValueKey('login-password-error'),
+                                textAlign: TextAlign.right,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: vivaFieldErrorText(context)),
+                          ),
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                    ),
-                    obscureText: _obscurePassword,
-                    validator: (v) {
-                      if (v == null || v.isEmpty) {
-                        return 'auth_password_required'.tr();
-                      }
-                      if (v.length < 6) return 'auth_password_min_length'.tr();
-                      return null;
-                    },
+                    ]),
                   ),
-                  const SizedBox(height: 24),
-
-                  // 로그인 버튼
-                  FilledButton(
-                    onPressed: _isLoading ? null : _login,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text('auth_login'.tr()),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 회원가입 링크
-                  TextButton(
-                    onPressed: () => context.push('/signup'),
-                    child: Text('auth_no_account'.tr()),
-                  ),
-
-                  // 둘러보기
-                  TextButton(
-                    onPressed: () => context.go('/home'),
-                    child: Text(
-                      'auth_browse'.tr(),
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                    ),
-                  ),
-
-                  // 디자인 미리보기 — 테스트 유저용 A/B/C 체험(비로그인 공개).
-                  // 테스트 종료 시 이 버튼 + kPublicPaths '/design-test' 제거:
-                  // docs/design-test-rollout-plan.md §2.4
-                  TextButton(
-                    onPressed: () => context.push('/design-test'),
-                    child: Text(
-                      'login_design_preview'.tr(),
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ),
+          Positioned(
+            left: 12,
+            right: 12,
+            bottom: ctaBottom,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              SizedBox(
+                height: 56,
+                child: FilledButton(
+                  key: const ValueKey('login-submit'),
+                  onPressed: _canSubmit ? _login : null,
+                  style: FilledButton.styleFrom(
+                      backgroundColor: glass.textPrimary,
+                      foregroundColor: VivaColors.fillBack,
+                      disabledBackgroundColor: glass.border,
+                      disabledForegroundColor: VivaColors.fillBack,
+                      minimumSize: const Size(double.infinity, 56),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      textStyle: vivaFieldText(context).copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          height: 28 / 18,
+                          letterSpacing: -0.36)),
+                  child: Text(
+                      (_isLoading ? 'login_in_progress' : 'auth_login').tr()),
+                ),
+              ),
+              // Figma에 가입 진입점이 없어(계획 B4) 다른 화면의 y752 보조 행
+              // 자리에 텍스트 링크로 둔다. 키보드가 열리면 숨긴다.
+              if (!keyboardOpen)
+                SizedBox(
+                  height: 56,
+                  child: TextButton(
+                    key: const ValueKey('login-signup'),
+                    onPressed: () => context.push('/signup'),
+                    style: TextButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 56),
+                        foregroundColor: glass.textSecondary,
+                        textStyle: vivaFieldText(context).copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            height: 19.09 / 16,
+                            letterSpacing: -0.32)),
+                    child: Text('auth_no_account'.tr()),
+                  ),
+                ),
+            ]),
+          ),
+        ]),
       ),
     );
   }

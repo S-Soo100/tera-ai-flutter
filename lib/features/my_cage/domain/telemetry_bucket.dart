@@ -46,10 +46,11 @@ class TelemetryBucket {
     return TelemetryBucket(
       bucket: DateTime.parse(j['bucket'].toString()),
       sampleCount: _parseInt(j['sample_count']),
-      tValidCount:
-          j['t_a_valid_count'] == null ? null : _parseInt(j['t_a_valid_count']),
-      hValidCount:
-          j['h_a_valid_count'] == null ? null : _parseInt(j['h_a_valid_count']),
+      // 2026-09-16 배포 컬럼명은 `t_a_count`/`h_a_count`(센서 정상 보고분만).
+      // 2026-09-15 이전 버킷은 null → 평균 `--`. 구 제안명(`*_valid_count`)은
+      // 호환용 폴백.
+      tValidCount: _optionalInt(j['t_a_count'] ?? j['t_a_valid_count']),
+      hValidCount: _optionalInt(j['h_a_count'] ?? j['h_a_valid_count']),
       tAvg: parseDouble(j['t_a_avg']),
       tMin: parseDouble(j['t_a_min']),
       tMax: parseDouble(j['t_a_max']),
@@ -58,6 +59,8 @@ class TelemetryBucket {
       hMax: parseDouble(j['h_a_max']),
     );
   }
+
+  static int? _optionalInt(Object? v) => v == null ? null : _parseInt(v);
 
   /// DB 컬럼은 int/num/String 어느 형태로도 올 수 있다. 파싱 실패는 0.
   static int _parseInt(Object? v) {

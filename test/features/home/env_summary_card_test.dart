@@ -12,12 +12,13 @@ import 'package:vivanaut/shared/domain/env_extremes.dart';
 
 const _deviceId = 'd1';
 
-TelemetryReading _reading({double? t = 28.5, double? h = 62}) =>
+TelemetryReading _reading(
+        {double? t = 28.5, double? h = 62, bool aOk = true, DateTime? ts}) =>
     TelemetryReading(
       deviceId: _deviceId,
       tA: t,
       hA: h,
-      aOk: true,
+      aOk: aOk,
       tB: null,
       hB: null,
       bOk: false,
@@ -25,7 +26,7 @@ TelemetryReading _reading({double? t = 28.5, double? h = 62}) =>
       fan: ActuatorState.off,
       heaterState: ActuatorState.off,
       heaterLocked: false,
-      ts: DateTime(2026, 9, 2, 12),
+      ts: ts ?? DateTime.now(),
     );
 
 const _extremes = EnvExtremes(
@@ -46,6 +47,7 @@ Future<void> _pump(
         currentDeviceIdProvider.overrideWith((ref) async => deviceId),
         telemetryStreamProvider
             .overrideWith((ref, id) => Stream.value(reading ?? _reading())),
+        telemetryStaleProvider.overrideWith((ref, id) => Stream.value(false)),
         homeTodayExtremesProvider.overrideWith((ref) async => _extremes),
       ],
       child: MaterialApp.router(routerConfig: _router()),
@@ -69,6 +71,13 @@ GoRouter _router() => GoRouter(
     );
 
 void main() {
+  testWidgets('stale or invalid sensor readings remain unknown',
+      (tester) async {
+    await _pump(tester, reading: _reading(ts: DateTime(2020)));
+    expect(find.text('--'), findsNWidgets(2));
+    await _pump(tester, reading: _reading(aOk: false));
+    expect(find.text('--'), findsNWidgets(2));
+  });
   testWidgets('온도·습도 2열(현재값 + 오늘 최고/최저)을 그린다', (tester) async {
     await _pump(tester);
     // EasyLocalization 미초기화 → tr()은 키를 그대로 돌려준다.

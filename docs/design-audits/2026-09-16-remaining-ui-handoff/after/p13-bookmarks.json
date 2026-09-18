@@ -1,0 +1,180 @@
+[
+  {
+    "type": "IconButton",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_previous",
+    "rect": [
+      22.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "북마크",
+    "rect": [
+      176.23781204223633,
+      72.5,
+      40.524375915527344,
+      23.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      337.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      337.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "calendar",
+    "rect": [
+      349.0,
+      74.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "2026. 08. 12 · 오전 12:50",
+    "rect": [
+      12.0,
+      130.0,
+      369.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      333.0,
+      157.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      333.0,
+      157.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/more_vert",
+    "rect": [
+      345.0,
+      169.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "눈 귀여워~아아ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ",
+    "rect": [
+      281.0,
+      199.0,
+      88.0,
+      126.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.8x)"
+  },
+  {
+    "type": "Text",
+    "text": "2026. 08. 12 · 오전 12:50",
+    "rect": [
+      12.0,
+      357.0,
+      369.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "2026. 08. 12 · 오전 12:50",
+    "rect": [
+      12.0,
+      584.0,
+      369.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      333.0,
+      611.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      333.0,
+      611.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/more_vert",
+    "rect": [
+      345.0,
+      623.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "메모를 합니다 메모를 메메메메메메에ㅔㅔㅔㅔㅔㅔㅔ에ㅔㅔㅇ",
+    "rect": [
+      281.0,
+      653.0,
+      88.0,
+      126.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.8x)"
+  }
+]

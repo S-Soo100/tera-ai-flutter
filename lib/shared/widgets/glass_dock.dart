@@ -61,8 +61,9 @@ class GlassDock extends StatelessWidget {
     required this.onSelected,
   });
 
-  /// 바 콘텐츠 높이(홈 인디케이터 제외). Figma 80은 safe area 포함 — 콘텐츠는 64.
-  static const double height = 64;
+  /// Figma 765:4288: top 12 + tabs 42 + bottom 26 = 80.
+  /// Devices with a larger gesture inset retain that inset below the tabs.
+  static const double height = 54;
 
   final List<GlassDockItem> items;
   final int currentIndex;
@@ -81,21 +82,25 @@ class GlassDock extends StatelessWidget {
         type: MaterialType.transparency,
         child: SafeArea(
           top: false,
-          child: SizedBox(
-            height: height,
-            child: Row(
-              children: [
-                for (var i = 0; i < items.length; i++)
-                  Expanded(
-                    child: _DockButton(
-                      item: items[i],
-                      selected: i == currentIndex,
-                      selectedColor: glass.navSelected,
-                      unselectedColor: glass.navUnselected,
-                      onTap: () => onSelected(i),
+          minimum: const EdgeInsets.only(bottom: 26),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(28.5, 12, 28.5, 0),
+            child: SizedBox(
+              height: 28 + MediaQuery.textScalerOf(context).scale(14.3203125),
+              child: Row(
+                children: [
+                  for (var i = 0; i < items.length; i++)
+                    Expanded(
+                      child: _DockButton(
+                        item: items[i],
+                        selected: i == currentIndex,
+                        selectedColor: glass.navSelected,
+                        unselectedColor: glass.navUnselected,
+                        onTap: () => onSelected(i),
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -145,7 +150,8 @@ class _DockButton extends StatelessWidget {
               item.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: glass.dockLabel.copyWith(color: color),
+              style:
+                  glass.dockLabel.copyWith(color: color, height: 1.193359375),
             ),
           ],
         ),

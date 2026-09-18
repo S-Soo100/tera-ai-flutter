@@ -1,0 +1,574 @@
+[
+  {
+    "type": "Material",
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      852.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      167.79999923706055,
+      74.5,
+      57.400001525878906,
+      19.0
+    ],
+    "text": "기기 관리",
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      337.0,
+      62.0,
+      44.0,
+      44.0
+    ],
+    "color": "0"
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      347.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      24.0,
+      122.0,
+      345.0,
+      19.0
+    ],
+    "text": "사육 환경 그룹",
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "ManagementGroupCard",
+    "rect": [
+      12.0,
+      153.0,
+      369.0,
+      78.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      28.0,
+      165.0,
+      37.454376220703125,
+      19.0
+    ],
+    "text": "그룹 1",
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      28.0,
+      200.0,
+      54.032501220703125,
+      19.0
+    ],
+    "text": "크랑이네",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      215.0,
+      174.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      223.0,
+      182.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      259.0,
+      174.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      267.0,
+      182.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      303.0,
+      174.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      311.0,
+      182.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      347.0,
+      183.0,
+      18.0,
+      18.0
+    ]
+  },
+  {
+    "type": "ManagementGroupCard",
+    "rect": [
+      12.0,
+      243.0,
+      369.0,
+      78.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      28.0,
+      255.0,
+      39.798126220703125,
+      19.0
+    ],
+    "text": "그룹 2",
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      28.0,
+      290.0,
+      111.54187774658203,
+      19.0
+    ],
+    "text": "마뱀이 펜트하우스",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      259.0,
+      264.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      267.0,
+      272.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      303.0,
+      264.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      311.0,
+      272.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      347.0,
+      273.0,
+      18.0,
+      18.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      24.0,
+      353.0,
+      345.0,
+      19.0
+    ],
+    "text": "그룹 없음",
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "ManagementItemRow",
+    "rect": [
+      12.0,
+      384.0,
+      369.0,
+      64.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      28.0,
+      397.75,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      36.0,
+      405.75,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      395.75,
+      53.321876525878906,
+      19.0
+    ],
+    "text": "사육장 2",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      418.75,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      235.85530853271484,
+      406.25,
+      99.14469146728516,
+      19.0
+    ],
+    "text": "viva-iot-0002",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      347.0,
+      406.75,
+      18.0,
+      18.0
+    ]
+  },
+  {
+    "type": "ManagementItemRow",
+    "rect": [
+      12.0,
+      448.0,
+      369.0,
+      64.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      28.0,
+      461.75,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      36.0,
+      469.75,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      459.75,
+      53.790626525878906,
+      19.0
+    ],
+    "text": "사육장 3",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      482.75,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      235.38655853271484,
+      470.25,
+      99.61344146728516,
+      19.0
+    ],
+    "text": "viva-iot-0003",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      347.0,
+      470.75,
+      18.0,
+      18.0
+    ]
+  },
+  {
+    "type": "ManagementItemRow",
+    "rect": [
+      12.0,
+      512.0,
+      369.0,
+      64.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "rect": [
+      28.0,
+      525.75,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      36.0,
+      533.75,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      523.75,
+      53.790626525878906,
+      19.0
+    ],
+    "text": "카메라 3",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      546.75,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      193.0734405517578,
+      534.25,
+      141.9265594482422,
+      19.0
+    ],
+    "text": "FB2_P4_CAM-0003",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      347.0,
+      534.75,
+      18.0,
+      18.0
+    ]
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": true
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "color": "ffc00306"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      164.1509780883789,
+      710.0,
+      64.69804382324219,
+      28.0
+    ],
+    "text": "그룹 추가",
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "fffafafa"
+    }
+  }
+]

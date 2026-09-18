@@ -1,0 +1,350 @@
+{
+  "frame": {
+    "id": "1106:5734",
+    "name": "BottomSheet",
+    "section": "home",
+    "bounds": {
+      "x": 7092.57080078125,
+      "y": -6894.5,
+      "width": 393,
+      "height": 272
+    },
+    "text": [
+      "즉시 작동",
+      "예약 작동",
+      "12:00~15:30",
+      "화 수 목 금 토 일 · 켜짐",
+      "새 예약 추가"
+    ],
+    "file": "1106-5734.png",
+    "task": "P10",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1106:5734",
+      "name": "BottomSheet",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 393,
+        "height": 272
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ]
+    },
+    {
+      "id": "1106:5735",
+      "name": "Toggle_R",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 24.0,
+        "width": 345,
+        "height": 32
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 18
+    },
+    {
+      "id": "1106:5736",
+      "name": "Left",
+      "type": "FRAME",
+      "rect": {
+        "x": 26.0,
+        "y": 26.0,
+        "width": 168.5,
+        "height": 28
+      },
+      "cornerRadius": 14
+    },
+    {
+      "id": "1106:5737",
+      "name": "즉시 작동",
+      "type": "TEXT",
+      "rect": {
+        "x": 84.75,
+        "y": 31.5,
+        "width": 51,
+        "height": 17
+      },
+      "characters": "즉시 작동",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 14,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1106:5738",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 198.5,
+        "y": 26.0,
+        "width": 168.5,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "1106:5739",
+      "name": "예약 작동",
+      "type": "TEXT",
+      "rect": {
+        "x": 257.25,
+        "y": 31.5,
+        "width": 51,
+        "height": 17
+      },
+      "characters": "예약 작동",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 14,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1106:5740",
+      "name": "Button/Abled",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 80.0,
+        "width": 345,
+        "height": 72
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1106:5741",
+      "name": "Left",
+      "type": "FRAME",
+      "rect": {
+        "x": 40.0,
+        "y": 96.0,
+        "width": 169,
+        "height": 40
+      }
+    },
+    {
+      "id": "1106:5751",
+      "name": "lightbulb",
+      "type": "FRAME",
+      "rect": {
+        "x": 40.0,
+        "y": 96.0,
+        "width": 40,
+        "height": 40
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e89e00"
+        }
+      ],
+      "cornerRadius": 20
+    },
+    {
+      "id": "1106:5744",
+      "name": "Frame 12",
+      "type": "FRAME",
+      "rect": {
+        "x": 88.0,
+        "y": 96.0,
+        "width": 121,
+        "height": 40
+      }
+    },
+    {
+      "id": "1106:5745",
+      "name": "12:00~15:30",
+      "type": "TEXT",
+      "rect": {
+        "x": 88.0,
+        "y": 96.0,
+        "width": 91,
+        "height": 19
+      },
+      "characters": "12:00~15:30",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1106:5746",
+      "name": "화 수 목 금 토 일 · 켜짐",
+      "type": "TEXT",
+      "rect": {
+        "x": 88.0,
+        "y": 119.0,
+        "width": 121,
+        "height": 17
+      },
+      "characters": "화 수 목 금 토 일 · 켜짐",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1106:5747",
+      "name": "Toggle_on",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.0,
+        "y": 100.0,
+        "width": 80,
+        "height": 32
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e89e00"
+        }
+      ],
+      "cornerRadius": 16
+    },
+    {
+      "id": "1106:5748",
+      "name": "Button",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 301.0,
+        "y": 102.0,
+        "width": 50,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "1106:5749",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 176.0,
+        "width": 345,
+        "height": 44
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e89e00"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1106:5750",
+      "name": "새 예약 추가",
+      "type": "TEXT",
+      "rect": {
+        "x": 159.0,
+        "y": 184.0,
+        "width": 75,
+        "height": 28
+      },
+      "characters": "새 예약 추가",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    }
+  ]
+}

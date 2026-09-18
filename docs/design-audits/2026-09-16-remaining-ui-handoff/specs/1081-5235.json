@@ -1,0 +1,1082 @@
+{
+  "frame": {
+    "id": "1081:5235",
+    "name": "Highlight",
+    "section": "main",
+    "bounds": {
+      "x": 6265,
+      "y": -10962.5,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "하이라이트",
+      "하이라이트가 도착했어요",
+      "2026. 08.28 - 08. 31",
+      "2026. 8. 28 - 8. 31",
+      "2026. 8. 28 - 8. 31"
+    ],
+    "file": "1081-5235.png",
+    "task": "P12",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1081:5235",
+      "name": "Highlight",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 0.0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1081:5236",
+      "name": "Rectangle 113",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": -0.1592,
+        "y": 0.0,
+        "width": 393,
+        "height": 106
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1081:5237",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 0.0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I1081:5237;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16,
+        "y": 21.0,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1081:5237;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22.0,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I1081:5237;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21.0,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1081:5237;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26.0,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I1081:5237;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26.0,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I1081:5237;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28.0,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "1081:5238",
+      "name": "Frame 64",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 62.0,
+        "width": 369,
+        "height": 44
+      }
+    },
+    {
+      "id": "1081:5239",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 62.0,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "1081:5240",
+      "name": "arrow_back_ios_new",
+      "type": "GROUP",
+      "rect": {
+        "x": 22,
+        "y": 72.0,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1081:5241",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 22,
+        "y": 72.0,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1081:5243",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 337,
+        "y": 62.0,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "1081:5244",
+      "name": "calendar_month",
+      "type": "GROUP",
+      "rect": {
+        "x": 349,
+        "y": 74.0,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "1081:5245",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 349,
+        "y": 74.0,
+        "width": 20,
+        "height": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1081:5247",
+      "name": "하이라이트",
+      "type": "TEXT",
+      "rect": {
+        "x": 162.5,
+        "y": 74.5,
+        "width": 68,
+        "height": 19
+      },
+      "characters": "하이라이트",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "1081:5248",
+      "name": "Frame 202",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 118.0,
+        "width": 369,
+        "height": 817.31591796875
+      }
+    },
+    {
+      "id": "1081:5249",
+      "name": "NewHighlight",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 118.0,
+        "width": 369,
+        "height": 263.31591796875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1081:5250",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 32,
+        "y": 138.0,
+        "width": 329,
+        "height": 42
+      }
+    },
+    {
+      "id": "1081:5251",
+      "name": "하이라이트가 도착했어요",
+      "type": "TEXT",
+      "rect": {
+        "x": 32,
+        "y": 138.0,
+        "width": 329,
+        "height": 21
+      },
+      "characters": "하이라이트가 도착했어요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 21.48046875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "1081:5252",
+      "name": "2026. 08.28 - 08. 31",
+      "type": "TEXT",
+      "rect": {
+        "x": 32,
+        "y": 163.0,
+        "width": 329,
+        "height": 17
+      },
+      "characters": "2026. 08.28 - 08. 31",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#545454"
+        }
+      ]
+    },
+    {
+      "id": "1081:5253",
+      "name": "ThumbIMG",
+      "type": "FRAME",
+      "rect": {
+        "x": 32,
+        "y": 189.0,
+        "width": 329,
+        "height": 172.31591796875
+      }
+    },
+    {
+      "id": "1081:5254",
+      "name": "Thumbs",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 51.5,
+        "y": 189.0,
+        "width": 290,
+        "height": 160.5341796875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafbfd"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1081:5255",
+      "name": "Thumbs",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 32,
+        "y": 199.5342,
+        "width": 329,
+        "height": 161.78173828125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              0.8703944683074951,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafbfd"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1081:5256",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 337,
+        "y": 118.0,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "1081:5257",
+      "name": "close",
+      "type": "GROUP",
+      "rect": {
+        "x": 347,
+        "y": 128.0,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1081:5258",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 347,
+        "y": 128.0,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1081:5260",
+      "name": "Frame 125",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 405.3164,
+        "width": 369,
+        "height": 530
+      }
+    },
+    {
+      "id": "1081:5261",
+      "name": "Group",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 405.3164,
+        "width": 369,
+        "height": 255
+      }
+    },
+    {
+      "id": "1081:5262",
+      "name": "Date",
+      "type": "TEXT",
+      "rect": {
+        "x": 12,
+        "y": 405.3164,
+        "width": 369,
+        "height": 19
+      },
+      "characters": "2026. 8. 28 - 8. 31",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1081:5263",
+      "name": "Grid",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 432.3164,
+        "width": 369,
+        "height": 228
+      },
+      "cornerRadius": 12
+    },
+    {
+      "id": "1081:5264",
+      "name": "Thum",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 432.3164,
+        "width": 369,
+        "height": 113
+      }
+    },
+    {
+      "id": "1081:5265",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 12,
+        "y": 432.3164,
+        "width": 121.66666412353516,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5266",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 135.6665,
+        "y": 432.3164,
+        "width": 121.66667175292969,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5267",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 259.3335,
+        "y": 432.3164,
+        "width": 121.66667175292969,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5268",
+      "name": "bookmark",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 514.1113,
+        "width": 32,
+        "height": 32
+      }
+    },
+    {
+      "id": "1081:5270",
+      "name": "Thum",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 547.3164,
+        "width": 369,
+        "height": 113
+      }
+    },
+    {
+      "id": "1081:5271",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 12,
+        "y": 547.3164,
+        "width": 121.66666412353516,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5272",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 135.6665,
+        "y": 547.3164,
+        "width": 121.66667175292969,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5273",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 259.3335,
+        "y": 547.3164,
+        "width": 121.66667175292969,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5274",
+      "name": "bookmark",
+      "type": "FRAME",
+      "rect": {
+        "x": 137,
+        "y": 629.1113,
+        "width": 32,
+        "height": 32
+      }
+    },
+    {
+      "id": "1081:5276",
+      "name": "Group",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 680.3164,
+        "width": 369,
+        "height": 255
+      }
+    },
+    {
+      "id": "1081:5277",
+      "name": "Date",
+      "type": "TEXT",
+      "rect": {
+        "x": 12,
+        "y": 680.3164,
+        "width": 369,
+        "height": 19
+      },
+      "characters": "2026. 8. 28 - 8. 31",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1081:5278",
+      "name": "Grid",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 707.3164,
+        "width": 369,
+        "height": 228
+      },
+      "cornerRadius": 12
+    },
+    {
+      "id": "1081:5279",
+      "name": "Thum",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 707.3164,
+        "width": 369,
+        "height": 113
+      }
+    },
+    {
+      "id": "1081:5280",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 12,
+        "y": 707.3164,
+        "width": 121.66666412353516,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5281",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 135.6665,
+        "y": 707.3164,
+        "width": 121.66667175292969,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5282",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 259.3335,
+        "y": 707.3164,
+        "width": 121.66667175292969,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5283",
+      "name": "bookmark",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 789.1113,
+        "width": 32,
+        "height": 32
+      }
+    },
+    {
+      "id": "1081:5285",
+      "name": "Thum",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 822.3164,
+        "width": 369,
+        "height": 113
+      }
+    },
+    {
+      "id": "1081:5286",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 12,
+        "y": 822.3164,
+        "width": 121.66666412353516,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5287",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 135.6665,
+        "y": 822.3164,
+        "width": 121.66667175292969,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5288",
+      "name": "ThumIMG",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 259.3335,
+        "y": 822.3164,
+        "width": 121.66667175292969,
+        "height": 113
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6183205842971802,
+              0,
+              0.19083969295024872
+            ],
+            [
+              0,
+              0.8703909516334534,
+              0.12960553169250488
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:5289",
+      "name": "bookmark",
+      "type": "FRAME",
+      "rect": {
+        "x": 137,
+        "y": 904.1113,
+        "width": 32,
+        "height": 32
+      }
+    }
+  ]
+}

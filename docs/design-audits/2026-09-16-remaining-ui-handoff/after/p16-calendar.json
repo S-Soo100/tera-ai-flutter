@@ -1,0 +1,723 @@
+[
+  {
+    "type": "IconButton",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_previous",
+    "rect": [
+      22.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "북마크",
+    "rect": [
+      176.23781204223633,
+      72.5,
+      40.524375915527344,
+      23.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      337.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      337.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "calendar",
+    "rect": [
+      349.0,
+      74.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "2026. 08. 12 · 오전 12:50",
+    "rect": [
+      12.0,
+      130.0,
+      369.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      333.0,
+      157.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      333.0,
+      157.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/more_vert",
+    "rect": [
+      345.0,
+      169.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "눈 귀여워~아아ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ",
+    "rect": [
+      281.0,
+      199.0,
+      88.0,
+      126.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.8x)"
+  },
+  {
+    "type": "Text",
+    "text": "2026. 08. 12 · 오전 12:50",
+    "rect": [
+      12.0,
+      357.0,
+      369.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "2026. 08. 12 · 오전 12:50",
+    "rect": [
+      12.0,
+      584.0,
+      369.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      333.0,
+      611.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      333.0,
+      611.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/more_vert",
+    "rect": [
+      345.0,
+      623.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "메모를 합니다 메모를 메메메메메메에ㅔㅔㅔㅔㅔㅔㅔ에ㅔㅔㅇ",
+    "rect": [
+      281.0,
+      653.0,
+      88.0,
+      126.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.8x)"
+  },
+  {
+    "type": "Text",
+    "text": "날짜 선택",
+    "rect": [
+      40.5,
+      172.0,
+      52.31640625,
+      20.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense labelLarge 2021).merge(((blackMountainView labelLarge).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: 0.1, baseline: ideographic, height: 1.4x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "9월 16일 (수)",
+    "rect": [
+      40.5,
+      220.0,
+      276.0,
+      40.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense headlineLarge 2021).merge(((blackMountainView headlineLarge).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 32.0, weight: 400, letterSpacing: 0.0, baseline: ideographic, height: 1.3x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      316.5,
+      216.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      320.5,
+      220.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      276.5,
+      278.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      280.5,
+      282.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      324.5,
+      278.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      328.5,
+      282.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "일",
+    "rect": [
+      45.3359375,
+      340.0,
+      14.328125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "월",
+    "rect": [
+      93.3359375,
+      340.0,
+      14.328125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "화",
+    "rect": [
+      141.3359375,
+      340.0,
+      14.328125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "수",
+    "rect": [
+      189.3359375,
+      340.0,
+      14.328125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "목",
+    "rect": [
+      237.3359375,
+      340.0,
+      14.328125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "금",
+    "rect": [
+      285.3359375,
+      340.0,
+      14.328125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "토",
+    "rect": [
+      333.3359375,
+      340.0,
+      14.328125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "1",
+    "rect": [
+      144.7421875,
+      388.0,
+      7.515625,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "2",
+    "rect": [
+      191.5546875,
+      388.0,
+      9.890625,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "3",
+    "rect": [
+      239.3125,
+      388.0,
+      10.375,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "4",
+    "rect": [
+      287.2578125,
+      388.0,
+      10.484375,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "5",
+    "rect": [
+      335.4765625,
+      388.0,
+      10.046875,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "6",
+    "rect": [
+      47.34375,
+      436.0,
+      10.3125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "7",
+    "rect": [
+      95.8359375,
+      436.0,
+      9.328125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "8",
+    "rect": [
+      143.3984375,
+      436.0,
+      10.203125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "9",
+    "rect": [
+      191.34375,
+      436.0,
+      10.3125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "10",
+    "rect": [
+      235.7265625,
+      436.0,
+      17.546875,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "11",
+    "rect": [
+      284.984375,
+      436.0,
+      15.03125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "12",
+    "rect": [
+      331.796875,
+      436.0,
+      17.40625,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "13",
+    "rect": [
+      43.5546875,
+      484.0,
+      17.890625,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "14",
+    "rect": [
+      91.5,
+      484.0,
+      18.0,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "15",
+    "rect": [
+      139.71875,
+      484.0,
+      17.5625,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "16",
+    "rect": [
+      187.5859375,
+      484.0,
+      17.828125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "17",
+    "rect": [
+      236.078125,
+      484.0,
+      16.84375,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "18",
+    "rect": [
+      283.640625,
+      484.0,
+      17.71875,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "19",
+    "rect": [
+      331.5859375,
+      484.0,
+      17.828125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "20",
+    "rect": [
+      42.5390625,
+      532.0,
+      19.921875,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "21",
+    "rect": [
+      91.796875,
+      532.0,
+      17.40625,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "22",
+    "rect": [
+      138.609375,
+      532.0,
+      19.78125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "23",
+    "rect": [
+      186.3671875,
+      532.0,
+      20.265625,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "24",
+    "rect": [
+      234.43359375,
+      532.0,
+      20.1328125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "25",
+    "rect": [
+      282.53125,
+      532.0,
+      19.9375,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "26",
+    "rect": [
+      330.3984375,
+      532.0,
+      20.203125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "27",
+    "rect": [
+      42.890625,
+      580.0,
+      19.21875,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "28",
+    "rect": [
+      90.453125,
+      580.0,
+      20.09375,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "29",
+    "rect": [
+      138.3984375,
+      580.0,
+      20.203125,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "30",
+    "rect": [
+      186.296875,
+      580.0,
+      20.40625,
+      24.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyLarge 2021).merge(((blackMountainView bodyLarge).apply).merge(unknown))).apply, inherit: false, color: Color(alpha: 0.3804, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 400, letterSpacing: 0.5, baseline: ideographic, height: 1.5x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      32.5,
+      276.0,
+      232.0,
+      52.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "2026년 9월",
+    "rect": [
+      40.5,
+      292.0,
+      71.15547180175781,
+      20.0
+    ],
+    "style": "TextStyle(debugLabel: (((dense titleSmall 2021).merge(((blackMountainView titleSmall).apply).merge(unknown))).apply).apply, inherit: false, color: Color(alpha: 0.6000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: 0.1, baseline: ideographic, height: 1.4x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      232.5,
+      678.0,
+      64.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "취소",
+    "rect": [
+      252.30039024353027,
+      688.0,
+      24.399219512939453,
+      20.0
+    ],
+    "style": "null"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      304.5,
+      678.0,
+      64.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "확인",
+    "rect": [
+      324.3003902435303,
+      688.0,
+      24.399219512939453,
+      20.0
+    ],
+    "style": "null"
+  }
+]

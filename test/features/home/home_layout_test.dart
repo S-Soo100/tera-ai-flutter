@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -65,7 +66,8 @@ Future<void> _pump(WidgetTester tester) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        enclosureSetsProvider.overrideWith((ref) async => [_set()]),
+        homeDeviceSetsProvider.overrideWith((ref) async => [_set()]),
+        currentUserProvider.overrideWithValue(null),
         currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
         telemetryStreamProvider
             .overrideWith((ref, id) => Stream.value(_reading())),
@@ -106,7 +108,7 @@ void main() {
     await _pump(tester);
     expect(find.byType(HomeHeaderBar), findsOneWidget);
     // 캠 없는 세트 → 라이브 자리는 안내 한 줄로 접힌다.
-    expect(find.byKey(TopFixedArea.noCameraLineKey), findsOneWidget);
+    expect(find.byKey(TopFixedArea.noCameraLineKey), findsNothing);
     expect(find.byKey(EnvSummaryCard.cardKey), findsOneWidget);
     expect(find.byType(CageControlGrid), findsOneWidget);
     expect(find.byKey(CageControlGrid.ventFanKey), findsOneWidget);
@@ -126,14 +128,15 @@ void main() {
     expect(find.text('env-detail-screen'), findsOneWidget);
   });
 
-  testWidgets('미배선 타일(냉각팬) 탭 → SnackBar 안내', (tester) async {
+  testWidgets('fan2 미보고 냉각팬은 제어 명령을 보내지 않는다', (tester) async {
     // 히터팬은 리뷰 2026-09-03에서 handleHeaterTap로 배선됐다 — 미배선
     // 검증은 냉각팬으로 한다(cage_control_grid_test에 히터 다이얼로그 검증).
     await _pump(tester);
     await tester.ensureVisible(find.byKey(CageControlGrid.coolFanKey));
     await tester.tap(find.byKey(CageControlGrid.coolFanKey));
     await tester.pump();
-    expect(find.text('home_device_not_ready'), findsOneWidget);
+    expect(find.text('home_device_not_ready'), findsNothing);
+    expect(find.text('home_fan_duration_title'), findsNothing);
   });
 
   testWidgets('일정 설정 로우 탭 → /home/routines', (tester) async {

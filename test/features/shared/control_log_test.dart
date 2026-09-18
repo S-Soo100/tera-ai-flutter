@@ -12,6 +12,7 @@ Map<String, dynamic> row(
     'id': '${action}_${localAt.millisecondsSinceEpoch}',
     'action': action,
     'status': status,
+    'result': 'ok',
     // 실 DB처럼 UTC 문자열로 준다 — 파서가 .toLocal()을 하는지 검증.
     'issued_at': localAt.toUtc().toIso8601String(),
   };
@@ -31,6 +32,60 @@ TelemetryBucket bucket(DateTime at, {double? t, double? h}) {
 }
 
 void main() {
+  test('acked failure is not rendered as successful operation', () {
+    final at = DateTime(2026, 9, 3);
+    final failed = row('fan_on', at)..['result'] = 'error';
+    expect(buildControlLog(commandRows: [failed], buckets: []), isEmpty);
+  });
+  test('fan and cooling on-off pairs remain separate', () {
+    final at = DateTime(2026, 9, 3);
+    final log = buildControlLog(commandRows: [
+      row('fan_on', at),
+      row('fan2_off', at.add(const Duration(minutes: 1)))
+    ], buckets: [
+      bucket(at, t: 25, h: 60)
+    ]);
+    expect(log.last.kind, MarkerKind.cooling);
+    expect(log.last.deltaTemperature, isNull);
+  });
+  test('prior-day on pairs before visible-day filtering', () {
+    final start = DateTime(2026, 9, 3);
+    final log = buildControlLog(
+      commandRows: [
+        row('fan_on', start.subtract(const Duration(minutes: 20))),
+        row('fan_off', start.add(const Duration(minutes: 20)))
+      ],
+      buckets: [
+        bucket(start.subtract(const Duration(minutes: 30)), t: 30, h: 60),
+        bucket(start.add(const Duration(minutes: 30)), t: 25, h: 62)
+      ],
+      visibleFrom: start,
+      visibleTo: start.add(const Duration(days: 1)),
+    );
+    expect(log, hasLength(1));
+    expect(log.single.state, ControlLogState.off);
+    expect(log.single.deltaTemperature, -5);
+  });
+  test('invalid or missing humidity does not discard valid temperature', () {
+    final at = DateTime(2026, 9, 3, 1);
+    final log = buildControlLog(
+        commandRows: [row('fan_off', at)],
+        buckets: [bucket(at, t: 25, h: double.infinity)]);
+    expect(log.single.temperature, 25);
+    expect(log.single.humidity, isNull);
+  });
+  test('ambiguous toggle breaks an earlier on-off pairing', () {
+    final at = DateTime(2026, 9, 3, 1);
+    final log = buildControlLog(commandRows: [
+      row('fan_on', at),
+      row('fan_toggle', at.add(const Duration(minutes: 1))),
+      row('fan_off', at.add(const Duration(minutes: 2)))
+    ], buckets: [
+      bucket(at, t: 25, h: 60)
+    ]);
+    expect(log.last.deltaTemperature, isNull);
+  });
+
   group('buildControlLog — 상태 매핑', () {
     test('on/off/mist/toggle을 상태로 읽는다', () {
       final at = DateTime(2026, 9, 2, 10);

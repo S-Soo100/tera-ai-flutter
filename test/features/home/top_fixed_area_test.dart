@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
@@ -40,7 +41,8 @@ EnclosureSet _set(String id, {bool cam = false, bool dev = false}) =>
 Future<ProviderContainer> _pump(
     WidgetTester tester, List<EnclosureSet> sets) async {
   final c = ProviderContainer(overrides: [
-    enclosureSetsProvider.overrideWith((ref) async => sets),
+    currentUserProvider.overrideWithValue(null),
+    homeDeviceSetsProvider.overrideWith((ref) async => sets),
     // 실피어 차단 — startConnection()을 부르지 않은 inert 컨트롤러(A2).
     webrtcLiveControllerProvider
         .overrideWith((ref, uuid) => InertLiveController(ref, uuid)),
@@ -59,66 +61,35 @@ Future<ProviderContainer> _pump(
 }
 
 void main() {
-  // 실피어는 inert 컨트롤러 오버라이드로 차단된다(2026-09-07 A2) —
-  // 구 '캠 세트는 마지막 페이지에 숨기기' 관례는 폐기. 픽스처 배치는 유지.
-
-  testWidgets('어느 세트에도 캠이 없으면 라이브 자리를 접고 한 줄 안내', (tester) async {
-    await _pump(tester, [_set('e1', dev: true)]);
-    expect(find.byKey(TopFixedArea.noCameraLineKey), findsOneWidget);
-    expect(find.byKey(TopFixedArea.pageViewKey), findsNothing);
-    expect(find.byType(AspectRatio), findsNothing);
-  });
-
-  testWidgets('캠이 하나라도 있으면 면이 서고, 캠 없는 세트 페이지는 안내 한 줄', (tester) async {
+  testWidgets('선택한 사육장에 카메라가 없으면 라이브와 안내 여백 모두 없다', (tester) async {
     await _pump(tester, [_set('e1', dev: true), _set('e2', cam: true)]);
-    expect(find.byKey(TopFixedArea.pageViewKey), findsOneWidget);
-    expect(find.byKey(TopFixedArea.noCameraPaneKey), findsOneWidget);
     expect(find.byKey(TopFixedArea.liveKey), findsNothing);
+    expect(find.byType(LiveSurface), findsNothing);
+    expect(find.byKey(TopFixedArea.noCameraLineKey), findsNothing);
   });
-
-  testWidgets('세트 1개면(캠 없음) 페이지 인디케이터도 없다', (tester) async {
-    await _pump(tester, [_set('e1', dev: true)]);
-    expect(find.byKey(TopFixedArea.indicatorKey), findsNothing);
-  });
-
-  testWidgets('세트 2개 이상이면 인디케이터 노출', (tester) async {
-    await _pump(tester,
-        [_set('e1', dev: true), _set('e2', dev: true), _set('e3', cam: true)]);
-    expect(find.byKey(TopFixedArea.indicatorKey), findsOneWidget);
-  });
-
-  testWidgets('스와이프하면 선택 인덱스가 따라온다', (tester) async {
-    final c = await _pump(tester,
-        [_set('e1', dev: true), _set('e2', dev: true), _set('e3', cam: true)]);
-    await tester.drag(
-        find.byKey(TopFixedArea.pageViewKey), const Offset(-500, 0));
-    await tester.pumpAndSettle();
-    expect(c.read(selectedSetIndexProvider), 1);
-  });
-
-  testWidgets('Figma 실측 비율(369:271)을 유지한다', (tester) async {
-    await _pump(tester, [_set('e1', dev: true), _set('e2', cam: true)]);
+  testWidgets('선택 카메라는 369:271 비율, 상태 배지 없이 표시한다', (tester) async {
+    await _pump(tester, [_set('e1', dev: true, cam: true)]);
+    expect(find.byKey(TopFixedArea.liveKey), findsOneWidget);
+    expect(tester.widget<LiveSurface>(find.byType(LiveSurface)).status, isNull);
     final ar = tester.widget<AspectRatio>(find
         .descendant(
             of: find.byType(TopFixedArea), matching: find.byType(AspectRatio))
         .first);
-    expect(ar.aspectRatio, closeTo(TopFixedArea.aspectRatio, 0.001));
-    expect(TopFixedArea.aspectRatio, closeTo(369 / 271, 0.001));
-  });
-
-  testWidgets('라이브 영상에는 LIVE·연결 상태 배지를 표시하지 않는다', (tester) async {
-    await _pump(tester, [_set('e1', cam: true)]);
-
-    final surface = tester.widget<LiveSurface>(find.byType(LiveSurface));
-    expect(surface.status, isNull);
-
+    expect(ar.aspectRatio, closeTo(369 / 271, .001));
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
-
-  testWidgets('세트 없음 → 한 줄 안내로 죽지 않는다', (tester) async {
-    await _pump(tester, const []);
-    expect(find.byType(TopFixedArea), findsOneWidget);
-    expect(find.text('home_no_set'), findsOneWidget);
+  testWidgets('선택 ID 변경으로 라이브 대상이 바뀐다', (tester) async {
+    final c = await _pump(
+        tester, [_set('e1', dev: true), _set('e2', dev: true, cam: true)]);
+    c.read(selectedHomeDeviceIdProvider.notifier).state = 'd-e2';
+    await tester.pumpAndSettle();
+    expect(find.byKey(TopFixedArea.liveKey), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+  testWidgets('빈 선택은 라이브를 만들지 않는다', (tester) async {
+    await _pump(tester, []);
+    expect(find.byType(LiveSurface), findsNothing);
   });
 }

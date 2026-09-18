@@ -14,12 +14,44 @@ const validDeviceEvent = {
     execution_source: 'schedule',
     execution_phase: 'started',
     action: 'fan_on',
-    result: 'succeeded',
+    outcome: 'succeeded',
+    result: 'ok',
+    device_key: 'terra-1a2b3c4d',
   },
 };
 
 test('accepts a matching scheduled action event', () => {
   assert.equal(validateNotificationEvent(validDeviceEvent).ok, true);
+});
+
+test('accepts failed events carrying the raw firmware result and no-ack expiry', () => {
+  for (const result of ['busy', 'no_ack', 'expired', undefined]) {
+    const event = {
+      ...validDeviceEvent,
+      event_id: 'command:c1:failed',
+      type: 'device.action.failed',
+      payload: {
+        ...validDeviceEvent.payload,
+        execution_phase: 'failed',
+        outcome: 'failed',
+        result,
+      },
+    };
+    assert.equal(validateNotificationEvent(event).ok, true, String(result));
+  }
+});
+
+test('rejects the legacy result-only verdict, the timer source, and non-text optionals', () => {
+  const { outcome: _outcome, ...legacyPayload } = { ...validDeviceEvent.payload, result: 'succeeded' };
+  assert.equal(validateNotificationEvent({ ...validDeviceEvent, payload: legacyPayload }).status, 400);
+  assert.equal(validateNotificationEvent({
+    ...validDeviceEvent,
+    payload: { ...validDeviceEvent.payload, execution_source: 'timer' },
+  }).status, 400);
+  assert.equal(validateNotificationEvent({
+    ...validDeviceEvent,
+    payload: { ...validDeviceEvent.payload, device_key: 42 },
+  }).status, 400);
 });
 
 test('rejects a mismatched phase and unsupported source', () => {
@@ -86,5 +118,32 @@ test('rejects impossible calendar dates even when Date.parse normalizes them', (
   assert.equal(validateNotificationEvent({
     ...validDeviceEvent,
     occurred_at: '2026-02-30T12:00:00Z',
+  }).status, 400);
+});
+
+test('accepts guard-skipped events with an optional guard object and rejects a non-object guard', () => {
+  const skipped = {
+    ...validDeviceEvent,
+    event_id: 'command:c9:skipped',
+    type: 'device.action.skipped',
+    payload: {
+      ...validDeviceEvent.payload,
+      action: 'heater_on',
+      execution_phase: 'skipped',
+      outcome: 'skipped',
+      result: 'guard_skipped',
+      guard: { kind: 'temp_above', metric: 'temperature', threshold: 30, value: 33.5 },
+    },
+  };
+  assert.equal(validateNotificationEvent(skipped).ok, true);
+  const { guard: _guard, ...withoutGuard } = skipped.payload;
+  assert.equal(validateNotificationEvent({ ...skipped, payload: withoutGuard }).ok, true);
+  assert.equal(validateNotificationEvent({
+    ...skipped,
+    payload: { ...skipped.payload, guard: 'temp_above' },
+  }).status, 400);
+  assert.equal(validateNotificationEvent({
+    ...skipped,
+    payload: { ...skipped.payload, outcome: 'failed' },
   }).status, 400);
 });

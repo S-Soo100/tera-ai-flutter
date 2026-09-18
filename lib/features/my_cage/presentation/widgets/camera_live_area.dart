@@ -6,13 +6,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/live_surface.dart';
+import '../../../../shared/widgets/figma_icon.dart';
 import '../../../../shared/widgets/skeleton_loading.dart';
 import '../../../home/domain/enclosure_set.dart';
 import '../../../home/presentation/home_set_providers.dart';
-import '../../../home/presentation/widgets/live_clock_overlay.dart';
 import '../../domain/terra_camera.dart';
 import '../my_cage_providers.dart';
-import 'camera_name_badge.dart';
 import 'webrtc_live_view.dart';
 
 /// 카메라 탭 라이브 영역 — Figma Camera Home (668:427), 369×271 radius 12.
@@ -103,6 +102,9 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
         ref.read(enclosureSetsProvider).valueOrNull ?? const <EnclosureSet>[];
     final i = sets.indexWhere((s) => s.camera?.id == cameraId);
     if (i < 0) return; // 세트 밖 카메라 — 홈은 그대로 둔다.
+    final deviceId = sets[i].device?.id;
+    if (deviceId == null) return;
+    ref.read(selectedHomeDeviceIdProvider.notifier).state = deviceId;
     if (ref.read(selectedSetIndexProvider) == i) return;
     ref.read(selectedSetIndexProvider.notifier).state = i;
   }
@@ -215,16 +217,6 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
       aspectRatio: CameraLiveArea.aspectRatio,
       // 좌상단 연결 배지 — 스트림 phase 기준(홈과 동일 공용 위젯, A3 복원).
       status: null,
-      // 시계는 항상 — 홈(TopFixedArea)과 동일. 연결 실패 문구는 WebRtcLiveView
-      // 몫이고, DB is_online은 stale일 수 있어 여기서 판정하지 않는다.
-      corner: const LiveClockOverlay(),
-      footer: cameras.length > 1
-          ? _PageDots(
-              key: CameraLiveArea.indicatorKey,
-              count: cameras.length,
-              current: selected,
-            )
-          : null,
       child: PageView.builder(
         key: CameraLiveArea.pageViewKey,
         controller: _controller,
@@ -259,13 +251,6 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
               key: CameraLiveArea.expandButtonKey,
               cameraId: current.id,
             ),
-          ),
-          // 어느 카메라를 보는지 — 구 카메라 그리드가 주던 식별 정보의 복원
-          // (리뷰 2026-09-04: 다중 카메라에서 점 인디케이터만으론 알 수 없다).
-          Positioned(
-            left: 12,
-            bottom: 12,
-            child: CameraNameBadge(name: current.name),
           ),
         ],
       ),
@@ -312,38 +297,12 @@ class _ExpandButton extends StatelessWidget {
         child: const SizedBox(
           width: 32,
           height: 32,
-          child:
-              Icon(Icons.zoom_out_map, size: 17.5, color: AppTheme.liveOnDark),
+          child: Center(
+            child: FigmaIcon.tinted(FigmaIcons.liveExpand,
+                size: 17, color: AppTheme.liveOnDark),
+          ),
         ),
       ),
-    );
-  }
-}
-
-/// 어두운 라이브 면 위 점 인디케이터 — 테마 색은 안 보인다(홈 _PageDots 문법).
-class _PageDots extends StatelessWidget {
-  const _PageDots({super.key, required this.count, required this.current});
-
-  final int count;
-  final int current;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        for (var i = 0; i < count; i++)
-          Container(
-            width: 6,
-            height: 6,
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color:
-                  i == current ? AppTheme.liveOnDark : AppTheme.liveOnDarkFaint,
-            ),
-          ),
-      ],
     );
   }
 }

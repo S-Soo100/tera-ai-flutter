@@ -1,0 +1,368 @@
+[
+  {
+    "type": "Text",
+    "text": "기기",
+    "icon": null,
+    "rect": [
+      182.99187469482422,
+      74.5,
+      27.016250610351562,
+      19.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32
+    }
+  },
+  {
+    "type": "Text",
+    "text": "기기 이름",
+    "icon": null,
+    "rect": [
+      24.0,
+      122.0,
+      345.0,
+      19.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32
+    }
+  },
+  {
+    "type": "Text",
+    "text": "5/10",
+    "icon": null,
+    "rect": [
+      329.9831256866455,
+      176.0,
+      31.016874313354492,
+      19.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32
+    }
+  },
+  {
+    "type": "Text",
+    "text": "기기 정보",
+    "icon": null,
+    "rect": [
+      72.0,
+      270.5,
+      57.509376525878906,
+      19.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32
+    }
+  },
+  {
+    "type": "Text",
+    "text": "terra-iot-real",
+    "icon": null,
+    "rect": [
+      141.5093765258789,
+      270.5,
+      227.4906234741211,
+      19.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32
+    }
+  },
+  {
+    "type": "Text",
+    "text": "전원",
+    "icon": null,
+    "rect": [
+      72.0,
+      324.0,
+      27.016250610351562,
+      19.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32
+    }
+  },
+  {
+    "type": "Text",
+    "text": "ON",
+    "icon": null,
+    "rect": [
+      72.0,
+      343.0,
+      19.742734909057617,
+      17.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28
+    }
+  },
+  {
+    "type": "Text",
+    "text": "켬",
+    "icon": null,
+    "rect": [
+      277.7459373474121,
+      332.5,
+      13.508125305175781,
+      19.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32
+    }
+  },
+  {
+    "type": "Text",
+    "text": "끔",
+    "icon": null,
+    "rect": [
+      334.2459373474121,
+      332.5,
+      13.508125305175781,
+      19.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32
+    }
+  },
+  {
+    "type": "Text",
+    "text": "마뱀이네 집",
+    "icon": null,
+    "rect": [
+      72.0,
+      400.5,
+      193.4906234741211,
+      19.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32
+    }
+  },
+  {
+    "type": "Text",
+    "text": "그룹 설정",
+    "icon": null,
+    "rect": [
+      277.4906234741211,
+      400.5,
+      57.509376525878906,
+      19.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32
+    }
+  },
+  {
+    "type": "Text",
+    "text": "완료",
+    "icon": null,
+    "rect": [
+      181.30335903167725,
+      713.5,
+      30.393281936645508,
+      21.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.36
+    }
+  },
+  {
+    "type": "Text",
+    "text": "이 기기 삭제",
+    "icon": null,
+    "rect": [
+      154.5969123840332,
+      769.5,
+      83.8061752319336,
+      21.0
+    ],
+    "style": {
+      "family": "Pretendard",
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.36
+    }
+  },
+  {
+    "type": "TextFormField",
+    "text": null,
+    "icon": null,
+    "rect": [
+      12.0,
+      153.0,
+      369.0,
+      65.0
+    ]
+  },
+  {
+    "type": "ManagementButton",
+    "text": null,
+    "icon": null,
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "ManagementItemIcon",
+    "text": null,
+    "icon": null,
+    "rect": [
+      24.0,
+      262.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "ManagementSymbolBadge",
+    "text": null,
+    "icon": null,
+    "rect": [
+      24.0,
+      324.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "ManagementSymbolBadge",
+    "text": null,
+    "icon": null,
+    "rect": [
+      24.0,
+      392.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "arrow_previous",
+    "rect": [
+      24.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "nav_home",
+    "rect": [
+      32.0,
+      270.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "redesign_v2/power_settings_new",
+    "rect": [
+      32.0,
+      332.0,
+      20.0,
+      20.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "redesign_v2/workspaces",
+    "rect": [
+      30.666666666666668,
+      400.0,
+      22.66666666666666,
+      20.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "icon": "arrow_next",
+    "rect": [
+      339.0,
+      401.0,
+      18.0,
+      18.0
+    ]
+  },
+  {
+    "type": "TextButton",
+    "text": null,
+    "icon": null,
+    "rect": [
+      265.4906234741211,
+      386.0,
+      103.5093765258789,
+      48.0
+    ]
+  },
+  {
+    "type": "TextButton",
+    "text": null,
+    "icon": null,
+    "rect": [
+      142.5969123840332,
+      752.0,
+      107.8061752319336,
+      56.0
+    ]
+  }
+]

@@ -1,0 +1,57 @@
+[
+  {
+    "type": "Text",
+    "text": "즉시 작동",
+    "rect": [
+      86.13750076293945,
+      604.5,
+      50.224998474121094,
+      17.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "예약 작동",
+    "rect": [
+      256.58964920043945,
+      604.5,
+      50.320701599121094,
+      17.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 600, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "전원 · 켜짐",
+    "rect": [
+      36.0,
+      666.5,
+      245.0,
+      21.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "밝기",
+    "rect": [
+      36.0,
+      725.0,
+      333.0,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "60%",
+    "rect": [
+      36.0,
+      765.5,
+      51.0,
+      21.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, height: 1.2x)"
+  }
+]

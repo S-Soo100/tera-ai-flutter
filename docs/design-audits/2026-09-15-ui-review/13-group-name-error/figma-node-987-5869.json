@@ -1,0 +1,490 @@
+{
+  "id": "987:5869",
+  "name": "그룹추가 - 이름설정",
+  "type": "FRAME",
+  "fills": [
+    {
+      "blendMode": "NORMAL",
+      "type": "SOLID",
+      "color": "#ffffff"
+    }
+  ],
+  "absoluteBoundingBox": {
+    "x": 5295.5,
+    "y": 7124.3955078125,
+    "width": 393,
+    "height": 852
+  },
+  "children": [
+    {
+      "id": "987:5870",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "absoluteBoundingBox": {
+        "x": 5295.5,
+        "y": 7124.3955078125,
+        "width": 393,
+        "height": 62
+      },
+      "children": [
+        {
+          "id": "I987:5870;5465:16808",
+          "name": "Time",
+          "type": "FRAME",
+          "absoluteBoundingBox": {
+            "x": 5311.5,
+            "y": 7145.3955078125,
+            "width": 103.5,
+            "height": 22
+          },
+          "children": [
+            {
+              "id": "I987:5870;5465:16809",
+              "name": "Time",
+              "type": "TEXT",
+              "fills": [
+                {
+                  "blendMode": "NORMAL",
+                  "type": "SOLID",
+                  "color": "#000000"
+                }
+              ],
+              "absoluteBoundingBox": {
+                "x": 5344.75,
+                "y": 7146.3955078125,
+                "width": 37,
+                "height": 22
+              },
+              "characters": "9:41",
+              "style": {
+                "fontFamily": "SF Pro",
+                "fontStyle": "Semibold",
+                "fontWeight": 590,
+                "fontSize": 17,
+                "textAlignHorizontal": "CENTER",
+                "letterSpacing": 0,
+                "lineHeightPx": 22
+              }
+            }
+          ]
+        },
+        {
+          "id": "I987:5870;5465:16811",
+          "name": "Levels",
+          "type": "FRAME",
+          "absoluteBoundingBox": {
+            "x": 5569,
+            "y": 7145.3955078125,
+            "width": 103.5,
+            "height": 22
+          },
+          "children": [
+            {
+              "id": "I987:5870;5465:16814",
+              "name": "Battery",
+              "type": "GROUP",
+              "fills": [
+                {
+                  "blendMode": "NORMAL",
+                  "visible": false,
+                  "type": "SOLID",
+                  "color": "#ffffff"
+                }
+              ],
+              "absoluteBoundingBox": {
+                "x": 5632.2568359375,
+                "y": 7150.3955078125,
+                "width": 27.32803726196289,
+                "height": 13
+              },
+              "children": [
+                {
+                  "id": "I987:5870;5465:16815",
+                  "name": "Border",
+                  "type": "RECTANGLE",
+                  "strokes": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#000000"
+                    }
+                  ],
+                  "cornerRadius": 4.300000190734863,
+                  "absoluteBoundingBox": {
+                    "x": 5632.2568359375,
+                    "y": 7150.3955078125,
+                    "width": 25,
+                    "height": 13
+                  }
+                },
+                {
+                  "id": "I987:5870;5465:16817",
+                  "name": "Capacity",
+                  "type": "RECTANGLE",
+                  "fills": [
+                    {
+                      "blendMode": "NORMAL",
+                      "type": "SOLID",
+                      "color": "#000000"
+                    }
+                  ],
+                  "cornerRadius": 2.5,
+                  "absoluteBoundingBox": {
+                    "x": 5634.2568359375,
+                    "y": 7152.3955078125,
+                    "width": 21,
+                    "height": 9
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "989:5915",
+      "name": "Title",
+      "type": "FRAME",
+      "absoluteBoundingBox": {
+        "x": 5307.5,
+        "y": 7246.3955078125,
+        "width": 369,
+        "height": 46
+      },
+      "children": [
+        {
+          "id": "989:5916",
+          "name": "그룹 이름 설정",
+          "type": "TEXT",
+          "fills": [
+            {
+              "blendMode": "NORMAL",
+              "type": "SOLID",
+              "color": "#3c3c3c"
+            }
+          ],
+          "absoluteBoundingBox": {
+            "x": 5319.5,
+            "y": 7246.3955078125,
+            "width": 345,
+            "height": 21
+          },
+          "characters": "그룹 이름 설정",
+          "style": {
+            "fontFamily": "Pretendard",
+            "fontStyle": "SemiBold",
+            "fontWeight": 600,
+            "fontSize": 18,
+            "textAlignHorizontal": "LEFT",
+            "letterSpacing": -0.36,
+            "lineHeightPx": 21.48046875
+          }
+        },
+        {
+          "id": "989:5917",
+          "name": "추가할 그룹의 이름을 설정해 주세요",
+          "type": "TEXT",
+          "fills": [
+            {
+              "blendMode": "NORMAL",
+              "type": "SOLID",
+              "color": "#626262"
+            }
+          ],
+          "absoluteBoundingBox": {
+            "x": 5319.5,
+            "y": 7275.3955078125,
+            "width": 345,
+            "height": 17
+          },
+          "characters": "추가할 그룹의 이름을 설정해 주세요",
+          "style": {
+            "fontFamily": "Pretendard",
+            "fontStyle": "Medium",
+            "fontWeight": 500,
+            "fontSize": 14,
+            "textAlignHorizontal": "LEFT",
+            "letterSpacing": -0.28,
+            "lineHeightPx": 16.70703125
+          }
+        }
+      ]
+    },
+    {
+      "id": "987:5871",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "cornerRadius": 22,
+      "absoluteBoundingBox": {
+        "x": 5307.5,
+        "y": 7186.3955078125,
+        "width": 44,
+        "height": 44
+      },
+      "children": [
+        {
+          "id": "987:5872",
+          "name": "arrow_back_ios_new",
+          "type": "GROUP",
+          "absoluteBoundingBox": {
+            "x": 5317.5,
+            "y": 7196.3955078125,
+            "width": 24,
+            "height": 24
+          },
+          "children": [
+            {
+              "id": "987:5873",
+              "name": "Bounding box",
+              "type": "RECTANGLE",
+              "fills": [
+                {
+                  "blendMode": "NORMAL",
+                  "type": "SOLID",
+                  "color": "#3c3c3c"
+                }
+              ],
+              "absoluteBoundingBox": {
+                "x": 5317.5,
+                "y": 7196.3955078125,
+                "width": 24,
+                "height": 24
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "987:5875",
+      "name": "그룹",
+      "type": "TEXT",
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ],
+      "absoluteBoundingBox": {
+        "x": 5477.9990234375,
+        "y": 7198.8955078125,
+        "width": 28,
+        "height": 19
+      },
+      "characters": "그룹",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      }
+    },
+    {
+      "id": "987:5876",
+      "name": "CTA",
+      "type": "FRAME",
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 12,
+      "absoluteBoundingBox": {
+        "x": 5307.5,
+        "y": 7820.3955078125,
+        "width": 369,
+        "height": 56
+      },
+      "children": [
+        {
+          "id": "987:5877",
+          "name": "이 그룹에 기기 · 개체 추가",
+          "type": "TEXT",
+          "fills": [
+            {
+              "blendMode": "NORMAL",
+              "type": "SOLID",
+              "color": "#fafafa"
+            }
+          ],
+          "absoluteBoundingBox": {
+            "x": 5403.5,
+            "y": 7834.3955078125,
+            "width": 177,
+            "height": 28
+          },
+          "characters": "이 그룹에 기기 · 개체 추가",
+          "style": {
+            "fontFamily": "Pretendard",
+            "fontStyle": "SemiBold",
+            "fontWeight": 600,
+            "fontSize": 18,
+            "textAlignHorizontal": "LEFT",
+            "letterSpacing": -0.36,
+            "lineHeightPx": 28
+          }
+        }
+      ]
+    },
+    {
+      "id": "987:5897",
+      "name": "Field",
+      "type": "FRAME",
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 12,
+      "absoluteBoundingBox": {
+        "x": 5307.5,
+        "y": 7308.3955078125,
+        "width": 369,
+        "height": 65
+      },
+      "children": [
+        {
+          "id": "987:5898",
+          "name": "Frame 166",
+          "type": "FRAME",
+          "absoluteBoundingBox": {
+            "x": 5324.5,
+            "y": 7331.3955078125,
+            "width": 303,
+            "height": 19
+          },
+          "children": [
+            {
+              "id": "987:5899",
+              "name": "마뱀이네 집",
+              "type": "TEXT",
+              "fills": [
+                {
+                  "blendMode": "NORMAL",
+                  "type": "SOLID",
+                  "color": "#1e1e1e"
+                }
+              ],
+              "absoluteBoundingBox": {
+                "x": 5324.5,
+                "y": 7331.3955078125,
+                "width": 72,
+                "height": 19
+              },
+              "characters": "마뱀이네 집",
+              "style": {
+                "fontFamily": "Pretendard",
+                "fontStyle": "Medium",
+                "fontWeight": 500,
+                "fontSize": 16,
+                "textAlignHorizontal": "LEFT",
+                "letterSpacing": -0.32,
+                "lineHeightPx": 19.09375
+              }
+            },
+            {
+              "id": "987:5900",
+              "name": "cursor",
+              "type": "TEXT",
+              "fills": [
+                {
+                  "blendMode": "NORMAL",
+                  "type": "SOLID",
+                  "color": "#d61619"
+                }
+              ],
+              "absoluteBoundingBox": {
+                "x": 5398.5,
+                "y": 7331.3955078125,
+                "width": 6,
+                "height": 19
+              },
+              "characters": "|",
+              "style": {
+                "fontFamily": "Pretendard",
+                "fontStyle": "Medium",
+                "fontWeight": 500,
+                "fontSize": 16,
+                "textAlignHorizontal": "LEFT",
+                "letterSpacing": -0.32,
+                "lineHeightPx": 19.09375
+              }
+            }
+          ]
+        },
+        {
+          "id": "989:5923",
+          "name": "cursor",
+          "type": "TEXT",
+          "fills": [
+            {
+              "blendMode": "NORMAL",
+              "type": "SOLID",
+              "color": "#949090"
+            }
+          ],
+          "absoluteBoundingBox": {
+            "x": 5627.5,
+            "y": 7331.3955078125,
+            "width": 32,
+            "height": 19
+          },
+          "characters": "4/10",
+          "style": {
+            "fontFamily": "Pretendard",
+            "fontStyle": "Medium",
+            "fontWeight": 500,
+            "fontSize": 16,
+            "textAlignHorizontal": "LEFT",
+            "letterSpacing": -0.32,
+            "lineHeightPx": 19.09375
+          }
+        }
+      ]
+    },
+    {
+      "id": "990:6238",
+      "name": "중복되지 않는 이름으로 설정해 주세요",
+      "type": "TEXT",
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ],
+      "absoluteBoundingBox": {
+        "x": 5319.5,
+        "y": 7381.3955078125,
+        "width": 174,
+        "height": 14
+      },
+      "characters": "중복되지 않는 이름으로 설정해 주세요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      }
+    }
+  ]
+}

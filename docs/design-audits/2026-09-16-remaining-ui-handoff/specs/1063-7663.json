@@ -1,0 +1,1027 @@
+{
+  "frame": {
+    "id": "1063:7663",
+    "name": "MyCre_empty",
+    "section": "activity",
+    "bounds": {
+      "x": 5033,
+      "y": -2465.5,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "Home",
+      "Camera",
+      "MyCre",
+      "Community",
+      "개체를 추가하고\n카메라와 연동해 활동 리포트를 받아보세요",
+      "개체 추가하기"
+    ],
+    "file": "1063-7663.png",
+    "task": "P06",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1063:7663",
+      "name": "MyCre_empty",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 0.0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1063:7664",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 0.0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I1063:7664;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16,
+        "y": 21.0,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1063:7664;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22.0,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I1063:7664;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21.0,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1063:7664;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26.0,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I1063:7664;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26.0,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I1063:7664;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28.0,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "1063:7665",
+      "name": "Frame 53",
+      "type": "FRAME",
+      "rect": {
+        "x": 281,
+        "y": 62.0,
+        "width": 100,
+        "height": 44
+      }
+    },
+    {
+      "id": "1063:7666",
+      "name": "discover_tune",
+      "type": "FRAME",
+      "rect": {
+        "x": 281,
+        "y": 62.0,
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "id": "1063:7668",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 337,
+        "y": 62.0,
+        "width": 44,
+        "height": 44
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 22
+    },
+    {
+      "id": "1063:7669",
+      "name": "person",
+      "type": "GROUP",
+      "rect": {
+        "x": 347,
+        "y": 72.0,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1063:7670",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 347,
+        "y": 72.0,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1063:7672",
+      "name": "Navigation",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 772.0,
+        "width": 393,
+        "height": 80
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1063:7673",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 44.5,
+        "y": 784.0,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1063:7674",
+      "name": "home",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 58.5,
+        "y": 784.0,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1063:7674;849:2083",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 58.5,
+        "y": 784.0,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1063:7675",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 54.5,
+        "y": 812.0,
+        "width": 32,
+        "height": 14
+      },
+      "characters": "Home",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1063:7676",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 128.5,
+        "y": 784.0,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1063:7677",
+      "name": "camera_video",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 142.5,
+        "y": 784.0,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1063:7677;849:2086",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 142.5,
+        "y": 784.0,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1063:7678",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 133.5,
+        "y": 812.0,
+        "width": 42,
+        "height": 14
+      },
+      "characters": "Camera",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1063:7679",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 212.5,
+        "y": 784.0,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1063:7680",
+      "name": "fertile",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 226.5,
+        "y": 784.0,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1063:7680;849:2092",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 226.5,
+        "y": 784.0,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1063:7681",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 220.5,
+        "y": 812.0,
+        "width": 36,
+        "height": 14
+      },
+      "characters": "MyCre",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ]
+    },
+    {
+      "id": "1063:7682",
+      "name": "Tab",
+      "type": "FRAME",
+      "rect": {
+        "x": 296.5,
+        "y": 784.0,
+        "width": 52,
+        "height": 42
+      }
+    },
+    {
+      "id": "1063:7683",
+      "name": "mode_comment",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 310.5,
+        "y": 784.0,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "I1063:7683;849:2089",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 310.5,
+        "y": 784.0,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1063:7684",
+      "name": "label",
+      "type": "TEXT",
+      "rect": {
+        "x": 292,
+        "y": 812.0,
+        "width": 61,
+        "height": 14
+      },
+      "characters": "Community",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1063:7685",
+      "name": "Frame 201",
+      "type": "FRAME",
+      "rect": {
+        "x": 24,
+        "y": 250.0,
+        "width": 345,
+        "height": 353
+      }
+    },
+    {
+      "id": "1063:7686",
+      "name": "Empty_01",
+      "type": "FRAME",
+      "rect": {
+        "x": 24,
+        "y": 250.0,
+        "width": 345,
+        "height": 227
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1063:7687",
+      "name": "Group 23",
+      "type": "GROUP",
+      "rect": {
+        "x": 42.8398,
+        "y": 252.4414,
+        "width": 307.3203125,
+        "height": 224.55859375
+      }
+    },
+    {
+      "id": "1063:7688",
+      "name": "Group 22",
+      "type": "GROUP",
+      "rect": {
+        "x": 98.8418,
+        "y": 266.3105,
+        "width": 195.31610107421875,
+        "height": 113.93211364746094
+      }
+    },
+    {
+      "id": "1063:7689",
+      "name": "Rectangle 118",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 98.8418,
+        "y": 340.3516,
+        "width": 18.525575637817383,
+        "height": 39.8911018371582
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "1063:7690",
+      "name": "Rectangle 118",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 128.3071,
+        "y": 287.1846,
+        "width": 18.525575637817383,
+        "height": 88.05762481689453
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1063:7691",
+      "name": "Rectangle 118",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 157.772,
+        "y": 266.3105,
+        "width": 18.525575637817383,
+        "height": 107.37632751464844
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d61619"
+        }
+      ]
+    },
+    {
+      "id": "1063:7692",
+      "name": "Rectangle 118",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 187.2373,
+        "y": 280.5518,
+        "width": 18.525575637817383,
+        "height": 94.78435516357422
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1063:7693",
+      "name": "Rectangle 118",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 216.7021,
+        "y": 289.7578,
+        "width": 18.525575637817383,
+        "height": 86.264404296875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1063:7694",
+      "name": "Rectangle 118",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 246.1675,
+        "y": 312.0269,
+        "width": 18.525575637817383,
+        "height": 66.10525512695312
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1063:7695",
+      "name": "Rectangle 118",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 275.6323,
+        "y": 332.3467,
+        "width": 18.525575637817383,
+        "height": 47.2994499206543
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1063:7696",
+      "name": "Ellipse 38",
+      "type": "ELLIPSE",
+      "rect": {
+        "x": 42.8398,
+        "y": 439.2368,
+        "width": 307.3203125,
+        "height": 37.76318359375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f0f0f0"
+        }
+      ]
+    },
+    {
+      "id": "1063:7697",
+      "name": "Card",
+      "type": "FRAME",
+      "rect": {
+        "x": 64.5,
+        "y": 367.5518,
+        "width": 264,
+        "height": 87.58788299560547
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "GRADIENT_LINEAR",
+          "gradientHandlePositions": [
+            {
+              "x": 0.5000000000000084,
+              "y": 0.8832115784291669
+            },
+            {
+              "x": 0.5000000000000095,
+              "y": 1.0000000556890856
+            },
+            {
+              "x": 0.44160576137004903,
+              "y": 0.8832115784291669
+            }
+          ],
+          "gradientStops": [
+            {
+              "color": {
+                "r": 1,
+                "g": 1,
+                "b": 1,
+                "a": 1
+              },
+              "position": 0
+            },
+            {
+              "color": {
+                "r": 0.8605769276618958,
+                "g": 0.8605769276618958,
+                "b": 0.8605769276618958,
+                "a": 1
+              },
+              "position": 1
+            }
+          ]
+        }
+      ],
+      "cornerRadius": 11.926859855651855
+    },
+    {
+      "id": "1063:7698",
+      "name": "Left",
+      "type": "FRAME",
+      "rect": {
+        "x": 80.4023,
+        "y": 383.4543,
+        "width": 203.50108337402344,
+        "height": 55.782920837402344
+      }
+    },
+    {
+      "id": "1063:7699",
+      "name": "favicon_viva_50",
+      "type": "FRAME",
+      "rect": {
+        "x": 80.4023,
+        "y": 383.4543,
+        "width": 55.78291702270508,
+        "height": 55.78291702270508
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 2.7891459465026855
+    },
+    {
+      "id": "1063:7700",
+      "name": "logo_vivanaut_verti_260711 1",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 91.5474,
+        "y": 392.519,
+        "width": 33.49281311035156,
+        "height": 37.65346908569336
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "STRETCH",
+          "imageTransform": [
+            [
+              0.6767195463180542,
+              0,
+              0.15976355969905853
+            ],
+            [
+              0,
+              0.7026607394218445,
+              3.552713678800501e-15
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1063:7701",
+      "name": "Frame 123",
+      "type": "FRAME",
+      "rect": {
+        "x": 148.1123,
+        "y": 394.5024,
+        "width": 135.7913055419922,
+        "height": 33.686973571777344
+      }
+    },
+    {
+      "id": "1063:7702",
+      "name": "Frame 198",
+      "type": "FRAME",
+      "rect": {
+        "x": 148.1123,
+        "y": 394.5024,
+        "width": 124.96123504638672,
+        "height": 11.87396240234375
+      }
+    },
+    {
+      "id": "1063:7703",
+      "name": "Rectangle 188",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 148.1123,
+        "y": 394.5024,
+        "width": 77.57894897460938,
+        "height": 11.87396240234375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#818181"
+        }
+      ],
+      "cornerRadius": 99.3905029296875
+    },
+    {
+      "id": "1063:7704",
+      "name": "Rectangle 190",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 233.6426,
+        "y": 394.5022,
+        "width": 39.43104553222656,
+        "height": 11.87396240234375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#de4547"
+        }
+      ],
+      "cornerRadius": 99.3905029296875
+    },
+    {
+      "id": "1063:7705",
+      "name": "Rectangle 189",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 148.1123,
+        "y": 416.3152,
+        "width": 135.7913055419922,
+        "height": 11.87396240234375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c3bebe"
+        }
+      ],
+      "cornerRadius": 99.3905029296875
+    },
+    {
+      "id": "1063:7708",
+      "name": "개체를 추가하고 카메라와 연동해 활동 리포트를 받아보세요",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 493.0,
+        "width": 345,
+        "height": 38
+      },
+      "characters": "개체를 추가하고\n카메라와 연동해 활동 리포트를 받아보세요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1063:7709",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 110.5,
+        "y": 547.0,
+        "width": 172,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ],
+      "cornerRadius": 29.5
+    },
+    {
+      "id": "1063:7710",
+      "name": "add",
+      "type": "GROUP",
+      "rect": {
+        "x": 134.5,
+        "y": 563.0,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1063:7711",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 134.5,
+        "y": 563.0,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1063:7713",
+      "name": "개체 추가하기",
+      "type": "TEXT",
+      "rect": {
+        "x": 162.5,
+        "y": 561.0,
+        "width": 96,
+        "height": 28
+      },
+      "characters": "개체 추가하기",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    }
+  ]
+}

@@ -5,9 +5,15 @@ import 'package:go_router/go_router.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/my_pets/presentation/my_pets_screen.dart';
-import '../../features/my_pets/presentation/pet_add_screen.dart';
+import '../../features/my_cage/presentation/nightly_report_view.dart';
+import '../../features/my_pets/presentation/pet_form_route.dart';
 import '../../features/my_pets/presentation/pet_detail_screen.dart';
-import '../../features/my_pets/presentation/pet_edit_screen.dart';
+import '../../features/my_cage/presentation/device_management_screen.dart';
+import '../../features/my_cage/presentation/device_add_flow_route.dart';
+import '../../features/my_cage/presentation/device_detail_screen.dart';
+import '../../features/my_cage/presentation/group_editor_screen.dart';
+import '../../features/my_cage/presentation/pairing_pet_selection_screen.dart';
+import '../../features/my_cage/domain/redesign_management.dart';
 import '../../features/my_cage/presentation/crecam_screen.dart';
 import '../../features/my_cage/presentation/smart_cage_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
@@ -26,6 +32,11 @@ import '../../features/community/presentation/community_player_screen.dart';
 import '../../features/community/presentation/clip_select_screen.dart';
 import '../../features/community/presentation/compose_screen.dart';
 import '../../features/community/presentation/blocked_users_screen.dart';
+import '../../features/profile/presentation/account_screen.dart';
+import '../../features/profile/presentation/community_profile_screen.dart';
+import '../../features/profile/presentation/notification_settings_screen.dart';
+import '../../features/profile/presentation/password_change_screen.dart';
+import '../../features/profile/presentation/withdraw_screen.dart';
 import '../../features/community/presentation/user_posts_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -128,8 +139,18 @@ GoRouter buildAppRouter({
                 builder: (context, state) => const MyPetsScreen(),
                 routes: [
                   GoRoute(
+                    path: 'manage',
+                    builder: (context, state) => const PetManagementRoute(),
+                  ),
+                  GoRoute(
+                    path: 'reports',
+                    builder: (context, state) => Scaffold(
+                        appBar: AppBar(title: Text('my_pets_tab_report'.tr())),
+                        body: const NightlyReportView()),
+                  ),
+                  GoRoute(
                     path: 'add',
-                    builder: (context, state) => const PetAddScreen(),
+                    builder: (context, state) => const PetFormRoute(),
                   ),
                   // 리포트 카드 → 클립 재생은 셸 밖 `/crecam/motion-clips/:clipId`를
                   // 쓴다 — 셸 안에 두면 가로 전체화면 위에 탭바가 옆으로 그려져
@@ -145,7 +166,7 @@ GoRouter buildAppRouter({
                         path: 'edit',
                         builder: (context, state) {
                           final petId = state.pathParameters['petId'] ?? '';
-                          return PetEditScreen(petId: petId);
+                          return PetFormRoute(petId: petId);
                         },
                       ),
                     ],
@@ -322,17 +343,105 @@ GoRouter buildAppRouter({
       // `/my-pets/add`를 홈에서 push하면 셸 인덱스가 탭3으로 점프하고
       // 뒤로가기가 홈이 아닌 마이크레로 떨어진다(리뷰 2026-09-03).
       GoRoute(
+          path: '/devices/add',
+          builder: (context, state) => const DeviceAddFlowRoute()),
+      GoRoute(
+          path: '/devices/manage',
+          builder: (context, state) => const DeviceManagementScreen()),
+      GoRoute(
+          path: '/devices/:kind/:id',
+          builder: (context, state) {
+            final kind = ManagementKind.values
+                .where((k) =>
+                    k.name == state.pathParameters['kind'] &&
+                    k != ManagementKind.pet)
+                .firstOrNull;
+            if (kind == null) return const ErrorScreen();
+            return DeviceDetailScreen(
+                kind: kind, itemId: state.pathParameters['id']!);
+          }),
+      GoRoute(
+          path: '/device-groups/connect-camera',
+          builder: (context, state) {
+            final target = state.extra;
+            return GroupEditorScreen(
+                selectMembers: true,
+                groupId: target is ({String? groupId, ManagementKey member})
+                    ? target.groupId
+                    : null,
+                initialMember:
+                    target is ({String? groupId, ManagementKey member})
+                        ? target.member
+                        : null);
+          }),
+      GoRoute(
+          path: '/groups/new',
+          builder: (context, state) => GroupEditorScreen(
+              initialMember: state.extra is ManagementKey
+                  ? state.extra as ManagementKey
+                  : null)),
+      GoRoute(
+          path: '/groups/:id',
+          builder: (context, state) =>
+              GroupEditorScreen(groupId: state.pathParameters['id'])),
+      GoRoute(
+          path: '/groups/:groupId/choose-pet',
+          builder: (context, state) => PairingPetSelectionScreen(
+              groupId: state.pathParameters['groupId']!)),
+      GoRoute(
         path: '/pet-add',
-        builder: (context, state) => const PetAddScreen(),
+        builder: (context, state) => PetFormRoute(
+            initialGroupId:
+                state.extra is String ? state.extra as String : null),
+      ),
+      // 셸 밖 개체 상세·수정. 루트 화면(기기 관리·그룹 편집기)에서 셸 안
+      // `/my-pets/:id`를 push하면 go_router가 셸 페이지를 한 번 더 만들어
+      // `!keyReservation.contains(key)` 단언이 터지고, 그 예외가 내비게이터를
+      // 잠가(`_debugLocked`) 이후 모든 뒤로가기가 죽는다(2026-09-16 시뮬 실측).
+      // 탭 안에서는 계속 `/my-pets/...`, 루트에서는 이 경로를 쓴다.
+      GoRoute(
+        path: '/pets/:petId',
+        builder: (context, state) =>
+            PetDetailScreen(petId: state.pathParameters['petId'] ?? ''),
+        routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) =>
+                PetFormRoute(petId: state.pathParameters['petId'] ?? ''),
+          ),
+        ],
       ),
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
         routes: [
+          // 마이 페이지 하위(Figma 1142:8859, 2026-09-16).
+          GoRoute(
+            path: 'community',
+            builder: (context, state) => const CommunityProfileScreen(),
+          ),
           // 커뮤니티 차단 관리 (Task 12)
           GoRoute(
             path: 'blocked',
             builder: (context, state) => const BlockedUsersScreen(),
+          ),
+          GoRoute(
+            path: 'notifications',
+            builder: (context, state) => const NotificationSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'account',
+            builder: (context, state) => const AccountScreen(),
+            routes: [
+              GoRoute(
+                path: 'password',
+                builder: (context, state) => const PasswordChangeScreen(),
+              ),
+              GoRoute(
+                path: 'withdraw',
+                builder: (context, state) => const WithdrawScreen(),
+              ),
+            ],
           ),
         ],
       ),

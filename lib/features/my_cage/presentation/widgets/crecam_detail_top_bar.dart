@@ -130,9 +130,15 @@ class CrecamDetailHeaderArea extends StatelessWidget {
           ? SystemUiOverlayStyle.light
           : SystemUiOverlayStyle.dark,
       child: Container(
-        decoration: BoxDecoration(
-          color: glass.surfaceHeader,
+        decoration: BoxDecoration(color: glass.surfaceHeader),
+
+        // Figma 668:717 — 헤더 106(62+44) 안에 하단선을 그린다(높이 미추가,
+
+        // 2026-09-16 P14: 북마크 날짜 y130·플레이어 영상 y190 정합).
+
+        foregroundDecoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: glass.outline)),
+
         ),
         child: SafeArea(bottom: false, child: child),
       ),

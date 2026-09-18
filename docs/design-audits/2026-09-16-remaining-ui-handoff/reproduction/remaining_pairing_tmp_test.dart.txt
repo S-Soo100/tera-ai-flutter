@@ -1,0 +1,123 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vivanaut/core/theme/app_theme.dart';
+import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
+import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
+import 'package:vivanaut/features/my_cage/domain/wifi_access_point.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_add_flow_screen.dart';
+import 'device_add_flow_test.dart' show Gateway, device, camera;
+
+class Translations extends AssetLoader {
+  const Translations();
+  @override
+  Future<Map<String, Object?>> load(String path, Locale locale) async {
+    final Object? raw =
+        jsonDecode(File('assets/l10n/ko.json').readAsStringSync());
+    return raw is Map<String, Object?> ? raw : {};
+  }
+}
+
+class Controller extends DeviceAddFlowController {
+  Controller(DeviceAddState initial)
+      : super(
+            gateway: Gateway(),
+            accountId: 'a',
+            isCurrent: () => true,
+            token: () => '',
+            namePrefix: (_) => '기기',
+            names: () async => [],
+            confirm: (_, __) async => null,
+            saveCredentials: (_, __) async {},
+            readCredentials: () async => {},
+            autoGroup: (_, __) async => 'group') {
+    state = initial;
+  }
+  @override
+  Future<void> scan() async {}
+}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    await EasyLocalization.ensureInitialized();
+    final font = FontLoader('Pretendard');
+    for (final weight in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+      font.addFont(rootBundle.load('assets/fonts/Pretendard-$weight.otf'));
+    }
+    await font.load();
+  });
+  testWidgets('opt-in capture measured selection/password/result screens',
+      (tester) async {
+    if (!const bool.fromEnvironment('CAPTURE_PAIRING')) return;
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(393, 852);
+    addTearDown(tester.view.reset);
+    final boundary = GlobalKey();
+    for (final mode in ['scan-busy','scan-none','scan-unselected','scan-one','scan-two','network-busy','network-list','network-none','password-empty','password-filled','password-error','connecting','result-device','result-camera','result-both']) {
+      final step = mode.startsWith('scan') ? DeviceAddStep.scan : mode.startsWith('network') ? DeviceAddStep.networks : mode.startsWith('password') ? DeviceAddStep.credentials : mode == 'connecting' ? DeviceAddStep.connecting : DeviceAddStep.results;
+      final initial = DeviceAddState(step:step,
+        busy:mode.endsWith('busy') || mode=='connecting',
+        candidates: mode=='scan-none' ? [] : [device,camera],
+        selected: {if(mode=='scan-one'||mode=='scan-two')PairTargetKind.device:device,if(mode=='scan-two')PairTargetKind.camera:camera},
+        ssid:'iptime_office',
+        networks:mode=='network-none' ? [] : [const WifiAccessPoint(no:1,ssid:'iptime_office',rssi:-40,channel:1),const WifiAccessPoint(no:2,ssid:'KT_GIGA_2G',rssi:-70,channel:6)],
+        errorKey:mode=='password-error'?'device_add_failed':null,
+        results:step!=DeviceAddStep.results ? {} : {
+         if(mode!='result-camera')PairTargetKind.device:const DeviceAddResult(candidate:device,outcome:DeviceAddOutcome.registered,registeredId:'d'),
+         if(mode!='result-device')PairTargetKind.camera:const DeviceAddResult(candidate:camera,outcome:DeviceAddOutcome.registered,registeredId:'c'),
+        },groupId:'g');
+      await tester.pumpWidget(EasyLocalization(
+          supportedLocales: const [Locale('ko')],
+          path: 'assets/l10n',
+          assetLoader: const Translations(),
+          child: Builder(
+              builder: (context) => ProviderScope(
+                  key: ValueKey(mode),
+                  overrides: [
+                    deviceAddAccountProvider.overrideWithValue('a'),
+                    deviceAddFlowProvider('test')
+                        .overrideWith((ref) => Controller(initial))
+                  ],
+                  child: MaterialApp(
+                      theme: AppTheme.light,
+                      locale: context.locale,
+                      supportedLocales: context.supportedLocales,
+                      localizationsDelegates: context.localizationDelegates,
+                      builder: (context, child) =>
+                          RepaintBoundary(key: boundary, child: child!),
+                      home: MediaQuery(
+                          data: const MediaQueryData(
+                              size: Size(393, 852),
+                              padding: EdgeInsets.only(top: 62, bottom: 34)),
+                          child:
+                              const DeviceAddFlowScreen(flowKey: 'test')))))));
+      await tester.pump(); await tester.pump(const Duration(milliseconds:350));
+      Future<void> capture(String name) => tester.runAsync(() async {
+            final image = await (boundary.currentContext!.findRenderObject()!
+                    as RenderRepaintBoundary)
+                .toImage();
+            final bytes =
+                await image.toByteData(format: ui.ImageByteFormat.png);
+            await File('/private/tmp/remaining-audit/app/pairing-$name.png')
+                .writeAsBytes(bytes!.buffer.asUint8List());
+            image.dispose();
+          });
+      if(mode=='password-filled'||mode=='password-error') {await tester.enterText(find.byType(TextField).last,'fixture-password');await tester.pump();}
+      await capture(mode);
+      expect(tester.takeException(),isNull);
+
+    }
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+  });
+}

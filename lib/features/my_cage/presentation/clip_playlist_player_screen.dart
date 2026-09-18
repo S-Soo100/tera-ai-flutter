@@ -7,6 +7,7 @@ import 'dart:math' as math;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/theme/glass_palette.dart';
@@ -24,6 +25,11 @@ import 'my_cage_providers.dart';
 import 'bookmark_controller.dart';
 import '../../auth/presentation/auth_providers.dart';
 import 'widgets/crecam_detail_top_bar.dart';
+import 'widgets/clip_memo_editor.dart';
+import 'widgets/clip_toast.dart';
+import 'clip_memo_providers.dart';
+import 'clip_visibility_providers.dart';
+import 'widgets/clip_hide_dialog.dart';
 
 /// 세로 재생목록 플레이어 (Figma 668:743, 카메라 탭 재설계 T1).
 ///
@@ -35,6 +41,10 @@ import 'widgets/crecam_detail_top_bar.dart';
 /// 이전/다음은 스와이프·화살표·중앙 필름스트립, 단일 탭은 조작계 표시,
 /// 양쪽 더블탭은 ±10초.
 /// 하이라이트만 끝에서 자동으로 다음 클립(마지막이면 정지 상태 유지).
+/// 더블탭 ±10초 피드백(초 단위 부호 값). 화면 인스턴스별.
+final _seekFeedbackProvider =
+    StateProvider.autoDispose.family<int?, Object>((ref, key) => null);
+
 class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
   const ClipPlaylistPlayerScreen({
     super.key,
@@ -100,6 +110,7 @@ class _ClipPlaylistPlayerScreenState
   bool _initialized = false;
   String? _error;
   bool _busy = false; // 저장/공유/즐겨찾기 진행 중
+  bool _downloading = false; // 기기 저장 진행 중 — 흰 dim + 스피너(1106:3659)
   bool _isPlaying = false;
   bool _autoAdvanced = false; // 클립당 자동 다음 1회 가드
   MotionClipCursor? _nextCursor;
@@ -166,6 +177,7 @@ class _ClipPlaylistPlayerScreenState
 
   @override
   void dispose() {
+    _seekFeedbackTimer?.cancel();
     _controller?.removeListener(_onTick);
     _controller?.dispose();
     _filmstripController.dispose();
@@ -210,17 +222,19 @@ class _ClipPlaylistPlayerScreenState
         _nextCursor,
       );
       if (!mounted || ref.read(currentUserProvider)?.id != owner) return;
-      final current = _currentClipId;
+      final current = _playlist.isEmpty ? null : _currentClipId;
+      final hidden = ref.read(currentClipVisibilityProvider).hiddenIds;
       final expanded = {
         ..._playlist,
         ...page.items.map((clip) => clip.id),
-      }.toList(growable: false);
+      }.where((id) => !hidden.contains(id)).toList(growable: false);
       _playlist = expanded;
-      _index = expanded.indexOf(current);
+      _index = current == null ? 0 : math.max(0, expanded.indexOf(current));
       _nextCursor = page.nextCursor;
       _hasMore = page.hasMore;
       _setFilmstripPreview(_index);
       _centerFilmstrip(_index, animate: false);
+      if (current == null && expanded.isNotEmpty) unawaited(_load());
     } catch (_) {
       if (mounted) {
         ref.read(playerPlaylistErrorProvider(_orientationKey).notifier).state =
@@ -268,6 +282,20 @@ class _ClipPlaylistPlayerScreenState
 
     VideoPlayerController? controller;
     try {
+      final owner = ref.read(clipVisibilityAccountProvider);
+      if (owner != null) {
+        final visibility = ref.read(clipVisibilityProvider(owner).notifier);
+        await visibility.ready();
+        if (!mounted ||
+            seq != _loadSeq ||
+            ref.read(clipVisibilityAccountProvider) != owner) {
+          return;
+        }
+        if (visibility.hiddenIds.contains(clipId)) {
+          _applyHiddenClips(visibility.hiddenIds);
+          return;
+        }
+      }
       // 즐겨찾기(로컬 파일) 우선 — 오프라인 재생 가능
       final localFile =
           ref.read(favoriteClipRepositoryProvider).getLocalFile(clipId);
@@ -432,6 +460,8 @@ class _ClipPlaylistPlayerScreenState
     controller.value.isPlaying ? controller.pause() : controller.play();
   }
 
+  Timer? _seekFeedbackTimer;
+
   void _seekBy(Duration delta) {
     final controller = _controller;
     if (controller == null || !_initialized) return;
@@ -440,6 +470,15 @@ class _ClipPlaylistPlayerScreenState
     if (pos < Duration.zero) pos = Duration.zero;
     if (pos > v.duration) pos = v.duration;
     unawaited(_seekTo(pos));
+    // Figma 941:1928 Toast_V — 탭한 쪽에 ±10s 칩을 잠깐 띄운다.
+    ref.read(_seekFeedbackProvider(_orientationKey).notifier).state =
+        delta.inSeconds;
+    _seekFeedbackTimer?.cancel();
+    _seekFeedbackTimer = Timer(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        ref.read(_seekFeedbackProvider(_orientationKey).notifier).state = null;
+      }
+    });
   }
 
   /// "처음부터" — 서버 시작점으로 중간에서 시작한 클립을 0초부터 다시 본다.
@@ -460,10 +499,12 @@ class _ClipPlaylistPlayerScreenState
 
   Future<void> _save() async {
     if (_busy) return;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _downloading = true;
+    });
     final clipId = _currentClipId; // 진행 중 클립 전환에도 대상 고정
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(content: Text('clip_saving'.tr())));
     try {
       final src = await _source(clipId);
       await ref.read(videoExportServiceProvider).saveToGallery(
@@ -471,12 +512,19 @@ class _ClipPlaylistPlayerScreenState
             localFile: src.file,
             presignedUrl: src.url,
           );
-      messenger
-          .showSnackBar(SnackBar(content: Text('clip_saved_to_gallery'.tr())));
+      if (!mounted) return;
+      setState(() => _downloading = false);
+      // Figma 1106:3584 — 완료만 토스트. 실패는 아래 별도 스낵바(완료 오인 금지).
+      showClipToast(context, text: 'clip_download_done'.tr());
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text('clip_save_failed'.tr())));
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _downloading = false;
+        });
+      }
     }
   }
 
@@ -499,14 +547,52 @@ class _ClipPlaylistPlayerScreenState
   }
 
   void _toggleFavorite(MotionClip? clip) {
-    final owner = ref.read(currentUserProvider)?.id;
+    toggleClipBookmark(context, ref, _currentClipId, canAdd: clip != null);
+  }
+
+  void _editMemo() {
+    final owner = ref.read(clipMemoAccountProvider);
     if (owner == null) return;
-    final key = (ownerId: owner, clipId: _currentClipId);
-    final state = ref.read(bookmarkControllerProvider(key));
-    if (clip == null && !state.desired) return;
-    ref
-        .read(bookmarkControllerProvider(key).notifier)
-        .setDesired(!state.desired);
+    showClipMemoEditor(context, key: (ownerId: owner, clipId: _currentClipId));
+  }
+
+  void _hideCurrentClip() {
+    final owner = ref.read(clipVisibilityAccountProvider);
+    if (owner == null || _playlist.isEmpty) return;
+    showClipHideDialog(context, ownerId: owner, clipId: _currentClipId);
+  }
+
+  void _applyHiddenClips(Set<String> hiddenIds) {
+    if (!mounted || _playlist.isEmpty) return;
+    final current = _currentClipId;
+    final oldIndex = _index;
+    final visible = _playlist
+        .where((id) => !hiddenIds.contains(id))
+        .toList(growable: false);
+    if (visible.length == _playlist.length) return;
+    _urlCache.removeWhere((id, _) => hiddenIds.contains(id));
+    _playlist = visible;
+    _index = visible.contains(current)
+        ? visible.indexOf(current)
+        : math.min(oldIndex, math.max(0, visible.length - 1));
+    if (visible.isEmpty) {
+      _loadSeq++;
+      final controller = _controller;
+      controller?.removeListener(_onTick);
+      _controller = null;
+      _initialized = false;
+      _isPlaying = false;
+      unawaited(controller?.dispose());
+      if (_hasMore) unawaited(_loadMoreFeedPlaylist());
+      return;
+    }
+    _setFilmstripPreview(_index);
+    _centerFilmstrip(_index, animate: false);
+    _loadMoreIfNearEnd(_index);
+    if (current != _currentClipId) {
+      _autoAdvanced = false;
+      unawaited(_load());
+    }
   }
 
   @override
@@ -514,6 +600,41 @@ class _ClipPlaylistPlayerScreenState
     final glass = context.glass;
     ref.watch(playerPlaylistProvider(_playlistSeed));
     ref.watch(playerIndexProvider(_playlistSeed));
+    final visibility = ref.watch(currentClipVisibilityProvider);
+    ref.listen(currentClipVisibilityProvider.select((value) => value.hiddenIds),
+        (_, hidden) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _applyHiddenClips(hidden));
+    });
+    ref.listen(clipVisibilityAccountProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _applyHiddenClips(_playlist.toSet());
+        });
+      }
+    });
+    if (visibility.loading) {
+      return const Scaffold(
+          body: Center(
+              child: SkeletonLoading(width: double.infinity, height: 224)));
+    }
+    if (_playlist.isEmpty) {
+      return Scaffold(
+          body: SafeArea(
+              child: Column(children: [
+        CrecamDetailTopBar(closeButton: true),
+        Expanded(
+            child: Center(
+                child: ref.watch(playerPlaylistLoadingProvider(_orientationKey))
+                    ? const SkeletonLoading(width: double.infinity, height: 224)
+                    : Text('clip_hide_empty'.tr()))),
+      ])));
+    }
+    if (visibility.hiddenIds.contains(_currentClipId)) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _applyHiddenClips(visibility.hiddenIds));
+      return const Scaffold(body: SizedBox.shrink());
+    }
     final controlsVisible =
         ref.watch(playerControlsVisibleProvider(_orientationKey));
     final currentId = _currentClipId;
@@ -531,126 +652,187 @@ class _ClipPlaylistPlayerScreenState
 
     final landscape = ref.watch(playerOrientationProvider(_orientationKey));
     if (landscape) {
+      // Figma 941:1928 / 1081:6895 — 영상 위 overlay chrome. 여백 좌우 48·
+      // 상 24·하 20은 SafeArea 최소값(노치 기기는 더 큰 쪽을 쓴다).
       return Scaffold(
           backgroundColor: glass.wallpaper,
           body: Stack(fit: StackFit.expand, children: [
             _videoArea(glass, BoxConstraints.tight(MediaQuery.sizeOf(context)),
                 fill: true),
-            if (controlsVisible)
+            if (controlsVisible) ...[
+              Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 156,
+                  child: IgnorePointer(
+                      child: DecoratedBox(
+                          decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                        glass.wallpaper.withValues(alpha: 0),
+                        glass.wallpaper.withValues(alpha: 0.9),
+                      ]))))),
               SafeArea(
-                  child: Column(children: [
-                ColoredBox(
-                    color: glass.surfaceHeader.withValues(alpha: 0.9),
-                    child: _topBar(glass, startedAt)),
-                const Spacer(),
-                ColoredBox(
-                    color: glass.wallpaper.withValues(alpha: 0.85),
-                    child: Column(children: [
-                      _SeekBar(
-                          controller: _initialized ? _controller : null,
-                          onSeek: _seekTo),
-                      _controlRow(glass),
-                      _navigationActions(glass, clip, isFav, showArrows: false),
-                      if (_playlist.length > 1) _thumbnailStrip(),
-                      if (ref
-                          .watch(playerPlaylistErrorProvider(_orientationKey)))
-                        _playlistRetry(),
-                    ])),
-              ])),
+                  minimum: const EdgeInsets.fromLTRB(48, 24, 48, 20),
+                  child: Stack(children: [
+                    Positioned(
+                        left: 0,
+                        right: 0,
+                        top: 0,
+                        child: Center(child: _datePill(glass, startedAt))),
+                    Positioned(
+                        left: 0,
+                        top: 0,
+                        child: _circleButton(
+                            key: const Key('player_landscape_close'),
+                            asset: FigmaIcons.close,
+                            tooltip: MaterialLocalizations.of(context)
+                                .closeButtonTooltip,
+                            onTap: () => context.pop())),
+                    Positioned(
+                        right: 0,
+                        top: 0,
+                        child: _landscapeActions(glass, clip, isFav)),
+                    Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(
+                                  height: 16,
+                                  child: _SeekBar(
+                                      controller:
+                                          _initialized ? _controller : null,
+                                      onSeek: _seekTo)),
+                              const SizedBox(height: 4),
+                              _controlRow(glass, padded: false),
+                              const SizedBox(height: 4),
+                              if (_playlist.length > 1)
+                                Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: LayoutBuilder(
+                                        builder: (context, c) => SizedBox(
+                                            width: math.min(510, c.maxWidth),
+                                            child: _thumbnailStrip()))),
+                              if (ref.watch(
+                                  playerPlaylistErrorProvider(_orientationKey)))
+                                _playlistRetry(),
+                            ])),
+                  ])),
+            ],
+            if (_downloading) const _DownloadOverlay(),
           ]));
     }
     return Scaffold(
-        body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      CrecamDetailHeaderArea(child: _topBar(glass, startedAt)),
-      Expanded(
-          child: SafeArea(
-              top: false,
-              child: LayoutBuilder(
-                  builder: (context, outer) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          SizedBox(
-                              height: math.min(84, outer.maxHeight * 0.13)),
-                          _videoArea(glass, outer),
-                          SizedBox(
-                              height: 16,
-                              child: _SeekBar(
-                                  onSeek: _seekTo,
-                                  controller:
-                                      _initialized ? _controller : null)),
-                          Visibility(
-                              visible: controlsVisible,
-                              maintainSize: true,
-                              maintainState: true,
-                              maintainAnimation: true,
-                              child: _controlRow(glass)),
-                          const Spacer(),
-                          _navigationActions(glass, clip, isFav),
-                          if (_playlist.length > 1) ...[
-                            const SizedBox(height: 12),
-                            _thumbnailStrip()
+        body: Stack(fit: StackFit.expand, children: [
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        CrecamDetailHeaderArea(child: _topBar(glass, startedAt)),
+        Expanded(
+            child: SafeArea(
+                top: false,
+                child: LayoutBuilder(
+                    builder: (context, outer) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SizedBox(
+                                height: math.min(84, outer.maxHeight * 0.13)),
+                            _videoArea(glass, outer),
+                            SizedBox(
+                                height: 16,
+                                child: _SeekBar(
+                                    onSeek: _seekTo,
+                                    controller:
+                                        _initialized ? _controller : null)),
+                            Visibility(
+                                visible: controlsVisible,
+                                maintainSize: true,
+                                maintainState: true,
+                                maintainAnimation: true,
+                                child: _controlRow(glass)),
+                            const Spacer(),
+                            _navigationActions(glass, clip, isFav),
+                            if (_playlist.length > 1) ...[
+                              const SizedBox(height: 12),
+                              _thumbnailStrip()
+                            ],
+                            if (ref.watch(
+                                playerPlaylistErrorProvider(_orientationKey)))
+                              _playlistRetry(),
+                            // Figma 941:1834 — 스트립 하단 y764, 홈 인디케이터 위 54
+                            // (본문 712 기준 7.6%). 작은 화면(320×568)은 비율로
+                            // 줄여 11px overflow를 막는다(회귀 2026-09-16).
+                            SizedBox(
+                                height: math.min(54, outer.maxHeight * 0.076)),
                           ],
-                          if (ref.watch(
-                              playerPlaylistErrorProvider(_orientationKey)))
-                            _playlistRetry(),
-                          const SizedBox(height: 24),
-                        ],
-                      )))),
+                        )))),
+      ]),
+      if (_downloading) const _DownloadOverlay(),
     ]));
   }
 
   Widget _navigationActions(GlassPalette glass, MotionClip? clip, bool isFav,
       {bool showArrows = true}) {
     final hasNavigation = showArrows && _playlist.length > 1;
-    return Align(
-      alignment: Alignment.center,
-      child: Row(
-          key: ClipPlaylistPlayerScreen.navigationActionsKey,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (hasNavigation) ...[
-              if (_index > 0)
-                _navArrow(
-                  key: ClipPlaylistPlayerScreen.prevArrowKey,
-                  asset: FigmaIcons.arrowPrevious,
-                  tooltip:
-                      MaterialLocalizations.of(context).previousPageTooltip,
-                  onTap: () => _go(-1),
-                )
-              else
-                const SizedBox.square(dimension: 48),
-              const SizedBox(width: 24),
-            ],
-            Column(mainAxisSize: MainAxisSize.min, children: [
-              _actionPill(glass, clip, isFav),
-              if (ref.watch(currentUserProvider)?.id case final owner?)
-                if (ref
-                        .watch(bookmarkControllerProvider(
-                            (ownerId: owner, clipId: _currentClipId)))
-                        .error !=
-                    null)
-                  TextButton(
-                      onPressed: () => ref
-                          .read(bookmarkControllerProvider(
-                                  (ownerId: owner, clipId: _currentClipId))
-                              .notifier)
-                          .retry(),
-                      child: Text('retry'.tr())),
+    // Use this row's actual constraints: split views and rotation can narrow
+    // its layout independently of the enclosing MediaQuery viewport.
+    return LayoutBuilder(builder: (context, constraints) {
+      final arrowGap = ((constraints.maxWidth - 312) / 2).clamp(0.0, 24.0);
+      return Align(
+        alignment: Alignment.center,
+        child: Row(
+            key: ClipPlaylistPlayerScreen.navigationActionsKey,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasNavigation) ...[
+                if (_index > 0)
+                  _navArrow(
+                    key: ClipPlaylistPlayerScreen.prevArrowKey,
+                    asset: FigmaIcons.arrowPrevious,
+                    tooltip:
+                        MaterialLocalizations.of(context).previousPageTooltip,
+                    onTap: () => _go(-1),
+                  )
+                else
+                  const SizedBox.square(dimension: 48),
+                SizedBox(width: arrowGap),
+              ],
+              Column(mainAxisSize: MainAxisSize.min, children: [
+                _actionPill(glass, clip, isFav),
+                if (ref.watch(currentUserProvider)?.id case final owner?)
+                  if (ref
+                          .watch(bookmarkControllerProvider(
+                              (ownerId: owner, clipId: _currentClipId)))
+                          .error !=
+                      null)
+                    TextButton(
+                        onPressed: () => ref
+                            .read(bookmarkControllerProvider(
+                                    (ownerId: owner, clipId: _currentClipId))
+                                .notifier)
+                            .retry(),
+                        child: Text('retry'.tr())),
+              ]),
+              if (hasNavigation) ...[
+                SizedBox(width: arrowGap),
+                if (_index < _playlist.length - 1)
+                  _navArrow(
+                    key: ClipPlaylistPlayerScreen.nextArrowKey,
+                    asset: FigmaIcons.arrowNext,
+                    tooltip: MaterialLocalizations.of(context).nextPageTooltip,
+                    onTap: () => _go(1),
+                  )
+                else
+                  const SizedBox.square(dimension: 48),
+              ],
             ]),
-            if (hasNavigation) ...[
-              const SizedBox(width: 24),
-              if (_index < _playlist.length - 1)
-                _navArrow(
-                  key: ClipPlaylistPlayerScreen.nextArrowKey,
-                  asset: FigmaIcons.arrowNext,
-                  tooltip: MaterialLocalizations.of(context).nextPageTooltip,
-                  onTap: () => _go(1),
-                )
-              else
-                const SizedBox.square(dimension: 48),
-            ],
-          ]),
-    );
+      );
+    });
   }
 
   Widget _navArrow({
@@ -712,6 +894,12 @@ class _ClipPlaylistPlayerScreenState
     // 날짜·시각은 본문이 아니라 크롬이라 클램프가 관례에 맞다.
     return CrecamDetailTopBar(
       closeButton: true,
+      trailing: IconButton(
+          key: const Key('clip_hide_button'),
+          tooltip: 'clip_hide_action'.tr(),
+          onPressed: _hideCurrentClip,
+          icon: FigmaIcon.tinted('redesign_v2/delete',
+              size: 24, color: glass.textPrimary)),
       titleWidget: startedAt == null
           ? null
           : MediaQuery.withClampedTextScaling(
@@ -792,6 +980,12 @@ class _ClipPlaylistPlayerScreenState
                         onDoubleTap: () =>
                             _seekBy(const Duration(seconds: 10)))),
               ]),
+            if (ref.watch(_seekFeedbackProvider(_orientationKey))
+                case final seconds?)
+              IgnorePointer(
+                  child: Align(
+                      alignment: Alignment(seconds < 0 ? -0.5 : 0.5, 0),
+                      child: _SeekFeedbackChip(seconds: seconds))),
           ]),
         ));
   }
@@ -835,66 +1029,184 @@ class _ClipPlaylistPlayerScreenState
     );
   }
 
-  Widget _controlRow(GlassPalette glass) {
+  /// Figma 941:1834 Frame 144 — 높이 36, 재생 36 + 8 + 시각 14/500,
+  /// 우측 2X 36 + 12 + 확대 36. 세로는 좌우 12 안쪽, 가로는 SafeArea 여백 그대로.
+  Widget _controlRow(GlassPalette glass, {bool padded = true}) {
     final speed = ref.watch(playerSpeedProvider(_orientationKey));
     final landscape = ref.watch(playerOrientationProvider(_orientationKey));
     final controller = _controller;
     String time(Duration value) =>
         '${value.inMinutes}:${(value.inSeconds % 60).toString().padLeft(2, '0')}';
     return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: EdgeInsets.symmetric(horizontal: padded ? 12 : 0),
+        child: SizedBox(
+            height: 36,
+            child: Row(children: [
+              _iconButton36(
+                  key: const Key('player_play_pause'),
+                  onTap: _togglePlay,
+                  child: FigmaIcon.tinted(
+                      _isPlaying ? FigmaIcons.pause : FigmaIcons.play,
+                      size: 36,
+                      color: glass.textPrimary)),
+              const SizedBox(width: 8),
+              if (controller != null)
+                ValueListenableBuilder(
+                    valueListenable: controller,
+                    builder: (context, value, _) => Text(
+                        '${time(value.position)} / ${time(value.duration)}',
+                        style: TextStyle(
+                            fontFamily: 'Pretendard',
+                            fontSize: 14,
+                            height: 16.70703125 / 14,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.28,
+                            color: glass.textSecondary))),
+              if (_startedMidway)
+                Flexible(
+                    child: TextButton(
+                        key: ClipPlaylistPlayerScreen.fromStartKey,
+                        onPressed: _restartFromZero,
+                        child: Text('crecam_player_from_start'.tr(),
+                            maxLines: 1, overflow: TextOverflow.ellipsis))),
+              const Spacer(),
+              _iconButton36(
+                  key: const Key('player_speed'),
+                  onTap: () {
+                    final next = speed == 1 ? 2.0 : 1.0;
+                    ref
+                        .read(playerSpeedProvider(_orientationKey).notifier)
+                        .state = next;
+                    _controller?.setPlaybackSpeed(next);
+                  },
+                  child: speed == 2
+                      ? FigmaIcon.tinted(FigmaIcons.speed2x,
+                          color: glass.textPrimary, size: 36)
+                      : Text('1×',
+                          style: TextStyle(
+                              fontFamily: 'Pretendard',
+                              fontSize: 14,
+                              color: glass.textPrimary,
+                              fontWeight: FontWeight.w700))),
+              const SizedBox(width: 12),
+              _iconButton36(
+                  key: const Key('player_orientation'),
+                  tooltip:
+                      (landscape ? 'player_portrait' : 'player_landscape').tr(),
+                  onTap: () => ref
+                      .read(playerOrientationProvider(_orientationKey).notifier)
+                      .toggle(),
+                  // 세로=zoom_out_map(expand), 가로=zoom_in_map(축소) —
+                  // 둘 다 Figma 36 export(941:1834/1928).
+                  child: FigmaIcon.tinted(
+                      landscape ? FigmaIcons.zoomInMap : FigmaIcons.expand,
+                      color: glass.textPrimary,
+                      size: 36)),
+            ])));
+  }
+
+  Widget _iconButton36(
+      {required Key key,
+      required VoidCallback onTap,
+      required Widget child,
+      String? tooltip}) {
+    final button = SizedBox.square(
+        key: key,
+        dimension: 36,
+        child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: Center(child: child)));
+    return tooltip == null ? button : Tooltip(message: tooltip, child: button);
+  }
+
+  /// 가로 상단 가운데 날짜 알약 (Figma 941:1928 Frame 145 — 130×48 r24).
+  Widget _datePill(GlassPalette glass, DateTime? startedAt) {
+    if (startedAt == null) return const SizedBox.shrink();
+    return Container(
+        key: const Key('player_landscape_date'),
+        width: 130,
+        height: 48,
+        decoration: BoxDecoration(
+            color: glass.surfaceTint, borderRadius: BorderRadius.circular(24)),
+        child: MediaQuery.withClampedTextScaling(
+            maxScaleFactor: 1.2,
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Text(DateFormat('yyyy. MM. dd').format(startedAt.toLocal()),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.32,
+                      height: 19 / 16,
+                      color: glass.textPrimary)),
+              const SizedBox(height: 2),
+              Text(formatAmPmTime(startedAt.toLocal()),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.28,
+                      height: 17 / 14,
+                      color: glass.mediaMeta)),
+            ])));
+  }
+
+  /// 가로 44 원형 버튼 (Figma Button/Enabled — #F4F4F4 r22, 그림 24).
+  Widget _circleButton(
+          {required Key key,
+          required String asset,
+          required String tooltip,
+          required VoidCallback onTap}) =>
+      Tooltip(
+          message: tooltip,
+          child: SizedBox.square(
+              key: key,
+              dimension: 44,
+              child: Material(
+                  color: context.glass.surfaceTint,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: onTap,
+                      child: Center(
+                          child: FigmaIcon.tinted(asset,
+                              size: 24,
+                              color: context.glass.textSecondary))))));
+
+  /// 가로 우상단 알약 (Figma Frame 135 — 276×48 r24): 삭제 44 + 12 +
+  /// 다운로드·공유·메모·북마크 44 동작면(간격 8).
+  Widget _landscapeActions(GlassPalette glass, MotionClip? clip, bool isFav) {
+    return Container(
+        key: ClipPlaylistPlayerScreen.actionPillKey,
+        width: 276,
+        height: 48,
+        decoration: BoxDecoration(
+            color: glass.surfaceTint, borderRadius: BorderRadius.circular(24)),
         child: Row(children: [
-          IconButton(
-              key: const Key('player_play_pause'),
-              onPressed: _togglePlay,
-              icon: _isPlaying
-                  ? FigmaIcon.tinted(FigmaIcons.pause,
-                      size: 36, color: glass.textPrimary)
-                  : FigmaIcon.tinted(FigmaIcons.play,
-                      size: 20, color: glass.textPrimary)),
-          if (controller != null)
-            ValueListenableBuilder(
-                valueListenable: controller,
-                builder: (context, value, _) => Text(
-                    '${time(value.position)} / ${time(value.duration)}',
-                    style:
-                        TextStyle(fontSize: 12, color: glass.textSecondary))),
-          if (_startedMidway)
-            Flexible(
-                child: TextButton(
-                    key: ClipPlaylistPlayerScreen.fromStartKey,
-                    onPressed: _restartFromZero,
-                    child: Text('crecam_player_from_start'.tr(),
-                        maxLines: 1, overflow: TextOverflow.ellipsis))),
-          const Spacer(),
-          TextButton(
-              key: const Key('player_speed'),
-              onPressed: () {
-                final next = speed == 1 ? 2.0 : 1.0;
-                ref.read(playerSpeedProvider(_orientationKey).notifier).state =
-                    next;
-                _controller?.setPlaybackSpeed(next);
-              },
-              child: speed == 2
-                  ? FigmaIcon.tinted(FigmaIcons.speed2x,
-                      color: glass.textPrimary, size: 24)
-                  : Text('1×',
-                      style: TextStyle(
-                          color: glass.textPrimary,
-                          fontWeight: FontWeight.w700))),
-          IconButton(
-              key: const Key('player_orientation'),
-              tooltip:
-                  (landscape ? 'player_portrait' : 'player_landscape').tr(),
-              onPressed: () => ref
-                  .read(playerOrientationProvider(_orientationKey).notifier)
-                  .toggle(),
-              icon: FigmaIcon.tinted(FigmaIcons.expand,
-                  color: glass.textPrimary, size: 36)),
+          const SizedBox(width: 12),
+          SizedBox.square(
+              dimension: 44,
+              child: IconButton(
+                  key: const Key('clip_hide_button'),
+                  padding: EdgeInsets.zero,
+                  tooltip: 'clip_hide_action'.tr(),
+                  onPressed: _hideCurrentClip,
+                  icon: FigmaIcon.tinted('redesign_v2/delete',
+                      size: 24, color: glass.textPrimary))),
+          const SizedBox(width: 12),
+          ..._actionButtons(glass, clip, isFav),
         ]));
   }
 
-  Widget _actionPill(GlassPalette glass, MotionClip? clip, bool isFav) {
+  /// 다운로드 → 공유 → 메모 → 북마크 (Figma 941:1834 순서), 44 동작면·간격 8.
+  List<Widget> _actionButtons(
+      GlassPalette glass, MotionClip? clip, bool isFav) {
     final color = glass.textPrimary;
     Widget action(String asset, String tooltip, VoidCallback? onTap) {
       return SizedBox(
@@ -911,9 +1223,24 @@ class _ClipPlaylistPlayerScreenState
       );
     }
 
+    return [
+      action(FigmaIcons.download, 'clip_save'.tr(), _busy ? null : _save),
+      const SizedBox(width: 8),
+      action(FigmaIcons.share, 'clip_share'.tr(), _busy ? null : _share),
+      const SizedBox(width: 8),
+      action(FigmaIcons.memo, 'clip_memo_add'.tr(), _editMemo),
+      const SizedBox(width: 8),
+      action(
+          isFav ? FigmaIcons.bookmarkCheck : FigmaIcons.bookmark,
+          (isFav ? 'clip_favorite_remove' : 'clip_favorite_add').tr(),
+          () => _toggleFavorite(clip)),
+    ];
+  }
+
+  Widget _actionPill(GlassPalette glass, MotionClip? clip, bool isFav) {
     return Container(
       key: ClipPlaylistPlayerScreen.actionPillKey,
-      width: 164,
+      width: 216,
       height: 48,
       decoration: BoxDecoration(
         color: glass.surfaceTint,
@@ -922,18 +1249,55 @@ class _ClipPlaylistPlayerScreenState
       // Figma 941:1834 — 좌우 패딩 8, 44pt 동작면 사이 간격 8.
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          action(FigmaIcons.download, 'clip_save'.tr(), _busy ? null : _save),
-          const SizedBox(width: 8),
-          action(FigmaIcons.share, 'clip_share'.tr(), _busy ? null : _share),
-          const SizedBox(width: 8),
-          action(
-              isFav ? FigmaIcons.bookmarkCheck : FigmaIcons.bookmark,
-              (isFav ? 'clip_favorite_remove' : 'clip_favorite_add').tr(),
-              () => _toggleFavorite(clip)),
-        ],
+        children: _actionButtons(glass, clip, isFav),
       ),
     );
+  }
+}
+
+/// 더블탭 ±10초 피드백 칩 (Figma 941:1928 Toast_V — 77×34 r24 #1E1E1E,
+/// 안쪽 8, 문구 14/600 #FAFAFA + 4 + fast_forward 26). 되감기는 같은
+/// 글리프를 좌우 반전해 문구 앞에 둔다(원본에 fast_rewind export 없음).
+class _SeekFeedbackChip extends StatelessWidget {
+  const _SeekFeedbackChip({required this.seconds});
+  final int seconds;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    final forward = seconds > 0;
+    final label = Text('${forward ? '+' : '-'}${seconds.abs()}s',
+        style: TextStyle(
+            fontFamily: 'Pretendard',
+            fontSize: 14,
+            height: 16.70703125 / 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.28,
+            color: glass.buttonForeground));
+    final glyph = Transform.flip(
+        flipX: !forward,
+        child: FigmaIcon.tinted(FigmaIcons.fastForward,
+            size: 26, color: glass.buttonForeground));
+    return Container(
+        key: const Key('player_seek_feedback'),
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+            color: glass.textPrimary, borderRadius: BorderRadius.circular(24)),
+        // alignment를 주면 Container가 가로로 늘어나 Align 위치가 무의미해진다.
+        child: Center(
+            widthFactor: 1,
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (forward) ...[
+                label,
+                const SizedBox(width: 4),
+                glyph
+              ] else ...[
+                glyph,
+                const SizedBox(width: 4),
+                label
+              ],
+            ])));
   }
 }
 
@@ -1026,4 +1390,99 @@ class _SeekBarState extends State<_SeekBar> {
       ),
     );
   }
+}
+
+/// 기기 저장 진행 화면 (Figma 1106:3659) — 흰 dim이 화면 전체 입력을 막고,
+/// 가운데 62 원호 스피너 + 12 + '영상 다운로드 중' 18/600 #3C3C3C.
+/// 실제 진행률은 제공되지 않으므로 퍼센트를 꾸미지 않는다. 진행 중에는 닫기까지
+/// 가려진다(짧은 저장이며 취소 계약이 없다).
+class _DownloadOverlay extends StatelessWidget {
+  const _DownloadOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return Positioned.fill(
+      key: const Key('player_download_overlay'),
+      child: AbsorbPointer(
+        child: ColoredBox(
+          color: glass.wallpaper.withValues(alpha: 0.8),
+          child: Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              _SpinnerArc(size: 62, color: glass.textSecondary),
+              const SizedBox(height: 12),
+              Text('clip_download_progress'.tr(),
+                  style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 18,
+                      height: 28 / 18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.36,
+                      color: glass.textSecondary)),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 원본 progress_activity 글리프(3/4 원호)를 도는 커스텀 스피너. Material
+/// CircularProgressIndicator를 쓰지 않는다(프로젝트 금지) — 디자인이 지정한
+/// 그림을 그대로 그린다.
+class _SpinnerArc extends StatefulWidget {
+  const _SpinnerArc({required this.size, required this.color});
+  final double size;
+  final Color color;
+
+  @override
+  State<_SpinnerArc> createState() => _SpinnerArcState();
+}
+
+class _SpinnerArcState extends State<_SpinnerArc>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _turn = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1000))
+    ..repeat();
+
+  @override
+  void dispose() {
+    _turn.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => RotationTransition(
+        turns: _turn,
+        child: CustomPaint(
+          key: const Key('player_download_spinner'),
+          size: Size.square(widget.size),
+          painter: _ArcPainter(color: widget.color),
+        ),
+      );
+}
+
+class _ArcPainter extends CustomPainter {
+  const _ArcPainter({required this.color});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = size.width / 10;
+    final rect = Rect.fromLTWH(
+        stroke / 2, stroke / 2, size.width - stroke, size.height - stroke);
+    canvas.drawArc(
+        rect,
+        -math.pi / 2,
+        math.pi * 1.5,
+        false,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = stroke);
+  }
+
+  @override
+  bool shouldRepaint(_ArcPainter old) => old.color != color;
 }

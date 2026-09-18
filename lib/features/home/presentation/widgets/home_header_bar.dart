@@ -1,290 +1,34 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
-import '../../../../core/theme/glass_palette.dart';
-import '../../domain/enclosure_set.dart';
+import '../../../../shared/widgets/redesign_tab_header.dart';
 import '../home_set_providers.dart';
 
-/// 홈 헤더 — Figma A.4 ① 기반 (h44, 좌 세트 드롭다운 필 + 우 원형 버튼 3개).
-///
-/// 좌: 세트 드롭다운 필(bg surfaceTint, radius 12, 텍스트 16 SemiBold +
-/// `keyboard_arrow_down` 24 — 세트 1개면 화살표 숨김, PRD §3.1 예외).
-/// 우: 44×44 흰 원형 버튼 ×3 — `[+]`(기기/개체 추가·사육장 연동 메뉴),
-/// `[⚙️]`(→ `/env-settings` 환경설정), `[person]`(→ `/profile`).
-///
-/// 🔔은 PRD 재설계(2026-09-02)로 빠졌다 — 알림 진입은 프로필 화면 안.
-/// ⚙️도 그때 함께 뺐다가 **2026-09-08 사용자 결정으로 부활** — 목표 온습도·
-/// 화면 뒤집기 같은 실사용 설정이 생겨 "추가" 메뉴에 설정을 얹어두는 구조가
-/// 더는 안 맞는다(연동/설정 분리). 미읽음 provider는
-/// `notification/presentation/notification_providers`로 이사했다.
 class HomeHeaderBar extends ConsumerWidget {
   const HomeHeaderBar({super.key});
-
+  static const height = 44.0;
   static const dropdownArrowKey = Key('home_header_dropdown_arrow');
   static const setPillKey = Key('home_header_set_pill');
   static const addButtonKey = Key('home_header_add_button');
   static const settingsButtonKey = Key('home_header_settings_button');
   static const personButtonKey = Key('home_header_person_button');
 
-  /// Figma 실측 헤더 높이.
-  static const double height = 44;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sets = ref.watch(enclosureSetsProvider).valueOrNull ?? const [];
+    final sets = ref.watch(homeDeviceSetsProvider).valueOrNull ?? const [];
     final current = ref.watch(currentSetProvider).valueOrNull;
-    final multi = sets.length > 1;
-    final glass = context.glass;
-
-    // 필 라벨: 개체가 있으면 개체명이 세트의 얼굴, 없으면 사육장명.
-    final label = current == null
-        ? 'home_no_set'.tr()
-        : current.pet?.name ?? current.enclosure.name;
-
-    return SizedBox(
-      height: height,
-      child: Row(
-        // 필이 h44를 꽉 채우게(Figma 668:430) — 기본 center면 필이 텍스트
-        // 높이(23)로 수축해 납작한 캡슐이 된다(2026-09-07 지오메트리 실측).
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ⚠️ Flexible(pill) + Spacer 금지 — 여유 공간이 둘에 1:1 분배되고
-          // loose한 필이 할당보다 좁으면 잔여가 Row **우측**에 남아 버튼들이
-          // 화면 끝에서 ~40pt 떠 보인다(2026-09-07 시뮬 실측 — 짧은 세트명
-          // 에서만 재현되고 위젯 테스트의 긴 라벨은 할당을 다 써 안 잡혔다).
-          // 남는 공간은 전부 Expanded 안 Align이 흡수한다.
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: SizedBox(
-                height: height,
-                child: Material(
-                  key: setPillKey,
-                  color: glass.surfaceTint,
-                  borderRadius: BorderRadius.circular(12),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    // 세트가 하나뿐이면 고를 게 없다 — 필은 라벨로만 선다.
-                    onTap: multi ? () => _openSetPicker(context, ref) : null,
-                    child: Padding(
-                      // Figma 실측 12 (668:429 — 텍스트 x 664.4, 필 x 652.4).
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontFamily: 'Pretendard',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 16 * -0.02,
-                                color: glass.textSecondary,
-                              ),
-                            ),
-                          ),
-                          if (multi) ...[
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.keyboard_arrow_down,
-                              key: dropdownArrowKey,
-                              size: 24,
-                              color: glass.textSecondary,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          _AddMenuButton(key: addButtonKey),
-          const SizedBox(width: 12),
-          _CircleButton(
-            key: settingsButtonKey,
-            icon: Icons.settings_outlined,
-            tooltip: 'home_env_settings'.tr(),
-            onTap: () => context.push('/env-settings'),
-          ),
-          const SizedBox(width: 12),
-          _CircleButton(
-            key: personButtonKey,
-            icon: Icons.person_outline,
-            tooltip: 'home_account'.tr(),
-            onTap: () => context.push('/profile'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openSetPicker(BuildContext context, WidgetRef ref) async {
-    final sets = ref.read(enclosureSetsProvider).valueOrNull ?? const [];
-    final currentIndex = ref.read(selectedSetIndexProvider);
-    final picked = await showModalBottomSheet<int>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            for (var i = 0; i < sets.length; i++)
-              _SetTile(
-                set: sets[i],
-                isCurrent: i == currentIndex,
-                onTap: () => Navigator.of(ctx).pop(i),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (picked != null) {
-      ref.read(selectedSetIndexProvider.notifier).state = picked;
-    }
-  }
-}
-
-/// `[+]` 메뉴 — 기기 추가 / 카메라 추가 / 개체 추가 / 사육장 연동.
-class _AddMenuButton extends StatelessWidget {
-  const _AddMenuButton({super.key});
-
-  static const deviceItemKey = Key('home_header_add_device');
-  static const cameraItemKey = Key('home_header_add_camera');
-  static const petItemKey = Key('home_header_add_pet');
-  static const setItemKey = Key('home_header_link_enclosure');
-
-  @override
-  Widget build(BuildContext context) {
-    final glass = context.glass;
-    return PopupMenuButton<String>(
-      tooltip: 'home_add_device'.tr(),
-      offset: const Offset(0, HomeHeaderBar.height + 4),
-      onSelected: (route) => context.push(route),
-      itemBuilder: (_) => [
-        PopupMenuItem(
-          key: deviceItemKey,
-          value: '/smart-cage/devices/pair',
-          child: Text('home_add_device'.tr()),
-        ),
-        // 카메라 탭 재설계(2026-09-04)로 크레캠 그리드·FAB가 사라져 2번째
-        // 카메라의 페어링 진입점이 여기와 빈 상태 카드뿐이다.
-        PopupMenuItem(
-          key: cameraItemKey,
-          value: '/crecam/cameras/pair',
-          child: Text('home_add_camera'.tr()),
-        ),
-        // 브랜치 하위 `/my-pets/add`가 아니라 셸 밖 전용 라우트 — 홈에서
-        // 타 브랜치 하위를 push하면 탭 인덱스가 점프한다(리뷰 2026-09-03).
-        PopupMenuItem(
-          key: petItemKey,
-          value: '/pet-add',
-          child: Text('home_add_pet'.tr()),
-        ),
-        // "사육세트 추가" → "사육장 연동"으로 개명(2026-09-08) — 이 화면은
-        // 배정·페어링·관리이지 '추가' 한 동작이 아니었다. 설정은 헤더 ⚙️로.
-        PopupMenuItem(
-          key: setItemKey,
-          value: '/enclosure-settings',
-          child: Text('home_enclosure_link'.tr()),
-        ),
+    return RedesignTabHeader(
+      choices: [
+        for (final set in sets) (id: set.device!.id, label: set.homeLabel)
       ],
-      child: _CircleSurface(
-        child: Icon(Icons.add, size: 24, color: glass.textSecondary),
-      ),
-    );
-  }
-}
-
-/// 44×44 흰 원형 버튼(Figma A.4 ①).
-class _CircleButton extends StatelessWidget {
-  const _CircleButton({
-    super.key,
-    required this.icon,
-    required this.onTap,
-    this.tooltip,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final String? tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    final glass = context.glass;
-    final button = Material(
-      color: glass.overlay,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Icon(icon, size: 24, color: glass.textSecondary),
-        ),
-      ),
-    );
-    if (tooltip == null) return button;
-    return Tooltip(message: tooltip!, child: button);
-  }
-}
-
-/// [PopupMenuButton]의 child로 쓰는 원형 면 — 탭 처리는 메뉴 버튼이 한다.
-class _CircleSurface extends StatelessWidget {
-  const _CircleSurface({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: context.glass.overlay,
-      shape: const CircleBorder(),
-      child: SizedBox(width: 44, height: 44, child: Center(child: child)),
-    );
-  }
-}
-
-/// 세트 한 줄. **어느 것을 보고 있는지 표시한다** — 이름만 나열하면 열어봐야
-/// 안다.
-class _SetTile extends StatelessWidget {
-  const _SetTile({
-    required this.set,
-    required this.isCurrent,
-    required this.onTap,
-  });
-
-  final EnclosureSet set;
-  final bool isCurrent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListTile(
-      onTap: onTap,
-      selected: isCurrent,
-      selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.06),
-      title: Text(
-        set.pet?.name ?? set.enclosure.name,
-        style:
-            theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-      ),
-      subtitle: set.pet == null ? null : Text(set.enclosure.name),
-      trailing: isCurrent
-          ? Text(
-              'home_set_current'.tr(),
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(color: theme.colorScheme.primary),
-            )
-          : null,
+      selectedId: current?.device?.id,
+      emptyLabel: 'device_module_label'.tr(),
+      pillKey: setPillKey,
+      arrowKey: dropdownArrowKey,
+      managementKey: addButtonKey,
+      accountKey: personButtonKey,
+      onSelected: (id) =>
+          ref.read(selectedHomeDeviceIdProvider.notifier).state = id,
     );
   }
 }

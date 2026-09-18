@@ -1,0 +1,261 @@
+[
+  {
+    "type": "Material",
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      852.0
+    ],
+    "color": "ffffffff",
+    "shape": null
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      156.0,
+      135.0812530517578,
+      19.0
+    ],
+    "text": "크랑이네작은도마뱀왕",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.1875,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      267.0812530517578,
+      157.0,
+      35.338829040527344,
+      17.0
+    ],
+    "text": "미구분",
+    "align": null,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.1875,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      183.0,
+      143.46852111816406,
+      17.0
+    ],
+    "text": "아잔틱 릴리 화이트 | 21.0g",
+    "align": null,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.1875,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      329.0,
+      158.0,
+      40.0,
+      40.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "Material",
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      106.0
+    ],
+    "color": "ffffffff",
+    "shape": null
+  },
+  {
+    "type": "Material",
+    "rect": [
+      8.0,
+      64.0,
+      40.0,
+      40.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      148.8265609741211,
+      74.5,
+      95.34687805175781,
+      19.0
+    ],
+    "text": "개체 추가 · 관리",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.1875,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      738.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      738.0,
+      369.0,
+      56.0
+    ],
+    "color": "ff1e1e1e",
+    "shape": "RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      164.05097579956055,
+      755.5,
+      64.8980484008789,
+      21.0
+    ],
+    "text": "개체 추가",
+    "align": null,
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.1875,
+      "spacing": -0.32,
+      "color": "ffffffff"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      24.0,
+      340.0,
+      345.0,
+      200.0
+    ],
+    "color": "ffffffff",
+    "shape": "RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      48.0,
+      364.0,
+      297.0,
+      84.0
+    ],
+    "text": "크랑이네작은도마뱀왕을 삭제하시겠습니까?\n크레 활동 데이터, 그래프도 삭제됩니다.",
+    "align": "center",
+    "style": {
+      "size": 18.0,
+      "weight": 500,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      48.0,
+      472.0,
+      142.5,
+      44.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      48.0,
+      472.0,
+      142.5,
+      44.0
+    ],
+    "color": "ff1e1e1e",
+    "shape": "RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      105.74187469482422,
+      480.0,
+      27.016250610351562,
+      28.0
+    ],
+    "text": "취소",
+    "align": "center",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.75,
+      "spacing": -0.32,
+      "color": "fffafafa"
+    }
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      202.5,
+      472.0,
+      142.5,
+      44.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      202.5,
+      472.0,
+      142.5,
+      44.0
+    ],
+    "color": "ffc00306",
+    "shape": "RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      260.2418746948242,
+      480.0,
+      27.016250610351562,
+      28.0
+    ],
+    "text": "삭제",
+    "align": "center",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.75,
+      "spacing": -0.32,
+      "color": "fffafafa"
+    }
+  }
+]

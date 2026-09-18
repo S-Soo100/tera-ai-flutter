@@ -5,6 +5,7 @@ import 'package:vivanaut/shared/domain/actuator_marker.dart';
 import 'package:vivanaut/shared/domain/axis_bounds.dart';
 import 'package:vivanaut/shared/domain/control_log.dart';
 import 'package:vivanaut/shared/domain/env_chart_data.dart';
+import 'package:vivanaut/shared/widgets/figma_icon.dart';
 
 EnvChartData _data({bool empty = false}) {
   final tempAxis = AxisBounds.forValues([20, 30]);
@@ -22,6 +23,39 @@ EnvChartData _data({bool empty = false}) {
 }
 
 void main() {
+  test('missing half-hour buckets break each metric line', () {
+    final points = [
+      (x: 0.0, y: .5),
+      (x: 1 / 48, y: .6),
+      (x: 3 / 48, y: .7),
+      (x: 4 / 48, y: .8)
+    ];
+    final segments = environmentLineSegments(points, maxGap: 1 / 48);
+    expect(segments.map((part) => part.length), [2, 2]);
+    expect(segments.first.last.x, 1 / 48);
+    expect(segments.last.first.x, 3 / 48);
+  });
+  testWidgets('same day refresh preserves user horizontal scroll',
+      (tester) async {
+    Widget chart(double fraction) => MaterialApp(
+        home: Scaffold(
+            body: SizedBox(
+                width: 393,
+                child: EnvDayChart(data: _data(), initialFraction: fraction))));
+    await tester.pumpWidget(chart(0));
+    await tester.pump();
+    await tester.drag(
+        find.byType(SingleChildScrollView), const Offset(-120, 0));
+    await tester.pumpAndSettle();
+    final before =
+        tester.state<ScrollableState>(find.byType(Scrollable)).position.pixels;
+    expect(before, greaterThan(0));
+    await tester.pumpWidget(chart(1));
+    await tester.pumpAndSettle();
+    expect(
+        tester.state<ScrollableState>(find.byType(Scrollable)).position.pixels,
+        before);
+  });
   group('resolveMarkerCenters — 겹침 보정', () {
     test('겹치지 않으면 그대로', () {
       final out = resolveMarkerCenters([50, 100, 200], min: 14, max: 510);
@@ -83,9 +117,13 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(EnvDayChart.chartKey), findsOneWidget);
-      expect(find.byIcon(Icons.wind_power), findsOneWidget);
-      expect(find.byIcon(Icons.water_drop), findsOneWidget);
-      expect(find.byIcon(Icons.lightbulb), findsNothing); // 창 밖
+      Finder icon(String name) =>
+          find.byWidgetPredicate((w) => w is FigmaIcon && w.name == name);
+      expect(
+          icon(FigmaIcons.fanBadge(on: true, compact: true)), findsOneWidget);
+      expect(icon('redesign_v2/2828/humidity_high_glyph'), findsOneWidget);
+      expect(icon(FigmaIcons.ledBadge(on: true, compact: true)),
+          findsNothing); // 창 밖
       // X축 눈금 4개 (오전 12시/6시/오후 12시/6시 — 미초기화 tr()은 키 반환).
       expect(find.text('home_chart_time_am'), findsNWidgets(2));
       expect(find.text('home_chart_time_pm'), findsNWidgets(2));
@@ -108,7 +146,7 @@ void main() {
       // 콘텐츠 좌표 0.3 근처를 탭 → 데이터 포인트(0.1/0.3/0.5)로 스냅.
       final box = tester.getRect(find.byKey(EnvDayChart.chartKey));
       await tester.tapAt(Offset(
-        box.left + EnvDayChart.yLabelWidth + 0.3 * EnvDayChart.contentWidth,
+        box.left + EnvDayChart.plotInset + 0.3 * EnvDayChart.contentWidth,
         box.top + EnvDayChart.markerBand + 50,
       ));
       await tester.pump();

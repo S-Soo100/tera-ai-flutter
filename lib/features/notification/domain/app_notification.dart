@@ -5,6 +5,7 @@ const knownNotificationKinds = {
   'device.action.started',
   'device.action.ended',
   'device.action.failed',
+  'device.action.skipped',
   'community.comment',
   'community.like_digest',
   'notice.published',

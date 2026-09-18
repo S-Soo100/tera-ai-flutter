@@ -1,0 +1,230 @@
+[
+  {
+    "type": "Text",
+    "text": "이 사육환경에서 어떤 도마뱀을 키울까요?",
+    "rect": [
+      55.01860046386719,
+      174.0,
+      282.9627990722656,
+      21.0
+    ],
+    "style": "TextStyle(debugLabel: (((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "도마뱀의 활동 리포트를 받아볼수 있어요",
+    "rect": [
+      74.50843811035156,
+      203.0,
+      243.98312377929688,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: (((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      24.0,
+      246.0,
+      345.0,
+      112.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "크레 이름",
+    "rect": [
+      136.0,
+      281.0,
+      57.400001525878906,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "암컷",
+    "rect": [
+      209.4000015258789,
+      282.0,
+      23.639219284057617,
+      17.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.8392, green: 0.0863, blue: 0.0980, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "아잔틱 릴리 화이트 | 21g",
+    "rect": [
+      136.0,
+      308.5,
+      133.34617614746094,
+      17.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/check_box_300",
+    "rect": [
+      329.0,
+      262.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      24.0,
+      366.0,
+      345.0,
+      112.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "둘째",
+    "rect": [
+      136.0,
+      401.0,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "암컷",
+    "rect": [
+      179.01625061035156,
+      402.0,
+      23.639219284057617,
+      17.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.8392, green: 0.0863, blue: 0.0980, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "아잔틱 릴리 화이트 | 21g",
+    "rect": [
+      136.0,
+      428.5,
+      133.34617614746094,
+      17.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/check_box_outline_blank_400",
+    "rect": [
+      329.0,
+      382.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      24.0,
+      486.0,
+      345.0,
+      112.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "둘째",
+    "rect": [
+      136.0,
+      521.0,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "암컷",
+    "rect": [
+      179.01625061035156,
+      522.0,
+      23.639219284057617,
+      17.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.8392, green: 0.0863, blue: 0.0980, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 700, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "Text",
+    "text": "아잔틱 릴리 화이트 | 21g",
+    "rect": [
+      136.0,
+      548.5,
+      133.34617614746094,
+      17.0
+    ],
+    "style": "TextStyle(debugLabel: ((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, letterSpacing: -0.3, baseline: ideographic, height: 1.2x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/check_box_outline_blank_400",
+    "rect": [
+      329.0,
+      502.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "enabled": true
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "이 사육 환경에서 키우기",
+    "rect": [
+      114.64957427978516,
+      710.0,
+      163.7008514404297,
+      28.0
+    ],
+    "style": "TextStyle(debugLabel: (((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, baseline: ideographic, height: 1.6x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      12.0,
+      752.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "나중에 하기",
+    "rect": [
+      156.5526580810547,
+      766.0,
+      79.89468383789062,
+      28.0
+    ],
+    "style": "TextStyle(debugLabel: (((dense bodyMedium 2021).merge(((blackMountainView bodyMedium).apply).merge(unknown))).copyWith).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, baseline: ideographic, height: 1.6x, leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB) TextDecoration.none)"
+  }
+]

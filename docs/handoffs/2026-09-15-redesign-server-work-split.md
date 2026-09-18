@@ -1,10 +1,12 @@
 # 디자인 재설계 — 서버 작업 담당과 직접 수행 가능 여부
 
-> 상태: **문서화 완료 / 사용자가 두 요청서 전달 완료 확인(2026-09-15) / 외부 회신 대기 / 신규 서버 변경 없음**.
+> 상태: **Flutter 구현 완료 / petcam-lab 활동 API 배포 확인 / 앱 SQL 초안 로컬 검증 / 운영 앱 SQL·안전 unlink 등 대기**.
 > 2026-09-15 사용자가 확정 기획·구현계획 저장과 함께 담당 구분을 요청했다.
 > [확정 기획](../superpowers/specs/2026-09-15-figma-redesign-approved-design.md) · [구현계획](../superpowers/plans/2026-09-15-figma-redesign-implementation.md)
 
-사용자 직접 전달 완료: [petcam-lab 요청서](2026-09-15-petcam-lab-redesign-request.md) · [이관훈님 요청서](2026-09-15-lee-gwanhun-redesign-request.md). 전달 사실은 사용자 확인 기준이며 수신자 회신·작업 수락·개발 완료는 아직 확인되지 않았다. 중복 발송하지 않는다.
+사용자 직접 전달 완료: [petcam-lab 요청서](2026-09-15-petcam-lab-redesign-request.md) · [이관훈님 요청서](2026-09-15-lee-gwanhun-redesign-request.md). 이관훈님 [재설계 회신](../references/2026-09-15-backend-redesign-reply.md)·[푸시 회신](../references/2026-09-15-backend-push-reply.md)을 원문 보관했다. petcam-lab의 활동 API 완료 응답과 배포를 확인했고 [수신 계약](../references/2026-09-15-petcam-activity-handoff.md)을 보관했다. 중복 발송하지 않는다.
+
+최신 구현·운영 대기는 [최종 결과](../design-audits/2026-09-15-redesign-implementation-results.md)를 따른다. 아래 요청 묶음은 전달 시점 기록이다. 최초 지원/미지원 구분은 [회신 반영 기록](../design-audits/2026-09-15-redesign-controls-and-replies.md)을 따른다. 현재 DELETE는 원본을 삭제하므로 등록 해제·사용자 숨김 용도로 사용하지 않는다. 아래 요청 묶음은 전달 당시 요청이며, 회신의 제안 사항까지 운영 지원으로 간주하지 않는다.
 
 ## 1. 결론
 
@@ -72,7 +74,7 @@
 - Home·Camera·MyCre의 헤더·드롭다운 목록은 그룹 소속이면 그룹명, 미소속이면 해당 사육장·카메라·개체 이름을 사용한다. 표시 규칙은 앱 팀 담당이며 그룹 ID·이름·구성 관계 조회와 변경 후 갱신 계약은 T1에 포함한다. 그룹 생성 순서 번호와 그룹 표시명은 별개다.
 - 그룹의 유형별 최대 1개, 이동 확인, 마지막 구성원 제외 시 빈 그룹 제거를 하나의 일관된 서버 작업으로 적용한다. 먼저 현재 `assign_pet_to_enclosure` RPC·unique index·FK·RLS를 읽어 재사용 범위를 결정한다.
 
-## 4. 이관훈님 요청 묶음 — 사용자 전달 완료·회신 대기
+## 4. 이관훈님 요청 묶음 — 회신 수신·보완 계약 미확정
 
 ### T1/T2/T4: 등록·그룹·이름·기록 보존 계약
 
@@ -96,7 +98,7 @@
 - 예시: 평균 20/유효수 1, 평균 30/유효수 3 → 일평균 27.5. 온도와 습도 count가 다르면 독립 계산.
 - 이번에는 **제어 시점 snapshot·정확한 동작 전후 변화량 기록을 새로 요청하지 않는다**. 해당 UI는 근사치 사용을 이미 승인받았다.
 
-## 5. petcam-lab 요청 묶음 — 사용자 전달 완료·회신 대기
+## 5. petcam-lab 요청 묶음 — P1 interval 배포, coverage/P2 추가 계약 대기
 
 ### P1: 활동 집계 입력 계약
 

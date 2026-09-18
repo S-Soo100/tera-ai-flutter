@@ -25,6 +25,14 @@ class ControlLogEntry {
   final double? deltaTemperature;
   final double? deltaHumidity;
 
+  /// Matched successful ON command, not an inferred firmware transition.
+  final DateTime? startedAt;
+  Duration? get duration => state != ControlLogState.off ||
+          startedAt == null ||
+          !at.isAfter(startedAt!)
+      ? null
+      : at.difference(startedAt!);
+
   const ControlLogEntry({
     required this.kind,
     required this.state,
@@ -33,6 +41,7 @@ class ControlLogEntry {
     this.humidity,
     this.deltaTemperature,
     this.deltaHumidity,
+    this.startedAt,
   });
 }
 
@@ -52,6 +61,9 @@ const _entryByAction = <String, ({MarkerKind kind, ControlLogState state})>{
   'fan_on': (kind: MarkerKind.fan, state: ControlLogState.on),
   'fan_off': (kind: MarkerKind.fan, state: ControlLogState.off),
   'fan_toggle': (kind: MarkerKind.fan, state: ControlLogState.ran),
+  'fan2_on': (kind: MarkerKind.cooling, state: ControlLogState.on),
+  'fan2_off': (kind: MarkerKind.cooling, state: ControlLogState.off),
+  'fan2_toggle': (kind: MarkerKind.cooling, state: ControlLogState.ran),
 
   'heater_on': (kind: MarkerKind.heater, state: ControlLogState.on),
   'heater_off': (kind: MarkerKind.heater, state: ControlLogState.off),
@@ -62,65 +74,103 @@ const _entryByAction = <String, ({MarkerKind kind, ControlLogState state})>{
   'led_toggle': (kind: MarkerKind.led, state: ControlLogState.ran),
 };
 
+/// The query and parser share the exact supported action contract.
+List<String> controlLogActions([MarkerKind? kind]) => [
+      for (final entry in _entryByAction.entries)
+        if (kind == null || entry.value.kind == kind) entry.key,
+    ];
+
+bool isControlLogStart(Object? action) =>
+    action is String && _entryByAction[action]?.state == ControlLogState.on;
+
 /// `commands` 원시 행 + 그 날의 30분 버킷 → 제어 기록 (시간 오름차순).
 ///
-/// - `status='acked'`만 쓴다 — 거부/대기 명령을 동작으로 그리면 오해한다.
-/// - 온습도 매칭 후보는 **tAvg·hAvg가 모두 0 초과**인 버킷만 — 0은 센서
+/// - `status='acked'`와 `result='ok'`만 쓴다 — 거부/대기 명령을 동작으로 그리면 오해한다.
+/// - 지표별 유한한 0 초과 평균값만 매칭한다 — 0은 센서
 ///   오프라인 센티넬이다(메모리 `project_telemetry_zero_sentinel`).
 /// - 델타 짝: off는 같은 kind의 직전 on을 **소진**한다 — on 하나에 off가
 ///   둘이면 두 번째 off는 짝이 없다(기기는 이미 꺼져 있었다).
 List<ControlLogEntry> buildControlLog({
-  required List<Map<String, dynamic>> commandRows,
+  required List<Map<String, Object?>> commandRows,
   required List<TelemetryBucket> buckets,
+  DateTime? visibleFrom,
+  DateTime? visibleTo,
 }) {
-  // 매칭 후보 버킷 — 센티넬(0값) 제외, 시각은 로컬로 통일.
-  final candidates = <({DateTime at, double t, double h})>[
-    for (final b in buckets)
-      if (b.tAvg != null && b.tAvg! > 0 && b.hAvg != null && b.hAvg! > 0)
-        (at: b.bucket.toLocal(), t: b.tAvg!, h: b.hAvg!),
-  ];
-
-  ({double? t, double? h}) envAt(DateTime at) {
-    ({DateTime at, double t, double h})? best;
+  // Each metric is independently valid; missing humidity must not erase a
+  // measured temperature. Non-finite values never reach display/deltas.
+  double? nearest(DateTime at, double? Function(TelemetryBucket) pick) {
+    double? best;
     Duration? bestGap;
-    for (final c in candidates) {
-      final gap = (c.at.difference(at)).abs();
+    for (final bucket in buckets) {
+      final value = pick(bucket);
+      if (value == null || !value.isFinite || value <= 0) continue;
+      final gap = bucket.bucket.difference(at).abs();
+      if (gap > const Duration(minutes: 30)) continue;
       if (bestGap == null || gap < bestGap) {
-        best = c;
+        best = value;
         bestGap = gap;
       }
     }
-    if (best == null || bestGap! > const Duration(minutes: 30)) {
-      return (t: null, h: null);
-    }
-    return (t: best.t, h: best.h);
+    return best;
   }
 
   // 파싱 + 시간 오름차순 정렬 (델타 짝짓기는 시간순이 전제다).
-  final parsed = <({MarkerKind kind, ControlLogState state, DateTime at})>[];
+  final parsed = <({
+    MarkerKind kind,
+    ControlLogState state,
+    DateTime at,
+    String id,
+    int? timerMs
+  })>[];
   for (final r in commandRows) {
-    if (r['status'] != 'acked') continue;
-    final entry = _entryByAction[r['action'] as String?];
+    if (r['status'] != 'acked' || r['result'] != 'ok') continue;
+    final action = r['action'];
+    final entry = action is String ? _entryByAction[action] : null;
     if (entry == null) continue;
     final raw = r['issued_at'] == null
         ? null
         : DateTime.tryParse(r['issued_at'].toString());
     if (raw == null) continue;
     // ⚠️ issued_at은 UTC 문자열 — 로컬로 바꿔야 화면 시각·버킷 매칭이 맞는다.
-    parsed.add((kind: entry.kind, state: entry.state, at: raw.toLocal()));
+    final payload = r['payload'];
+    final duration = payload is Map ? payload['duration_ms'] : null;
+    parsed.add((
+      kind: entry.kind,
+      state: entry.state,
+      at: raw.toLocal(),
+      id: r['id'] is String ? r['id']! as String : '',
+      timerMs: duration is int && duration > 0 ? duration : null
+    ));
   }
-  parsed.sort((a, b) => a.at.compareTo(b.at));
+  parsed.sort((a, b) {
+    final time = a.at.compareTo(b.at);
+    return time != 0 ? time : a.id.compareTo(b.id);
+  });
 
   // 마지막으로 본 on 로우 (kind별) — off가 나오면 소진한다.
-  final lastOn = <MarkerKind, ControlLogEntry>{};
+  final lastOn = <MarkerKind, ({ControlLogEntry entry, int? timerMs})>{};
   final out = <ControlLogEntry>[];
   for (final p in parsed) {
-    final env = envAt(p.at);
+    final env =
+        (t: nearest(p.at, (b) => b.tAvg), h: nearest(p.at, (b) => b.hAvg));
     double? dT;
     double? dH;
+    DateTime? startedAt;
     if (p.state == ControlLogState.off) {
-      final on = lastOn.remove(p.kind); // 소진 — 두 번째 off는 짝 없음.
-      if (on != null) {
+      final previous =
+          lastOn.remove(p.kind); // Consume each explicit start once.
+      final on = previous?.entry;
+      final elapsed = on == null ? null : p.at.difference(on.at);
+      // Timer expiry is firmware-owned, not a synthetic off command. A later
+      // explicit off cannot prove that a timed fan ran continuously until then.
+      final expired = previous?.timerMs != null &&
+          elapsed != null &&
+          elapsed.inMilliseconds > previous!.timerMs!;
+      if (on != null &&
+          elapsed != null &&
+          elapsed > Duration.zero &&
+          !expired) {
+        startedAt = on.at;
         if (env.t != null && on.temperature != null) {
           dT = env.t! - on.temperature!;
         }
@@ -137,9 +187,17 @@ List<ControlLogEntry> buildControlLog({
       humidity: env.h,
       deltaTemperature: dT,
       deltaHumidity: dH,
+      startedAt: startedAt,
     );
-    if (p.state == ControlLogState.on) lastOn[p.kind] = entry;
-    out.add(entry);
+    if (p.state == ControlLogState.on) {
+      lastOn[p.kind] = (entry: entry, timerMs: p.timerMs);
+    }
+    if (p.state == ControlLogState.ran) lastOn.remove(p.kind);
+    // Pair using lookback context first, then show only the selected day.
+    if ((visibleFrom == null || !p.at.isBefore(visibleFrom)) &&
+        (visibleTo == null || p.at.isBefore(visibleTo))) {
+      out.add(entry);
+    }
   }
   return out;
 }

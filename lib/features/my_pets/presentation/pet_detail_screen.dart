@@ -1,13 +1,16 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
+import '../../my_cage/presentation/widgets/management_widgets.dart';
 import '../domain/pet.dart';
 import 'my_pets_providers.dart';
+import 'pet_form_route.dart';
 import 'widgets/event_timeline.dart';
 import 'widgets/media_gallery.dart';
 
@@ -40,7 +43,10 @@ class PetDetailScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: '수정',
-            onPressed: () => context.push('/my-pets/$petId/edit'),
+            // 탭 안(`/my-pets/:id`)이든 루트(`/pets/:id`)든 현재 위치 아래로 push —
+            // 루트에서 셸 경로를 push하면 페이지 키 중복으로 내비게이터가 잠긴다.
+            onPressed: () => context
+                .push('${GoRouterState.of(context).matchedLocation}/edit'),
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
@@ -82,30 +88,22 @@ class PetDetailScreen extends ConsumerWidget {
     ));
   }
 
+  /// 삭제 확인 — 승인된 23번 공통 확인창([managementConfirm])과 개체 관리
+  /// 화면의 문구(받침에 따른 을/를)를 그대로 쓴다(P18 구형 AlertDialog 교체).
+  /// 이 화면은 기기관리 → 개체 탭 경로로 아직 살아 있다.
   Future<void> _confirmDelete(
       BuildContext context, WidgetRef ref, Pet pet) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('개체 삭제'),
-        content: Text("'${pet.name}'을(를) 삭제할까요?\n체중 기록도 함께 삭제됩니다."),
-        actions: [
-          TextButton(
-            onPressed: () => ctx.pop(false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => ctx.pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && context.mounted) {
-      await ref.read(petListProvider.notifier).delete(pet.id);
+    final titleKey = switch (managementNameHasFinalConsonant(pet.name)) {
+      true => 'pet_form_delete_title',
+      false => 'pet_form_delete_title_open',
+      null => 'pet_form_delete_title_unknown',
+    };
+    final message = '${titleKey.tr(namedArgs: {'name': pet.name})}\n'
+        '${'pet_form_delete_body'.tr()}';
+    final confirmed =
+        await managementConfirm(context, message, action: 'common_delete'.tr());
+    if (confirmed && context.mounted) {
+      await ref.read(deleteRedesignPetProvider)(pet);
       if (context.mounted) context.pop();
     }
   }

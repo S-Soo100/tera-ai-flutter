@@ -1,0 +1,630 @@
+{
+  "frame": {
+    "id": "1081:3160",
+    "name": "lcd-naming",
+    "section": "home",
+    "bounds": {
+      "x": 7693,
+      "y": -9320,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "모듈 화면 표시 문구",
+      "사육장 상단 모듈의 \n화면에 표시될 문구를 지정해 주세요",
+      "viva-iot-ㅁㅁㅁㅁ",
+      "|",
+      "14/20",
+      "중복되지 않는 이름으로 설정해 주세요",
+      "완료"
+    ],
+    "file": "1081-3160.png",
+    "task": "P08",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1081:3160",
+      "name": "lcd-naming",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1081:3161",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I1081:3161;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1081:3161;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I1081:3161;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1081:3161;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I1081:3161;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I1081:3161;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "1081:3268",
+      "name": "Frame 192",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 62,
+        "width": 393,
+        "height": 44
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1081:3269",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "1081:3270",
+      "name": "arrow_back_ios_new",
+      "type": "GROUP",
+      "rect": {
+        "x": 22,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1081:3271",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 22,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1081:3273",
+      "name": "모듈 화면 표시 문구",
+      "type": "TEXT",
+      "rect": {
+        "x": 137.5,
+        "y": 74.5,
+        "width": 119,
+        "height": 19
+      },
+      "characters": "모듈 화면 표시 문구",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "1081:3471",
+      "name": "Frame 210",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 118,
+        "width": 369,
+        "height": 306
+      }
+    },
+    {
+      "id": "1081:3474",
+      "name": "LCD",
+      "type": "FRAME",
+      "rect": {
+        "x": 24,
+        "y": 118,
+        "width": 345,
+        "height": 171
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1081:3476",
+      "name": "Frame 193",
+      "type": "FRAME",
+      "rect": {
+        "x": 73.7158,
+        "y": 160.6152,
+        "width": 246.081298828125,
+        "height": 78.92621612548828
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1081:3477",
+      "name": "Rectangle 187",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 239.6973,
+        "y": 180.2939,
+        "width": 61.33050537109375,
+        "height": 39.568214416503906
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 7.352677345275879
+    },
+    {
+      "id": "1081:3478",
+      "name": "Rectangle 185",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 73.7158,
+        "y": 239.542,
+        "width": 246.081298828125,
+        "height": 248.39476013183594
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "GRADIENT_LINEAR",
+          "gradientHandlePositions": [
+            {
+              "x": 0.5,
+              "y": -3.0616171314629196e-17
+            },
+            {
+              "x": 0.5,
+              "y": 0.9999999999999999
+            },
+            {
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "gradientStops": [
+            {
+              "color": "#b9b5b5",
+              "position": 0
+            },
+            {
+              "color": "#ffffff",
+              "position": 0.30000001192092896
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1081:3481",
+      "name": "Rectangle 197",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 247.1318,
+        "y": 187.0469,
+        "width": 46.4609375,
+        "height": 3.86669921875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 20
+    },
+    {
+      "id": "1081:3311",
+      "name": "사육장 상단 모듈의 화면에 표시될 문구를 지정해 주세요",
+      "type": "TEXT",
+      "rect": {
+        "x": 12,
+        "y": 305,
+        "width": 369,
+        "height": 38
+      },
+      "characters": "사육장 상단 모듈의 \n화면에 표시될 문구를 지정해 주세요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1081:3300",
+      "name": "wrap",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 359,
+        "width": 369,
+        "height": 65
+      }
+    },
+    {
+      "id": "1081:3301",
+      "name": "Field",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 359,
+        "width": 369,
+        "height": 65
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1081:3302",
+      "name": "Frame 166",
+      "type": "FRAME",
+      "rect": {
+        "x": 29,
+        "y": 382,
+        "width": 294,
+        "height": 19
+      }
+    },
+    {
+      "id": "1081:3303",
+      "name": "cursor",
+      "type": "TEXT",
+      "rect": {
+        "x": 29,
+        "y": 382,
+        "width": 114,
+        "height": 19
+      },
+      "characters": "viva-iot-ㅁㅁㅁㅁ",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "1081:3313",
+      "name": "cursor",
+      "type": "TEXT",
+      "rect": {
+        "x": 145,
+        "y": 382,
+        "width": 6,
+        "height": 19
+      },
+      "characters": "|",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d61619"
+        }
+      ]
+    },
+    {
+      "id": "1081:3304",
+      "name": "cursor",
+      "type": "TEXT",
+      "rect": {
+        "x": 323,
+        "y": 382,
+        "width": 41,
+        "height": 19
+      },
+      "characters": "14/20",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "1081:3305",
+      "name": "Alert",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 432,
+        "width": 186,
+        "height": 14
+      }
+    },
+    {
+      "id": "1081:3306",
+      "name": "중복되지 않는 이름으로 설정해 주세요",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 432,
+        "width": 174,
+        "height": 14
+      },
+      "characters": "중복되지 않는 이름으로 설정해 주세요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ]
+    },
+    {
+      "id": "1081:3317",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 696,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1081:3318",
+      "name": "완료",
+      "type": "TEXT",
+      "rect": {
+        "x": 181,
+        "y": 710,
+        "width": 31,
+        "height": 28
+      },
+      "characters": "완료",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    }
+  ]
+}

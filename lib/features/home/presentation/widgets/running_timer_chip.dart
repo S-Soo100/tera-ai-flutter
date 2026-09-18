@@ -6,11 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/supabase/supabase_provider.dart';
+import '../../../../shared/domain/fan_actuator.dart';
 import '../../domain/running_timer.dart';
 import '../home_control_providers.dart';
 
-/// 1초 tick. autoDispose라 홈을 떠나면 타이머가 멈춘다.
-final _secondTickProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
+/// 1초 tick. autoDispose라 홈을 떠나면 타이머가 멈춘다. 제어 타일의 카운트다운
+/// 부제([CageControlGrid])도 이걸 구독한다 — 타이머가 있을 때만.
+final secondTickProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
   yield DateTime.now();
   yield* Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
 });
@@ -36,30 +38,39 @@ const _kTimerRevalidateEvery = Duration(seconds: 30);
 final runningTimersProvider =
     FutureProvider.autoDispose<List<RunningTimer>>((ref) async {
   final client = ref.watch(supabaseClientProvider);
+  var alive = true;
+  ref.onDispose(() => alive = false);
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) return const [];
   try {
-    final rows = await client
-        .from('commands')
-        .select('id, device_id, action, status, payload, issued_at')
-        .eq('device_id', deviceId)
-        .inFilter('action', ['fan_on', 'fan_off', 'fan_toggle'])
-        .order('issued_at', ascending: false)
-        .limit(10);
+    final timers = <RunningTimer>[];
     final now = DateTime.now();
-    final t = RunningTimer.fanTimerFrom(
-      (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
-      now,
-    );
-    if (t != null) {
-      final remaining = t.remaining(now);
+    for (final actuator in FanActuator.values) {
+      final rows = await client
+          .from('commands')
+          .select('id, device_id, action, status, result, payload, issued_at')
+          .eq('device_id', deviceId)
+          .inFilter('action', actuator.actions)
+          .order('issued_at', ascending: false)
+          .limit(10);
+      final t = RunningTimer.fanTimerFrom(
+        (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
+        now,
+        actuator: actuator,
+      );
+      if (t != null) timers.add(t);
+    }
+    if (!alive) return const [];
+    if (timers.isNotEmpty) {
+      final remaining =
+          timers.map((t) => t.remaining(now)).reduce((a, b) => a < b ? a : b);
       final refreshIn = remaining < _kTimerRevalidateEvery
           ? remaining + const Duration(seconds: 1)
           : _kTimerRevalidateEvery;
       final timer = Timer(refreshIn, ref.invalidateSelf);
       ref.onDispose(timer.cancel);
     }
-    return t == null ? const [] : [t];
+    return timers;
   } catch (_) {
     return const [];
   }
@@ -79,11 +90,10 @@ class RunningTimerChip extends ConsumerWidget {
     final timers = ref.watch(runningTimersProvider).valueOrNull ?? const [];
     if (timers.isEmpty) return const SizedBox.shrink();
 
-    final now = ref.watch(_secondTickProvider).valueOrNull ?? DateTime.now();
+    final now = ref.watch(secondTickProvider).valueOrNull ?? DateTime.now();
     final active = timers.where((t) => t.isActive(now)).toList();
     if (active.isEmpty) return const SizedBox.shrink();
 
-    final t = active.first;
     final scheme = Theme.of(context).colorScheme;
 
     // 홈 단일 스크롤의 카드 리듬(좌우 12·섹션 간 12) — DeviceOfflineNotice와
@@ -97,20 +107,25 @@ class RunningTimerChip extends ConsumerWidget {
           color: scheme.primaryContainer,
           borderRadius: BorderRadius.circular(AppStyles.chipRadius),
         ),
-        child: Row(
+        child: Column(
           children: [
-            const Icon(Icons.timer_outlined, size: 16),
-            const SizedBox(width: AppStyles.spacing8),
-            Expanded(
-              child: Text(
-                'home_timer_running'.tr(args: [
-                  t.actuatorLabelKey.tr(),
-                  '${t.durationMinutes}',
-                  formatRemaining(t.remaining(now)),
-                ]),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
+            for (final t in active)
+              Row(
+                children: [
+                  const Icon(Icons.timer_outlined, size: 16),
+                  const SizedBox(width: AppStyles.spacing8),
+                  Expanded(
+                    child: Text(
+                      'home_timer_running'.tr(args: [
+                        t.actuatorLabelKey.tr(),
+                        '${t.durationMinutes}',
+                        formatRemaining(t.remaining(now)),
+                      ]),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              )
           ],
         ),
       ),

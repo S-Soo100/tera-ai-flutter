@@ -7,9 +7,13 @@ import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/domain/telemetry_reading.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../../../../shared/widgets/figma_icon.dart';
+import '../../../../shared/domain/fan_actuator.dart';
 import '../cage_control_actions.dart';
-import '../../domain/mist_duration.dart' show MistDuration;
+import '../../domain/running_timer.dart';
+import '../../domain/schedule_device.dart';
 import '../home_control_providers.dart';
+import 'device_control_sheet.dart';
+import 'running_timer_chip.dart';
 
 /// 사육장 제어 그리드 — Figma A.4 ④ (타일 180.5×72, 갭 8, radius 12).
 ///
@@ -23,10 +27,14 @@ import '../home_control_providers.dart';
 /// 상태를 구분한다. 다크는 기기색 배경을 유지한다. LED 밝기 보고 시
 /// [GlassPalette.deviceLedGauge]가 밝기 비율만큼 좌측을 채운다.
 ///
-/// **사육장 제어의 유일한 진입점**이며, 탭 동작은 전부 기존
-/// [cage_control_actions] 경유(히터 2단 안전확인·분무 5초 잠금이 거기 있다).
-/// 냉각팬·히터팬은 **미배선**(terra-server 계약 없음, 2026-09-02 기획 B.3) —
-/// 탭하면 "준비 중" 안내만 낸다. **절대 toggle 명령을 만들지 말 것.**
+/// **사육장 제어의 유일한 진입점**이며, 탭은 기기 제어 시트
+/// ([openDeviceControlSheet], Figma 1107:7995 — 즉시/예약 segment)를 연다.
+/// 명령 송신은 전부 [cage_control_actions] 경유(히터 2단 안전확인·분무 5초
+/// 잠금이 거기 있다). 냉각팬은 fan2 계약을 사용하며 미보고이면 비활성화한다.
+///
+/// 타이머 카운트다운은 타일 부제에 쓴다 — "켜짐 · 30m 56s 뒤 꺼짐"(2026-09-16
+/// 디자이너 메모 "타이머·예약 사용 시 종료 카운트다운 표시"). 홈 상단 칩은
+/// Figma에 없어 내렸다(계획 A4).
 class CageControlGrid extends ConsumerWidget {
   const CageControlGrid({super.key});
 
@@ -54,34 +62,54 @@ class CageControlGrid extends ConsumerWidget {
     final mistOn = t?.relay == ActuatorState.on || mistLocked;
 
     final fanOn = t?.fan == ActuatorState.on;
+    final coolOn = t?.fan2 == ActuatorState.on;
+    final coolAvailable = t != null && t.fan2 != ActuatorState.unavailable;
     final ledOn = t?.led == ActuatorState.on;
     // 히터 타일 노출 조건 — 켜짐 또는 안전잠금(둘 다 "꺼야/풀어야 할 상태").
     final heaterVisible =
         t?.heaterState == ActuatorState.on || (t?.heaterLocked ?? false);
+    // 타이머 목록을 먼저 보고, 있을 때만 1초 tick을 구독한다(칩과 같은 이유).
+    final timers = ref.watch(runningTimersProvider).valueOrNull ?? const [];
+    final now = timers.isEmpty
+        ? DateTime.now()
+        : ref.watch(secondTickProvider).valueOrNull ?? DateTime.now();
+    RunningTimer? timerOf(FanActuator a) => timers
+        .where((x) => x.actuatorLabelKey == a.labelKey && x.isActive(now))
+        .firstOrNull;
+    String fanStatus(ActuatorState? state, FanActuator a) {
+      final timer = state == ActuatorState.on ? timerOf(a) : null;
+      if (timer == null) return _stateLabel(state);
+      return 'home_tile_on_with_fmt'.tr(args: [
+        'home_tile_off_in_fmt'
+            .tr(args: [formatCountdownShort(timer.remaining(now))])
+      ]);
+    }
+
+    void open(ScheduleDevice device) =>
+        openDeviceControlSheet(context, ref, deviceId, device);
 
     final tiles = <Widget>[
-      // ① 환기팬 — 기존 fan_* 절대 명령 배선. 글리프는 Figma 원본
-      // mode_fan_2(글리프만 20 — 원 40 안 실측 20). 탭=직전 설정 원탭
-      // (초기 30분), 꾹=방식 시트(2026-09-08 UX 개편 — 분무 원탭과 같은 문법).
+      // ① 환기팬 — 탭=제어 시트(즉시 작동: 전원 스위치 + 작동 시간 칩 /
+      // 예약 작동). 글리프는 Figma 원본 mode_fan_2(글리프만 20 — 원 40 안 실측
+      // 20). 부제는 타이머가 돌면 카운트다운.
       _DeviceTile(
         key: ventFanKey,
         name: 'device_vent_fan'.tr(),
-        status: _stateLabel(t?.fan),
+        status: fanStatus(t?.fan, FanActuator.ventilation),
         glyph: FigmaIcon.metric(fanOn ? FigmaIcons.fanOn : FigmaIcons.fanOff,
             size: 40),
         active: fanOn,
         tileColor: fanOn ? glass.deviceFanBg : glass.surfaceTint,
         iconCircleColor: fanOn ? glass.deviceFan : glass.deviceOff,
-        onTap: online ? () => handleFanTap(context, ref, deviceId, t) : null,
-        onLongPress: online ? () => openFanSheet(context, ref, deviceId) : null,
+        onTap: online ? () => open(ScheduleDevice.fan) : null,
       ),
-      // ② 분무 — Figma대로 꺼짐/켜짐 표시, **탭 즉시 3초 분사**(2026-09-07
-      // 사용자 지시 — 시간 선택 시트 폐지, 예약 편집기에는 시간 선택이 남는다).
-      // 모멘터리라 분사(릴레이 ON)+잠금 5초 동안만 켜짐으로 말한다.
+      // ② 분무 — 탭=제어 시트("1회 분사 시작" + 실행 취소 2초, 계획 A5 —
+      // 2026-09-07의 타일 즉시 분사는 시트 진입으로 바뀜). 모멘터리라
+      // 분사(릴레이 ON)+잠금 5초 동안만 "작동 중"으로 말한다.
       _DeviceTile(
         key: mistKey,
         name: 'device_mist'.tr(),
-        status: mistOn ? 'device_state_on'.tr() : 'device_state_off'.tr(),
+        status: mistOn ? 'device_state_running'.tr() : 'device_state_off'.tr(),
         // 꺼짐=format_color_reset(사선 물방울, 원 40 프레임 export라 40),
         // 켜짐=humidity_high(물방울, 글리프만 17×20 → 20) — 2026-09-08
         // 사용자 지시.
@@ -90,21 +118,21 @@ class CageControlGrid extends ConsumerWidget {
         active: mistOn,
         tileColor: mistOn ? glass.deviceMistBg : glass.surfaceTint,
         iconCircleColor: mistOn ? glass.deviceMist : glass.deviceOff,
-        onTap: online && !mistLocked
-            ? () => mistOnce(context, ref, deviceId, MistDuration.threeSeconds)
-            : null,
+        onTap: online ? () => open(ScheduleDevice.mist) : null,
       ),
-      // ③ 냉각팬 — API 없음, 미배선(UI만). 글리프는 Figma 원본 mode_cool —
-      // export가 28 마커 기준(패딩 포함)이라 40으로 키우면 실측 비율이 된다.
+      // ③ 냉각팬 — 실제 fan2 상태, 선택/타이머는 환기팬과 분리.
       _DeviceTile(
         key: coolFanKey,
         name: 'device_cool_fan'.tr(),
-        status: 'device_status_pending'.tr(),
-        glyph: const FigmaIcon.metric(FigmaIcons.coolOff, size: 40),
-        active: false,
-        tileColor: glass.surfaceTint,
-        iconCircleColor: glass.deviceOff,
-        onTap: () => _notReady(context),
+        status: coolAvailable
+            ? fanStatus(t.fan2, FanActuator.cooling)
+            : 'home_value_none'.tr(),
+        glyph: FigmaIcon.metric(coolOn ? FigmaIcons.coolOn : FigmaIcons.coolOff,
+            size: 40),
+        active: coolOn,
+        tileColor: coolOn ? glass.deviceCoolBg : glass.surfaceTint,
+        iconCircleColor: coolOn ? glass.deviceCool : glass.deviceOff,
+        onTap: online && coolAvailable ? () => open(ScheduleDevice.cool) : null,
       ),
       // ④ LED — `telemetry.led`/`led_brightness`만 믿는다(2026-08-18 회신 §4).
       // 구 펌웨어(unavailable)는 "상태 모름"으로 말하고 켜기/끄기 시트를 연다.
@@ -112,7 +140,6 @@ class CageControlGrid extends ConsumerWidget {
         key: ledKey,
         name: 'device_led'.tr(),
         status: _ledLabel(t),
-        // Figma도 lightbulb — Material 동형이라 SVG 교체 불필요.
         glyph: FigmaIcon.metric(ledOn ? FigmaIcons.ledOn : FigmaIcons.ledOff,
             size: 40),
         active: ledOn,
@@ -122,12 +149,7 @@ class CageControlGrid extends ConsumerWidget {
             ? (t!.ledBrightness!.clamp(0, 100)) / 100
             : null,
         gaugeColor: glass.deviceLedGauge,
-        onTap: online
-            ? () => openLedSheet(context, ref, deviceId,
-                // 꺼져 있을 때 보고되는 0을 시드로 넘기면 슬라이더가 1%로
-                // 열린다 — 켜져 있을 때의 밝기만 넘긴다.
-                currentBrightness: ledOn ? t?.ledBrightness : null)
-            : null,
+        onTap: online ? () => open(ScheduleDevice.led) : null,
       ),
       // ⑤ 히터팬 — 켜짐/잠금일 때만(클래스 doc). 끄기·잠금 해제 진입점.
       if (heaterVisible) _heaterTile(context, ref, deviceId, t, online),
@@ -182,21 +204,13 @@ class CageControlGrid extends ConsumerWidget {
     );
   }
 
-  static void _notReady(BuildContext context) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('home_device_not_ready'.tr())),
-      );
-  }
-
   /// 켜짐 + 밝기 보고(MOSFET)면 `60%`, on/off면 켜짐/꺼짐, 모르면 "상태 모름".
   static String _ledLabel(TelemetryReading? t) {
     if (t == null || t.led == ActuatorState.unavailable) {
       return 'device_state_unknown'.tr();
     }
     if (t.led == ActuatorState.on && t.ledBrightness != null) {
-      return 'unit_percent_fmt'.tr(args: ['${t.ledBrightness}']);
+      return 'redesign_led_on_brightness'.tr(args: ['${t.ledBrightness}']);
     }
     return _stateLabel(t.led);
   }
@@ -227,7 +241,6 @@ class _DeviceTile extends StatelessWidget {
     this.gaugeFraction,
     this.gaugeColor,
     this.onTap,
-    this.onLongPress,
   });
 
   final String name;
@@ -246,9 +259,6 @@ class _DeviceTile extends StatelessWidget {
 
   /// null이면 비활성(오프라인 등) — 탭 무반응.
   final VoidCallback? onTap;
-
-  /// 꾹 누르기(환기팬 방식 시트 등). null이면 없음.
-  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -269,7 +279,6 @@ class _DeviceTile extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: onTap,
-              onLongPress: onLongPress,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(

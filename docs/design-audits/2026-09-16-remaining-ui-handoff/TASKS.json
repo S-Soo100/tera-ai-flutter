@@ -1,0 +1,174 @@
+[
+  {
+    "id": "P01",
+    "title": "모프 검색",
+    "difference": "초성 검색·일치 글자 강조·검색어 지우기·결과 없음 안내 누락",
+    "app": [
+      "widget-morph-initial-search.png",
+      "widget-morph-no-result.png"
+    ],
+    "primary": "1043:5003"
+  },
+  {
+    "id": "P02",
+    "title": "개체 그룹 선택·등록 후 안내",
+    "difference": "현재 그룹 ListTile 바텀시트/저장 후 pop 경로와 원본 전체 화면·완료 안내가 다름",
+    "app": [
+      "widget-pet-group-picker.png"
+    ],
+    "primary": "1043:3649"
+  },
+  {
+    "id": "P03",
+    "title": "BLE 검색·선택",
+    "difference": "미선택 CTA·추가 재검색 버튼·로딩/빈 상태·버튼 위치 차이",
+    "app": [
+      "pairing-scan-unselected.png",
+      "pairing-scan-one.png",
+      "pairing-scan-none.png"
+    ],
+    "primary": "990:7601"
+  },
+  {
+    "id": "P04",
+    "title": "Wi-Fi 목록·비밀번호·대기·오류",
+    "difference": "header/회색 빈 행/CTA/오류 모달/대기 overlay 차이. AP 보안 정보 없는 문제 별도",
+    "app": [
+      "pairing-network-list.png",
+      "pairing-password-error.png",
+      "pairing-connecting.png"
+    ],
+    "primary": "982:3500"
+  },
+  {
+    "id": "P05",
+    "title": "연결 완료·개체 선택",
+    "difference": "성공 상태 세로 위치, 1마리 확인형 화면, 큰 글자 잘림을 보완",
+    "app": [
+      "pairing-result-both.png",
+      "pairing-pet-selected.png",
+      "pairing-pet-small.png"
+    ],
+    "primary": "1043:5893"
+  },
+  {
+    "id": "P06",
+    "title": "빈 상태·MyCre 미연결",
+    "difference": "원본 pill형 + 버튼과 현재 radius12/아이콘 없는 CTA 차이",
+    "app": [
+      "redesign-home-empty.png",
+      "redesign-camera-empty-isolated.png"
+    ],
+    "primary": "1063:7793"
+  },
+  {
+    "id": "P07",
+    "title": "온습도 그래프·제어 기록",
+    "difference": "주간 SVG 내부 그림·최대값 라벨색·요일색·격자/간격 차이. 실제 값은 복제하지 않음",
+    "app": [
+      "widget-env-weekly.png",
+      "widget-env-daily.png",
+      "widget-env-log.png"
+    ],
+    "primary": "1081:5052"
+  },
+  {
+    "id": "P08",
+    "title": "LCD 문구",
+    "difference": "기존 간단한 시트와 원본 illustration 포함 전체 화면의 구조 차이",
+    "app": [
+      "widget-lcd.png"
+    ],
+    "primary": "1081:3160"
+  },
+  {
+    "id": "P09",
+    "title": "환기팬·냉각팬·LED 제어",
+    "difference": "기존 ChoiceChip/시작·끄기와 원본 segment/전원/시간/밝기 구조 차이",
+    "app": [
+      "widget-fan-duration.png",
+      "widget-led.png"
+    ],
+    "primary": "1106:4127"
+  },
+  {
+    "id": "P10",
+    "title": "예약 목록·편집·삭제",
+    "difference": "원본 장치별 전체 화면/플로팅 CTA/삭제 모드와 기존 범용 편집기의 차이",
+    "app": [
+      "widget-routine-empty.png",
+      "widget-schedule-editor.png"
+    ],
+    "primary": "1107:10246"
+  },
+  {
+    "id": "P11",
+    "title": "기능 결정 필요",
+    "difference": "분무 지연·취소, 예약 작동 중 제어 잠금 등은 기존 확정과 충돌. 임의 동작 변경 금지",
+    "app": [],
+    "primary": "1106:6790"
+  },
+  {
+    "id": "P12",
+    "title": "하이라이트",
+    "difference": "대표 전폭 카드 대신 원본 날짜범위+3열 그리드. publication 계약은 보존",
+    "app": [
+      "widget-highlights.png",
+      "widget-highlights-scrolled.png"
+    ],
+    "primary": "1081:5235"
+  },
+  {
+    "id": "P13",
+    "title": "북마크·메모 메뉴",
+    "difference": "기본 카드 비율은 유지하고 메뉴/삭제색/긴글/서체를 맞춤",
+    "app": [
+      "widget-bookmarks.png",
+      "memo-six-colors.png"
+    ],
+    "primary": "945:4351"
+  },
+  {
+    "id": "P14",
+    "title": "플레이어 세로·가로",
+    "difference": "동작 순서 차이 및 가로 전용 overlay chrome 누락",
+    "app": [
+      "widget-player-portrait.png",
+      "widget-player-landscape.png"
+    ],
+    "primary": "941:1928"
+  },
+  {
+    "id": "P15",
+    "title": "메모 모달·토스트",
+    "difference": "원본 제목/활성 버튼색/토스트/가로 키보드 배치와 대조",
+    "app": [
+      "memo-portrait.png",
+      "memo-landscape.png"
+    ],
+    "primary": "1081:6727"
+  },
+  {
+    "id": "P16",
+    "title": "다운로드·기간 선택",
+    "difference": "다운로드 overlay/토스트 차이. 달력 팝업 원본은 없어 기능/OS 재현 검증 필요",
+    "app": [
+      "widget-calendar.png"
+    ],
+    "primary": "1106:3659"
+  },
+  {
+    "id": "P17",
+    "title": "자산·그림자",
+    "difference": "LCD illustration 신규 확보, SVG 내부 그림 보존, 그림자 효과값은 미판정",
+    "app": [],
+    "primary": "1107:10445"
+  },
+  {
+    "id": "P18",
+    "title": "회귀·구형 경로·평균",
+    "difference": "24 기대 vs36 실제의 오래된 테스트, 구형 삭제창, 검수 후 평균 안건 재논의",
+    "app": [],
+    "primary": "1081:6397"
+  }
+]

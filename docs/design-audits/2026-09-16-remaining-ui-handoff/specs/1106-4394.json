@@ -1,0 +1,478 @@
+{
+  "frame": {
+    "id": "1106:4394",
+    "name": "BottomSheet",
+    "section": "home",
+    "bounds": {
+      "x": 5836.1259765625,
+      "y": -5852.5,
+      "width": 393,
+      "height": 300
+    },
+    "text": [
+      "즉시 작동",
+      "예약 작동",
+      "전원 · 켜짐",
+      "종료",
+      "아이스팩은 팬이 켜진 상태에서 최대 2시간 유지됩니다",
+      "30분 뒤",
+      "1시간 뒤",
+      "2시간 뒤"
+    ],
+    "file": "1106-4394.png",
+    "task": "P09",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1106:4394",
+      "name": "BottomSheet",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 393,
+        "height": 300
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ]
+    },
+    {
+      "id": "1106:4585",
+      "name": "Toggle_L",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 24.0,
+        "width": 345,
+        "height": 32
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 18
+    },
+    {
+      "id": "1106:4586",
+      "name": "Left",
+      "type": "FRAME",
+      "rect": {
+        "x": 26.0,
+        "y": 26.0,
+        "width": 168.5,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "1106:4587",
+      "name": "즉시 작동",
+      "type": "TEXT",
+      "rect": {
+        "x": 84.75,
+        "y": 31.5,
+        "width": 51,
+        "height": 17
+      },
+      "characters": "즉시 작동",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 14,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1106:4588",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 198.5,
+        "y": 26.0,
+        "width": 168.5,
+        "height": 28
+      },
+      "cornerRadius": 14
+    },
+    {
+      "id": "1106:4589",
+      "name": "예약 작동",
+      "type": "TEXT",
+      "rect": {
+        "x": 257.25,
+        "y": 31.5,
+        "width": 51,
+        "height": 17
+      },
+      "characters": "예약 작동",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 14,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "1106:4395",
+      "name": "OnOff",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 80.0,
+        "width": 345,
+        "height": 48
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 16
+    },
+    {
+      "id": "1106:4396",
+      "name": "전원 · 켜짐",
+      "type": "TEXT",
+      "rect": {
+        "x": 36.0,
+        "y": 93.5,
+        "width": 74,
+        "height": 21
+      },
+      "characters": "전원 · 켜짐",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 21.48046875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1106:4397",
+      "name": "Toggle_on",
+      "type": "FRAME",
+      "rect": {
+        "x": 281.0,
+        "y": 88.0,
+        "width": 80,
+        "height": 32
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#636ddb"
+        }
+      ],
+      "cornerRadius": 16
+    },
+    {
+      "id": "1106:4398",
+      "name": "Button",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 309.0,
+        "y": 90.0,
+        "width": 50,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "1106:4399",
+      "name": "End",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 152.0,
+        "width": 345,
+        "height": 96
+      }
+    },
+    {
+      "id": "1106:4400",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 152.0,
+        "width": 345,
+        "height": 19
+      }
+    },
+    {
+      "id": "1106:4401",
+      "name": "Label",
+      "type": "TEXT",
+      "rect": {
+        "x": 36.0,
+        "y": 152.0,
+        "width": 321,
+        "height": 19
+      },
+      "characters": "종료",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "1106:4636",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 179.0,
+        "width": 345,
+        "height": 17
+      }
+    },
+    {
+      "id": "1106:4637",
+      "name": "Label",
+      "type": "TEXT",
+      "rect": {
+        "x": 36.0,
+        "y": 179.0,
+        "width": 321,
+        "height": 17
+      },
+      "characters": "아이스팩은 팬이 켜진 상태에서 최대 2시간 유지됩니다",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "1106:4402",
+      "name": "Buttons",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 204.0,
+        "width": 345,
+        "height": 44
+      }
+    },
+    {
+      "id": "1106:4405",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 204.0,
+        "width": 112.33333587646484,
+        "height": 44
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 16
+    },
+    {
+      "id": "1106:4406",
+      "name": "30분 뒤",
+      "type": "TEXT",
+      "rect": {
+        "x": 54.6665,
+        "y": 216.5,
+        "width": 51,
+        "height": 19
+      },
+      "characters": "30분 뒤",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1106:4407",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 140.3335,
+        "y": 204.0,
+        "width": 112.33332824707031,
+        "height": 44
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 16
+    },
+    {
+      "id": "1106:4408",
+      "name": "1시간 뒤",
+      "type": "TEXT",
+      "rect": {
+        "x": 170.5,
+        "y": 216.5,
+        "width": 52,
+        "height": 19
+      },
+      "characters": "1시간 뒤",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1106:4411",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 256.6665,
+        "y": 204.0,
+        "width": 112.33332824707031,
+        "height": 44
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#636ddb"
+        }
+      ],
+      "cornerRadius": 16
+    },
+    {
+      "id": "1106:4412",
+      "name": "2시간 뒤",
+      "type": "TEXT",
+      "rect": {
+        "x": 285.833,
+        "y": 216.5,
+        "width": 54,
+        "height": 19
+      },
+      "characters": "2시간 뒤",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    }
+  ]
+}

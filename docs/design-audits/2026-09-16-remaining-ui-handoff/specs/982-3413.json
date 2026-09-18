@@ -1,0 +1,611 @@
+{
+  "frame": {
+    "id": "982:3413",
+    "name": "네트워크 비밀번호",
+    "section": "connection",
+    "bounds": {
+      "x": 7805,
+      "y": 412,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "WiFi 연결",
+      "WiFi 비밀 번호 입력",
+      "선택한 네트워크: iptime_office",
+      "123456496jsdhoij!#!@",
+      "|",
+      "비밀번호 기억하기",
+      "기기 추가"
+    ],
+    "file": "982-3413.png",
+    "task": "P04",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "982:3413",
+      "name": "네트워크 비밀번호",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "982:3414",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I982:3414;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I982:3414;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I982:3414;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I982:3414;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I982:3414;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I982:3414;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "982:3415",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 696,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "982:3416",
+      "name": "WiFi 연결",
+      "type": "TEXT",
+      "rect": {
+        "x": 161.5,
+        "y": 710,
+        "width": 70,
+        "height": 28
+      },
+      "characters": "WiFi 연결",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    },
+    {
+      "id": "987:4677",
+      "name": "Frame 173",
+      "type": "FRAME",
+      "rect": {
+        "x": 2,
+        "y": 112,
+        "width": 389,
+        "height": 66
+      }
+    },
+    {
+      "id": "982:3417",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 122,
+        "width": 369,
+        "height": 46
+      }
+    },
+    {
+      "id": "982:3418",
+      "name": "WiFi 비밀 번호 입력",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 122,
+        "width": 345,
+        "height": 21
+      },
+      "characters": "WiFi 비밀 번호 입력",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 21.48046875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3419",
+      "name": "선택한 네트워크: iptime_office",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 151,
+        "width": 345,
+        "height": 17
+      },
+      "characters": "선택한 네트워크: iptime_office",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "982:3430",
+      "name": "FieldWrap",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 184,
+        "width": 369,
+        "height": 101
+      }
+    },
+    {
+      "id": "982:3431",
+      "name": "Field",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 184,
+        "width": 369,
+        "height": 65
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "982:3572",
+      "name": "Frame 166",
+      "type": "FRAME",
+      "rect": {
+        "x": 29,
+        "y": 207,
+        "width": 239,
+        "height": 19
+      }
+    },
+    {
+      "id": "982:3432",
+      "name": "123456496jsdhoij!#!@",
+      "type": "TEXT",
+      "rect": {
+        "x": 29,
+        "y": 207,
+        "width": 161,
+        "height": 19
+      },
+      "characters": "123456496jsdhoij!#!@",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "982:3570",
+      "name": "cursor",
+      "type": "TEXT",
+      "rect": {
+        "x": 192,
+        "y": 207,
+        "width": 6,
+        "height": 19
+      },
+      "characters": "|",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d61619"
+        }
+      ]
+    },
+    {
+      "id": "982:3433",
+      "name": "visibility",
+      "type": "GROUP",
+      "rect": {
+        "x": 340,
+        "y": 204.5,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3434",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 340,
+        "y": 204.5,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3441",
+      "name": "remember",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 261,
+        "width": 134,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3442",
+      "name": "check_box",
+      "type": "GROUP",
+      "rect": {
+        "x": 20,
+        "y": 261,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3443",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 20,
+        "y": 261,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3445",
+      "name": "비밀번호 기억하기",
+      "type": "TEXT",
+      "rect": {
+        "x": 48,
+        "y": 264.5,
+        "width": 98,
+        "height": 17
+      },
+      "characters": "비밀번호 기억하기",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3420",
+      "name": "TopNav",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 62,
+        "width": 369,
+        "height": 44
+      }
+    },
+    {
+      "id": "982:3421",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "982:3422",
+      "name": "arrow_back_ios_new",
+      "type": "GROUP",
+      "rect": {
+        "x": 22,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3423",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 22,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3425",
+      "name": "기기 추가",
+      "type": "TEXT",
+      "rect": {
+        "x": 168,
+        "y": 74.5,
+        "width": 58,
+        "height": 19
+      },
+      "characters": "기기 추가",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "982:3426",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 338,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "982:3427",
+      "name": "close",
+      "type": "GROUP",
+      "rect": {
+        "x": 348,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3428",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 348,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    }
+  ]
+}

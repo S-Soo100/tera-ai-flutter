@@ -1,0 +1,2755 @@
+{
+  "frame": {
+    "id": "945:3650",
+    "name": "TempHumid_Detail",
+    "section": "home",
+    "bounds": {
+      "x": 9491.169921875,
+      "y": -9314.25390625,
+      "width": 393,
+      "height": 584
+    },
+    "text": [
+      "오전 12시",
+      "오전 6시",
+      "오후 12시",
+      "오후 6시",
+      "75%",
+      "70%",
+      "65%",
+      "60%",
+      "55%",
+      "50%",
+      "45°",
+      "40°",
+      "35°",
+      "30°",
+      "25°",
+      "20°",
+      "9:41",
+      "사육장 제어 기록",
+      "냉각팬 꺼짐",
+      "오후 12:59",
+      "32℃ 52%",
+      "-5℃ +2%",
+      "환기팬 꺼짐",
+      "오후 12:59",
+      "32℃ 52%",
+      "-3℃ +2%",
+      "LED 꺼짐",
+      "오후 12:59",
+      "32℃ 52%",
+      "작동 시점 온습도",
+      "분무 작동",
+      "오후 1:30",
+      "32℃ 52%",
+      "작동 시점 온습도",
+      "환기팬 켜짐",
+      "오전 8:40",
+      "32℃ 52%",
+      "작동 시점 온습도",
+      "냉각팬 켜짐",
+      "오전 8:35",
+      "32℃ 52%",
+      "작동 시점 온습도",
+      "LED 켜짐",
+      "오전 8:30",
+      "32℃ 52%",
+      "작동 시점 온습도",
+      "온습도 상세",
+      "일간",
+      "주간",
+      "2026. 8. 29",
+      "오전 11:23",
+      "35.2℃",
+      "59%"
+    ],
+    "file": "945-3650.png",
+    "task": "P07",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "945:3650",
+      "name": "TempHumid_Detail",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 393,
+        "height": 584
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "945:3651",
+      "name": "Rectangle 113",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 393,
+        "height": 106
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "945:3652",
+      "name": "GraphGroup",
+      "type": "GROUP",
+      "rect": {
+        "x": -143.1914,
+        "y": 293.0,
+        "width": 679.19140625,
+        "height": 259
+      }
+    },
+    {
+      "id": "945:3653",
+      "name": "LineX",
+      "type": "FRAME",
+      "rect": {
+        "x": -143.1914,
+        "y": 294.0,
+        "width": 524,
+        "height": 256
+      }
+    },
+    {
+      "id": "945:3663",
+      "name": "LineY",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 294.0,
+        "width": 524,
+        "height": 256
+      }
+    },
+    {
+      "id": "945:3664",
+      "name": "Line",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 294.0,
+        "width": 524,
+        "height": 256
+      }
+    },
+    {
+      "id": "945:3674",
+      "name": "X",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 528.0,
+        "width": 524,
+        "height": 22
+      }
+    },
+    {
+      "id": "945:3675",
+      "name": "X",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 528.0,
+        "width": 130,
+        "height": 14
+      }
+    },
+    {
+      "id": "945:3676",
+      "name": "오전 12시",
+      "type": "TEXT",
+      "rect": {
+        "x": 16.0,
+        "y": 528.0,
+        "width": 46,
+        "height": 14
+      },
+      "characters": "오전 12시",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3677",
+      "name": "X",
+      "type": "FRAME",
+      "rect": {
+        "x": 143.333,
+        "y": 528.0,
+        "width": 130,
+        "height": 14
+      }
+    },
+    {
+      "id": "945:3678",
+      "name": "오전 6시",
+      "type": "TEXT",
+      "rect": {
+        "x": 147.333,
+        "y": 528.0,
+        "width": 41,
+        "height": 14
+      },
+      "characters": "오전 6시",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3679",
+      "name": "X",
+      "type": "FRAME",
+      "rect": {
+        "x": 274.667,
+        "y": 528.0,
+        "width": 130,
+        "height": 14
+      }
+    },
+    {
+      "id": "945:3680",
+      "name": "오후 12시",
+      "type": "TEXT",
+      "rect": {
+        "x": 278.667,
+        "y": 528.0,
+        "width": 46,
+        "height": 14
+      },
+      "characters": "오후 12시",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3681",
+      "name": "X",
+      "type": "FRAME",
+      "rect": {
+        "x": 406.0,
+        "y": 528.0,
+        "width": 130,
+        "height": 14
+      }
+    },
+    {
+      "id": "945:3682",
+      "name": "오후 6시",
+      "type": "TEXT",
+      "rect": {
+        "x": 410.0,
+        "y": 528.0,
+        "width": 41,
+        "height": 14
+      },
+      "characters": "오후 6시",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3685",
+      "name": "Hide",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": -0.1914,
+        "y": 293.0,
+        "width": 12,
+        "height": 258
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "945:3686",
+      "name": "Y_humid",
+      "type": "FRAME",
+      "rect": {
+        "x": 354.8086,
+        "y": 326.2666,
+        "width": 26,
+        "height": 192
+      }
+    },
+    {
+      "id": "945:3687",
+      "name": "75%",
+      "type": "TEXT",
+      "rect": {
+        "x": 354.8086,
+        "y": 326.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "75%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3688",
+      "name": "70%",
+      "type": "TEXT",
+      "rect": {
+        "x": 354.8086,
+        "y": 358.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "70%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3689",
+      "name": "65%",
+      "type": "TEXT",
+      "rect": {
+        "x": 354.8086,
+        "y": 390.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "65%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3690",
+      "name": "60%",
+      "type": "TEXT",
+      "rect": {
+        "x": 354.8086,
+        "y": 422.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "60%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3691",
+      "name": "55%",
+      "type": "TEXT",
+      "rect": {
+        "x": 354.8086,
+        "y": 454.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "55%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3692",
+      "name": "50%",
+      "type": "TEXT",
+      "rect": {
+        "x": 354.8086,
+        "y": 486.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "50%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3693",
+      "name": "Y_temp",
+      "type": "FRAME",
+      "rect": {
+        "x": 11.8086,
+        "y": 326.2666,
+        "width": 26,
+        "height": 192
+      }
+    },
+    {
+      "id": "945:3694",
+      "name": "45°",
+      "type": "TEXT",
+      "rect": {
+        "x": 11.8086,
+        "y": 326.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "45°",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3695",
+      "name": "40°",
+      "type": "TEXT",
+      "rect": {
+        "x": 11.8086,
+        "y": 358.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "40°",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3696",
+      "name": "35°",
+      "type": "TEXT",
+      "rect": {
+        "x": 11.8086,
+        "y": 390.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "35°",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3697",
+      "name": "30°",
+      "type": "TEXT",
+      "rect": {
+        "x": 11.8086,
+        "y": 422.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "30°",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3698",
+      "name": "25°",
+      "type": "TEXT",
+      "rect": {
+        "x": 11.8086,
+        "y": 454.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "25°",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3699",
+      "name": "20°",
+      "type": "TEXT",
+      "rect": {
+        "x": 11.8086,
+        "y": 486.2666,
+        "width": 26,
+        "height": 32
+      },
+      "characters": "20°",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ]
+    },
+    {
+      "id": "945:3700",
+      "name": "humidity_high",
+      "type": "FRAME",
+      "rect": {
+        "x": 254.5996,
+        "y": 296.0,
+        "width": 28,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#2a97db"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "945:3702",
+      "name": "Frame 79",
+      "type": "FRAME",
+      "rect": {
+        "x": 299.0,
+        "y": 296.0,
+        "width": 92,
+        "height": 28
+      }
+    },
+    {
+      "id": "945:3703",
+      "name": "light_off",
+      "type": "FRAME",
+      "rect": {
+        "x": 299.0,
+        "y": 296.0,
+        "width": 28,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "945:3705",
+      "name": "mode_cool_off",
+      "type": "FRAME",
+      "rect": {
+        "x": 331.0,
+        "y": 296.0,
+        "width": 28,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "945:3707",
+      "name": "mode_fan_off",
+      "type": "FRAME",
+      "rect": {
+        "x": 363.0,
+        "y": 296.0,
+        "width": 28,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "945:3709",
+      "name": "Frame 78",
+      "type": "FRAME",
+      "rect": {
+        "x": 161.0,
+        "y": 296.0,
+        "width": 72,
+        "height": 28
+      }
+    },
+    {
+      "id": "945:3710",
+      "name": "lightbulb",
+      "type": "FRAME",
+      "rect": {
+        "x": 161.0,
+        "y": 296.0,
+        "width": 28,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e89e00"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "945:3712",
+      "name": "mode_cool",
+      "type": "FRAME",
+      "rect": {
+        "x": 183.0,
+        "y": 296.0,
+        "width": 28,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#636ddb"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "945:3714",
+      "name": "mode_fan_2",
+      "type": "FRAME",
+      "rect": {
+        "x": 205.0,
+        "y": 296.0,
+        "width": 28,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#228c73"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "945:3716",
+      "name": "Hide",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 380.8086,
+        "y": 294.0,
+        "width": 12,
+        "height": 258
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "945:3717",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I945:3717;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16.0,
+        "y": 21.0,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I945:3717;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22.0,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I945:3717;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21.0,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I945:3717;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26.0,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I945:3717;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26.0,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I945:3717;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28.0,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "945:3718",
+      "name": "Frame 110",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 584.0,
+        "width": 393,
+        "height": 500
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#e1e3e4"
+        }
+      ]
+    },
+    {
+      "id": "945:3719",
+      "name": "사육장 제어 기록",
+      "type": "TEXT",
+      "rect": {
+        "x": 20.0,
+        "y": 604.0,
+        "width": 353,
+        "height": 20
+      },
+      "characters": "사육장 제어 기록",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "945:3720",
+      "name": "Frame 104",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 644.0,
+        "width": 353,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3721",
+      "name": "Frame 103",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 644.0,
+        "width": 120,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3722",
+      "name": "mode_cool_off",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 646.0,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ],
+      "cornerRadius": 18.000001907348633
+    },
+    {
+      "id": "945:3724",
+      "name": "Frame 101",
+      "type": "FRAME",
+      "rect": {
+        "x": 68.0,
+        "y": 644.0,
+        "width": 72,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3725",
+      "name": "냉각팬 꺼짐",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 644.0,
+        "width": 72,
+        "height": 19
+      },
+      "characters": "냉각팬 꺼짐",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "945:3726",
+      "name": "오후 12:59",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 667.0,
+        "width": 62,
+        "height": 17
+      },
+      "characters": "오후 12:59",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3727",
+      "name": "Frame 102",
+      "type": "FRAME",
+      "rect": {
+        "x": 298.0,
+        "y": 644.0,
+        "width": 75,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3728",
+      "name": "32℃ 52%",
+      "type": "TEXT",
+      "rect": {
+        "x": 298.0,
+        "y": 644.0,
+        "width": 75,
+        "height": 19
+      },
+      "characters": "32℃ 52%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "945:3729",
+      "name": "-5℃ +2%",
+      "type": "TEXT",
+      "rect": {
+        "x": 311.0,
+        "y": 667.0,
+        "width": 62,
+        "height": 17
+      },
+      "characters": "-5℃ +2%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3730",
+      "name": "Frame 105",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 704.0,
+        "width": 353,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3731",
+      "name": "Frame 103",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 704.0,
+        "width": 120,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3732",
+      "name": "mode_fan_off",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 706.0,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ],
+      "cornerRadius": 18
+    },
+    {
+      "id": "945:3734",
+      "name": "Frame 101",
+      "type": "FRAME",
+      "rect": {
+        "x": 68.0,
+        "y": 704.0,
+        "width": 72,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3735",
+      "name": "환기팬 꺼짐",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 704.0,
+        "width": 72,
+        "height": 19
+      },
+      "characters": "환기팬 꺼짐",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "945:3736",
+      "name": "오후 12:59",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 727.0,
+        "width": 62,
+        "height": 17
+      },
+      "characters": "오후 12:59",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3737",
+      "name": "Frame 102",
+      "type": "FRAME",
+      "rect": {
+        "x": 298.0,
+        "y": 704.0,
+        "width": 75,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3738",
+      "name": "32℃ 52%",
+      "type": "TEXT",
+      "rect": {
+        "x": 298.0,
+        "y": 704.0,
+        "width": 75,
+        "height": 19
+      },
+      "characters": "32℃ 52%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "945:3739",
+      "name": "-3℃ +2%",
+      "type": "TEXT",
+      "rect": {
+        "x": 311.0,
+        "y": 727.0,
+        "width": 62,
+        "height": 17
+      },
+      "characters": "-3℃ +2%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3740",
+      "name": "Frame 106",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 764.0,
+        "width": 353,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3741",
+      "name": "Frame 103",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 764.0,
+        "width": 110,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3742",
+      "name": "light_off",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 766.0,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#b4aeae"
+        }
+      ],
+      "cornerRadius": 18
+    },
+    {
+      "id": "945:3744",
+      "name": "Frame 101",
+      "type": "FRAME",
+      "rect": {
+        "x": 68.0,
+        "y": 764.0,
+        "width": 62,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3745",
+      "name": "LED 꺼짐",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 764.0,
+        "width": 59,
+        "height": 19
+      },
+      "characters": "LED 꺼짐",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "945:3746",
+      "name": "오후 12:59",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 787.0,
+        "width": 62,
+        "height": 17
+      },
+      "characters": "오후 12:59",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3747",
+      "name": "Frame 102",
+      "type": "FRAME",
+      "rect": {
+        "x": 283.0,
+        "y": 764.0,
+        "width": 90,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3748",
+      "name": "32℃ 52%",
+      "type": "TEXT",
+      "rect": {
+        "x": 298.0,
+        "y": 764.0,
+        "width": 75,
+        "height": 19
+      },
+      "characters": "32℃ 52%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "945:3749",
+      "name": "작동 시점 온습도",
+      "type": "TEXT",
+      "rect": {
+        "x": 283.0,
+        "y": 787.0,
+        "width": 90,
+        "height": 17
+      },
+      "characters": "작동 시점 온습도",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3750",
+      "name": "Frame 107",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 824.0,
+        "width": 353,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3751",
+      "name": "Frame 103",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 824.0,
+        "width": 106,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3752",
+      "name": "humidity_high",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 826.0,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#2e408c"
+        }
+      ],
+      "cornerRadius": 18
+    },
+    {
+      "id": "945:3754",
+      "name": "Frame 101",
+      "type": "FRAME",
+      "rect": {
+        "x": 68.0,
+        "y": 824.0,
+        "width": 58,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3755",
+      "name": "분무 작동",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 824.0,
+        "width": 58,
+        "height": 19
+      },
+      "characters": "분무 작동",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "945:3756",
+      "name": "오후 1:30",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 847.0,
+        "width": 54,
+        "height": 17
+      },
+      "characters": "오후 1:30",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3757",
+      "name": "Frame 102",
+      "type": "FRAME",
+      "rect": {
+        "x": 283.0,
+        "y": 824.0,
+        "width": 90,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3758",
+      "name": "32℃ 52%",
+      "type": "TEXT",
+      "rect": {
+        "x": 298.0,
+        "y": 824.0,
+        "width": 75,
+        "height": 19
+      },
+      "characters": "32℃ 52%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "945:3759",
+      "name": "작동 시점 온습도",
+      "type": "TEXT",
+      "rect": {
+        "x": 283.0,
+        "y": 847.0,
+        "width": 90,
+        "height": 17
+      },
+      "characters": "작동 시점 온습도",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3760",
+      "name": "Frame 109",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 884.0,
+        "width": 353,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3761",
+      "name": "Frame 103",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 884.0,
+        "width": 120,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3762",
+      "name": "mode_fan_2",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 886.0,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#228c73"
+        }
+      ],
+      "cornerRadius": 18
+    },
+    {
+      "id": "945:3764",
+      "name": "Frame 101",
+      "type": "FRAME",
+      "rect": {
+        "x": 68.0,
+        "y": 884.0,
+        "width": 72,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3765",
+      "name": "환기팬 켜짐",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 884.0,
+        "width": 72,
+        "height": 19
+      },
+      "characters": "환기팬 켜짐",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "945:3766",
+      "name": "오전 8:40",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 907.0,
+        "width": 56,
+        "height": 17
+      },
+      "characters": "오전 8:40",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3767",
+      "name": "Frame 102",
+      "type": "FRAME",
+      "rect": {
+        "x": 283.0,
+        "y": 884.0,
+        "width": 90,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3768",
+      "name": "32℃ 52%",
+      "type": "TEXT",
+      "rect": {
+        "x": 298.0,
+        "y": 884.0,
+        "width": 75,
+        "height": 19
+      },
+      "characters": "32℃ 52%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "945:3769",
+      "name": "작동 시점 온습도",
+      "type": "TEXT",
+      "rect": {
+        "x": 283.0,
+        "y": 907.0,
+        "width": 90,
+        "height": 17
+      },
+      "characters": "작동 시점 온습도",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3770",
+      "name": "Frame 108",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 944.0,
+        "width": 353,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3771",
+      "name": "Frame 103",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 944.0,
+        "width": 120,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3772",
+      "name": "mode_cool",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 946.0,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#636ddb"
+        }
+      ],
+      "cornerRadius": 18
+    },
+    {
+      "id": "945:3774",
+      "name": "Frame 101",
+      "type": "FRAME",
+      "rect": {
+        "x": 68.0,
+        "y": 944.0,
+        "width": 72,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3775",
+      "name": "냉각팬 켜짐",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 944.0,
+        "width": 72,
+        "height": 19
+      },
+      "characters": "냉각팬 켜짐",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "945:3776",
+      "name": "오전 8:35",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 967.0,
+        "width": 56,
+        "height": 17
+      },
+      "characters": "오전 8:35",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3777",
+      "name": "Frame 102",
+      "type": "FRAME",
+      "rect": {
+        "x": 283.0,
+        "y": 944.0,
+        "width": 90,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3778",
+      "name": "32℃ 52%",
+      "type": "TEXT",
+      "rect": {
+        "x": 298.0,
+        "y": 944.0,
+        "width": 75,
+        "height": 19
+      },
+      "characters": "32℃ 52%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "945:3779",
+      "name": "작동 시점 온습도",
+      "type": "TEXT",
+      "rect": {
+        "x": 283.0,
+        "y": 967.0,
+        "width": 90,
+        "height": 17
+      },
+      "characters": "작동 시점 온습도",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3780",
+      "name": "Frame 110",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 1004.0,
+        "width": 353,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3781",
+      "name": "Frame 103",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 1004.0,
+        "width": 107,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3782",
+      "name": "lightbulb",
+      "type": "FRAME",
+      "rect": {
+        "x": 20.0,
+        "y": 1006.0,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e89e00"
+        }
+      ],
+      "cornerRadius": 18
+    },
+    {
+      "id": "945:3784",
+      "name": "Frame 101",
+      "type": "FRAME",
+      "rect": {
+        "x": 68.0,
+        "y": 1004.0,
+        "width": 59,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3785",
+      "name": "LED 켜짐",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 1004.0,
+        "width": 59,
+        "height": 19
+      },
+      "characters": "LED 켜짐",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "945:3786",
+      "name": "오전 8:30",
+      "type": "TEXT",
+      "rect": {
+        "x": 68.0,
+        "y": 1027.0,
+        "width": 56,
+        "height": 17
+      },
+      "characters": "오전 8:30",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3787",
+      "name": "Frame 102",
+      "type": "FRAME",
+      "rect": {
+        "x": 283.0,
+        "y": 1004.0,
+        "width": 90,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3788",
+      "name": "32℃ 52%",
+      "type": "TEXT",
+      "rect": {
+        "x": 298.0,
+        "y": 1004.0,
+        "width": 75,
+        "height": 19
+      },
+      "characters": "32℃ 52%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "945:3789",
+      "name": "작동 시점 온습도",
+      "type": "TEXT",
+      "rect": {
+        "x": 283.0,
+        "y": 1027.0,
+        "width": 90,
+        "height": 17
+      },
+      "characters": "작동 시점 온습도",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3790",
+      "name": "온습도 상세",
+      "type": "TEXT",
+      "rect": {
+        "x": 160.5,
+        "y": 74.5,
+        "width": 72,
+        "height": 19
+      },
+      "characters": "온습도 상세",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "945:3791",
+      "name": "Toggle_L",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 124.0,
+        "width": 369,
+        "height": 32
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 18
+    },
+    {
+      "id": "945:3792",
+      "name": "Left",
+      "type": "FRAME",
+      "rect": {
+        "x": 14.0,
+        "y": 126.0,
+        "width": 180.5,
+        "height": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "cornerRadius": 14
+    },
+    {
+      "id": "945:3793",
+      "name": "일간",
+      "type": "TEXT",
+      "rect": {
+        "x": 92.25,
+        "y": 131.5,
+        "width": 24,
+        "height": 17
+      },
+      "characters": "일간",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 14,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "945:3794",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 198.5,
+        "y": 126.0,
+        "width": 180.5,
+        "height": 28
+      },
+      "cornerRadius": 14
+    },
+    {
+      "id": "945:3795",
+      "name": "주간",
+      "type": "TEXT",
+      "rect": {
+        "x": 276.75,
+        "y": 131.5,
+        "width": 24,
+        "height": 17
+      },
+      "characters": "주간",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 14,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "945:3809",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 337.0,
+        "y": 62.0,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "945:3810",
+      "name": "close",
+      "type": "GROUP",
+      "rect": {
+        "x": 347.0,
+        "y": 72.0,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "945:3811",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 347.0,
+        "y": 72.0,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "945:3813",
+      "name": "DatePicker",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 172.0,
+        "width": 369,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3814",
+      "name": "arrow_back_ios_new",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 172.0,
+        "width": 40,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3816",
+      "name": "DatePicker-Modal",
+      "type": "FRAME",
+      "rect": {
+        "x": 142.5,
+        "y": 172.0,
+        "width": 108,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3817",
+      "name": "2026. 8. 29",
+      "type": "TEXT",
+      "rect": {
+        "x": 150.5,
+        "y": 181.5,
+        "width": 92,
+        "height": 21
+      },
+      "characters": "2026. 8. 29",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 21.48046875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "945:3818",
+      "name": "arrow_forward_ios",
+      "type": "FRAME",
+      "rect": {
+        "x": 341.0,
+        "y": 172.0,
+        "width": 40,
+        "height": 40
+      }
+    },
+    {
+      "id": "945:3857",
+      "name": "Group 21",
+      "type": "GROUP",
+      "rect": {
+        "x": 66.959,
+        "y": 224.3818,
+        "width": 102,
+        "height": 326
+      }
+    },
+    {
+      "id": "945:3858",
+      "name": "Dtail",
+      "type": "FRAME",
+      "rect": {
+        "x": 66.959,
+        "y": 224.3818,
+        "width": 102,
+        "height": 326
+      }
+    },
+    {
+      "id": "945:3859",
+      "name": "Box",
+      "type": "FRAME",
+      "rect": {
+        "x": 46.459,
+        "y": 224.3818,
+        "width": 143,
+        "height": 66
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "945:3860",
+      "name": "오전 11:23",
+      "type": "TEXT",
+      "rect": {
+        "x": 58.459,
+        "y": 236.3818,
+        "width": 51,
+        "height": 14
+      },
+      "characters": "오전 11:23",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "945:3861",
+      "name": "temhumi",
+      "type": "FRAME",
+      "rect": {
+        "x": 58.459,
+        "y": 254.3818,
+        "width": 119,
+        "height": 24
+      }
+    },
+    {
+      "id": "945:3862",
+      "name": "35.2℃",
+      "type": "TEXT",
+      "rect": {
+        "x": 58.459,
+        "y": 254.3818,
+        "width": 64,
+        "height": 24
+      },
+      "characters": "35.2℃",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 20,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.4,
+        "lineHeightPx": 23.8671875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "945:3863",
+      "name": "59%",
+      "type": "TEXT",
+      "rect": {
+        "x": 134.459,
+        "y": 254.3818,
+        "width": 43,
+        "height": 24
+      },
+      "characters": "59%",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 20,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.4,
+        "lineHeightPx": 23.8671875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "945:3865",
+      "name": "Ellipse 14",
+      "type": "ELLIPSE",
+      "rect": {
+        "x": 113.959,
+        "y": 400.8408,
+        "width": 8,
+        "height": 8
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d61619"
+        }
+      ]
+    },
+    {
+      "id": "945:3866",
+      "name": "Ellipse 15",
+      "type": "ELLIPSE",
+      "rect": {
+        "x": 113.959,
+        "y": 467.8613,
+        "width": 8,
+        "height": 8
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#2e408c"
+        }
+      ]
+    }
+  ]
+}

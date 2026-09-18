@@ -11,6 +11,7 @@ import '../../../shared/domain/chart_window.dart';
 import '../../../shared/domain/env_chart_data.dart';
 import '../../../shared/domain/env_extremes.dart';
 import 'home_set_providers.dart';
+import '../data/command_history_repository.dart';
 
 /// 현재 세트 제어기 id. 없으면 null(캠 단품 등).
 final currentDeviceIdProvider =
@@ -111,35 +112,15 @@ final chartExtremesProvider =
 /// 쓰므로 조회부를 한 벌로 둔다 — 쿼리를 두 벌로 복사하면 한쪽만 고쳐진 채로
 /// 남는다.
 ///
-/// 조회 실패는 빈 목록으로 흡수한다 — 기록이 없다고 차트를 못 그릴 이유는 없다.
-Future<List<Map<String, dynamic>>> fetchCommandRows(
+/// Composite keyset pagination reads the whole requested interval. Failures
+/// propagate; an unavailable page is never a successful empty/partial history.
+Future<List<CommandHistoryRow>> fetchCommandRows(
   SupabaseClient client,
   String deviceId, {
   required DateTime from,
   required DateTime to,
-}) async {
-  try {
-    // 소비자(마커·제어 기록)는 acked만 쓴다 — 서버에서 걸러 전송량을 줄이고,
-    // PostgREST 기본 1000행 상한에 걸려도 order 덕에 결손이 결정적이 된다
-    // (무정렬 전량 조회는 임의 부분집합이 와서 기록이 조용히 빠졌다 —
-    // 리뷰 2026-09-03). 끝 경계는 telemetryHistory와 같은 exclusive(lt) —
-    // lte면 자정 정각 명령이 이틀 페이지에 이중 계상된다.
-    final rows = await client
-        .from('commands')
-        .select('id, action, status, issued_at')
-        .eq('device_id', deviceId)
-        .eq('status', 'acked')
-        .gte('issued_at', from.toUtc().toIso8601String())
-        .lt('issued_at', to.toUtc().toIso8601String())
-        .order('issued_at', ascending: true)
-        .limit(2000);
-    return (rows as List)
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
-  } catch (_) {
-    return const [];
-  }
-}
+}) =>
+    CommandHistoryRepository(client).readPeriod(deviceId, from: from, to: to);
 
 /// `commands`에서 [from]~[to] 구간의 기기 동작 마커를 읽는다.
 ///

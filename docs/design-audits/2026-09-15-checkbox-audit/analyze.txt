@@ -1,0 +1,10 @@
+Analyzing redesign-20260915...
+
+   info • The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/features/home/presentation/fan_timer_resync_observer.dart:6:8 • unnecessary_import
+   info • The type of the right operand ('ActuatorState') isn't a subtype or a supertype of the left operand ('HeaterState') • lib/features/my_cage/presentation/widgets/actuator_controls.dart:304:35 • unrelated_type_equality_checks
+   info • Statements in an if should be enclosed in a block • lib/features/profile/data/profile_repository.dart:44:7 • curly_braces_in_flow_control_structures
+   info • The imported package 'fake_async' isn't a dependency of the importing package • test/features/my_cage/module_connection_test.dart:3:8 • depend_on_referenced_packages
+   info • Statements in an if should be enclosed in a block • test/features/my_cage/motion_clip_paging_test.dart:25:9 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • test/features/my_cage/player_orientation_test.dart:46:9 • curly_braces_in_flow_control_structures
+
+6 issues found. (ran in 4.1s)

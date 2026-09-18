@@ -1,0 +1,33 @@
+
+00:00 +0: loading /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_pets/activity_capture_test.dart
+00:01 +0: loading /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_pets/activity_capture_test.dart
+00:01 +0: (setUpAll)
+00:01 +0: (setUpAll)
+[🌎 Easy Localization] [DEBUG] Localization initialized
+
+00:01 +0: 393px localized MyCre populated, lower content and empty captures
+00:01 +0: 393px localized MyCre populated, lower content and empty captures
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Init state
+[🌎 Easy Localization] [INFO] Start locale loaded ko
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+[🌎 Easy Localization] [DEBUG] Start
+[🌎 Easy Localization] [DEBUG] Build
+[🌎 Easy Localization] [DEBUG] Init Localization Delegate
+[🌎 Easy Localization] [DEBUG] Init provider
+[🌎 Easy Localization] [DEBUG] Load Localization Delegate
+
+00:02 +1: 393px localized MyCre populated, lower content and empty captures
+00:02 +1: (tearDownAll)
+00:02 +1: All tests passed!

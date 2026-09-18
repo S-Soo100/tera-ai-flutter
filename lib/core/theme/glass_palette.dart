@@ -79,12 +79,14 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     required this.deviceMist,
     required this.deviceMistBg,
     required this.deviceGlyph,
+    required this.buttonForeground,
     required this.deviceOff,
     required this.tempAccent,
     required this.humidAccent,
     required this.surfaceTint,
     required this.segmentTrack,
     required this.surfaceHeader,
+    required this.menuShadow,
     required this.envTempValue,
     required this.envHumidValue,
     required this.envTempPeak,
@@ -204,6 +206,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   final Color deviceMistBg; // 분무 잠금(작동 중) 타일 배경 — mistTint(전경)와 역할 분리
   final Color
       deviceGlyph; // 기기색/deviceOff 원 **안** 글리프 — 하드코딩 white 금지(리뷰 2026-09-03)
+  /// Text and glyphs on saturated brand CTAs (VIVA Fill/Back).
+  final Color buttonForeground;
   final Color deviceOff; // 꺼짐 상태 아이콘 원 배경
 
   // ── 온습도 지표 액센트 (홈 요약·상세 차트 라인) ──
@@ -222,6 +226,8 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   final Color navSelected;
   final Color navUnselected;
   final Color surfaceHeader; // 상세 상단바·제어기록 섹션 배경
+  final Color
+      menuShadow; // 헤더 드롭다운 그림자 — Figma 1107:10552 X0 Y0 blur20 #919497 30%
 
   // ── 표면 위 타이포 (Pretendard 명시 — 공용 위젯은 테마 밖에서도 쓰인다) ──
   // 색만 팔레트에서 오고 크기·굵기는 두 모드 공통이다.
@@ -317,12 +323,14 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     deviceMist: Color(0xFF00B2F3),
     deviceMistBg: Color(0xFF10333D), // 다크 카드 위 humidAccent 저명도 도출
     deviceGlyph: Color(0xFFFFFFFF),
+    buttonForeground: VivaColors.fillBack,
     deviceOff: Color(0xFF3A4152),
     tempAccent: Color(0xFFF85478),
     humidAccent: Color(0xFF00B2F3),
     surfaceTint: Color(0xFF1A2032),
     segmentTrack: Color(0xFF1E2438),
     surfaceHeader: Color(0xFF0E1322),
+    menuShadow: Color(0x66000000), // 다크는 Figma 미정의 — 검정 40% 도출값
     envTempValue: Color(0xFFF85478),
     envHumidValue: Color(0xFF768AD6),
     envTempPeak: Color(0xFFF85478),
@@ -337,9 +345,9 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   // 매핑: docs/design-system-viva-colors.md
   static const light = GlassPalette(
     brightness: Brightness.light,
-    wallpaper: VivaColors.fillBack, // VIVA Fill/Back
+    wallpaper: Colors.white, // 2026-09-15 재설계: 화면 바닥은 흰색.
     overlay: VivaColors.fillButton, // Asset_v2/Card + NewHighlight
-    overlayStrong: VivaColors.fillBack, // = surfaceHeader
+    overlayStrong: Colors.white, // = surfaceHeader
     overlayFaint: VivaColors.fillButton, // surfaceSubtle — 비활성 칩 배경
     border: VivaColors.fillLine, // 칩 테두리·상단바 하단선
     outline: VivaColors.fillLine, // 기간 설정 버튼 stroke (Figma Camera)
@@ -388,18 +396,20 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     deviceMist: VivaColors.blue,
     deviceMistBg: VivaColors.fillButton,
     deviceGlyph: Color(0xFFFFFFFF),
+    buttonForeground: VivaColors.fillBack,
     deviceOff: VivaColors.fillIcon,
-    tempAccent: Color(0xFFF85478),
-    humidAccent: Color(0xFF00B2F3),
+    tempAccent: VivaColors.mainLight,
+    humidAccent: VivaColors.subLight,
     surfaceTint: VivaColors.fillButton,
     segmentTrack: VivaColors.fillButton,
-    surfaceHeader: VivaColors.fillBack,
+    surfaceHeader: Colors.white,
+    menuShadow: Color(0x4D919497), // 2026-09-16 디자이너 effect 값(30%)
     envTempValue: Color(0xFFF85478),
     envHumidValue: Color(0xFF00B2F3),
     envTempPeak: Color(0xFFF85478),
     envHumidPeak: Color(0xFF00B2F3),
     envBarNeutral: VivaColors.labelTertiary,
-    envBarMinimum: Color(0xFFA9B3BE),
+    envBarMinimum: VivaColors.fillIcon, // 주간 최저 막대 #B4AEAE (1081:5052)
     navSelected: VivaColors.mainDark,
     navUnselected: VivaColors.labelTertiary,
   );
@@ -457,12 +467,14 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     Color? deviceMist,
     Color? deviceMistBg,
     Color? deviceGlyph,
+    Color? buttonForeground,
     Color? deviceOff,
     Color? tempAccent,
     Color? humidAccent,
     Color? surfaceTint,
     Color? segmentTrack,
     Color? surfaceHeader,
+    Color? menuShadow,
     Color? envTempValue,
     Color? envHumidValue,
     Color? envTempPeak,
@@ -525,12 +537,14 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       deviceMist: deviceMist ?? this.deviceMist,
       deviceMistBg: deviceMistBg ?? this.deviceMistBg,
       deviceGlyph: deviceGlyph ?? this.deviceGlyph,
+      buttonForeground: buttonForeground ?? this.buttonForeground,
       deviceOff: deviceOff ?? this.deviceOff,
       tempAccent: tempAccent ?? this.tempAccent,
       humidAccent: humidAccent ?? this.humidAccent,
       surfaceTint: surfaceTint ?? this.surfaceTint,
       segmentTrack: segmentTrack ?? this.segmentTrack,
       surfaceHeader: surfaceHeader ?? this.surfaceHeader,
+      menuShadow: menuShadow ?? this.menuShadow,
       envTempValue: envTempValue ?? this.envTempValue,
       envHumidValue: envHumidValue ?? this.envHumidValue,
       envTempPeak: envTempPeak ?? this.envTempPeak,
@@ -601,12 +615,14 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       deviceMist: c(deviceMist, other.deviceMist),
       deviceMistBg: c(deviceMistBg, other.deviceMistBg),
       deviceGlyph: c(deviceGlyph, other.deviceGlyph),
+      buttonForeground: c(buttonForeground, other.buttonForeground),
       deviceOff: c(deviceOff, other.deviceOff),
       tempAccent: c(tempAccent, other.tempAccent),
       humidAccent: c(humidAccent, other.humidAccent),
       surfaceTint: c(surfaceTint, other.surfaceTint),
       segmentTrack: c(segmentTrack, other.segmentTrack),
       surfaceHeader: c(surfaceHeader, other.surfaceHeader),
+      menuShadow: c(menuShadow, other.menuShadow),
       envTempValue: c(envTempValue, other.envTempValue),
       envHumidValue: c(envHumidValue, other.envHumidValue),
       envTempPeak: c(envTempPeak, other.envTempPeak),

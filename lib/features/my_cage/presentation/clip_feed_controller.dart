@@ -4,6 +4,8 @@ import '../../auth/presentation/auth_providers.dart';
 import '../domain/motion_clip.dart';
 import '../domain/motion_clip_page.dart';
 import 'my_cage_providers.dart';
+import '../domain/clip_visibility.dart';
+import 'clip_visibility_providers.dart';
 
 final clipFeedRangeProvider = StateProvider<ClipDateRange?>((ref) {
   ref.watch(currentUserProvider.select((user) => user?.id));
@@ -34,10 +36,20 @@ final clipFeedProvider = StateNotifierProvider.autoDispose
     .family<ClipFeedController, ClipFeedState, ClipFeedQuery>((ref, query) {
   final owner = ref.watch(currentUserProvider.select((user) => user?.id));
   final repository = ref.watch(motionClipRepositoryProvider);
-  final controller = ClipFeedController((cursor) => owner == query.ownerId
-      ? repository.listPage(query, before: cursor)
-      : Future.value(
-          (items: <MotionClip>[], nextCursor: null, hasMore: false)));
+  final controller = ClipFeedController((cursor) async {
+    if (owner != query.ownerId) {
+      return (items: <MotionClip>[], nextCursor: null, hasMore: false);
+    }
+    await ref.read(clipVisibilityProvider(owner!).notifier).ready();
+    return loadVisibleClipPage(
+      before: cursor,
+      hiddenIds: () => ref.read(clipVisibilityProvider(owner)).hiddenIds,
+      load: (before) => repository.listPage(query, before: before),
+    );
+  });
+  ref.listen(currentClipVisibilityProvider, (_, visibility) {
+    controller.exclude(visibility.hiddenIds);
+  });
   unawaited(controller.refresh());
   return controller;
 });
@@ -64,6 +76,25 @@ class ClipFeedController extends StateNotifier<ClipFeedState> {
   ClipFeedController(this._load) : super(const ClipFeedState());
   final ClipPageLoader _load;
   int _generation = 0;
+  Set<String> _hiddenIds = const {};
+
+  void exclude(Set<String> hiddenIds) {
+    if (!mounted) return;
+    _hiddenIds = hiddenIds;
+    final items = state.items
+        .where((clip) => !hiddenIds.contains(clip.id))
+        .toList(growable: false);
+    if (items.length == state.items.length) return;
+    state = ClipFeedState(
+        items: items,
+        nextCursor: state.nextCursor,
+        hasMore: state.hasMore,
+        initialLoading: state.initialLoading,
+        refreshing: state.refreshing,
+        loadingMore: state.loadingMore,
+        pageError: state.pageError);
+    if (items.isEmpty && state.hasMore) unawaited(loadMore());
+  }
 
   Future<void> refresh() async {
     if (!mounted || state.refreshing) return;
@@ -131,7 +162,8 @@ class ClipFeedController extends StateNotifier<ClipFeedState> {
   List<MotionClip> _merge(
       List<MotionClip> previous, List<MotionClip> incoming) {
     final byId = {
-      for (final clip in [...previous, ...incoming]) clip.id: clip
+      for (final clip in [...previous, ...incoming])
+        if (!_hiddenIds.contains(clip.id)) clip.id: clip
     };
     final clips = byId.values.toList()
       ..sort((a, b) {

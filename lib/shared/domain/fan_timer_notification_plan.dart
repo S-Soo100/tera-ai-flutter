@@ -9,6 +9,8 @@
 /// 도메인(`CommandAction`)에 의존하지 않아 홈·사육장 탭 어느 쪽에서도 쓴다.
 library;
 
+import 'fan_actuator.dart';
+
 sealed class FanTimerNotificationPlan {
   const FanTimerNotificationPlan();
 
@@ -18,19 +20,26 @@ sealed class FanTimerNotificationPlan {
   /// - `fan_on` duration 없음(계속 켜기) → **취소** — duration 없는 fan_on은
   ///   진행 중 타이머를 대체(소멸)시킨다. `handleFanTap`의 invalidate와 같은 이유.
   /// - `fan_off` → 취소 (타이머 취소도 fan_off다)
-  /// - 그 외(팬 무관, fan_toggle 포함) → null(알림에 영향 없음)
+  /// - 그 외(팬 무관, fan_toggle 포함) → null(알림에 영향 없음). LED는
+  ///   펌웨어에 타이머가 없어(2026-09-16 회신 §1.4) 대상이 아니다.
   static FanTimerNotificationPlan? of(String action, int? durationMs) {
+    final actuator = action.startsWith('fan2_')
+        ? FanActuator.cooling
+        : FanActuator.ventilation;
     switch (action) {
       case 'fan_on':
+      case 'fan2_on':
         if (durationMs != null && durationMs > 0) {
           return ScheduleFanDone(
             minutes: durationMs ~/ 60000,
             duration: Duration(milliseconds: durationMs),
+            actuator: actuator,
           );
         }
-        return const CancelFanDone();
+        return CancelFanDone(actuator: actuator);
       case 'fan_off':
-        return const CancelFanDone();
+      case 'fan2_off':
+        return CancelFanDone(actuator: actuator);
       default:
         return null;
     }
@@ -38,7 +47,11 @@ sealed class FanTimerNotificationPlan {
 }
 
 class ScheduleFanDone extends FanTimerNotificationPlan {
-  const ScheduleFanDone({required this.minutes, required this.duration});
+  const ScheduleFanDone(
+      {required this.minutes,
+      required this.duration,
+      this.actuator = FanActuator.ventilation});
+  final FanActuator actuator;
 
   /// 알림 문구용 분 단위 (칩 문구 `팬 30분 타이머`와 같은 값).
   final int minutes;
@@ -48,16 +61,20 @@ class ScheduleFanDone extends FanTimerNotificationPlan {
 }
 
 class CancelFanDone extends FanTimerNotificationPlan {
-  const CancelFanDone();
+  const CancelFanDone({this.actuator = FanActuator.ventilation});
+  final FanActuator actuator;
 }
 
 /// 기기 → 알림 id. **실행 간 안정**이어야 한다 — 예약한 세션과 취소하는
 /// 세션이 다를 수 있다(앱 재시작 후 끄기). Dart `String.hashCode`는 실행 간
 /// 안정을 보장하지 않아 FNV-1a 32bit를 직접 쓴다. 상위 비트를 지워 Android
 /// 알림 id가 요구하는 32bit 양수로 맞춘다.
-int notificationIdFor(String deviceId) {
+int notificationIdFor(
+  String deviceId, {
+  FanActuator actuator = FanActuator.ventilation,
+}) {
   var hash = 0x811C9DC5;
-  for (final byte in deviceId.codeUnits) {
+  for (final byte in actuator.storageKey(deviceId).codeUnits) {
     // codeUnit은 UTF-16이라 0xFFFF까지 온다 — 바이트 둘로 쪼개 섞는다.
     hash ^= byte & 0xFF;
     hash = (hash * 0x01000193) & 0xFFFFFFFF;

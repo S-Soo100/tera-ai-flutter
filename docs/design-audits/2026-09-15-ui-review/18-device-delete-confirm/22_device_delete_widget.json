@@ -1,0 +1,397 @@
+[
+  {
+    "type": "Material",
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      852.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      182.99187469482422,
+      74.5,
+      27.016250610351562,
+      19.0
+    ],
+    "text": "기기",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ],
+    "color": "0"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      24.0,
+      122.0,
+      345.0,
+      19.0
+    ],
+    "text": "기기 이름",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      332.9831256866455,
+      176.0,
+      31.016874313354492,
+      19.0
+    ],
+    "text": "5/10",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      72.0,
+      270.5,
+      57.509376525878906,
+      19.0
+    ],
+    "text": "기기 정보",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      141.5093765258789,
+      270.5,
+      227.4906234741211,
+      19.0
+    ],
+    "text": "terra-iot-real",
+    "align": "right",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      72.0,
+      322.0,
+      27.016250610351562,
+      19.0
+    ],
+    "text": "전원",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      72.0,
+      345.0,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "align": null,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      277.7459373474121,
+      332.5,
+      13.508125305175781,
+      19.0
+    ],
+    "text": "켬",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      334.2459373474121,
+      332.5,
+      13.508125305175781,
+      19.0
+    ],
+    "text": "끔",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      72.0,
+      394.5,
+      217.4906234741211,
+      19.0
+    ],
+    "text": "마뱀이네 집",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      289.4906234741211,
+      386.0,
+      79.5093765258789,
+      36.0
+    ],
+    "color": "0"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      289.4906234741211,
+      394.5,
+      57.509376525878906,
+      19.0
+    ],
+    "text": "그룹 설정",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "color": "ff1e1e1e"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      181.30335903167725,
+      710.0,
+      30.393281936645508,
+      28.0
+    ],
+    "text": "완료",
+    "align": "center",
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "fffafafa"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      752.0,
+      369.0,
+      56.0
+    ],
+    "color": "0"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      154.5969123840332,
+      766.0,
+      83.8061752319336,
+      28.0
+    ],
+    "text": "이 기기 삭제",
+    "align": null,
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "ffc00306"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      24.0,
+      354.0,
+      345.0,
+      172.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      59.25950622558594,
+      378.0,
+      274.4809875488281,
+      56.0
+    ],
+    "text": "이 기기를 삭제하시겠습니까?\n기기와 연동된 데이터도 함께 삭제됩니다",
+    "align": "center",
+    "style": {
+      "size": 18.0,
+      "weight": 500,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      48.0,
+      458.0,
+      142.5,
+      44.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      48.0,
+      458.0,
+      142.5,
+      44.0
+    ],
+    "color": "ff1e1e1e"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      105.74187469482422,
+      466.0,
+      27.016250610351562,
+      28.0
+    ],
+    "text": "취소",
+    "align": "center",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.75,
+      "spacing": -0.32,
+      "color": "fffafafa"
+    }
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      202.5,
+      458.0,
+      142.5,
+      44.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      202.5,
+      458.0,
+      142.5,
+      44.0
+    ],
+    "color": "ffc00306"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      260.2418746948242,
+      466.0,
+      27.016250610351562,
+      28.0
+    ],
+    "text": "삭제",
+    "align": "center",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.75,
+      "spacing": -0.32,
+      "color": "fffafafa"
+    }
+  }
+]

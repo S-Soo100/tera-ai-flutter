@@ -1,0 +1,731 @@
+{
+  "frame": {
+    "id": "990:11607",
+    "name": "기기 관리",
+    "section": "connection",
+    "bounds": {
+      "x": 4453,
+      "y": 5849.3955078125,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "사육 환경 그룹",
+      "그룹 1",
+      "사육 환경 1",
+      "그룹 없음",
+      "해당하는 기기가 없습니다",
+      "기기 관리",
+      "그룹 추가"
+    ],
+    "file": "990-11607.png",
+    "task": "P18",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "990:11607",
+      "name": "기기 관리",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 0.0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "990:11608",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 0.0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I990:11608;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16,
+        "y": 21.0,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I990:11608;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22.0,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I990:11608;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21.0,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I990:11608;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26.0,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I990:11608;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26.0,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I990:11608;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28.0,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "990:11609",
+      "name": "Frame 168",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 122.0,
+        "width": 369,
+        "height": 236
+      }
+    },
+    {
+      "id": "990:11610",
+      "name": "Frame 156",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 122.0,
+        "width": 369,
+        "height": 109
+      }
+    },
+    {
+      "id": "990:11611",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 122.0,
+        "width": 369,
+        "height": 19
+      }
+    },
+    {
+      "id": "990:11612",
+      "name": "사육 환경 그룹",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 122.0,
+        "width": 89,
+        "height": 19
+      },
+      "characters": "사육 환경 그룹",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "990:11732",
+      "name": "Group",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 153.0,
+        "width": 369,
+        "height": 78
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "990:11733",
+      "name": "Left",
+      "type": "FRAME",
+      "rect": {
+        "x": 28,
+        "y": 165.0,
+        "width": 183,
+        "height": 54
+      }
+    },
+    {
+      "id": "990:11734",
+      "name": "AutoName",
+      "type": "TEXT",
+      "rect": {
+        "x": 28,
+        "y": 165.0,
+        "width": 183,
+        "height": 19
+      },
+      "characters": "그룹 1",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "990:11735",
+      "name": "사육 환경 1",
+      "type": "TEXT",
+      "rect": {
+        "x": 28,
+        "y": 200.0,
+        "width": 183,
+        "height": 19
+      },
+      "characters": "사육 환경 1",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "990:11736",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 215,
+        "y": 174.0,
+        "width": 150,
+        "height": 36
+      }
+    },
+    {
+      "id": "990:11737",
+      "name": "Icons",
+      "type": "FRAME",
+      "rect": {
+        "x": 215,
+        "y": 174.0,
+        "width": 124,
+        "height": 36
+      }
+    },
+    {
+      "id": "990:11738",
+      "name": "Home",
+      "type": "FRAME",
+      "rect": {
+        "x": 215,
+        "y": 174.0,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 22
+    },
+    {
+      "id": "990:11739",
+      "name": "home",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 223,
+        "y": 182.0,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "I990:11739;849:2083",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 223,
+        "y": 182.0,
+        "width": 20,
+        "height": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "990:11740",
+      "name": "Camera",
+      "type": "FRAME",
+      "rect": {
+        "x": 259,
+        "y": 174.0,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 22
+    },
+    {
+      "id": "990:11741",
+      "name": "camera_video",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 267,
+        "y": 182.0,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "I990:11741;849:2086",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 267,
+        "y": 182.0,
+        "width": 20,
+        "height": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "990:11742",
+      "name": "Camera",
+      "type": "FRAME",
+      "rect": {
+        "x": 303,
+        "y": 174.0,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 22
+    },
+    {
+      "id": "990:11743",
+      "name": "fertile",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 311,
+        "y": 182.0,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "I990:11743;849:2092",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 311,
+        "y": 182.0,
+        "width": 20,
+        "height": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "990:11744",
+      "name": "arrow_forward_ios",
+      "type": "GROUP",
+      "rect": {
+        "x": 347,
+        "y": 183.0,
+        "width": 18,
+        "height": 18
+      }
+    },
+    {
+      "id": "990:11745",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 347,
+        "y": 183.0,
+        "width": 18,
+        "height": 18
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "990:11618",
+      "name": "Frame 157",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 263.0,
+        "width": 369,
+        "height": 95
+      }
+    },
+    {
+      "id": "990:11619",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 263.0,
+        "width": 369,
+        "height": 19
+      }
+    },
+    {
+      "id": "990:11620",
+      "name": "그룹 없음",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 263.0,
+        "width": 58,
+        "height": 19
+      },
+      "characters": "그룹 없음",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "990:12042",
+      "name": "Lists",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 294.0,
+        "width": 369,
+        "height": 64
+      },
+      "cornerRadius": 12
+    },
+    {
+      "id": "990:12043",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 294.0,
+        "width": 369,
+        "height": 64
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "990:12044",
+      "name": "해당하는 기기가 없습니다",
+      "type": "TEXT",
+      "rect": {
+        "x": 28,
+        "y": 312.0,
+        "width": 157,
+        "height": 28
+      },
+      "characters": "해당하는 기기가 없습니다",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#949090"
+        }
+      ]
+    },
+    {
+      "id": "990:11704",
+      "name": "기기 관리",
+      "type": "TEXT",
+      "rect": {
+        "x": 168,
+        "y": 74.5,
+        "width": 58,
+        "height": 19
+      },
+      "characters": "기기 관리",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "990:11705",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 338,
+        "y": 62.0,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "990:11706",
+      "name": "close",
+      "type": "GROUP",
+      "rect": {
+        "x": 348,
+        "y": 72.0,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "990:11707",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 348,
+        "y": 72.0,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "990:11895",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.498,
+        "y": 696.0,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "990:11896",
+      "name": "그룹 추가",
+      "type": "TEXT",
+      "rect": {
+        "x": 163.998,
+        "y": 710.0,
+        "width": 66,
+        "height": 28
+      },
+      "characters": "그룹 추가",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    }
+  ]
+}

@@ -7,6 +7,7 @@ Map<String, dynamic> _cmd(String action, String issuedAt,
       'id': 'c-$action-$issuedAt',
       'action': action,
       'status': status,
+      'result': 'ok',
       'issued_at': issuedAt,
     };
 

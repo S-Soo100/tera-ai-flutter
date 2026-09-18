@@ -1,0 +1,148 @@
+[
+  {
+    "type": "Text",
+    "text": "작동 시간",
+    "rect": [
+      36.0,
+      643.0,
+      321.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'fan_timer_10'>]",
+    "rect": [
+      24.0,
+      670.0,
+      62.25,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "10분",
+    "rect": [
+      39.90968704223633,
+      682.5,
+      30.430625915527344,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'fan_timer_30'>]",
+    "rect": [
+      90.25,
+      670.0,
+      62.25,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "30분",
+    "rect": [
+      104.55031204223633,
+      682.5,
+      33.649375915527344,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'fan_timer_60'>]",
+    "rect": [
+      156.5,
+      670.0,
+      62.25,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "1시간",
+    "rect": [
+      170.60499954223633,
+      682.5,
+      34.040000915527344,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'fan_timer_120'>]",
+    "rect": [
+      222.75,
+      670.0,
+      62.25,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "2시간",
+    "rect": [
+      235.70656204223633,
+      682.5,
+      36.336875915527344,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "InkWell",
+    "key": "[<'fan_steady_on'>]",
+    "rect": [
+      289.0,
+      670.0,
+      80.0,
+      44.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "계속",
+    "rect": [
+      315.4918746948242,
+      682.5,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      24.0,
+      738.0,
+      345.0,
+      56.0
+    ],
+    "enabled": true
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      24.0,
+      738.0,
+      345.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "시작",
+    "rect": [
+      181.30335903167725,
+      752.0,
+      30.393281936645508,
+      28.0
+    ],
+    "style": "null"
+  }
+]

@@ -1,9 +1,32 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:vivanaut/features/my_cage/data/wifi_credentials_store.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  test('account-scoped secure credentials ignore legacy global cache',
+      () async {
+    FlutterSecureStorage.setMockInitialValues(
+        {'wifi_saved_credentials': '{"home":"legacy"}'});
+    final store = WifiCredentialsStore();
+    expect(await store.readAll(accountId: 'a'), isEmpty);
+    await store.save('home', 'a-password', accountId: 'a');
+    await store.save('home', 'b-password', accountId: 'b');
+    expect(await store.readAll(accountId: 'a'), {'home': 'a-password'});
+    expect(await store.readAll(accountId: 'b'), {'home': 'b-password'});
+  });
+  test('concurrent successful devices preserve different SSIDs', () async {
+    FlutterSecureStorage.setMockInitialValues({});
+    final store = WifiCredentialsStore();
+    await Future.wait([
+      store.save('one', '1', accountId: 'a'),
+      store.save('two', '2', accountId: 'a')
+    ]);
+    expect(await store.readAll(accountId: 'a'), {'one': '1', 'two': '2'});
+  });
+
   group('WifiCredentialsStore.decode', () {
     test('정상 JSON 맵을 SSID→비밀번호로 파싱한다', () {
       final raw = jsonEncode({'MyHomeWifi': 'pw1234', '집공유기 5G': 'abcd'});

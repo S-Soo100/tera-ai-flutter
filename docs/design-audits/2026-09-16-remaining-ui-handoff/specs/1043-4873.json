@@ -1,0 +1,655 @@
+{
+  "frame": {
+    "id": "1043:4873",
+    "name": "개체 추가_모프",
+    "section": "connection",
+    "bounds": {
+      "x": 7703.9375,
+      "y": 2412,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "ㅂ",
+      "중복되지 않는 이름으로 설정해 주세요",
+      "9:41",
+      "모프 선택",
+      "비",
+      "블랙 홀",
+      "블레이징 블리자드",
+      "디아블로 블랑코",
+      "라벤더",
+      "수퍼 노바"
+    ],
+    "file": "1043-4873.png",
+    "task": "P01",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "1043:4873",
+      "name": "개체 추가_모프",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "1043:4874",
+      "name": "wrap",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 119,
+        "width": 369,
+        "height": 65
+      }
+    },
+    {
+      "id": "1043:4875",
+      "name": "Field",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 119,
+        "width": 369,
+        "height": 65
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1043:4876",
+      "name": "cursor",
+      "type": "TEXT",
+      "rect": {
+        "x": 29.0,
+        "y": 142,
+        "width": 14,
+        "height": 19
+      },
+      "characters": "ㅂ",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "1043:4877",
+      "name": "cancel",
+      "type": "GROUP",
+      "rect": {
+        "x": 340.0,
+        "y": 139.5,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1043:4878",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 340.0,
+        "y": 139.5,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "1043:4880",
+      "name": "Alert",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 192,
+        "width": 186,
+        "height": 14
+      }
+    },
+    {
+      "id": "1043:4881",
+      "name": "중복되지 않는 이름으로 설정해 주세요",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 192,
+        "width": 174,
+        "height": 14
+      },
+      "characters": "중복되지 않는 이름으로 설정해 주세요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 12,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.24,
+        "lineHeightPx": 14.3203125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ]
+    },
+    {
+      "id": "1043:4882",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0.0977,
+        "y": 0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I1043:4882;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16.0977,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1043:4882;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.3477,
+        "y": 22,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I1043:4882;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5977,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I1043:4882;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.8545,
+        "y": 26,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I1043:4882;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.8545,
+        "y": 26,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I1043:4882;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.8545,
+        "y": 28,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "1043:4883",
+      "name": "모프 선택",
+      "type": "TEXT",
+      "rect": {
+        "x": 167.5977,
+        "y": 74.5,
+        "width": 58,
+        "height": 19
+      },
+      "characters": "모프 선택",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "1043:4884",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "1043:4885",
+      "name": "arrow_back_ios_new",
+      "type": "GROUP",
+      "rect": {
+        "x": 22.0,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "1043:4886",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 22.0,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:4963",
+      "name": "SelectList",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 184,
+        "width": 369,
+        "height": 272
+      }
+    },
+    {
+      "id": "1043:4980",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 188,
+        "width": 369,
+        "height": 44
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1043:4981",
+      "name": "비",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 195.5,
+        "width": 16,
+        "height": 28
+      },
+      "characters": "비",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#c00306"
+        }
+      ]
+    },
+    {
+      "id": "1043:4982",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 232,
+        "width": 369,
+        "height": 44
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1043:4983",
+      "name": "블랙 홀",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 239.5,
+        "width": 50,
+        "height": 28
+      },
+      "characters": "블랙 홀",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:4984",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 276,
+        "width": 369,
+        "height": 44
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1043:4985",
+      "name": "블레이징 블리자드",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 283.5,
+        "width": 126,
+        "height": 28
+      },
+      "characters": "블레이징 블리자드",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:4968",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 320,
+        "width": 369,
+        "height": 44
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1043:4969",
+      "name": "디아블로 블랑코",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 327.5,
+        "width": 111,
+        "height": 28
+      },
+      "characters": "디아블로 블랑코",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:4972",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 364,
+        "width": 369,
+        "height": 44
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1043:4973",
+      "name": "라벤더",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 371.5,
+        "width": 46,
+        "height": 28
+      },
+      "characters": "라벤더",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "1043:4990",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 12.0,
+        "y": 408,
+        "width": 369,
+        "height": 44
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "1043:4991",
+      "name": "수퍼 노바",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 415.5,
+        "width": 66,
+        "height": 28
+      },
+      "characters": "수퍼 노바",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    }
+  ]
+}

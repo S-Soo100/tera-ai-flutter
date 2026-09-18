@@ -1,0 +1,337 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vivanaut/core/theme/app_theme.dart';
+import 'package:vivanaut/features/my_pets/data/pet_repository.dart';
+import 'package:vivanaut/features/my_pets/domain/pet.dart';
+import 'package:vivanaut/features/my_pets/presentation/my_pets_providers.dart';
+import 'package:vivanaut/features/my_pets/presentation/widgets/pet_form_screen.dart';
+
+class _MemoryPets extends PetRepository {
+  _MemoryPets([this.pets = const []]);
+  final List<Pet> pets;
+  @override
+  Future<void> clearPets() async {}
+  @override
+  List<Pet> getAllPets() => pets;
+}
+
+class _Strings extends AssetLoader {
+  const _Strings();
+  @override
+  Future<Map<String, Object>> load(String path, Locale locale) async => {
+        'pet_form_title': '개체 정보 입력',
+        'pet_form_name': '이름*',
+        'pet_form_species': '종*',
+        'pet_form_crested': '크레스티드 게코',
+        'pet_form_morph': '모프',
+        'pet_form_none': '선택 안함',
+        'pet_form_sex': '성별',
+        'pet_form_sex_male': '수컷',
+        'pet_form_sex_female': '암컷',
+        'pet_form_sex_unknown': '미구분',
+        'pet_form_birth': '생년월일',
+        'pet_form_adoption': '입양일',
+        'pet_form_weight': '체중 (g)',
+        'pet_form_group': '그룹',
+        'pet_form_group_settings': '그룹 설정',
+        'pet_form_no_group': '그룹 없음',
+        'pet_form_memo': '메모',
+        'pet_form_save': '저장',
+        'pet_form_back': '뒤로',
+        'pet_form_photo_add': '사진 추가',
+        'pet_form_photo_replace': '사진 교체',
+        'pet_form_photo_remove': '사진 삭제',
+        'pet_form_discard_title': '입력을 취소할까요?',
+        'pet_form_discard_body': '저장하지 않은 변경사항이 사라집니다.',
+        'pet_form_keep': '계속 입력',
+        'pet_form_discard': '나가기',
+        'pet_form_save_failed': '저장하지 못했습니다.',
+        'pet_form_required': '필수항목을 입력해 주세요',
+        'pet_form_duplicate': '중복되지 않는 이름으로 설정해 주세요',
+        'pet_form_name_length': '이름은 10자 이내로 입력해 주세요',
+      };
+}
+
+Future<void> _pump(WidgetTester tester,
+    {Pet? original,
+    bool failSave = false,
+    List<Pet> peers = const [],
+    Future<void> Function(Pet, String?)? save}) async {
+  tester.view.physicalSize = const Size(393, 852);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  await tester.pumpWidget(ProviderScope(
+      overrides: [
+        petListProvider
+            .overrideWith((ref) => PetListNotifier(_MemoryPets(peers), null)),
+      ],
+      child: EasyLocalization(
+        supportedLocales: const [Locale('ko')],
+        path: 'test',
+        assetLoader: const _Strings(),
+        startLocale: const Locale('ko'),
+        child: Builder(
+            builder: (context) => MaterialApp(
+                  theme: AppTheme.light,
+                  locale: context.locale,
+                  supportedLocales: context.supportedLocales,
+                  localizationsDelegates: context.localizationDelegates,
+                  home: Builder(
+                      builder: (context) => Scaffold(
+                          body: TextButton(
+                              onPressed: () => Navigator.of(context)
+                                  .push(MaterialPageRoute<void>(
+                                      builder: (_) => PetFormScreen(
+                                          original: original,
+                                          onSave: (pet, group) async {
+                                            await save?.call(pet, group);
+                                            if (failSave) {
+                                              throw Exception('offline');
+                                            }
+                                          }))),
+                              child: const Text('open')))),
+                )),
+      )));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('open'));
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    await EasyLocalization.ensureInitialized();
+  });
+
+  testWidgets('dirty back keeps input on cancel and leaves only after discard',
+      (tester) async {
+    await _pump(tester);
+    await tester.enterText(find.byKey(const ValueKey('pet-form-name')), '도도');
+    await tester.tap(find.byTooltip('뒤로'));
+    await tester.pumpAndSettle();
+    expect(find.text('입력을 취소할까요?'), findsOneWidget);
+    await tester.tap(find.text('계속 입력'));
+    await tester.pumpAndSettle();
+    expect(find.text('도도'), findsOneWidget);
+    await tester.tap(find.byTooltip('뒤로'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('나가기'));
+    await tester.pumpAndSettle();
+    expect(find.text('open'), findsOneWidget);
+    expect(find.byType(PetFormScreen), findsNothing);
+  });
+
+  testWidgets('name counter supports graphemes and shows overflow inline',
+      (tester) async {
+    await _pump(tester);
+    await tester.enterText(
+        find.byKey(const ValueKey('pet-form-name')), '👩‍👩‍👧‍👦' * 10);
+    await tester.pump();
+    expect(find.text('10/10'), findsOneWidget);
+    expect(find.text('이름은 10자 이내로 입력해 주세요'), findsNothing);
+    await tester.enterText(
+        find.byKey(const ValueKey('pet-form-name')), '한' * 11);
+    await tester.pump();
+    expect(find.text('11/10'), findsOneWidget);
+    expect(find.text('이름은 10자 이내로 입력해 주세요'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'species picker offers only crested and keeps selection after dismiss',
+      (tester) async {
+    await _pump(tester);
+    final field = find.byKey(const ValueKey('pet-form-species'));
+    await tester.ensureVisible(field);
+    await tester.tap(field);
+    await tester.pumpAndSettle();
+    expect(find.text('크레스티드 게코'), findsOneWidget);
+    expect(find.text('레오파드 게코'), findsNothing);
+    await tester.tap(find.text('크레스티드 게코'));
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: field, matching: find.text('크레스티드 게코')),
+        findsOneWidget);
+    await tester.tap(field);
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(5, 110));
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: field, matching: find.text('크레스티드 게코')),
+        findsOneWidget);
+  });
+
+  testWidgets(
+      'save is disabled until required input is valid and recovers after errors',
+      (tester) async {
+    await _pump(tester);
+    Future<bool> saveEnabled() async {
+      await tester.scrollUntilVisible(find.text('저장'), 400,
+          scrollable: find.byType(Scrollable).first);
+      return tester.widget<FilledButton>(find.byType(FilledButton)).onPressed !=
+          null;
+    }
+
+    Future<void> name(String text) async {
+      final field = find.byKey(const ValueKey('pet-form-name'));
+      await tester.scrollUntilVisible(field, -400,
+          scrollable: find.byType(Scrollable).first);
+      await tester.enterText(field, text);
+      await tester.pumpAndSettle();
+    }
+
+    expect(await saveEnabled(), isFalse);
+    await name('크랑이');
+    expect(await saveEnabled(), isFalse);
+    final species = find.byKey(const ValueKey('pet-form-species'));
+    await tester.scrollUntilVisible(species, -400,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(species);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('크레스티드 게코'));
+    await tester.pumpAndSettle();
+    expect(await saveEnabled(), isTrue);
+    await name('한' * 11);
+    expect(await saveEnabled(), isFalse);
+    await name('크랑이');
+    expect(await saveEnabled(), isTrue);
+    await name('   ');
+    expect(await saveEnabled(), isFalse);
+  });
+
+  testWidgets(
+      'date cancel preserves value and selection none clears only the date',
+      (tester) async {
+    final pet = Pet(
+        id: 'date',
+        name: '도도',
+        speciesId: 'crested-gecko',
+        speciesName: '크레스티드 게코',
+        birthDate: DateTime(2026, 1, 12));
+    await _pump(tester, original: pet);
+    await tester.scrollUntilVisible(find.text('2026. 1. 12'), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('2026. 1. 12'));
+    await tester.pumpAndSettle();
+    final dialog = find.byType(Dialog);
+    expect(find.descendant(of: dialog, matching: find.text('선택 안함')),
+        findsOneWidget);
+    await tester.tap(find.descendant(of: dialog, matching: find.text('취소')));
+    await tester.pumpAndSettle();
+    expect(find.text('2026. 1. 12'), findsOneWidget);
+    await tester.tap(find.text('2026. 1. 12'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+        find.descendant(of: find.byType(Dialog), matching: find.text('선택 안함')));
+    await tester.pumpAndSettle();
+    expect(find.text('2026. 1. 12'), findsNothing);
+    expect(pet.birthDate, DateTime(2026, 1, 12));
+  });
+
+  testWidgets('weight unit stays display-only and decimal precision is saved',
+      (tester) async {
+    Pet? saved;
+    await _pump(tester,
+        original: Pet(
+            id: 'weight',
+            name: '도도',
+            speciesId: 'crested-gecko',
+            speciesName: '크레스티드 게코',
+            weight: 30), save: (pet, _) async {
+      saved = pet;
+    });
+    final field = find.byKey(const ValueKey('pet-form-weight'));
+    await tester.scrollUntilVisible(field, 300,
+        scrollable: find.byType(Scrollable).first);
+    expect(tester.widget<TextFormField>(field).controller!.text, '30g');
+    await tester.enterText(field, '30.125');
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextFormField>(field).controller!.text, '30.125g');
+    await tester.scrollUntilVisible(find.text('저장'), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('저장'));
+    await tester.pumpAndSettle();
+    expect(saved?.weight, 30.125);
+  });
+
+  testWidgets(
+      'save floats across scroll and keyboard while the last memo remains accessible',
+      (tester) async {
+    await _pump(tester,
+        original: Pet(
+            id: 'p',
+            name: '도도',
+            speciesId: 'crested-gecko',
+            speciesName: '크레스티드 게코'));
+    final save = find.byKey(const ValueKey('pet-form-save'));
+    final start = tester.getRect(save);
+    expect(start.top, 696);
+    expect(start.width, 369);
+    await tester.fling(
+        find.byType(ListView).first, const Offset(0, -2500), 2500);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(save), start);
+    final memo = find.byKey(const ValueKey('pet-form-memo'));
+    expect(tester.getRect(memo).bottom, lessThan(start.top));
+    await tester.tap(memo);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+    await tester.fling(
+        find.byType(ListView).first, const Offset(0, -1500), 2000);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(save).bottom, 536);
+    expect(tester.getRect(memo).bottom, lessThan(tester.getRect(save).top));
+    await tester.enterText(memo, '마지막 메모 입력');
+    expect(find.text('마지막 메모 입력'), findsOneWidget);
+  });
+
+  testWidgets('duplicate error has its own gap without shrinking the field',
+      (tester) async {
+    await _pump(tester,
+        original: Pet(
+            id: 'p',
+            name: '도도',
+            speciesId: 'crested-gecko',
+            speciesName: '크레스티드 게코'),
+        peers: [
+          Pet(
+              id: 'other',
+              name: '도도',
+              speciesId: 'crested-gecko',
+              speciesName: '크레스티드 게코')
+        ]);
+    final field = tester.getRect(find.byKey(const ValueKey('pet-form-name')));
+    final message = find.text('중복되지 않는 이름으로 설정해 주세요');
+    final error = tester.getRect(message);
+    expect(field.height, 65);
+    expect(error.left, 24);
+    expect(error.top, field.bottom + 8);
+    expect(tester.widget<Text>(message).style!.letterSpacing, -.24);
+  });
+
+  testWidgets('failed save remains on form with changed input', (tester) async {
+    await _pump(tester,
+        original: Pet(
+            id: 'one',
+            name: '원본',
+            speciesId: 'crested-gecko',
+            speciesName: '크레스티드 게코'),
+        failSave: true);
+    await tester.enterText(find.byKey(const ValueKey('pet-form-name')), '수정');
+    await tester.scrollUntilVisible(find.text('저장'), 400,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('저장'));
+    await tester.pumpAndSettle();
+    expect(find.text('저장하지 못했습니다.'), findsOneWidget);
+    expect(find.byType(PetFormScreen), findsOneWidget);
+    await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('pet-form-name')), -400,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('수정'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+}

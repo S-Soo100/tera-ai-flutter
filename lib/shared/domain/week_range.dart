@@ -100,7 +100,7 @@ List<DayMinMax> _weekRanges(
     // 따로 필터하면 부분행(max만 센티넬 0/NULL)이 섞인 날 min>max 역전이
     // 생겨 주간 헤더·바가 뒤집힌다(리뷰 2026-09-03).
     for (final x in [v.min, v.max]) {
-      if (x == null || x <= 0) continue; // 0 = 센서 오프라인 센티넬.
+      if (x == null || !x.isFinite || x <= 0) continue; // 0 = 센서 오프라인 센티넬.
       mins[i] = mins[i] == null || x < mins[i]! ? x : mins[i];
       maxs[i] = maxs[i] == null || x > maxs[i]! ? x : maxs[i];
     }

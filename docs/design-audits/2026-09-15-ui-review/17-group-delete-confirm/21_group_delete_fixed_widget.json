@@ -1,0 +1,443 @@
+[
+  {
+    "type": "Material",
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      852.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      182.99187469482422,
+      74.5,
+      27.016250610351562,
+      19.0
+    ],
+    "text": "그룹",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      62.0,
+      44.0,
+      44.0
+    ],
+    "color": "0"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      24.0,
+      122.0,
+      345.0,
+      19.0
+    ],
+    "text": "그룹 이름",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      332.7175006866455,
+      176.0,
+      31.282499313354492,
+      19.0
+    ],
+    "text": "6/10",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      24.0,
+      262.0,
+      345.0,
+      19.0
+    ],
+    "text": "이 그룹의 목록",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      293.0,
+      369.0,
+      192.0
+    ],
+    "color": "fff4f4f4"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      304.75,
+      51.025001525878906,
+      19.0
+    ],
+    "text": "사육장 1",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      327.75,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "align": null,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      243.58155822753906,
+      315.25,
+      91.41844177246094,
+      19.0
+    ],
+    "text": "terra-iot-real",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      368.75,
+      57.509376525878906,
+      19.0
+    ],
+    "text": "크랑이 캠",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      391.75,
+      19.742734909057617,
+      17.0
+    ],
+    "text": "ON",
+    "align": null,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      252.1921844482422,
+      379.25,
+      82.80781555175781,
+      19.0
+    ],
+    "text": "p4cam-real",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      432.75,
+      40.524375915527344,
+      19.0
+    ],
+    "text": "크랑이",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      76.0,
+      455.75,
+      100.83280944824219,
+      17.0
+    ],
+    "text": "아잔틱 릴리 화이트",
+    "align": null,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff949090"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      493.0,
+      369.0,
+      52.0
+    ],
+    "color": "0"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      56.0,
+      505.0,
+      65.02562713623047,
+      28.0
+    ],
+    "text": "추가 · 변경",
+    "align": null,
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.75,
+      "spacing": -0.32,
+      "color": "ffc00306"
+    }
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "color": "ff1e1e1e"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      181.30335903167725,
+      710.0,
+      30.393281936645508,
+      28.0
+    ],
+    "text": "완료",
+    "align": "center",
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "fffafafa"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      142.5969123840332,
+      752.0,
+      107.8061752319336,
+      56.0
+    ],
+    "color": "0"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      154.5969123840332,
+      766.0,
+      83.8061752319336,
+      28.0
+    ],
+    "text": "이 그룹 삭제",
+    "align": null,
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "ffc00306"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      24.0,
+      368.0,
+      345.0,
+      144.0
+    ],
+    "color": "ffffffff"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      96.97441101074219,
+      392.0,
+      199.05117797851562,
+      28.0
+    ],
+    "text": "이 그룹을 삭제하시겠습니까?",
+    "align": "center",
+    "style": {
+      "size": 18.0,
+      "weight": 500,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      48.0,
+      444.0,
+      142.5,
+      44.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      48.0,
+      444.0,
+      142.5,
+      44.0
+    ],
+    "color": "ff1e1e1e"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      105.74187469482422,
+      452.0,
+      27.016250610351562,
+      28.0
+    ],
+    "text": "취소",
+    "align": "center",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.75,
+      "spacing": -0.32,
+      "color": "fffafafa"
+    }
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      202.5,
+      444.0,
+      142.5,
+      44.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      202.5,
+      444.0,
+      142.5,
+      44.0
+    ],
+    "color": "ffc00306"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      260.2418746948242,
+      452.0,
+      27.016250610351562,
+      28.0
+    ],
+    "text": "삭제",
+    "align": "center",
+    "style": {
+      "size": 16.0,
+      "weight": 600,
+      "height": 1.75,
+      "spacing": -0.32,
+      "color": "fffafafa"
+    }
+  }
+]

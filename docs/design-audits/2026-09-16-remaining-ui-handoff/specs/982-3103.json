@@ -1,0 +1,1012 @@
+{
+  "frame": {
+    "id": "982:3103",
+    "name": "네트워크 설정",
+    "section": "connection",
+    "bounds": {
+      "x": 6562,
+      "y": 412,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "네트워크 재검색",
+      "직접 입력",
+      "네트워크 선택",
+      "기기에 연결할 네트워크를 선택하세요",
+      "iptime_office",
+      "SK_WIFIGIGA88",
+      "SK_WIFIGIGA66",
+      "SK_WIFIGIGA11",
+      "기기 추가"
+    ],
+    "file": "982-3103.png",
+    "task": "P04",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "982:3103",
+      "name": "네트워크 설정",
+      "type": "FRAME",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "982:3104",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I982:3104;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I982:3104;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I982:3104;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I982:3104;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I982:3104;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I982:3104;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "982:3173",
+      "name": "Buttons",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 696,
+        "width": 369,
+        "height": 112
+      }
+    },
+    {
+      "id": "982:3105",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 696,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "982:3106",
+      "name": "restart_alt",
+      "type": "GROUP",
+      "rect": {
+        "x": 127,
+        "y": 712,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3107",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 127,
+        "y": 712,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3109",
+      "name": "네트워크 재검색",
+      "type": "TEXT",
+      "rect": {
+        "x": 155,
+        "y": 710,
+        "width": 111,
+        "height": 28
+      },
+      "characters": "네트워크 재검색",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    },
+    {
+      "id": "982:3168",
+      "name": "TextButton",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 752,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "982:3172",
+      "name": "직접 입력",
+      "type": "TEXT",
+      "rect": {
+        "x": 163.5,
+        "y": 766,
+        "width": 66,
+        "height": 28
+      },
+      "characters": "직접 입력",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3116",
+      "name": "Frame 156",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 122,
+        "width": 369,
+        "height": 322
+      }
+    },
+    {
+      "id": "982:3117",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 122,
+        "width": 369,
+        "height": 46
+      }
+    },
+    {
+      "id": "982:3569",
+      "name": "Top",
+      "type": "FRAME",
+      "rect": {
+        "x": 24,
+        "y": 122,
+        "width": 345,
+        "height": 21
+      }
+    },
+    {
+      "id": "982:3118",
+      "name": "네트워크 선택",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 122,
+        "width": 96,
+        "height": 21
+      },
+      "characters": "네트워크 선택",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 21.48046875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3565",
+      "name": "progress_activity",
+      "type": "GROUP",
+      "rect": {
+        "x": 128,
+        "y": 122.5,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "982:3566",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 128,
+        "y": 122.5,
+        "width": 20,
+        "height": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3119",
+      "name": "기기에 연결할 네트워크를 선택하세요",
+      "type": "TEXT",
+      "rect": {
+        "x": 24,
+        "y": 151,
+        "width": 345,
+        "height": 17
+      },
+      "characters": "기기에 연결할 네트워크를 선택하세요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 14,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.28,
+        "lineHeightPx": 16.70703125
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "982:3120",
+      "name": "Lists",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 184,
+        "width": 369,
+        "height": 260
+      },
+      "cornerRadius": 12
+    },
+    {
+      "id": "982:3121",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 184,
+        "width": 369,
+        "height": 65
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "982:3125",
+      "name": "iptime_office",
+      "type": "TEXT",
+      "rect": {
+        "x": 28,
+        "y": 206.5,
+        "width": 92,
+        "height": 19
+      },
+      "characters": "iptime_office",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3314",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 313,
+        "y": 204,
+        "width": 52,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3275",
+      "name": "lock",
+      "type": "GROUP",
+      "rect": {
+        "x": 313,
+        "y": 204,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3270",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 313,
+        "y": 204,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3287",
+      "name": "wifi",
+      "type": "GROUP",
+      "rect": {
+        "x": 341,
+        "y": 204,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3282",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 341,
+        "y": 204,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3133",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 249,
+        "width": 369,
+        "height": 65
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "982:3137",
+      "name": "SK_WIFIGIGA88",
+      "type": "TEXT",
+      "rect": {
+        "x": 28,
+        "y": 271.5,
+        "width": 115,
+        "height": 19
+      },
+      "characters": "SK_WIFIGIGA88",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3315",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 313,
+        "y": 269,
+        "width": 52,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3308",
+      "name": "lock",
+      "type": "GROUP",
+      "rect": {
+        "x": 313,
+        "y": 269,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3309",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 313,
+        "y": 269,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3288",
+      "name": "wifi",
+      "type": "GROUP",
+      "rect": {
+        "x": 341,
+        "y": 269,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3289",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 341,
+        "y": 269,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3317",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 314,
+        "width": 369,
+        "height": 65
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "982:3318",
+      "name": "SK_WIFIGIGA66",
+      "type": "TEXT",
+      "rect": {
+        "x": 28,
+        "y": 336.5,
+        "width": 115,
+        "height": 19
+      },
+      "characters": "SK_WIFIGIGA66",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3319",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 341,
+        "y": 334,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3323",
+      "name": "wifi",
+      "type": "GROUP",
+      "rect": {
+        "x": 341,
+        "y": 334,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3324",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 341,
+        "y": 334,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3161",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 379,
+        "width": 369,
+        "height": 65
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "982:3162",
+      "name": "SK_WIFIGIGA11",
+      "type": "TEXT",
+      "rect": {
+        "x": 28,
+        "y": 402,
+        "width": 109,
+        "height": 19
+      },
+      "characters": "SK_WIFIGIGA11",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3316",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 313,
+        "y": 399.5,
+        "width": 52,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3311",
+      "name": "lock",
+      "type": "GROUP",
+      "rect": {
+        "x": 313,
+        "y": 399.5,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3312",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 313,
+        "y": 399.5,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3304",
+      "name": "wifi",
+      "type": "GROUP",
+      "rect": {
+        "x": 341,
+        "y": 399.5,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3305",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 341,
+        "y": 399.5,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "982:3410",
+      "name": "TopNav",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 62,
+        "width": 369,
+        "height": 44
+      }
+    },
+    {
+      "id": "982:3231",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 12,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "982:3232",
+      "name": "arrow_back_ios_new",
+      "type": "GROUP",
+      "rect": {
+        "x": 22,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3233",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 22,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "982:3111",
+      "name": "기기 추가",
+      "type": "TEXT",
+      "rect": {
+        "x": 168,
+        "y": 74.5,
+        "width": 58,
+        "height": 19
+      },
+      "characters": "기기 추가",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "982:3112",
+      "name": "Button/Enabled",
+      "type": "FRAME",
+      "rect": {
+        "x": 338,
+        "y": 62,
+        "width": 44,
+        "height": 44
+      },
+      "cornerRadius": 22
+    },
+    {
+      "id": "982:3113",
+      "name": "close",
+      "type": "GROUP",
+      "rect": {
+        "x": 348,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "id": "982:3114",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 348,
+        "y": 72,
+        "width": 24,
+        "height": 24
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    }
+  ]
+}

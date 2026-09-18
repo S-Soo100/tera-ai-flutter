@@ -1,0 +1,664 @@
+{
+  "frame": {
+    "id": "994:13307",
+    "name": "iPhone 14 & 15 Pro - 211",
+    "section": "connection",
+    "bounds": {
+      "x": 9083.9375,
+      "y": 2412,
+      "width": 393,
+      "height": 852
+    },
+    "text": [
+      "9:41",
+      "도마뱀과 기기를 연결합니다",
+      "도마뱀의 활동 리포트를 받아볼수 있어요",
+      "사육장",
+      "viva-iot-ㅁㅁㅁㅁ",
+      "카메라",
+      "FB2_P4_CAM-ㅁㅁㅁㅁ",
+      "이 사육 환경에서 키우기",
+      "나중에 하기"
+    ],
+    "file": "994-13307.png",
+    "task": "P02",
+    "evidence": "Figma PNG/수치 + 현행 코드 대조; 앱 대표 캡처는 해당 작업 참조"
+  },
+  "nodes": [
+    {
+      "id": "994:13307",
+      "name": "iPhone 14 & 15 Pro - 211",
+      "type": "FRAME",
+      "rect": {
+        "x": 0.0,
+        "y": 0,
+        "width": 393,
+        "height": 852
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "994:13308",
+      "name": "Status bar",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 0.0,
+        "y": 0,
+        "width": 393,
+        "height": 62
+      }
+    },
+    {
+      "id": "I994:13308;5465:16808",
+      "name": "Time",
+      "type": "FRAME",
+      "rect": {
+        "x": 16.0,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I994:13308;5465:16809",
+      "name": "Time",
+      "type": "TEXT",
+      "rect": {
+        "x": 49.25,
+        "y": 22,
+        "width": 37,
+        "height": 22
+      },
+      "characters": "9:41",
+      "style": {
+        "fontFamily": "SF Pro",
+        "fontStyle": "Semibold",
+        "fontWeight": 590,
+        "fontSize": 17,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": 0,
+        "lineHeightPx": 22
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ]
+    },
+    {
+      "id": "I994:13308;5465:16811",
+      "name": "Levels",
+      "type": "FRAME",
+      "rect": {
+        "x": 273.5,
+        "y": 21,
+        "width": 103.5,
+        "height": 22
+      }
+    },
+    {
+      "id": "I994:13308;5465:16814",
+      "name": "Battery",
+      "type": "GROUP",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 27.32803726196289,
+        "height": 13
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "I994:13308;5465:16815",
+      "name": "Border",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 336.7568,
+        "y": 26,
+        "width": 25,
+        "height": 13
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 4.300000190734863
+    },
+    {
+      "id": "I994:13308;5465:16817",
+      "name": "Capacity",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 338.7568,
+        "y": 28,
+        "width": 21,
+        "height": 9
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#000000"
+        }
+      ],
+      "cornerRadius": 2.5
+    },
+    {
+      "id": "1043:3536",
+      "name": "Frame 191",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 266,
+        "width": 345,
+        "height": 200
+      }
+    },
+    {
+      "id": "994:13310",
+      "name": "Title",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 266,
+        "width": 345,
+        "height": 48
+      }
+    },
+    {
+      "id": "994:13311",
+      "name": "도마뱀과 기기를 연결합니다",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 266,
+        "width": 345,
+        "height": 21
+      },
+      "characters": "도마뱀과 기기를 연결합니다",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 21.48046875
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "994:13312",
+      "name": "도마뱀의 활동 리포트를 받아볼수 있어요",
+      "type": "TEXT",
+      "rect": {
+        "x": 24.0,
+        "y": 295,
+        "width": 345,
+        "height": 19
+      },
+      "characters": "도마뱀의 활동 리포트를 받아볼수 있어요",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "Medium",
+        "fontWeight": 500,
+        "fontSize": 16,
+        "textAlignHorizontal": "CENTER",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#626262"
+        }
+      ]
+    },
+    {
+      "id": "994:13313",
+      "name": "Lists",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 338,
+        "width": 345,
+        "height": 128
+      },
+      "cornerRadius": 12
+    },
+    {
+      "id": "994:13314",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 338,
+        "width": 345,
+        "height": 64
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "994:13315",
+      "name": "Left",
+      "type": "FRAME",
+      "rect": {
+        "x": 40.0,
+        "y": 351.5,
+        "width": 89,
+        "height": 36
+      }
+    },
+    {
+      "id": "994:13316",
+      "name": "Home",
+      "type": "FRAME",
+      "rect": {
+        "x": 40.0,
+        "y": 351.5,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 22
+    },
+    {
+      "id": "994:13317",
+      "name": "home",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 48.0,
+        "y": 359.5,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "I994:13317;849:2083",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 48.0,
+        "y": 359.5,
+        "width": 20,
+        "height": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "994:13318",
+      "name": "사육장",
+      "type": "TEXT",
+      "rect": {
+        "x": 88.0,
+        "y": 360,
+        "width": 41,
+        "height": 19
+      },
+      "characters": "사육장",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "994:13319",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 238.0,
+        "y": 360,
+        "width": 115,
+        "height": 19
+      }
+    },
+    {
+      "id": "994:13320",
+      "name": "viva-iot-ㅁㅁㅁㅁ",
+      "type": "TEXT",
+      "rect": {
+        "x": 238.0,
+        "y": 360,
+        "width": 115,
+        "height": 19
+      },
+      "characters": "viva-iot-ㅁㅁㅁㅁ",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "994:13321",
+      "name": "List",
+      "type": "FRAME",
+      "rect": {
+        "x": 24.0,
+        "y": 402,
+        "width": 345,
+        "height": 64
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#f4f4f4"
+        }
+      ],
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#e3e3e3"
+        }
+      ]
+    },
+    {
+      "id": "994:13322",
+      "name": "Left",
+      "type": "FRAME",
+      "rect": {
+        "x": 40.0,
+        "y": 416,
+        "width": 89,
+        "height": 36
+      }
+    },
+    {
+      "id": "994:13323",
+      "name": "Camera",
+      "type": "FRAME",
+      "rect": {
+        "x": 40.0,
+        "y": 416,
+        "width": 36,
+        "height": 36
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 22
+    },
+    {
+      "id": "994:13324",
+      "name": "camera_video",
+      "type": "INSTANCE",
+      "rect": {
+        "x": 48.0,
+        "y": 424,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "id": "I994:13324;849:2086",
+      "name": "Bounding box",
+      "type": "RECTANGLE",
+      "rect": {
+        "x": 48.0,
+        "y": 424,
+        "width": 20,
+        "height": 20
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#d9d9d9"
+        }
+      ]
+    },
+    {
+      "id": "994:13325",
+      "name": "카메라",
+      "type": "TEXT",
+      "rect": {
+        "x": 88.0,
+        "y": 424.5,
+        "width": 41,
+        "height": 19
+      },
+      "characters": "카메라",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    },
+    {
+      "id": "994:13326",
+      "name": "Right",
+      "type": "FRAME",
+      "rect": {
+        "x": 196.0,
+        "y": 424.5,
+        "width": 157,
+        "height": 19
+      }
+    },
+    {
+      "id": "994:13327",
+      "name": "FB2_P4_CAM-ㅁㅁㅁㅁ",
+      "type": "TEXT",
+      "rect": {
+        "x": 196.0,
+        "y": 424.5,
+        "width": 157,
+        "height": 19
+      },
+      "characters": "FB2_P4_CAM-ㅁㅁㅁㅁ",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 16,
+        "textAlignHorizontal": "RIGHT",
+        "letterSpacing": -0.32,
+        "lineHeightPx": 19.09375
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ]
+    },
+    {
+      "id": "1043:3537",
+      "name": "Buttons",
+      "type": "FRAME",
+      "rect": {
+        "x": 11.793,
+        "y": 696,
+        "width": 369,
+        "height": 112
+      }
+    },
+    {
+      "id": "1043:3538",
+      "name": "CTA",
+      "type": "FRAME",
+      "rect": {
+        "x": 11.793,
+        "y": 696,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#1e1e1e"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1043:3539",
+      "name": "이 사육 환경에서 키우기",
+      "type": "TEXT",
+      "rect": {
+        "x": 113.793,
+        "y": 710,
+        "width": 165,
+        "height": 28
+      },
+      "characters": "이 사육 환경에서 키우기",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#fafafa"
+        }
+      ]
+    },
+    {
+      "id": "1043:3540",
+      "name": "TextButton",
+      "type": "FRAME",
+      "rect": {
+        "x": 11.793,
+        "y": 752,
+        "width": 369,
+        "height": 56
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "visible": false,
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ],
+      "cornerRadius": 12
+    },
+    {
+      "id": "1043:3541",
+      "name": "나중에 하기",
+      "type": "TEXT",
+      "rect": {
+        "x": 155.793,
+        "y": 766,
+        "width": 81,
+        "height": 28
+      },
+      "characters": "나중에 하기",
+      "style": {
+        "fontFamily": "Pretendard",
+        "fontStyle": "SemiBold",
+        "fontWeight": 600,
+        "fontSize": 18,
+        "textAlignHorizontal": "LEFT",
+        "letterSpacing": -0.36,
+        "lineHeightPx": 28
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": "#3c3c3c"
+        }
+      ]
+    }
+  ]
+}

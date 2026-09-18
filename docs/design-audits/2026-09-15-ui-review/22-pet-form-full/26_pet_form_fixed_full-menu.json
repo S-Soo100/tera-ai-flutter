@@ -1,0 +1,406 @@
+[
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      238.5,
+      254.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "이름*",
+    "rect": [
+      24.0,
+      326.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "TextFormField",
+    "text": null,
+    "rect": [
+      12.0,
+      357.0,
+      369.0,
+      65.0
+    ]
+  },
+  {
+    "type": "EditableText",
+    "text": "도도도도",
+    "rect": [
+      29.0,
+      380.0,
+      299.5300006866455,
+      19.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "4/10",
+    "rect": [
+      332.5300006866455,
+      380.0,
+      31.469999313354492,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "종*",
+    "rect": [
+      24.0,
+      446.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "크레스티드 게코",
+    "rect": [
+      29.0,
+      500.0,
+      311.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      340.0,
+      497.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "모프",
+    "rect": [
+      24.0,
+      566.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "아잔틱 릴리 화이트",
+    "rect": [
+      29.0,
+      620.0,
+      311.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      340.0,
+      617.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "성별",
+    "rect": [
+      24.0,
+      686.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      50.49187469482422,
+      731.5,
+      15.0,
+      11.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "수컷",
+    "rect": [
+      73.99187469482422,
+      727.5,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.9804, green: 0.9804, blue: 0.9804, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "암컷",
+    "rect": [
+      182.49187469482422,
+      727.5,
+      27.016250610351562,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "미구분",
+    "rect": [
+      299.2378120422363,
+      727.5,
+      40.524375915527344,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "생년월일",
+    "rect": [
+      24.0,
+      781.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "2026. 1. 12",
+    "rect": [
+      29.0,
+      835.0,
+      311.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      340.0,
+      832.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "입양일",
+    "rect": [
+      24.0,
+      901.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "2026. 1. 8",
+    "rect": [
+      29.0,
+      955.0,
+      311.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      340.0,
+      952.5,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "체중 (g)",
+    "rect": [
+      24.0,
+      1021.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "TextFormField",
+    "text": null,
+    "rect": [
+      12.0,
+      1052.0,
+      369.0,
+      65.0
+    ]
+  },
+  {
+    "type": "EditableText",
+    "text": "30g",
+    "rect": [
+      29.0,
+      1075.0,
+      335.0,
+      19.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "그룹",
+    "rect": [
+      24.0,
+      1141.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "크랑이네",
+    "rect": [
+      29.0,
+      1195.0,
+      255.4906234741211,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "그룹 설정",
+    "rect": [
+      284.4906234741211,
+      1195.0,
+      57.509376525878906,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7529, green: 0.0118, blue: 0.0235, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      346.0,
+      1195.5,
+      18.0,
+      18.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "메모",
+    "rect": [
+      24.0,
+      1261.0,
+      345.0,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 500, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "TextFormField",
+    "text": null,
+    "rect": [
+      12.0,
+      1292.0,
+      369.0,
+      130.0
+    ]
+  },
+  {
+    "type": "EditableText",
+    "text": "밥을 잘 못먹음",
+    "rect": [
+      29.0,
+      1309.5,
+      335.0,
+      95.0
+    ]
+  },
+  {
+    "type": "FilledButton",
+    "text": null,
+    "rect": [
+      12.0,
+      1434.0,
+      369.0,
+      56.0
+    ],
+    "enabled": true
+  },
+  {
+    "type": "Text",
+    "text": "저장",
+    "rect": [
+      181.30335903167725,
+      1448.0,
+      30.393281936645508,
+      28.0
+    ],
+    "style": "null"
+  },
+  {
+    "type": "FigmaIcon",
+    "text": null,
+    "rect": [
+      22.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "개체 정보 입력",
+    "rect": [
+      152.60812377929688,
+      74.5,
+      87.78375244140625,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "사진 교체",
+    "rect": [
+      188.5,
+      305.5,
+      64.82109069824219,
+      28.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 500, letterSpacing: -0.4, height: 1.6x)"
+  },
+  {
+    "type": "Text",
+    "text": "사진 삭제",
+    "rect": [
+      188.5,
+      350.0,
+      64.82109069824219,
+      28.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 500, letterSpacing: -0.4, height: 1.6x)"
+  }
+]

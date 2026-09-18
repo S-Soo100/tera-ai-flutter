@@ -67,11 +67,11 @@ class AppTheme {
   // ── 차트 지표 색상 (Figma §3.1) ──
   // 온·습도는 앱 전체에서 **같은 색으로 읽혀야** 해서 토큰으로 고정한다.
 
-  /// 온도 지표. Figma `vivanaut app` Asset `#f85478` (2026-09-02 교체).
-  static const chartTemperature = Color(0xFFF85478);
+  /// 온도선. 2026-09-15 승인 Figma VIVA Main_light.
+  static const chartTemperature = VivaColors.mainLight;
 
-  /// 습도 지표. Figma `vivanaut app` Asset `#00b2f3` (2026-09-02 교체).
-  static const chartHumidity = Color(0xFF00B2F3);
+  /// 습도선. 2026-09-15 승인 Figma VIVA Sub_light.
+  static const chartHumidity = VivaColors.subLight;
 
   // 차트 토큰(미도래 밴드·지금 선·격자·마커·밤 띠·본문 보조)은 밝기별 값이
   // 필요해 [GlassPalette]로 옮겼다(`context.glass.chartGridLine` 등). 여기
@@ -184,6 +184,7 @@ class AppTheme {
         backgroundColor: palette.wallpaper,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         titleTextStyle: textTheme.titleLarge,
         iconTheme: const IconThemeData(color: textTitle),
       ),

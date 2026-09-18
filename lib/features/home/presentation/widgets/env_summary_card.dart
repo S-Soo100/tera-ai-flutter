@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/domain/num_format.dart';
+import '../../../../shared/widgets/figma_icon.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../env_detail_providers.dart';
 import '../home_control_providers.dart';
+import '../../domain/env_realtime_values.dart';
 
 /// 온습도 요약 카드 — Figma A.4 ③ (369×69, bg surfaceTint, radius 12).
 ///
@@ -23,11 +25,19 @@ class EnvSummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final deviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
+    final device = ref.watch(currentDeviceIdProvider);
+    final deviceId = device.isLoading ? null : device.valueOrNull;
     if (deviceId == null) return const SizedBox.shrink();
 
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
     final ex = ref.watch(homeTodayExtremesProvider).valueOrNull;
+    final stale =
+        ref.watch(telemetryStaleProvider(deviceId)).valueOrNull ?? false;
+    final values = realtimeEnvironment(t,
+        deviceId: deviceId,
+        now: DateTime.now(),
+        freshness: telemetryStaleThreshold,
+        stale: stale);
     final glass = context.glass;
 
     return Material(
@@ -43,10 +53,10 @@ class EnvSummaryCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: _EnvColumn(
-                  value: t?.tA == null
+                  value: values.temperature == null
                       ? '--'
                       : 'home_live_temp_value'
-                          .tr(args: [formatCompact(t!.tA!)]),
+                          .tr(args: [formatCompact(values.temperature!)]),
                   minMax: 'home_env_minmax_temp'.tr(args: [
                     _fmt(ex?.tempMax),
                     _fmt(ex?.tempMin),
@@ -55,16 +65,18 @@ class EnvSummaryCard extends ConsumerWidget {
               ),
               Expanded(
                 child: _EnvColumn(
-                  value: t?.hA == null
+                  value: values.humidity == null
                       ? '--'
                       : 'home_live_humid_value'
-                          .tr(args: [formatCompact(t!.hA!)]),
+                          .tr(args: [formatCompact(values.humidity!)]),
                   minMax: 'home_env_minmax_humid'.tr(args: [
                     _fmt(ex?.humidMax),
                     _fmt(ex?.humidMin),
                   ]),
                 ),
               ),
+              FigmaIcon.tinted(FigmaIcons.arrowNext,
+                  color: glass.textSecondary, size: 18),
             ],
           ),
         ),
@@ -93,6 +105,7 @@ class _EnvColumn extends StatelessWidget {
           style: TextStyle(
             fontFamily: 'Pretendard',
             fontSize: 20,
+            height: 1.193359375,
             fontWeight: FontWeight.w600,
             letterSpacing: 20 * -0.02,
             color: glass.textPrimary,
@@ -106,6 +119,7 @@ class _EnvColumn extends StatelessWidget {
           style: TextStyle(
             fontFamily: 'Pretendard',
             fontSize: 14,
+            height: 1.193359375,
             fontWeight: FontWeight.w500,
             letterSpacing: 14 * -0.02,
             color: glass.textTertiary,

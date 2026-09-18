@@ -15,26 +15,30 @@ class CameraRepository {
 
   // ── Supabase 직결 ──────────────────────────────────────────────────────────
 
+  /// 소프트 해제된 카메라(`unlinked_at` 있음, 2026-09-16 가정 계약)는 뺀다.
+  /// 컬럼 미배포면 null이라 전부 남는다 — 서버 필터 대신 앱에서 거른다(직결
+  /// 조회에 없는 컬럼을 필터로 걸면 배포 전 400이 난다).
   Future<List<TerraCamera>> listAll() async {
     final rows = await _supabase
         .from('cameras')
         .select()
         .order('created_at', ascending: false);
     return (rows as List)
-        .map((r) => TerraCamera.fromJson(r as Map<String, dynamic>))
+        .cast<Map<String, dynamic>>()
+        .where((r) => r['unlinked_at'] == null)
+        .map(TerraCamera.fromJson)
         .toList();
   }
 
   Future<TerraCamera?> getById(String id) async {
     final rows = await _supabase.from('cameras').select().eq('id', id).limit(1);
-    final list = rows as List;
-    if (list.isEmpty) return null;
-    return TerraCamera.fromJson(list.first as Map<String, dynamic>);
+    final list = (rows as List).cast<Map<String, dynamic>>();
+    if (list.isEmpty || list.first['unlinked_at'] != null) return null;
+    return TerraCamera.fromJson(list.first);
   }
 
-  Future<void> delete(String id) async {
-    await _supabase.from('cameras').delete().eq('id', id);
-  }
+  // 카메라 hard delete는 앱에서 호출하지 않는다(2026-09-15 회신 §2.1 —
+  // motion_clips cascade 삭제). 등록 해제는 RedesignGroupRepository.unlink.
 
   /// 카메라를 사육장에 배정. enclosureId=null 이면 배정 해제.
   /// RLS(owner_id=auth.uid)로 본인 카메라만 UPDATE 가능.

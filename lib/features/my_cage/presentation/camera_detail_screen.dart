@@ -63,49 +63,8 @@ class CameraDetailScreen extends ConsumerStatefulWidget {
 class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
   ActivityRange _activityRange = ActivityRange.today;
 
-  // ── 카메라 삭제 ────────────────────────────────────────────────────────────
-
-  Future<void> _deleteCamera(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final router = GoRouter.of(context);
-    final errorColor = Theme.of(context).colorScheme.error;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('camera_delete'.tr()),
-        content: Text('camera_delete_confirm'.tr()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('camera_delete_confirm_no'.tr()),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            child: Text('camera_delete_confirm_yes'.tr()),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    try {
-      await ref.read(cameraRepositoryProvider).delete(widget.cameraId);
-      if (!mounted) return;
-      ref.invalidate(camerasProvider);
-      router.pop();
-    } catch (e) {
-      if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('${'error_generic'.tr()}: ${e.toString()}'),
-          backgroundColor: errorColor,
-        ),
-      );
-    }
-  }
+  // 카메라 삭제(하드 DELETE)는 2026-09-16에 제거 — 회신 §2.1대로 motion_clips가
+  // cascade 삭제된다. 등록 해제는 기기 관리(RedesignGroupRepository.unlink).
 
   // ── 빌드 ──────────────────────────────────────────────────────────────────
 
@@ -130,11 +89,6 @@ class _CameraDetailScreenState extends ConsumerState<CameraDetailScreen> {
           error: (_, __) => Text(widget.cameraId),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => _deleteCamera(context),
-            tooltip: 'camera_delete'.tr(),
-          ),
           WifiReconfigureMenu(
             onSelected: () => context.push('/crecam/cameras/pair'),
           ),

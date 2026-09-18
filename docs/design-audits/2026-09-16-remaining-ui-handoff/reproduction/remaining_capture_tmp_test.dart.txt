@@ -1,0 +1,418 @@
+// Explicit diagnostic capture, not a simulator or real-device test.
+// flutter test --dart-define=CAPTURE_DESIGN=true test/design/final_design_capture_test.dart
+import 'dart:async';
+import 'package:vivanaut/features/my_cage/domain/highlight_publication.dart';
+import 'package:vivanaut/features/my_cage/data/highlight_banner_store.dart';
+import 'package:vivanaut/features/my_cage/domain/highlight_group.dart';
+import 'package:vivanaut/features/my_cage/domain/nightly_highlight.dart';
+import 'package:vivanaut/features/my_cage/presentation/highlights_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/bookmarks_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_memo_providers.dart';
+import 'package:vivanaut/features/my_cage/domain/clip_memo.dart';
+import 'dart:math' as math;
+import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
+import 'package:vivanaut/features/home/presentation/widgets/schedule_editor_sheet.dart';
+import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/lcd_setting_tile.dart';
+import 'package:vivanaut/features/my_cage/data/lcd_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
+import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivanaut/shared/domain/control_log.dart';
+import 'package:vivanaut/shared/domain/actuator_marker.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:video_player_platform_interface/video_player_platform_interface.dart';
+import 'package:vivanaut/core/theme/app_theme.dart';
+import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
+import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
+import '../helpers/inert_live_controller.dart';
+import 'package:vivanaut/core/theme/glass_palette.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
+import 'package:vivanaut/features/home/presentation/env_detail_screen.dart';
+import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivanaut/features/home/presentation/widgets/fan_duration_sheet.dart';
+import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
+import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
+import 'package:vivanaut/features/my_cage/domain/telemetry_bucket.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
+import 'package:vivanaut/shared/domain/env_day.dart';
+import 'package:vivanaut/shared/domain/week_range.dart';
+
+class _Translations extends AssetLoader {
+  const _Translations();
+  @override
+  Future<Map<String, dynamic>> load(String path, Locale locale) async =>
+      jsonDecode(File('$path/ko.json').readAsStringSync())
+          as Map<String, dynamic>;
+}
+
+class _Favorite extends Fake implements FavoriteClipRepository {
+  @override
+  bool isFavorite(String id) => false;
+  @override
+  File? getLocalFile(String id) => null;
+  @override
+  FavoriteClip? getMeta(String id) => null;
+}
+
+class _Video extends VideoPlayerPlatform {
+  int created = 0;
+  @override
+  Future<void> init() async {}
+  @override
+  Future<int?> createWithOptions(VideoCreationOptions options) async =>
+      ++created;
+  @override
+  Future<void> dispose(int playerId) async {}
+  @override
+  Stream<VideoEvent> videoEventsFor(int playerId) {
+    late StreamController<VideoEvent> c;
+    c = StreamController(
+        onListen: () => c.add(VideoEvent(
+            eventType: VideoEventType.initialized,
+            duration: const Duration(minutes: 1),
+            size: const Size(1920, 1080))),
+        onCancel: () async {});
+    return c.stream;
+  }
+
+  @override
+  Future<void> setLooping(int playerId, bool looping) async {}
+  @override
+  Future<void> setVolume(int playerId, double volume) async {}
+  @override
+  Future<void> setPlaybackSpeed(int playerId, double speed) async {}
+  @override
+  Future<void> play(int playerId) async {}
+  @override
+  Future<void> pause(int playerId) async {}
+  @override
+  Future<void> seekTo(int playerId, Duration position) async {}
+  @override
+  Future<Duration> getPosition(int playerId) async =>
+      const Duration(seconds: 12);
+  @override
+  Widget buildViewWithOptions(VideoViewOptions options) => Builder(
+      builder: (context) => ColoredBox(color: context.glass.surfaceTint));
+}
+
+void main() {
+  if (!const bool.fromEnvironment('CAPTURE_DESIGN')) {
+    test('opt-in diagnostic captures', () {}, skip: 'CAPTURE_DESIGN=true');
+    return;
+  }
+  final boundary = GlobalKey();
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    await EasyLocalization.ensureInitialized();
+    final fonts = FontLoader('Pretendard');
+    for (final weight in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+      fonts.addFont(rootBundle.load('assets/fonts/Pretendard-$weight.otf'));
+    }
+    await fonts.load();
+    final icons = FontLoader('MaterialIcons')
+      ..addFont(Future.value(ByteData.sublistView(File('/Users/baek/develop/flutter/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf').readAsBytesSync())));
+    await icons.load();
+  });
+  Future<void> capture(WidgetTester tester, String name) async {
+    await tester.runAsync(() async {
+      final render =
+          boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      final image = await render.toImage(pixelRatio: 1);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      const output = String.fromEnvironment('CAPTURE_OUTPUT',
+          defaultValue: 'docs/design-audits/2026-09-14-implementation');
+      await Directory(output).create(recursive: true);
+      await File('$output/$name.png').writeAsBytes(bytes!.buffer.asUint8List());
+      image.dispose();
+    });
+  }
+
+  Future<void> pump(
+      WidgetTester tester, Widget screen, List<Override> overrides) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    final scopeKey = UniqueKey();
+    await tester.pumpWidget(EasyLocalization(
+        assetLoader: const _Translations(),
+        supportedLocales: const [Locale('ko')],
+        path: 'assets/l10n',
+        startLocale: const Locale('ko'),
+        child: Builder(
+            builder: (context) => ProviderScope(
+                key: scopeKey,
+                overrides: overrides,
+                child: MaterialApp(
+                    theme: AppTheme.light,
+                    locale: context.locale,
+                    supportedLocales: context.supportedLocales,
+                    localizationsDelegates: context.localizationDelegates,
+                    builder: (context, child) => RepaintBoundary(
+                        key: boundary,
+                        child: MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                                padding:
+                                    const EdgeInsets.only(top: 62, bottom: 34)),
+                            child: child!)),
+                    home: screen)))));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  testWidgets('환경 일간 주간과 팬 선택 진단 캡처', (tester) async {
+    final day = EnvDay.of(DateTime.now().subtract(const Duration(days: 1)));
+    final week = WeekRange.containing(day.start);
+    await pump(tester, const EnvDetailScreen(), [
+      currentDeviceIdProvider.overrideWith((ref) async => null),
+      envDetailDayProvider.overrideWith((ref) => day),
+      envDayBucketsProvider.overrideWith((ref) async => [
+            for (var i = 0; i < 48; i++)
+              TelemetryBucket(
+                  bucket: day.start.add(Duration(minutes: i * 30)),
+                  sampleCount: 600,
+                  tValidCount: 600,
+                  hValidCount: 600,
+                  tAvg: 27.5 + 2.2 * math.sin((i - 12) * math.pi / 48),
+                  tMin: 26,
+                  tMax: 32,
+                  hAvg: 62 - 4 * math.sin((i - 12) * math.pi / 48),
+                  hMin: 55,
+                  hMax: 70)
+          ]),
+      envDayControlLogProvider.overrideWith((ref) async => [
+ ControlLogEntry(kind: MarkerKind.fan, state: ControlLogState.on, at:day.start.add(const Duration(hours:8)),temperature:29.4,humidity:60.2),
+ ControlLogEntry(kind: MarkerKind.fan, state: ControlLogState.off, at:day.start.add(const Duration(hours:9)),temperature:27.8,humidity:62,deltaTemperature:-1.6,deltaHumidity:1.8),
+ ControlLogEntry(kind: MarkerKind.mist, state: ControlLogState.ran, at:day.start.add(const Duration(hours:13)),temperature:28.8,humidity:61),
+ ]),
+      envWeekRowsProvider.overrideWith((ref) async => (
+            temp: [
+              for (var i = 0; i < 7; i++)
+                DayMinMax(
+                    day: week.days[i],
+                    min: i == 3 || i == 4 ? 23 : 25.0,
+                    max: i == 1 ? 33 : 30.0)
+            ],
+            humid: [
+              for (var i = 0; i < 7; i++)
+                DayMinMax(
+                    day: week.days[i],
+                    min: i == 5 ? 50 : 55.0,
+                    max: i == 2 ? 72 : 65.0)
+            ]
+          )),
+    ]);
+    await tester.pumpAndSettle();
+    await capture(tester, 'widget-env-daily');
+ await tester.drag(find.byType(SingleChildScrollView).first,const Offset(0,-420)); await tester.pumpAndSettle();await capture(tester,'widget-env-log');
+    await tester.tap(find.byKey(EnvDetailScreen.segmentWeeklyKey));
+    await tester.pumpAndSettle();
+    await capture(tester, 'widget-env-weekly');
+    await pump(
+        tester,
+        const Scaffold(
+            body: Align(
+                alignment: Alignment.bottomCenter, child: FanDurationSheet())),
+        []);
+    await tester.pumpAndSettle();
+    await capture(tester, 'widget-fan-duration');
+    await tester.pumpWidget(const SizedBox());
+  });
+  testWidgets('세로 가로 왕복은 동일 플레이어 유지, 작은 화면 overflow 없음', (tester) async {
+    final video = _Video();
+    VideoPlayerPlatform.instance = video;
+    await pump(
+        tester,
+        const ClipPlaylistPlayerScreen(clipId: 'b', playlist: ['a', 'b', 'c']),
+        [
+          currentUserProvider.overrideWithValue(null),
+          favoriteClipRepositoryProvider.overrideWithValue(_Favorite()),
+          motionThumbnailFileProvider.overrideWith((ref, key) async => null),
+          motionClipProvider.overrideWith((ref, id) async => MotionClip(
+              id: id,
+              cameraId: 'cam',
+              startedAt: DateTime(2026, 8, 28, 10, 21),
+              durationSec: 60)),
+          motionClipUrlProvider
+              .overrideWith((ref, id) async => 'https://example.test/$id'),
+        ]);
+    await tester.pump(const Duration(seconds: 1));
+    await capture(tester, 'widget-player-portrait');
+    expect(video.created, 1);
+    await tester.tap(find.byKey(const Key('player_speed')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('player_orientation')));
+    await tester.binding.setSurfaceSize(const Size(852, 393));
+    await tester.pump(const Duration(milliseconds: 300));
+    await capture(tester, 'widget-player-landscape');
+    expect(video.created, 1);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const Key('player_orientation')));
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(video.created, 1);
+    expect(tester.takeException(), isNull);
+    final navigation =
+        find.byKey(ClipPlaylistPlayerScreen.navigationActionsKey);
+    expect(tester.getSize(navigation).width, lessThanOrEqualTo(320));
+    expect(tester.getSize(find.byKey(ClipPlaylistPlayerScreen.actionPillKey)),
+        const Size(216, 48));
+    expect(tester.getSize(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey)),
+        const Size.square(48));
+    expect(tester.getSize(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey)),
+        const Size.square(48));
+    await capture(tester, 'widget-player-portrait-narrow');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 1));
+  });
+  testWidgets('라이브는 세로 진입하고 회전해도 연결 controller를 재생성하지 않는다', (tester) async {
+    var creates = 0;
+    await pump(tester, const CameraLiveFullscreenScreen(cameraId: 'cam'), [
+      camerasProvider.overrideWith((ref) => Stream.value([
+            TerraCamera(
+                id: 'cam',
+                cameraId: 'p4',
+                name: '라이브',
+                isOnline: false,
+                createdAt: DateTime(2026))
+          ])),
+      webrtcLiveControllerProvider.overrideWith((ref, id) {
+        creates++;
+        return InertLiveController(ref, id);
+      }),
+    ]);
+    await tester.pumpAndSettle();
+    expect(creates, 1);
+    await tester.tap(find.byKey(const Key('live_fullscreen_orientation')));
+    await tester.binding.setSurfaceSize(const Size(852, 393));
+    await tester.pumpAndSettle();
+    expect(creates, 1);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const Key('live_fullscreen_orientation')));
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await tester.pumpAndSettle();
+    expect(creates, 1);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+ testWidgets('remaining highlights bookmarks and date picker', (tester) async {
+  await pump(tester,const HighlightsScreen(),[
+   currentUserProvider.overrideWithValue(null),
+   highlightGroupsProvider.overrideWith((ref)async=>_groups()),
+   highlightBannerStoreProvider.overrideWith((ref)=>_FakeBannerStore()),
+   motionThumbnailFileProvider.overrideWith((ref,id)async=>null),
+   isFavoriteProvider.overrideWith((ref,id)=>false),
+  ]);
+  await tester.pumpAndSettle();await capture(tester,'widget-highlights');
+  await tester.drag(find.byType(ListView).first,const Offset(0,-450));await tester.pumpAndSettle();await capture(tester,'widget-highlights-scrolled');
+  await pump(tester,const BookmarksScreen(),[
+   currentUserProvider.overrideWithValue(null),
+   allFavoriteClipsProvider.overrideWith((ref)async=>[for(var i=0;i<3;i++)FavoriteClip(clipId:'b$i',cameraId:'cam',startedAt:DateTime(2026,8,12,0,50),durationSec:60,filePath:'/private/tmp/fixture.mp4',sizeBytes:1,favoritedAt:DateTime(2026,9,3-i),ownerId:'qa')]),
+   motionThumbnailFileProvider.overrideWith((ref,id)async=>null),
+   clipMemoAccountProvider.overrideWithValue('qa'),
+   clipMemoProvider.overrideWith((ref,key)async=>key.clipId=='b1'?null:ClipMemo(clipId:key.clipId,text:'벽을 타고 올라가는 모습이 귀여워요. 다음에도 확인하기',colorIndex:key.clipId=='b0'?1:0,updatedAt:DateTime(2026,9,1))),
+  ]);
+  await tester.pumpAndSettle();await capture(tester,'widget-bookmarks');
+  await tester.tap(find.byTooltip('기간 설정'));await tester.pumpAndSettle();await capture(tester,'widget-calendar');
+  await tester.pumpWidget(const SizedBox());
+ });
+ testWidgets('remaining control editor and LCD current UI', (tester) async {
+  Widget launcher(void Function(BuildContext, WidgetRef) open) => Scaffold(body:Consumer(builder:(context,ref,_)=>TextButton(onPressed:()=>open(context,ref),child:const Text('OPEN'))));
+  await pump(tester,launcher((c,r)=>showScheduleEditor(c)),[]);
+  await tester.tap(find.text('OPEN'));await tester.pumpAndSettle();await capture(tester,'widget-schedule-editor');
+  await pump(tester,const RoutineSettingsScreen(),[currentDeviceIdProvider.overrideWith((ref)async=>null)]);
+  await tester.pumpAndSettle();await capture(tester,'widget-routine-empty');
+  await pump(tester,launcher((c,r)=>showLcdSheet(c,r,'d')), [lcdRepositoryProvider.overrideWithValue(_NoLcd())]);
+  await tester.tap(find.text('OPEN'));await tester.pumpAndSettle();await capture(tester,'widget-lcd');
+  await pump(tester,launcher((c,r)async {await r.read(deviceListProvider.future);if(c.mounted)openLedSheet(c,r,'d',currentBrightness:50);}),[
+    deviceListProvider.overrideWith((ref)async=>[const Device(id:'d',ownerId:null,enclosureId:null,name:'사육장 1',isOnline:true,lastSeenAt:null,capabilities:{'led_dimmable':true})]),
+  ]);
+  await tester.pumpAndSettle();await tester.tap(find.text('OPEN'));await tester.pumpAndSettle();await capture(tester,'widget-led');
+  await tester.pumpWidget(const SizedBox());
+ });
+
+}
+
+class _NoLcd implements LcdRepository {
+ @override Future<void> setText(String id,String text) async=>throw StateError('read-only');
+ @override Future<void> clear(String id) async=>throw StateError('read-only');
+}
+
+NightlyHighlight _h(
+  String id,
+  DateTime at, {
+  String tier = 'candidate',
+  String dayKey = '',
+  int rank = 0,
+  double? playFrom,
+  bool published = true,
+}) =>
+    NightlyHighlight(
+      clipId: id,
+      cameraId: 'cam',
+      publication: !published || parseDayKey(dayKey) == null
+          ? null
+          : HighlightPublication(
+              batchId: dayKey,
+              status: 'ready',
+              captureStart: parseDayKey(dayKey)!.add(const Duration(hours: 22)),
+              captureEnd: parseDayKey(dayKey)!.add(const Duration(hours: 30)),
+              publishedAt: parseDayKey(dayKey)!.add(const Duration(hours: 31))),
+      startedAt: at,
+      source: 'rule',
+      reason: '움직임 3.0초',
+      tier: tier,
+      dayKey: dayKey,
+      playFromSec: playFrom,
+      episodeRank: rank,
+      episodeClipCount: 4,
+      episodeActivitySec: 42,
+    );
+
+class _FakeBannerStore implements HighlightBannerStore {
+  _FakeBannerStore([this.value]);
+
+  String? value;
+
+  // 계정 격리(2026-09-07): 실 스토어는 ownerId별 키를 쓰지만, 위젯 테스트는
+  // 단일 계정 시나리오라 fake는 ownerId를 무시한다.
+  @override
+  String? load(String? ownerId) => value;
+
+  @override
+  Future<void> save(String? ownerId, String groupKey) async {
+    value = groupKey;
+  }
+}
+
+/// 묶음 픽스처 2개 — dayA(최신, 대표 3 + 후보 2) + dayB(대표 1, 후보 0).
+const _dayA = '2026-08-31';
+const _dayB = '2026-08-30';
+String _dayKey(DateTime date) =>
+    '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+final _f1 = _h('f1', DateTime(2026, 8, 31, 23),
+    tier: 'featured', dayKey: _dayA, rank: 1, playFrom: 8.8);
+final _f2 =
+    _h('f2', DateTime(2026, 9, 1, 2), tier: 'featured', dayKey: _dayA, rank: 2);
+final _f3 = _h('f3', DateTime(2026, 8, 31, 21),
+    tier: 'featured', dayKey: _dayA, rank: 3);
+final _c1 = _h('c1', DateTime(2026, 8, 31, 22), dayKey: _dayA);
+final _c2 = _h('c2', DateTime(2026, 9, 1, 1), dayKey: _dayA);
+final _f4 = _h('f4', DateTime(2026, 8, 30, 23),
+    tier: 'featured', dayKey: _dayB, rank: 1);
+
+List<DayHighlightGroup> _groups() => groupByDay([_c1, _f2, _f4, _f1, _c2, _f3]);
+

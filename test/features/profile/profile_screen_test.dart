@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vivanaut/features/auth/data/auth_repository.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivanaut/features/community/presentation/community_providers.dart';
 import 'package:vivanaut/features/notification/data/notification_repository.dart';
 import 'package:vivanaut/features/notification/domain/push_lifecycle_controller.dart';
 import 'package:vivanaut/features/notification/presentation/notification_providers.dart';
 import 'package:vivanaut/features/notification/presentation/push_providers.dart';
 import 'package:vivanaut/features/profile/domain/user_profile.dart';
+import 'package:vivanaut/features/profile/presentation/account_screen.dart';
 import 'package:vivanaut/features/profile/presentation/profile_providers.dart';
 import 'package:vivanaut/features/profile/presentation/profile_screen.dart';
 import '../notification/notification_repository_test.dart';
@@ -33,7 +35,7 @@ class RecordingAuth extends AuthRepository {
 
 void main() {
   testWidgets(
-      'profile red dot derives from live unread rows; logout deactivates before auth',
+      'mypage red dot derives from live unread rows; account logout modal deactivates before auth',
       (tester) async {
     tester.view.physicalSize = const Size(900, 2200);
     tester.view.devicePixelRatio = 1;
@@ -63,6 +65,9 @@ void main() {
     final router = GoRouter(routes: [
       GoRoute(path: '/', builder: (_, __) => const ProfileScreen()),
       GoRoute(
+          path: '/profile/account',
+          builder: (_, __) => const AccountScreen()),
+      GoRoute(
           path: '/login',
           builder: (_, __) => const Scaffold(body: Text('login'))),
     ]);
@@ -71,6 +76,7 @@ void main() {
       currentUserProvider.overrideWith((ref) => notificationUser('a')),
       profileNotifierProvider.overrideWith(EmptyProfile.new),
       appVersionProvider.overrideWith((ref) async => '1+1'),
+      blockedProfilesProvider.overrideWith((ref) async => const []),
       notificationRepositoryProvider.overrideWithValue(repo),
       pushLifecycleControllerProvider.overrideWithValue(controller),
       authRepositoryProvider
@@ -81,7 +87,13 @@ void main() {
     await repo.markAllRead('a');
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('profile_notifications_dot')), findsNothing);
-    await tester.tap(find.text('auth_logout'));
+    // 로그아웃은 내 계정 화면의 CTA → 모달 확인.
+    await tester.tap(find.byKey(ProfileScreen.accountRowKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(AccountScreen.logoutKey));
+    await tester.pumpAndSettle();
+    expect(find.text('account_logout_question'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('viva_modal_confirm')));
     await tester.pumpAndSettle();
     expect(devices.operations, ['deactivate', 'deleteToken', 'signout']);
     expect(find.text('login'), findsOneWidget);

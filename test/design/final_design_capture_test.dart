@@ -22,7 +22,6 @@ import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
 import 'package:vivanaut/features/home/presentation/env_detail_screen.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
-import 'package:vivanaut/features/home/presentation/widgets/fan_duration_sheet.dart';
 import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
 import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
@@ -116,8 +115,10 @@ void main() {
           boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
       final image = await render.toImage(pixelRatio: 1);
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      await File('docs/design-audits/2026-09-14-implementation/$name.png')
-          .writeAsBytes(bytes!.buffer.asUint8List());
+      const output = String.fromEnvironment('CAPTURE_OUTPUT',
+          defaultValue: 'docs/design-audits/2026-09-14-implementation');
+      await Directory(output).create(recursive: true);
+      await File('$output/$name.png').writeAsBytes(bytes!.buffer.asUint8List());
       image.dispose();
     });
   }
@@ -145,7 +146,7 @@ void main() {
                         child: MediaQuery(
                             data: MediaQuery.of(context).copyWith(
                                 padding:
-                                    const EdgeInsets.only(top: 59, bottom: 34)),
+                                    const EdgeInsets.only(top: 62, bottom: 26)),
                             child: child!)),
                     home: screen)))));
     await tester.pump();
@@ -195,14 +196,6 @@ void main() {
     await tester.tap(find.byKey(EnvDetailScreen.segmentWeeklyKey));
     await tester.pumpAndSettle();
     await capture(tester, 'widget-env-weekly');
-    await pump(
-        tester,
-        const Scaffold(
-            body: Align(
-                alignment: Alignment.bottomCenter, child: FanDurationSheet())),
-        []);
-    await tester.pumpAndSettle();
-    await capture(tester, 'widget-fan-duration');
     await tester.pumpWidget(const SizedBox());
   });
   testWidgets('세로 가로 왕복은 동일 플레이어 유지, 작은 화면 overflow 없음', (tester) async {
@@ -239,6 +232,16 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(video.created, 1);
     expect(tester.takeException(), isNull);
+    final navigation =
+        find.byKey(ClipPlaylistPlayerScreen.navigationActionsKey);
+    expect(tester.getSize(navigation).width, lessThanOrEqualTo(320));
+    expect(tester.getSize(find.byKey(ClipPlaylistPlayerScreen.actionPillKey)),
+        const Size(216, 48));
+    expect(tester.getSize(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey)),
+        const Size.square(48));
+    expect(tester.getSize(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey)),
+        const Size.square(48));
+    await capture(tester, 'widget-player-portrait-narrow');
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 1));
   });

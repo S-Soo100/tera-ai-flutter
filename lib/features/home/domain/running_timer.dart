@@ -1,3 +1,5 @@
+import '../../../shared/domain/fan_actuator.dart';
+
 /// 발행 후 이 시간 안에 ACK가 안 오면 "기기에 닿지 않은 명령"으로 본다.
 ///
 /// mist 블랙아웃(2026-09-07 핸드오프)으로 유실된 명령은 서버에 **영영
@@ -55,18 +57,22 @@ class RunningTimer {
   /// 정상 타이머를 가짜로 취소하는 것도 막는다.
   static RunningTimer? fanTimerFrom(
     List<Map<String, dynamic>> rows,
-    DateTime now,
-  ) {
+    DateTime now, {
+    FanActuator actuator = FanActuator.ventilation,
+  }) {
     for (final r in rows) {
+      if (!actuator.actions.contains(r['action'])) continue;
       final status = r['status'] as String?;
-      if (status == 'rejected' || status == 'expired') continue;
+      if (!const ['acked', 'pending', 'sent'].contains(status)) continue;
+      // ACK는 수신 확인일 뿐이다. busy/error인 명령은 팬을 켜거나 끄지 못했다.
+      if (status == 'acked' && r['result'] != 'ok') continue;
       final issuedAtRaw = DateTime.tryParse('${r['issued_at']}')?.toLocal();
       if (status != 'acked' &&
           issuedAtRaw != null &&
           now.difference(issuedAtRaw) > kCommandAckGrace) {
         continue; // 미ACK 유예 초과 — 기기에 닿지 못한 명령.
       }
-      if (r['action'] != 'fan_on') return null;
+      if (r['action'] != actuator.onAction) return null;
       final payload = r['payload'];
       final ms = payload is Map ? (payload['duration_ms'] as num?) : null;
       if (ms == null) return null;
@@ -75,7 +81,7 @@ class RunningTimer {
       final t = RunningTimer(
         id: '${r['id']}',
         deviceId: '${r['device_id']}',
-        actuatorLabelKey: 'module_actuator_fan',
+        actuatorLabelKey: actuator.labelKey,
         durationMinutes: ms.toInt() ~/ 60000,
         endsAt: issuedAt.add(Duration(milliseconds: ms.toInt())),
       );
@@ -93,4 +99,15 @@ String formatRemaining(Duration d) {
   if (h > 0) return '$h시간 $m분 $s초';
   if (m > 0) return '$m분 $s초';
   return '$s초';
+}
+
+/// 타일 부제용 짧은 카운트다운 — Figma 타일 "30m 56s 뒤 꺼짐", "1h 20m 뒤 꺼짐"
+/// (1107:7995 Button/Enabled). 시간이 있으면 초는 생략한다.
+String formatCountdownShort(Duration d) {
+  final h = d.inHours;
+  final m = d.inMinutes % 60;
+  final s = d.inSeconds % 60;
+  if (h > 0) return '${h}h ${m}m';
+  if (m > 0) return '${m}m ${s}s';
+  return '${s}s';
 }

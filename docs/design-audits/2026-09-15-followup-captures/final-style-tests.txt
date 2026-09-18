@@ -1,0 +1,5 @@
+[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found
+[🌎 Easy Localization] [WARNING] Localization key [activity_hours_axis] not found
+
+00:02 +7: /Users/baek/myProjects/tera-ai-flutter/.worktrees/redesign-20260915/test/features/my_pets/my_cre_activity_screen_test.dart: ... fixed header stays after scroll and legacy remains reachable 
+00:02 +7: All tests passed!                                                                                                                                                                            

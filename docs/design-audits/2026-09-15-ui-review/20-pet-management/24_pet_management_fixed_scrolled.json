@@ -1,0 +1,699 @@
+[
+  {
+    "type": "Material",
+    "rect": [
+      0.0,
+      0.0,
+      393.0,
+      852.0
+    ],
+    "color": "ffffffff",
+    "shape": null
+  },
+  {
+    "type": "Text",
+    "rect": [
+      148.8265609741211,
+      74.5,
+      95.34687805175781,
+      19.0
+    ],
+    "text": "개체 추가 · 관리",
+    "exceededLines": false,
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff1e1e1e"
+    }
+  },
+  {
+    "type": "Material",
+    "rect": [
+      337.0,
+      62.0,
+      44.0,
+      44.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      347.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Container",
+    "rect": [
+      12.0,
+      80.0,
+      369.0,
+      112.0
+    ],
+    "decoration": "BoxDecoration(color: Color(alpha: 1.0000, red: 0.9569, green: 0.9569, blue: 0.9569, colorSpace: ColorSpace.sRGB), borderRadius: BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "ClipRRect",
+    "rect": [
+      28.0,
+      96.0,
+      80.0,
+      80.0
+    ],
+    "radius": "BorderRadius.circular(4.0)"
+  },
+  {
+    "type": "Image",
+    "rect": [
+      28.0,
+      96.0,
+      80.0,
+      80.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      114.0,
+      57.400001525878906,
+      19.0
+    ],
+    "text": "크레 이름",
+    "exceededLines": false,
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Container",
+    "rect": [
+      189.4000015258789,
+      111.5,
+      40.0,
+      24.0
+    ],
+    "decoration": "BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), borderRadius: BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      197.5803918838501,
+      115.0,
+      23.639219284057617,
+      17.0
+    ],
+    "text": "암컷",
+    "exceededLines": false,
+    "style": {
+      "size": 14.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ffd61619"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      143.5,
+      133.34617614746094,
+      17.0
+    ],
+    "text": "아잔틱 릴리 화이트 | 21g",
+    "exceededLines": false,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "PopupMenuButton<String>",
+    "rect": [
+      333.0,
+      88.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      333.0,
+      88.0,
+      40.0,
+      40.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      96.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Container",
+    "rect": [
+      12.0,
+      200.0,
+      369.0,
+      112.0
+    ],
+    "decoration": "BoxDecoration(color: Color(alpha: 1.0000, red: 0.9569, green: 0.9569, blue: 0.9569, colorSpace: ColorSpace.sRGB), borderRadius: BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "ClipRRect",
+    "rect": [
+      28.0,
+      216.0,
+      80.0,
+      80.0
+    ],
+    "radius": "BorderRadius.circular(4.0)"
+  },
+  {
+    "type": "Image",
+    "rect": [
+      28.0,
+      216.0,
+      80.0,
+      80.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      234.0,
+      57.400001525878906,
+      19.0
+    ],
+    "text": "크레 이름",
+    "exceededLines": false,
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Container",
+    "rect": [
+      189.4000015258789,
+      231.5,
+      40.0,
+      24.0
+    ],
+    "decoration": "BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), borderRadius: BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      197.5803918838501,
+      235.0,
+      23.639219284057617,
+      17.0
+    ],
+    "text": "암컷",
+    "exceededLines": false,
+    "style": {
+      "size": 14.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ffd61619"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      263.5,
+      133.34617614746094,
+      17.0
+    ],
+    "text": "아잔틱 릴리 화이트 | 21g",
+    "exceededLines": false,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "PopupMenuButton<String>",
+    "rect": [
+      333.0,
+      208.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      333.0,
+      208.0,
+      40.0,
+      40.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      216.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Container",
+    "rect": [
+      12.0,
+      320.0,
+      369.0,
+      112.0
+    ],
+    "decoration": "BoxDecoration(color: Color(alpha: 1.0000, red: 0.9569, green: 0.9569, blue: 0.9569, colorSpace: ColorSpace.sRGB), borderRadius: BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "ClipRRect",
+    "rect": [
+      28.0,
+      336.0,
+      80.0,
+      80.0
+    ],
+    "radius": "BorderRadius.circular(4.0)"
+  },
+  {
+    "type": "Image",
+    "rect": [
+      28.0,
+      336.0,
+      80.0,
+      80.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      354.0,
+      57.400001525878906,
+      19.0
+    ],
+    "text": "크레 이름",
+    "exceededLines": false,
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Container",
+    "rect": [
+      189.4000015258789,
+      351.5,
+      40.0,
+      24.0
+    ],
+    "decoration": "BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), borderRadius: BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      197.5803918838501,
+      355.0,
+      23.639219284057617,
+      17.0
+    ],
+    "text": "암컷",
+    "exceededLines": false,
+    "style": {
+      "size": 14.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ffd61619"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      383.5,
+      133.34617614746094,
+      17.0
+    ],
+    "text": "아잔틱 릴리 화이트 | 21g",
+    "exceededLines": false,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "PopupMenuButton<String>",
+    "rect": [
+      333.0,
+      328.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      333.0,
+      328.0,
+      40.0,
+      40.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      336.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Container",
+    "rect": [
+      12.0,
+      440.0,
+      369.0,
+      112.0
+    ],
+    "decoration": "BoxDecoration(color: Color(alpha: 1.0000, red: 0.9569, green: 0.9569, blue: 0.9569, colorSpace: ColorSpace.sRGB), borderRadius: BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "ClipRRect",
+    "rect": [
+      28.0,
+      456.0,
+      80.0,
+      80.0
+    ],
+    "radius": "BorderRadius.circular(4.0)"
+  },
+  {
+    "type": "Image",
+    "rect": [
+      28.0,
+      456.0,
+      80.0,
+      80.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      474.0,
+      57.400001525878906,
+      19.0
+    ],
+    "text": "크레 이름",
+    "exceededLines": false,
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Container",
+    "rect": [
+      189.4000015258789,
+      471.5,
+      40.0,
+      24.0
+    ],
+    "decoration": "BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), borderRadius: BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      197.5803918838501,
+      475.0,
+      23.639219284057617,
+      17.0
+    ],
+    "text": "암컷",
+    "exceededLines": false,
+    "style": {
+      "size": 14.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ffd61619"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      503.5,
+      133.34617614746094,
+      17.0
+    ],
+    "text": "아잔틱 릴리 화이트 | 21g",
+    "exceededLines": false,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "PopupMenuButton<String>",
+    "rect": [
+      333.0,
+      448.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      333.0,
+      448.0,
+      40.0,
+      40.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      456.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Container",
+    "rect": [
+      12.0,
+      560.0,
+      369.0,
+      112.0
+    ],
+    "decoration": "BoxDecoration(color: Color(alpha: 1.0000, red: 0.9569, green: 0.9569, blue: 0.9569, colorSpace: ColorSpace.sRGB), borderRadius: BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "ClipRRect",
+    "rect": [
+      28.0,
+      576.0,
+      80.0,
+      80.0
+    ],
+    "radius": "BorderRadius.circular(4.0)"
+  },
+  {
+    "type": "Image",
+    "rect": [
+      28.0,
+      576.0,
+      80.0,
+      80.0
+    ]
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      594.0,
+      57.400001525878906,
+      19.0
+    ],
+    "text": "크레 이름",
+    "exceededLines": false,
+    "style": {
+      "size": 16.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.32,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "Container",
+    "rect": [
+      189.4000015258789,
+      591.5,
+      40.0,
+      24.0
+    ],
+    "decoration": "BoxDecoration(color: Color(alpha: 1.0000, red: 1.0000, green: 1.0000, blue: 1.0000, colorSpace: ColorSpace.sRGB), borderRadius: BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      197.5803918838501,
+      595.0,
+      23.639219284057617,
+      17.0
+    ],
+    "text": "암컷",
+    "exceededLines": false,
+    "style": {
+      "size": 14.0,
+      "weight": 700,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ffd61619"
+    }
+  },
+  {
+    "type": "Text",
+    "rect": [
+      124.0,
+      623.5,
+      133.34617614746094,
+      17.0
+    ],
+    "text": "아잔틱 릴리 화이트 | 21g",
+    "exceededLines": false,
+    "style": {
+      "size": 14.0,
+      "weight": 500,
+      "height": 1.193359375,
+      "spacing": -0.28,
+      "color": "ff3c3c3c"
+    }
+  },
+  {
+    "type": "PopupMenuButton<String>",
+    "rect": [
+      333.0,
+      568.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      333.0,
+      568.0,
+      40.0,
+      40.0
+    ],
+    "color": "0",
+    "shape": "StadiumBorder(BorderSide(width: 0.0, style: none))"
+  },
+  {
+    "type": "FigmaIcon",
+    "rect": [
+      341.0,
+      576.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "FilledButton",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ]
+  },
+  {
+    "type": "Material",
+    "rect": [
+      12.0,
+      696.0,
+      369.0,
+      56.0
+    ],
+    "color": "ffc00306",
+    "shape": "RoundedRectangleBorder(BorderSide(width: 0.0, style: none), BorderRadius.circular(12.0))"
+  },
+  {
+    "type": "Text",
+    "rect": [
+      164.1509780883789,
+      710.0,
+      64.69804382324219,
+      28.0
+    ],
+    "text": "개체 추가",
+    "exceededLines": false,
+    "style": {
+      "size": 18.0,
+      "weight": 600,
+      "height": 1.5555555555555556,
+      "spacing": -0.36,
+      "color": "fffafafa"
+    }
+  }
+]

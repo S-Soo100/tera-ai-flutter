@@ -4,6 +4,7 @@ class Device {
   final String? ownerId;
   final String? enclosureId;
   final String? name;
+  final String? hardwareId;
   final bool isOnline;
   final DateTime? lastSeenAt;
 
@@ -20,6 +21,7 @@ class Device {
     required this.name,
     required this.isOnline,
     required this.lastSeenAt,
+    this.hardwareId,
     this.capabilities,
   });
 
@@ -41,6 +43,7 @@ class Device {
       ownerId: j['owner_id'] as String?,
       enclosureId: j['enclosure_id'] as String?,
       name: j['name'] as String?,
+      hardwareId: j['device_id'] as String?,
       isOnline: j['is_online'] as bool? ?? false,
       lastSeenAt: j['last_seen_at'] != null
           ? DateTime.tryParse(j['last_seen_at'].toString())

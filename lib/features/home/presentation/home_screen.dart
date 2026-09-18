@@ -6,13 +6,15 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
+import '../../../shared/widgets/figma_icon.dart';
+import '../../../shared/widgets/redesign_empty_state.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
 import '../../my_cage/presentation/widgets/lcd_setting_tile.dart';
 import 'home_set_providers.dart';
 import 'widgets/cage_control_grid.dart';
 import 'widgets/device_offline_notice.dart';
 import 'widgets/env_summary_card.dart';
 import 'widgets/home_header_bar.dart';
-import 'widgets/running_timer_chip.dart';
 import 'widgets/top_fixed_area.dart';
 
 /// 홈 탭 — Figma `vivanaut app` Home (668:833) **단일 스크롤**.
@@ -27,9 +29,10 @@ import 'widgets/top_fixed_area.dart';
 /// dispose되면 재연결(수초)이 걸린다. 홈 콘텐츠는 한 화면 남짓이라 전체
 /// keep-alive 비용이 없다.
 ///
-/// [RunningTimerChip]·[DeviceOfflineNotice]는 **그리드 위**에 남긴다 — 타이머
-/// 진행·오프라인 사유 고지는 안전 기능이다(회색 버튼만 두면 고장으로 읽힌다).
-class HomeScreen extends StatelessWidget {
+/// [DeviceOfflineNotice]는 **그리드 위**에 남긴다 — 오프라인 사유 고지는 안전
+/// 기능이다(회색 버튼만 두면 고장으로 읽힌다). 타이머 진행은 상단 칩 대신
+/// 제어 타일 부제 카운트다운으로 보인다(2026-09-16, Figma 1107:7995).
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   static const scheduleRowKey = Key('home_schedule_row');
@@ -39,7 +42,9 @@ class HomeScreen extends StatelessWidget {
   static const double _gap = 12;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sets = ref.watch(homeDeviceSetsProvider);
+    final current = ref.watch(currentSetProvider).valueOrNull;
     return GlassTabShell(
       child: Column(
         children: [
@@ -50,45 +55,64 @@ class HomeScreen extends StatelessWidget {
             child: HomeHeaderBar(),
           ),
           Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                // 플로팅 독 높이만큼 비워야 마지막 섹션이 안 가려진다.
-                bottom: glassDockListPadding(context).bottom,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: _margin),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                      child: TopFixedArea(),
-                    ),
-                  ),
-                  const SizedBox(height: _gap),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: _margin),
-                    child: EnvSummaryCard(),
-                  ),
-                  const SizedBox(height: _gap),
-                  // 칩·오프라인 고지는 자체 패딩(16)을 가진 기존 위젯 그대로다.
-                  const RunningTimerChip(),
-                  const DeviceOfflineNotice(),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: _margin),
-                    child: CageControlGrid(),
-                  ),
-                  // Figma 실측 22 — 그리드끝(634)→일정 로우(683) 49에서
-                  // 라벨 19·라벨-로우 갭 8을 뺀 값.
-                  const SizedBox(height: 22),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: _margin),
-                    child: _ScheduleSection(),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
+            child: sets.when(
+                loading: () =>
+                    const SkeletonLoading(width: double.infinity, height: 280),
+                error: (_, __) => Center(
+                    child: TextButton(
+                        onPressed: () => ref.invalidate(homeDeviceSetsProvider),
+                        child: Text('retry'.tr()))),
+                data: (items) => items.isEmpty
+                    ? RedesignEmptyState(
+                        image: FigmaImages.emptyEnclosure,
+                        message: 'redesign_empty_enclosure'.tr(),
+                        buttonText: 'redesign_device_add'.tr(),
+                        onPressed: () => context.push('/devices/add'))
+                    : SingleChildScrollView(
+                        padding: EdgeInsets.only(
+                          // 플로팅 독 높이만큼 비워야 마지막 섹션이 안 가려진다.
+                          bottom: glassDockListPadding(context).bottom,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (current?.camera != null) ...[
+                              const Padding(
+                                padding:
+                                    EdgeInsets.symmetric(horizontal: _margin),
+                                child: ClipRRect(
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(12)),
+                                  child: TopFixedArea(),
+                                ),
+                              ),
+                              const SizedBox(height: _gap)
+                            ],
+                            const Padding(
+                              padding:
+                                  EdgeInsets.symmetric(horizontal: _margin),
+                              child: EnvSummaryCard(),
+                            ),
+                            const SizedBox(height: _gap),
+                            // 칩·오프라인 고지는 자체 패딩(16)을 가진 기존 위젯 그대로다.
+                            const DeviceOfflineNotice(),
+                            const Padding(
+                              padding:
+                                  EdgeInsets.symmetric(horizontal: _margin),
+                              child: CageControlGrid(),
+                            ),
+                            // Figma 실측 22 — 그리드끝(634)→일정 로우(683) 49에서
+                            // 라벨 19·라벨-로우 갭 8을 뺀 값.
+                            const SizedBox(height: 24),
+                            const Padding(
+                              padding:
+                                  EdgeInsets.symmetric(horizontal: _margin),
+                              child: _ScheduleSection(),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      )),
           ),
         ],
       ),
@@ -106,16 +130,19 @@ class _ScheduleSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'home_schedule_settings'.tr(),
-          style: TextStyle(
-            fontFamily: 'Pretendard',
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 14 * -0.02,
-            color: glass.textTertiary,
-          ),
-        ),
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              'redesign_home_device_settings'.tr(),
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 14 * -0.02,
+                color: glass.textTertiary,
+                height: 1.193359375,
+              ),
+            )),
         const SizedBox(height: 8),
         Material(
           color: glass.surfaceTint,
@@ -132,7 +159,7 @@ class _ScheduleSection extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'home_routine_settings'.tr(),
+                        'redesign_home_schedule_settings'.tr(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -144,9 +171,9 @@ class _ScheduleSection extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      size: 18,
+                    FigmaIcon.tinted(
+                      FigmaIcons.arrowNext,
+                      size: 24,
                       color: glass.textSecondary,
                     ),
                   ],
@@ -191,7 +218,7 @@ class HomeLcdRow extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'lcd_tile_title'.tr(),
+                    'redesign_home_lcd_label'.tr(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -203,9 +230,23 @@ class HomeLcdRow extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 18,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 118),
+                  child: Text(device.hardwareId ?? '--',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontFamily: 'Pretendard',
+                          fontSize: 14,
+                          height: 1.193359375,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: -.28,
+                          color: glass.textTertiary)),
+                ),
+                const SizedBox(width: 8),
+                FigmaIcon.tinted(
+                  FigmaIcons.arrowNext,
+                  size: 24,
                   color: glass.textSecondary,
                 ),
               ],

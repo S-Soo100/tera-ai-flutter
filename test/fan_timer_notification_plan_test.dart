@@ -26,8 +26,14 @@ void main() {
       expect(FanTimerNotificationPlan.of('fan_on', -5), isA<CancelFanDone>());
     });
 
-    test('팬 이외 명령 → null', () {
-      for (final action in ['heater_on', 'mist', 'led_on', 'relay_off']) {
+    test('팬 이외 명령 → null — LED는 펌웨어 타이머가 없다(2026-09-16 회신 §1.4)', () {
+      for (final action in [
+        'heater_on',
+        'mist',
+        'led_on',
+        'led_off',
+        'relay_off'
+      ]) {
         expect(FanTimerNotificationPlan.of(action, 1000), isNull,
             reason: action);
       }

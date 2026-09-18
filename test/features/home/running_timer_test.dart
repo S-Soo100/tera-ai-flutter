@@ -59,6 +59,7 @@ void main() {
           'device_id': 'dev-1',
           'action': action,
           'status': status,
+          'result': 'ok',
           'payload': durationMs == null ? null : {'duration_ms': durationMs},
           'issued_at': issuedAt,
         };

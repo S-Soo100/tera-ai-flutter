@@ -187,8 +187,27 @@ void main() {
       expect(find.byKey(const ValueKey('highlight_cell_c1')), findsNothing);
       expect(find.byKey(const ValueKey('highlight_cell_c2')), findsNothing);
       expect(find.textContaining('후보'), findsNothing);
-      // 지난 날짜 묶음 헤더는 "M월 d일 밤" 서식 키(테스트는 미번역 키 노출).
-      expect(find.text('crecam_highlights_night_of'), findsWidgets);
+      // 묶음 헤더는 공개 배치의 실제 촬영 구간(P12, Figma 1081:5235) —
+      // 픽스처는 22:00~다음날 06:00.
+      // 최신 묶음 라벨은 배너(공개 배치 key ≠ dismiss key)와 섹션 헤더 둘.
+      expect(find.text('2026. 8. 31 - 9. 1'), findsNWidgets(2));
+      expect(find.text('2026. 8. 30 - 8. 31'), findsOneWidget);
+      expect(find.text('crecam_highlights_night_of'), findsNothing);
+    });
+
+    test('formatPeriod — 같은 날은 한 날짜, 해가 다르면 둘 다 연도', () {
+      expect(
+          HighlightsScreen.formatPeriod(
+              DateTime(2026, 8, 28), DateTime(2026, 8, 31)),
+          '2026. 8. 28 - 8. 31');
+      expect(
+          HighlightsScreen.formatPeriod(
+              DateTime(2026, 8, 31, 22), DateTime(2026, 8, 31, 23)),
+          '2026. 8. 31');
+      expect(
+          HighlightsScreen.formatPeriod(
+              DateTime(2026, 12, 31), DateTime(2027, 1, 1)),
+          '2026. 12. 31 - 2027. 1. 1');
     });
 
     testWidgets('대표 6장 이상(하루 상한 폐지 2026-09-11 후속)도 전부 렌더', (tester) async {
@@ -209,12 +228,13 @@ void main() {
       expect(last, findsOneWidget);
     });
 
-    testWidgets('어젯밤 day_key 묶음 → "어젯밤" 헤더', (tester) async {
+    testWidgets('공개 배치 정보가 없는 어젯밤 묶음은 날짜를 지어내지 않고 "어젯밤" 헤더', (tester) async {
       final now = DateTime.now();
       final dayKey = _dayKey(DateTime(now.year, now.month, now.day)
           .subtract(const Duration(days: 1)));
       final groups = groupByDay([
-        _h('x1', DateTime.now(), tier: 'featured', dayKey: dayKey, rank: 1),
+        _h('x1', DateTime.now(),
+            tier: 'featured', dayKey: dayKey, rank: 1, published: false),
       ]);
       final store = _FakeBannerStore('cam/$dayKey');
       await _pump(tester, groups: groups, store: store);

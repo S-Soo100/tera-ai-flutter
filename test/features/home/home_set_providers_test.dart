@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
@@ -13,7 +14,8 @@ EnclosureSet _set(String id) => EnclosureSet(
 
 ProviderContainer _container(List<EnclosureSet> sets) => ProviderContainer(
       overrides: [
-        enclosureSetsProvider.overrideWith((ref) async => sets),
+        currentUserProvider.overrideWithValue(null),
+        homeDeviceSetsProvider.overrideWith((ref) async => sets),
       ],
     );
 

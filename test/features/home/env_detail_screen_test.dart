@@ -63,6 +63,7 @@ Future<void> _pump(
   WidgetTester tester, {
   bool empty = false,
   List<ControlLogEntry>? log,
+  Future<List<ControlLogEntry>> Function()? loadLog,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -73,7 +74,8 @@ Future<void> _pump(
         envDayChartDataProvider
             .overrideWith((ref) async => _chartData(empty: empty)),
         envDayExtremesProvider.overrideWith((ref) async => _extremes),
-        envDayControlLogProvider.overrideWith((ref) async => log ?? _log()),
+        envDayControlLogProvider.overrideWith(
+            (ref) async => loadLog != null ? await loadLog() : log ?? _log()),
         envWeekRowsProvider.overrideWith((ref) async => _weekRows()),
       ],
       child: MaterialApp.router(
@@ -91,6 +93,21 @@ Future<void> _pump(
 String _dateLabel(DateTime d) => '${d.year}. ${d.month}. ${d.day}';
 
 void main() {
+  testWidgets('제어 기록 조회 실패는 빈 기록과 구분하고 재시도한다', (tester) async {
+    var calls = 0;
+    await _pump(tester, loadLog: () async {
+      if (++calls == 1) throw StateError('network');
+      return [];
+    });
+    expect(find.text('env_log_load_failed'), findsOneWidget);
+    expect(find.byKey(ControlLogList.sectionKey), findsNothing);
+    await tester.ensureVisible(find.text('retry'));
+    await tester.tap(find.text('retry'));
+    await tester.pumpAndSettle();
+    expect(calls, 2);
+    expect(find.text('env_log_load_failed'), findsNothing);
+    expect(find.byKey(ControlLogList.sectionKey), findsOneWidget);
+  });
   testWidgets('일간 기본 — 타이틀·오늘 날짜·차트·제어 기록, → 숨김', (tester) async {
     await _pump(tester);
 

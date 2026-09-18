@@ -1,0 +1,573 @@
+[
+  {
+    "type": "Text",
+    "text": "온습도 상세",
+    "rect": [
+      161.04593658447266,
+      72.5,
+      70.90812683105469,
+      23.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 700, letterSpacing: -0.3)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      339.0,
+      60.0,
+      48.0,
+      48.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      341.0,
+      62.0,
+      44.0,
+      44.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "close",
+    "rect": [
+      351.0,
+      72.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "일간",
+    "rect": [
+      93.43039035797119,
+      131.5,
+      23.639219284057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 700, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "주간",
+    "rect": [
+      275.9303903579712,
+      131.5,
+      23.639219284057617,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.3843, green: 0.3843, blue: 0.3843, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      12.0,
+      172.0,
+      48.0,
+      40.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      16.0,
+      172.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_previous",
+    "rect": [
+      24.0,
+      180.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "2026. 9. 15",
+    "rect": [
+      152.55275344848633,
+      181.5,
+      87.89449310302734,
+      21.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 600, letterSpacing: -0.4, height: 1.2x)"
+  },
+  {
+    "type": "IconButton",
+    "rect": [
+      333.0,
+      172.0,
+      48.0,
+      40.0
+    ]
+  },
+  {
+    "type": "InkWell",
+    "rect": [
+      337.0,
+      172.0,
+      40.0,
+      40.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "arrow_next",
+    "rect": [
+      345.0,
+      180.0,
+      24.0,
+      24.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/env_temperature",
+    "rect": [
+      20.0,
+      226.5,
+      28.0,
+      28.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "28.5℃",
+    "rect": [
+      56.0,
+      224.0,
+      140.5,
+      33.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7529, green: 0.0118, blue: 0.0235, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 28.0, weight: 600, letterSpacing: -0.6, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "최고: 32° 최저: 26°",
+    "rect": [
+      20.0,
+      261.0,
+      115.982421875,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/env_humidity",
+    "rect": [
+      196.5,
+      226.5,
+      28.0,
+      28.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "60.3%",
+    "rect": [
+      232.5,
+      224.0,
+      140.5,
+      33.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.0980, green: 0.1451, blue: 0.3255, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 28.0, weight: 600, letterSpacing: -0.6, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "최고: 70% 최저: 55%",
+    "rect": [
+      196.5,
+      261.0,
+      128.0751953125,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "오전 12시",
+    "rect": [
+      16.0,
+      528.0,
+      45.118595123291016,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "오전 6시",
+    "rect": [
+      147.0,
+      528.0,
+      40.31953048706055,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "오후 12시",
+    "rect": [
+      278.0,
+      528.0,
+      45.118595123291016,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "오후 6시",
+    "rect": [
+      409.0,
+      528.0,
+      40.31953048706055,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/2828/mode_fan_2",
+    "rect": [
+      172.66666666666666,
+      296.0,
+      28.0,
+      28.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/2828/mode_fan_off",
+    "rect": [
+      194.66666666666666,
+      296.0,
+      28.0,
+      28.0
+    ]
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/2828/humidity_high_glyph",
+    "rect": [
+      281.8333333333333,
+      296.0,
+      28.0,
+      28.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "30°",
+    "rect": [
+      12.0,
+      344.0,
+      19.354219436645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "29°",
+    "rect": [
+      12.0,
+      376.0,
+      19.072969436645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "28°",
+    "rect": [
+      12.0,
+      408.0,
+      19.014375686645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "27°",
+    "rect": [
+      12.0,
+      440.0,
+      18.311250686645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "26°",
+    "rect": [
+      12.0,
+      472.0,
+      19.072969436645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "25°",
+    "rect": [
+      12.0,
+      504.0,
+      18.873750686645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "66%",
+    "rect": [
+      356.0324993133545,
+      344.0,
+      24.967500686645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "64%",
+    "rect": [
+      355.8918743133545,
+      376.0,
+      25.108125686645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "62%",
+    "rect": [
+      356.3723430633545,
+      408.0,
+      24.627656936645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "60%",
+    "rect": [
+      356.1028118133545,
+      440.0,
+      24.897188186645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "58%",
+    "rect": [
+      356.2903118133545,
+      472.0,
+      24.709688186645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "56%",
+    "rect": [
+      356.2317180633545,
+      504.0,
+      24.768281936645508,
+      14.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.7059, green: 0.6824, blue: 0.6824, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 12.0, weight: 500, letterSpacing: -0.2, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "사육장 제어 기록",
+    "rect": [
+      20.0,
+      604.0,
+      113.95336151123047,
+      20.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 18.0, weight: 700, letterSpacing: -0.4, height: 1.1x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/3636/humidity_high_glyph",
+    "rect": [
+      20.0,
+      646.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "분무 작동",
+    "rect": [
+      68.0,
+      644.0,
+      57.509376525878906,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "오후 1:00",
+    "rect": [
+      68.0,
+      667.0,
+      56.615234375,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "28.8℃ 61%",
+    "rect": [
+      288.18468475341797,
+      644.0,
+      84.81531524658203,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "작동 시점 온습도",
+    "rect": [
+      279.216796875,
+      667.0,
+      93.783203125,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/3636/mode_fan_off",
+    "rect": [
+      20.0,
+      706.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "환기팬 꺼짐",
+    "rect": [
+      68.0,
+      704.0,
+      71.01750183105469,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "오전 9:00",
+    "rect": [
+      68.0,
+      727.0,
+      59.0625,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "27.8℃ 62%",
+    "rect": [
+      288.51280975341797,
+      704.0,
+      84.48719024658203,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "-1.6℃ +1.8%",
+    "rect": [
+      288.08203125,
+      727.0,
+      84.91796875,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, height: 1.2x)"
+  },
+  {
+    "type": "FigmaIcon",
+    "icon": "redesign_v2/3636/mode_fan_2",
+    "rect": [
+      20.0,
+      766.0,
+      36.0,
+      36.0
+    ]
+  },
+  {
+    "type": "Text",
+    "text": "환기팬 켜짐",
+    "rect": [
+      68.0,
+      764.0,
+      71.01750183105469,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.2353, green: 0.2353, blue: 0.2353, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "오전 8:00",
+    "rect": [
+      68.0,
+      787.0,
+      58.994140625,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "29.4℃ 60.2%",
+    "rect": [
+      271.8168716430664,
+      764.0,
+      101.1831283569336,
+      19.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.1176, green: 0.1176, blue: 0.1176, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 16.0, weight: 600, letterSpacing: -0.3, height: 1.2x)"
+  },
+  {
+    "type": "Text",
+    "text": "작동 시점 온습도",
+    "rect": [
+      279.216796875,
+      787.0,
+      93.783203125,
+      17.0
+    ],
+    "style": "TextStyle(inherit: true, color: Color(alpha: 1.0000, red: 0.5804, green: 0.5647, blue: 0.5647, colorSpace: ColorSpace.sRGB), family: Pretendard, size: 14.0, weight: 500, height: 1.2x)"
+  }
+]
