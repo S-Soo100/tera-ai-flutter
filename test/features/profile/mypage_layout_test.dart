@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../notification/push_lifecycle_controller_test.dart' show FakePushMessaging, MemoryPushPreferences, RecordingPushDevices;
+import '../notification/push_lifecycle_controller_test.dart'
+    show FakePushMessaging, MemoryPushPreferences, RecordingPushDevices;
 import 'package:vivanaut/features/notification/domain/push_lifecycle_controller.dart';
 import 'package:vivanaut/features/notification/presentation/push_providers.dart';
 import 'package:vivanaut/features/notification/data/push_messaging_service.dart';
@@ -57,8 +58,7 @@ List<Override> overrides({UserProfile? profile, int blocked = 0}) => [
               (id: 'u$i', name: '닉네임', avatarUrl: null)
           ]),
       unreadNotificationCountProvider.overrideWithValue(0),
-      notificationPreferencesRepositoryProvider
-          .overrideWithValue(_MemPrefs()),
+      notificationPreferencesRepositoryProvider.overrideWithValue(_MemPrefs()),
     ];
 
 Widget app(Widget home, List<Override> ov) => ProviderScope(
@@ -99,8 +99,7 @@ void main() {
     final title = tester.getRect(find.text('마이 페이지'));
     expect(title.center.dx, closeTo(196.5, 1));
     expect(title.top, closeTo(74.5, 1));
-    expect(tester.getRect(find.text('커뮤니티 설정')).topLeft,
-        const Offset(24, 122));
+    expect(tester.getRect(find.text('커뮤니티 설정')).topLeft, const Offset(24, 122));
     final card = tester.getRect(find.byKey(ProfileScreen.profileCardKey));
     expect(card, const Rect.fromLTWH(12, 149, 369, 76));
     expect(find.text('자동생성닉네임'), findsOneWidget);
@@ -149,8 +148,7 @@ void main() {
 
   testWidgets('회원 탈퇴 — 문구 y122, CTA 696', (tester) async {
     await pump(tester, const WithdrawScreen(), overrides());
-    expect(tester.getRect(find.text('회원 탈퇴를 진행하시겠습니까?')).top,
-        closeTo(122, 1));
+    expect(tester.getRect(find.text('회원 탈퇴를 진행하시겠습니까?')).top, closeTo(122, 1));
     expect(tester.getRect(find.byKey(WithdrawScreen.submitKey)),
         const Rect.fromLTWH(12, 696, 369, 56));
   });
@@ -169,7 +167,8 @@ void main() {
         matching: find.byType(FilledButton)));
     expect(cta().onPressed, isNull);
     await tester.enterText(find.byKey(PasswordChangeScreen.currentKey), 'old');
-    await tester.enterText(find.byKey(PasswordChangeScreen.newKey), '1235113213');
+    await tester.enterText(
+        find.byKey(PasswordChangeScreen.newKey), '1235113213');
     await tester.enterText(
         find.byKey(PasswordChangeScreen.confirmKey), '1235113213');
     await tester.pump();
@@ -218,7 +217,8 @@ void main() {
         expect((e.widget as Text).maxLines, 1);
       }
     }
-    expect(tester.getRect(find.byKey(NotificationSettingsScreen.likeKey)).height,
+    expect(
+        tester.getRect(find.byKey(NotificationSettingsScreen.likeKey)).height,
         closeTo(72, 0.5));
     expect(tester.takeException(), isNull);
   });
@@ -234,18 +234,22 @@ void main() {
             find.byKey(NotificationSettingsScreen.featureSectionKey))
         .opacity;
 
-    testWidgets('거절 상태 — 안내 + 설정 열기, 기능 토글 흐리게·조작 불가',
-        (tester) async {
+    testWidgets('거절 상태 — 안내 + 알림 허용, 기능 토글 흐리게·조작 불가', (tester) async {
       await pumpWith(tester, PushPermission.denied);
-      expect(find.byKey(NotificationSettingsScreen.systemOffKey), findsOneWidget);
+      expect(
+          find.byKey(NotificationSettingsScreen.systemOffKey), findsOneWidget);
       expect(find.text('기기 알림이 꺼져 있어요'), findsOneWidget);
-      expect(find.text('설정 열기'), findsOneWidget);
+      expect(find.text('알림 허용'), findsOneWidget, reason: '상태와 무관하게 한 문구');
+      expect(find.text('설정 열기'), findsNothing);
       expect(featureOpacity(tester), 0.4);
       expect(
           tester
-              .widget<IgnorePointer>(find.descendant(
-                  of: find.byKey(NotificationSettingsScreen.featureSectionKey),
-                  matching: find.byType(IgnorePointer)).first)
+              .widget<IgnorePointer>(find
+                  .descendant(
+                      of: find
+                          .byKey(NotificationSettingsScreen.featureSectionKey),
+                      matching: find.byType(IgnorePointer))
+                  .first)
               .ignoring,
           isTrue);
       // 수신 동의는 동의 기록이라 계속 조작 가능.
@@ -265,13 +269,13 @@ void main() {
     testWidgets('허용됨·iOS(미지원) — 안내 없음, 토글 그대로', (tester) async {
       for (final p in [PushPermission.authorized, PushPermission.unavailable]) {
         await pumpWith(tester, p);
-        expect(find.byKey(NotificationSettingsScreen.systemOffKey), findsNothing,
+        expect(
+            find.byKey(NotificationSettingsScreen.systemOffKey), findsNothing,
             reason: '$p');
         expect(featureOpacity(tester), 1, reason: '$p');
       }
     });
-    testWidgets('설정 열기 탭 → 권한 재요청, 여전히 거절이면 앱 설정을 연다',
-        (tester) async {
+    testWidgets('거절 상태에서 알림 허용 탭 → 권한 재요청, 여전히 거절이면 앱 설정을 연다', (tester) async {
       final messaging = _SettingsCountingMessaging()
         ..permission = PushPermission.denied;
       final controller = PushLifecycleController(
@@ -300,8 +304,7 @@ void main() {
       expect(messaging.settingsOpened, 1, reason: '막혀 있으면 앱 설정으로');
     });
 
-    testWidgets('알림 허용 탭(아직 안 물음) → 시스템 팝업, 허용되면 설정은 안 연다',
-        (tester) async {
+    testWidgets('알림 허용 탭(아직 안 물음) → 시스템 팝업, 허용되면 설정은 안 연다', (tester) async {
       final messaging = _SettingsCountingMessaging()
         ..permission = PushPermission.authorized;
       final controller = PushLifecycleController(

@@ -43,7 +43,6 @@ class NotificationSettingsScreen extends ConsumerWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         if (systemOff) ...[
           _SystemOffNotice(
-              permission: permission,
               onAllow: () => requestPushPermission(ref, retry: true)),
           const SizedBox(height: 24),
         ],
@@ -175,18 +174,16 @@ class _ToggleRow extends StatelessWidget {
 
 /// 기기(시스템) 알림이 꺼져 있다는 안내(2026-09-18 사용자 결정 — Figma 밖).
 /// 앱 안 토글이 켜져 있어도 알림이 오지 않는 이유와 해결 버튼을 한곳에 둔다.
-/// 한 번도 묻지 않았으면 시스템 팝업("알림 허용"), 거절했으면 앱 설정("설정 열기").
+/// 버튼은 상태와 무관하게 "알림 허용" 하나(2026-09-18 사용자 결정): 시스템 팝업을
+/// 띄울 수 있으면 띄우고, Android에서 두 번 거절로 막혔으면 앱 설정을 연다 —
+/// "설정 열기"라고 쓰면 한 번만 거절한 경우 팝업이 떠 문구와 동작이 어긋난다.
 class _SystemOffNotice extends StatelessWidget {
-  const _SystemOffNotice({required this.permission, required this.onAllow});
-  final PushPermission permission;
+  const _SystemOffNotice({required this.onAllow});
   final VoidCallback onAllow;
 
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
-    final label = permission == PushPermission.notDetermined
-        ? 'notif_settings_system_off_allow'
-        : 'notif_settings_system_off_open';
     return Container(
       key: NotificationSettingsScreen.systemOffKey,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -224,7 +221,8 @@ class _SystemOffNotice extends StatelessWidget {
               textStyle:
                   managementStyle(context, size: 14, weight: FontWeight.w600),
             ),
-            child: Text(label.tr(), maxLines: 1, softWrap: false),
+            child: Text('notif_settings_system_off_allow'.tr(),
+                maxLines: 1, softWrap: false),
           ),
         ),
       ]),

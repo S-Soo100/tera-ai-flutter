@@ -432,7 +432,6 @@
   "notif_settings_system_off_title": "기기 알림이 꺼져 있어요",
   "notif_settings_system_off_body": "알림을 받으려면 알림을 허용해 주세요",
   "notif_settings_system_off_allow": "알림 허용",
-  "notif_settings_system_off_open": "설정 열기",
   "account_title": "내 계정",
   "account_change_password": "비밀번호 변경",
   "account_withdraw": "회원 탈퇴",
