@@ -15,6 +15,7 @@ import '../data/favorite_clip_repository.dart';
 import '../data/highlight_banner_store.dart';
 import '../data/highlight_repository.dart';
 import '../data/motion_clip_repository.dart';
+import '../data/passed_clip_feed_source.dart';
 import '../data/video_cache_repository.dart';
 import '../data/video_export_service.dart';
 import '../data/webrtc_signaling_repository.dart';
@@ -423,6 +424,20 @@ final highlightRepositoryProvider = Provider<HighlightRepository>((ref) {
 /// 하이라이트 공개 게이트가 보는 시계. 테스트가 고정 시각을 주입한다.
 final highlightClockProvider =
     Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// 카메라 탭 전체 영상 목록의 소스 — 하이라이트 규칙 O 전부(정책 v2).
+/// 그리드([clipFeedProvider])와 플레이어 필름스트립
+/// ([playerFeedPageLoaderProvider])이 **같이** 이걸 쓴다.
+final passedClipFeedSourceProvider = Provider<PassedClipFeedSource>((ref) {
+  final highlights = ref.watch(highlightRepositoryProvider);
+  final clips = ref.watch(motionClipRepositoryProvider);
+  return PassedClipFeedSource(
+    listRefs: ({required cameraId, since, until, cursor}) =>
+        highlights.listPassedPage(
+            cameraId: cameraId, since: since, until: until, cursor: cursor),
+    hydrate: clips.getByIds,
+  );
+});
 
 /// 어젯밤 요약 — 어젯밤 day_key(20:00 경계)의 ⭐ 대표 + 활동시간 합(22~06시).
 /// 계정 전환 시 재조회.

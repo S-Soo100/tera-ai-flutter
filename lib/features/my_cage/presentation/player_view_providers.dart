@@ -14,14 +14,14 @@ typedef PlayerFeedPageLoader = Future<MotionClipPage> Function(
 /// 모두 포함해 다른 피드 결과가 섞이지 않게 한다.
 final playerFeedPageLoaderProvider = Provider.autoDispose
     .family<PlayerFeedPageLoader, ClipFeedQuery>((ref, query) {
-  final repository = ref.watch(motionClipRepositoryProvider);
+  final source = ref.watch(passedClipFeedSourceProvider);
   return (before) async {
     await ref.read(clipVisibilityProvider(query.ownerId).notifier).ready();
     return loadVisibleClipPage(
         before: before,
         hiddenIds: () =>
             ref.read(clipVisibilityProvider(query.ownerId)).hiddenIds,
-        load: (cursor) => repository.listPage(query, before: cursor));
+        load: (cursor) => source.loadPage(query, before: cursor));
   };
 });
 

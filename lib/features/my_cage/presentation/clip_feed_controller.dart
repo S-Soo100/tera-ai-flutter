@@ -35,7 +35,7 @@ final clipFeedQueryProvider = Provider<ClipFeedQuery?>((ref) {
 final clipFeedProvider = StateNotifierProvider.autoDispose
     .family<ClipFeedController, ClipFeedState, ClipFeedQuery>((ref, query) {
   final owner = ref.watch(currentUserProvider.select((user) => user?.id));
-  final repository = ref.watch(motionClipRepositoryProvider);
+  final source = ref.watch(passedClipFeedSourceProvider);
   final controller = ClipFeedController((cursor) async {
     if (owner != query.ownerId) {
       return (items: <MotionClip>[], nextCursor: null, hasMore: false);
@@ -44,7 +44,7 @@ final clipFeedProvider = StateNotifierProvider.autoDispose
     return loadVisibleClipPage(
       before: cursor,
       hiddenIds: () => ref.read(clipVisibilityProvider(owner)).hiddenIds,
-      load: (before) => repository.listPage(query, before: before),
+      load: (before) => source.loadPage(query, before: before),
     );
   });
   ref.listen(currentClipVisibilityProvider, (_, visibility) {
