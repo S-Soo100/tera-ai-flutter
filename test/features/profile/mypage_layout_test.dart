@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../notification/push_lifecycle_controller_test.dart' show FakePushMessaging, MemoryPushPreferences, RecordingPushDevices;
+import 'package:vivanaut/features/notification/domain/push_lifecycle_controller.dart';
 import 'package:vivanaut/features/notification/presentation/push_providers.dart';
 import 'package:vivanaut/features/notification/data/push_messaging_service.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
@@ -268,5 +270,71 @@ void main() {
         expect(featureOpacity(tester), 1, reason: '$p');
       }
     });
+    testWidgets('설정 열기 탭 → 권한 재요청, 여전히 거절이면 앱 설정을 연다',
+        (tester) async {
+      final messaging = _SettingsCountingMessaging()
+        ..permission = PushPermission.denied;
+      final controller = PushLifecycleController(
+          messaging: messaging,
+          devices: RecordingPushDevices(),
+          preferences: MemoryPushPreferences(),
+          appVersion: () async => '1+1',
+          locale: () => 'ko',
+          findNotification: (_, __) async => null,
+          markRead: (_) async {},
+          display: (_) async {},
+          navigate: (_) {},
+          permissionChanged: (_) {},
+          reportError: (_) {});
+      await controller.setUser('a');
+      addTearDown(controller.dispose);
+      addTearDown(messaging.close);
+      await pump(tester, const NotificationSettingsScreen(), [
+        ...overrides(),
+        pushPermissionProvider.overrideWith((ref) => PushPermission.denied),
+        pushLifecycleControllerProvider.overrideWithValue(controller),
+      ]);
+      await tester.tap(find.byKey(const Key('notif_system_off_action')));
+      await tester.pumpAndSettle();
+      expect(messaging.requests, 1, reason: '먼저 시스템 팝업을 다시 요청');
+      expect(messaging.settingsOpened, 1, reason: '막혀 있으면 앱 설정으로');
+    });
+
+    testWidgets('알림 허용 탭(아직 안 물음) → 시스템 팝업, 허용되면 설정은 안 연다',
+        (tester) async {
+      final messaging = _SettingsCountingMessaging()
+        ..permission = PushPermission.authorized;
+      final controller = PushLifecycleController(
+          messaging: messaging,
+          devices: RecordingPushDevices(),
+          preferences: MemoryPushPreferences(),
+          appVersion: () async => '1+1',
+          locale: () => 'ko',
+          findNotification: (_, __) async => null,
+          markRead: (_) async {},
+          display: (_) async {},
+          navigate: (_) {},
+          permissionChanged: (_) {},
+          reportError: (_) {});
+      await controller.setUser('a');
+      addTearDown(controller.dispose);
+      addTearDown(messaging.close);
+      await pump(tester, const NotificationSettingsScreen(), [
+        ...overrides(),
+        pushPermissionProvider
+            .overrideWith((ref) => PushPermission.notDetermined),
+        pushLifecycleControllerProvider.overrideWithValue(controller),
+      ]);
+      await tester.tap(find.byKey(const Key('notif_system_off_action')));
+      await tester.pumpAndSettle();
+      expect(messaging.requests, 1);
+      expect(messaging.settingsOpened, 0);
+    });
   });
+}
+
+class _SettingsCountingMessaging extends FakePushMessaging {
+  int settingsOpened = 0;
+  @override
+  Future<void> openSettings() async => settingsOpened++;
 }
