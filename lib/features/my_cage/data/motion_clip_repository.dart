@@ -108,7 +108,7 @@ class MotionClipRepository {
               : clip
       ]),
       nextCursor: hasMore && items.isNotEmpty
-          ? (startedAt: items.last.startedAt, id: items.last.id)
+          ? (startedAt: items.last.startedAt, id: items.last.id, token: null)
           : null,
       hasMore: hasMore,
     );
@@ -271,6 +271,26 @@ class MotionClipRepository {
     final list = rows as List;
     if (list.isEmpty) return null;
     return MotionClip.fromJson(list.first as Map<String, dynamic>);
+  }
+
+  /// id 목록으로 모션 클립을 채운다 — 전체 영상 목록(정책 v2)이 petcam-api가
+  /// 준 통과 clip_id를 화면용 [MotionClip]으로 바꿀 때 쓴다. RLS 본인 것만,
+  /// 원본이 지워진 id는 조용히 빠진다. **반환 순서는 보장하지 않는다.**
+  /// Supabase `inFilter`는 URL 길이 제한이 있어 호출부가 100개 이하로 부른다.
+  Future<List<MotionClip>> getByIds(List<String> clipIds) async {
+    if (clipIds.isEmpty) return const [];
+    final rows =
+        await _supabase.from('motion_clips').select().inFilter('id', clipIds);
+    final clips = [
+      for (final r in rows as List)
+        if (r is Map<String, dynamic>) MotionClip.fromJson(r),
+    ];
+    if (!kClipClassificationEnabled || clips.isEmpty) return clips;
+    final labels = await _fetchLabels(clips.map((c) => c.id).toList());
+    return [
+      for (final c in clips)
+        labels.containsKey(c.id) ? c.copyWith(action: labels[c.id]) : c,
+    ];
   }
 
   /// 활동시간 집계 row를 로드한다. effective view를 우선하고, view 조회가

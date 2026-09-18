@@ -34,7 +34,7 @@ void main() {
           return (
             items: [_clip(id)],
             nextCursor:
-                calls < 3 ? (startedAt: DateTime.utc(2026), id: id) : null,
+                calls < 3 ? (startedAt: DateTime.utc(2026), id: id, token: null) : null,
             hasMore: calls < 3
           );
         });
@@ -43,7 +43,7 @@ void main() {
     expect(page.hasMore, false);
   });
   test('repeated cursor fails instead of looping on hidden page', () async {
-    final cursor = (startedAt: DateTime.utc(2026), id: 'a');
+    final cursor = (startedAt: DateTime.utc(2026), id: 'a', token: null);
     await expectLater(
         loadVisibleClipPage(
             before: cursor,

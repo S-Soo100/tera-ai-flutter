@@ -141,7 +141,7 @@ void main() {
     final controller = ClipFeedController((before) async => before == null
         ? (
             items: [_clip('a'), _clip('b')],
-            nextCursor: (startedAt: DateTime.utc(2026), id: 'b'),
+            nextCursor: (startedAt: DateTime.utc(2026), id: 'b', token: null),
             hasMore: true
           )
         : pending.future);

@@ -139,7 +139,7 @@ void main() {
         cameraId: 'cam-1',
         visibilityRepository: repository,
         hasMore: true,
-        nextCursor: (startedAt: DateTime.utc(2026), id: 'a'),
+        nextCursor: (startedAt: DateTime.utc(2026), id: 'a', token: null),
         feedLoader: (_) async {
       calls++;
       return (items: [_clip('b')], nextCursor: null, hasMore: false);
@@ -192,7 +192,7 @@ void main() {
       playlist: ids,
       source: ClipPlaybackSource.feed,
       cameraId: 'cam-1',
-      nextCursor: (startedAt: DateTime(2026, 8, 28), id: 'c60'),
+      nextCursor: (startedAt: DateTime(2026, 8, 28), id: 'c60', token: null),
       hasMore: true,
       feedLoader: (cursor) async {
         calls++;
@@ -211,7 +211,7 @@ void main() {
 
   testWidgets('전체 피드 끝에 가까우면 커서 다음 영상을 기존 목록 뒤에 붙인다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
-    final cursor = (startedAt: DateTime(2026, 8, 28), id: 'c3');
+    final cursor = (startedAt: DateTime(2026, 8, 28), id: 'c3', token: null);
     MotionClipCursor? receivedCursor;
     var calls = 0;
     await _pump(
