@@ -45,6 +45,20 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   # 신규 브랜치(원격에 추적본 없음)는 검사 생략
   [ "$remote_sha" = "$zero" ] && continue
 
+  # 버전 역행 가드(2026-09-18): 옛 코드로 되돌려 빌드번호가 낮아지면 차단.
+  # 옛 화면으로 돌아가는 사고는 거의 항상 pubspec 버전도 함께 되돌린다.
+  build_of() { git show "$1:pubspec.yaml" 2>/dev/null | sed -nE 's/^version: *[0-9.]+\+([0-9]+).*/\1/p' | head -1; }
+  remote_build=$(build_of "$remote_sha")
+  local_build=$(build_of "$local_sha")
+  if [ -n "$remote_build" ] && [ -n "$local_build" ] && [ "$local_build" -lt "$remote_build" ]; then
+    echo "✋ pre-push 차단: 빌드번호가 원격(+$remote_build)보다 낮아집니다(+$local_build)." >&2
+    echo "   옛 버전 코드로 되돌리는 push로 보입니다 — 화면이 구버전으로 돌아갈 수 있어요." >&2
+    echo "   → 최신 main을 병합(git merge origin/main)한 뒤 다시 push하세요." >&2
+    echo "   → 의도적 우회: git push --no-verify" >&2
+    blocked=1
+    continue
+  fi
+
   range="${remote_sha}..${local_sha}"
 
   # 이 push 범위에 lib/ 코드 변경이 있나?
