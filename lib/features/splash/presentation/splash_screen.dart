@@ -1,10 +1,8 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../core/theme/app_theme.dart';
 import '../../auth/data/login_prefs_repository.dart';
 import '../../notification/presentation/push_providers.dart';
 
@@ -50,36 +48,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // 브랜드 레드 로고라 배경은 흰색이어야 대비가 산다.
-    // (기존 primary 초록 배경 위 빨강은 서로 채도가 높아 탁해진다)
+    // 네이티브 스플래시(flutter_native_splash, 같은 워드마크 200pt 중앙)와
+    // 같은 모습으로 이어지게 워드마크만 중앙에 둔다 — 전환 때 튀지 않게.
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // 구 lockup(logo_stacked)에는 "terra ai" 워드마크가 박혀 있어
-            // 심볼 단독 + 현행 브랜드명 텍스트로 조합한다 (2026-08-14 리브랜딩).
-            Image.asset('assets/images/logo.png', width: 140),
-            const SizedBox(height: 12),
-            Text(
-              'app_name'.tr(),
-              style: const TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.brandRed,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'app_subtitle'.tr(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+        child: Image.asset(
+          'assets/images/splash_vivanaut.png',
+          width: 200,
+          fit: BoxFit.contain,
         ),
       ),
     );
