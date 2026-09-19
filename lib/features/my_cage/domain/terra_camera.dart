@@ -37,6 +37,20 @@ class TerraCamera {
     this.rotate180Capable = false,
   });
 
+  /// 생존 신호 시각([lastSeenAt])만 빼고 같은가. 화면이 쓰는 값은 전부 비교한다
+  /// — 필드를 추가하면 여기에도 넣을 것(빠뜨리면 그 값의 변경이 화면에 안 온다).
+  bool sameIgnoringHeartbeat(TerraCamera other) =>
+      id == other.id &&
+      cameraId == other.cameraId &&
+      name == other.name &&
+      model == other.model &&
+      resolution == other.resolution &&
+      isOnline == other.isOnline &&
+      enclosureId == other.enclosureId &&
+      createdAt == other.createdAt &&
+      rotate180 == other.rotate180 &&
+      rotate180Capable == other.rotate180Capable;
+
   factory TerraCamera.fromJson(Map<String, dynamic> j) {
     final capabilities = j['capabilities'];
     return TerraCamera(
@@ -58,4 +72,17 @@ class TerraCamera {
           capabilities is Map && capabilities['rotate_180'] == true,
     );
   }
+}
+
+/// 생존 신호 시각만 다른 두 목록은 같은 목록으로 본다(개수·순서 포함 비교).
+///
+/// 온라인 카메라는 15초마다 `last_seen_at`을 갱신하고 그때마다 Realtime 이벤트가
+/// 온다. 이걸 "목록 변경"으로 흘리면 세트·리포트 등 하위 provider가 전부 다시
+/// 돌아 홈이 15초마다 깜빡였다(2026-09-19 실기기). 앱은 그 시각을 쓰지 않는다.
+bool sameCamerasIgnoringHeartbeat(List<TerraCamera> a, List<TerraCamera> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (!a[i].sameIgnoringHeartbeat(b[i])) return false;
+  }
+  return true;
 }

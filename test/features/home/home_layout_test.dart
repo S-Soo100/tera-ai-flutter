@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,11 +64,19 @@ const _extremes = EnvExtremes(
   humidMax: 71.0,
 );
 
-Future<void> _pump(WidgetTester tester) async {
+/// 세트 재조립(의존 변경 → 다시 로딩)을 흉내 내는 방아쇠.
+final _reloadTick = StateProvider<int>((ref) => 0);
+
+Future<void> _pump(WidgetTester tester, {Completer<void>? reloadGate}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        homeDeviceSetsProvider.overrideWith((ref) async => [_set()]),
+        homeDeviceSetsProvider.overrideWith((ref) async {
+          // 첫 조립은 바로 끝나고, 방아쇠가 당겨진 뒤의 재조립만 gate에서 멈춘다.
+          final tick = ref.watch(_reloadTick);
+          if (tick > 0 && reloadGate != null) await reloadGate.future;
+          return [_set()];
+        }),
         currentUserProvider.overrideWithValue(null),
         currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
         telemetryStreamProvider
@@ -119,6 +129,26 @@ void main() {
     expect(find.text('home_subtab_timeline'), findsNothing);
     // 타이머 없음 → 칩 비노출.
     expect(find.byKey(RunningTimerChip.chipKey), findsNothing);
+  });
+
+  testWidgets('세트가 다시 조립되는 동안 본문을 스켈레톤으로 갈아 끼우지 않는다', (tester) async {
+    // 회귀(2026-09-19 실기기): 카메라 생존 신호(15초)마다 세트가 재조립되며
+    // 홈 본문 전체가 한 프레임 회색 스켈레톤으로 바뀌고 라이브·스크롤이 철거됐다.
+    final gate = Completer<void>();
+    await _pump(tester, reloadGate: gate);
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HomeScreen)));
+
+    container.read(_reloadTick.notifier).state = 1;
+    await tester.pump();
+
+    expect(container.read(homeDeviceSetsProvider).isLoading, isTrue);
+    expect(find.byKey(EnvSummaryCard.cardKey), findsOneWidget);
+    expect(find.byType(CageControlGrid), findsOneWidget);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.byKey(EnvSummaryCard.cardKey), findsOneWidget);
   });
 
   testWidgets('요약 카드 탭 → /env-detail', (tester) async {

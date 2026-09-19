@@ -125,11 +125,23 @@ final camerasProvider = StreamProvider<List<TerraCamera>>((ref) {
 
   final controller = StreamController<List<TerraCamera>>();
 
+  // 마지막으로 흘린 목록. 에러를 흘린 뒤에는 비워, 복구된 같은 목록도 다시 흘린다.
+  List<TerraCamera>? last;
+
   Future<void> reload() async {
     try {
       final list = await repo.listAll();
-      if (!controller.isClosed) controller.add(list);
+      if (controller.isClosed) return;
+      // 생존 신호(15초)만 바뀐 갱신은 버린다 — 흘리면 하위 provider가 전부 다시
+      // 돌아 홈이 깜빡인다(sameCamerasIgnoringHeartbeat 주석).
+      final previous = last;
+      if (previous != null && sameCamerasIgnoringHeartbeat(previous, list)) {
+        return;
+      }
+      last = list;
+      controller.add(list);
     } catch (e, st) {
+      last = null;
       if (!controller.isClosed) controller.addError(e, st);
     }
   }

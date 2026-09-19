@@ -56,6 +56,10 @@ class HomeScreen extends ConsumerWidget {
           ),
           Expanded(
             child: sets.when(
+                // 세트는 기기·카메라·개체 어느 하나만 바뀌어도 다시 조립된다. 그동안
+                // 이전 본문을 유지한다 — 스켈레톤으로 갈아 끼우면 라이브·스크롤이
+                // 철거돼 화면 전체가 깜빡인다(CameraLiveArea와 같은 규칙).
+                skipLoadingOnReload: true,
                 loading: () =>
                     const SkeletonLoading(width: double.infinity, height: 280),
                 error: (_, __) => Center(
