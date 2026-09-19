@@ -25,8 +25,9 @@ class EnvSummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final device = ref.watch(currentDeviceIdProvider);
-    final deviceId = device.isLoading ? null : device.valueOrNull;
+    // 재계산 중에도 이전 기기 id를 쓴다 — 접으면 아래 제어 그리드가 위로 튀었다
+    // 돌아와 화면이 깜빡인다(CageControlGrid·DeviceOfflineNotice와 같은 규칙).
+    final deviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
     if (deviceId == null) return const SizedBox.shrink();
 
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;

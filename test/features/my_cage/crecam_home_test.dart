@@ -1,3 +1,4 @@
+import 'package:vivanaut/shared/widgets/skeleton_loading.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_visibility_providers.dart';
 import 'package:vivanaut/features/my_cage/domain/clip_playlist_args.dart';
 import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
@@ -126,8 +127,13 @@ GoRouter _router() => GoRouter(
       ],
     );
 
+/// 하이라이트 재조회(숨김 목록 갱신 → 연쇄 재계산)를 흉내 내는 방아쇠.
+final _highlightReloadTick = StateProvider<int>((ref) => 0);
+
 Future<void> _pump(
   WidgetTester tester, {
+  Completer<void>? highlightReloadGate,
+  Completer<void>? favoritesReloadGate,
   List<TerraCamera>? cameras,
   List<MotionClip>? clips,
   DateTime? latestHighlightAt,
@@ -186,10 +192,20 @@ Future<void> _pump(
             .overrideWith((ref, cameraId) async => latestClipAt),
         motionClipsProvider.overrideWith((ref, key) async => clips ?? _clips),
         motionThumbnailFileProvider.overrideWith((ref, clipId) async => null),
-        latestHighlightAtProvider
-            .overrideWith((ref) async => latestHighlightAt),
-        allFavoriteClipsProvider
-            .overrideWith((ref) async => favorites ?? const []),
+        latestHighlightAtProvider.overrideWith((ref) async {
+          final tick = ref.watch(_highlightReloadTick);
+          if (tick > 0 && highlightReloadGate != null) {
+            await highlightReloadGate.future;
+          }
+          return latestHighlightAt;
+        }),
+        allFavoriteClipsProvider.overrideWith((ref) async {
+          final tick = ref.watch(_highlightReloadTick);
+          if (tick > 0 && favoritesReloadGate != null) {
+            await favoritesReloadGate.future;
+          }
+          return favorites ?? const [];
+        }),
         // 셀 북마크 오버레이(2026-09-07) — 기본 즐겨찾기 없음.
         isFavoriteProvider.overrideWith((ref, id) => false),
         // 어젯밤 활동 병기(미결 S, 2026-09-07) — 기본 0(병기 없음).
@@ -496,6 +512,68 @@ void main() {
       ),
     ]);
     expect(find.text('time_days_ago'), findsNothing);
+    expect(find.text('crecam_updated_days'), findsOneWidget);
+  });
+
+  testWidgets('하이라이트 재조회 중에도 카드 문구를 스켈레톤으로 바꾸지 않는다', (tester) async {
+    // 회귀(2026-09-19 실기기): 탭 진입·앱 복귀 때 숨김 목록 갱신이 하이라이트·
+    // 북마크 조회를 연쇄로 다시 돌려, 카드 부제목이 한순간 스켈레톤으로 깜빡였다.
+    final gate = Completer<void>();
+    final now = DateTime.now();
+    await _pump(tester,
+        highlightReloadGate: gate,
+        latestHighlightAt: DateTime(now.year, now.month, now.day));
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(CrecamScreen)));
+
+    container.read(_highlightReloadTick.notifier).state = 1;
+    await tester.pump();
+
+    expect(container.read(latestHighlightAtProvider).isLoading, isTrue);
+    expect(find.text('crecam_updated_today'), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(CrecamScreen.highlightCardKey),
+            matching: find.byType(SkeletonLoading)),
+        findsNothing);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('crecam_updated_today'), findsOneWidget);
+  });
+
+  testWidgets('북마크 재조회 중에도 카드 문구를 스켈레톤으로 바꾸지 않는다', (tester) async {
+    // 회귀(2026-09-19 실기기 앱 복귀): whenData는 로딩 중 이전 값을 버려
+    // skipLoadingOnReload만으로는 북마크 부제목이 3프레임 스켈레톤이 됐다.
+    final gate = Completer<void>();
+    await _pump(tester, favoritesReloadGate: gate, favorites: [
+      FavoriteClip(
+        clipId: 'c1',
+        cameraId: _cameraId,
+        startedAt: DateTime(2026, 8, 31, 10, 15),
+        durationSec: 8,
+        filePath: '/tmp/c1.mp4',
+        sizeBytes: 1,
+        favoritedAt: DateTime.now().subtract(const Duration(days: 14)),
+        ownerId: 'u1',
+      ),
+    ]);
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(CrecamScreen)));
+
+    container.read(_highlightReloadTick.notifier).state = 1;
+    await tester.pump();
+
+    expect(container.read(allFavoriteClipsProvider).isLoading, isTrue);
+    expect(find.text('crecam_updated_days'), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(CrecamScreen.bookmarkCardKey),
+            matching: find.byType(SkeletonLoading)),
+        findsNothing);
+
+    gate.complete();
+    await tester.pumpAndSettle();
     expect(find.text('crecam_updated_days'), findsOneWidget);
   });
 }

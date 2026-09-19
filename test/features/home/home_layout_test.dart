@@ -67,7 +67,11 @@ const _extremes = EnvExtremes(
 /// 세트 재조립(의존 변경 → 다시 로딩)을 흉내 내는 방아쇠.
 final _reloadTick = StateProvider<int>((ref) => 0);
 
-Future<void> _pump(WidgetTester tester, {Completer<void>? reloadGate}) async {
+/// 현재 기기 id 재계산(세트 변경 → 다시 로딩)을 흉내 내는 방아쇠.
+final _deviceReloadTick = StateProvider<int>((ref) => 0);
+
+Future<void> _pump(WidgetTester tester,
+    {Completer<void>? reloadGate, Completer<void>? deviceReloadGate}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -78,7 +82,13 @@ Future<void> _pump(WidgetTester tester, {Completer<void>? reloadGate}) async {
           return [_set()];
         }),
         currentUserProvider.overrideWithValue(null),
-        currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
+        currentDeviceIdProvider.overrideWith((ref) async {
+          final tick = ref.watch(_deviceReloadTick);
+          if (tick > 0 && deviceReloadGate != null) {
+            await deviceReloadGate.future;
+          }
+          return _deviceId;
+        }),
         telemetryStreamProvider
             .overrideWith((ref, id) => Stream.value(_reading())),
         moduleOnlineProvider(_deviceId).overrideWithValue(true),
@@ -145,6 +155,25 @@ void main() {
     expect(container.read(homeDeviceSetsProvider).isLoading, isTrue);
     expect(find.byKey(EnvSummaryCard.cardKey), findsOneWidget);
     expect(find.byType(CageControlGrid), findsOneWidget);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.byKey(EnvSummaryCard.cardKey), findsOneWidget);
+  });
+
+  testWidgets('기기 id가 다시 계산되는 동안 요약 카드를 접지 않는다', (tester) async {
+    // 회귀(2026-09-19 실기기): 요약 카드만 재로딩 중 기기 id를 버리고 접혀,
+    // 아래 제어 그리드가 위로 튀었다 돌아왔다(그리드는 이전 값을 유지했다).
+    final gate = Completer<void>();
+    await _pump(tester, deviceReloadGate: gate);
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HomeScreen)));
+
+    container.read(_deviceReloadTick.notifier).state = 1;
+    await tester.pump();
+
+    expect(container.read(currentDeviceIdProvider).isLoading, isTrue);
+    expect(find.byKey(EnvSummaryCard.cardKey), findsOneWidget);
 
     gate.complete();
     await tester.pumpAndSettle();

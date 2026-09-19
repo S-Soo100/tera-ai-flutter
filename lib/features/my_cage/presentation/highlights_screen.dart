@@ -90,6 +90,9 @@ class HighlightsScreen extends ConsumerWidget {
                     ),
                   Expanded(
                     child: groupsAsync.when(
+                      // 진입 직후 숨김 목록 갱신이 이 목록을 다시 계산한다 — 그동안
+                      // 이전 목록을 유지해야 스켈레톤 깜빡임·스크롤 초기화가 없다.
+                      skipLoadingOnReload: true,
                       loading: () => const _Skeleton(),
                       error: (_, __) => CrecamErrorRetry(
                         onRetry: () {

@@ -223,11 +223,21 @@ class _EntryCards extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final highlightAt = ref.watch(latestHighlightAtProvider);
+    // whenData는 쓰지 않는다 — 로딩 중 이전 값을 버려(riverpod 2.6 common.dart
+    // `loading: (l) => AsyncLoading<R>()`) 재조회마다 부제목이 스켈레톤으로 깜빡였다.
     final bookmarkAt = ref.watch(
-      allFavoriteClipsProvider.select(
-        (v) =>
-            v.whenData((list) => list.isEmpty ? null : list.first.favoritedAt),
-      ),
+      allFavoriteClipsProvider.select((v) {
+        if (v.hasValue) {
+          final list = v.requireValue;
+          return AsyncData<DateTime?>(
+              list.isEmpty ? null : list.first.favoritedAt);
+        }
+        if (v.hasError) {
+          return AsyncError<DateTime?>(
+              v.error!, v.stackTrace ?? StackTrace.empty);
+        }
+        return const AsyncLoading<DateTime?>();
+      }),
     );
     return Row(
       children: [
@@ -351,6 +361,9 @@ class _EntryCard extends StatelessWidget {
       color: glass.textTertiary,
     );
     return latestAt.when(
+      // 재조회 중엔 이전 문구 유지 — 탭 진입·앱 복귀마다 숨김 목록 갱신이
+      // 하이라이트·북마크 조회를 연쇄로 다시 돌려 부제목이 깜빡였다.
+      skipLoadingOnReload: true,
       loading: () => const SkeletonLoading(width: 72, height: 14),
       // "없음"과 구분되는 문구 — 오프라인/서버 장애를 "아직 없어요"로
       // 단정하면 상세 화면(에러+재시도)과 모순된다(리뷰 2026-09-04).
