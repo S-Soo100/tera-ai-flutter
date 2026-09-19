@@ -142,9 +142,8 @@ class HighlightRepository {
     return (
       clipIds: ids,
       startedAts: times,
-      oldestStartedAt: times.isEmpty
-          ? null
-          : times.reduce((a, b) => a.isBefore(b) ? a : b),
+      oldestStartedAt:
+          times.isEmpty ? null : times.reduce((a, b) => a.isBefore(b) ? a : b),
       nextCursor: next is String && next.isNotEmpty ? next : null,
       hasMore: body['has_more'] == true,
     );

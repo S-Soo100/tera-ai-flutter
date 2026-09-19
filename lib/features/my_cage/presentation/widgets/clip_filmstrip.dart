@@ -59,9 +59,8 @@ class ClipFilmstrip extends StatelessWidget {
     // 회전 중 한 프레임은 세로·가로 리스트가 같은 컨트롤러에 동시에 붙는다
     // — 그때 offset을 읽으면 단정이 터지므로 마지막 위치를 쓴다.
     final positions = controller.positions;
-    final offset = positions.isEmpty
-        ? offsetForIndex(selected)
-        : positions.last.pixels;
+    final offset =
+        positions.isEmpty ? offsetForIndex(selected) : positions.last.pixels;
     return (offsetForIndex(index) - offset) / itemExtent;
   }
 

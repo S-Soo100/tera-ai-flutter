@@ -70,3 +70,32 @@ DateTime? parseDayKey(String dayKey) {
     int.parse(m.group(3)!),
   );
 }
+
+/// 지금 공개돼 있는 **가장 최신 묶음의 대표 1건** — 공개 시각이 가장 늦은 것,
+/// 같으면 순위(episodeRank)가 높은 것. 공개 정보·카메라가 없거나 아직 공개 전인
+/// 항목은 뺀다. 하이라이트 화면 도착 배너와 카메라 탭 카드("새 하이라이트")가
+/// 같은 묶음을 보도록 둘 다 이 함수를 쓴다.
+NightlyHighlight? latestPublishedHighlight(
+    List<DayHighlightGroup> groups, DateTime now) {
+  NightlyHighlight? best;
+  for (final group in groups) {
+    for (final h in group.featured) {
+      final publication = h.publication;
+      if (h.cameraId.isEmpty ||
+          publication == null ||
+          !publication.availableAt(now)) {
+        continue;
+      }
+      if (best == null) {
+        best = h;
+        continue;
+      }
+      final date =
+          publication.publishedAt.compareTo(best.publication!.publishedAt);
+      if (date > 0 || (date == 0 && h.episodeRank < best.episodeRank)) {
+        best = h;
+      }
+    }
+  }
+  return best;
+}

@@ -216,8 +216,7 @@ class _MemoFormState extends ConsumerState<_MemoForm> {
                       // Figma Field 297×130, 글자 x+17/y+17. 가로는
                       // OutlineInputBorder gapPadding(4)이 더해져 13으로 맞춘다
                       // (실측: 글상자 +17, 글리프 +18 = 원본 PNG).
-                      contentPadding:
-                          const EdgeInsets.fromLTRB(13, 17, 13, 17),
+                      contentPadding: const EdgeInsets.fromLTRB(13, 17, 13, 17),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: glass.border))),

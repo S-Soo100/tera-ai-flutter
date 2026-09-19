@@ -40,8 +40,7 @@ class ClipMemoCard extends StatelessWidget {
                 surfaceTintColor: context.glass.surfaceHeader,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
-                constraints:
-                    const BoxConstraints(minWidth: 106, maxWidth: 106),
+                constraints: const BoxConstraints(minWidth: 106, maxWidth: 106),
                 menuPadding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
                 position: PopupMenuPosition.under,
                 // under = 버튼 아래 - padding/2(12) → 36, 원본 44 = +8.

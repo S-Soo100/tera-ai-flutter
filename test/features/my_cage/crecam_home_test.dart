@@ -1,3 +1,5 @@
+import 'package:vivanaut/features/my_cage/data/highlight_read_store.dart';
+import 'package:vivanaut/features/my_cage/presentation/highlight_read_providers.dart';
 import 'package:vivanaut/shared/widgets/skeleton_loading.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_visibility_providers.dart';
 import 'package:vivanaut/features/my_cage/domain/clip_playlist_args.dart';
@@ -127,6 +129,16 @@ GoRouter _router() => GoRouter(
       ],
     );
 
+/// 읽음 저장소 대역 — 실제는 Hive라 테스트에선 모든 묶음이 안 읽음이 된다.
+class _FakeReadStore extends HighlightReadStore {
+  const _FakeReadStore(this.readBatches);
+  final Set<String> readBatches;
+  @override
+  bool read(HighlightReadKey key) => readBatches.contains(key.batchId);
+  @override
+  Future<void> markRead(HighlightReadKey key) async {}
+}
+
 /// 하이라이트 재조회(숨김 목록 갱신 → 연쇄 재계산)를 흉내 내는 방아쇠.
 final _highlightReloadTick = StateProvider<int>((ref) => 0);
 
@@ -134,6 +146,8 @@ Future<void> _pump(
   WidgetTester tester, {
   Completer<void>? highlightReloadGate,
   Completer<void>? favoritesReloadGate,
+  LatestHighlightBatch? latestBatch,
+  Set<String> readBatches = const {},
   List<TerraCamera>? cameras,
   List<MotionClip>? clips,
   DateTime? latestHighlightAt,
@@ -199,6 +213,9 @@ Future<void> _pump(
           }
           return latestHighlightAt;
         }),
+        latestHighlightBatchProvider.overrideWith((ref) async => latestBatch),
+        highlightReadStoreProvider
+            .overrideWithValue(_FakeReadStore(readBatches)),
         allFavoriteClipsProvider.overrideWith((ref) async {
           final tick = ref.watch(_highlightReloadTick);
           if (tick > 0 && favoritesReloadGate != null) {
@@ -574,6 +591,29 @@ void main() {
 
     gate.complete();
     await tester.pumpAndSettle();
+    expect(find.text('crecam_updated_days'), findsOneWidget);
+  });
+
+  // 2026-09-19 사용자 결정: 안 본 최신 묶음이 있으면 카드가 "새 하이라이트",
+  // 다 보면 원래대로 "업데이트 N일 전"(배너와 같은 읽음 기준).
+  testWidgets('안 본 하이라이트 묶음이 있으면 카드에 새 하이라이트', (tester) async {
+    final now = DateTime.now();
+    await _pump(tester,
+        latestHighlightAt: DateTime(now.year, now.month, now.day - 3),
+        latestBatch: (cameraId: _cameraId, batchId: 'night:2026-09-14'));
+
+    expect(find.text('crecam_highlights_new'), findsOneWidget);
+    expect(find.text('crecam_updated_days'), findsNothing);
+  });
+
+  testWidgets('최신 묶음을 다 봤으면 업데이트 N일 전으로 돌아온다', (tester) async {
+    final now = DateTime.now();
+    await _pump(tester,
+        latestHighlightAt: DateTime(now.year, now.month, now.day - 3),
+        latestBatch: (cameraId: _cameraId, batchId: 'night:2026-09-14'),
+        readBatches: {'night:2026-09-14'});
+
+    expect(find.text('crecam_highlights_new'), findsNothing);
     expect(find.text('crecam_updated_days'), findsOneWidget);
   });
 }

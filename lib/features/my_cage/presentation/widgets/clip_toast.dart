@@ -22,8 +22,8 @@ void showClipToast(BuildContext context,
   if (overlay == null) return;
   _timer?.cancel();
   _current?.remove();
-  final entry = OverlayEntry(
-      builder: (context) => _ClipToast(text: text, icon: icon));
+  final entry =
+      OverlayEntry(builder: (context) => _ClipToast(text: text, icon: icon));
   _current = entry;
   overlay.insert(entry);
   _timer = Timer(duration, () {

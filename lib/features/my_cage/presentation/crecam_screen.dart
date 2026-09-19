@@ -1,3 +1,5 @@
+import 'highlight_read_providers.dart';
+import '../../auth/presentation/auth_providers.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -223,6 +225,16 @@ class _EntryCards extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final highlightAt = ref.watch(latestHighlightAtProvider);
+    // 안 본 최신 묶음이 있으면 "새 하이라이트" — 다 보면(재생 진전) 원래대로
+    // "업데이트 N일 전". 배너와 같은 읽음 기준이다(2026-09-19 사용자 결정).
+    final owner = ref.watch(currentUserProvider.select((u) => u?.id)) ?? '';
+    final batch = ref.watch(latestHighlightBatchProvider).valueOrNull;
+    final highlightUnread = batch != null &&
+        !ref.watch(highlightReadProvider((
+          ownerId: owner,
+          cameraId: batch.cameraId,
+          batchId: batch.batchId,
+        )));
     // whenData는 쓰지 않는다 — 로딩 중 이전 값을 버려(riverpod 2.6 common.dart
     // `loading: (l) => AsyncLoading<R>()`) 재조회마다 부제목이 스켈레톤으로 깜빡였다.
     final bookmarkAt = ref.watch(
@@ -248,6 +260,7 @@ class _EntryCards extends ConsumerWidget {
             title: 'crecam_home_highlights'.tr(),
             latestAt: highlightAt,
             emptyLabel: 'crecam_update_unknown'.tr(),
+            label: highlightUnread ? 'crecam_highlights_new'.tr() : null,
             onTap: () => context.push('/crecam/highlights'),
           ),
         ),
@@ -276,6 +289,7 @@ class _EntryCard extends StatelessWidget {
     required this.title,
     required this.latestAt,
     this.emptyLabel,
+    this.label,
     required this.onTap,
   });
 
@@ -283,6 +297,9 @@ class _EntryCard extends StatelessWidget {
   final String iconAsset;
   final String title;
   final String? emptyLabel;
+
+  /// 날짜 문구 대신 보일 상태 문구(예: 새 하이라이트). null이면 [latestAt] 기준.
+  final String? label;
 
   /// 최신 항목 시각. data(null) = 항목 없음("아직 없어요").
   final AsyncValue<DateTime?> latestAt;
@@ -360,6 +377,13 @@ class _EntryCard extends StatelessWidget {
       letterSpacing: 14 * -0.02,
       color: glass.textTertiary,
     );
+    if (label case final text?) {
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(text, style: style),
+      );
+    }
     return latestAt.when(
       // 재조회 중엔 이전 문구 유지 — 탭 진입·앱 복귀마다 숨김 목록 갱신이
       // 하이라이트·북마크 조회를 연쇄로 다시 돌려 부제목이 깜빡였다.

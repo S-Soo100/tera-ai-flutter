@@ -585,6 +585,19 @@ final latestHighlightAtProvider =
   return published;
 });
 
+/// 공개된 최신 하이라이트 묶음(카메라·batchId) — 읽음 키. 카메라 탭 카드가
+/// 이 묶음을 안 봤으면 "새 하이라이트"를 띄운다(하이라이트 화면 배너와 같은
+/// [latestPublishedHighlight] 기준, 2026-09-19 사용자 결정).
+typedef LatestHighlightBatch = ({String cameraId, String batchId});
+
+final latestHighlightBatchProvider =
+    FutureProvider.autoDispose<LatestHighlightBatch?>((ref) async {
+  final groups = await ref.watch(highlightGroupsProvider.future);
+  final latest = latestPublishedHighlight(groups, DateTime.now());
+  if (latest == null) return null;
+  return (cameraId: latest.cameraId, batchId: latest.publication!.batchId);
+});
+
 /// 전체 즐겨찾기(favoritedAt desc — repository가 정렬). 엔트리 카드 최신
 /// 시각 + 북마크 상세(T3)가 쓴다. non-autoDispose이므로 currentUser id
 /// select-watch 필수(project_auth_provider_stale_pattern).

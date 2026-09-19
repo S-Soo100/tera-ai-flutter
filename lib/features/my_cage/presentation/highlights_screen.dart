@@ -158,13 +158,9 @@ class HighlightsScreen extends ConsumerWidget {
     final published = [for (final group in groups) ...group.featured]
         .where((h) =>
             h.cameraId.isNotEmpty && h.publication?.availableAt(now) == true)
-        .toList()
-      ..sort((a, b) {
-        final date =
-            b.publication!.publishedAt.compareTo(a.publication!.publishedAt);
-        return date != 0 ? date : a.episodeRank.compareTo(b.episodeRank);
-      });
-    final latest = published.firstOrNull;
+        .toList();
+    // 카메라 탭 카드("새 하이라이트")와 같은 기준 — 갈라지면 두 곳이 다른 묶음을 본다.
+    final latest = latestPublishedHighlight(groups, now);
     final publication = latest?.publication;
     final newest = latest == null
         ? groups.first
