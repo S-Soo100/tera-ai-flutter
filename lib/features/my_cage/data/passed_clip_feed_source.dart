@@ -12,11 +12,12 @@ typedef PassedRefLoader = Future<PassedClipRefPage> Function({
 typedef ClipHydrator = Future<List<MotionClip>> Function(List<String> clipIds);
 
 /// 아직 판정되지 않은 영상 — `motion_clips` 원본에서 [after] **뒤**의 것만,
-/// [range]가 있으면 그 안으로 잘라 최신순으로.
-typedef PendingClipLoader = Future<List<MotionClip>> Function({
+/// [range]가 있으면 그 안으로 잘라 최신순으로. [before]는 이어 읽기 커서다.
+typedef PendingClipLoader = Future<MotionClipPage> Function({
   required String cameraId,
   required DateTime after,
   ClipDateRange? range,
+  MotionClipCursor? before,
 });
 
 /// 카메라 탭 **전체 영상 목록**의 데이터 소스(정책 v2, 2026-09-19) — 거르지
@@ -45,52 +46,77 @@ class PassedClipFeedSource {
   /// 판정된 것이 하나도 없을 때의 기준점 — 그 카메라 영상 전부가 판정 전이다.
   static final _beforeEverything = DateTime.utc(1970);
 
+  /// 판정 전 구간을 읽는 중임을 커서에 실어 둔다. 판정 지점(`/highlights`
+  /// 첫 페이지)을 페이지마다 다시 묻지 않기 위해 값까지 같이 싣는다.
+  static const _pendingPrefix = 'pending:';
+
   /// 서버 `until` 미배포 동안 과거 범위를 찾으러 넘기는 페이지 상한.
   static const _maxSkipPages = 20;
 
+  /// 한 페이지.
+  ///
+  /// **판정 전 구간을 먼저 다 읽고, 그다음 통과 목록으로 넘어간다.** 판정이
+  /// 몇 주씩 밀리면 판정 전 영상이 수천 건이라(2026-09-21 실측: 한 카메라에
+  /// 1187건) 맨 위에 60건만 얹는 방식으로는 가운데가 뚫린 목록이 된다.
   Future<MotionClipPage> loadPage(ClipFeedQuery query,
       {MotionClipCursor? before}) async {
-    final page = await _passedPage(query, before: before);
-    // 판정 전 영상은 **맨 위 페이지에만** 붙인다 — 아래 페이지는 이미 판정이
-    // 끝난 과거라서 빠져 있다면 미통과가 맞다.
-    if (before != null || _listPending == null) return page;
-    final pending = await _pendingClips(query);
-    if (pending.isEmpty) return page;
-    final seen = {for (final clip in page.items) clip.id};
-    final merged = [
-      ...pending.where((clip) => seen.add(clip.id)),
-      ...page.items,
-    ]..sort((a, b) {
-        final date = b.startedAt.compareTo(a.startedAt);
-        return date == 0 ? b.id.compareTo(a.id) : date;
-      });
-    return (
-      items: List<MotionClip>.unmodifiable(merged),
-      nextCursor: page.nextCursor,
-      hasMore: page.hasMore,
-    );
+    if (_listPending == null) return _passedPage(query, before: before);
+    final token = before?.token;
+    if (before != null &&
+        (token == null || !token.startsWith(_pendingPrefix))) {
+      return _passedPage(query, before: before);
+    }
+    final judgedUpTo = before == null
+        ? await _judgedUpTo(query.cameraId)
+        : _parseWatermark(token!);
+    final page = await _pendingPage(query, judgedUpTo, before);
+    if (page.items.isNotEmpty) {
+      final last = page.items.last;
+      return (
+        items: page.items,
+        nextCursor: (
+          startedAt: last.startedAt,
+          id: last.id,
+          token: '$_pendingPrefix${judgedUpTo?.toIso8601String() ?? ''}',
+        ),
+        // 판정 전 구간이 끝나도 그 아래에 통과 목록이 있다.
+        hasMore: true,
+      );
+    }
+    // 판정 전 구간을 다 읽었다 → 통과 목록 처음부터.
+    return _passedPage(query, before: null);
   }
 
-  /// 아직 판정되지 않은 영상. 기준점은 **가장 최근 통과분의 촬영 시각**이다 —
-  /// 판정은 시간순으로 진행되므로 그보다 뒤는 아직 안 본 것으로 본다.
-  /// 조회가 실패하면 빈 목록이다(통과 목록까지 같이 죽이지 않는다).
-  Future<List<MotionClip>> _pendingClips(ClipFeedQuery query) async {
+  static DateTime? _parseWatermark(String token) {
+    final raw = token.substring(_pendingPrefix.length);
+    return raw.isEmpty ? null : DateTime.parse(raw);
+  }
+
+  /// 판정 전 한 페이지. 조회가 실패하면 빈 페이지다 — 통과 목록까지 같이
+  /// 죽이지 않는다.
+  Future<MotionClipPage> _pendingPage(ClipFeedQuery query, DateTime? judgedUpTo,
+      MotionClipCursor? before) async {
     try {
-      final judgedUpTo = await _judgedUpTo(query.cameraId);
       return await _listPending!(
           cameraId: query.cameraId,
           after: judgedUpTo ?? _beforeEverything,
-          range: query.range);
+          range: query.range,
+          before: before);
     } catch (_) {
-      return const [];
+      return (items: const <MotionClip>[], nextCursor: null, hasMore: false);
     }
   }
 
   /// 기간 선택과 무관하게 **전체**에서 가장 최근 통과분의 시각.
+  /// 조회가 실패하면 null — 전부 판정 전으로 보고 원본을 보여준다.
   Future<DateTime?> _judgedUpTo(String cameraId) async {
-    final refs = await _listRefs(cameraId: cameraId);
-    if (refs.startedAts.isEmpty) return null;
-    return refs.startedAts.reduce((a, b) => a.isAfter(b) ? a : b);
+    try {
+      final refs = await _listRefs(cameraId: cameraId);
+      if (refs.startedAts.isEmpty) return null;
+      return refs.startedAts.reduce((a, b) => a.isAfter(b) ? a : b);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<MotionClipPage> _passedPage(ClipFeedQuery query,

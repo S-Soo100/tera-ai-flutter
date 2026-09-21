@@ -456,24 +456,30 @@ final passedClipFeedSourceProvider = Provider<PassedClipFeedSource>((ref) {
     hydrate: clips.getByIds,
     listPending: owner == null
         ? null
-        : ({required cameraId, required after, range}) async {
+        : ({required cameraId, required after, range, before}) async {
             final start = range == null || range.start.isBefore(after)
                 ? after
                 : range.start;
             // 상한이 없으면 "지금까지" — 미래 시각 행은 어차피 없다.
             final end = range?.endExclusive ??
                 DateTime.now().toUtc().add(const Duration(days: 1));
-            if (!end.isAfter(start)) return const [];
+            const empty =
+                (items: <MotionClip>[], nextCursor: null, hasMore: false);
+            if (!end.isAfter(start)) return empty;
             final page = await clips.listPage((
               ownerId: owner,
               cameraId: cameraId,
               range: (start: start, endExclusive: end)
-            ), pageSize: 60);
+            ), before: before, pageSize: 60);
             // gte라 기준점 자신이 섞여 들어온다 — 뒤엣것만 남긴다.
-            return [
-              for (final clip in page.items)
-                if (clip.startedAt.toUtc().isAfter(after)) clip
-            ];
+            return (
+              items: [
+                for (final clip in page.items)
+                  if (clip.startedAt.toUtc().isAfter(after)) clip
+              ],
+              nextCursor: page.nextCursor,
+              hasMore: page.hasMore,
+            );
           },
   );
 });
