@@ -1,22 +1,19 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/network/auth_session.dart';
 
 import 'camera_exceptions.dart';
 
 class WebRtcSignalingRepository {
   final String _terraServerUrl;
-  final Future<String?> Function() _tokenProvider;
-  final SupabaseClient _supabase;
+  final AuthSession _session;
 
   WebRtcSignalingRepository({
     required String terraServerUrl,
-    required Future<String?> Function() tokenProvider,
-    required SupabaseClient supabase,
+    required AuthSession session,
   })  : _terraServerUrl = terraServerUrl,
-        _tokenProvider = tokenProvider,
-        _supabase = supabase;
+        _session = session;
 
   // ── 공개 API ───────────────────────────────────────────────────────────────
 
@@ -127,20 +124,21 @@ class WebRtcSignalingRepository {
 
   // ── 내부 헬퍼 ─────────────────────────────────────────────────────────────
 
-  /// 401 응답 시 전역 signOut
+  /// 401이면 세션을 되살려 **한 번 더** 보낸다. 로그아웃은 refresh 자체가
+  /// 거부당했을 때만 일어난다([AuthSession]) — 만료 토큰 한 번에 자동 로그인을
+  /// 날리던 규칙의 교체(2026-09-21).
   Future<http.Response> _authedRequest(
     Future<http.Response> Function() send, {
     int timeoutSec = 15,
   }) async {
     final resp = await send().timeout(Duration(seconds: timeoutSec));
-    if (resp.statusCode == 401) {
-      await _supabase.auth.signOut();
-    }
-    return resp;
+    if (resp.statusCode != 401) return resp;
+    if (!await _session.recoverFromUnauthorized()) return resp;
+    return send().timeout(Duration(seconds: timeoutSec));
   }
 
   Future<Map<String, String>> _authHeaders({bool withJson = false}) async {
-    final token = await _tokenProvider();
+    final token = await _session.accessToken();
     return {
       if (token != null) 'Authorization': 'Bearer $token',
       if (withJson) 'Content-Type': 'application/json',

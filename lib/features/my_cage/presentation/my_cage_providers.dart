@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/config/env_config.dart';
+import '../../../core/network/auth_session.dart';
 import '../../../core/network/terra_rest_client.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/camera_repository.dart';
@@ -56,10 +57,11 @@ final _supabaseClientProvider = Provider<SupabaseClient>(
   (ref) => Supabase.instance.client,
 );
 
-/// JWT accessToken 공급자. 매 호출마다 currentSession을 읽어 최신 토큰 반환.
+/// JWT accessToken 공급자. 만료가 임박하면 갱신까지 한다([AuthSession]) —
+/// 예전처럼 `currentSession`을 그대로 읽으면 만료 토큰이 나가고 401 →
+/// 로그아웃으로 이어진다(2026-09-21 "자동로그인이 자꾸 풀린다").
 final _tokenProviderProvider = Provider<Future<String?> Function()>(
-  (ref) =>
-      () async => Supabase.instance.client.auth.currentSession?.accessToken,
+  (ref) => ref.watch(authSessionProvider).accessToken,
 );
 
 // ── Repository Provider ────────────────────────────────────────────────────────
@@ -81,7 +83,7 @@ final clipRepositoryProvider = Provider<ClipRepository>((ref) {
   return ClipRepository(
     supabase: ref.watch(_supabaseClientProvider),
     backendUrl: EnvConfig.backendUrl,
-    tokenProvider: ref.watch(_tokenProviderProvider),
+    session: ref.watch(authSessionProvider),
   );
 });
 
@@ -97,8 +99,7 @@ final webrtcSignalingRepositoryProvider =
     Provider<WebRtcSignalingRepository>((ref) {
   return WebRtcSignalingRepository(
     terraServerUrl: EnvConfig.terraServerUrl,
-    tokenProvider: ref.watch(_tokenProviderProvider),
-    supabase: ref.watch(_supabaseClientProvider),
+    session: ref.watch(authSessionProvider),
   );
 });
 

@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/network/auth_session.dart';
+
 import '../domain/behavior_inference.dart';
 import '../domain/behavior_label.dart';
 import '../domain/cage_activity.dart';
@@ -18,15 +20,15 @@ import 'camera_exceptions.dart';
 class ClipRepository {
   final SupabaseClient _supabase;
   final String _backendUrl;
-  final Future<String?> Function() _tokenProvider;
+  final AuthSession _session;
 
   ClipRepository({
     required SupabaseClient supabase,
     required String backendUrl,
-    required Future<String?> Function() tokenProvider,
+    required AuthSession session,
   })  : _supabase = supabase,
         _backendUrl = backendUrl,
-        _tokenProvider = tokenProvider;
+        _session = session;
 
   // ── Supabase 직결 페이징 ───────────────────────────────────────────────────
 
@@ -350,19 +352,19 @@ class ClipRepository {
 
   // ── 내부 헬퍼 ─────────────────────────────────────────────────────────────
 
-  /// 401 응답 시 전역 signOut으로 /login 자동 이동 유도.
+  /// 401이면 세션을 되살려 **한 번 더** 보낸다. 로그아웃은 refresh 자체가
+  /// 거부당했을 때만 일어난다([AuthSession], 2026-09-21).
   Future<http.Response> _authedRequest(
       Future<http.Response> Function() send) async {
     final resp = await send();
-    if (resp.statusCode == 401) {
-      await _supabase.auth.signOut();
-    }
-    return resp;
+    if (resp.statusCode != 401) return resp;
+    if (!await _session.recoverFromUnauthorized()) return resp;
+    return send();
   }
 
   /// HTTP 요청용 Bearer 헤더. 기존 동기 authHeaders()와 이름 구분.
   Future<Map<String, String>> _authHeadersHttp() async {
-    final token = await _tokenProvider();
+    final token = await _session.accessToken();
     return {if (token != null) 'Authorization': 'Bearer $token'};
   }
 

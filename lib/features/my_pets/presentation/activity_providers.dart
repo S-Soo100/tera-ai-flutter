@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/config/env_config.dart';
+import '../../../core/network/auth_session.dart';
 import '../data/activity_repository.dart';
 import '../domain/activity_summary.dart';
 import '../domain/activity_window.dart';
@@ -11,10 +12,12 @@ final activityRepositoryProvider =
     Provider.autoDispose.family<ActivityRepository, String>((ref, userId) {
   final repo = HttpActivityRepository(
       baseUrl: EnvConfig.backendUrl,
+      // 만료가 임박하면 갱신까지 한다([AuthSession]) — 만료 토큰을 보내면
+      // 401이고, 401은 로그아웃 경로를 탄다(2026-09-21).
       tokenProvider: () async {
         final auth = Supabase.instance.client.auth;
         if (auth.currentUser?.id != userId) return null;
-        return auth.currentSession?.accessToken;
+        return ref.read(authSessionProvider).accessToken();
       });
   ref.onDispose(repo.dispose);
   return repo;
