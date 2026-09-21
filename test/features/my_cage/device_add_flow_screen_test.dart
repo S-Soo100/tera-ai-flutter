@@ -168,6 +168,53 @@ void main() {
       await tester.pump();
     });
   }
+  // 새 사육장 + Wi-Fi만 바꾼 카메라(2026-09-21) — 버튼이 '나중에 하기'만
+  // 남던 문제. 새 사육장을 기존 사육 환경에 연결할 길을 연다.
+  testWidgets('새 사육장과 Wi-Fi 변경 카메라가 섞이면 기존 환경 연결을 연다', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(393, 852);
+    addTearDown(tester.view.reset);
+    const initial =
+        DeviceAddState(step: DeviceAddStep.results, ssid: 'home', results: {
+      PairTargetKind.device: DeviceAddResult(
+          candidate: device,
+          outcome: DeviceAddOutcome.registered,
+          registeredId: 'new-device',
+          wifiConnected: true),
+      PairTargetKind.camera: DeviceAddResult(
+          candidate: camera,
+          outcome: DeviceAddOutcome.wifiUpdated,
+          registeredId: 'existing-camera',
+          wifiConnected: true,
+          reconnect: CameraReconnect.online),
+    });
+    await tester.pumpWidget(EasyLocalization(
+        supportedLocales: const [Locale('ko')],
+        path: 'assets/l10n',
+        assetLoader: const Translations(),
+        child: Builder(
+            builder: (context) => ProviderScope(
+                    overrides: [
+                      deviceAddAccountProvider.overrideWithValue('a'),
+                      deviceAddFlowProvider('test')
+                          .overrideWith((ref) => Controller(initial)),
+                    ],
+                    child: MaterialApp(
+                        theme: AppTheme.light,
+                        locale: context.locale,
+                        supportedLocales: context.supportedLocales,
+                        localizationsDelegates: context.localizationDelegates,
+                        home: const DeviceAddFlowScreen(flowKey: 'test'))))));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('device_add_link_existing')), findsOneWidget);
+    expect(find.byKey(const Key('device_add_continue_kind')), findsNothing);
+    expect(find.byKey(const Key('device_add_later')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+  });
+
   // 사육장 등록 대기(2026-09-21) — 실패 사유를 밝히고 다시 연결을 연다.
   testWidgets('사육장 등록 실패 사유와 다시 연결', (tester) async {
     tester.view.devicePixelRatio = 1;

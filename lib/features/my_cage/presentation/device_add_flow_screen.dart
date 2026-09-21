@@ -798,7 +798,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                 .copyWith(height: 19.09375 / 16))
       else
         for (final result in state.results.values) _result(context, result),
-      if (confirmed == 1 && !pending && !updated && _joinedGroupId == null)
+      // Wi-Fi만 바꾼 카메라와 섞여도 새로 등록한 기기는 기존 사육 환경에
+      // 연결할 수 있어야 한다 — 안 그러면 '나중에 하기'만 남는다(2026-09-21).
+      // 카메라는 자동으로 옮기지 않는다(사용자가 환경을 고른다).
+      if (confirmed == 1 && !pending && _joinedGroupId == null)
         _PairingTextButton(
             key: const Key('device_add_link_existing'),
             onPressed: state.busy
