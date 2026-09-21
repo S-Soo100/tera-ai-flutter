@@ -189,7 +189,9 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     final log = logAsync.valueOrNull ?? const [];
 
     return ListView(
-      padding: EdgeInsets.zero,
+      // 안드로이드 edge-to-edge — 하단 시스템 바 높이를 직접 비운다(padding을
+      // 지정하면 ListView가 자동으로 더해 주지 않는다).
+      padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
       children: [
         _dayPager(glass, day),
         const SizedBox(height: 12),
@@ -460,7 +462,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     final rowsAsync = ref.watch(envWeekRowsProvider);
 
     return ListView(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding:
+          EdgeInsets.only(bottom: 24 + MediaQuery.paddingOf(context).bottom),
       children: [
         _weekPager(glass, week),
         // Figma 1081:5052 — 페이저(172~212) → 헤더 236.
