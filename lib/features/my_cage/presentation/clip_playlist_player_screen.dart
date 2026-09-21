@@ -1208,11 +1208,10 @@ class _ClipPlaylistPlayerScreenState
   List<Widget> _actionButtons(
       GlassPalette glass, MotionClip? clip, bool isFav) {
     final color = glass.textPrimary;
-    // [frame]은 그 아이콘의 export 프레임이다. 프레임에 디자인이 정한 여백이
-    // 들어 있어서 다른 크기로 그리면 글리프만 확대·축소된다 — 북마크 on은
-    // 24 프레임(Figma 1081:4209)이라 36으로 그리면 옆 버튼들보다 1.5배 커진다.
-    Widget action(String asset, String tooltip, VoidCallback? onTap,
-        {double frame = 36, Color? tint}) {
+    // 이 줄의 아이콘은 전부 36 프레임 export다. 프레임에 디자인이 정한 여백이
+    // 들어 있어서 다른 크기로 그리면 글리프만 확대·축소된다 — 다른 프레임의
+    // 에셋을 여기 넣으려면 그 크기로 그려야 한다(`player_icon_frame_test`).
+    Widget action(String asset, String tooltip, VoidCallback? onTap) {
       return SizedBox(
         width: 44,
         height: 44,
@@ -1220,8 +1219,7 @@ class _ClipPlaylistPlayerScreenState
           padding: EdgeInsets.zero,
           iconSize: 24,
           icon: FigmaIcon.tinted(asset,
-              color: onTap == null ? glass.textTertiary : (tint ?? color),
-              size: frame),
+              color: onTap == null ? glass.textTertiary : color, size: 36),
           tooltip: tooltip,
           onPressed: onTap,
         ),
@@ -1237,14 +1235,12 @@ class _ClipPlaylistPlayerScreenState
       action(_hasMemo ? FigmaIcons.memoFilled : FigmaIcons.memo,
           (_hasMemo ? 'clip_memo_edit' : 'clip_memo_add').tr(), _editMemo),
       const SizedBox(width: 8),
+      // 북마크도 메모처럼 외곽선/채움으로 가른다(2026-09-21 사용자 지시).
+      // 두 에셋이 같은 36 프레임이라 frame·tint를 따로 줄 필요가 없다.
       action(
-          isFav ? FigmaIcons.bookmarkCheck : FigmaIcons.bookmark,
+          isFav ? FigmaIcons.bookmarkFilled : FigmaIcons.bookmark,
           (isFav ? 'clip_favorite_remove' : 'clip_favorite_add').tr(),
-          () => _toggleFavorite(clip),
-          frame: isFav ? 24 : 36,
-          // on/off가 둘 다 채워진 리본이라 모양만으로는 구분이 약하다 —
-          // 안 한 쪽을 50% 연하게 그린다(2026-09-21 사용자 결정).
-          tint: isFav ? null : color.withValues(alpha: .5)),
+          () => _toggleFavorite(clip)),
     ];
   }
 

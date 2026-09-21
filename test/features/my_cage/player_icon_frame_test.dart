@@ -146,43 +146,53 @@ void main() {
         padding: const EdgeInsets.only(top: 62, bottom: 34), favorite: true);
     expect(
         find.byWidgetPredicate(
-            (w) => w is FigmaIcon && w.name == FigmaIcons.bookmarkCheck),
+            (w) => w is FigmaIcon && w.name == FigmaIcons.bookmarkFilled),
         findsWidgets);
     expectFramesMatch(tester);
     expect(tester.takeException(), isNull);
   });
 
-  /// 북마크 on/off가 둘 다 **채워진** 리본이라 모양만으로는 구분이 약하다.
-  /// 2026-09-21 사용자 결정 — off는 50% 연하게, on은 원래 색 그대로.
+  /// 북마크 on/off는 **모양으로** 가른다 — 메모와 같은 문법이다
+  /// (2026-09-21 사용자 지시, `bookmark-empty`/`bookmark-full` 시트).
+  ///
+  /// 그 전에는 둘 다 채워진 리본이라 구분이 안 돼서 off를 50% 연하게 그렸다.
+  /// 외곽선/채움이 생겼으니 그 농도 장치는 걷어낸다 — 두 장치가 겹치면 off가
+  /// 비활성 버튼처럼 보인다.
   FigmaIcon bookmarkIcon(WidgetTester tester) =>
       tester.widgetList<FigmaIcon>(find.byType(FigmaIcon)).firstWhere(
           (w) =>
               w.name == FigmaIcons.bookmark ||
-              w.name == FigmaIcons.bookmarkCheck,
+              w.name == FigmaIcons.bookmarkFilled,
           orElse: () => throw StateError('북마크 아이콘이 없다'));
 
-  testWidgets('북마크 안 한 영상은 북마크만 50% 연하게 그린다', (tester) async {
+  testWidgets('북마크 안 한 영상은 외곽선 북마크 아이콘', (tester) async {
     await pump(tester, const Size(393, 852),
         padding: const EdgeInsets.only(top: 62, bottom: 34));
 
     final bookmark = bookmarkIcon(tester);
     expect(bookmark.name, FigmaIcons.bookmark);
-    expect(bookmark.color!.a, closeTo(0.5, 0.01));
-
-    // 옆 버튼들은 그대로다 — 연해지는 건 북마크뿐이다.
+    // 옆 버튼들과 같은 농도다 — 연하게 그리던 장치는 걷어냈다.
     final download = tester
         .widgetList<FigmaIcon>(find.byType(FigmaIcon))
         .firstWhere((w) => w.name == FigmaIcons.download);
-    expect(download.color!.a, 1.0);
+    expect(bookmark.color!.a, download.color!.a);
   });
 
-  testWidgets('북마크한 영상은 원래 색 그대로다', (tester) async {
+  testWidgets('북마크한 영상은 채워진 북마크 아이콘', (tester) async {
     await pump(tester, const Size(393, 852),
         padding: const EdgeInsets.only(top: 62, bottom: 34), favorite: true);
 
-    final bookmark = bookmarkIcon(tester);
-    expect(bookmark.name, FigmaIcons.bookmarkCheck);
-    expect(bookmark.color!.a, 1.0);
+    expect(bookmarkIcon(tester).name, FigmaIcons.bookmarkFilled);
+  });
+
+  testWidgets('북마크 두 상태가 같은 프레임이라 눌러도 크기가 안 변한다', (tester) async {
+    await pump(tester, const Size(393, 852),
+        padding: const EdgeInsets.only(top: 62, bottom: 34));
+    final off = bookmarkIcon(tester).size;
+
+    await pump(tester, const Size(393, 852),
+        padding: const EdgeInsets.only(top: 62, bottom: 34), favorite: true);
+    expect(bookmarkIcon(tester).size, off);
   });
 
   /// 2026-09-21 사용자 결정 — 메모도 있을때/없을때가 구분되어야 한다

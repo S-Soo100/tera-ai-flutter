@@ -78,7 +78,14 @@ abstract final class FigmaIcons {
   static const arrowNext = 'arrow_next';
   static const download = 'download';
   static const share = 'share';
-  static const bookmark = 'bookmark';
+  /// 북마크 안했을때(외곽선) / 했을때(채움) — Figma 아이콘 시트(2026-09-21).
+  ///
+  /// 둘 다 36 프레임에 같은 자리로 그려져 있어 눌러도 크기가 안 변한다.
+  /// 그 전에는 on이 24 프레임(`bookmark_check`)이라 누르면 확 커졌고, 둘 다
+  /// 채워진 리본이라 off를 50% 연하게 그려 구분했다 — 모양으로 갈리니 그
+  /// 농도 장치는 걷어냈다(연한 아이콘은 비활성 버튼으로 읽힌다).
+  static const bookmark = 'redesign_v2/bookmark_empty';
+  static const bookmarkFilled = 'redesign_v2/bookmark_full';
   static const delete = 'delete';
   static const play = 'play';
   static const speed2x = 'speed_2x';
