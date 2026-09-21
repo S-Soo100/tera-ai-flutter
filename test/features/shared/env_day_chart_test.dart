@@ -56,29 +56,36 @@ void main() {
         tester.state<ScrollableState>(find.byType(Scrollable)).position.pixels,
         before);
   });
-  group('resolveMarkerCenters — 겹침 보정', () {
-    test('겹치지 않으면 그대로', () {
+  group('resolveMarkerCenters — 시각 자리 유지 + 살짝 겹침', () {
+    test('멀리 떨어지면 그대로', () {
       final out = resolveMarkerCenters([50, 100, 200], min: 14, max: 510);
       expect(out, [50, 100, 200]);
     });
 
-    test('같은 위치는 최소 22pt 간격으로 벌린다', () {
-      final out = resolveMarkerCenters([100, 100, 105], min: 14, max: 510);
-      expect(out, [100, 122, 144]);
+    test('가까운 것은 평균 자리 중심으로 8pt 간격 겹침', () {
+      final out = resolveMarkerCenters([100, 100, 106], min: 14, max: 510);
+      expect(out[0], closeTo(94, 0.001));
+      expect(out[1], closeTo(102, 0.001));
+      expect(out[2], closeTo(110, 0.001));
     });
 
-    test('왼쪽 끝은 min으로 클램프', () {
+    test('연속 조작 10건도 실제 시각에서 멀리 밀리지 않는다', () {
+      final out =
+          resolveMarkerCenters(List.filled(10, 200.0), min: 14, max: 510);
+      expect(out.first, greaterThanOrEqualTo(200 - 14));
+      expect(out.last, lessThanOrEqualTo(200 + 14));
+    });
+
+    test('왼쪽 끝은 min 안에 담는다', () {
       final out = resolveMarkerCenters([0, 2], min: 14, max: 510);
       expect(out.first, 14);
-      expect(out[1] - out[0], greaterThanOrEqualTo(22));
+      expect(out[1], 22);
     });
 
-    test('오른쪽 끝을 넘치면 되밀어 max 안에 담는다', () {
+    test('오른쪽 끝은 max 안에 담는다', () {
       final out = resolveMarkerCenters([505, 508, 510], min: 14, max: 510);
-      expect(out.last, lessThanOrEqualTo(510));
-      expect(out[2] - out[1], closeTo(22, 0.001));
-      expect(out[1] - out[0], closeTo(22, 0.001));
-      expect(out.first, greaterThanOrEqualTo(14));
+      expect(out.last, 510);
+      expect(out.first, 494);
     });
 
     test('빈 목록은 빈 목록', () {

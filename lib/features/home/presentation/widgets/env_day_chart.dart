@@ -27,30 +27,42 @@ List<List<({double x, double y})>> environmentLineSegments(
   return segments;
 }
 
-/// 겹치는 마커 중심 x들을 **최소 [minGap] 간격**으로 벌린다 (계획서 §A.5).
+/// 마커 중심 x들을 **실제 시각 자리에 두고, 가까운 것끼리는 살짝 겹쳐 편다.**
 ///
-/// [centers]는 오름차순 픽셀 좌표. 앞에서 뒤로 밀어 간격을 확보하고, 끝을
-/// 넘치면 뒤에서 앞으로 되밀어 [max] 안에 담는다 — 한 방향만 밀면 마지막
-/// 마커가 차트 밖으로 나간다. 되밀어도 안 담기면(마커가 폭보다 많으면) 겹침을
-/// 허용한다 — Figma도 22px 간격 겹침을 허용했다.
+/// [centers]는 오름차순 픽셀 좌표. 이웃과 [clusterWidth] 안에 있는 마커들을
+/// 한 묶음으로 보고, 묶음의 평균 위치를 중심으로 [maxGap] 간격(묶음이 크면
+/// 전체 폭이 [clusterWidth]를 넘지 않게 더 좁게)으로 펼친다. 묶음은 통째로
+/// [min]~[max] 안에 담는다.
+///
+/// 예전엔 22pt(≈1시간) 간격을 강제해 연속 조작이 몇 시간 뒤까지 밀려
+/// 시각과 어긋나 보였다(2026-09-21 제보) — 색으로 구분되니 겹침을 허용한다.
 List<double> resolveMarkerCenters(
   List<double> centers, {
   required double min,
   required double max,
-  double minGap = 22,
+  double maxGap = 8,
+  double clusterWidth = 28,
 }) {
-  final out = List<double>.of(centers);
-  for (var i = 0; i < out.length; i++) {
-    out[i] = out[i].clamp(min, max);
-    if (i > 0 && out[i] < out[i - 1] + minGap) {
-      out[i] = out[i - 1] + minGap;
+  final out = <double>[];
+  var i = 0;
+  while (i < centers.length) {
+    var j = i + 1;
+    while (j < centers.length && centers[j] - centers[j - 1] < clusterWidth) {
+      j++;
     }
-  }
-  for (var i = out.length - 1; i >= 0; i--) {
-    if (out[i] > max) out[i] = max;
-    if (i < out.length - 1 && out[i] > out[i + 1] - minGap) {
-      out[i] = (out[i + 1] - minGap).clamp(min, max);
+    final n = j - i;
+    final mean = centers.sublist(i, j).reduce((a, b) => a + b) / n;
+    final gap = n > 1
+        ? (clusterWidth / (n - 1) < maxGap ? clusterWidth / (n - 1) : maxGap)
+        : 0.0;
+    final spread = gap * (n - 1);
+    var first = mean - spread / 2;
+    if (first < min) first = min;
+    if (first + spread > max) first = max - spread;
+    for (var k = 0; k < n; k++) {
+      out.add(first + gap * k);
     }
+    i = j;
   }
   return out;
 }
@@ -96,7 +108,6 @@ class EnvDayChart extends StatefulWidget {
   /// 마커 행 높이 — 스크롤 콘텐츠에 포함(시각 x좌표 정렬).
   static const double markerBand = 32;
   static const double markerSize = 28;
-  static const double markerMinGap = 22;
 
   /// Y 눈금은 항상 6개([AxisBounds.defaultDivisions]+1) — 격자 5칸.
   static const double rowStep = 32;
@@ -278,7 +289,7 @@ class _EnvDayChartState extends State<EnvDayChart> {
         .tr(namedArgs: {'h': '$h12'});
   }
 
-  /// 마커 행 — 동작 시각 x에 28×28 원. 겹치면 22pt 간격으로 벌린다.
+  /// 마커 행 — 동작 시각 x에 28×28 원. 가까우면 살짝 겹쳐 편다(나중 것이 위).
   List<Widget> _markers(GlassPalette glass) {
     final span = widget.data.to.difference(widget.data.from).inMicroseconds;
     if (span <= 0) return const [];
@@ -295,7 +306,6 @@ class _EnvDayChartState extends State<EnvDayChart> {
       [for (final s in spots) s.x],
       min: EnvDayChart.markerSize / 2,
       max: EnvDayChart.contentWidth - EnvDayChart.markerSize / 2,
-      minGap: EnvDayChart.markerMinGap,
     );
 
     return [
