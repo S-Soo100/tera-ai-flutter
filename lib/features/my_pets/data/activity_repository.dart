@@ -33,6 +33,11 @@ abstract interface class ActivityRepository {
 
 /// petcam-lab owner-activity-v1. Interval quality survives decoding and
 /// collection coverage deliberately stays empty: clip counts cannot prove it.
+///
+/// ⚠️ **화면에서는 더 쓰지 않는다**(2026-09-21 사용자 결정) — 활동 시간은
+/// "실제 움직인 구간"이 아니라 "하이라이트 규칙 통과 영상의 길이 합"이 됐고,
+/// 그 계산은 [PassedClipActivityRepository]가 한다. 서버 계약 디코더로서
+/// 남겨 둔다(정책이 되돌아오면 여기가 출발점이다).
 class HttpActivityRepository implements ActivityRepository {
   HttpActivityRepository(
       {required String baseUrl,

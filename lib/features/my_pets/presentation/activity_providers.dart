@@ -2,26 +2,41 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../core/config/env_config.dart';
-import '../../../core/network/auth_session.dart';
+import '../../my_cage/presentation/my_cage_providers.dart';
 import '../data/activity_repository.dart';
+import '../data/passed_clip_activity_repository.dart';
 import '../domain/activity_summary.dart';
 import '../domain/activity_window.dart';
 
+/// 활동 시간의 출처 — **하이라이트 규칙 통과 영상의 길이 합**
+/// (2026-09-21 사용자 결정, [PassedClipActivityRepository]).
+///
+/// 카메라 탭 목록과 같은 집합(petcam-api `/highlights`)을 쓰므로 "화면에 보이는
+/// 영상"과 "활동 시간"이 같은 것을 센다. 구 `/activity/intervals`(실제 움직인
+/// 구간)는 더 쓰지 않는다.
 final activityRepositoryProvider =
     Provider.autoDispose.family<ActivityRepository, String>((ref, userId) {
-  final repo = HttpActivityRepository(
-      baseUrl: EnvConfig.backendUrl,
-      // 만료가 임박하면 갱신까지 한다([AuthSession]) — 만료 토큰을 보내면
-      // 401이고, 401은 로그아웃 경로를 탄다(2026-09-21).
-      tokenProvider: () async {
-        final auth = Supabase.instance.client.auth;
-        if (auth.currentUser?.id != userId) return null;
-        return ref.read(authSessionProvider).accessToken();
-      });
-  ref.onDispose(repo.dispose);
-  return repo;
+  if (Supabase.instance.client.auth.currentUser?.id != userId) {
+    return const _NoActivityRepository();
+  }
+  final highlights = ref.watch(highlightRepositoryProvider);
+  final clips = ref.watch(motionClipRepositoryProvider);
+  return PassedClipActivityRepository(
+    listRefs: ({required cameraId, since, until, cursor}) =>
+        highlights.listPassedPage(
+            cameraId: cameraId, since: since, until: until, cursor: cursor),
+    hydrate: clips.getByIds,
+  );
 });
+
+/// 다른 계정의 요청 — 남의 데이터를 채우지 않는다.
+class _NoActivityRepository implements ActivityRepository {
+  const _NoActivityRepository();
+  @override
+  Future<ActivityData> load(
+          {required String cameraId, required ActivityWindow window}) async =>
+      const ActivityData();
+}
 
 final activityClockProvider =
     StreamProvider.autoDispose<DateTime>((ref) async* {
