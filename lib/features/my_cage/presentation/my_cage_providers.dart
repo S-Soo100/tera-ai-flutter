@@ -441,14 +441,40 @@ final highlightClockProvider =
 /// 카메라 탭 전체 영상 목록의 소스 — 하이라이트 규칙 O 전부(정책 v2).
 /// 그리드([clipFeedProvider])와 플레이어 필름스트립
 /// ([playerFeedPageLoaderProvider])이 **같이** 이걸 쓴다.
+///
+/// 2026-09-21 사용자 결정으로 **아직 판정되지 않은 영상은 일단 같이 보여준다**
+/// — 판정이 늦으면 "미통과"와 "아직 안 봄"이 구분되지 않아 어제 찍힌 영상이
+/// 통째로 사라진 것처럼 보였다. 미통과로 확정되면 그때 빠진다.
 final passedClipFeedSourceProvider = Provider<PassedClipFeedSource>((ref) {
   final highlights = ref.watch(highlightRepositoryProvider);
   final clips = ref.watch(motionClipRepositoryProvider);
+  final owner = ref.watch(currentUserProvider.select((user) => user?.id));
   return PassedClipFeedSource(
     listRefs: ({required cameraId, since, until, cursor}) =>
         highlights.listPassedPage(
             cameraId: cameraId, since: since, until: until, cursor: cursor),
     hydrate: clips.getByIds,
+    listPending: owner == null
+        ? null
+        : ({required cameraId, required after, range}) async {
+            final start = range == null || range.start.isBefore(after)
+                ? after
+                : range.start;
+            // 상한이 없으면 "지금까지" — 미래 시각 행은 어차피 없다.
+            final end = range?.endExclusive ??
+                DateTime.now().toUtc().add(const Duration(days: 1));
+            if (!end.isAfter(start)) return const [];
+            final page = await clips.listPage((
+              ownerId: owner,
+              cameraId: cameraId,
+              range: (start: start, endExclusive: end)
+            ), pageSize: 60);
+            // gte라 기준점 자신이 섞여 들어온다 — 뒤엣것만 남긴다.
+            return [
+              for (final clip in page.items)
+                if (clip.startedAt.toUtc().isAfter(after)) clip
+            ];
+          },
   );
 });
 
