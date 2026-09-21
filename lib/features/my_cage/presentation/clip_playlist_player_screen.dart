@@ -894,12 +894,17 @@ class _ClipPlaylistPlayerScreenState
     // 날짜·시각은 본문이 아니라 크롬이라 클램프가 관례에 맞다.
     return CrecamDetailTopBar(
       closeButton: true,
-      trailing: IconButton(
-          key: const Key('clip_hide_button'),
-          tooltip: 'clip_hide_action'.tr(),
-          onPressed: _hideCurrentClip,
-          icon: FigmaIcon.tinted('redesign_v2/delete',
-              size: 24, color: glass.textPrimary)),
+      trailing: SizedBox.square(
+          dimension: 44,
+          child: IconButton(
+              key: const Key('clip_hide_button'),
+              padding: EdgeInsets.zero,
+              tooltip: 'clip_hide_action'.tr(),
+              onPressed: _hideCurrentClip,
+              // 44 프레임 export(글리프 17×19 가운데) — 예약 목록과 같은 파일이라
+              // 같은 44로 그린다. 24로 그리면 글리프가 11pt로 쪼그라든다.
+              icon: FigmaIcon.tinted(FigmaIcons.trash,
+                  size: 44, color: glass.textPrimary))),
       titleWidget: startedAt == null
           ? null
           : MediaQuery.withClampedTextScaling(
@@ -1197,8 +1202,8 @@ class _ClipPlaylistPlayerScreenState
                   padding: EdgeInsets.zero,
                   tooltip: 'clip_hide_action'.tr(),
                   onPressed: _hideCurrentClip,
-                  icon: FigmaIcon.tinted('redesign_v2/delete',
-                      size: 24, color: glass.textPrimary))),
+                  icon: FigmaIcon.tinted(FigmaIcons.trash,
+                      size: 44, color: glass.textPrimary))),
           const SizedBox(width: 12),
           ..._actionButtons(glass, clip, isFav),
         ]));
@@ -1208,7 +1213,11 @@ class _ClipPlaylistPlayerScreenState
   List<Widget> _actionButtons(
       GlassPalette glass, MotionClip? clip, bool isFav) {
     final color = glass.textPrimary;
-    Widget action(String asset, String tooltip, VoidCallback? onTap) {
+    // [frame]은 그 아이콘의 export 프레임이다. 프레임에 디자인이 정한 여백이
+    // 들어 있어서 다른 크기로 그리면 글리프만 확대·축소된다 — 북마크 on은
+    // 24 프레임(Figma 1081:4209)이라 36으로 그리면 옆 버튼들보다 1.5배 커진다.
+    Widget action(String asset, String tooltip, VoidCallback? onTap,
+        {double frame = 36}) {
       return SizedBox(
         width: 44,
         height: 44,
@@ -1216,7 +1225,7 @@ class _ClipPlaylistPlayerScreenState
           padding: EdgeInsets.zero,
           iconSize: 24,
           icon: FigmaIcon.tinted(asset,
-              color: onTap == null ? glass.textTertiary : color, size: 36),
+              color: onTap == null ? glass.textTertiary : color, size: frame),
           tooltip: tooltip,
           onPressed: onTap,
         ),
@@ -1233,7 +1242,8 @@ class _ClipPlaylistPlayerScreenState
       action(
           isFav ? FigmaIcons.bookmarkCheck : FigmaIcons.bookmark,
           (isFav ? 'clip_favorite_remove' : 'clip_favorite_add').tr(),
-          () => _toggleFavorite(clip)),
+          () => _toggleFavorite(clip),
+          frame: isFav ? 24 : 36),
     ];
   }
 
