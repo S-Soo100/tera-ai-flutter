@@ -102,17 +102,39 @@ void main() {
         [device.physicalId, camera.physicalId, camera.physicalId]);
     expect(groups.single.values.toSet(), {'device-uuid', 'camera-uuid'});
   });
-  test('WiFi-only and ambiguous receipt never claim registration or resend',
+  test('camera ambiguous receipt never claims registration or resends',
       () async {
-    controller.select(device);
-    gateway.receipts[device.physicalId] =
+    controller.select(camera);
+    gateway.receipts[camera.physicalId] =
         const DeviceProvisionReceipt(wifiConnected: true);
     await controller.connect('home', 'password');
     expect(controller.state.results.values.single.outcome,
         DeviceAddOutcome.registrationPending);
+    expect(controller.state.results.values.single.canRetry, isFalse);
     await controller.connect('home', 'password');
-    expect(gateway.sent, [device.physicalId]);
+    expect(gateway.sent, [camera.physicalId]);
     expect(saved, isEmpty);
+  });
+  // 사육장은 UNPAIR 뒤 같은 device_id로 재등록돼 행이 늘지 않는다 — 등록
+  // 대기면 다시 보내도 안전하다(2026-09-21, 기기가 pair를 안 한 사고).
+  test('device registration pending keeps issue and can be re-provisioned',
+      () async {
+    controller.select(device);
+    gateway.receipts[device.physicalId] = const DeviceProvisionReceipt(
+        wifiConnected: true,
+        issue: DeviceRegistrationIssue.pairFailed,
+        issueDetail: '401');
+    await controller.connect('home', 'password');
+    final result = controller.state.results.values.single;
+    expect(result.outcome, DeviceAddOutcome.registrationPending);
+    expect(result.issue, DeviceRegistrationIssue.pairFailed);
+    expect(result.issueDetail, '401');
+    expect(result.canRetry, isTrue);
+    gateway.receipts.clear();
+    await controller.connect('home', 'password');
+    expect(gateway.sent, [device.physicalId, device.physicalId]);
+    expect(controller.state.results.values.single.outcome,
+        DeviceAddOutcome.registered);
   });
   test(
       'account change during WIFI_OK blocks storage, confirmation and next device',

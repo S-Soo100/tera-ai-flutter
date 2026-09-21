@@ -267,6 +267,8 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
             wifiConnected: receipt.wifiConnected,
             hardwareId: receipt.hardwareId,
             registeredId: id,
+            issue: id != null ? null : receipt.issue,
+            issueDetail: id != null ? null : receipt.issueDetail,
             outcome: id != null
                 ? DeviceAddOutcome.registered
                 : receipt.retrySafe

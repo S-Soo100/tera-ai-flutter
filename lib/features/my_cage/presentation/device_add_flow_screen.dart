@@ -958,9 +958,30 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             DeviceAddOutcome.failed =>
               'device_add_failed'.tr(),
             DeviceAddOutcome.wifiUpdated => 'device_add_wifi_updated_line'.tr(),
-          }}',
+          }}${_issue(result).map((text) => '\n$text').join()}',
           textAlign: TextAlign.center,
           style: managementStyle(context)));
+
+  /// 등록 확인이 안 된 이유 — '등록 확인 대기' 한 줄로는 구 펌웨어와 서버
+  /// 등록 실패를 가릴 수 없다(2026-09-21).
+  Iterable<String> _issue(DeviceAddResult result) sync* {
+    if (result.outcome != DeviceAddOutcome.registrationPending) return;
+    switch (result.issue) {
+      case DeviceRegistrationIssue.legacyFirmware:
+        yield 'device_add_issue_legacy'.tr();
+      case DeviceRegistrationIssue.pairFailed:
+        final reason = result.issueDetail;
+        yield reason == null || reason.isEmpty
+            ? 'device_add_issue_pair_failed'.tr()
+            : 'device_add_issue_pair_failed_reason'
+                .tr(namedArgs: {'reason': reason});
+      case DeviceRegistrationIssue.noPairReply:
+        yield 'device_add_issue_no_reply'.tr();
+      case null:
+        return;
+    }
+  }
+
   String _kind(PairTargetKind kind) => (kind == PairTargetKind.device
           ? 'device_add_device'
           : 'device_add_camera')

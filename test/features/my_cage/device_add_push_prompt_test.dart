@@ -13,7 +13,8 @@ import 'package:vivanaut/features/my_cage/presentation/device_management_control
 import 'package:vivanaut/features/notification/data/push_messaging_service.dart';
 import 'package:vivanaut/features/notification/domain/push_consent_flow.dart';
 import 'package:vivanaut/features/notification/presentation/push_pre_popup.dart';
-import '../notification/notification_repository_test.dart' show notificationUser;
+import '../notification/notification_repository_test.dart'
+    show notificationUser;
 import 'device_add_flow_screen_test.dart' show Controller, Translations;
 import 'device_add_flow_test.dart' show device, camera;
 
@@ -71,8 +72,7 @@ void main() {
                         currentPermission: () async => permission,
                         requestPermission: ({bool retry = false}) async =>
                             requests.add(retry),
-                        setTopic: (_, __) async =>
-                            fail('사육장 주제는 토글을 건드리지 않는다'),
+                        setTopic: (_, __) async => fail('사육장 주제는 토글을 건드리지 않는다'),
                         isAsked: asked.contains,
                         markAsked: (t) async => asked.add(t),
                       )),
@@ -92,10 +92,9 @@ void main() {
 
   final prompt = find.text('사육장 알림을 켜시겠습니까?');
 
-  testWidgets('사육장 등록 성공 → 결과 화면 위에 팝업, 받기는 시스템 권한 요청',
-      (tester) async {
-    final r = await run(
-        tester, results({PairTargetKind.device: deviceRegistered}));
+  testWidgets('사육장 등록 성공 → 결과 화면 위에 팝업, 받기는 시스템 권한 요청', (tester) async {
+    final r =
+        await run(tester, results({PairTargetKind.device: deviceRegistered}));
     expect(prompt, findsOneWidget);
     await tester.tap(find.text('알림 받기'));
     await tester.pump(const Duration(milliseconds: 500));
@@ -169,8 +168,8 @@ void main() {
 
   testWidgets('이미 물었던 기기는 다시 묻지 않는다', (tester) async {
     // 한 번 답한 뒤 같은 기록(asked)으로 두 번째 등록 흐름을 연다.
-    final first = await run(
-        tester, results({PairTargetKind.device: deviceRegistered}));
+    final first =
+        await run(tester, results({PairTargetKind.device: deviceRegistered}));
     await tester.tap(find.text('알림 받기'));
     await tester.pump(const Duration(milliseconds: 500));
     expect(first.asked, {PushTopic.device});

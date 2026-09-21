@@ -152,6 +152,20 @@ void main() {
     expect(result.wifiConnected, true);
     expect(result.hardwareId, isNull);
     expect(result.retrySafe, false);
+    expect(result.issue, DeviceRegistrationIssue.legacyFirmware);
+  });
+  test('missing PAIR_OK after WIFI_OK is recorded as no reply', () async {
+    repo.sendPair = false;
+    final result = await adapter.provision(candidate,
+        ssid: 'home',
+        password: 'pw',
+        name: '사육장 1',
+        jwt: 'secret',
+        onWifiConnected: () async {},
+        isCurrent: () => true);
+    expect(result.wifiConnected, true);
+    expect(result.hardwareId, isNull);
+    expect(result.issue, DeviceRegistrationIssue.noPairReply);
   });
   test('lost PAIR_OK cannot become a safe reconnect', () async {
     repo.sendPair = false;
@@ -244,6 +258,8 @@ void main() {
         isCurrent: () => true);
     expect(result.wifiConnected, true);
     expect(result.hardwareId, isNull);
+    expect(result.issue, DeviceRegistrationIssue.pairFailed);
+    expect(result.issueDetail, '401');
   });
 
   test('Wi-Fi 변경은 SSID·PASS·CONNECT만 보낸다 — NAME·JWT가 없으면 펌웨어가 등록하지 않는다',

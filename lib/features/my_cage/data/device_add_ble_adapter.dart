@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' show min;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../domain/device_add_flow.dart';
@@ -112,6 +113,10 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
       bool wifiOnly = false}) async {
     bool connectSent = false;
     bool wifi = false;
+    DeviceRegistrationIssue? issue;
+    // 단계 기록 — 자격증명·JWT·SSID는 남기지 않는다(종류·응답 코드만).
+    void log(String step) =>
+        debugPrint('[device-add] ${candidate.kind.name} $step');
     _BleInbox? inbox;
     try {
       await _connect(candidate);
@@ -154,9 +159,12 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
       if (candidate.kind == PairTargetKind.device) {
         await command('UNPAIR');
         try {
-          await inbox.take(
+          final reply = await inbox.take(
               (e) => e is BleUnpairOk || e is BlePairingErr, replyTimeout);
-        } on TimeoutException {/* Legacy firmware ignores UNPAIR. */}
+          log(reply is BleUnpairOk ? 'UNPAIR_OK' : 'UNPAIR rejected');
+        } on TimeoutException {
+          log('UNPAIR no reply'); // Legacy firmware ignores UNPAIR.
+        }
       }
       // Establish capability before disclosing a current-account JWT. Old
       // firmware rejects NAME; no claim API or fabricated registration follows.
@@ -168,16 +176,27 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
         final reply = await inbox.take(
             (e) => e is BleNameOk || e is BlePairingErr, replyTimeout);
         if (reply is BleNameOk) supportsRegistration = true;
+        log(reply is BleNameOk
+            ? 'NAME_OK'
+            : 'NAME ERR:${(reply as BlePairingErr).code}');
         if (reply is BlePairingErr && reply.code != 'UNKNOWN_CMD') {
           throw StateError('Name rejected');
         }
-      } on TimeoutException {/* Legacy firmware can silently ignore NAME. */}
+      } on TimeoutException {
+        log('NAME no reply'); // Legacy firmware can silently ignore NAME.
+      }
+      if (!supportsRegistration) {
+        issue = DeviceRegistrationIssue.legacyFirmware;
+      }
       if (supportsRegistration) {
         if (jwt.isEmpty) throw StateError('Session unavailable');
         await command('JWT_BEGIN ${jwt.length}');
         final begin = await inbox.take(
             (e) => e is BleJwtBeginOk || e is BlePairingErr, replyTimeout);
-        if (begin is! BleJwtBeginOk) throw StateError('JWT_BEGIN rejected');
+        if (begin is! BleJwtBeginOk) {
+          log('JWT_BEGIN rejected');
+          throw StateError('JWT_BEGIN rejected');
+        }
         final chunkSize = _repo.jwtChunkSize;
         for (var i = 0; i < jwt.length; i += chunkSize) {
           await command(
@@ -186,8 +205,10 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
         final ack = await inbox.take(
             (e) => e is BleJwtOk || e is BlePairingErr, replyTimeout);
         if (ack is! BleJwtOk || ack.length != jwt.length) {
+          log('JWT not acknowledged');
           throw StateError('JWT not acknowledged');
         }
+        log('JWT_OK len=${jwt.length} chunk=$chunkSize');
       }
       if (_disposed || !isCurrent()) throw StateError('Account changed');
       // Set before the write: even an interrupted write may reach the device.
@@ -201,6 +222,7 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
               e is BlePairFail ||
               e is BlePairingErr,
           wifiTimeout);
+      log('CONNECT -> ${_describe(result)}');
       if (result is BleWifiFail) {
         return const DeviceProvisionReceipt(
             wifiConnected: false, retrySafe: true);
@@ -210,29 +232,56 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
         return DeviceProvisionReceipt(
             wifiConnected: false, hardwareId: result.hardwareId);
       }
+      if (result is BlePairFail) {
+        return DeviceProvisionReceipt(
+            wifiConnected: false,
+            issue: DeviceRegistrationIssue.pairFailed,
+            issueDetail: result.reason);
+      }
       if (result is! BleWifiOk) {
-        return const DeviceProvisionReceipt(wifiConnected: false);
+        return DeviceProvisionReceipt(wifiConnected: false, issue: issue);
       }
       wifi = true;
       if (isCurrent()) await onWifiConnected();
       if (!supportsRegistration) {
-        return const DeviceProvisionReceipt(wifiConnected: true);
+        return DeviceProvisionReceipt(wifiConnected: true, issue: issue);
       }
       // PAIR_FAIL은 등록 확인 대기를 일찍 끝낸다(등록 대기로 남아 재확인 가능).
+      issue = DeviceRegistrationIssue.noPairReply;
       final pair = await inbox.take(
           (e) => e is BlePairOk || e is BlePairFail || e is BlePairingErr,
           registrationTimeout);
+      log('pair -> ${_describe(pair)}');
+      return switch (pair) {
+        BlePairOk(:final hardwareId) =>
+          DeviceProvisionReceipt(wifiConnected: true, hardwareId: hardwareId),
+        BlePairFail(:final reason) => DeviceProvisionReceipt(
+            wifiConnected: true,
+            issue: DeviceRegistrationIssue.pairFailed,
+            issueDetail: reason),
+        _ => DeviceProvisionReceipt(wifiConnected: true, issue: issue),
+      };
+    } catch (error) {
+      log('ended: ${error.runtimeType}');
       return DeviceProvisionReceipt(
-          wifiConnected: true,
-          hardwareId: pair is BlePairOk ? pair.hardwareId : null);
-    } catch (_) {
-      return DeviceProvisionReceipt(
-          wifiConnected: wifi, retrySafe: wifiOnly || !connectSent);
+          wifiConnected: wifi,
+          retrySafe: wifiOnly || !connectSent,
+          issue: connectSent ? issue : null);
     } finally {
       await inbox?.dispose();
       await _repo.disconnect();
     }
   }
+
+  /// 로그용 이벤트 이름 — 페이로드(AP 목록·id 외)는 남기지 않는다.
+  static String _describe(BlePairingEvent event) => switch (event) {
+        BleWifiOk() => 'WIFI_OK',
+        BleWifiFail() => 'WIFI_FAIL',
+        BlePairOk() => 'PAIR_OK',
+        BlePairFail(:final reason) => 'PAIR_FAIL $reason',
+        BlePairingErr(:final code) => 'ERR:$code',
+        _ => event.runtimeType.toString(),
+      };
 
   @override
   Future<void> dispose() async {

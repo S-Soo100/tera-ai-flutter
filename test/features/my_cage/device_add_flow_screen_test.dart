@@ -126,38 +126,36 @@ void main() {
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = const Size(320, 568);
       addTearDown(tester.view.reset);
-      final initial = DeviceAddState(
-          step: DeviceAddStep.results,
-          ssid: 'home',
-          results: {
-            PairTargetKind.camera: DeviceAddResult(
-                candidate: camera,
-                outcome: DeviceAddOutcome.wifiUpdated,
-                registeredId: 'existing',
-                wifiConnected: true,
-                reconnect: reconnect),
-          });
+      final initial =
+          DeviceAddState(step: DeviceAddStep.results, ssid: 'home', results: {
+        PairTargetKind.camera: DeviceAddResult(
+            candidate: camera,
+            outcome: DeviceAddOutcome.wifiUpdated,
+            registeredId: 'existing',
+            wifiConnected: true,
+            reconnect: reconnect),
+      });
       await tester.pumpWidget(EasyLocalization(
           supportedLocales: const [Locale('ko')],
           path: 'assets/l10n',
           assetLoader: const Translations(),
           child: Builder(
               builder: (context) => ProviderScope(
-                  overrides: [
-                    deviceAddAccountProvider.overrideWithValue('a'),
-                    deviceAddFlowProvider('test')
-                        .overrideWith((ref) => Controller(initial)),
-                  ],
-                  child: MaterialApp(
-                      theme: AppTheme.light,
-                      locale: context.locale,
-                      supportedLocales: context.supportedLocales,
-                      localizationsDelegates: context.localizationDelegates,
-                      builder: (context, child) => MediaQuery(
-                          data: MediaQuery.of(context).copyWith(
-                              textScaler: const TextScaler.linear(1.7)),
-                          child: child!),
-                      home: const DeviceAddFlowScreen(flowKey: 'test'))))));
+                      overrides: [
+                        deviceAddAccountProvider.overrideWithValue('a'),
+                        deviceAddFlowProvider('test')
+                            .overrideWith((ref) => Controller(initial)),
+                      ],
+                      child: MaterialApp(
+                          theme: AppTheme.light,
+                          locale: context.locale,
+                          supportedLocales: context.supportedLocales,
+                          localizationsDelegates: context.localizationDelegates,
+                          builder: (context, child) => MediaQuery(
+                              data: MediaQuery.of(context).copyWith(
+                                  textScaler: const TextScaler.linear(1.7)),
+                              child: child!),
+                          home: const DeviceAddFlowScreen(flowKey: 'test'))))));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
@@ -170,6 +168,45 @@ void main() {
       await tester.pump();
     });
   }
+  // 사육장 등록 대기(2026-09-21) — 실패 사유를 밝히고 다시 연결을 연다.
+  testWidgets('사육장 등록 실패 사유와 다시 연결', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 568);
+    addTearDown(tester.view.reset);
+    const initial =
+        DeviceAddState(step: DeviceAddStep.results, ssid: 'home', results: {
+      PairTargetKind.device: DeviceAddResult(
+          candidate: device,
+          outcome: DeviceAddOutcome.registrationPending,
+          wifiConnected: true,
+          issue: DeviceRegistrationIssue.pairFailed,
+          issueDetail: '401'),
+    });
+    await tester.pumpWidget(EasyLocalization(
+        supportedLocales: const [Locale('ko')],
+        path: 'assets/l10n',
+        assetLoader: const Translations(),
+        child: Builder(
+            builder: (context) => ProviderScope(
+                    overrides: [
+                      deviceAddAccountProvider.overrideWithValue('a'),
+                      deviceAddFlowProvider('test')
+                          .overrideWith((ref) => Controller(initial)),
+                    ],
+                    child: MaterialApp(
+                        theme: AppTheme.light,
+                        locale: context.locale,
+                        supportedLocales: context.supportedLocales,
+                        localizationsDelegates: context.localizationDelegates,
+                        home: const DeviceAddFlowScreen(flowKey: 'test'))))));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('기기가 서버 등록에 실패했어요 (401)'), findsOneWidget);
+    expect(find.text('실패한 기기 다시 연결'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+  });
   testWidgets('opt-in capture measured selection/password/result screens',
       (tester) async {
     if (!const bool.fromEnvironment('CAPTURE_PAIRING')) return;
