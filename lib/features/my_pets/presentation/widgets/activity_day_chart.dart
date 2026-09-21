@@ -72,7 +72,12 @@ class ActivityBars extends StatelessWidget {
     return SizedBox(
         height: 256,
         child: LayoutBuilder(builder: (context, constraints) {
-          final plotWidth = math.max(0.0, constraints.maxWidth - 28);
+          // Figma 원본은 시간 라벨("3h")이라 26으로 충분했다. 주간 분 라벨
+          // ("60m")은 더 넓어서 26에 두면 "60 / m"으로 접힌다(2026-09-21 시뮬
+          // 실측). 일간은 숫자뿐("60")이라 원본 그대로 26을 쓴다.
+          final axisWidth = weekly && axis.inMinutes ? 36.0 : 26.0;
+          final plotWidth =
+              math.max(0.0, constraints.maxWidth - (axisWidth + 2));
           final width = plotWidth / (buckets.isEmpty ? 1 : buckets.length);
           return Stack(clipBehavior: Clip.none, children: [
             Positioned(
@@ -87,7 +92,7 @@ class ActivityBars extends StatelessWidget {
               Positioned(
                   right: 0,
                   top: tick * rowHeight,
-                  width: 26,
+                  width: axisWidth,
                   height: rowHeight,
                   child: Align(
                       alignment: Alignment.bottomLeft,
@@ -95,6 +100,9 @@ class ActivityBars extends StatelessWidget {
                           weekly
                               ? activityAxisLabel(axis, axis.ticks[6 - tick])
                               : '${60 - tick * 10}',
+                          key: const Key('activity_axis_label'),
+                          maxLines: 1,
+                          softWrap: false,
                           style: labelStyle,
                           textAlign: TextAlign.left))),
             for (var i = 0; i < buckets.length; i++)
