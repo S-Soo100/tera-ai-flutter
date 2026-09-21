@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../shared/widgets/skeleton_loading.dart';
+import '../../../shared/widgets/video_seek_bar.dart';
 import 'community_providers.dart';
 
 /// 커뮤니티 게시물 재생 — 전체화면 가로 전용(클립 재생 결정 §6-B와 동일).
@@ -124,8 +125,50 @@ class _CommunityPlayerScreenState extends ConsumerState<CommunityPlayerScreen> {
               ),
             ),
           ),
+          // 하단 재생바 + 재생 시간(2026-09-21 사용자 요청) — 크레캠 플레이어와
+          // 같은 VideoSeekBar(원형 커서는 조작 중에만).
+          SafeArea(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Row(children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 16,
+                      child: VideoSeekBar(
+                        key: const Key('community_player_seek'),
+                        controller: _initialized ? _controller : null,
+                        onSeek: (d) async => _controller?.seekTo(d),
+                      ),
+                    ),
+                  ),
+                  if (_initialized && _controller != null)
+                    ValueListenableBuilder<VideoPlayerValue>(
+                      valueListenable: _controller!,
+                      builder: (context, v, _) => Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text(
+                          '${_format(v.position)} / ${_format(v.duration)}',
+                          style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              fontFeatures: [FontFeature.tabularFigures()]),
+                        ),
+                      ),
+                    ),
+                ]),
+              ),
+            ),
+          ),
         ]),
       ),
     );
+  }
+
+  static String _format(Duration d) {
+    final m = d.inMinutes;
+    final s = d.inSeconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
   }
 }
