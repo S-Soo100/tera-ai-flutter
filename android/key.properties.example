@@ -1,0 +1,20 @@
+# 릴리즈 서명 키 설정 예시.
+#
+# 이 파일을 같은 폴더에 `key.properties`로 복사한 뒤 네 값을 채운다.
+# `key.properties`와 키스토어(.jks)는 .gitignore돼 있어 레포에 올라가지 않는다.
+#
+#   cp android/key.properties.example android/key.properties
+#
+# 키스토어가 없다면 먼저 만든다(비밀번호는 직접 정한다):
+#
+#   keytool -genkey -v -keystore ~/vivanaut-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias vivanaut
+#
+# ⚠️ 키스토어 파일과 비밀번호는 레포 밖에 따로 백업한다. 이 키를 잃어버리면
+#    com.vivanaut.app는 그 시점 이후로 업데이트를 영영 낼 수 없다.
+
+# 키스토어 절대경로 (~ 는 안 풀리니 전체 경로로 쓴다)
+storeFile=/Users/<사용자>/vivanaut-release.jks
+storePassword=<키스토어 비밀번호>
+keyAlias=vivanaut
+keyPassword=<키 비밀번호>
