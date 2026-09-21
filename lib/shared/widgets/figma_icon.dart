@@ -43,7 +43,12 @@ abstract final class FigmaIcons {
   // 2026-09-15 원본 → runtime 변환 이력은 redesign-asset-map.json에 보관.
   // 원형 면이 들어 있는 28/36/40px 파일은 metric으로 그린다.
   static const management = 'redesign_v2/discover_tune';
+
+  /// 메모 없을때(외곽선) / 있을때(채움) — Figma 아이콘 시트(2026-09-21).
+  /// 채움본은 18 프레임 export를 36 프레임 가운데로 옮겨 담아, 두 상태가
+  /// 같은 크기로 보인다.
   static const memo = 'redesign_v2/sticky_note_2';
+  static const memoFilled = 'redesign_v2/sticky_note_2_full';
   static const edit = 'redesign_v2/edit';
   static const more = 'redesign_v2/more_vert';
   static const pause = 'final_pause';

@@ -1233,7 +1233,9 @@ class _ClipPlaylistPlayerScreenState
       const SizedBox(width: 8),
       action(FigmaIcons.share, 'clip_share'.tr(), _busy ? null : _share),
       const SizedBox(width: 8),
-      action(FigmaIcons.memo, 'clip_memo_add'.tr(), _editMemo),
+      // 메모 있을때는 채워진 아이콘(Figma 시트, 2026-09-21).
+      action(_hasMemo ? FigmaIcons.memoFilled : FigmaIcons.memo,
+          (_hasMemo ? 'clip_memo_edit' : 'clip_memo_add').tr(), _editMemo),
       const SizedBox(width: 8),
       action(
           isFav ? FigmaIcons.bookmarkCheck : FigmaIcons.bookmark,
@@ -1244,6 +1246,18 @@ class _ClipPlaylistPlayerScreenState
           // 안 한 쪽을 50% 연하게 그린다(2026-09-21 사용자 결정).
           tint: isFav ? null : color.withValues(alpha: .5)),
     ];
+  }
+
+  /// 이 클립에 메모가 있는가 — 아이콘을 외곽선/채움으로 가른다.
+  bool get _hasMemo {
+    // 메모는 자기 계정 축을 따로 갖고 있다([clipMemoAccountProvider]) —
+    // 북마크·숨김과 달리 Supabase를 타지 않는 로컬 저장이다.
+    final owner = ref.watch(clipMemoAccountProvider);
+    if (owner == null) return false;
+    return ref
+            .watch(clipMemoProvider((ownerId: owner, clipId: _currentClipId)))
+            .valueOrNull !=
+        null;
   }
 
   Widget _actionPill(GlassPalette glass, MotionClip? clip, bool isFav) {

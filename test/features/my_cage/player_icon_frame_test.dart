@@ -10,8 +10,10 @@ import 'package:vivanaut/core/theme/glass_palette.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
+import 'package:vivanaut/features/my_cage/domain/clip_memo.dart';
 import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_memo_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'package:vivanaut/shared/widgets/figma_icon.dart';
@@ -82,7 +84,9 @@ double _frameOf(String name) {
 /// (2026-09-21 실기기 신고: 북마크를 누르면 아이콘이 확 커지고 휴지통만 작다.)
 void main() {
   Future<void> pump(WidgetTester tester, Size size,
-      {EdgeInsets padding = EdgeInsets.zero, bool favorite = false}) async {
+      {EdgeInsets padding = EdgeInsets.zero,
+      bool favorite = false,
+      ClipMemo? memo}) async {
     VideoPlayerPlatform.instance = _Video();
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -101,6 +105,9 @@ void main() {
               durationSec: 60)),
           motionClipUrlProvider
               .overrideWith((ref, id) async => 'https://example.test/$id'),
+          // 메모는 계정 축이 따로 있다 — 로그인 목업 없이 유무만 준다.
+          clipMemoAccountProvider.overrideWithValue('fixture-owner'),
+          clipMemoProvider.overrideWith((ref, key) async => memo),
         ],
         child: MaterialApp(
             theme: AppTheme.light,
@@ -176,5 +183,31 @@ void main() {
     final bookmark = bookmarkIcon(tester);
     expect(bookmark.name, FigmaIcons.bookmarkCheck);
     expect(bookmark.color!.a, 1.0);
+  });
+
+  /// 2026-09-21 사용자 결정 — 메모도 있을때/없을때가 구분되어야 한다
+  /// (Figma 아이콘 시트: 없을때 외곽선 / 있을때 채움).
+  FigmaIcon memoIcon(WidgetTester tester) =>
+      tester.widgetList<FigmaIcon>(find.byType(FigmaIcon)).firstWhere(
+          (w) => w.name == FigmaIcons.memo || w.name == FigmaIcons.memoFilled,
+          orElse: () => throw StateError('메모 아이콘이 없다'));
+
+  testWidgets('메모가 없으면 외곽선 메모 아이콘', (tester) async {
+    await pump(tester, const Size(393, 852),
+        padding: const EdgeInsets.only(top: 62, bottom: 34));
+    expect(memoIcon(tester).name, FigmaIcons.memo);
+  });
+
+  testWidgets('메모가 있으면 채워진 메모 아이콘', (tester) async {
+    await pump(tester, const Size(393, 852),
+        padding: const EdgeInsets.only(top: 62, bottom: 34),
+        memo: ClipMemo(
+            clipId: 'b',
+            text: '탈피 중',
+            colorIndex: 0,
+            updatedAt: DateTime(2026, 9, 21)));
+    expect(memoIcon(tester).name, FigmaIcons.memoFilled);
+    // 두 상태가 같은 크기로 보여야 한다 — 프레임 검사와 같은 규칙.
+    expectFramesMatch(tester);
   });
 }

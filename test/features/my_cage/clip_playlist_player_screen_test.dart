@@ -1,4 +1,5 @@
 import 'package:vivanaut/features/my_cage/data/clip_visibility_repository.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_memo_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_visibility_providers.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
@@ -70,6 +71,8 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        // 메모 아이콘이 유무를 읽는다 — Hive 없이 '메모 없음'으로 고정한다.
+        clipMemoProvider.overrideWith((ref, key) async => null),
         clipVisibilityAccountProvider
             .overrideWithValue(visibilityRepository == null ? null : 'owner-1'),
         if (visibilityRepository != null)
