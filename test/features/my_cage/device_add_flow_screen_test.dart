@@ -119,6 +119,57 @@ void main() {
       await tester.pump();
     });
   }
+  // 이미 등록된 카메라의 Wi-Fi만 바꾼 결과(2026-09-21) — 도마뱀 등록·이어
+  // 추가를 권하지 않고, 끝내 안 붙을 때만 새 카메라로 등록할 길을 연다.
+  for (final reconnect in CameraReconnect.values) {
+    testWidgets('Wi-Fi 변경 결과 · ${reconnect.name}', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 568);
+      addTearDown(tester.view.reset);
+      final initial = DeviceAddState(
+          step: DeviceAddStep.results,
+          ssid: 'home',
+          results: {
+            PairTargetKind.camera: DeviceAddResult(
+                candidate: camera,
+                outcome: DeviceAddOutcome.wifiUpdated,
+                registeredId: 'existing',
+                wifiConnected: true,
+                reconnect: reconnect),
+          });
+      await tester.pumpWidget(EasyLocalization(
+          supportedLocales: const [Locale('ko')],
+          path: 'assets/l10n',
+          assetLoader: const Translations(),
+          child: Builder(
+              builder: (context) => ProviderScope(
+                  overrides: [
+                    deviceAddAccountProvider.overrideWithValue('a'),
+                    deviceAddFlowProvider('test')
+                        .overrideWith((ref) => Controller(initial)),
+                  ],
+                  child: MaterialApp(
+                      theme: AppTheme.light,
+                      locale: context.locale,
+                      supportedLocales: context.supportedLocales,
+                      localizationsDelegates: context.localizationDelegates,
+                      builder: (context, child) => MediaQuery(
+                          data: MediaQuery.of(context).copyWith(
+                              textScaler: const TextScaler.linear(1.7)),
+                          child: child!),
+                      home: const DeviceAddFlowScreen(flowKey: 'test'))))));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('device_add_wifi_updated')), findsOneWidget);
+      expect(find.byKey(const Key('device_add_pet')), findsNothing);
+      expect(find.byKey(const Key('device_add_continue_kind')), findsNothing);
+      expect(find.byKey(const Key('device_add_register_new')),
+          reconnect == CameraReconnect.missing ? findsOneWidget : findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+  }
   testWidgets('opt-in capture measured selection/password/result screens',
       (tester) async {
     if (!const bool.fromEnvironment('CAPTURE_PAIRING')) return;

@@ -220,8 +220,7 @@ void main() {
         isCurrent: () => true);
     expect(repo.commands, isNot(contains('UNPAIR')));
   });
-  test('rejected JWT_BEGIN never sends CONNECT and stays retry-safe',
-      () async {
+  test('rejected JWT_BEGIN never sends CONNECT and stays retry-safe', () async {
     repo.rejectJwtBegin = true;
     final result = await adapter.provision(candidate,
         ssid: 'home',
@@ -245,5 +244,42 @@ void main() {
         isCurrent: () => true);
     expect(result.wifiConnected, true);
     expect(result.hardwareId, isNull);
+  });
+
+  test('Wi-Fi 변경은 SSID·PASS·CONNECT만 보낸다 — NAME·JWT가 없으면 펌웨어가 등록하지 않는다',
+      () async {
+    final camera = DeviceAddCandidate(
+        physicalId: candidate.physicalId,
+        kind: PairTargetKind.camera,
+        name: 'FB2_P4_CAM_A1B2',
+        rssi: -40);
+    var remembered = 0;
+    final result = await adapter.provision(camera,
+        ssid: 'home',
+        password: 'pw',
+        name: '카메라 1',
+        jwt: 'secret',
+        wifiOnly: true,
+        onWifiConnected: () async {
+          remembered++;
+        },
+        isCurrent: () => true);
+    expect(repo.commands, ['SSID:home', 'PASS:pw', 'CONNECT']);
+    expect(result.wifiConnected, true);
+    expect(result.hardwareId, isNull);
+    expect(remembered, 1);
+  });
+  test('Wi-Fi 변경 실패는 다시 시도해도 안전하다', () async {
+    repo.wifiFail = true;
+    final result = await adapter.provision(candidate,
+        ssid: 'home',
+        password: 'pw',
+        name: '카메라 1',
+        jwt: 'secret',
+        wifiOnly: true,
+        onWifiConnected: () async {},
+        isCurrent: () => true);
+    expect(result.wifiConnected, false);
+    expect(result.retrySafe, true);
   });
 }

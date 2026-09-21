@@ -78,8 +78,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
   String? _joinedGroupId;
 
   Future<void> _maybeOfferJoin(DeviceAddState state) async {
-    final registered =
-        state.results.values.where((r) => r.registeredId != null).toList();
+    // 새로 등록한 기기만 — Wi-Fi만 바꾼 카메라는 이미 제 자리가 있다.
+    final registered = state.results.values
+        .where((r) => r.outcome == DeviceAddOutcome.registered)
+        .toList();
     if (_joinPrompted || registered.length != 1) return;
     _joinPrompted = true;
     final result = registered.single;
@@ -301,8 +303,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     final controller = ref.read(deviceAddFlowProvider(_key).notifier);
     final step = state.step;
     final showsTopBar = step != DeviceAddStep.results ||
-        state.results.values
-            .any((r) => r.outcome != DeviceAddOutcome.registered);
+        state.results.values.any((r) => !_succeeded(r));
     final (body, footer, above) = switch (step) {
       DeviceAddStep.scan => _scan(context, state, controller),
       DeviceAddStep.networks => _networks(context, state, controller),
@@ -740,20 +741,29 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
 
   (List<Widget>, List<Widget>, Widget?) _results(BuildContext context,
       DeviceAddState state, DeviceAddFlowController controller) {
-    final confirmed =
-        state.results.values.where((r) => r.registeredId != null).length;
+    if (state.results.isNotEmpty &&
+        state.results.values
+            .every((r) => r.outcome == DeviceAddOutcome.wifiUpdated)) {
+      return _wifiUpdated(context, state, controller);
+    }
+    final confirmed = state.results.values
+        .where((r) => r.outcome == DeviceAddOutcome.registered)
+        .length;
+    final updated = state.results.values
+        .any((r) => r.outcome == DeviceAddOutcome.wifiUpdated);
+    bool isNew(PairTargetKind kind) =>
+        state.results[kind]?.outcome == DeviceAddOutcome.registered;
     final retry = state.results.values.any((r) => r.canRetry);
     final pending = state.results.values
         .any((r) => r.outcome == DeviceAddOutcome.registrationPending);
     final titleKey = confirmed == 2
         ? 'device_add_both_done'
         : confirmed == 1
-            ? (state.results[PairTargetKind.device]?.registeredId != null
+            ? (isNew(PairTargetKind.device)
                 ? 'device_add_device_done'
                 : 'device_add_camera_done')
             : 'device_add_results';
-    final topBar = state.results.values
-        .any((r) => r.outcome != DeviceAddOutcome.registered);
+    final topBar = state.results.values.any((r) => !_succeeded(r));
     final body = [
       // Figma 982:3643 — 체크 64 y308(상단바 없음: 62+16+230), 제목 y396(+24),
       // 부제 y425(+8). 작은 화면은 비율로 줄인다.
@@ -775,11 +785,11 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
           style: managementStyle(context, size: 18, weight: FontWeight.w600)
               .copyWith(height: 21.48046875 / 18)),
       const SizedBox(height: 8),
-      if (!retry && !pending && confirmed > 0)
+      if (!retry && !pending && !updated && confirmed > 0)
         Text(
             (confirmed == 2 || _joinedGroupId != null
                     ? 'device_add_done_subtitle'
-                    : state.results[PairTargetKind.device]?.registeredId != null
+                    : isNew(PairTargetKind.device)
                         ? 'device_add_continue_camera_subtitle'
                         : 'device_add_continue_device_subtitle')
                 .tr(),
@@ -788,14 +798,14 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                 .copyWith(height: 19.09375 / 16))
       else
         for (final result in state.results.values) _result(context, result),
-      if (confirmed == 1 && !pending && _joinedGroupId == null)
+      if (confirmed == 1 && !pending && !updated && _joinedGroupId == null)
         _PairingTextButton(
             key: const Key('device_add_link_existing'),
             onPressed: state.busy
                 ? null
                 : () {
-                    final result = state.results.values
-                        .firstWhere((r) => r.registeredId != null);
+                    final result = state.results.values.firstWhere(
+                        (r) => r.outcome == DeviceAddOutcome.registered);
                     context.push('/groups/new',
                         extra: ManagementKey(
                             kind: result.candidate.kind == PairTargetKind.device
@@ -823,10 +833,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
         ManagementButton(
             label: 'device_add_retry_group'.tr(),
             onPressed: state.busy ? null : controller.groupConfirmed),
-      if (confirmed == 1 && !pending && _joinedGroupId == null)
+      if (confirmed == 1 && !pending && !updated && _joinedGroupId == null)
         ManagementButton(
             key: const Key('device_add_continue_kind'),
-            label: (state.results[PairTargetKind.device]?.registeredId != null
+            label: (isNew(PairTargetKind.device)
                     ? 'device_add_continue_camera'
                     : 'device_add_continue_device')
                 .tr(),
@@ -875,6 +885,66 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     }
   }
 
+  static bool _succeeded(DeviceAddResult r) =>
+      r.outcome == DeviceAddOutcome.registered ||
+      r.outcome == DeviceAddOutcome.wifiUpdated;
+
+  /// 이미 등록된 카메라의 Wi-Fi만 바꾼 결과(2026-09-21). 새 등록이 아니라서
+  /// 도마뱀 등록·기기 이어 추가를 권하지 않는다. 카메라가 재부팅 뒤 끝내 안
+  /// 붙으면(저장값이 지워진 경우) 새 카메라로 등록할 길을 연다.
+  (List<Widget>, List<Widget>, Widget?) _wifiUpdated(BuildContext context,
+      DeviceAddState state, DeviceAddFlowController controller) {
+    final result = state.results.values.first;
+    final reconnect = result.reconnect;
+    final missing = reconnect == CameraReconnect.missing;
+    final body = [
+      SizedBox(height: math.min(186, MediaQuery.sizeOf(context).height * 0.27)),
+      Center(
+          child: FigmaIcon.tinted(
+              switch (reconnect) {
+                CameraReconnect.waiting => 'redesign_v2/progress_activity',
+                CameraReconnect.missing => 'redesign_v2/cancel',
+                _ => 'redesign_v2/check_circle',
+              },
+              size: 64,
+              color: context.glass.textPrimary)),
+      const SizedBox(height: 24),
+      Text('device_add_wifi_updated'.tr(),
+          key: const Key('device_add_wifi_updated'),
+          textAlign: TextAlign.center,
+          style: managementStyle(context, size: 18, weight: FontWeight.w600)
+              .copyWith(height: 21.48046875 / 18)),
+      const SizedBox(height: 8),
+      Text(
+          switch (reconnect) {
+            CameraReconnect.waiting => 'device_add_wifi_updated_waiting',
+            CameraReconnect.missing => 'device_add_wifi_updated_missing',
+            _ => 'device_add_wifi_updated_online',
+          }
+              .tr(),
+          textAlign: TextAlign.center,
+          style: managementStyle(context, color: context.glass.bodySecondary)
+              .copyWith(height: 19.09375 / 16)),
+    ];
+    final footer = <Widget>[
+      if (missing)
+        ManagementButton(
+            key: const Key('device_add_register_new'),
+            label: 'device_add_register_new'.tr(),
+            onPressed: state.busy
+                ? null
+                : () async {
+                    await controller.registerAsNew(result.candidate.kind);
+                    if (mounted) await _network(state.ssid);
+                  }),
+      ManagementButton(
+          key: const Key('device_add_wifi_updated_done'),
+          label: 'device_add_confirm'.tr(),
+          onPressed: _home),
+    ];
+    return (body, footer, null);
+  }
+
   Widget _result(BuildContext context, DeviceAddResult result) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
       child: Text(
@@ -887,6 +957,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             DeviceAddOutcome.wifiFailed ||
             DeviceAddOutcome.failed =>
               'device_add_failed'.tr(),
+            DeviceAddOutcome.wifiUpdated => 'device_add_wifi_updated_line'.tr(),
           }}',
           textAlign: TextAlign.center,
           style: managementStyle(context)));

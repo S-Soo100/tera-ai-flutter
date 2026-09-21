@@ -19,6 +19,7 @@ const camera = DeviceAddCandidate(
 class Gateway implements DeviceAddGateway {
   final events = StreamController<List<DeviceAddCandidate>>.broadcast();
   final sent = <String>[];
+  final wifiOnly = <bool>[];
   final receipts = <String, DeviceProvisionReceipt>{};
   Completer<void>? pending;
   @override
@@ -37,8 +38,10 @@ class Gateway implements DeviceAddGateway {
       required String name,
       required String jwt,
       required Future<void> Function() onWifiConnected,
-      required bool Function() isCurrent}) async {
+      required bool Function() isCurrent,
+      bool wifiOnly = false}) async {
     sent.add(candidate.physicalId);
+    this.wifiOnly.add(wifiOnly);
     await pending?.future;
     final receipt = receipts[candidate.physicalId] ??
         const DeviceProvisionReceipt(wifiConnected: true, hardwareId: 'mqtt');
@@ -152,5 +155,110 @@ void main() {
     await controller.connect('home', 'password');
     expect(gateway.sent, [device.physicalId, camera.physicalId]);
     expect(groups.single.length, 2);
+  });
+
+  /// 이미 등록된 카메라는 Wi-Fi만 바꾼다(2026-09-21). 카메라 펌웨어는 JWT가
+  /// 오면 매번 새 camera_id로 등록해 cameras에 행이 하나씩 늘어났다. JWT를
+  /// 빼면 pair를 호출하지 않고 NVS의 기존 camera_id로 재접속한다.
+  group('이미 등록된 카메라', () {
+    late Map<String, String> known;
+    late List<String> forgotten;
+    late DateTime? lastSeen;
+    DeviceAddFlowController build() => DeviceAddFlowController(
+        gateway: gateway,
+        accountId: 'owner',
+        isCurrent: () => active,
+        token: () => 'jwt',
+        namePrefix: (kind) => kind == PairTargetKind.device ? '사육장' : '카메라',
+        names: () async => [],
+        confirm: (kind, id) async => '${kind.name}-uuid',
+        saveCredentials: (ssid, password) async {},
+        readCredentials: () async => {},
+        autoGroup: (owner, ids) async {
+          groups.add(ids);
+          return 'group';
+        },
+        knownCamera: (c) async => known[c.physicalId],
+        rememberCamera: (c, id) async => known[c.physicalId] = id,
+        forgetCamera: (c) async {
+          forgotten.add(c.physicalId);
+          known.remove(c.physicalId);
+        },
+        cameraLastSeen: (id) async => lastSeen,
+        reconnectPoll: const Duration(milliseconds: 5),
+        reconnectTimeout: const Duration(milliseconds: 40));
+    setUp(() {
+      controller.dispose();
+      known = {};
+      forgotten = [];
+      lastSeen = null;
+      controller = build();
+    });
+
+    test('새로 등록한 카메라는 기억하고, 사육장은 기억하지 않는다', () async {
+      controller.select(device);
+      controller.select(camera);
+      await controller.connect('home', 'password');
+      expect(known, {camera.physicalId: 'camera-uuid'});
+      expect(gateway.wifiOnly, [false, false]);
+    });
+
+    test('기억한 카메라는 JWT 없이 Wi-Fi만 보내고 기존 id를 쓴다', () async {
+      known[camera.physicalId] = 'existing-camera';
+      controller.select(camera);
+      await controller.connect('home', 'password');
+      final result = controller.state.results[PairTargetKind.camera]!;
+      expect(gateway.wifiOnly, [true]);
+      expect(result.outcome, DeviceAddOutcome.wifiUpdated);
+      expect(result.registeredId, 'existing-camera');
+    });
+
+    test('Wi-Fi만 바꾼 카메라는 새 사육장과 자동으로 묶지 않는다', () async {
+      known[camera.physicalId] = 'existing-camera';
+      controller.select(device);
+      controller.select(camera);
+      await controller.connect('home', 'password');
+      expect(groups, isEmpty);
+    });
+
+    test('Wi-Fi 실패는 다시 시도해도 안전하다', () async {
+      known[camera.physicalId] = 'existing-camera';
+      gateway.receipts[camera.physicalId] =
+          const DeviceProvisionReceipt(wifiConnected: false);
+      controller.select(camera);
+      await controller.connect('home', 'password');
+      expect(controller.state.results[PairTargetKind.camera]!.outcome,
+          DeviceAddOutcome.wifiFailed);
+    });
+
+    test('다시 접속하면 재연결 확인으로 바뀐다', () async {
+      known[camera.physicalId] = 'existing-camera';
+      controller.select(camera);
+      await controller.connect('home', 'password');
+      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+          CameraReconnect.waiting);
+      lastSeen = DateTime.now().add(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+          CameraReconnect.online);
+    });
+
+    test('끝내 접속하지 않으면 새 카메라로 등록할 수 있다', () async {
+      known[camera.physicalId] = 'existing-camera';
+      lastSeen = DateTime(2020);
+      controller.select(camera);
+      await controller.connect('home', 'password');
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+          CameraReconnect.missing);
+
+      await controller.registerAsNew(PairTargetKind.camera);
+      expect(forgotten, [camera.physicalId]);
+      expect(controller.state.results, isEmpty);
+      await controller.connect('home', 'password');
+      expect(gateway.wifiOnly, [true, false]);
+      expect(controller.state.results[PairTargetKind.camera]!.outcome,
+          DeviceAddOutcome.registered);
+    });
   });
 }

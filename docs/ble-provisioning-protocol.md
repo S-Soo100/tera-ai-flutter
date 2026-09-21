@@ -13,6 +13,7 @@
 |---|---|---|
 | 사육장 `terra-iot` | `UNPAIR` → `SSID:` → `PASS:` → `NAME:<기본 이름>` → `JWT_BEGIN <길이>` → `JWT:<청크>`×N → `CONNECT` | `PAIR_OK <device_id>` → `devices`에서 `owner_id`+`device_id`로 확인되면 **등록 완료**. `PAIR_OK`가 없거나 `PAIR_FAIL <사유>`면 **등록 대기**(결과 화면에서 다시 확인). 앱은 id를 추측하거나 목록 차이로 새 기기를 판정하지 않는다 |
 | 카메라 `FB2_P4_CAM` | `SSID:` → `PASS:` → `NAME:` → (`NAME_OK`면 `JWT_BEGIN`/`JWT`) → `CONNECT` | `UNPAIR`는 보내지 않는다(플래시 때 개발 계정으로 된 등록이 지워질 수 있음). 현 카메라 펌웨어는 `NAME:`을 모르므로(§2-3 전) `ERR:UNKNOWN_CMD`/무응답 → JWT 없이 Wi-Fi만 연결, 등록 대기로 표시 |
+| 카메라 Wi-Fi 변경 (2026-09-21) | `SSID:` → `PASS:` → `CONNECT` (`NAME`·`JWT` 생략) | 이 폰이 등록한 카메라(BLE 주소+광고 이름 `FB2_P4_CAM_<MAC 하위 2바이트>` → `cameras.id`, Hive `known_camera_<계정>_<주소>`)이고 그 행이 이 계정에 해제 없이 남아 있으면 이 경로. 펌웨어는 JWT가 없으면 pair를 호출하지 않고 재부팅 뒤 NVS의 기존 `camera_id`로 재접속한다(app_ble_prov.c `have_jwt`). JWT를 보내면 매번 새 `camera_id`로 등록돼 행이 늘어난다. 90초 안에 `last_seen_at`이 갱신되지 않으면 결과 화면에 '새 카메라로 등록' |
 
 - 응답 확인: `UNPAIR`는 미지원 펌웨어의 `ERR:UNKNOWN_CMD`·무응답을 삼키고 진행한다. `NAME:`에 `ERR:UNKNOWN_CMD`·무응답이면 구 펌웨어로 보고 JWT를 보내지 않는다(그 외 `ERR:`는 실패). `NAME_OK` 뒤에는 `JWT_BEGIN_OK`와 `JWT_OK <길이>`가 필수 — 없거나 `ERR:`거나 길이가 다르면 **`CONNECT`하지 않고 실패**(다시 시도 안전).
 - JWT: 등록 직전에 `refreshSession()`으로 갱신한 access token(`freshAccessTokenProvider`). 갱신 실패 시 유효한 현재 토큰. 청크 길이는 협상된 MTU−7(최대 200).

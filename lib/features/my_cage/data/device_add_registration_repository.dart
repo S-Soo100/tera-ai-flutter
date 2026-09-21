@@ -44,4 +44,21 @@ class DeviceAddRegistrationRepository {
     final id = rows.single['id'];
     return id is String && id.isNotEmpty ? id : null;
   }
+
+  /// 이 계정의 카메라 행이 아직 있으면 마지막 접속 시각과 함께 돌려준다.
+  /// 삭제·해제(`unlinked_at`)됐거나 다른 계정으로 넘어갔으면 null — 새로
+  /// 등록해야 한다(해제된 행으로 Wi-Fi만 붙이면 목록에 안 보인다).
+  Future<({DateTime? lastSeen})?> ownedCamera(String account, String id) async {
+    _guard(account);
+    final rows = await client
+        .from('cameras')
+        .select('id,last_seen_at,unlinked_at')
+        .eq('owner_id', account)
+        .eq('id', id)
+        .limit(1);
+    _guard(account);
+    if (rows.isEmpty || rows.single['unlinked_at'] != null) return null;
+    final raw = rows.single['last_seen_at'];
+    return (lastSeen: raw == null ? null : DateTime.tryParse(raw.toString()));
+  }
 }
