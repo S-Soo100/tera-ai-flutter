@@ -21,6 +21,7 @@ import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/clip_playback.dart';
 import '../domain/motion_clip.dart';
+import '../domain/player_speed.dart';
 import 'my_cage_providers.dart';
 import 'bookmark_controller.dart';
 import '../../auth/presentation/auth_providers.dart';
@@ -1077,22 +1078,16 @@ class _ClipPlaylistPlayerScreenState
               const Spacer(),
               _iconButton36(
                   key: const Key('player_speed'),
+                  // 1X → 1.2X → 1.5X → 2X → 1X (Figma 아이콘 시트, 2026-09-21).
                   onTap: () {
-                    final next = speed == 1 ? 2.0 : 1.0;
+                    final next = nextPlayerSpeed(speed);
                     ref
                         .read(playerSpeedProvider(_orientationKey).notifier)
                         .state = next;
                     _controller?.setPlaybackSpeed(next);
                   },
-                  child: speed == 2
-                      ? FigmaIcon.tinted(FigmaIcons.speed2x,
-                          color: glass.textPrimary, size: 36)
-                      : Text('1×',
-                          style: TextStyle(
-                              fontFamily: 'Pretendard',
-                              fontSize: 14,
-                              color: glass.textPrimary,
-                              fontWeight: FontWeight.w700))),
+                  child: FigmaIcon.tinted(FigmaIcons.speed(speed),
+                      color: glass.textPrimary, size: 36)),
               const SizedBox(width: 12),
               _iconButton36(
                   key: const Key('player_orientation'),

@@ -77,6 +77,16 @@ abstract final class FigmaIcons {
   static const delete = 'delete';
   static const play = 'play';
   static const speed2x = 'speed_2x';
+
+  /// 배속 글리프. ⚠️ **export 파일명이 글리프와 어긋난다** — `speed_1_2x.svg`가
+  /// "1X"를, `speed_1_2x-1.svg`가 "1.2X"를 그린다(2026-09-21 렌더 실측).
+  /// 파일명만 보고 고르면 1.2배속 자리에 "1X"가 나온다.
+  static String speed(double value) => switch (value) {
+        >= 2 => speed2x,
+        >= 1.5 => 'redesign_v2/speed_1_5x',
+        >= 1.2 => 'redesign_v2/speed_1_2x-1',
+        _ => 'redesign_v2/speed_1_2x',
+      };
   static const expand = 'expand';
   static const calendar = 'calendar';
 
