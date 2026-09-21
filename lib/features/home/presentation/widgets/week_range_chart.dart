@@ -49,13 +49,18 @@ class WeekRangeChart extends StatelessWidget {
   final String Function(double, int decimals) axisFormat;
 
   // ── 치수 (Figma 1081:5052 실측) ──
-  static const double chartHeight = 256;
+  static const double chartHeight = 288;
   static const double rowStep = 32;
   static const int divisions = 6; // 눈금 7개
   static const double gridTop = rowStep; // y=0은 최고값 라벨 여유선
   static const double gridBottom = rowStep * (divisions + 1); // 224
   static const double gridSpan = gridBottom - gridTop; // 192
-  static const double weekdayTop = 234;
+  /// 격자 틀 바닥 — 데이터 바닥(224) 아래 한 칸을 최저값 라벨 여유로 둔다.
+  /// 위의 최고값 여유줄과 대칭. 없으면 최저값이 축 최소에 붙은 날(예: 습도
+  /// 40.7 / 축 40%) 라벨이 요일과 겹쳤다(2026-09-21 제보). Figma 원본 256보다
+  /// 32pt 길다.
+  static const double frameBottom = gridBottom + rowStep; // 256
+  static const double weekdayTop = frameBottom + 10;
   static const double barWidth = 10;
   static const double yLabelWidth = 28;
   static const double valueLabelHeight = 17;
@@ -312,14 +317,14 @@ class _WeekGridPainter extends CustomPainter {
       ..color = color
       ..strokeWidth = 1
       ..isAntiAlias = false;
-    for (var i = 0; i <= WeekRangeChart.divisions + 1; i++) {
+    for (var i = 0; i <= WeekRangeChart.divisions + 2; i++) {
       final y = i * WeekRangeChart.rowStep;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), p);
     }
     final columnWidth = size.width / 7;
     for (var i = 0; i <= 7; i++) {
       final x = (i * columnWidth).clamp(0.5, size.width - 0.5);
-      canvas.drawLine(Offset(x, 0), Offset(x, WeekRangeChart.gridBottom), p);
+      canvas.drawLine(Offset(x, 0), Offset(x, WeekRangeChart.frameBottom), p);
     }
   }
 

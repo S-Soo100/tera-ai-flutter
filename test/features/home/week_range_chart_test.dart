@@ -7,7 +7,7 @@ import 'package:vivanaut/features/home/presentation/widgets/week_range_chart.dar
 import 'package:vivanaut/shared/domain/week_range.dart';
 import 'package:vivanaut/shared/widgets/figma_icon.dart';
 
-/// Figma 1081:5052 실측 — 차트 369×256, 격자 32 간격, 열 폭 341/7.
+/// Figma 1081:5052 실측 — 차트 369×256(+최저값 여유줄 32 = 288), 격자 32 간격, 열 폭 341/7.
 void main() {
   final week = WeekRange.containing(DateTime(2026, 9, 14));
   final rows = [
@@ -19,7 +19,8 @@ void main() {
       ),
   ];
 
-  Future<GlassPalette> pump(WidgetTester tester) async {
+  Future<GlassPalette> pump(WidgetTester tester,
+      {List<DayMinMax>? data}) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     late GlassPalette glass;
     await tester.pumpWidget(MaterialApp(
@@ -30,7 +31,7 @@ void main() {
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: WeekRangeChart(
-              rows: rows,
+              rows: data ?? rows,
               accent: glass.tempAccent,
               valueColor: VivaColors.mainDark,
               iconAsset: 'redesign_v2/env_temperature',
@@ -54,7 +55,7 @@ void main() {
     final glass = await pump(tester);
     final chart = tester.getRect(grid());
     expect(chart.width, closeTo(341, 0.01));
-    expect(chart.height, 256);
+    expect(chart.height, 288);
 
     // 값 23~33 → 칸 2, 눈금 22..34 (7개). 맨 위 라벨은 y=32 선에 아래 정렬.
     final top = tester.getRect(find.text('34°'));
@@ -66,16 +67,27 @@ void main() {
     expect(axisStyle.color, glass.deviceOff);
     expect(axisStyle.fontSize, 12);
 
-    // 요일: 열 왼쪽 +4, y=234, 최고 요일도 회색·500.
+    // 요일: 열 왼쪽 +4, y=266(여유줄 바닥 256 + 10), 최고 요일도 회색·500.
     final tue = find.text('home_weekday_2');
     final tueRect = tester.getRect(tue);
     expect(tueRect.left, closeTo(chart.left + 341 / 7 + 4, 0.01));
-    expect(tueRect.top, closeTo(chart.top + 234, 0.01));
+    expect(tueRect.top, closeTo(chart.top + 266, 0.01));
     final tueStyle = tester.widget<Text>(tue).style!;
     expect(tueStyle.color, glass.deviceOff);
     expect(tueStyle.fontWeight, FontWeight.w500);
     expect(tester.getRect(find.text('home_weekday_1')).left,
         closeTo(chart.left + 4, 0.01));
+  });
+
+  testWidgets('최저값이 축 바닥에 붙어도 라벨이 요일과 겹치지 않는다', (tester) async {
+    // 2026-09-21 제보 — 습도 40.7(축 40%) 라벨이 '월'을 덮었다.
+    await pump(tester, data: [
+      DayMinMax(day: week.days[0], min: 40.7, max: 96.9),
+      for (var i = 1; i < 7; i++) DayMinMax(day: week.days[i]),
+    ]);
+    final low = tester.getRect(find.text('40.7'));
+    final mon = tester.getRect(find.text('home_weekday_1'));
+    expect(low.bottom, lessThanOrEqualTo(mon.top));
   });
 
   testWidgets('max bar and both of its labels use the accent colours',
