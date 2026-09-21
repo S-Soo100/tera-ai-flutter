@@ -201,6 +201,7 @@ void main() {
           return 'group';
         },
         knownCamera: (c) async => known[c.physicalId],
+        registered: (c) async => known.containsKey(c.physicalId),
         rememberCamera: (c, id) async => known[c.physicalId] = id,
         forgetCamera: (c) async {
           forgotten.add(c.physicalId);
@@ -217,12 +218,33 @@ void main() {
       controller = build();
     });
 
-    test('새로 등록한 카메라는 기억하고, 사육장은 기억하지 않는다', () async {
+    test('새로 등록한 기기는 둘 다 기억하고 목록에 등록됨으로 표시한다', () async {
       controller.select(device);
       controller.select(camera);
       await controller.connect('home', 'password');
-      expect(known, {camera.physicalId: 'camera-uuid'});
+      expect(known,
+          {device.physicalId: 'device-uuid', camera.physicalId: 'camera-uuid'});
       expect(gateway.wifiOnly, [false, false]);
+      expect(
+          controller.state.registered, {device.physicalId, camera.physicalId});
+    });
+
+    test('기억한 사육장이어도 Wi-Fi만 바꾸지 않고 새로 등록한다', () async {
+      known[device.physicalId] = 'existing-device';
+      controller.select(device);
+      await controller.connect('home', 'password');
+      expect(gateway.wifiOnly, [false]);
+    });
+
+    test('스캔된 기기 중 계정에 남아 있는 기억한 기기만 등록됨으로 표시한다', () async {
+      known[camera.physicalId] = 'existing-camera';
+      // setUp의 dispose가 이전 게이트웨이 스트림을 닫았다 — 새로 붙인다.
+      controller.dispose();
+      gateway = Gateway();
+      controller = build();
+      gateway.events.add([device, camera]);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(controller.state.registered, {camera.physicalId});
     });
 
     test('기억한 카메라는 JWT 없이 Wi-Fi만 보내고 기존 id를 쓴다', () async {

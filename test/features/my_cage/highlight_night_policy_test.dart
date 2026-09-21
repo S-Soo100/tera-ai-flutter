@@ -35,13 +35,13 @@ void main() {
 
   test('공개 시각 전에는 숨기고, 정각부터 보인다', () {
     final night = _h('a', DateTime.utc(2026, 8, 16, 15)); // 8/17 00:00 KST
-    expect(applyNightPolicy([night], DateTime.utc(2026, 8, 17, 22, 59)),
-        isEmpty);
+    expect(
+        applyNightPolicy([night], DateTime.utc(2026, 8, 17, 22, 59)), isEmpty);
     final shown = applyNightPolicy([night], DateTime.utc(2026, 8, 17, 23));
     expect(shown.single.clipId, 'a');
     expect(shown.single.publication!.batchId, 'night:2026-08-16');
-    expect(shown.single.publication!.publishedAt,
-        DateTime.utc(2026, 8, 17, 23));
+    expect(
+        shown.single.publication!.publishedAt, DateTime.utc(2026, 8, 17, 23));
   });
 
   test('낮(08:00 KST 이후) 촬영분은 하이라이트에서 뺀다', () {
@@ -64,7 +64,9 @@ void main() {
     final h = _h('s', DateTime.utc(2026, 8, 16, 15), publication: server);
     expect(applyNightPolicy([h], DateTime.utc(2026, 8, 18)), isEmpty);
     expect(
-        applyNightPolicy([h], DateTime.utc(2026, 8, 19)).single.publication!
+        applyNightPolicy([h], DateTime.utc(2026, 8, 19))
+            .single
+            .publication!
             .batchId,
         'srv');
   });

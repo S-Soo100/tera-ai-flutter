@@ -61,4 +61,18 @@ class DeviceAddRegistrationRepository {
     final raw = rows.single['last_seen_at'];
     return (lastSeen: raw == null ? null : DateTime.tryParse(raw.toString()));
   }
+
+  /// 이 계정의 사육장 행이 해제 없이 남아 있는지 — 스캔 목록 '이미 등록됨'용.
+  Future<bool> ownedDevice(String account, String id) async {
+    _guard(account);
+    final rows = await client
+        .from('devices')
+        .select('id')
+        .eq('owner_id', account)
+        .eq('id', id)
+        .isFilter('unlinked_at', null)
+        .limit(1);
+    _guard(account);
+    return rows.isNotEmpty;
+  }
 }

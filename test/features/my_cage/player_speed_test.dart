@@ -39,8 +39,8 @@ void main() {
 
   test('배속 아이콘은 전부 36 프레임 export다', () {
     for (final s in kPlayerSpeeds) {
-      final svg = File('assets/icons/${FigmaIcons.speed(s)}.svg')
-          .readAsStringSync();
+      final svg =
+          File('assets/icons/${FigmaIcons.speed(s)}.svg').readAsStringSync();
       final vb = RegExp(r'viewBox="([^"]+)"').firstMatch(svg)!.group(1)!;
       expect(vb.trim().split(RegExp(r'\s+'))[2], '36', reason: '$s');
     }

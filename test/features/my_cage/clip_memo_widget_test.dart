@@ -220,8 +220,8 @@ void main() {
     expect(delete.top - edit.top, closeTo(44, 0.5));
     expect(tester.widget<Text>(find.text('clip_memo_delete')).style!.color,
         VivaColors.mainDark);
-    expect(tester.widget<Text>(find.text('clip_memo_edit')).style!.fontSize,
-        18);
+    expect(
+        tester.widget<Text>(find.text('clip_memo_edit')).style!.fontSize, 18);
     await tester.binding.setSurfaceSize(null);
   });
 }

@@ -12,8 +12,9 @@ MotionClip clip(String id) => MotionClip(
 MotionClipPage page(List<String> ids, {bool more = false}) => (
       items: ids.map(clip).toList(),
       hasMore: more,
-      nextCursor:
-          more ? (startedAt: clip(ids.last).startedAt, id: ids.last, token: null) : null
+      nextCursor: more
+          ? (startedAt: clip(ids.last).startedAt, id: ids.last, token: null)
+          : null
     );
 void main() {
   test('추가 로드 중 기존 항목 유지·중복 요청 방지·ID 중복 제거', () async {

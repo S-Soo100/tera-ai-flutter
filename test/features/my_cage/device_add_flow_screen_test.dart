@@ -168,6 +168,50 @@ void main() {
       await tester.pump();
     });
   }
+  // 등록을 마친 기기도 몇 분간 광고한다(2026-09-21) — 이 폰이 등록한 기기는
+  // '이미 등록됨'으로 표시하고 아래로 내린다.
+  testWidgets('이미 등록한 기기는 표시하고 목록 아래로 내린다', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(393, 852);
+    addTearDown(tester.view.reset);
+    final initial = DeviceAddState(
+        candidates: const [camera, device], registered: {camera.physicalId});
+    await tester.pumpWidget(EasyLocalization(
+        supportedLocales: const [Locale('ko')],
+        path: 'assets/l10n',
+        assetLoader: const Translations(),
+        child: Builder(
+            builder: (context) => ProviderScope(
+                    overrides: [
+                      deviceAddAccountProvider.overrideWithValue('a'),
+                      deviceAddFlowProvider('test')
+                          .overrideWith((ref) => Controller(initial)),
+                    ],
+                    child: MaterialApp(
+                        theme: AppTheme.light,
+                        locale: context.locale,
+                        supportedLocales: context.supportedLocales,
+                        localizationsDelegates: context.localizationDelegates,
+                        home: const DeviceAddFlowScreen(flowKey: 'test'))))));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
+    expect(find.text('이미 등록됨 · Wi-Fi만 변경'), findsOneWidget);
+    expect(find.byKey(Key('device_add_registered_${device.physicalId}')),
+        findsNothing);
+    final cameraY = tester
+        .getTopLeft(
+            find.byKey(Key('device_add_candidate_${camera.physicalId}')))
+        .dy;
+    final deviceY = tester
+        .getTopLeft(
+            find.byKey(Key('device_add_candidate_${device.physicalId}')))
+        .dy;
+    expect(cameraY, greaterThan(deviceY));
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+  });
+
   // 새 사육장 + Wi-Fi만 바꾼 카메라(2026-09-21) — 버튼이 '나중에 하기'만
   // 남던 문제. 새 사육장을 기존 사육 환경에 연결할 길을 연다.
   testWidgets('새 사육장과 Wi-Fi 변경 카메라가 섞이면 기존 환경 연결을 연다', (tester) async {

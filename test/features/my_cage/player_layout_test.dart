@@ -130,7 +130,8 @@ void main() {
     expect(time.left, 56);
     expect(tester.widget<Text>(find.textContaining(' / ')).style!.fontSize, 14);
 
-    final pill = tester.getRect(find.byKey(ClipPlaylistPlayerScreen.actionPillKey));
+    final pill =
+        tester.getRect(find.byKey(ClipPlaylistPlayerScreen.actionPillKey));
     expect(pill, const Rect.fromLTWH(88.5, 656, 216, 48));
     expect(tester.getRect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey)),
         const Rect.fromLTWH(16.5, 656, 48, 48));
@@ -146,8 +147,8 @@ void main() {
     for (var i = 0; i < icons.length; i++) {
       final icon = find.descendant(
           of: find.byKey(ClipPlaylistPlayerScreen.actionPillKey),
-          matching: find.byWidgetPredicate(
-              (w) => w is FigmaIcon && w.name == icons[i]));
+          matching: find
+              .byWidgetPredicate((w) => w is FigmaIcon && w.name == icons[i]));
       expect(tester.getCenter(icon).dx, closeTo(118.5 + 52 * i, 0.01),
           reason: icons[i]);
       expect(tester.getSize(icon), const Size(36, 36));
@@ -226,8 +227,9 @@ void main() {
     expect(label, findsOneWidget);
     expect(tester.getRect(label).top - tester.getRect(spinner).bottom, 12);
     // dim이 입력을 막는다 — 다운로드 버튼을 다시 눌러도 호출 없음.
-    await tester.tap(find.byWidgetPredicate(
-        (w) => w is FigmaIcon && w.name == FigmaIcons.download),
+    await tester.tap(
+        find.byWidgetPredicate(
+            (w) => w is FigmaIcon && w.name == FigmaIcons.download),
         warnIfMissed: false);
     await tester.pump();
     expect(export.calls, 1);

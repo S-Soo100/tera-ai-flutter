@@ -46,6 +46,8 @@
   "device_add_registered": "등록 완료",
   "device_add_wifi_pending": "Wi-Fi 연결 성공 · 등록 확인 대기",
   "device_add_uncertain": "연결 결과 확인 대기",
+  "device_add_already_registered": "이미 등록된 기기",
+  "device_add_already_registered_camera": "이미 등록됨 · Wi-Fi만 변경",
   "device_add_issue_legacy": "서버 등록을 지원하지 않는 펌웨어예요 · 펌웨어 업데이트 필요",
   "device_add_issue_pair_failed": "기기가 서버 등록에 실패했어요",
   "device_add_issue_pair_failed_reason": "기기가 서버 등록에 실패했어요 ({reason})",

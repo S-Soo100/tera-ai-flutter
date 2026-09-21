@@ -33,8 +33,9 @@ void main() {
           final id = ['a', 'b', 'c'][calls - 1];
           return (
             items: [_clip(id)],
-            nextCursor:
-                calls < 3 ? (startedAt: DateTime.utc(2026), id: id, token: null) : null,
+            nextCursor: calls < 3
+                ? (startedAt: DateTime.utc(2026), id: id, token: null)
+                : null,
             hasMore: calls < 3
           );
         });

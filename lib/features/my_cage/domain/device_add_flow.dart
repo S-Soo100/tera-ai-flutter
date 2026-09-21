@@ -90,7 +90,8 @@ class DeviceAddState {
       this.errorKey,
       this.activePhysicalId,
       this.groupId,
-      this.groupError = false});
+      this.groupError = false,
+      this.registered = const {}});
   final DeviceAddStep step;
   final List<DeviceAddCandidate> candidates;
   final Map<PairTargetKind, DeviceAddCandidate> selected;
@@ -99,6 +100,9 @@ class DeviceAddState {
   final bool busy, remember, showPassword, groupError;
   final String ssid;
   final String? errorKey, activePhysicalId, groupId;
+
+  /// 이 폰이 등록해 계정에 남아 있는 기기의 BLE 주소 — 목록에 '이미 등록됨'.
+  final Set<String> registered;
   DeviceAddState copyWith(
           {DeviceAddStep? step,
           List<DeviceAddCandidate>? candidates,
@@ -112,7 +116,8 @@ class DeviceAddState {
           String? errorKey,
           String? activePhysicalId,
           String? groupId,
-          bool? groupError}) =>
+          bool? groupError,
+          Set<String>? registered}) =>
       DeviceAddState(
           step: step ?? this.step,
           candidates: candidates ?? this.candidates,
@@ -126,7 +131,8 @@ class DeviceAddState {
           errorKey: errorKey,
           activePhysicalId: activePhysicalId,
           groupId: groupId ?? this.groupId,
-          groupError: groupError ?? this.groupError);
+          groupError: groupError ?? this.groupError,
+          registered: registered ?? this.registered);
 }
 
 class DeviceProvisionReceipt {

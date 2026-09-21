@@ -456,6 +456,11 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       for (final candidate in state.candidates)
         if (state.results[candidate.kind]?.canRetry != false) candidate
     ]..sort((a, b) {
+        // 이미 등록한 기기는 아래로 — 등록을 마친 기기도 몇 분간 광고해
+        // 방금 설치한 기기가 다시 잡힌다(2026-09-21).
+        final ra = state.registered.contains(a.physicalId);
+        final rb = state.registered.contains(b.physicalId);
+        if (ra != rb) return ra ? 1 : -1;
         if (widget.initialKind != null && a.kind != b.kind) {
           return a.kind == widget.initialKind ? -1 : 1;
         }
@@ -505,6 +510,22 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                         style: managementStyle(context,
                                             weight: FontWeight.w600,
                                             color: context.glass.textPrimary)),
+                                    if (state.registered
+                                        .contains(c.physicalId)) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                          key: Key(
+                                              'device_add_registered_${c.physicalId}'),
+                                          (c.kind == PairTargetKind.camera
+                                                  ? 'device_add_already_registered_camera'
+                                                  : 'device_add_already_registered')
+                                              .tr(),
+                                          textAlign: TextAlign.end,
+                                          style: managementStyle(context,
+                                              size: 14,
+                                              color:
+                                                  context.glass.bodySecondary)),
+                                    ],
                                     const SizedBox(height: 4),
                                     Row(
                                         mainAxisAlignment:

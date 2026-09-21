@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/device_add_ble_adapter.dart';
 import '../data/device_add_registration_repository.dart';
-import '../data/known_camera_store.dart';
+import '../data/known_device_store.dart';
 import '../data/wifi_credentials_store.dart';
 import '../domain/device_add_flow.dart';
 import '../domain/pair_target_kind.dart';
@@ -19,8 +19,8 @@ final deviceAddGatewayFactoryProvider =
     Provider<DeviceAddGateway Function()>((ref) => DeviceAddBleAdapter.new);
 final deviceAddAutoGroupProvider = Provider<DeviceAddAutoGroup>((ref) =>
     (account, ids) async => throw StateError('Atomic grouping unavailable'));
-final knownCameraStoreProvider =
-    Provider<KnownCameraStore>((ref) => const HiveKnownCameraStore());
+final knownDeviceStoreProvider =
+    Provider<KnownDeviceStore>((ref) => const HiveKnownDeviceStore());
 final deviceAddCompletedProvider = Provider<void Function()>((ref) => () {});
 final deviceAddFlowProvider = StateNotifierProvider.autoDispose
     .family<DeviceAddFlowController, DeviceAddState, Object>((ref, key) {
@@ -32,7 +32,7 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
   final completed = ref.watch(deviceAddCompletedProvider);
   final gatewayFactory = ref.watch(deviceAddGatewayFactoryProvider);
   final freshToken = ref.watch(freshAccessTokenProvider);
-  final knownCameras = ref.watch(knownCameraStoreProvider);
+  final known = ref.watch(knownDeviceStoreProvider);
   var active = true;
   ref.onDispose(() => active = false);
   return DeviceAddFlowController(
@@ -55,13 +55,20 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
       completed: completed,
       // 기억한 카메라라도 이 계정에 행이 남아 있어야 Wi-Fi만 바꾼다.
       knownCamera: (candidate) async {
-        final id = knownCameras.load(account!, candidate);
+        final id = known.load(account!, candidate);
         if (id == null) return null;
         return await registration.ownedCamera(account, id) == null ? null : id;
       },
-      rememberCamera: (candidate, id) =>
-          knownCameras.save(account!, candidate, id),
-      forgetCamera: (candidate) => knownCameras.forget(account!, candidate),
+      // 목록 '이미 등록됨' — 기억한 행이 이 계정에 해제 없이 남아 있을 때만.
+      registered: (candidate) async {
+        final id = known.load(account!, candidate);
+        if (id == null) return false;
+        return candidate.kind == PairTargetKind.camera
+            ? await registration.ownedCamera(account, id) != null
+            : await registration.ownedDevice(account, id);
+      },
+      rememberCamera: (candidate, id) => known.save(account!, candidate, id),
+      forgetCamera: (candidate) => known.forget(account!, candidate),
       cameraLastSeen: (id) async =>
           (await registration.ownedCamera(account!, id))?.lastSeen);
 });
@@ -80,12 +87,14 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       required DeviceAddAutoGroup autoGroup,
       void Function()? completed,
       Future<String?> Function(DeviceAddCandidate)? knownCamera,
+      Future<bool> Function(DeviceAddCandidate)? registered,
       Future<void> Function(DeviceAddCandidate, String)? rememberCamera,
       Future<void> Function(DeviceAddCandidate)? forgetCamera,
       Future<DateTime?> Function(String)? cameraLastSeen,
       this.reconnectPoll = const Duration(seconds: 5),
       this.reconnectTimeout = const Duration(seconds: 90)})
       : _known = knownCamera,
+        _registered = registered,
         _rememberCamera = rememberCamera,
         _forgetCamera = forgetCamera,
         _lastSeen = cameraLastSeen,
@@ -102,7 +111,13 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         _completed = completed,
         super(const DeviceAddState()) {
     _scan = gateway.scanResults.listen((rows) {
-      if (_active) state = state.copyWith(candidates: List.unmodifiable(rows));
+      if (!_active) return;
+      state = state.copyWith(candidates: List.unmodifiable(rows));
+      for (final candidate in rows) {
+        if (_checked.add(candidate.physicalId)) {
+          unawaited(_checkRegistered(candidate));
+        }
+      }
     }, onError: (Object _) {
       if (_active) {
         state = state.copyWith(busy: false, errorKey: 'device_add_scan_error');
@@ -125,6 +140,10 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   /// Wi-Fi만 바꾼다 — 카메라 펌웨어는 JWT를 받을 때마다 새 camera_id로
   /// 등록해 행이 늘어난다(2026-09-21).
   final Future<String?> Function(DeviceAddCandidate)? _known;
+  final Future<bool> Function(DeviceAddCandidate)? _registered;
+
+  /// 등록 여부를 이미 물어본 BLE 주소 — 스캔 갱신마다 다시 묻지 않는다.
+  final Set<String> _checked = {};
   final Future<void> Function(DeviceAddCandidate, String)? _rememberCamera;
   final Future<void> Function(DeviceAddCandidate)? _forgetCamera;
   final Future<DateTime?> Function(String)? _lastSeen;
@@ -347,12 +366,33 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     }
   }
 
-  /// 카메라만 기억한다. 사육장은 UNPAIR로 같은 device_id에 재등록된다.
+  /// 등록한 기기를 기억한다. 카메라는 다음 연결을 Wi-Fi 변경으로, 사육장은
+  /// 목록 '이미 등록됨' 표시에만 쓴다(등록을 마친 기기도 몇 분간 광고한다).
   Future<void> _remember(DeviceAddCandidate candidate, String id) async {
-    if (candidate.kind != PairTargetKind.camera) return;
+    if (_active) {
+      state = state.copyWith(
+          registered:
+              Set.unmodifiable({...state.registered, candidate.physicalId}));
+    }
     try {
       await _rememberCamera?.call(candidate, id);
     } catch (_) {/* 못 기억하면 다음에 한 번 더 등록될 뿐이다. */}
+  }
+
+  Future<void> _checkRegistered(DeviceAddCandidate candidate) async {
+    final check = _registered;
+    if (check == null) return;
+    bool yes;
+    try {
+      yes = await check(candidate);
+    } catch (_) {
+      _checked.remove(candidate.physicalId); // 다음 스캔 때 다시 묻는다.
+      return;
+    }
+    if (!yes || !_active) return;
+    state = state.copyWith(
+        registered:
+            Set.unmodifiable({...state.registered, candidate.physicalId}));
   }
 
   Future<String?> _existingCamera(DeviceAddCandidate candidate) async {
@@ -444,6 +484,8 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     if (!_active) return;
     final results = {...state.results}..remove(kind);
     state = state.copyWith(
+        registered: Set.unmodifiable(
+            {...state.registered}..remove(result.candidate.physicalId)),
         results: Map.unmodifiable(results),
         selected:
             Map.unmodifiable({...state.selected, kind: result.candidate}));
