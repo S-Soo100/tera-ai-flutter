@@ -37,7 +37,7 @@ class _FakeLcdRepo implements LcdRepository {
 }
 
 Future<void> _pump(WidgetTester tester, _FakeLcdRepo repo,
-    {String? deviceId = 'd1'}) async {
+    {String? deviceId = 'd1', String? hardwareId}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -52,6 +52,7 @@ Future<void> _pump(WidgetTester tester, _FakeLcdRepo repo,
                     ownerId: null,
                     enclosureId: null,
                     name: null,
+                    hardwareId: hardwareId,
                     isOnline: true,
                     lastSeenAt: null),
                 camera: null,
@@ -237,6 +238,70 @@ void main() {
             .widget<FilledButton>(find.byKey(const Key('lcd_apply')))
             .onPressed,
         isNotNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('처음 열면 감지된 기기 이름(terra-…)이 채워져 있다', (tester) async {
+    // Figma 1081:3160 — 입력칸에 `viva-iot-ㅁㅁㅁㅁ`가 #1E1E1E(= 실제 값)로
+    // 들어 있고 카운터가 14/20이다. 회색 예시("예: 밥 6시")는 원본에 없다.
+    final repo = _FakeLcdRepo();
+    await _pump(tester, repo, hardwareId: 'terra-cb7d7864');
+
+    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.pumpAndSettle();
+
+    expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('lcd_text_field')))
+            .controller!
+            .text,
+        'terra-cb7d7864');
+    expect(find.text('14/20'), findsOneWidget);
+    expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('lcd_text_field')))
+            .decoration!
+            .hintText,
+        isNull,
+        reason: '예시 문구는 쓰지 않는다');
+    expect(
+        tester
+            .widget<FilledButton>(find.byKey(const Key('lcd_apply')))
+            .onPressed,
+        isNotNull,
+        reason: '채워진 값 그대로 보낼 수 있어야 한다');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('전송 이력이 있으면 기기 이름 대신 마지막 문구를 채운다', (tester) async {
+    final repo = _FakeLcdRepo();
+    await _pump(tester, repo, hardwareId: 'terra-cb7d7864');
+
+    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('lcd_text_field')), '도도네 집');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('lcd_apply')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('lcd_text_field')))
+            .controller!
+            .text,
+        '도도네 집');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('기기 이름을 모르면 빈 칸으로 연다', (tester) async {
+    final repo = _FakeLcdRepo();
+    await _pump(tester, repo);
+
+    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.pumpAndSettle();
+    expect(find.text('0/20'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

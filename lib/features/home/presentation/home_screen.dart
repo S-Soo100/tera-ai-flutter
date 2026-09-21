@@ -213,7 +213,9 @@ class HomeLcdRow extends ConsumerWidget {
       child: InkWell(
         key: rowKey,
         borderRadius: BorderRadius.circular(12),
-        onTap: () => showLcdSheet(context, ref, device.id),
+        // 기본값 = 페어링 때 감지된 기기 이름(`devices.device_id`).
+        onTap: () => showLcdSheet(context, ref, device.id,
+            defaultText: device.hardwareId),
         child: SizedBox(
           height: 51,
           child: Padding(

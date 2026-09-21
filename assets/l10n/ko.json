@@ -964,7 +964,6 @@
   "lcd_screen_title": "모듈 화면 표시 문구",
   "lcd_screen_description": "사육장 상단 모듈의\n화면에 표시될 문구를 지정해 주세요",
   "lcd_done": "완료",
-  "lcd_hint": "예: 밥 6시",
   "lcd_length_hint": "최대 20자",
   "lcd_apply": "적용",
   "lcd_sent": "LCD에 전송했어요. 잠시 뒤 기기 화면에 반영됩니다.",

@@ -30,14 +30,17 @@ final lastLcdTextProvider =
 Future<void> showLcdSheet(
   BuildContext context,
   WidgetRef ref,
-  String deviceId,
-) {
+  String deviceId, {
+  String? defaultText,
+}) {
   // 탭 셸 밖(루트)으로 띄운다 — 원본 1081:3160은 전체 화면이고 독이 없다
   // (시뮬 확인 2026-09-16: 탭 내비게이터로 띄우면 독이 남는다).
   return Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute(
           builder: (_) => _LcdScreen(
-              deviceId: deviceId, repo: ref.read(lcdRepositoryProvider))));
+              deviceId: deviceId,
+              defaultText: defaultText,
+              repo: ref.read(lcdRepositoryProvider))));
 }
 
 /// Figma 1081:3160 — 헤더 44(뒤로 + 제목 16/700), 모듈 그림 345×171 y118,
@@ -45,10 +48,17 @@ Future<void> showLcdSheet(
 /// 완료 CTA y696(키보드 위 36). 기본값 복원은 기존 기능이라 y752 텍스트
 /// 버튼으로 두되 키보드가 있으면 숨긴다(노출 위치는 결정 목록).
 class _LcdScreen extends ConsumerStatefulWidget {
-  const _LcdScreen({required this.deviceId, required this.repo});
+  const _LcdScreen(
+      {required this.deviceId, required this.repo, this.defaultText});
 
   final String deviceId;
   final LcdRepository repo;
+
+  /// 아직 아무것도 안 보낸 기기의 첫 기본값 — 페어링 때 감지된 기기 이름
+  /// (`devices.device_id`, 예 `terra-cb7d7864`). 원본 1081:3160의 입력칸이
+  /// `viva-iot-ㅁㅁㅁㅁ`를 #1E1E1E(= 회색 예시가 아니라 **채워진 값**)로
+  /// 그리고 카운터가 14/20인 것과 같다.
+  final String? defaultText;
 
   @override
   ConsumerState<_LcdScreen> createState() => _LcdScreenState();
@@ -56,7 +66,9 @@ class _LcdScreen extends ConsumerStatefulWidget {
 
 class _LcdScreenState extends ConsumerState<_LcdScreen> {
   late final TextEditingController _text = TextEditingController(
-      text: ref.read(lastLcdTextProvider(widget.deviceId)) ?? '');
+      text: ref.read(lastLcdTextProvider(widget.deviceId)) ??
+          widget.defaultText ??
+          '');
   final _identity = Object();
 
   @override
@@ -130,14 +142,16 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
                                 child: TextField(
                                     key: const Key('lcd_text_field'),
                                     controller: _text,
-                                    // 기기 이름과 독립적인 문구이며 공백도
-                                    // 입력 한도에 포함한다.
+                                    // 기기 이름을 기본값으로 채우지만 그 뒤로는
+                                    // 자유 문구다(기기 이름과 연동되지 않는다).
+                                    // 공백도 입력 한도에 포함한다.
                                     maxLength: _maxLcdTextLength,
                                     readOnly: sending,
                                     style: managementStyle(context,
                                         color: glass.textPrimary),
-                                    decoration: InputDecoration(
-                                        hintText: 'lcd_hint'.tr(),
+                                    decoration: const InputDecoration(
+                                        // 원본에 예시 문구가 없다 — 기본값은
+                                        // 감지된 기기 이름([defaultText])이다.
                                         counterText: '',
                                         border: InputBorder.none,
                                         enabledBorder: InputBorder.none,
