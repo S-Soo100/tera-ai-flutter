@@ -44,12 +44,15 @@ class FavoriteToggleButton extends ConsumerWidget {
       });
     }
     final favorite = state?.desired ?? false;
+    final tint = color ?? context.glass.textPrimary;
     return IconButton(
       // 아이콘은 자기 export 프레임 크기로 그린다 — bookmark_check는 24
       // 프레임(Figma 1081:4209)이라 36으로 그리면 글리프만 1.5배가 된다.
+      // on/off가 둘 다 채워진 리본이라 안 한 쪽을 50% 연하게 그린다
+      // (2026-09-21 사용자 결정).
       icon: FigmaIcon.tinted(
           favorite ? FigmaIcons.bookmarkCheck : FigmaIcons.bookmark,
-          color: color ?? context.glass.textPrimary,
+          color: favorite ? tint : tint.withValues(alpha: .5),
           size: favorite ? 24 : 36),
       tooltip: (favorite ? 'clip_favorite_remove' : 'clip_favorite_add').tr(),
       onPressed:

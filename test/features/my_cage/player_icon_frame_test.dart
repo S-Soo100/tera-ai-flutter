@@ -144,4 +144,37 @@ void main() {
     expectFramesMatch(tester);
     expect(tester.takeException(), isNull);
   });
+
+  /// 북마크 on/off가 둘 다 **채워진** 리본이라 모양만으로는 구분이 약하다.
+  /// 2026-09-21 사용자 결정 — off는 50% 연하게, on은 원래 색 그대로.
+  FigmaIcon bookmarkIcon(WidgetTester tester) =>
+      tester.widgetList<FigmaIcon>(find.byType(FigmaIcon)).firstWhere(
+          (w) =>
+              w.name == FigmaIcons.bookmark ||
+              w.name == FigmaIcons.bookmarkCheck,
+          orElse: () => throw StateError('북마크 아이콘이 없다'));
+
+  testWidgets('북마크 안 한 영상은 북마크만 50% 연하게 그린다', (tester) async {
+    await pump(tester, const Size(393, 852),
+        padding: const EdgeInsets.only(top: 62, bottom: 34));
+
+    final bookmark = bookmarkIcon(tester);
+    expect(bookmark.name, FigmaIcons.bookmark);
+    expect(bookmark.color!.a, closeTo(0.5, 0.01));
+
+    // 옆 버튼들은 그대로다 — 연해지는 건 북마크뿐이다.
+    final download = tester
+        .widgetList<FigmaIcon>(find.byType(FigmaIcon))
+        .firstWhere((w) => w.name == FigmaIcons.download);
+    expect(download.color!.a, 1.0);
+  });
+
+  testWidgets('북마크한 영상은 원래 색 그대로다', (tester) async {
+    await pump(tester, const Size(393, 852),
+        padding: const EdgeInsets.only(top: 62, bottom: 34), favorite: true);
+
+    final bookmark = bookmarkIcon(tester);
+    expect(bookmark.name, FigmaIcons.bookmarkCheck);
+    expect(bookmark.color!.a, 1.0);
+  });
 }

@@ -1217,7 +1217,7 @@ class _ClipPlaylistPlayerScreenState
     // 들어 있어서 다른 크기로 그리면 글리프만 확대·축소된다 — 북마크 on은
     // 24 프레임(Figma 1081:4209)이라 36으로 그리면 옆 버튼들보다 1.5배 커진다.
     Widget action(String asset, String tooltip, VoidCallback? onTap,
-        {double frame = 36}) {
+        {double frame = 36, Color? tint}) {
       return SizedBox(
         width: 44,
         height: 44,
@@ -1225,7 +1225,8 @@ class _ClipPlaylistPlayerScreenState
           padding: EdgeInsets.zero,
           iconSize: 24,
           icon: FigmaIcon.tinted(asset,
-              color: onTap == null ? glass.textTertiary : color, size: frame),
+              color: onTap == null ? glass.textTertiary : (tint ?? color),
+              size: frame),
           tooltip: tooltip,
           onPressed: onTap,
         ),
@@ -1243,7 +1244,10 @@ class _ClipPlaylistPlayerScreenState
           isFav ? FigmaIcons.bookmarkCheck : FigmaIcons.bookmark,
           (isFav ? 'clip_favorite_remove' : 'clip_favorite_add').tr(),
           () => _toggleFavorite(clip),
-          frame: isFav ? 24 : 36),
+          frame: isFav ? 24 : 36,
+          // on/off가 둘 다 채워진 리본이라 모양만으로는 구분이 약하다 —
+          // 안 한 쪽을 50% 연하게 그린다(2026-09-21 사용자 결정).
+          tint: isFav ? null : color.withValues(alpha: .5)),
     ];
   }
 
