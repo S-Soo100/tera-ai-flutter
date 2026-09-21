@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../core/theme/activity_colors.dart';
+import '../../domain/activity_axis.dart';
 import '../../domain/activity_summary.dart';
 
 String activityDuration(double? seconds) {
@@ -21,11 +22,20 @@ class ActivityDayChart extends StatelessWidget {
   final List<ActivityBucket> hours;
   @override
   Widget build(BuildContext context) => ActivityBars(
+      // 한 시간짜리 버킷이라 축도 한 시간 고정 — 0~60분 라벨을 그대로 읽는다.
       buckets: hours,
-      maxSeconds: 3600,
+      axis: ActivityAxis.forPeak(3600),
       weekly: false,
       labels: List.generate(4, (index) => 'activity_hour_${index * 6}'.tr()));
 }
+
+/// 주간 축 눈금 라벨. 90분 이하 축은 **분**으로 읽는다 — 시간으로 쓰면
+/// `1.3h`·`0.3h`처럼 시계로 못 읽는 숫자가 된다.
+String activityAxisLabel(ActivityAxis axis, double seconds) => axis.inMinutes
+    ? 'activity_minutes_axis'
+        .tr(namedArgs: {'value': (seconds / 60).round().toString()})
+    : 'activity_hours_axis'
+        .tr(namedArgs: {'value': NumberFormat('0.#').format(seconds / 3600)});
 
 /// Original Figma graph is 369×256 with a 224px plot and right-hand axis.
 /// Empty buckets carry a dash; measured zero remains an explicit 0 tooltip.
@@ -33,7 +43,7 @@ class ActivityBars extends StatelessWidget {
   const ActivityBars(
       {super.key,
       required this.buckets,
-      required this.maxSeconds,
+      required this.axis,
       required this.labels,
       required this.weekly});
   // Seven 32px rows: the highest tick ends the first row, zero ends the last.
@@ -42,7 +52,7 @@ class ActivityBars extends StatelessWidget {
   static const double valueHeight = plotHeight - rowHeight;
 
   final List<ActivityBucket> buckets;
-  final double maxSeconds;
+  final ActivityAxis axis;
   final List<String> labels;
   final bool weekly;
   @override
@@ -83,10 +93,7 @@ class ActivityBars extends StatelessWidget {
                       alignment: Alignment.bottomLeft,
                       child: Text(
                           weekly
-                              ? 'activity_hours_axis'.tr(namedArgs: {
-                                  'value': NumberFormat('0.#').format(
-                                      maxSeconds / 3600 * (6 - tick) / 6)
-                                })
+                              ? activityAxisLabel(axis, axis.ticks[6 - tick])
                               : '${60 - tick * 10}',
                           style: labelStyle,
                           textAlign: TextAlign.left))),
@@ -122,7 +129,7 @@ class ActivityBars extends StatelessWidget {
                                           : math.max(1, width - 4),
                                       height: (valueHeight *
                                               buckets[i].seconds! /
-                                              maxSeconds)
+                                              axis.maxSeconds)
                                           .clamp(0, valueHeight),
                                       decoration: BoxDecoration(
                                         borderRadius:
@@ -139,7 +146,7 @@ class ActivityBars extends StatelessWidget {
                                     Positioned(
                                         bottom: (valueHeight *
                                                     buckets[i].seconds! /
-                                                    maxSeconds +
+                                                    axis.maxSeconds +
                                                 2)
                                             .clamp(2, valueHeight + 2),
                                         child: Text(
