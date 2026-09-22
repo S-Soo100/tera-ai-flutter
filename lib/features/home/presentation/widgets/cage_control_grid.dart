@@ -9,9 +9,11 @@ import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../../../shared/domain/fan_actuator.dart';
 import '../cage_control_actions.dart';
+import '../control_pending.dart';
 import '../../domain/running_timer.dart';
 import '../../domain/schedule_device.dart';
 import '../home_control_providers.dart';
+import 'control_loading_overlay.dart';
 import 'device_control_sheet.dart';
 import 'running_timer_chip.dart';
 
@@ -43,6 +45,7 @@ class CageControlGrid extends ConsumerWidget {
   static const coolFanKey = Key('cage_control_cool_fan');
   static const heatFanKey = Key('cage_control_heat_fan');
   static const ledKey = Key('cage_control_led');
+  static const loadingKey = Key('cage_control_loading');
 
   static const double _tileHeight = 72;
   static const double _gap = 8;
@@ -53,7 +56,17 @@ class CageControlGrid extends ConsumerWidget {
     if (deviceId == null) return const SizedBox.shrink();
 
     final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
-    final online = ref.watch(moduleOnlineProvider(deviceId));
+    // 기기 확인 대기 중이면 모든 타일을 잠그고(2026-09-22 사용자 결정), 누른
+    // 타일은 목표 상태 + 로딩으로 그린다 — 시트를 닫아도 여기서 이어 보인다.
+    final pending = ref.watch(controlPendingProvider(deviceId));
+    final online = ref.watch(moduleOnlineProvider(deviceId)) && pending == null;
+    bool loading(ScheduleDevice d) => pending?.device == d;
+    ActuatorState? shown(ScheduleDevice d) {
+      final expect = loading(d) ? pending!.expectOn : null;
+      if (expect == null) return actuatorStateOf(t, d);
+      return expect ? ActuatorState.on : ActuatorState.off;
+    }
+
     final lock = ref.watch(mistLockProvider(deviceId));
     final glass = context.glass;
     final mistLocked = lock.isLocked(DateTime.now());
@@ -61,10 +74,10 @@ class CageControlGrid extends ConsumerWidget {
     // 텔레메트리는 3초 주기라 3초 펄스를 놓칠 수 있어 잠금을 함께 본다.
     final mistOn = t?.relay == ActuatorState.on || mistLocked;
 
-    final fanOn = t?.fan == ActuatorState.on;
-    final coolOn = t?.fan2 == ActuatorState.on;
+    final fanOn = shown(ScheduleDevice.fan) == ActuatorState.on;
+    final coolOn = shown(ScheduleDevice.cool) == ActuatorState.on;
     final coolAvailable = t != null && t.fan2 != ActuatorState.unavailable;
-    final ledOn = t?.led == ActuatorState.on;
+    final ledOn = shown(ScheduleDevice.led) == ActuatorState.on;
     // 히터 타일 노출 조건 — 켜짐 또는 안전잠금(둘 다 "꺼야/풀어야 할 상태").
     final heaterVisible =
         t?.heaterState == ActuatorState.on || (t?.heaterLocked ?? false);
@@ -95,10 +108,11 @@ class CageControlGrid extends ConsumerWidget {
       _DeviceTile(
         key: ventFanKey,
         name: 'device_vent_fan'.tr(),
-        status: fanStatus(t?.fan, FanActuator.ventilation),
+        status: fanStatus(shown(ScheduleDevice.fan), FanActuator.ventilation),
         glyph: FigmaIcon.metric(fanOn ? FigmaIcons.fanOn : FigmaIcons.fanOff,
             size: 40),
         active: fanOn,
+        loading: loading(ScheduleDevice.fan),
         tileColor: fanOn ? glass.deviceFanBg : glass.surfaceTint,
         iconCircleColor: fanOn ? glass.deviceFan : glass.deviceOff,
         onTap: online ? () => open(ScheduleDevice.fan) : null,
@@ -116,6 +130,7 @@ class CageControlGrid extends ConsumerWidget {
         glyph: FigmaIcon.metric(mistOn ? FigmaIcons.mistOn : FigmaIcons.mistOff,
             size: 40),
         active: mistOn,
+        loading: loading(ScheduleDevice.mist),
         tileColor: mistOn ? glass.deviceMistBg : glass.surfaceTint,
         iconCircleColor: mistOn ? glass.deviceMist : glass.deviceOff,
         onTap: online ? () => open(ScheduleDevice.mist) : null,
@@ -125,11 +140,12 @@ class CageControlGrid extends ConsumerWidget {
         key: coolFanKey,
         name: 'device_cool_fan'.tr(),
         status: coolAvailable
-            ? fanStatus(t.fan2, FanActuator.cooling)
+            ? fanStatus(shown(ScheduleDevice.cool), FanActuator.cooling)
             : 'home_value_none'.tr(),
         glyph: FigmaIcon.metric(coolOn ? FigmaIcons.coolOn : FigmaIcons.coolOff,
             size: 40),
         active: coolOn,
+        loading: loading(ScheduleDevice.cool),
         tileColor: coolOn ? glass.deviceCoolBg : glass.surfaceTint,
         iconCircleColor: coolOn ? glass.deviceCool : glass.deviceOff,
         onTap: online && coolAvailable ? () => open(ScheduleDevice.cool) : null,
@@ -139,10 +155,13 @@ class CageControlGrid extends ConsumerWidget {
       _DeviceTile(
         key: ledKey,
         name: 'device_led'.tr(),
-        status: _ledLabel(t),
+        status: loading(ScheduleDevice.led) && pending!.expectOn != null
+            ? _stateLabel(shown(ScheduleDevice.led))
+            : _ledLabel(t),
         glyph: FigmaIcon.metric(ledOn ? FigmaIcons.ledOn : FigmaIcons.ledOff,
             size: 40),
         active: ledOn,
+        loading: loading(ScheduleDevice.led),
         tileColor: ledOn ? glass.deviceLedBg : glass.surfaceTint,
         iconCircleColor: ledOn ? glass.deviceLed : glass.deviceOff,
         gaugeFraction: ledOn && t?.ledBrightness != null
@@ -152,7 +171,10 @@ class CageControlGrid extends ConsumerWidget {
         onTap: online ? () => open(ScheduleDevice.led) : null,
       ),
       // ⑤ 히터팬 — 켜짐/잠금일 때만(클래스 doc). 끄기·잠금 해제 진입점.
-      if (heaterVisible) _heaterTile(context, ref, deviceId, t, online),
+      if (heaterVisible)
+        _heaterTile(context, ref, deviceId, t, online,
+            loading: loading(ScheduleDevice.heater),
+            shownState: shown(ScheduleDevice.heater)),
     ];
 
     return Column(
@@ -187,17 +209,19 @@ class CageControlGrid extends ConsumerWidget {
   /// 안전확인·잠금 다이얼로그는 [handleHeaterTap](cage_control_actions) 안에
   /// 있다. 미결 Q(전용 '히터팬' API)가 확정되면 명령만 갈아끼운다.
   Widget _heaterTile(BuildContext context, WidgetRef ref, String deviceId,
-      TelemetryReading? t, bool online) {
+      TelemetryReading? t, bool online,
+      {required bool loading, required ActuatorState? shownState}) {
     final glass = context.glass;
-    final heaterOn = t?.heaterState == ActuatorState.on;
+    final heaterOn = shownState == ActuatorState.on;
     return _DeviceTile(
       key: heatFanKey,
       name: 'device_heat_fan'.tr(),
-      status: _stateLabel(t?.heaterState),
+      status: _stateLabel(shownState),
       // 조건부 타일이라 Figma에 원본 없음 — Material 유지.
       glyph:
           Icon(Icons.local_fire_department, size: 20, color: glass.deviceGlyph),
       active: heaterOn,
+      loading: loading,
       tileColor: heaterOn ? glass.deviceHeatBg : glass.surfaceTint,
       iconCircleColor: heaterOn ? glass.deviceHeat : glass.deviceOff,
       onTap: online ? () => handleHeaterTap(context, ref, deviceId, t) : null,
@@ -236,6 +260,7 @@ class _DeviceTile extends StatelessWidget {
     required this.status,
     required this.glyph,
     required this.active,
+    this.loading = false,
     required this.tileColor,
     required this.iconCircleColor,
     this.gaugeFraction,
@@ -250,6 +275,9 @@ class _DeviceTile extends StatelessWidget {
   /// 색은 호출부가 `deviceGlyph`로 칠해 넘긴다.
   final Widget glyph;
   final bool active;
+
+  /// 기기 확인 대기 중 — 타일 위에 shimmer를 흘린다.
+  final bool loading;
   final Color tileColor;
   final Color iconCircleColor;
 
@@ -338,6 +366,10 @@ class _DeviceTile extends StatelessWidget {
               ),
             ),
           ),
+          if (loading)
+            ControlLoadingOverlay(
+                key: CageControlGrid.loadingKey,
+                borderRadius: BorderRadius.circular(12)),
         ],
       ),
     );

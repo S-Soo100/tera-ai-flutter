@@ -32,7 +32,8 @@ import '../data/fan_timer_notification_resync.dart';
 import '../domain/fan_timer_duration.dart';
 import '../domain/mist_duration.dart';
 import '../domain/mist_lock.dart';
-import '../domain/running_timer.dart';
+import '../domain/schedule_device.dart';
+import 'control_pending.dart';
 import 'widgets/running_timer_chip.dart';
 import '../../my_cage/presentation/widgets/clip_toast.dart';
 import '../../../shared/widgets/figma_icon.dart';
@@ -47,103 +48,79 @@ final mistLockProvider = StateProvider.family<MistLock, String>(
 final fanChoiceStoreProvider =
     Provider<FanChoiceStore>((_) => const HiveFanChoiceStore());
 
-/// 발행한 명령이 [kCommandAckGrace] 안에 ACK되는지 지켜본다.
-///
-/// mist 블랙아웃(핸드오프 `backend-handoff-2026-09-07-mist-blackout.md`) 중의
-/// 명령은 서버 `sent`까지만 가고 기기에 닿지 않는데, 서버에 sent 만료가 없어
-/// 앱이 말해주지 않으면 "눌렀는데 아무 일도 없음"이 된다. 유예 후에도
-/// 미ACK면 스낵바로 알리고, 타이머 칩 계산도 깨운다([RunningTimer.fanTimerFrom]의
-/// 유예 게이트와 한 쌍 — 안 깨우면 다음 재검증까지 최대 30초 가짜 칩이 돈다).
-///
-/// messenger·client는 호출 시점에 잡아 둔다 — 타이머가 울릴 때쯤 화면을
-/// 떠났을 수 있고, 그때 context로 lookup하면 죽은 엘리먼트를 만진다.
-void _watchCommandAck(
-  BuildContext context,
-  WidgetRef ref,
-  ScaffoldMessengerState messenger,
-  DeviceCommand command,
-) =>
-    _watchCommandAckWith(
-        ProviderScope.containerOf(context, listen: false), messenger, command,
-        invalidate: () {
-      // 화면을 떠났으면 ref가 죽어 있다 — 칩은 어차피 다음 진입 때 새로 계산된다.
-      if (context.mounted) ref.invalidate(runningTimersProvider);
-    });
-
-/// [_watchCommandAck]의 컨테이너 버전 — 시트가 닫힌 뒤에도 살아 있어야 하는
-/// 분무 대기([mistWithUndo])가 쓴다.
-void _watchCommandAckWith(
-  ProviderContainer container,
-  ScaffoldMessengerState messenger,
-  DeviceCommand command, {
-  VoidCallback? invalidate,
-}) {
-  final client = container.read(supabaseClientProvider);
-  final timerNotifs = container.read(fanTimerNotificationServiceProvider);
-  Timer(kCommandAckGrace + const Duration(seconds: 1), () async {
-    Map<String, dynamic>? row;
-    try {
-      row = await client
-          .from('commands')
-          .select('status, result')
-          .eq('id', command.id)
-          .maybeSingle();
-    } catch (_) {
-      return; // 조회 실패는 유실 확정이 아니다 — 겁주지 않는다.
-    }
-    final status = row?['status'] as String?;
-    const undelivered = {'pending', 'sent', 'expired', 'lost'};
-    final failed =
-        status == 'rejected' || (status == 'acked' && row?['result'] != 'ok');
-    if (messenger.mounted && (failed || undelivered.contains(status))) {
-      messenger.showSnackBar(SnackBar(
-          content: Text(
-        (failed ? 'module_command_failed' : 'module_command_no_ack').tr(),
-      )));
-    }
-    invalidate?.call();
-    if (FanActuator.values
-        .any((a) => a.actions.contains(command.action.toWire()))) {
-      // 실패한 시작은 예약을 내리고, 실패한 종료는 이전 유효 타이머를 복구한다.
-      // 최신 이력으로 계산하므로 더 나중에 보낸 명령의 알림을 지우지 않는다.
-      await FanTimerNotificationResync(client, timerNotifs)
-          .run([command.deviceId]);
-    }
-  });
+/// 확인이 끝난 명령의 뒷정리 — 팬 명령이면 완료 알림 예약을 최신 이력으로
+/// 다시 맞춘다(실패한 시작은 예약을 내리고, 실패한 종료는 이전 유효 타이머를
+/// 복구). 타일 카운트다운도 깨운다.
+Future<void> _afterConfirm(
+    ProviderContainer container, DeviceCommand command) async {
+  container.invalidate(runningTimersProvider);
+  if (FanActuator.values
+      .any((a) => a.actions.contains(command.action.toWire()))) {
+    await FanTimerNotificationResync(container.read(supabaseClientProvider),
+            container.read(fanTimerNotificationServiceProvider))
+        .run([command.deviceId]);
+  }
 }
 
-/// 명령 1건 발행. **실패를 삼키지 않는다.**
+/// 명령 1건 발행 + **기기 확인까지 대기**([controlPendingProvider]).
+/// **실패를 삼키지 않는다.**
 ///
-/// onTap은 VoidCallback이라 여기서 던지면 unhandled async error로 콘솔에만
-/// 남고 사용자는 "눌렀는데 아무 일도 안 일어남"을 기기 고장으로 오해한다.
-/// 그래서 여기서 잡아 토스트로 알린다. 반환값은 전송 성공 여부 — 팬 타이머
-/// 알림처럼 "명령이 실제로 나갔을 때만" 이어져야 하는 후속 동작이 본다.
+/// 대기하는 동안 그 사육장의 제어는 전부 잠기고, 누른 장치는 목표 상태를
+/// 로딩으로 그린다(2026-09-22 — 스위치가 텔레메트리 반영까지 2~3초 원래 자리에
+/// 있어 연타 → 기기 `busy` 거절이 잦았다). 거절·무응답은 16초 뒤가 아니라
+/// 확인되는 즉시 알린다.
 ///
-/// 전송 성공 후에는 [_watchCommandAck]로 ACK를 지켜본다 — "전송 성공"은
-/// 서버에 닿았다는 뜻이지 기기가 받았다는 뜻이 아니다(mist 블랙아웃 유실).
+/// 반환값은 **기기가 받아들였는지** — 팬 타이머 알림처럼 실제로 켜졌을 때만
+/// 이어져야 하는 후속 동작이 본다. 이미 대기 중이면 보내지 않고 false.
 Future<bool> sendCageCommand(
   BuildContext context,
   WidgetRef ref,
   String deviceId,
   CommandAction action, {
+  required ScheduleDevice device,
+  bool? expectOn,
+  Map<String, dynamic>? payload,
+}) =>
+    sendCageCommandWith(
+        ProviderScope.containerOf(context, listen: false),
+        ScaffoldMessenger.of(context),
+        deviceId,
+        action,
+        device: device,
+        expectOn: expectOn,
+        payload: payload);
+
+/// [sendCageCommand]의 컨테이너 버전 — 확인은 시트가 닫힌 뒤에도 이어져야
+/// 해서 context 대신 컨테이너·메신저를 잡는다.
+Future<bool> sendCageCommandWith(
+  ProviderContainer container,
+  ScaffoldMessengerState messenger,
+  String deviceId,
+  CommandAction action, {
+  required ScheduleDevice device,
+  bool? expectOn,
   Map<String, dynamic>? payload,
 }) async {
-  // await 전에 잡는다 — 전송 중 화면을 떠나면 of(context)를 못 쓴다.
-  final messenger = ScaffoldMessenger.of(context);
+  final pending = container.read(controlPendingProvider(deviceId).notifier);
+  if (!pending.begin(device, expectOn)) return false;
+  final DeviceCommand command;
   try {
-    final command = await ref
+    command = await container
         .read(moduleCommandSenderProvider.notifier)
         .send(deviceId, action, payload: payload);
-    // 전송 중 화면을 떠났으면 감시 생략 — ref가 죽어 있고, 칩도 이 화면 것이다.
-    if (context.mounted) _watchCommandAck(context, ref, messenger, command);
-    return true;
   } catch (e, st) {
+    pending.cancel();
     debugPrint('[cage-control] $action failed: $e\n$st');
-    messenger.showSnackBar(
-      SnackBar(content: Text('module_command_failed'.tr())),
-    );
+    if (messenger.mounted) {
+      messenger.showSnackBar(
+          SnackBar(content: Text('module_command_failed'.tr())));
+    }
     return false;
   }
+  final outcome = await pending.confirm(command);
+  showControlOutcome(messenger, outcome);
+  await _afterConfirm(container, command);
+  return outcome == ControlOutcome.ok;
 }
 
 /// PRD §3.4 히터 제어 — **안전 확인을 거친다.**
@@ -201,8 +178,13 @@ Future<void> handleHeaterTap(
     ref,
     deviceId,
     isOn ? CommandAction.heaterOff : CommandAction.heaterOn,
+    device: ScheduleDevice.heater,
+    expectOn: !isOn,
   );
 }
+
+ScheduleDevice _fanDevice(FanActuator a) =>
+    a == FanActuator.cooling ? ScheduleDevice.cool : ScheduleDevice.fan;
 
 /// 켜진 팬을 끈다 — `fan_off`/`fan2_off` 절대 명령. 타이머가 돌고 있었다면
 /// 취소된 것이라 예약된 완료 알림도 내리고 타일 카운트다운을 깨운다.
@@ -216,13 +198,15 @@ Future<void> stopFan(
   // 서비스를 await 전에 잡아 둔다 — 전송 중 화면을 떠나도 예약된 로컬 알림은
   // 취소돼야 한다(ref는 unmount 후 못 쓴다).
   final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
+  final container = ProviderScope.containerOf(context, listen: false);
   final sent = await sendCageCommand(
-      context, ref, deviceId, CommandActionWire.fromWire(actuator.offAction));
+      context, ref, deviceId, CommandActionWire.fromWire(actuator.offAction),
+      device: _fanDevice(actuator), expectOn: false);
   if (sent) {
     await timerNotifs.onFanCommandSent(deviceId, actuator.offAction, null);
   }
-  // await 뒤라 mounted 재확인 — 전송 중 화면을 떠났으면 ref는 죽어 있다.
-  if (context.mounted) ref.invalidate(runningTimersProvider);
+  // 확인을 기다리는 사이 시트가 닫혔을 수 있다 — ref 대신 컨테이너로 깨운다.
+  container.invalidate(runningTimersProvider);
 }
 
 /// `fan_on`(+타이머) 전송 + 완료 알림 예약 + 칩 갱신 + 켜짐 스낵바.
@@ -236,16 +220,21 @@ Future<void> startFan(
   String deviceId,
   FanTimerDuration? duration, {
   FanActuator actuator = FanActuator.ventilation,
+  bool wasOn = false,
 }) async {
   // await 전에 잡는다 — 전송 중 화면을 떠나도 알림 예약/스낵바는 살아야 한다.
   final timerNotifs = ref.read(fanTimerNotificationServiceProvider);
   final messenger = ScaffoldMessenger.of(context);
+  final container = ProviderScope.containerOf(context, listen: false);
 
   final sent = await sendCageCommand(
     context,
     ref,
     deviceId,
     CommandActionWire.fromWire(actuator.onAction),
+    device: _fanDevice(actuator),
+    // 켜진 채 시간만 바꾸면 상태 변화가 없어 ACK로만 확인한다.
+    expectOn: wasOn ? null : true,
     payload: duration?.payload,
   );
   // 타이머면 만료 시각에 완료 알림을 예약하고, '계속 켜기'면 기존 예약을
@@ -259,8 +248,8 @@ Future<void> startFan(
   }
   // '계속 켜기'(duration 없음)도 invalidate한다 — duration 없는 fan_on은
   // 진행 중이던 타이머를 대체(소멸)시키므로, 안 깨우면 옛 칩이 만료 시각까지
-  // 가짜 카운트다운을 돈다. await 뒤라 mounted 재확인.
-  if (context.mounted) ref.invalidate(runningTimersProvider);
+  // 가짜 카운트다운을 돈다. 확인 대기 사이 시트가 닫혔을 수 있어 컨테이너로.
+  container.invalidate(runningTimersProvider);
 
   if (!sent) return; // 실패 스낵바는 sendCageCommand가 이미 냈다.
   messenger
@@ -307,6 +296,9 @@ Future<void> sendMistWith(
   MistDuration duration, {
   BuildContext? toastContext,
 }) async {
+  final pending = container.read(controlPendingProvider(deviceId).notifier);
+  // 다른 제어의 확인을 기다리는 중이면 보내지 않는다(그 사이 시트·타일은 잠겨 있다).
+  if (!pending.begin(ScheduleDevice.mist, null)) return;
   final lockNotifier = container.read(mistLockProvider(deviceId).notifier);
   lockNotifier.state = MistLock.startingAt(DateTime.now());
   // 만료를 깨우는 주체를 명시적으로 둔다. 예전엔 무관한 provider(telemetry
@@ -322,18 +314,25 @@ Future<void> sendMistWith(
     }
   }
 
+  final DeviceCommand command;
   try {
-    final command = await container
+    command = await container
         .read(moduleCommandSenderProvider.notifier)
         .send(deviceId, CommandAction.mist, payload: duration.payload);
-    // mist 자체도 유실될 수 있다 — 분사가 안 됐는데 "분사했어요"로 끝나면
-    // 사육 환경(습도)에 대한 거짓 확신이 된다.
-    _watchCommandAckWith(container, messenger, command);
-    // Figma 1106:6646 토스트 "분무가 실행되었습니다".
-    toast('home_mist_done_toast');
   } catch (e, st) {
+    pending.cancel();
     debugPrint('[cage-control] mist failed: $e\n$st');
     toast('home_mist_failed_toast', icon: FigmaIcons.cancel);
+    return;
+  }
+  // mist 자체도 유실될 수 있다 — 분사가 안 됐는데 "분사했어요"로 끝나면
+  // 사육 환경(습도)에 대한 거짓 확신이 된다. 그래서 기기 ACK를 받고 알린다.
+  final outcome = await pending.confirm(command);
+  if (outcome == ControlOutcome.ok) {
+    // Figma 1106:6646 토스트 "분무가 실행되었습니다".
+    toast('home_mist_done_toast');
+  } else {
+    showControlOutcome(messenger, outcome);
   }
 }
 
@@ -363,6 +362,7 @@ Future<void> mistWithUndo(
 ) async {
   final pending = ref.read(mistPendingProvider(deviceId).notifier);
   if (pending.state ||
+      ref.read(controlPendingProvider(deviceId)) != null ||
       ref.read(mistLockProvider(deviceId)).isLocked(DateTime.now())) {
     return;
   }

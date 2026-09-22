@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/home/domain/running_timer.dart';
 import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
+import 'package:vivanaut/features/home/presentation/control_pending.dart';
 import 'package:vivanaut/features/home/domain/schedule.dart';
 import 'package:vivanaut/features/home/domain/schedule_device.dart';
 import 'package:vivanaut/features/home/presentation/widgets/device_control_sheet.dart';
@@ -97,7 +98,14 @@ void main() {
     await tester.pump();
     expect(sent.single.$1, CommandAction.fanOn);
     expect(sent.single.$2, {'duration_ms': 7200000});
-    await tester.pump(const Duration(milliseconds: 100)); // 왕복 잠금 해제
+    // 기기 확인 전에는 시트 전체가 잠겨 있다 — 스위치를 눌러도 안 나간다.
+    expect(find.byKey(DeviceControlSheet.loadingKey), findsOneWidget);
+    await tester.tap(find.byKey(DeviceControlSheet.powerSwitchKey));
+    await tester.pump();
+    expect(sent, hasLength(1));
+    // 켜진 채 시간만 바꾼 명령은 ACK(1초 뒤 조회)로 확인되고 잠금이 풀린다.
+    await tester.pump(kControlPollInterval + const Duration(milliseconds: 100));
+    expect(find.byKey(DeviceControlSheet.loadingKey), findsNothing);
     await tester.tap(find.byKey(DeviceControlSheet.powerSwitchKey));
     await tester.pump();
     expect(sent.last.$1, CommandAction.fanOff);

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vivanaut/core/supabase/supabase_provider.dart';
+import 'package:vivanaut/features/home/presentation/control_pending.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivanaut/features/home/presentation/schedule_providers.dart';
 import 'package:vivanaut/features/home/presentation/widgets/running_timer_chip.dart';
@@ -81,11 +82,13 @@ List<Override> controlOverrides({
   List<Schedule> schedules = const [],
   List<RunningTimer> timers = const [],
   required List<(CommandAction, Map<String, dynamic>?)> sent,
+  Stream<TelemetryReading?>? telemetryStream,
+  CommandStatusFetcher? statusFetcher,
 }) =>
     [
       currentDeviceIdProvider.overrideWith((ref) async => kTestDeviceId),
       telemetryStreamProvider.overrideWith(
-          (ref, id) => Stream.value(telemetry ?? reading())),
+          (ref, id) => telemetryStream ?? Stream.value(telemetry ?? reading())),
       moduleOnlineProvider(kTestDeviceId).overrideWithValue(online),
       deviceListProvider.overrideWith((ref) async => [
             Device(
@@ -108,7 +111,13 @@ List<Override> controlOverrides({
           'http://localhost:54321', 'anon',
           authOptions: const AuthClientOptions(autoRefreshToken: false))),
       fanTimerNotificationServiceProvider.overrideWithValue(NoopTimerNotifs()),
+      // 기본은 기기가 곧바로 받아들인 명령(acked/ok).
+      commandStatusFetcherProvider
+          .overrideWithValue(statusFetcher ?? ackedOk),
     ];
+
+Future<({String? status, String? result})?> ackedOk(String _) async =>
+    (status: 'acked', result: 'ok');
 
 Widget controlApp(Widget home, List<Override> overrides) => ProviderScope(
     overrides: overrides,

@@ -15,6 +15,7 @@ import '../../domain/running_timer.dart';
 import '../../domain/schedule.dart';
 import '../../domain/schedule_device.dart';
 import '../cage_control_actions.dart';
+import '../control_pending.dart';
 import '../home_control_providers.dart';
 import '../routine_settings_screen.dart'
     show
@@ -26,6 +27,7 @@ import '../routine_settings_screen.dart'
         scheduleStateLabel;
 import '../schedule_draft_apply.dart';
 import '../schedule_providers.dart';
+import 'control_loading_overlay.dart';
 import 'led_brightness_row.dart';
 import 'running_timer_chip.dart';
 import 'schedule_device_badge.dart';
@@ -88,6 +90,7 @@ class DeviceControlSheet extends ConsumerStatefulWidget {
   static const scheduledTabKey = Key('device_sheet_tab_scheduled');
   static const powerRowKey = Key('device_sheet_power_row');
   static const powerSwitchKey = Key('device_sheet_power_switch');
+  static const loadingKey = Key('device_sheet_loading');
   static const mistStartKey = Key('device_sheet_mist_start');
   static const addScheduleKey = Key('device_sheet_add_schedule');
   static const saveScheduleKey = Key('device_sheet_save_schedule');
@@ -124,8 +127,13 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   /// 구 FanDurationSheet의 submitted 잠금과 같은 역할).
   bool _sending = false;
 
+  /// 이 사육장의 제어가 기기 확인을 기다리는 중 — 시트 제어 전체를 잠근다
+  /// (2026-09-22 사용자 결정, [controlPendingProvider]).
+  bool get _busy =>
+      _sending || ref.read(controlPendingProvider(widget.deviceId)) != null;
+
   Future<void> _locked(Future<void> Function() run) async {
-    if (_sending) return;
+    if (_busy) return;
     setState(() => _sending = true);
     try {
       await run();
@@ -205,17 +213,21 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
           await stopFan(context, ref, widget.deviceId, actuator: actuator);
           return;
         }
+        final wasOn = actuatorStateOf(
+                ref.read(telemetryStreamProvider(widget.deviceId)).valueOrNull,
+                widget.device) ==
+            ActuatorState.on;
         final choice = _fanChoice;
         // await 뒤에 ref를 쓰지 않도록 저장소를 먼저 잡는다(시트가 닫힐 수 있다).
         final store = ref.read(fanChoiceStoreProvider);
         final key = actuator.storageKey(widget.deviceId);
         await startFan(context, ref, widget.deviceId, choice,
-            actuator: actuator);
+            actuator: actuator, wasOn: wasOn);
         await store.save(key, choice);
       });
 
   Future<void> _fanChip(FanTimerDuration? d, bool on) async {
-    if (_sending) return;
+    if (_busy) return;
     setState(() => _fanChoice = d);
     // 켜진 채 바꾸면 그 값으로 다시 켠다(타이머 교체). 꺼져 있으면 선택만.
     if (on) await _fanPower(true);
@@ -223,11 +235,18 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
 
   Future<void> _ledPower(bool on) => _locked(() async {
         if (!_targetStillValid()) return;
+        final wasOn = actuatorStateOf(
+                ref.read(telemetryStreamProvider(widget.deviceId)).valueOrNull,
+                ScheduleDevice.led) ==
+            ActuatorState.on;
         await sendCageCommand(
           context,
           ref,
           widget.deviceId,
           on ? CommandAction.ledOn : CommandAction.ledOff,
+          device: ScheduleDevice.led,
+          // 켜진 채 밝기만 바꾸면 상태 변화가 없어 ACK로만 확인한다.
+          expectOn: on && wasOn ? null : on,
           payload: ledCommandPayload(
               on: on, dimmable: _dimmable, brightness: _brightness.round()),
         );
@@ -329,7 +348,14 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
     final t = ref.watch(telemetryStreamProvider(widget.deviceId)).valueOrNull;
     if (widget.device == ScheduleDevice.mist) return _mist(context, accent);
 
-    final state = _powerState(t);
+    final pending = ref.watch(controlPendingProvider(widget.deviceId));
+    final busy = _sending || pending != null;
+    // 누른 장치는 확인될 때까지 목표 상태로 그린다(로딩 표시와 함께).
+    final loading = pending?.device == widget.device;
+    final expect = loading ? pending!.expectOn : null;
+    final state = expect == null
+        ? _powerState(t)
+        : (expect ? ActuatorState.on : ActuatorState.off);
     final on = state == ActuatorState.on;
     final actuator = _actuator;
     RunningTimer? timer;
@@ -356,7 +382,8 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
           label: 'home_sheet_power_fmt'.tr(args: [stateLabel]),
           on: on,
           accent: accent,
-          enabled: !_sending,
+          enabled: !busy,
+          loading: loading,
           unknown: unknown,
           onChanged: (v) => switch (widget.device) {
                 ScheduleDevice.led => _ledPower(v),
@@ -378,7 +405,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                         label: d.labelKey.tr(),
                         selected: _fanChoice == d,
                         accent: accent,
-                        enabled: !_sending,
+                        enabled: !busy,
                         onTap: () => _fanChip(d, on))),
               ],
               const SizedBox(width: 4),
@@ -389,7 +416,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                       label: 'home_fan_steady_on'.tr(),
                       selected: _fanChoice == null,
                       accent: accent,
-                      enabled: !_sending,
+                      enabled: !busy,
                       onTap: () => _fanChip(null, on))),
             ])));
       case ScheduleDevice.cool:
@@ -419,7 +446,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                                   .tr(args: [d.labelKey.tr()]),
                               selected: _fanChoice == d,
                               accent: accent,
-                              enabled: !_sending,
+                              enabled: !busy,
                               onTap: () => _fanChip(d, on))),
                     ],
                   ]),
@@ -434,9 +461,10 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                   valueKey: const Key('led_brightness_value'),
                   sliderKey: DeviceControlSheet.brightnessSliderKey,
                   value: _brightness,
-                  onChanged: (v) => setState(() => _brightness = v),
+                  onChanged:
+                      busy ? null : (v) => setState(() => _brightness = v),
                   // 켜진 채 손을 떼면 그 밝기로 다시 켠다. 꺼져 있으면 선택만.
-                  onChangeEnd: on ? (_) => _ledPower(true) : null)));
+                  onChangeEnd: on && !busy ? (_) => _ledPower(true) : null)));
         } else {
           children.removeLast();
         }
@@ -450,7 +478,8 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   Widget _mist(BuildContext context, Color accent) {
     final locked =
         ref.watch(mistLockProvider(widget.deviceId)).isLocked(DateTime.now());
-    final pending = ref.watch(mistPendingProvider(widget.deviceId));
+    final pending = ref.watch(mistPendingProvider(widget.deviceId)) ||
+        ref.watch(controlPendingProvider(widget.deviceId)) != null;
     return _SheetCta(
         key: DeviceControlSheet.mistStartKey,
         label: 'home_mist_start_once'.tr(),
@@ -626,6 +655,7 @@ class _PowerRow extends StatelessWidget {
       required this.accent,
       required this.onChanged,
       this.enabled = true,
+      this.loading = false,
       this.unknown = false});
   final String label;
   final bool on;
@@ -635,13 +665,16 @@ class _PowerRow extends StatelessWidget {
   /// 명령 왕복 중 false — 스위치 탭을 무시한다.
   final bool enabled;
 
+  /// 기기 확인 대기 중 — 행 위에 shimmer를 흘린다.
+  final bool loading;
+
   /// 상태 모름(구 펌웨어) — 스위치 대신 켜기/끄기 버튼 둘.
   final bool unknown;
 
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
-    return Container(
+    final row = Container(
         key: DeviceControlSheet.powerRowKey,
         height: 48,
         padding: const EdgeInsets.only(left: 12, right: 8),
@@ -676,6 +709,14 @@ class _PowerRow extends StatelessWidget {
                 color: accent,
                 onChanged: enabled ? onChanged : (_) {}),
         ]));
+    if (!loading) return row;
+    return Stack(children: [
+      row,
+      Positioned.fill(
+          child: ControlLoadingOverlay(
+              key: DeviceControlSheet.loadingKey,
+              borderRadius: BorderRadius.circular(16))),
+    ]);
   }
 }
 
