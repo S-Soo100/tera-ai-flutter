@@ -42,6 +42,9 @@ class WebRtcLiveView extends ConsumerWidget {
       WebRtcLivePhase.connectingIce => _ConnectingView(
           labelKey: 'crecam_live_phase_ice',
         ),
+      WebRtcLivePhase.waitingVideo => _ConnectingView(
+          labelKey: 'crecam_live_phase_video',
+        ),
       WebRtcLivePhase.streaming => _StreamingView(
           renderer: state.renderer!,
           cover: cover,
