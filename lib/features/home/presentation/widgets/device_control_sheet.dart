@@ -235,10 +235,12 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
 
   Future<void> _ledPower(bool on) => _locked(() async {
         if (!_targetStillValid()) return;
-        final wasOn = actuatorStateOf(
-                ref.read(telemetryStreamProvider(widget.deviceId)).valueOrNull,
-                ScheduleDevice.led) ==
-            ActuatorState.on;
+        final current = actuatorStateOf(
+            ref.read(telemetryStreamProvider(widget.deviceId)).valueOrNull,
+            ScheduleDevice.led);
+        // 구 펌웨어(상태 미보고)는 기다려도 보고가 오지 않는다 — ACK로만 확인하고
+        // 목표 상태를 그리지 않는다("상태 모름" 유지, CLAUDE.md LED 규칙).
+        final known = current == ActuatorState.on || current == ActuatorState.off;
         await sendCageCommand(
           context,
           ref,
@@ -246,7 +248,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
           on ? CommandAction.ledOn : CommandAction.ledOff,
           device: ScheduleDevice.led,
           // 켜진 채 밝기만 바꾸면 상태 변화가 없어 ACK로만 확인한다.
-          expectOn: on && wasOn ? null : on,
+          expectOn: !known || (on && current == ActuatorState.on) ? null : on,
           payload: ledCommandPayload(
               on: on, dimmable: _dimmable, brightness: _brightness.round()),
         );

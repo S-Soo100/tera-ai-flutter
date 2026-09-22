@@ -3,7 +3,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/features/home/domain/mist_duration.dart';
+import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivanaut/features/home/domain/schedule_device.dart';
 import 'package:vivanaut/features/home/presentation/control_pending.dart';
 import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart'
@@ -21,19 +24,21 @@ Future<
     (
       List<(CommandAction, Map<String, dynamic>?)>,
       StreamController<TelemetryReading?>
-    )> _pump(WidgetTester tester, _Status status) async {
+    )> _pump(WidgetTester tester, _Status status,
+        {ScheduleDevice device = ScheduleDevice.fan,
+        ActuatorState led = ActuatorState.unavailable}) async {
   final sent = <(CommandAction, Map<String, dynamic>?)>[];
   // 현재 상태(꺼짐)부터 준다 — 실제 스트림의 seed와 같다.
   final telemetry = StreamController<TelemetryReading?>()
-    ..add(reading(fan2: ActuatorState.off));
+    ..add(reading(fan2: ActuatorState.off, led: led));
   await tester.pumpWidget(controlApp(
       Column(children: [
         const CageControlGrid(),
-        const Expanded(
+        Expanded(
             child: Align(
                 alignment: Alignment.bottomCenter,
                 child: DeviceControlSheet(
-                    deviceId: kTestDeviceId, device: ScheduleDevice.fan))),
+                    deviceId: kTestDeviceId, device: device))),
       ]),
       controlOverrides(
           sent: sent,
@@ -138,6 +143,61 @@ void main() {
     expect(find.byKey(DeviceControlSheet.loadingKey), findsNothing);
     expect(find.text('module_command_no_ack'), findsNothing);
     expect(find.text('module_command_busy'), findsNothing);
+    await tester.pump(const Duration(seconds: 10));
+  });
+
+  testWidgets('상태 모름 LED(구 펌웨어) — 목표 상태를 꾸며 그리지 않고 ACK로 1초 만에 해제',
+      (tester) async {
+    final (sent, _) = await _pump(tester, (status: 'acked', result: 'ok'),
+        device: ScheduleDevice.led);
+    await tester.tap(find.byKey(const Key('led_on')));
+    await tester.pump();
+    expect(sent.single.$1, CommandAction.ledOn);
+    // 대기 중에도 켜기/끄기 버튼 그대로("상태 모름" 유지), 타일도 켜짐으로 안 바뀐다.
+    expect(find.byKey(const Key('led_on')), findsOneWidget);
+    expect(find.byKey(DeviceControlSheet.powerSwitchKey), findsNothing);
+    expect(find.text('device_state_on'), findsNothing);
+    // 보고를 8초 기다리지 않는다 — 첫 ACK 조회에서 풀린다.
+    await tester.pump(kControlPollInterval + const Duration(milliseconds: 100));
+    await tester.pump();
+    expect(find.byKey(CageControlGrid.loadingKey), findsNothing);
+    expect(_tileTap(tester, CageControlGrid.ventFanKey), isNotNull);
+    await tester.pump(const Duration(seconds: 10));
+  });
+
+  testWidgets('분무 실행 취소 창 동안 다른 타일 잠금 — 겹쳐서 분무가 삼켜지지 않는다',
+      (tester) async {
+    final (sent, _) = await _pump(tester, (status: 'acked', result: 'ok'),
+        device: ScheduleDevice.mist);
+    await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
+    await tester.pump();
+    expect(sent, isEmpty);
+    expect(_tileTap(tester, CageControlGrid.ventFanKey), isNull);
+    expect(find.byKey(CageControlGrid.loadingKey), findsOneWidget);
+
+    await tester.pump(kMistUndoWindow + const Duration(milliseconds: 100));
+    expect(sent.single.$1, CommandAction.mist);
+    await tester.pump(kControlPollInterval + const Duration(milliseconds: 100));
+    await tester.pump();
+    expect(_tileTap(tester, CageControlGrid.ventFanKey), isNotNull);
+    await tester.pump(const Duration(seconds: 10));
+  });
+
+  testWidgets('다른 제어 대기 중 분무 전송 시도 — 보내지 않고 실패 토스트', (tester) async {
+    final (sent, _) = await _pump(tester, (status: 'sent', result: null),
+        device: ScheduleDevice.mist);
+    final ctx = tester.element(find.byType(DeviceControlSheet));
+    final container = ProviderScope.containerOf(ctx);
+    container
+        .read(controlPendingProvider(kTestDeviceId).notifier)
+        .begin(ScheduleDevice.fan, true);
+    unawaited(sendMistWith(container, ScaffoldMessenger.of(ctx), kTestDeviceId,
+        MistDuration.threeSeconds,
+        toastContext: ctx));
+    await tester.pump();
+    expect(sent, isEmpty);
+    expect(find.text('home_mist_failed_toast'), findsOneWidget);
+    container.read(controlPendingProvider(kTestDeviceId).notifier).cancel();
     await tester.pump(const Duration(seconds: 10));
   });
 

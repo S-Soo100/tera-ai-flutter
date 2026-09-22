@@ -296,9 +296,21 @@ Future<void> sendMistWith(
   MistDuration duration, {
   BuildContext? toastContext,
 }) async {
+  void toast(String key, {String? icon}) {
+    final c = toastContext;
+    if (c != null && c.mounted) {
+      showClipToast(c, text: key.tr(), icon: icon ?? 'redesign_v2/check');
+    }
+  }
+
   final pending = container.read(controlPendingProvider(deviceId).notifier);
-  // 다른 제어의 확인을 기다리는 중이면 보내지 않는다(그 사이 시트·타일은 잠겨 있다).
-  if (!pending.begin(ScheduleDevice.mist, null)) return;
+  // 다른 제어의 확인을 기다리는 중이면 보내지 않는다. 실행 취소 창 동안 타일은
+  // 잠기지만, 만에 하나 겹치면 조용히 삼키지 않고 실패로 알린다 — "분무가
+  // 실행됩니다"를 봤는데 안 나가면 습도에 대한 거짓 확신이 된다.
+  if (!pending.begin(ScheduleDevice.mist, null)) {
+    toast('home_mist_failed_toast', icon: FigmaIcons.cancel);
+    return;
+  }
   final lockNotifier = container.read(mistLockProvider(deviceId).notifier);
   lockNotifier.state = MistLock.startingAt(DateTime.now());
   // 만료를 깨우는 주체를 명시적으로 둔다. 예전엔 무관한 provider(telemetry
@@ -307,12 +319,6 @@ Future<void> sendMistWith(
   Timer(MistLock.duration, () {
     lockNotifier.state = const MistLock(lockedUntil: null);
   });
-  void toast(String key, {String? icon}) {
-    final c = toastContext;
-    if (c != null && c.mounted) {
-      showClipToast(c, text: key.tr(), icon: icon ?? 'redesign_v2/check');
-    }
-  }
 
   final DeviceCommand command;
   try {

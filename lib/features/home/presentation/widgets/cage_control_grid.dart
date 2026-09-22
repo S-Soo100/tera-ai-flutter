@@ -59,8 +59,14 @@ class CageControlGrid extends ConsumerWidget {
     // 기기 확인 대기 중이면 모든 타일을 잠그고(2026-09-22 사용자 결정), 누른
     // 타일은 목표 상태 + 로딩으로 그린다 — 시트를 닫아도 여기서 이어 보인다.
     final pending = ref.watch(controlPendingProvider(deviceId));
-    final online = ref.watch(moduleOnlineProvider(deviceId)) && pending == null;
-    bool loading(ScheduleDevice d) => pending?.device == d;
+    // 분무 실행 취소 창(2초)도 대기다 — 그 사이 다른 제어가 시작되면 분무가
+    // 나가지 못한다(리뷰 2026-09-22).
+    final mistWaiting = ref.watch(mistPendingProvider(deviceId));
+    final online = ref.watch(moduleOnlineProvider(deviceId)) &&
+        pending == null &&
+        !mistWaiting;
+    bool loading(ScheduleDevice d) =>
+        pending?.device == d || (d == ScheduleDevice.mist && mistWaiting);
     ActuatorState? shown(ScheduleDevice d) {
       final expect = loading(d) ? pending!.expectOn : null;
       if (expect == null) return actuatorStateOf(t, d);
