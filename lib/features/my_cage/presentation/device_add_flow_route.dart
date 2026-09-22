@@ -12,9 +12,14 @@ import 'device_management_controller.dart';
 
 /// Scope keeps one idempotency key throughout a physical pairing session.
 class DeviceAddFlowRoute extends ConsumerWidget {
-  const DeviceAddFlowRoute({super.key, this.initialKind, this.onProvisioned});
+  const DeviceAddFlowRoute(
+      {super.key, this.initialKind, this.onProvisioned, this.flowKey});
   final PairTargetKind? initialKind;
   final VoidCallback? onProvisioned;
+
+  /// 통합 테스트가 이 Route 안의 flow 컨트롤러를 찾을 때만 쓴다.
+  @visibleForTesting
+  final Object? flowKey;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final account = ref.watch(currentUserProvider.select((u) => u?.id));
@@ -71,6 +76,8 @@ class DeviceAddFlowRoute extends ConsumerWidget {
           }),
         ],
         child: DeviceAddFlowScreen(
-            initialKind: initialKind, onProvisioned: onProvisioned));
+            initialKind: initialKind,
+            onProvisioned: onProvisioned,
+            flowKey: flowKey));
   }
 }

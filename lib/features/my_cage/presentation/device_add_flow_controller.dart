@@ -30,11 +30,19 @@ final knownDeviceStoreProvider =
     Provider<KnownDeviceStore>((ref) => const HiveKnownDeviceStore());
 final deviceAddCompletedProvider =
     Provider<void Function()>((ref) => () {}, dependencies: const []);
+/// 등록 확인(읽기 전용)·세션 계정 확인. 통합 테스트가 실제 Route·컨트롤러를
+/// 그대로 두고 서버만 바꿔 끼울 수 있게 provider로 뺐다.
+final deviceAddRegistrationProvider = Provider<DeviceAddRegistrationRepository>(
+    (ref) => DeviceAddRegistrationRepository(ref.watch(supabaseClientProvider)));
+final deviceAddSessionUserProvider = Provider<String? Function()>((ref) {
+  final auth = ref.watch(supabaseClientProvider).auth;
+  return () => auth.currentUser?.id;
+});
 final deviceAddFlowProvider = StateNotifierProvider.autoDispose
     .family<DeviceAddFlowController, DeviceAddState, Object>((ref, key) {
   final account = ref.watch(deviceAddAccountProvider);
-  final client = ref.watch(supabaseClientProvider);
-  final registration = DeviceAddRegistrationRepository(client);
+  final sessionUser = ref.watch(deviceAddSessionUserProvider);
+  final registration = ref.watch(deviceAddRegistrationProvider);
   final credentials = WifiCredentialsStore();
   final group = ref.watch(deviceAddAutoGroupProvider);
   final completed = ref.watch(deviceAddCompletedProvider);
@@ -47,7 +55,7 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
       gateway: gatewayFactory(),
       accountId: account ?? '',
       isCurrent: () =>
-          active && account != null && client.auth.currentUser?.id == account,
+          active && account != null && sessionUser() == account,
       // 등록 직전에 갱신한 토큰 — 만료 토큰이면 기기의 /devices/pair가 401.
       token: () async => await freshToken() ?? '',
       namePrefix: (kind) => (kind == PairTargetKind.device
