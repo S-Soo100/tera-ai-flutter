@@ -6,9 +6,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../../core/supabase/supabase_provider.dart';
 import '../data/camera_exceptions.dart';
+import '../data/webrtc_connect_log_repository.dart';
 import '../data/webrtc_signaling_repository.dart';
 import '../domain/terra_camera.dart';
+import '../domain/webrtc_connect_log.dart';
 import 'my_cage_providers.dart';
 
 // ── 상태 정의 ─────────────────────────────────────────────────────────────────
@@ -78,6 +81,50 @@ final webrtcNetworkSignalProvider = StreamProvider<String>((ref) async* {
   yield* connectivity.onConnectivityChanged.map(sig);
 });
 
+/// 연결 결과 기록(`webrtc_connect_logs`, 2026-09-23). 테스트가 목록으로 받는다.
+/// 기록은 fire-and-forget — 실패해도 라이브 흐름에 영향이 없다.
+typedef WebRtcConnectLogSink = void Function(WebRtcConnectLog log);
+
+final webrtcConnectLogSinkProvider = Provider<WebRtcConnectLogSink>((ref) {
+  final repo = WebRtcConnectLogRepository(ref.watch(supabaseClientProvider));
+  return (log) => unawaited(repo.insert(log));
+});
+
+/// 연결 한 번(세대)의 계측값. 결과 행과 재생 종료 행이 같은 값을 공유한다.
+class _Attempt {
+  _Attempt(this.gen, this.reconnectAttempt, this.network);
+
+  final int gen;
+  final int reconnectAttempt;
+
+  /// 시도 시작 때의 네트워크 종류. 첫 시도는 신호가 아직 안 와 있을 수 있어
+  /// config 단계에서 한 번 더 채운다.
+  String? network;
+  int? msConfig;
+  int? msAnswer;
+  int? msConnected;
+  int? msFirstFrame;
+  int? offerAttempts;
+  int? answerMs;
+
+  /// ICE connected 때 조회한 선택 후보 쌍 타입(로컬, 원격).
+  Future<(String?, String?)>? candidates;
+
+  /// 첫 프레임 이후 재생 시간.
+  Stopwatch? playing;
+
+  /// 결과 행(`streaming` 제외)을 이미 썼다 — 한 세대에 종료 행은 하나.
+  bool ended = false;
+}
+
+const _kFailPhase = {
+  WebRtcLivePhase.connectingConfig: 'config',
+  WebRtcLivePhase.offering: 'offering',
+  WebRtcLivePhase.connectingIce: 'connectingIce',
+  WebRtcLivePhase.waitingVideo: 'waitingVideo',
+  WebRtcLivePhase.streaming: 'streaming',
+};
+
 // ── 타이밍 상수 ──────────────────────────────────────────────────────────────
 
 /// ICE 후보 수집 대기 — 계약 권장 2초(APP_WEBRTC.md). 1초면 느린 망에서 공인
@@ -126,6 +173,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   void startConnection() {
     if (_started) return;
     _started = true;
+    _logSink = ref.read(webrtcConnectLogSinkProvider);
     _watchEnvironment();
     unawaited(_start(_gen));
   }
@@ -136,6 +184,10 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
 
   /// 연결 때 잡아 둔 시그널링 — 정리([_cleanup])가 ref 없이 세션을 닫는다.
   WebRtcSignalingRepository? _signaling;
+
+  /// 연결 결과 기록. 시작 때 잡아 둔다 — dispose 중엔 ref를 못 읽는다.
+  WebRtcConnectLogSink? _logSink;
+  _Attempt? _attempt;
 
   /// 현재 세대. [_restart]·[_suspend]·[dispose]가 올린다.
   int _gen = 0;
@@ -247,6 +299,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   Future<void> _suspend() async {
     if (_suspended || _disposed) return;
     _suspended = true;
+    _endAttempt(_gen, null);
     _gen++;
     _cancelTimers();
     await _cleanup(closeRemote: true);
@@ -279,6 +332,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 무효로 만들고, 정리 도중 더 새로운 재시작이 오면 이쪽은 물러난다.
   Future<void> _restart() async {
     if (_disposed || _suspended) return;
+    _endAttempt(_gen, null);
     final gen = ++_gen;
     _cancelTimers(keepReconnect: true);
     await _cleanup(closeRemote: true);
@@ -297,6 +351,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
 
   @override
   void dispose() {
+    _endAttempt(_gen, null);
     _disposed = true;
     _gen++;
     _lifecycle?.dispose();
@@ -308,10 +363,15 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   // ── 연결 시퀀스 ────────────────────────────────────────────────────────────
 
   Future<void> _start(int gen) async {
+    _attempt = _Attempt(gen, _reconnectAttempt,
+        ref.read(webrtcNetworkSignalProvider).valueOrNull);
     try {
       await _doConnect(gen);
     } on CameraUnresponsiveException {
       if (!_isCurrent(gen)) return;
+      // 504 = 서버가 3회 모두 무응답(정의상 offer_attempts=3, 백엔드 회신 §1.3).
+      _attempt?.offerAttempts = 3;
+      _endAttempt(gen, 'unresponsive');
       if (!_autoRetried) {
         // 펌웨어가 offer를 놓친 일시 무응답일 수 있어 1회만 자동 재시도.
         _autoRetried = true;
@@ -322,7 +382,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       }
       debugPrint(
         '[webrtc-timing] cam=$cameraUuid FAILED(unresponsive) '
-        'config=${_msConfig}ms at=${_timing.elapsedMilliseconds}ms',
+        'config=${_attempt?.msConfig}ms at=${_timing.elapsedMilliseconds}ms',
       );
       state = const WebRtcLiveState(
         phase: WebRtcLivePhase.failed,
@@ -333,15 +393,16 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (!_isCurrent(gen)) return;
       debugPrint(
         '[webrtc-timing] cam=$cameraUuid FAILED phase=${state.phase} '
-        'config=${_msConfig}ms answer=${_msAnswer}ms '
+        'config=${_attempt?.msConfig}ms answer=${_attempt?.msAnswer}ms '
         'at=${_timing.elapsedMilliseconds}ms err=$e',
       );
       _fail(gen);
     }
   }
 
-  void _fail(int gen) {
+  void _fail(int gen, {String outcome = 'failed'}) {
     if (!_isCurrent(gen)) return;
+    _endAttempt(gen, outcome);
     _cancelTimers();
     state = WebRtcLiveState(
       phase: WebRtcLivePhase.failed,
@@ -351,13 +412,66 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _scheduleReconnect(gen);
   }
 
+  // ── 연결 결과 기록 ────────────────────────────────────────────────────────
+
+  /// 세대의 끝을 기록한다(한 번만). [outcome]이 null이면 결과 없이 끝난
+  /// 것 — 재생 중이었으면 `closed`, 아니면 `cancelled`.
+  void _endAttempt(int gen, String? outcome) {
+    final a = _attempt;
+    if (a == null || a.gen != gen || a.ended) return;
+    a.ended = true;
+    final playing = a.playing;
+    final result = outcome ?? (playing != null ? 'closed' : 'cancelled');
+    _writeLog(a, result,
+        failPhase: result == 'closed' ? null : _kFailPhase[state.phase],
+        streamedSec: playing?.elapsed.inSeconds);
+  }
+
+  void _writeLog(_Attempt a, String outcome,
+      {String? failPhase, int? streamedSec}) {
+    final sink = _logSink;
+    if (sink == null) return;
+    Future<void> write() async {
+      (String?, String?) cands = (null, null);
+      try {
+        cands = await a.candidates?.timeout(const Duration(seconds: 2)) ??
+            (null, null);
+      } catch (_) {}
+      sink(WebRtcConnectLog(
+        cameraId: cameraUuid,
+        outcome: outcome,
+        failPhase: failPhase,
+        network: a.network,
+        msConfig: a.msConfig,
+        msAnswer: a.msAnswer,
+        msConnected: a.msConnected,
+        msFirstFrame: a.msFirstFrame,
+        localCand: cands.$1,
+        remoteCand: cands.$2,
+        reconnectAttempt: a.reconnectAttempt,
+        streamedSec: streamedSec,
+        offerAttempts: a.offerAttempts,
+        answerMs: a.answerMs,
+      ));
+    }
+
+    unawaited(write());
+  }
+
+  Future<(String?, String?)> _candidateTypes(RTCPeerConnection pc) async {
+    try {
+      return selectedCandidateTypes(await pc.getStats());
+    } catch (_) {
+      return (null, null);
+    }
+  }
+
   // ICE gathering 대기 중 srflx 후보 감지용 probe (조기 진행).
   void Function(String raw)? _iceWaitProbe;
 
   // 연결 단계 계측 (ms 누적): 느린 구간이 앱/펌웨어/NAT 중 어디인지 판별용.
+  // 값은 세대별 [_Attempt]에 담는다(config·answer·connected·firstFrame).
   final Stopwatch _timing = Stopwatch();
-  int? _msConfig; // config+renderer 준비 완료
-  int? _msAnswer; // offer 전송 → answer 수신 (≒ 펌웨어 응답 시간 포함)
 
   Future<void> _doConnect(int gen) async {
     _timing
@@ -381,7 +495,9 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       return;
     }
     _renderer = renderer;
-    _msConfig = _timing.elapsedMilliseconds;
+    _attempt
+      ?..msConfig = _timing.elapsedMilliseconds
+      ..network ??= ref.read(webrtcNetworkSignalProvider).valueOrNull;
 
     // 3. PeerConnection 생성
     final pc = await ref.read(webrtcPeerConnectionFactoryProvider)({
@@ -405,6 +521,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         '${_timing.elapsedMilliseconds}ms',
       );
       frameSeen = true;
+      _attempt?.msFirstFrame ??= _timing.elapsedMilliseconds;
       if (connected) _enterStreaming(gen, pc, renderer);
     };
 
@@ -443,10 +560,15 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     pc.onConnectionState = (s) {
       if (!_isCurrent(gen)) return;
       if (s == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
+        final a = _attempt;
         debugPrint(
-          '[webrtc-timing] cam=$cameraUuid config=${_msConfig}ms '
-          'answer=${_msAnswer}ms connected=${_timing.elapsedMilliseconds}ms',
+          '[webrtc-timing] cam=$cameraUuid config=${a?.msConfig}ms '
+          'answer=${a?.msAnswer}ms connected=${_timing.elapsedMilliseconds}ms',
         );
+        if (a != null && a.gen == gen && a.msConnected == null) {
+          a.msConnected = _timing.elapsedMilliseconds;
+          a.candidates = _candidateTypes(pc);
+        }
         // 연결 성공 — 재연결 백오프 리셋.
         _reconnectAttempt = 0;
         _reconnectTimer?.cancel();
@@ -506,7 +628,10 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     }
 
     _sessionId = offerResult.sessionId;
-    _msAnswer = _timing.elapsedMilliseconds;
+    _attempt
+      ?..msAnswer = _timing.elapsedMilliseconds
+      ..offerAttempts = offerResult.offerAttempts
+      ..answerMs = offerResult.answerMs;
 
     // 11. setRemoteDescription
     await pc.setRemoteDescription(
@@ -551,7 +676,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         return;
       }
       debugPrint('[webrtc-timing] cam=$cameraUuid FAILED(no-video)');
-      _fail(gen);
+      _fail(gen, outcome: 'no_video');
     });
   }
 
@@ -562,6 +687,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _frameDeadline?.cancel();
     state = state.copyWith(
         phase: WebRtcLivePhase.streaming, clearError: true, renderer: r);
+    final a = _attempt;
+    if (a != null && a.gen == gen && a.playing == null) {
+      a.msFirstFrame ??= _timing.elapsedMilliseconds;
+      a.playing = Stopwatch()..start();
+      _writeLog(a, 'streaming');
+    }
     int? last;
     var still = 0;
     _frameTimer?.cancel();
@@ -577,7 +708,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       last = frames;
       if (still >= kWebRtcStallChecks) {
         debugPrint('[webrtc-timing] cam=$cameraUuid FAILED(stalled)');
-        _fail(gen);
+        _fail(gen, outcome: 'stalled');
       }
     });
   }

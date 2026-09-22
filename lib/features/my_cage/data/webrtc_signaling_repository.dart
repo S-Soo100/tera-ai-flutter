@@ -27,11 +27,23 @@ class WebRtcSignalingRepository {
     return jsonDecode(resp.body) as Map<String, dynamic>;
   }
 
-  /// POST /cameras/{cameraUuid}/webrtc/offer → (sessionId, answerSdp)
+  /// POST /cameras/{cameraUuid}/webrtc/offer → (sessionId, answerSdp,
+  /// offerAttempts, answerMs)
+  ///
+  /// `offerAttempts`·`answerMs`는 2026-09-23 서버 추가(APP_WEBRTC.md §4.2.1) —
+  /// 카메라가 답을 안 하면 서버가 7초씩 최대 3회 다시 보내는데, 앱에는 느린
+  /// 한 번의 호출로만 보인다. 1이면 이후 실패는 ICE/NAT, 2 이상이면 펌웨어.
+  /// 구 서버는 안 주므로 null.
   ///
   /// 504 → [CameraUnresponsiveException]
   /// 502 → [SignalingGatewayException]
-  Future<({String sessionId, String answerSdp})> sendOffer(
+  Future<
+      ({
+        String sessionId,
+        String answerSdp,
+        int? offerAttempts,
+        int? answerMs,
+      })> sendOffer(
     String cameraUuid,
     String sdp,
   ) async {
@@ -58,6 +70,8 @@ class WebRtcSignalingRepository {
     return (
       sessionId: body['session_id'] as String,
       answerSdp: body['sdp'] as String,
+      offerAttempts: (body['offer_attempts'] as num?)?.toInt(),
+      answerMs: (body['answer_ms'] as num?)?.toInt(),
     );
   }
 

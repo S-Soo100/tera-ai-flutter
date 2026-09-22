@@ -8,7 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:vivanaut/features/my_cage/data/webrtc_signaling_repository.dart';
+import 'package:vivanaut/features/my_cage/data/camera_exceptions.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
+import 'package:vivanaut/features/my_cage/domain/webrtc_connect_log.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
 
@@ -65,6 +67,11 @@ class _FakePc extends Fake implements RTCPeerConnection {
   Future<List<StatsReport>> getStats([MediaStreamTrack? track]) async => [
         StatsReport('in', 'inbound-rtp', 0,
             {'kind': 'video', 'framesDecoded': frames}),
+        StatsReport('t', 'transport', 0, {'selectedCandidatePairId': 'p'}),
+        StatsReport('p', 'candidate-pair', 0,
+            {'localCandidateId': 'l', 'remoteCandidateId': 'r'}),
+        StatsReport('l', 'local-candidate', 0, {'candidateType': 'srflx'}),
+        StatsReport('r', 'remote-candidate', 0, {'candidateType': 'host'}),
       ];
   @override
   Future<void> close() async {
@@ -97,13 +104,25 @@ class _FakeSignaling extends Fake implements WebRtcSignalingRepository {
   /// 다음 offer 응답을 테스트가 잡아 두고 싶을 때.
   Completer<void>? holdOffer;
 
+  /// 남은 504 응답 횟수.
+  int unresponsive = 0;
+
   @override
-  Future<({String sessionId, String answerSdp})> sendOffer(
-      String cameraUuid, String sdp) async {
+  Future<
+      ({
+        String sessionId,
+        String answerSdp,
+        int? offerAttempts,
+        int? answerMs,
+      })> sendOffer(String cameraUuid, String sdp) async {
     final id = 's${++_offers}';
     final hold = holdOffer;
     if (hold != null) await hold.future;
-    return (sessionId: id, answerSdp: 'answer');
+    if (unresponsive > 0) {
+      unresponsive--;
+      throw const CameraUnresponsiveException();
+    }
+    return (sessionId: id, answerSdp: 'answer', offerAttempts: 2, answerMs: 7800);
   }
 
   @override
@@ -134,6 +153,7 @@ class _Harness {
   final signaling = _FakeSignaling();
   final network = StreamController<String>();
   final cameras = StreamController<List<TerraCamera>>();
+  final logs = <WebRtcConnectLog>[];
   late final ProviderContainer container;
 
   _Harness() {
@@ -149,6 +169,7 @@ class _Harness {
           .overrideWithValue(() async => _FakeRenderer()),
       webrtcNetworkSignalProvider.overrideWith((ref) => network.stream),
       camerasProvider.overrideWith((ref) => cameras.stream),
+      webrtcConnectLogSinkProvider.overrideWithValue(logs.add),
     ]);
     container.listen(webrtcLiveControllerProvider(_cam), (_, __) {});
     container.listen(camerasProvider, (_, __) {});
@@ -342,5 +363,112 @@ void main() {
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
     await h.dispose();
+  });
+
+  // ── 연결 결과 기록(webrtc_connect_logs, 2026-09-23) ─────────────────────
+
+  testWidgets('기록 — 첫 프레임에 streaming 행, 화면을 떠나면 closed 행', (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
+    h.renderer.onFirstFrameRendered!();
+    await tester.pump();
+    expect(h.logs, hasLength(1));
+    final ok = h.logs.single;
+    expect(ok.outcome, 'streaming');
+    expect(ok.failPhase, isNull);
+    expect(ok.network, 'wifi');
+    expect(ok.offerAttempts, 2);
+    expect(ok.answerMs, 7800);
+    expect((ok.localCand, ok.remoteCand), ('srflx', 'host'));
+    expect(ok.msConnected, isNotNull);
+    expect(ok.msFirstFrame, isNotNull);
+    expect(ok.reconnectAttempt, 0);
+
+    await h.dispose();
+    await tester.pump();
+    expect(h.logs, hasLength(2));
+    expect(h.logs.last.outcome, 'closed');
+    expect(h.logs.last.failPhase, isNull);
+    expect(h.logs.last.streamedSec, isNotNull);
+  });
+
+  testWidgets('기록 — 504 두 번이면 unresponsive 행 둘(offer_attempts=3)',
+      (tester) async {
+    final h = _Harness();
+    h.signaling.unresponsive = 2;
+    // 가짜 피어는 ICE 수집이 즉시 끝나 1차 504 → 2초 뒤 2차 504가 이 안에 끝난다.
+    await _settleConnect(tester);
+    await tester.pump();
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.logs.map((l) => l.outcome), ['unresponsive', 'unresponsive']);
+    expect(h.logs.every((l) => l.offerAttempts == 3), isTrue);
+    expect(h.logs.every((l) => l.failPhase == 'offering'), isTrue);
+    await h.dispose();
+    await tester.pump();
+    expect(h.logs, hasLength(2), reason: '이미 끝난 세대는 다시 쓰지 않는다');
+  });
+
+  testWidgets('기록 — 연결 후 무영상은 no_video, 재생 중 정지는 stalled', (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
+    await tester.pump(kWebRtcFirstFrameTimeout);
+    await tester.pump();
+    expect(h.logs.single.outcome, 'no_video');
+    expect(h.logs.single.failPhase, 'waitingVideo');
+    expect(h.logs.single.localCand, 'srflx');
+
+    await tester.pump(const Duration(seconds: 3));
+    await _settleConnect(tester);
+    h.pc.frames = 5;
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
+    h.renderer.onFirstFrameRendered!();
+    // 첫 주기는 기준값을 잡을 뿐이라 한 주기 더 흘린다.
+    for (var i = 0; i <= kWebRtcStallChecks; i++) {
+      await tester.pump(kWebRtcStallCheckInterval);
+      await tester.pump();
+    }
+    expect(h.logs.map((l) => l.outcome), ['no_video', 'streaming', 'stalled']);
+    expect(h.logs[1].reconnectAttempt, 1);
+    expect(h.logs.last.failPhase, 'streaming');
+    expect(h.logs.last.streamedSec, isNotNull);
+    await h.dispose();
+  });
+
+  testWidgets('기록 — 결과 전에 네트워크가 바뀌면 cancelled', (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _settleConnect(tester);
+    expect(h.state.phase, WebRtcLivePhase.connectingIce);
+    h.network.add('mobile');
+    await _settleConnect(tester);
+    expect(h.logs.first.outcome, 'cancelled');
+    expect(h.logs.first.failPhase, 'connectingIce');
+    expect(h.logs.first.network, 'wifi');
+    await h.dispose();
+  });
+
+  test('selectedCandidateTypes — transport 없으면 nominated 쌍, 모르는 타입은 null',
+      () {
+    final reports = [
+      StatsReport('p1', 'candidate-pair', 0, {
+        'nominated': 'true',
+        'state': 'succeeded',
+        'localCandidateId': 'l',
+        'remoteCandidateId': 'r',
+      }),
+      StatsReport('l', 'local-candidate', 0, {'candidateType': 'relay'}),
+      StatsReport('r', 'remote-candidate', 0, {'candidateType': 'weird'}),
+    ];
+    expect(selectedCandidateTypes(reports), ('relay', null));
+    expect(selectedCandidateTypes([]), (null, null));
+  });
+
+  test('toRow — null 필드는 빼고 보낸다(DB 기본값·CHECK 보호)', () {
+    final row = const WebRtcConnectLog(cameraId: 'c', outcome: 'failed')
+        .toRow(appVersion: '1.0.0+1');
+    expect(row, {'camera_id': 'c', 'outcome': 'failed', 'app_version': '1.0.0+1'});
   });
 }
