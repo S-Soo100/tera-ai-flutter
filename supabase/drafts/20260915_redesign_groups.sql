@@ -12,7 +12,7 @@
 --            expected_members:[{kind,id,group_id}],request_id) -> {group_id}
 -- name=null means server chooses the first free '사육 환경 N', starting at 1.
 -- save/remove idempotency keys cannot be reused with different payloads.
--- Errors: 0A000 unsupported; 23505 duplicate name; 40001 changed membership;
+-- Errors: 0A000 unsupported; 23505 duplicate name; PT409 changed membership (2026-09-22: 40001은 PostgREST 무한 재시도);
 -- 42501 missing ownership/auth; 22023 invalid input. No raw device/pet DELETE.
 --
 -- Unicode gap: PostgreSQL char_length is NOT a grapheme count. The temporary
@@ -136,12 +136,12 @@ BEGIN
         UNION ALL SELECT 'pet',id FROM public.pets WHERE enclosure_id=target AND deleted_at IS NULL) s;
     SELECT coalesce(jsonb_agg(jsonb_build_object('kind',v->>'kind','id',v->>'id') ORDER BY v->>'kind',v->>'id'),'[]') INTO expected
       FROM jsonb_array_elements(p_expected_members) v WHERE v->>'group_id'=target::text;
-    IF actual<>expected THEN RAISE EXCEPTION 'group changed' USING ERRCODE='40001'; END IF;
+    IF actual<>expected THEN RAISE EXCEPTION 'group changed' USING ERRCODE='PT409'; END IF;
   END IF;
   FOR entry IN SELECT value FROM jsonb_array_elements(p_expected_members) LOOP
     current_group := public.redesign_owned_member_group(owner,entry->>'kind',(entry->>'id')::uuid);
     IF current_group IS DISTINCT FROM (entry->>'group_id')::uuid THEN
-      RAISE EXCEPTION 'membership changed' USING ERRCODE='40001';
+      RAISE EXCEPTION 'membership changed' USING ERRCODE='PT409';
     END IF;
   END LOOP;
   -- A caller cannot smuggle an unconfirmed selected member by omitting it.
@@ -202,7 +202,7 @@ BEGIN
     RETURN prior.result;
   END IF;
   actual:=public.redesign_owned_member_group(owner,p_kind,p_item_id);
-  IF actual IS DISTINCT FROM p_expected_group_id THEN RAISE EXCEPTION 'membership changed' USING ERRCODE='40001'; END IF;
+  IF actual IS DISTINCT FROM p_expected_group_id THEN RAISE EXCEPTION 'membership changed' USING ERRCODE='PT409'; END IF;
   IF p_kind='device' THEN UPDATE public.devices SET enclosure_id=NULL WHERE id=p_item_id AND owner_id=owner;
   ELSIF p_kind='camera' THEN UPDATE public.cameras SET enclosure_id=NULL WHERE id=p_item_id AND owner_id=owner;
   ELSE UPDATE public.pets SET enclosure_id=NULL WHERE id=p_item_id AND user_id=owner; END IF;

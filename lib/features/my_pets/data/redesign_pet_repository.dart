@@ -92,7 +92,8 @@ class RedesignPetRepository {
       throw ManagementFailure(switch (error.code) {
         'PGRST202' || '42883' || '0A000' => 'management_server_unsupported',
         '23505' => 'management_name_duplicate',
-        '40001' => 'management_membership_changed',
+        // PT409: 2026-09-22부터의 '구성 변경'(40001은 PostgREST 무한 재시도).
+        '40001' || 'PT409' => 'management_membership_changed',
         '42501' => 'management_auth_changed',
         _ => 'management_save_failed',
       });

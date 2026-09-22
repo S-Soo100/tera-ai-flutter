@@ -232,4 +232,17 @@ void main() {
         throwsA(isA<ManagementFailure>()
             .having((e) => e.key, 'key', 'management_save_timeout')));
   });
+
+  test('구성 변경 PT409(신)·40001(구)은 같은 멤버 변경 실패로 읽는다', () async {
+    for (final code in ['PT409', '40001']) {
+      final repo = RedesignGroupRepository(
+          loadRows: (_) async => [],
+          rpc: (_, __) async =>
+              throw PostgrestException(message: 'group changed', code: code));
+      await expectLater(
+          repo.deleteGroup('g', requestId: 'r'),
+          throwsA(isA<ManagementFailure>()
+              .having((e) => e.key, 'key', 'management_members_changed')));
+    }
+  });
 }

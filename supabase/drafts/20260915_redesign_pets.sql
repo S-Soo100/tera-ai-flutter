@@ -34,15 +34,15 @@ BEGIN
   IF is_existing AND old_owner IS DISTINCT FROM owner THEN
     RAISE EXCEPTION 'pet not owned' USING ERRCODE='42501'; END IF;
   IF is_existing AND old_deleted_at IS NOT NULL THEN
-    RAISE EXCEPTION 'deleted pet cannot be edited or resurrected' USING ERRCODE='40001'; END IF;
+    RAISE EXCEPTION 'deleted pet cannot be edited or resurrected' USING ERRCODE='PT409'; END IF;
   IF old_group IS DISTINCT FROM p_expected_group_id THEN
-    RAISE EXCEPTION 'membership changed' USING ERRCODE='40001'; END IF;
+    RAISE EXCEPTION 'membership changed' USING ERRCODE='PT409'; END IF;
   IF p_group_id IS NOT NULL THEN
     PERFORM 1 FROM public.enclosures WHERE id=p_group_id AND owner_id=owner FOR UPDATE;
     IF NOT FOUND THEN RAISE EXCEPTION 'group not owned' USING ERRCODE='42501'; END IF;
     -- Do not silently evict another pet. Group editor handles explicit moves.
     IF EXISTS(SELECT 1 FROM public.pets WHERE enclosure_id=p_group_id AND deleted_at IS NULL AND id<>pet_key) THEN
-      RAISE EXCEPTION 'group already has a pet' USING ERRCODE='40001'; END IF;
+      RAISE EXCEPTION 'group already has a pet' USING ERRCODE='PT409'; END IF;
   END IF;
   IF is_existing AND p_pet->>'name'=old_name THEN wanted:=old_name;
   ELSE
@@ -95,7 +95,7 @@ BEGIN
   IF NOT FOUND OR original_owner IS DISTINCT FROM owner THEN
     RAISE EXCEPTION 'pet not owned' USING ERRCODE='42501'; END IF;
   IF original_deleted_at IS NOT NULL OR actual IS DISTINCT FROM p_expected_group_id THEN
-    RAISE EXCEPTION 'membership changed or pet already deleted' USING ERRCODE='40001'; END IF;
+    RAISE EXCEPTION 'membership changed or pet already deleted' USING ERRCODE='PT409'; END IF;
   -- No physical deletion: pet profile, media and pet_events remain intact.
   UPDATE public.pets SET enclosure_id=NULL,deleted_at=changed_at,updated_at=changed_at
     WHERE id=p_pet_id AND user_id=owner;

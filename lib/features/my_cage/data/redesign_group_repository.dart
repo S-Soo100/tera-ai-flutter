@@ -222,7 +222,9 @@ class RedesignGroupRepository {
       if (error.code == '23505') {
         throw const ManagementFailure('management_name_duplicate');
       }
-      if (error.code == '40001') {
+      // PT409: 2026-09-22부터의 '구성 변경'. 구 40001은 PostgREST가 무한
+      // 재시도해 앱까지 오지 않지만 호환을 위해 같이 읽는다.
+      if (error.code == '40001' || error.code == 'PT409') {
         throw const ManagementFailure('management_members_changed');
       }
       if (error.code == '42501') {
