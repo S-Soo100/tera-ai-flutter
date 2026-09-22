@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vivanaut/core/network/terra_rest_client.dart';
@@ -210,5 +212,24 @@ void main() {
         rpc: (_, __) async => null);
     final inventory = await repo.load();
     expect(inventory.items.map((i) => i.key.id), ['d-live']);
+  });
+
+  // 2026-09-22: 서버가 40001을 내면 PostgREST가 무한 재시도해 응답이 안 온다.
+  // 앱은 기다리지 않고 '확인 필요'로 끝낸다(같은 request_id 재시도는 안전).
+  test('RPC가 응답하지 않으면 시간 제한 후 저장 확인 필요 실패로 끝낸다', () async {
+    final repo = RedesignGroupRepository(
+        loadRows: (_) async => [],
+        rpc: (_, __) => Completer<Object?>().future,
+        rpcTimeout: const Duration(milliseconds: 20));
+    await expectLater(
+        repo.saveGroup(
+            GroupEditDraft(name: 'n', members: {
+              const ManagementKey(kind: ManagementKind.device, id: 'd')
+            }, expectedGroups: {
+              const ManagementKey(kind: ManagementKind.device, id: 'd'): null
+            }),
+            requestId: 'r'),
+        throwsA(isA<ManagementFailure>()
+            .having((e) => e.key, 'key', 'management_save_timeout')));
   });
 }

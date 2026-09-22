@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
+import '../../../core/supabase/supabase_provider.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/device_add_ble_adapter.dart';
 import '../data/device_add_registration_repository.dart';
@@ -17,15 +18,22 @@ final deviceAddAccountProvider = Provider<String?>(
     (ref) => ref.watch(currentUserProvider.select((u) => u?.id)));
 final deviceAddGatewayFactoryProvider =
     Provider<DeviceAddGateway Function()>((ref) => DeviceAddBleAdapter.new);
-final deviceAddAutoGroupProvider = Provider<DeviceAddAutoGroup>((ref) =>
-    (account, ids) async => throw StateError('Atomic grouping unavailable'));
+/// 자동 묶기·완료 콜백은 `DeviceAddFlowRoute`의 안쪽 `ProviderScope`에서 바꿔
+/// 끼운다. 그래서 둘 다 scope 대상(`dependencies`)으로 선언하고, 이를 읽는
+/// [deviceAddFlowProvider]도 `dependencies`에 적는다 — 안 적으면 flow가 최상위
+/// 컨테이너에 만들어져 아래 기본값(항상 실패)을 읽는다(2026-09-22 사고).
+final deviceAddAutoGroupProvider = Provider<DeviceAddAutoGroup>(
+    (ref) =>
+        (account, ids) async => throw StateError('Atomic grouping unavailable'),
+    dependencies: const []);
 final knownDeviceStoreProvider =
     Provider<KnownDeviceStore>((ref) => const HiveKnownDeviceStore());
-final deviceAddCompletedProvider = Provider<void Function()>((ref) => () {});
+final deviceAddCompletedProvider =
+    Provider<void Function()>((ref) => () {}, dependencies: const []);
 final deviceAddFlowProvider = StateNotifierProvider.autoDispose
     .family<DeviceAddFlowController, DeviceAddState, Object>((ref, key) {
   final account = ref.watch(deviceAddAccountProvider);
-  final client = Supabase.instance.client;
+  final client = ref.watch(supabaseClientProvider);
   final registration = DeviceAddRegistrationRepository(client);
   final credentials = WifiCredentialsStore();
   final group = ref.watch(deviceAddAutoGroupProvider);
@@ -71,7 +79,7 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
       forgetCamera: (candidate) => known.forget(account!, candidate),
       cameraLastSeen: (id) async =>
           (await registration.ownedCamera(account!, id))?.lastSeen);
-});
+}, dependencies: [deviceAddAutoGroupProvider, deviceAddCompletedProvider]);
 
 class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   DeviceAddFlowController(
@@ -135,6 +143,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   final Future<Map<String, String>> Function() _read;
   final DeviceAddAutoGroup _group;
   final void Function()? _completed;
+
+  @visibleForTesting
+  DeviceAddAutoGroup get debugAutoGroup => _group;
+  @visibleForTesting
+  void Function()? get debugCompleted => _completed;
 
   /// 이 폰이 등록해 둔 카메라인지(BLE 주소 → cameras.id). 있으면 JWT 없이
   /// Wi-Fi만 바꾼다 — 카메라 펌웨어는 JWT를 받을 때마다 새 camera_id로
@@ -286,6 +299,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
             wifiConnected: receipt.wifiConnected,
             hardwareId: receipt.hardwareId,
             registeredId: id,
+            registeredName: name,
             issue: id != null ? null : receipt.issue,
             issueDetail: id != null ? null : receipt.issueDetail,
             outcome: id != null
@@ -332,6 +346,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
               candidate: result.candidate,
               outcome: DeviceAddOutcome.registered,
               registeredId: id,
+              registeredName: result.registeredName,
               hardwareId: result.hardwareId,
               wifiConnected: result.wifiConnected);
           await _remember(result.candidate, id);

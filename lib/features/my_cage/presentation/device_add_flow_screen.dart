@@ -109,10 +109,18 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     final other =
         inventory.members(group.id).firstWhere((i) => i.key.kind == otherKind);
     final newKey = ManagementKey(kind: newKind, id: result.registeredId!);
-    final deviceName =
-        newKind == ManagementKind.device ? result.candidate.name : other.name;
-    final cameraName =
-        newKind == ManagementKind.camera ? result.candidate.name : other.name;
+    // BLE 광고 이름("terra-iot")이 아니라 등록한 이름("사육장 5")을 보인다.
+    final newName = result.registeredName ?? result.candidate.name;
+    final deviceName = newKind == ManagementKind.device ? newName : other.name;
+    final cameraName = newKind == ManagementKind.camera ? newName : other.name;
+    // 그 환경의 기존 멤버(도마뱀 포함)를 그대로 두고 새 기기만 더한다. 도마뱀을
+    // 빼고 보내면 서버가 '구성 변경'(40001)으로 거절하고 — PostgREST는 이를
+    // 무한 재시도해 응답이 오지 않는다 — 통과해도 도마뱀이 환경에서 빠진다
+    // (2026-09-22).
+    final draft = GroupEditDraft.existing(group, inventory).select(
+        ManagementItem(key: newKey, name: newName, groupId: null));
+    // 시간 초과 뒤 다시 눌러도 같은 요청으로 본다(서버 멱등 키).
+    final requestId = const Uuid().v4();
     final joined = await Navigator.of(context).push<bool>(MaterialPageRoute(
         builder: (_) => LinkConfirmScreen(
               title: (otherKind == ManagementKind.device
@@ -142,14 +150,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                 if (repo == null) {
                   throw const ManagementFailure('management_auth_changed');
                 }
-                await repo.saveGroup(
-                    GroupEditDraft(
-                        groupId: group.id,
-                        name: group.name,
-                        members: {other.key, newKey},
-                        expectedGroups: {other.key: group.id, newKey: null}),
-                    requestId: const Uuid().v4());
-                ref.invalidate(managementInventoryProvider);
+                await repo.saveGroup(draft, requestId: requestId);
+                // 홈 사육 환경·기기 목록까지 갱신한다(인벤토리만 비우면 홈이
+                // 옛 구성을 계속 보인다).
+                ref.read(managementMutationCompletedProvider)();
               },
             )));
     if (joined == true && mounted) setState(() => _joinedGroupId = group.id);
@@ -806,7 +810,9 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
           style: managementStyle(context, size: 18, weight: FontWeight.w600)
               .copyWith(height: 21.48046875 / 18)),
       const SizedBox(height: 8),
-      if (!retry && !pending && !updated && confirmed > 0)
+      // 묶기 실패면 '도마뱀 등록' 안내 대신 아래 실패 문구만 보인다 — 둘이 함께
+      // 뜨면 모순된다(2026-09-22).
+      if (!retry && !pending && !updated && confirmed > 0 && !state.groupError)
         Text(
             (confirmed == 2 || _joinedGroupId != null
                     ? 'device_add_done_subtitle'

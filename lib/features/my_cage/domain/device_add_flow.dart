@@ -43,6 +43,7 @@ class DeviceAddResult {
       {required this.candidate,
       required this.outcome,
       this.registeredId,
+      this.registeredName,
       this.hardwareId,
       this.wifiConnected = false,
       this.reconnect,
@@ -51,6 +52,10 @@ class DeviceAddResult {
   final DeviceAddCandidate candidate;
   final DeviceAddOutcome outcome;
   final String? registeredId;
+
+  /// 앱이 `NAME:`으로 보낸 등록 이름("사육장 5") — 화면엔 BLE 광고 이름 대신
+  /// 이것을 보인다. Wi-Fi만 바꾼 카메라처럼 이름을 안 보냈으면 null.
+  final String? registeredName;
   final String? hardwareId;
   final bool wifiConnected;
   final CameraReconnect? reconnect;
@@ -60,6 +65,7 @@ class DeviceAddResult {
       candidate: candidate,
       outcome: outcome,
       registeredId: registeredId,
+      registeredName: registeredName,
       hardwareId: hardwareId,
       wifiConnected: wifiConnected,
       reconnect: value,

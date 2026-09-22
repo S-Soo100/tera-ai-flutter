@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/terra_rest_client.dart';
 import '../domain/redesign_management.dart';
@@ -25,7 +27,8 @@ class RedesignGroupRepository {
   RedesignGroupRepository(
       {required ManagementRowsLoader loadRows,
       required ManagementRpc rpc,
-      ManagementUnlink? unlink})
+      ManagementUnlink? unlink,
+      this.rpcTimeout = const Duration(seconds: 20)})
       : _loadRows = loadRows,
         _rpc = rpc,
         _unlink = unlink;
@@ -72,6 +75,12 @@ class RedesignGroupRepository {
   final ManagementRowsLoader _loadRows;
   final ManagementRpc _rpc;
   final ManagementUnlink? _unlink;
+
+  /// 쓰기 RPC 응답 대기 상한. 서버가 40001을 내면 PostgREST가 그 트랜잭션을
+  /// 끝없이 재시도해 응답이 영영 안 온다(2026-09-22 운영에서 확인). 그동안
+  /// 버튼이 잠긴 채 멈추지 않도록 끊는다. 서버에선 반영됐을 수도 있으니 실패가
+  /// 아니라 '확인 필요'로 알린다 — 같은 request_id로 다시 보내면 멱등이다.
+  final Duration rpcTimeout;
 
   Future<ManagementInventory> load() async {
     final (groups, devices, cameras, pets) = await (
@@ -201,7 +210,9 @@ class RedesignGroupRepository {
 
   Future<Object?> _call(String name, Map<String, Object?> params) async {
     try {
-      return await _rpc(name, params);
+      return await _rpc(name, params).timeout(rpcTimeout);
+    } on TimeoutException {
+      throw const ManagementFailure('management_save_timeout');
     } on PostgrestException catch (error) {
       if (['PGRST202', '42883', '0A000'].contains(error.code)) {
         {

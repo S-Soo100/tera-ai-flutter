@@ -175,6 +175,7 @@
   "management_auth_changed": "로그인 상태가 바뀌었습니다. 다시 로그인해 주세요.",
   "management_server_unsupported": "서버에서 아직 이 변경을 지원하지 않습니다. 입력한 내용은 유지됩니다.",
   "management_save_failed": "저장하지 못했습니다. 입력 내용을 확인하고 다시 시도해 주세요.",
+  "management_save_timeout": "서버 응답이 없습니다. 목록에서 저장됐는지 확인한 뒤 다시 시도해 주세요.",
   "management_members_changed": "다른 곳에서 그룹 구성이 변경되었습니다. 목록을 다시 확인해 주세요.",
   "management_member_required": "기기 또는 개체를 하나 이상 선택해 주세요.",
   "management_one_per_kind": "사육장·카메라·개체는 각각 하나씩 선택할 수 있습니다.",

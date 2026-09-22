@@ -292,15 +292,22 @@ void main() {
   });
 
   /// 사육장 하나만 있는 그룹 + 카메라 단독 성공 → 합류 카드(990:7508).
-  List<Override> joinOverrides(List<Map<String, Object?>> rpcCalls) => [
+  List<Override> joinOverrides(List<Map<String, Object?>> rpcCalls,
+          {bool withPet = false}) =>
+      [
         managementInventoryProvider
             .overrideWith((ref) async => ManagementInventory(groups: const [
                   ManagementGroup(id: 'g1', name: '마뱀이네 집', number: 1)
-                ], items: const [
-                  ManagementItem(
+                ], items: [
+                  const ManagementItem(
                       key: ManagementKey(kind: ManagementKind.device, id: 'd1'),
                       name: 'viva-iot-ㅁㅁㅁㅁ',
                       groupId: 'g1'),
+                  if (withPet)
+                    const ManagementItem(
+                        key: ManagementKey(kind: ManagementKind.pet, id: 'p1'),
+                        name: '꼬꼬',
+                        groupId: 'g1'),
                 ])),
         redesignGroupRepositoryProvider
             .overrideWith((ref) => RedesignGroupRepository(
@@ -384,5 +391,73 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('device_add_join')), findsNothing);
     expect(find.byKey(const Key('device_add_link_existing')), findsOneWidget);
+  });
+
+  // 2026-09-22: 합류는 그 환경의 기존 멤버(도마뱀 포함)를 그대로 두고 새 기기만
+  // 더한다. 도마뱀을 빼고 보내면 서버가 40001(무한 재시도)을 내고, 통과해도
+  // 도마뱀이 환경에서 빠진다.
+  testWidgets('join card: 도마뱀이 있는 그룹에 합류해도 도마뱀을 유지한다',
+      (tester) async {
+    final rpc = <Map<String, Object?>>[];
+    var refreshed = 0;
+    final c = await pump(tester,
+        const DeviceAddState(step: DeviceAddStep.connecting, ssid: 'home'),
+        overrides: [
+          ...joinOverrides(rpc, withPet: true),
+          managementMutationCompletedProvider
+              .overrideWithValue(() => refreshed++),
+        ]);
+    c.set(const DeviceAddState(step: DeviceAddStep.results, results: {
+      PairTargetKind.camera: DeviceAddResult(
+          candidate: camera,
+          outcome: DeviceAddOutcome.registered,
+          registeredId: 'c1',
+          registeredName: '카메라 3'),
+    }));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    // 카드에는 BLE 광고 이름이 아니라 등록된 이름을 보인다.
+    expect(find.text('카메라 3'), findsOneWidget);
+    expect(find.text('FB2_P4_CAM'), findsNothing);
+    await tester.tap(find.byKey(const Key('device_add_join')));
+    await tester.pumpAndSettle();
+    expect(rpc, hasLength(1));
+    expect(rpc.single['p_pet_id'], 'p1');
+    expect(rpc.single['p_device_id'], 'd1');
+    expect(rpc.single['p_camera_id'], 'c1');
+    expect(
+        rpc.single['p_expected_members'],
+        unorderedEquals([
+          {'kind': 'device', 'id': 'd1', 'group_id': 'g1'},
+          {'kind': 'pet', 'id': 'p1', 'group_id': 'g1'},
+          {'kind': 'camera', 'id': 'c1', 'group_id': null},
+        ]));
+    // 홈·목록 갱신 신호.
+    expect(refreshed, 1);
+  });
+
+  testWidgets('results: 자동 묶기 실패면 도마뱀 등록 안내 부제를 숨긴다', (tester) async {
+    final c = await pump(tester,
+        const DeviceAddState(step: DeviceAddStep.connecting, ssid: 'home'),
+        overrides: joinOverrides([]));
+    c.set(const DeviceAddState(
+        step: DeviceAddStep.results,
+        groupError: true,
+        results: {
+          PairTargetKind.device: DeviceAddResult(
+              candidate: device,
+              outcome: DeviceAddOutcome.registered,
+              registeredId: 'd9'),
+          PairTargetKind.camera: DeviceAddResult(
+              candidate: camera,
+              outcome: DeviceAddOutcome.registered,
+              registeredId: 'c1'),
+        }));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(find.text('device_add_group_error'.tr()), findsOneWidget);
+    expect(find.text('device_add_done_subtitle'.tr()), findsNothing);
   });
 }
