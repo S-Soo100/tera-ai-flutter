@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/features/home/domain/mist_duration.dart';
 import 'package:vivanaut/features/home/domain/mist_lock.dart';
 
 void main() {
@@ -27,6 +28,21 @@ void main() {
       expect(lock.remaining(DateTime(2026, 8, 5, 12, 0, 2)),
           const Duration(seconds: 3));
       expect(lock.remaining(DateTime(2026, 8, 5, 12, 0, 9)), Duration.zero);
+    });
+
+    test('분사 시간 + 2초 동안 잠근다 — 10초 분무 중 다시 누를 수 없다', () {
+      expect(MistLock.lockFor(MistDuration.fiveSeconds),
+          const Duration(seconds: 7));
+      expect(MistLock.lockFor(MistDuration.sevenSeconds),
+          const Duration(seconds: 9));
+      final lock = MistLock.startingAt(DateTime(2026, 9, 23, 12),
+          mist: MistDuration.tenSeconds);
+      expect(lock.isLocked(DateTime(2026, 9, 23, 12, 0, 11)), isTrue);
+      expect(lock.isLocked(DateTime(2026, 9, 23, 12, 0, 12)), isFalse);
+    });
+
+    test('분사 시간을 모르면 PRD 최소값 5초', () {
+      expect(MistLock.lockFor(null), MistLock.duration);
     });
   });
 }

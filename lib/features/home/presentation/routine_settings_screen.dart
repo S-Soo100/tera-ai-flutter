@@ -373,12 +373,17 @@ String scheduleRepeatLabel(ScheduleKind kind, List<int> daysOfWeek) {
   return ([...daysOfWeek]..sort()).map((d) => 'routine_day_$d'.tr()).join(' ');
 }
 
-/// 분무는 시각만(1106:5317 문법), 냉각팬 duration 예약(fan2_on + duration_ms)은
-/// "12:00~12:30", 그 외 켜기/끄기·레거시 동작은 시각 뒤에 동작 이름을 붙여야
-/// 같은 아이콘의 켜기·끄기가 구분된다.
+/// 분무는 시각 + 분사 시간("12:00 7초" — 2026-09-23 5/7/10초 선택 도입으로
+/// 원본 1106:5317의 시각만 문법에 초를 붙였다. 옛 1/2/3초 예약도 저장값 그대로
+/// 보인다), 냉각팬 duration 예약(fan2_on + duration_ms)은 "12:00~12:30", 그 외
+/// 켜기/끄기·레거시 동작은 시각 뒤에 동작 이름을 붙여야 같은 아이콘의
+/// 켜기·끄기가 구분된다.
 String scheduleSingleTitle(Schedule s, ScheduleDevice? device) {
-  if (device == ScheduleDevice.mist) return s.hhmm;
   final ms = s.payload?['duration_ms'];
+  if (device == ScheduleDevice.mist) {
+    if (ms is! num || ms <= 0) return s.hhmm;
+    return '${s.hhmm} ${'home_mist_seconds'.tr(args: ['${ms ~/ 1000}'])}';
+  }
   if (s.action == ScheduleAction.fan2On && ms is num && ms > 0) {
     final end = (s.hour * 60 + s.minute + ms ~/ 60000) % (24 * 60);
     final hh = (end ~/ 60).toString().padLeft(2, '0');

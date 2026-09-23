@@ -241,7 +241,8 @@ void main() {
     expect(tester.getRect(find.byKey(const Key('routine_day_1'))).top, 405);
   });
 
-  testWidgets('분무 편집기 — 시작만, 반복 283/310', (tester) async {
+  testWidgets('분무 편집기 — 시작 + 분사 시간 칩 111×44 @ y310, 반복 378/405',
+      (tester) async {
     await pump(tester, const []);
     await tester.tap(find.byKey(RoutineSettingsScreen.addKey));
     await tester.pumpAndSettle();
@@ -249,8 +250,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('분무 예약'), findsOneWidget);
     expect(find.text('종료'), findsNothing);
-    expect(tester.getRect(find.text('반복')).top, 283);
-    expect(tester.getRect(find.byKey(const Key('routine_day_1'))).top, 310);
+    // 냉각팬 종료 칩과 같은 자리(2026-09-23 분사 시간 5/7/10초).
+    expect(find.text('분사 시간'), findsOneWidget);
+    expect(tester.getRect(find.byKey(const Key('routine_mist_5'))),
+        const Rect.fromLTWH(24, 310, 111, 44));
+    expect(tester.getRect(find.byKey(const Key('routine_mist_7'))).left, 141);
+    expect(tester.getRect(find.byKey(const Key('routine_mist_10'))).left, 258);
+    expect(find.text('7초'), findsOneWidget);
+    expect(tester.getRect(find.text('반복')).top, 378);
+    expect(tester.getRect(find.byKey(const Key('routine_day_1'))).top, 405);
   });
 
   testWidgets('수정 — 저장 696 위에, "예약 삭제" 752 (글자 중심 780)', (tester) async {

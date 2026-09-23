@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/features/home/domain/mist_duration.dart';
 import 'package:vivanaut/features/home/domain/running_timer.dart';
 import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivanaut/features/home/presentation/control_pending.dart';
@@ -155,10 +156,28 @@ void main() {
     await _flush(tester);
   });
 
-  testWidgets('분무 — 전원 행 없이 "1회 분사 시작" CTA만', (tester) async {
-    await _pump(tester, ScheduleDevice.mist);
+  testWidgets('분무 — 전원 행 없이 분사 시간 칩(5/7/10초, 기본 7초) + CTA',
+      (tester) async {
+    final sent = await _pump(tester, ScheduleDevice.mist);
     expect(find.byKey(DeviceControlSheet.powerRowKey), findsNothing);
     expect(find.byKey(DeviceControlSheet.mistStartKey), findsOneWidget);
+    expect(find.text('home_mist_duration_label'), findsOneWidget);
+    for (final d in MistDuration.values) {
+      final chip = tester.widget<ScheduleChoiceChip>(
+          find.byKey(DeviceControlSheet.mistChipKey(d)));
+      expect(chip.selected, d == MistDuration.sevenSeconds, reason: '$d');
+    }
+    // 칩은 선택만 — 송신은 CTA뿐.
+    await tester.tap(find.byKey(DeviceControlSheet.mistChipKey(
+        MistDuration.tenSeconds)));
+    await tester.pump();
+    expect(sent, isEmpty);
+    expect(
+        tester
+            .widget<ScheduleChoiceChip>(find.byKey(
+                DeviceControlSheet.mistChipKey(MistDuration.tenSeconds)))
+            .selected,
+        isTrue);
     expect(
         tester
             .widget<FilledButton>(find.descendant(
@@ -244,7 +263,7 @@ void main() {
     await _flush(tester);
   });
 
-  testWidgets('분무 — 실행 취소하면 안 보내고, 창이 지나면 mist 3000ms', (tester) async {
+  testWidgets('분무 — 실행 취소하면 안 보내고, 창이 지나면 기본 mist 7000ms', (tester) async {
     final sent = await _pump(tester, ScheduleDevice.mist);
     await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
     await tester.pump();
@@ -255,8 +274,26 @@ void main() {
     await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
     await tester.pump(kMistUndoWindow + const Duration(milliseconds: 100));
     expect(sent.single.$1, CommandAction.mist);
-    expect(sent.single.$2, {'duration_ms': 3000});
-    await tester.pump(const Duration(seconds: 6)); // 잠금 타이머
+    expect(sent.single.$2, {'duration_ms': 7000});
+    await tester.pump(const Duration(seconds: 10)); // 잠금 타이머(7+2초)
+    await _flush(tester);
+  });
+
+  testWidgets('분무 10초 선택 → mist 10000ms, 분사+2초 동안 CTA 잠금', (tester) async {
+    final sent = await _pump(tester, ScheduleDevice.mist);
+    await tester.tap(find.byKey(
+        DeviceControlSheet.mistChipKey(MistDuration.tenSeconds)));
+    await tester.pump();
+    await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
+    await tester.pump(kMistUndoWindow + const Duration(milliseconds: 100));
+    expect(sent.single.$1, CommandAction.mist);
+    expect(sent.single.$2, {'duration_ms': 10000});
+    FilledButton cta() => tester.widget<FilledButton>(find.descendant(
+        of: find.byKey(DeviceControlSheet.mistStartKey),
+        matching: find.byType(FilledButton)));
+    // 옛 5초 잠금이면 여기서 풀렸다 — 10초 분사 중엔 잠겨 있어야 한다.
+    await tester.pump(const Duration(seconds: 8));
+    expect(cta().onPressed, isNull);
     await _flush(tester);
   });
 }

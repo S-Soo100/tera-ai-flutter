@@ -882,6 +882,7 @@
   "home_tile_off_in_fmt": "{} 뒤 꺼짐",
   "device_state_running": "작동 중",
   "home_fan_duration_label": "작동 시간",
+  "home_mist_duration_label": "분사 시간",
   "home_cooling_end_label": "종료",
   "home_cooling_end_hint": "아이스팩은 팬이 켜진 상태에서 최대 2시간 유지됩니다",
   "home_timer_later_fmt": "{} 뒤",

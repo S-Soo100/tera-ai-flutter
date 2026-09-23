@@ -11,6 +11,7 @@ import '../../../my_cage/presentation/management_colors.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../../../my_cage/presentation/widgets/management_widgets.dart';
 import '../../domain/fan_timer_duration.dart';
+import '../../domain/mist_duration.dart';
 import '../../domain/running_timer.dart';
 import '../../domain/schedule.dart';
 import '../../domain/schedule_device.dart';
@@ -38,7 +39,7 @@ import 'schedule_editor_sheet.dart';
 /// 시트 `#F4F4F4`·안쪽 24. 상단 segment [즉시 작동 | 예약 작동](345×32).
 /// 즉시 탭: "전원 · 켜짐/꺼짐" 행(345×48 흰색, 80×32 스위치) + 기기별
 /// 선택(환기팬 작동 시간 칩 / 냉각팬 종료 칩+안내 / LED 밝기 행 / 분무
-/// "1회 분사 시작"). 예약 탭: 그 기기의 예약 목록 + "새 예약 추가" 또는
+/// 분사 시간 칩 + "1회 분사 시작"). 예약 탭: 그 기기의 예약 목록 + "새 예약 추가" 또는
 /// 인라인 편집기([ScheduleEditorBody]) + "예약 저장".
 ///
 /// **송신 규칙(계획 A1, 2026-09-14 결정 유지):** 칩·슬라이더 선택만으로는
@@ -92,6 +93,7 @@ class DeviceControlSheet extends ConsumerStatefulWidget {
   static const powerSwitchKey = Key('device_sheet_power_switch');
   static const loadingKey = Key('device_sheet_loading');
   static const mistStartKey = Key('device_sheet_mist_start');
+  static Key mistChipKey(MistDuration d) => Key('mist_duration_${d.seconds}');
   static const addScheduleKey = Key('device_sheet_add_schedule');
   static const saveScheduleKey = Key('device_sheet_save_schedule');
   static const brightnessSliderKey = Key('device_sheet_brightness_slider');
@@ -117,6 +119,10 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   /// 환기팬 작동 시간 선택(null = 계속). 냉각팬은 30/60/120분만.
   FanTimerDuration? _fanChoice;
   bool _fanChoiceSeeded = false;
+
+  /// 분무 분사 시간 — 직전 선택(미저장이면 7초).
+  late MistDuration _mistChoice =
+      ref.read(mistChoiceStoreProvider).load(widget.deviceId);
   double _brightness = 60;
   bool _brightnessSeeded = false;
   _Editing? _editing;
@@ -477,22 +483,49 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
   }
 
+  /// Figma 분무 시트(1106:6391)엔 시간 선택이 없다 — 같은 시트의 환기팬
+  /// "작동 시간"(1107:8428) 칩 문법을 그대로 가져와 CTA 위에 둔다
+  /// (2026-09-23 사용자 결정). 칩은 선택만, 송신은 CTA뿐.
   Widget _mist(BuildContext context, Color accent) {
     final locked =
         ref.watch(mistLockProvider(widget.deviceId)).isLocked(DateTime.now());
     final pending = ref.watch(mistPendingProvider(widget.deviceId)) ||
         ref.watch(controlPendingProvider(widget.deviceId)) != null;
-    return _SheetCta(
-        key: DeviceControlSheet.mistStartKey,
-        label: 'home_mist_start_once'.tr(),
-        // 분무 편집기·목록과 같은 #2E408C(humidAccent).
-        color: context.glass.humidAccent,
-        onPressed: locked || pending
-            ? null
-            : () {
-                if (!_targetStillValid()) return;
-                mistWithUndo(context, ref, widget.deviceId);
-              });
+    // 분무 편집기·목록과 같은 #2E408C(humidAccent).
+    final color = context.glass.humidAccent;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      ScheduleSection(
+          label: 'home_mist_duration_label'.tr(),
+          gap: 8,
+          child: Row(children: [
+            for (final (i, d) in MistDuration.values.indexed) ...[
+              if (i > 0) const SizedBox(width: 4),
+              Expanded(
+                  child: ScheduleChoiceChip(
+                      key: DeviceControlSheet.mistChipKey(d),
+                      label: 'home_mist_seconds'.tr(args: ['${d.seconds}']),
+                      selected: _mistChoice == d,
+                      accent: color,
+                      enabled: !pending,
+                      onTap: () => setState(() => _mistChoice = d))),
+            ],
+          ])),
+      const SizedBox(height: 24),
+      _SheetCta(
+          key: DeviceControlSheet.mistStartKey,
+          label: 'home_mist_start_once'.tr(),
+          color: color,
+          onPressed: locked || pending
+              ? null
+              : () {
+                  if (!_targetStillValid()) return;
+                  final choice = _mistChoice;
+                  ref
+                      .read(mistChoiceStoreProvider)
+                      .save(widget.deviceId, choice);
+                  mistWithUndo(context, ref, widget.deviceId, choice);
+                }),
+    ]);
   }
 
   // ── 예약 작동 ──────────────────────────────────────────────────────────

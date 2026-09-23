@@ -229,6 +229,14 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
   int? _coolMinutes;
   late final Set<int> _days;
 
+  /// 분무 예약의 분사 시간. 새 예약은 7초. 옛 1/2/3초 예약을 열면 null(칩
+  /// 미선택)이고 저장값을 그대로 둔다 — 고르기 전엔 원본에 없는 값을 만들어
+  /// 넣지 않는다(2026-09-23).
+  MistDuration? _mistChoice;
+
+  bool get _isMistPoint =>
+      _kind == ScheduleEditorKind.point && _action.requiresDuration;
+
   /// LED 구간 예약의 밝기(%) — Figma 1107:8758 밝기 행, 기본 50. 켜기 행
   /// `payload.brightness`로 싣는다(2026-09-16 계약 확인 전 미리 구현).
   double _brightness = 50;
@@ -287,6 +295,12 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
             ScheduleDevice.coolDurations.contains(diff) ? diff : null;
       }
     }
+    if (_isMistPoint) {
+      final saved = (widget.initial?.payload?['duration_ms'] as num?)?.toInt();
+      _mistChoice = widget.initial == null
+          ? MistDuration.defaultValue
+          : MistDuration.tryFromMilliseconds(saved);
+    }
     _days = {...?base?.daysOfWeek};
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) widget.onChanged(_draft());
@@ -318,12 +332,9 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
           hour: _start.hour24,
           minute: _start.minute,
           daysOfWeek: days,
-          // 원본 편집기엔 분사 시간 선택이 없다 — 새 분무 예약은 홈 타일과
-          // 같은 3초, 기존 예약은 저장된 값을 그대로 둔다.
-          payload: widget.initial?.payload ??
-              (action.requiresDuration
-                  ? {'duration_ms': MistDuration.threeSeconds.milliseconds}
-                  : null),
+          // 분무는 고른 분사 시간. 칩을 안 고른 옛 예약(1/2/3초)은 저장된
+          // 값을 그대로 둔다.
+          payload: _mistChoice?.payload ?? widget.initial?.payload,
         );
       case ScheduleEditorKind.span:
       case ScheduleEditorKind.duration:
@@ -374,6 +385,26 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
               clock: _start,
               accent: accent,
               onChanged: () => _update(() {}))),
+      if (_isMistPoint) ...[
+        const SizedBox(height: 24),
+        // 냉각팬 종료 칩과 같은 3칸 행(111×44, 간격 6) — 두 편집기가 같은
+        // 자리에 칩과 반복을 둔다.
+        ScheduleSection(
+            label: 'home_mist_duration_label'.tr(),
+            gap: 8,
+            child: Row(children: [
+              for (final (i, d) in MistDuration.values.indexed) ...[
+                if (i > 0) const SizedBox(width: 6),
+                Expanded(
+                    child: ScheduleChoiceChip(
+                        key: Key('routine_mist_${d.seconds}'),
+                        label: 'home_mist_seconds'.tr(args: ['${d.seconds}']),
+                        selected: _mistChoice == d,
+                        accent: accent,
+                        onTap: () => _update(() => _mistChoice = d))),
+              ],
+            ])),
+      ],
       if (_kind == ScheduleEditorKind.span) ...[
         const SizedBox(height: 24),
         ScheduleSection(

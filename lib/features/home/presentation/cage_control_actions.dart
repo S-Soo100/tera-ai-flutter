@@ -28,6 +28,7 @@ import '../../my_cage/presentation/widgets/heater_lock_dialog.dart';
 import '../../../shared/services/fan_timer_notification_service.dart';
 import '../../../shared/domain/fan_actuator.dart';
 import '../data/fan_choice_store.dart';
+import '../data/mist_choice_store.dart';
 import '../data/fan_timer_notification_resync.dart';
 import '../domain/fan_timer_duration.dart';
 import '../domain/mist_duration.dart';
@@ -47,6 +48,10 @@ final mistLockProvider = StateProvider.family<MistLock, String>(
 /// 환기팬 직전 설정 저장소(원탭 재실행용) — [handleFanTap]·[openFanSheet]가 쓴다.
 final fanChoiceStoreProvider =
     Provider<FanChoiceStore>((_) => const HiveFanChoiceStore());
+
+/// 분무 직전 분사 시간 저장소 — 제어 시트 칩의 초기 선택.
+final mistChoiceStoreProvider =
+    Provider<MistChoiceStore>((_) => const HiveMistChoiceStore());
 
 /// 확인이 끝난 명령의 뒷정리 — 팬 명령이면 완료 알림 예약을 최신 이력으로
 /// 다시 맞춘다(실패한 시작은 예약을 내리고, 실패한 종료는 이전 유효 타이머를
@@ -312,11 +317,11 @@ Future<void> sendMistWith(
     return;
   }
   final lockNotifier = container.read(mistLockProvider(deviceId).notifier);
-  lockNotifier.state = MistLock.startingAt(DateTime.now());
+  lockNotifier.state = MistLock.startingAt(DateTime.now(), mist: duration);
   // 만료를 깨우는 주체를 명시적으로 둔다. 예전엔 무관한 provider(telemetry
   // 3초 틱)가 우연히 리빌드해 주기를 기다렸고, 그게 멈추면 버튼이 잠긴 채
   // 남았다.
-  Timer(MistLock.duration, () {
+  Timer(MistLock.lockFor(duration), () {
     lockNotifier.state = const MistLock(lockedUntil: null);
   });
 
@@ -354,7 +359,8 @@ final _pendingMist = <String, Completer<bool>>{};
 
 /// 시트 "1회 분사 시작"(계획 A5, 디자이너 메모 "터치→비활성→스낵바→완료
 /// 토스트→재활성"): 바로 보내지 않고 [kMistUndoWindow] 동안 스낵바에
-/// '실행 취소'를 둔다. 창이 지나면 3초 분무를 보낸다. 취소하면 토스트
+/// '실행 취소'를 둔다. 창이 지나면 [duration]만큼 분무를 보낸다(시트의
+/// 분사 시간 칩, 2026-09-23). 취소하면 토스트
 /// "분무 실행을 취소했습니다". 대기 중·잠금 중엔 다시 누를 수 없다.
 ///
 /// **취소는 '실행 취소' 버튼뿐이다.** 스낵바가 스와이프·다른 스낵바로 닫혀도
@@ -365,6 +371,7 @@ Future<void> mistWithUndo(
   BuildContext context,
   WidgetRef ref,
   String deviceId,
+  MistDuration duration,
 ) async {
   final pending = ref.read(mistPendingProvider(deviceId).notifier);
   if (pending.state ||
@@ -404,7 +411,7 @@ Future<void> mistWithUndo(
     return;
   }
   controller.close();
-  await sendMistWith(container, messenger, deviceId, MistDuration.threeSeconds,
+  await sendMistWith(container, messenger, deviceId, duration,
       toastContext: rootContext);
 }
 

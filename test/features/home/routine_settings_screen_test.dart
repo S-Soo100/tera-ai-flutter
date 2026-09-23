@@ -7,6 +7,8 @@ import 'package:vivanaut/features/home/domain/schedule.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart';
 import 'package:vivanaut/features/home/presentation/schedule_providers.dart';
+import 'package:vivanaut/features/home/presentation/widgets/schedule_editor_sheet.dart'
+    show ScheduleChoiceChip;
 
 /// 네트워크를 타지 않는 대역. 호출 기록을 남겨 "정말 서버에 갔는가"를 본다.
 class _FakeRepo implements ScheduleRepository {
@@ -244,6 +246,23 @@ void main() {
     expect(repo.calls.where((c) => c.startsWith('create:')).toList(),
         ['create:mist:12:00:d=']);
     expect(repo.pairIds, [null]);
+    // 새 분무 예약은 기본 7초.
+    expect(repo.payloads, [
+      {'duration_ms': 7000}
+    ]);
+  });
+
+  testWidgets('분무 예약 — 분사 시간 칩 10초를 고르면 duration_ms 10000', (tester) async {
+    final repo = _FakeRepo();
+    await _pump(tester, repo);
+    await _openEditor(tester, 'mist');
+    expect(find.text('home_mist_duration_label'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('routine_mist_10')));
+    await tester.pump();
+    await _save(tester);
+    expect(repo.payloads, [
+      {'duration_ms': 10000}
+    ]);
   });
 
   testWidgets('환기팬 예약 추가 — 시작/종료가 같은 pair_id의 on/off 2건이 된다', (tester) async {
@@ -543,6 +562,29 @@ void main() {
     expect(patch.contains('action'), isFalse);
     // 기존 분사 시간(payload)은 그대로 실린다.
     expect(patch, contains('duration_ms: 2000'));
+  });
+
+  testWidgets('옛 2초 분무 예약 — 칩 미선택으로 열리고, 5초를 고르면 5000으로 바뀐다',
+      (tester) async {
+    final repo = _FakeRepo(items: [_schedule(id: 'a', hour: 8)]);
+    await _pump(tester, repo);
+    // 목록은 저장된 초를 그대로 보여 준다.
+    expect(find.text('08:00 home_mist_seconds'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('schedule_a')));
+    await tester.pumpAndSettle();
+    for (final sec in [5, 7, 10]) {
+      expect(
+          tester
+              .widget<ScheduleChoiceChip>(find.byKey(Key('routine_mist_$sec')))
+              .selected,
+          isFalse,
+          reason: '$sec초');
+    }
+    await tester.tap(find.byKey(const Key('routine_mist_5')));
+    await tester.pump();
+    await _save(tester);
+    final patch = repo.calls.firstWhere((c) => c.startsWith('patch:a'));
+    expect(patch, contains('duration_ms: 5000'));
   });
 
   test('addSpan: weekly + 자정 넘김이면 off 요일이 하루 밀린다', () async {

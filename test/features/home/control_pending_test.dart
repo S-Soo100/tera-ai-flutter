@@ -192,7 +192,7 @@ void main() {
         .read(controlPendingProvider(kTestDeviceId).notifier)
         .begin(ScheduleDevice.fan, true);
     unawaited(sendMistWith(container, ScaffoldMessenger.of(ctx), kTestDeviceId,
-        MistDuration.threeSeconds,
+        MistDuration.sevenSeconds,
         toastContext: ctx));
     await tester.pump();
     expect(sent, isEmpty);
