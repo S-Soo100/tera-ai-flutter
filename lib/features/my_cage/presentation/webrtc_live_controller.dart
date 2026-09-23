@@ -317,6 +317,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   String? _lastNetwork; // 마지막 신호
   String? _netApplied; // 연결에 반영한 망(기준선)
   bool _waitingNetwork = false; // 망 없음으로 재시도를 멈춘 상태
+  bool _sawNoNetwork = false; // 망 없음을 본 뒤 아직 복귀를 처리하지 않음
 
   /// 망 변경 후 프레임 진행을 기다리는 남은 틱 — 재생 감시가 소비한다.
   int? _netGraceTicks;
@@ -327,6 +328,18 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   void _scheduleReconnect(int gen) {
     if (!_isCurrent(gen)) return;
     _reconnectTimer?.cancel();
+    if (_isNoNetwork(_lastNetwork) && _netApplied != null) {
+      // 폰 망 자체가 없다 — 카메라 탓으로 그리지 않고 복구 신호를 기다린다.
+      // 카메라 오프라인보다 **먼저** 본다: 폰이 오프라인이면 카메라 목록은 낡은
+      // 값이라 믿을 수 없다(2026-09-24 S21+ 실측: 폰 망 끊김에 "카메라가
+      // 오프라인이에요"가 떴다).
+      _waitingNetwork = true;
+      state = state.copyWith(
+          phase: WebRtcLivePhase.failed,
+          errorKey: 'crecam_live_error_no_network');
+      _diag('wait-network');
+      return;
+    }
     if (_cameraOffline()) {
       // 꺼진 카메라에 무한히 offer를 보내 봐야 매번 15초 무응답이다.
       _waitingOnline = true;
@@ -334,15 +347,6 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
           phase: WebRtcLivePhase.failed,
           errorKey: 'crecam_live_error_camera_offline');
       _diag('wait-online');
-      return;
-    }
-    if (_isNoNetwork(_lastNetwork) && _netApplied != null) {
-      // 망 자체가 없다 — 카메라 탓으로 그리지 않고 복구 신호를 기다린다.
-      _waitingNetwork = true;
-      state = state.copyWith(
-          phase: WebRtcLivePhase.failed,
-          errorKey: 'crecam_live_error_no_network');
-      _diag('wait-network');
       return;
     }
     final Duration delay;
@@ -411,14 +415,21 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (_suspended || _disposed) return;
     final now = _lastNetwork;
     if (_isNoNetwork(now)) {
+      _sawNoNetwork = true;
       _diag('network-none');
       return; // 기준선은 그대로 — 돌아오면 그때 비교한다
     }
-    if (_waitingNetwork) {
+    if (_waitingNetwork || _sawNoNetwork) {
+      // 폰 망이 끊겼다 돌아왔다 — 같은 Wi-Fi여도 "변경 없음"으로 넘기지 않는다.
+      // 끊긴 사이 카메라 온라인 알림(Realtime)을 놓쳤을 수 있어 카메라 오프라인
+      // 대기에 갇힐 수 있다(2026-09-24 실측: 수동 "다시 연결"이 필요했다).
+      // 영상이 아직 흐르면 건드리지 않는다 — 정지 감시가 판단한다.
+      final wasWaiting = _waitingNetwork || _waitingOnline;
       _waitingNetwork = false;
+      _sawNoNetwork = false;
       _netApplied = now;
       _diag('network-back', {'to': now});
-      _reconnectNow('network-back');
+      if (wasWaiting || !state.phase.hasVideo) _reconnectNow('network-back');
       return;
     }
     if (_netApplied == null) {

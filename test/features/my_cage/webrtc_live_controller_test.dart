@@ -752,6 +752,46 @@ void main() {
     await h.dispose();
   });
 
+  // ── S21+ 실기기 망 끊김 시험(2026-09-24) ─────────────────────────────
+
+  testWidgets('휴대폰 망이 없으면 카메라 목록이 오프라인이어도 "인터넷 없음"으로 안내한다',
+      (tester) async {
+    final h = _Harness();
+    h.cameras.add([_camera(online: false)]); // 망 끊긴 사이 낡은 목록
+    h.network.add('wifi');
+    await _stream(tester, h);
+    h.network.add('none');
+    await tester.pump(kWebRtcNetworkDebounce);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.errorKey, 'crecam_live_error_no_network',
+        reason: '폰 문제를 카메라 탓으로 안내하면 안 된다');
+    // 같은 Wi-Fi로 돌아오면 버튼 없이 곧바로 다시 붙는다.
+    h.network.add('wifi');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    await h.dispose();
+  });
+
+  testWidgets('카메라 오프라인 대기 중에도 폰 망이 끊겼다 돌아오면 한 번 다시 붙는다',
+      (tester) async {
+    final h = _Harness();
+    h.cameras.add([_camera(online: false)]);
+    h.network.add('wifi');
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.state.errorKey, 'crecam_live_error_camera_offline');
+    // 폰이 잠깐 오프라인 — 그동안 카메라 온라인 알림(Realtime)을 놓칠 수 있다.
+    h.network.add('none');
+    await tester.pump(kWebRtcNetworkDebounce);
+    h.network.add('wifi');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2), reason: '같은 Wi-Fi로 돌아와도 갇히면 안 된다');
+    await h.dispose();
+  });
+
   // ── 연결 결과 기록(webrtc_connect_logs, 2026-09-23) ─────────────────────
 
   testWidgets('기록 — 첫 프레임에 streaming 행, 화면을 떠나면 closed 행', (tester) async {
