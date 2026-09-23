@@ -8,10 +8,11 @@ import '../my_cage_providers.dart';
 /// 사육장 설정 — 현재 세트 카메라의 "화면 뒤집기(180°)" 토글
 /// (설치 방향 보정, 회신 2026-09-08).
 ///
-/// 노출 조건: 현재 세트에 카메라가 있고 `capabilities.rotate_180`을 보고한
-/// 신 펌웨어일 때만. 구 펌웨어·카메라 없음은 **타일째 숨김** — 계약(회신 §4)
-/// 이 "토글 미노출"이고, 기능이 아예 없는 기기라 회색 비활성으로 이유를
-/// 밝힐 대상도 아니다(LED dimmable 슬라이더와 같은 문법).
+/// 노출: **항상 표시**(2026-09-23 사용자 지시 — 라이브 확대 화면 버튼과 동일).
+/// 구 계약(회신 §4 "capabilities 미보고면 토글 미노출")을 사용자 결정으로
+/// 대체했다. `capabilities.rotate_180` 미보고 구 펌웨어도 토글은 PATCH를
+/// 보낸다(펌웨어가 무시할 수 있음). 현재 세트에 카메라가 없으면 비활성 +
+/// 이유 부제로 둔다(누를 대상이 없다).
 ///
 /// 쓰기는 REST `PATCH /cameras/{id}` 하나 — 서버가 MQTT 발행·재연결 동기화를
 /// 책임지므로 앱은 ack를 기다리지 않는다. 반영은 cameras Realtime UPDATE →
@@ -88,8 +89,15 @@ class _CameraRotateTileState extends ConsumerState<CameraRotateTile> {
   @override
   Widget build(BuildContext context) {
     final camera = ref.watch(currentSetProvider).valueOrNull?.camera;
-    if (camera == null || !camera.rotate180Capable) {
-      return const SizedBox.shrink();
+    if (camera == null) {
+      return SwitchListTile(
+        key: CameraRotateTile.tileKey,
+        secondary: const Icon(Icons.flip_camera_android_outlined),
+        title: Text('camera_rotate_title'.tr()),
+        subtitle: Text('camera_rotate_no_camera'.tr()),
+        value: false,
+        onChanged: null,
+      );
     }
     // 서버 값이 낙관적 표시를 따라잡았으면 정리 (build 중 setState 금지 —
     // 다음 빌드도 같은 값을 그리므로 필드만 내려놓으면 된다).

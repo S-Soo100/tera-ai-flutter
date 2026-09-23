@@ -126,14 +126,26 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('구 펌웨어(미보고) → 타일째 숨김(회신 §4)', (tester) async {
-      await _pump(tester, camera: _camera(capable: false));
-      expect(find.byKey(CameraRotateTile.tileKey), findsNothing);
+    // 2026-09-23 사용자 지시 — 타일은 항상 보인다(구 회신 §4 숨김 대체).
+    testWidgets('구 펌웨어(미보고) → 타일 노출 + PATCH 호출', (tester) async {
+      final repo = _FakeCameraRepo();
+      await _pump(tester, camera: _camera(capable: false), repo: repo);
+      expect(find.byKey(CameraRotateTile.tileKey), findsOneWidget);
+      await tester.tap(find.byKey(CameraRotateTile.tileKey));
+      await tester.pumpAndSettle();
+      expect(repo.calls, [('cam-uuid-1', true)]);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
     });
 
-    testWidgets('세트에 카메라 없음 → 숨김', (tester) async {
-      await _pump(tester, camera: null);
-      expect(find.byKey(CameraRotateTile.tileKey), findsNothing);
+    testWidgets('세트에 카메라 없음 → 비활성 타일 + 이유 부제', (tester) async {
+      final repo = _FakeCameraRepo();
+      await _pump(tester, camera: null, repo: repo);
+      expect(find.byKey(CameraRotateTile.tileKey), findsOneWidget);
+      expect(find.text('camera_rotate_no_camera'), findsOneWidget);
+      await tester.tap(find.byKey(CameraRotateTile.tileKey));
+      await tester.pumpAndSettle();
+      expect(repo.calls, isEmpty);
     });
   });
 
