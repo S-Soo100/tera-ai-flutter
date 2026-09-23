@@ -156,7 +156,7 @@ void main() {
     await _flush(tester);
   });
 
-  testWidgets('분무 — 전원 행 없이 분사 시간 칩(5/7/10초, 기본 7초) + CTA',
+  testWidgets('분무 — 전원 행 없이 분사 시간 칩(5/10초, 기본 5초) + CTA',
       (tester) async {
     final sent = await _pump(tester, ScheduleDevice.mist);
     expect(find.byKey(DeviceControlSheet.powerRowKey), findsNothing);
@@ -165,7 +165,7 @@ void main() {
     for (final d in MistDuration.values) {
       final chip = tester.widget<ScheduleChoiceChip>(
           find.byKey(DeviceControlSheet.mistChipKey(d)));
-      expect(chip.selected, d == MistDuration.sevenSeconds, reason: '$d');
+      expect(chip.selected, d == MistDuration.fiveSeconds, reason: '$d');
     }
     // 칩은 선택만 — 송신은 CTA뿐.
     await tester.tap(find.byKey(DeviceControlSheet.mistChipKey(
@@ -263,7 +263,7 @@ void main() {
     await _flush(tester);
   });
 
-  testWidgets('분무 — 실행 취소하면 안 보내고, 창이 지나면 기본 mist 7000ms', (tester) async {
+  testWidgets('분무 — 실행 취소하면 안 보내고, 창이 지나면 기본 mist 5000ms', (tester) async {
     final sent = await _pump(tester, ScheduleDevice.mist);
     await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
     await tester.pump();
@@ -274,8 +274,8 @@ void main() {
     await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
     await tester.pump(kMistUndoWindow + const Duration(milliseconds: 100));
     expect(sent.single.$1, CommandAction.mist);
-    expect(sent.single.$2, {'duration_ms': 7000});
-    await tester.pump(const Duration(seconds: 10)); // 잠금 타이머(7+2초)
+    expect(sent.single.$2, {'duration_ms': 5000});
+    await tester.pump(const Duration(seconds: 8)); // 잠금 타이머(5+2초)
     await _flush(tester);
   });
 

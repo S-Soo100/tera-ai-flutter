@@ -33,8 +33,6 @@ void main() {
     test('분사 시간 + 2초 동안 잠근다 — 10초 분무 중 다시 누를 수 없다', () {
       expect(MistLock.lockFor(MistDuration.fiveSeconds),
           const Duration(seconds: 7));
-      expect(MistLock.lockFor(MistDuration.sevenSeconds),
-          const Duration(seconds: 9));
       final lock = MistLock.startingAt(DateTime(2026, 9, 23, 12),
           mist: MistDuration.tenSeconds);
       expect(lock.isLocked(DateTime(2026, 9, 23, 12, 0, 11)), isTrue);

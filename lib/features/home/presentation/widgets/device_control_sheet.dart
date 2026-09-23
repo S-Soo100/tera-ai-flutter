@@ -120,7 +120,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   FanTimerDuration? _fanChoice;
   bool _fanChoiceSeeded = false;
 
-  /// 분무 분사 시간 — 직전 선택(미저장이면 7초).
+  /// 분무 분사 시간 — 직전 선택(미저장이면 5초).
   late MistDuration _mistChoice =
       ref.read(mistChoiceStoreProvider).load(widget.deviceId);
   double _brightness = 60;

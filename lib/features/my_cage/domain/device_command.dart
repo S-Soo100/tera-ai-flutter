@@ -3,7 +3,7 @@
 // ── CommandAction ─────────────────────────────────────────────────────────────
 
 enum CommandAction {
-  /// 물분무. `payload.duration_ms`(앱 선택 5000/7000/10000 — 옛 예약은
+  /// 물분무. `payload.duration_ms`(앱 선택 5000/10000 — 옛 예약은
   /// 1000/2000/3000, `MistDuration`)만큼 켜고 **펌웨어가 자동으로 끈다** — OFF 명령을 따로 보내면 안 된다(`APP_TIMER_MIST.md` §1).
   mist,
 

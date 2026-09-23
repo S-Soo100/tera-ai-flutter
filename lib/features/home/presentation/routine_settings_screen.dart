@@ -373,7 +373,7 @@ String scheduleRepeatLabel(ScheduleKind kind, List<int> daysOfWeek) {
   return ([...daysOfWeek]..sort()).map((d) => 'routine_day_$d'.tr()).join(' ');
 }
 
-/// 분무는 시각 + 분사 시간("12:00 7초" — 2026-09-23 5/7/10초 선택 도입으로
+/// 분무는 시각 + 분사 시간("12:00 5초" — 2026-09-23 5/10초 선택 도입으로
 /// 원본 1106:5317의 시각만 문법에 초를 붙였다. 옛 1/2/3초 예약도 저장값 그대로
 /// 보인다), 냉각팬 duration 예약(fan2_on + duration_ms)은 "12:00~12:30", 그 외
 /// 켜기/끄기·레거시 동작은 시각 뒤에 동작 이름을 붙여야 같은 아이콘의

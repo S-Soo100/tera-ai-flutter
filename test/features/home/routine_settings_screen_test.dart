@@ -246,9 +246,9 @@ void main() {
     expect(repo.calls.where((c) => c.startsWith('create:')).toList(),
         ['create:mist:12:00:d=']);
     expect(repo.pairIds, [null]);
-    // 새 분무 예약은 기본 7초.
+    // 새 분무 예약은 기본 5초.
     expect(repo.payloads, [
-      {'duration_ms': 7000}
+      {'duration_ms': 5000}
     ]);
   });
 
@@ -564,7 +564,7 @@ void main() {
     expect(patch, contains('duration_ms: 2000'));
   });
 
-  testWidgets('옛 2초 분무 예약 — 칩 미선택으로 열리고, 5초를 고르면 5000으로 바뀐다',
+  testWidgets('옛 2초 분무 예약 — 칩 미선택으로 열리고, 10초를 고르면 10000으로 바뀐다',
       (tester) async {
     final repo = _FakeRepo(items: [_schedule(id: 'a', hour: 8)]);
     await _pump(tester, repo);
@@ -572,7 +572,7 @@ void main() {
     expect(find.text('08:00 home_mist_seconds'), findsOneWidget);
     await tester.tap(find.byKey(const Key('schedule_a')));
     await tester.pumpAndSettle();
-    for (final sec in [5, 7, 10]) {
+    for (final sec in [5, 10]) {
       expect(
           tester
               .widget<ScheduleChoiceChip>(find.byKey(Key('routine_mist_$sec')))
@@ -580,11 +580,11 @@ void main() {
           isFalse,
           reason: '$sec초');
     }
-    await tester.tap(find.byKey(const Key('routine_mist_5')));
+    await tester.tap(find.byKey(const Key('routine_mist_10')));
     await tester.pump();
     await _save(tester);
     final patch = repo.calls.firstWhere((c) => c.startsWith('patch:a'));
-    expect(patch, contains('duration_ms: 5000'));
+    expect(patch, contains('duration_ms: 10000'));
   });
 
   test('addSpan: weekly + 자정 넘김이면 off 요일이 하루 밀린다', () async {

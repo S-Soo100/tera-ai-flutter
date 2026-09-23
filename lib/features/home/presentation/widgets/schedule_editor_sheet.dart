@@ -229,7 +229,7 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
   int? _coolMinutes;
   late final Set<int> _days;
 
-  /// 분무 예약의 분사 시간. 새 예약은 7초. 옛 1/2/3초 예약을 열면 null(칩
+  /// 분무 예약의 분사 시간. 새 예약은 5초. 옛 1/2/3초 예약을 열면 null(칩
   /// 미선택)이고 저장값을 그대로 둔다 — 고르기 전엔 원본에 없는 값을 만들어
   /// 넣지 않는다(2026-09-23).
   MistDuration? _mistChoice;
@@ -387,8 +387,8 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
               onChanged: () => _update(() {}))),
       if (_isMistPoint) ...[
         const SizedBox(height: 24),
-        // 냉각팬 종료 칩과 같은 3칸 행(111×44, 간격 6) — 두 편집기가 같은
-        // 자리에 칩과 반복을 둔다.
+        // 냉각팬 종료 칩과 같은 행(높이 44, 간격 6, y310) — 두 편집기가 같은
+        // 자리에 칩과 반복을 둔다. 칩은 2개라 반씩 나눈다.
         ScheduleSection(
             label: 'home_mist_duration_label'.tr(),
             gap: 8,

@@ -21,21 +21,23 @@ void main() {
 
   const store = HiveMistChoiceStore();
 
-  test('미저장 기본은 7초', () {
-    expect(store.load('d1'), MistDuration.sevenSeconds);
+  test('미저장 기본은 5초', () {
+    expect(store.load('d1'), MistDuration.fiveSeconds);
   });
 
   test('저장 → 그대로 재현, 기기별 분리', () async {
     await store.save('d1', MistDuration.tenSeconds);
     expect(store.load('d1'), MistDuration.tenSeconds);
-    expect(store.load('d2'), MistDuration.sevenSeconds);
+    expect(store.load('d2'), MistDuration.fiveSeconds);
   });
 
-  test('손상·옛 값(3초)은 기본 7초로', () async {
+  test('손상·옛 값(3초·빠진 7초)은 기본 5초로', () async {
     final box = Hive.box<dynamic>(HiveMistChoiceStore.boxName);
     await box.put(HiveMistChoiceStore.keyFor('d1'), 'garbage');
-    expect(store.load('d1'), MistDuration.sevenSeconds);
+    expect(store.load('d1'), MistDuration.fiveSeconds);
     await box.put(HiveMistChoiceStore.keyFor('d1'), 3000);
-    expect(store.load('d1'), MistDuration.sevenSeconds);
+    expect(store.load('d1'), MistDuration.fiveSeconds);
+    await box.put(HiveMistChoiceStore.keyFor('d1'), 7000);
+    expect(store.load('d1'), MistDuration.fiveSeconds);
   });
 }

@@ -5,7 +5,7 @@ import '../domain/mist_duration.dart';
 /// 분무 "직전 분사 시간" 저장소 — 시트를 다시 열면 마지막으로 고른 칩이
 /// 선택돼 있다. [FanChoiceStore]와 같은 Widget → Provider → Repository 체인.
 ///
-/// **미저장 기본은 7초**(2026-09-23 사용자 결정) — load가 기본값까지 책임진다.
+/// **미저장 기본은 5초**(2026-09-23 사용자 결정) — load가 기본값까지 책임진다.
 abstract class MistChoiceStore {
   /// [deviceId] 기기의 직전 선택. 저장된 적 없으면 [MistDuration.defaultValue].
   MistDuration load(String deviceId);

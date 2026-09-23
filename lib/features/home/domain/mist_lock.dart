@@ -17,7 +17,7 @@ class MistLock {
   static const tail = Duration(seconds: 2);
 
   /// [mist] 분사 동안은 잠근다 — 10초 분무 중 5초 만에 다시 누를 수 있으면
-  /// 기기가 `busy`로 거절한다(2026-09-23, 분사 시간 5/7/10초 도입).
+  /// 기기가 `busy`로 거절한다(2026-09-23, 분사 시간 5/10초 도입).
   static Duration lockFor(MistDuration? mist) {
     final spray = Duration(milliseconds: mist?.milliseconds ?? 0) + tail;
     return spray > duration ? spray : duration;
