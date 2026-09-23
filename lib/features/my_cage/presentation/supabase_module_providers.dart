@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/supabase/realtime_binding.dart';
+import '../../../core/supabase/resilient_channel.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../wiki/data/care_info_repository.dart';
@@ -75,40 +78,78 @@ final currentDeviceProvider = FutureProvider.autoDispose<Device?>((ref) async {
 
 /// `deviceId` family: 해당 디바이스의 telemetry INSERT를 실시간으로 수신.
 /// 진입 시 latestTelemetry()로 시드하고, 이후 INSERT 이벤트로 갱신.
+///
+/// 구독이 조용히 죽는 경우를 앱이 스스로 복구한다(2026-09-24 S21+ 실측 — 폰
+/// Wi-Fi를 껐다 켠 뒤 기기는 3초마다 DB에 쓰는데 앱만 40분간 못 받았다):
+/// - 구독 오류·망 복귀·앱 복귀 → 채널 재생성, 재합류하면 최신값 재조회
+/// - [telemetryStaleThreshold] 동안 값이 안 오면 REST로 최신값을 확인해
+///   **서버엔 새 값이 있는데 못 받은 것**이면 그 값을 흘리고 채널을 다시 만든다.
+///   서버도 새 값이 없으면(기기가 정말 조용함) 채널은 건드리지 않는다.
 final telemetryStreamProvider = StreamProvider.autoDispose
     .family<TelemetryReading?, String>((ref, deviceId) {
   final supabase = ref.watch(supabaseClientProvider);
   final repo = ref.watch(supabaseModuleControlRepositoryProvider);
 
   final controller = StreamController<TelemetryReading?>();
+  TelemetryReading? last;
+  late final SilenceProbe probe;
 
-  // 최신값 seed (에러는 무시 — 스트림은 Realtime으로만 유지)
-  repo.latestTelemetry(deviceId).then((t) {
-    if (!controller.isClosed && t != null) controller.add(t);
-  }).catchError((_) {});
+  void emit(TelemetryReading t) {
+    if (controller.isClosed) return;
+    last = t;
+    probe.onEvent();
+    controller.add(t);
+  }
 
-  final channel = supabase.channel('telemetry-$deviceId');
-  channel
-      .onPostgresChanges(
-        event: PostgresChangeEvent.insert,
-        schema: 'public',
-        table: 'telemetry',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'device_id',
-          value: deviceId,
-        ),
-        callback: (payload) {
-          if (!controller.isClosed) {
-            controller.add(TelemetryReading.fromJson(payload.newRecord));
-          }
-        },
-      )
-      .subscribe();
+  /// REST 최신값. 받은 것보다 새로우면 흘리고 true.
+  Future<bool> pullLatest() async {
+    try {
+      final t = await repo.latestTelemetry(deviceId);
+      if (t == null) return false;
+      final prev = last?.ts;
+      final newer = prev == null || (t.ts != null && t.ts!.isAfter(prev));
+      if (newer) emit(t);
+      return newer;
+    } catch (_) {
+      return false; // 망 없음 등 — 다음 주기에 다시 본다
+    }
+  }
+
+  final channel = bindResilientChannel(
+    ref,
+    supabase: supabase,
+    name: 'telemetry-$deviceId',
+    configure: (c) => c.onPostgresChanges(
+      event: PostgresChangeEvent.insert,
+      schema: 'public',
+      table: 'telemetry',
+      filter: PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'device_id',
+        value: deviceId,
+      ),
+      callback: (payload) => emit(TelemetryReading.fromJson(payload.newRecord)),
+    ),
+    // 끊긴 사이 빠진 값 — 재합류하면 최신값부터 다시 맞춘다.
+    onRejoined: () => unawaited(pullLatest()),
+  );
+
+  probe = SilenceProbe(
+    interval: telemetryStaleThreshold,
+    onSilent: () async {
+      final hadMissed = last != null && await pullLatest();
+      if (hadMissed && !controller.isClosed) {
+        debugPrint('[realtime] telemetry-$deviceId missed INSERT — rebuild');
+        unawaited(channel.restart('silent-but-server-has-new'));
+      }
+    },
+  )..start();
+
+  // 최신값 seed (에러는 무시 — 이후는 Realtime + 무소식 확인으로 유지)
+  unawaited(pullLatest());
 
   ref.onDispose(() {
-    // ignore: discarded_futures
-    supabase.removeChannel(channel);
+    probe.dispose();
     controller.close();
   });
 
@@ -199,25 +240,23 @@ final commandUpdatesProvider = StreamProvider.autoDispose<DeviceCommand>((ref) {
   final supabase = ref.watch(supabaseClientProvider);
   final controller = StreamController<DeviceCommand>();
 
-  final channel = supabase.channel('commands-rt');
-  channel
-      .onPostgresChanges(
-        event: PostgresChangeEvent.update,
-        schema: 'public',
-        table: 'commands',
-        callback: (payload) {
-          if (!controller.isClosed) {
-            controller.add(DeviceCommand.fromJson(payload.newRecord));
-          }
-        },
-      )
-      .subscribe();
+  bindResilientChannel(
+    ref,
+    supabase: supabase,
+    name: 'commands-rt',
+    configure: (c) => c.onPostgresChanges(
+      event: PostgresChangeEvent.update,
+      schema: 'public',
+      table: 'commands',
+      callback: (payload) {
+        if (!controller.isClosed) {
+          controller.add(DeviceCommand.fromJson(payload.newRecord));
+        }
+      },
+    ),
+  );
 
-  ref.onDispose(() {
-    // ignore: discarded_futures
-    supabase.removeChannel(channel);
-    controller.close();
-  });
+  ref.onDispose(controller.close);
 
   return controller.stream;
 });
