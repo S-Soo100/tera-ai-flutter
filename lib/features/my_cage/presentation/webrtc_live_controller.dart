@@ -26,7 +26,27 @@ enum WebRtcLivePhase {
   /// ICE는 붙었고 첫 영상 프레임을 기다리는 중(키프레임 대기).
   waitingVideo,
   streaming,
+
+  /// 재생 중 디코딩이 [kWebRtcSoftStallTicks]초 멈춤 — renderer는 살아 있어
+  /// 마지막 장면이 남고, 위에 "잠시 멈췄어요" 안내를 얹는다.
+  stalled,
+
+  /// 실패 뒤 집중 복구 예산([kWebRtcRecoveryBudget]) 안의 자동 재시도 대기.
+  /// 사용자에게 버튼을 요구하지 않는다.
+  recovering,
+
+  /// 집중 복구 예산 소진·카메라 오프라인·망 없음·인증 실패. "다시 연결" 버튼이
+  /// 있고 저빈도([kWebRtcLowRetryInterval]) 자동 재시도만 돈다.
   failed,
+}
+
+extension WebRtcLivePhaseX on WebRtcLivePhase {
+  /// 영상 면을 그릴 renderer가 있는 단계.
+  bool get hasVideo =>
+      this == WebRtcLivePhase.streaming || this == WebRtcLivePhase.stalled;
+
+  /// 연결 시퀀스 진행 중(config~첫 프레임 대기).
+  bool get isConnecting => index <= WebRtcLivePhase.waitingVideo.index;
 }
 
 class WebRtcLiveState {
@@ -34,10 +54,15 @@ class WebRtcLiveState {
   final String? errorKey; // ko.json 키
   final RTCVideoRenderer? renderer;
 
+  /// 재생 중 통계를 [kWebRtcStatsUnknownTicks]초 연속 못 읽음 — 영상은 나올 수
+  /// 있으니 가리지 않고, "영상 상태 확인 중"만 얹는다.
+  final bool statsUnknown;
+
   const WebRtcLiveState({
     required this.phase,
     this.errorKey,
     this.renderer,
+    this.statsUnknown = false,
   });
 
   WebRtcLiveState copyWith({
@@ -45,11 +70,13 @@ class WebRtcLiveState {
     String? errorKey,
     bool clearError = false,
     RTCVideoRenderer? renderer,
+    bool? statsUnknown,
   }) {
     return WebRtcLiveState(
       phase: phase ?? this.phase,
       errorKey: clearError ? null : (errorKey ?? this.errorKey),
       renderer: renderer ?? this.renderer,
+      statsUnknown: statsUnknown ?? this.statsUnknown,
     );
   }
 }
@@ -141,6 +168,38 @@ const kWebRtcUnresponsiveRetryDelay = Duration(seconds: 2);
 /// 첫 화면까지 ~18초가 실측됐다(메모리 webrtc_first_frame_keyframe_gap) — 그보다
 /// 넉넉히 둔다. 넘기면 영상 없는 연결로 보고 다시 붙인다.
 const kWebRtcFirstFrameTimeout = Duration(seconds: 30);
+
+/// 재생 중 통계 샘플 주기. getStats는 겹치지 않게 호출한다(busy 가드).
+const kWebRtcStatsInterval = Duration(seconds: 1);
+
+/// 디코딩 프레임이 이 틱만큼 연속 그대로면 `stalled`(안내만, 연결 유지).
+/// GOP 15/6fps = 키프레임 2.5초라 3초면 정상 손실에도 깜빡인다(기획 §11.3).
+const kWebRtcSoftStallTicks = 5;
+
+/// 이 틱만큼 연속 그대로면 재연결. 시각이 아니라 틱으로 세는 이유: 테스트의
+/// 가짜 시계는 Timer만 흘린다(기획 §11.3).
+const kWebRtcHardStallTicks = 15;
+
+/// 통계를 이 틱만큼 연속 못 읽으면 `statsUnknown`(연결은 끊지 않는다).
+const kWebRtcStatsUnknownTicks = 10;
+
+/// 첫 프레임 뒤 이 시간 동안 `streaming`이 유지돼야 백오프·복구 예산을 초기화.
+const kWebRtcStableAfter = Duration(seconds: 30);
+
+/// 개별 연결 시도(config 수신~첫 프레임) 전체 예산. ICE 연결 단계엔 다른
+/// 한도가 없어 이것이 유일한 상한이다(기획 §11.2).
+const kWebRtcAttemptBudget = Duration(seconds: 60);
+
+/// 시청 진입·끊김 뒤 자동 복구를 `recovering`으로 조용히 반복하는 예산.
+/// 넘기면 `failed`(버튼) + 저빈도 재시도.
+const kWebRtcRecoveryBudget = Duration(seconds: 90);
+const kWebRtcLowRetryInterval = Duration(seconds: 60);
+
+/// connectivity_plus 신호 합치기 창.
+const kWebRtcNetworkDebounce = Duration(seconds: 1);
+
+/// 망 신호가 바뀌어도 프레임이 이 틱 안에 진행하면 연결을 유지한다.
+const kWebRtcNetworkFrameGraceTicks = 3;
 
 /// 재생 중 멈춤 감시 주기와 허용 횟수 — 디코딩 프레임 수가 3회 연속(15초)
 /// 그대로면 얼어붙은 화면으로 보고 다시 붙인다.

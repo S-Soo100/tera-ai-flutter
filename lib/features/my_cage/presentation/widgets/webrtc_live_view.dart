@@ -45,9 +45,12 @@ class WebRtcLiveView extends ConsumerWidget {
       WebRtcLivePhase.waitingVideo => _ConnectingView(
           labelKey: 'crecam_live_phase_video',
         ),
-      WebRtcLivePhase.streaming => _StreamingView(
+      WebRtcLivePhase.streaming || WebRtcLivePhase.stalled => _StreamingView(
           renderer: state.renderer!,
           cover: cover,
+        ),
+      WebRtcLivePhase.recovering => _ConnectingView(
+          labelKey: 'crecam_live_phase_config',
         ),
       WebRtcLivePhase.failed => _FailedView(
           errorKey: state.errorKey ?? 'crecam_live_error_failed',
