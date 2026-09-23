@@ -76,14 +76,16 @@ class _CameraLiveFullscreenScreenState
 
   @override
   Widget build(BuildContext context) {
-    // 회전 버튼 게이팅 — capabilities 보고 카메라만(환경설정 타일과 동일
-    // 문법). camerasProvider는 Realtime이라 rotate_180 현재값도 따라온다.
+    // 회전 버튼은 세로·가로 어느 쪽이든 **항상 표시**한다(2026-09-23 사용자
+    // 지시 — capabilities 미보고 구 펌웨어·카메라 목록 로딩 중에도 숨기지
+    // 않는다). 환경설정 타일의 capabilities 게이팅과는 의도적으로 다르다.
+    // 카메라 행을 아직 못 읽었으면 현재값을 몰라 비활성으로만 둔다.
+    // camerasProvider는 Realtime이라 rotate_180 현재값도 따라온다.
     final camera = ref
         .watch(camerasProvider)
         .valueOrNull
         ?.where((c) => c.id == widget.cameraId)
         .firstOrNull;
-    final rotatable = camera != null && camera.rotate180Capable;
     final landscape = ref.watch(playerOrientationProvider(_orientationKey));
     final rotateBusy = ref.watch(_liveRotateBusyProvider(widget.cameraId));
 
@@ -97,17 +99,15 @@ class _CameraLiveFullscreenScreenState
             closeButton: true,
             leadingKey: CameraLiveFullscreenScreen.closeButtonKey,
             title: camera?.name ?? 'camera_live'.tr(),
-            trailing: rotatable
-                ? IconButton(
-                    key: CameraLiveFullscreenScreen.rotateButtonKey,
-                    tooltip: 'camera_rotate_title'.tr(),
-                    onPressed: rotateBusy
-                        ? null
-                        : () => _toggleRotate(camera.id, !camera.rotate180),
-                    icon: Icon(Icons.flip_camera_android_outlined,
-                        color: glass.textPrimary),
-                  )
-                : null,
+            trailing: IconButton(
+              key: CameraLiveFullscreenScreen.rotateButtonKey,
+              tooltip: 'camera_rotate_title'.tr(),
+              onPressed: rotateBusy || camera == null
+                  ? null
+                  : () => _toggleRotate(camera.id, !camera.rotate180),
+              icon: Icon(Icons.flip_camera_android_outlined,
+                  color: glass.textPrimary),
+            ),
           )),
           Expanded(
               child: SafeArea(
@@ -194,25 +194,24 @@ class _CameraLiveFullscreenScreenState
             )),
             // 우상단 화면 뒤집기(180°) — 닫기의 반대편(2026-09-09 사용자
             // 지시: 거꾸로 보이는 걸 알아채는 곳이 바로 이 화면이다).
-            // capabilities 미보고 카메라는 숨김(환경설정 타일과 동일 계약).
+            // 항상 표시(2026-09-23 사용자 지시 — 위 build 주석 참조).
             // 탭 → PATCH + 재부팅 예고 스낵바, 라이브는 끊겼다 자동 재연결.
-            if (rotatable)
-              SafeArea(
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: _ScrimCircleButton(
-                      key: CameraLiveFullscreenScreen.rotateButtonKey,
-                      icon: Icons.flip_camera_android_outlined,
-                      tooltip: 'camera_rotate_title'.tr(),
-                      onTap: rotateBusy
-                          ? null
-                          : () => _toggleRotate(camera.id, !camera.rotate180),
-                    ),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: _ScrimCircleButton(
+                    key: CameraLiveFullscreenScreen.rotateButtonKey,
+                    icon: Icons.flip_camera_android_outlined,
+                    tooltip: 'camera_rotate_title'.tr(),
+                    onTap: rotateBusy || camera == null
+                        ? null
+                        : () => _toggleRotate(camera.id, !camera.rotate180),
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),

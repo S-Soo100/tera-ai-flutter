@@ -263,11 +263,17 @@ void main() {
     ]);
     await tester.pumpAndSettle();
     expect(creates, 1);
+    // 화면 뒤집기 버튼은 capabilities 미보고 카메라여도 항상 보인다
+    // (2026-09-23 사용자 지시) — 세로·가로 둘 다.
+    expect(find.byKey(CameraLiveFullscreenScreen.rotateButtonKey),
+        findsOneWidget);
     await tester.tap(find.byKey(const Key('live_fullscreen_orientation')));
     await tester.binding.setSurfaceSize(const Size(852, 393));
     await tester.pumpAndSettle();
     expect(creates, 1);
     expect(tester.takeException(), isNull);
+    expect(find.byKey(CameraLiveFullscreenScreen.rotateButtonKey),
+        findsOneWidget);
     await tester.tap(find.byKey(const Key('live_fullscreen_orientation')));
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await tester.pumpAndSettle();

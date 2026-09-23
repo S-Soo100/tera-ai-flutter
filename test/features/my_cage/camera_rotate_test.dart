@@ -7,7 +7,11 @@ import 'package:vivanaut/features/my_cage/data/camera_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_screen.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/camera_rotate_tile.dart';
+import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
+
+import '../../helpers/inert_live_controller.dart';
 
 /// 회전 계약(회신 2026-09-08) — 모델 파싱 + 토글 노출/호출.
 
@@ -131,5 +135,40 @@ void main() {
       await _pump(tester, camera: null);
       expect(find.byKey(CameraRotateTile.tileKey), findsNothing);
     });
+  });
+
+  group('CameraLiveFullscreenScreen 화면 뒤집기 버튼', () {
+    // 2026-09-23 사용자 지시 — 라이브 확대 화면에서는 capabilities와
+    // 무관하게 항상 보인다(환경설정 타일 게이팅과 의도적으로 다름).
+    Future<void> pumpLive(WidgetTester tester, TerraCamera camera,
+        _FakeCameraRepo repo) async {
+      await tester.binding.setSurfaceSize(const Size(393, 852));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          camerasProvider.overrideWith((ref) => Stream.value([camera])),
+          cameraRepositoryProvider.overrideWithValue(repo),
+          webrtcLiveControllerProvider
+              .overrideWith((ref, id) => InertLiveController(ref, id)),
+        ],
+        child: MaterialApp(
+            home: CameraLiveFullscreenScreen(cameraId: camera.id)),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    for (final capable in [true, false]) {
+      testWidgets('capable=$capable → 버튼 노출 + 탭하면 PATCH', (tester) async {
+        final repo = _FakeCameraRepo();
+        await pumpLive(tester, _camera(capable: capable), repo);
+        final button = find.byKey(CameraLiveFullscreenScreen.rotateButtonKey);
+        expect(button, findsOneWidget);
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+        expect(repo.calls, [('cam-uuid-1', true)]);
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
   });
 }
