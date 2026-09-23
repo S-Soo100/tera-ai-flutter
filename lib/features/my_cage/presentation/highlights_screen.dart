@@ -476,8 +476,9 @@ class _Cell extends StatelessWidget {
 
 void _openPlayer(
     BuildContext context, String clipId, List<NightlyHighlight> playlist) {
-  // 재생목록과 함께 클립별 서버 재생 시작점(play_from_sec)을 넘긴다 —
-  // 값이 없는 클립은 0초부터(기존 동작).
+  // 서버 재생 시작점(play_from_sec)은 넘기지 않는다 — 항상 0초부터
+  // (2026-09-24 사용자 결정: GME 감지가 불안정해 움직임 직전으로 건너뛰면
+  // 움직임을 놓친 것처럼 보인다. 파싱·seek 로직은 남겨 두어 복귀는 이 자리).
   final selected = playlist.where((h) => h.clipId == clipId).first;
   final publication = selected.publication;
   final scoped = publication == null
@@ -496,10 +497,6 @@ void _openPlayer(
           ? publication?.batchId
           : null,
       playlist: [for (final h in scoped) h.clipId],
-      playFromSec: {
-        for (final h in scoped)
-          if (h.playFromSec != null) h.clipId: h.playFromSec!,
-      },
     ),
   );
 }
