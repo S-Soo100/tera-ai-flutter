@@ -373,6 +373,14 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (s == AppLifecycleState.paused) unawaited(_suspend());
       if (s == AppLifecycleState.resumed) _resume();
     });
+    // 망 신호 provider는 앱 전역에서 데워져 있다(non-autoDispose) — listen은
+    // 현재 값을 다시 주지 않으므로 기준선을 직접 채운다. 안 하면 나중에 만든
+    // 컨트롤러(카메라 탭·확대)가 첫 전환을 기준선으로 삼켜 재연결하지 않는다.
+    final initial = ref.read(webrtcNetworkSignalProvider).valueOrNull;
+    if (initial != null) {
+      _lastNetwork = initial;
+      if (!_isNoNetwork(initial)) _netApplied = initial;
+    }
     ref.listen<AsyncValue<String>>(webrtcNetworkSignalProvider, (_, next) {
       final now = next.valueOrNull;
       if (now == null) return;
@@ -446,11 +454,14 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _diag('suspend');
     _suspended = true;
     _endAttempt(_gen, null);
-    _gen++;
+    final gen = ++_gen;
     _cancelTimers();
     _recoveryDeadline?.cancel(); // 백그라운드 시간은 세지 않는다
     await _cleanup(closeRemote: true);
-    if (!_disposed) {
+    // close 응답이 늦는 사이(최대 15~30초) 복귀해 새 세대가 재생 중일 수 있다 —
+    // 그때 이 늦은 정리가 새 상태를 덮으면 영상은 흐르는데 화면은 "연결 중"에
+    // 갇힌다(A1).
+    if (!_disposed && _suspended && _gen == gen) {
       state = const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig);
     }
   }
@@ -459,6 +470,9 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (!_suspended || _disposed) return;
     _suspended = false;
     _diag('resume');
+    // 백그라운드 동안의 망 변화는 무시했다 — 지금 붙을 망을 기준선으로 삼는다.
+    // 안 하면 복귀 뒤 같은 신호의 재알림을 "변경"으로 보고 새 시도를 취소한다.
+    if (!_isNoNetwork(_lastNetwork)) _netApplied = _lastNetwork;
     _startRecoveryWindow();
     _reconnectNow('resume');
   }
@@ -968,6 +982,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         if (grace <= 1) {
           _netGraceTicks = null;
           _diag('network-no-progress');
+          // 사용자 이탈(closed)이 아니라 재생 실패다 — 정지율 집계용.
+          _endAttempt(gen, 'stalled');
           _reconnectNow('network');
           return;
         }

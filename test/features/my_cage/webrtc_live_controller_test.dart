@@ -153,8 +153,17 @@ class _FakeSignaling extends Fake implements WebRtcSignalingRepository {
       Map<String, dynamic> candidateJson) async {}
 
   @override
-  Future<void> closeSession(String cameraUuid, String sessionId) async =>
-      closedSessions.add(sessionId);
+  Future<void> closeSession(String cameraUuid, String sessionId) async {
+    closedSessions.add(sessionId);
+    final hold = holdClose;
+    if (hold != null) {
+      holdClose = null; // 다음 close 한 번만 잡는다
+      await hold.future;
+    }
+  }
+
+  /// 다음 closeSession 응답을 테스트가 잡아 둔다(느린 서버 흉내).
+  Completer<void>? holdClose;
 }
 
 TerraCamera _camera({required bool online}) => TerraCamera(
@@ -173,7 +182,9 @@ class _Harness {
   final diag = WebRtcDiagBuffer();
   late final ProviderContainer container;
 
-  _Harness() {
+  /// [start]가 false면 컨트롤러를 아직 만들지 않는다 — 테스트가 다른
+  /// provider를 먼저 데운 뒤 [startController]로 시작한다.
+  _Harness({bool start = true}) {
     container = ProviderContainer(overrides: [
       webrtcSignalingRepositoryProvider.overrideWithValue(signaling),
       webrtcConfigProvider.overrideWith((ref) async => <String, dynamic>{}),
@@ -189,9 +200,12 @@ class _Harness {
       webrtcConnectLogSinkProvider.overrideWithValue(logs.add),
       webrtcDiagBufferProvider.overrideWithValue(diag),
     ]);
-    container.listen(webrtcLiveControllerProvider(_cam), (_, __) {});
+    if (start) startController();
     container.listen(camerasProvider, (_, __) {});
   }
+
+  void startController() =>
+      container.listen(webrtcLiveControllerProvider(_cam), (_, __) {});
 
   WebRtcLiveState get state => container.read(webrtcLiveControllerProvider(_cam));
   _FakePc get pc => pcs.last;
@@ -636,6 +650,105 @@ void main() {
     await _settleConnect(tester);
     h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
     expect(h.state.phase, WebRtcLivePhase.recovering);
+    await h.dispose();
+  });
+
+  // ── 코드 리뷰 지적(2026-09-24) ───────────────────────────────────────
+
+  testWidgets('망 신호가 이미 데워져 있어도 첫 전환에 다시 붙는다', (tester) async {
+    final h = _Harness(start: false);
+    // 홈 라이브가 먼저 떠서 망 신호 provider가 이미 값을 들고 있는 상황.
+    h.container.listen(webrtcNetworkSignalProvider, (_, __) {});
+    h.network.add('wifi');
+    await tester.pump();
+    h.startController();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
+    expect(h.pcs, hasLength(1));
+    h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2), reason: '첫 전환을 기준선으로 삼켜서는 안 된다');
+    await h.dispose();
+  });
+
+  testWidgets('빠른 복귀 뒤 늦게 끝난 이전 정리가 새 재생 상태를 덮지 않는다',
+      (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    h.signaling.holdClose = Completer();
+    final slowClose = h.signaling.holdClose!;
+    for (final s in [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await tester.pump();
+    for (final s in [
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await _stream(tester, h);
+    expect(h.pcs, hasLength(2));
+    slowClose.complete(); // 이전 세션 close가 이제야 끝난다
+    await tester.pump();
+    await tester.pump();
+    expect(h.state.phase, WebRtcLivePhase.streaming);
+    expect(h.state.renderer, isNotNull);
+    await h.dispose();
+  });
+
+  testWidgets('백그라운드 중 망이 바뀌어도 복귀 뒤 같은 신호로 다시 붙지 않는다',
+      (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _stream(tester, h);
+    for (final s in [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await tester.pump();
+    h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
+    for (final s in [
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    // 복귀 직후 connectivity가 같은 값을 다시 알린다.
+    h.network.add('wifi,mobile');
+    await tester.pump();
+    h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2), reason: '이미 LTE로 붙은 연결을 다시 취소하면 안 된다');
+    await h.dispose();
+  });
+
+  testWidgets('망 변경 뒤 무진행 재연결은 stalled로 기록한다(closed 아님)', (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _stream(tester, h);
+    await _ticks(tester, 1);
+    h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _ticks(tester, kWebRtcNetworkFrameGraceTicks);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    expect(h.logs.map((l) => l.outcome), ['streaming', 'stalled']);
+    expect(h.logs.last.failPhase, 'streaming');
     await h.dispose();
   });
 
