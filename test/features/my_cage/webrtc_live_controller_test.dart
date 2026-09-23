@@ -25,6 +25,10 @@ class _FakePc extends Fake implements RTCPeerConnection {
   bool closed = false;
   int frames = 0;
 
+  /// 수신 누적 바이트·손실 패킷. null이면 통계에 필드를 넣지 않는다.
+  int? bytes;
+  int? lost;
+
   /// true면 getStats가 실패한다(통계 없음).
   bool statsBroken = false;
   RTCPeerConnectionState? _state;
@@ -72,8 +76,12 @@ class _FakePc extends Fake implements RTCPeerConnection {
   Future<List<StatsReport>> getStats([MediaStreamTrack? track]) async {
     if (statsBroken) throw StateError('no stats');
     return [
-        StatsReport('in', 'inbound-rtp', 0,
-            {'kind': 'video', 'framesDecoded': frames}),
+        StatsReport('in', 'inbound-rtp', 0, {
+          'kind': 'video',
+          'framesDecoded': frames,
+          if (bytes != null) 'bytesReceived': bytes,
+          if (lost != null) 'packetsLost': lost,
+        }),
         StatsReport('t', 'transport', 0, {'selectedCandidatePairId': 'p'}),
         StatsReport('p', 'candidate-pair', 0,
             {'localCandidateId': 'l', 'remoteCandidateId': 'r'}),
@@ -789,6 +797,60 @@ void main() {
     await tester.pump(kWebRtcNetworkDebounce);
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2), reason: '같은 Wi-Fi로 돌아와도 갇히면 안 된다');
+    await h.dispose();
+  });
+
+  // ── 정지 원인 진단: 수신 멈춤 vs 디코딩 멈춤(2026-09-24) ─────────────
+
+  Map<String, Object?> stallData(_Harness h, String event) =>
+      h.diag.events.lastWhere((e) => e.event == event).data;
+
+  testWidgets('정지 중 데이터도 안 오면 no-data로 기록한다(카메라·망 쪽)', (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    h.pc
+      ..bytes = 1000
+      ..lost = 0;
+    await _ticks(tester, 1);
+    await _ticks(tester, kWebRtcSoftStallTicks);
+    final d = stallData(h, 'stall-soft');
+    expect(d['cause'], 'no-data');
+    expect(d['bytes_delta'], 0);
+    await h.dispose();
+  });
+
+  testWidgets('데이터는 오는데 프레임이 멈추면 data-no-decode(앱·디코더·키프레임 쪽)',
+      (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    h.pc
+      ..bytes = 1000
+      ..lost = 0;
+    await _ticks(tester, 1);
+    for (var i = 0; i < kWebRtcSoftStallTicks; i++) {
+      h.pc
+        ..bytes = h.pc.bytes! + 5000
+        ..lost = h.pc.lost! + 2;
+      await _ticks(tester, 1);
+    }
+    final d = stallData(h, 'stall-soft');
+    expect(d['cause'], 'data-no-decode');
+    expect(d['bytes_delta'], 25000);
+    expect(d['lost_delta'], 10);
+    // 회복 행에는 정지 동안의 누계와 길이가 남는다.
+    h.pc.frames += 6;
+    await _ticks(tester, 1);
+    final r = stallData(h, 'stall-recovered');
+    expect(r['stalled_ticks'], kWebRtcSoftStallTicks);
+    expect(r['bytes_delta'], 25000);
+    await h.dispose();
+  });
+
+  testWidgets('수신 바이트 통계가 없으면 unknown — 추측하지 않는다', (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    await _ticks(tester, 1 + kWebRtcSoftStallTicks);
+    expect(stallData(h, 'stall-soft')['cause'], 'unknown');
     await h.dispose();
   });
 

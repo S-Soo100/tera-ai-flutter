@@ -146,6 +146,14 @@ class _Attempt {
   bool ended = false;
 }
 
+/// 수신 영상 누계 한 번(getStats inbound-rtp video).
+class _Inbound {
+  const _Inbound({required this.frames, this.bytes, this.lost});
+  final int frames;
+  final int? bytes;
+  final int? lost;
+}
+
 const _kFailPhase = {
   WebRtcLivePhase.connectingConfig: 'config',
   WebRtcLivePhase.offering: 'offering',
@@ -911,9 +919,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   void _awaitFirstFrame(int gen, RTCPeerConnection pc, RTCVideoRenderer r) {
     state = state.copyWith(phase: WebRtcLivePhase.waitingVideo, renderer: r);
     _frameTimer?.cancel();
+    int? bytes; // 무영상 실패 때 "데이터는 왔는가"를 남긴다
     _frameTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
       if (!_isCurrent(gen)) return;
-      final frames = await _framesDecoded(pc);
+      final s = await _inbound(pc);
+      bytes = s?.bytes ?? bytes;
+      final frames = s?.frames;
       if (_isCurrent(gen) &&
           frames != null &&
           frames > 0 &&
@@ -926,7 +937,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (!_isCurrent(gen) || state.phase != WebRtcLivePhase.waitingVideo) {
         return;
       }
-      debugPrint('[webrtc-timing] cam=$cameraUuid FAILED(no-video)');
+      _diag('no-video', {'bytes': bytes});
       _fail(gen, outcome: 'no_video');
     });
   }
@@ -956,13 +967,33 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     var still = 0;
     var noStats = 0;
     var busy = false;
+    // 마지막으로 프레임이 진행한 틱의 수신 누계 — 정지 동안 데이터가 왔는지를
+    // 여기서부터 잰다(기획 A4·범위 문서 §6: 수신 멈춤 vs 디코딩 멈춤).
+    _Inbound? atProgress;
+    _Inbound? latest;
+    Map<String, Object?> stallInfo() {
+      final bytesDelta = _delta(atProgress?.bytes, latest?.bytes);
+      return {
+        'still': still,
+        'cause': bytesDelta == null
+            ? 'unknown'
+            : bytesDelta > 0
+                ? 'data-no-decode'
+                : 'no-data',
+        'bytes_delta': bytesDelta,
+        'lost_delta': _delta(atProgress?.lost, latest?.lost),
+      };
+    }
+
     _frameTimer?.cancel();
     _frameTimer = Timer.periodic(kWebRtcStatsInterval, (_) async {
       if (!_isCurrent(gen) || busy) return;
       busy = true;
-      final frames = await _framesDecoded(pc);
+      final s = await _inbound(pc);
       busy = false;
       if (!_isCurrent(gen)) return;
+      final frames = s?.frames;
+      if (s != null) latest = s;
 
       if (frames == null) {
         noStats++;
@@ -976,14 +1007,16 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (state.statsUnknown) state = state.copyWith(statsUnknown: false);
 
       if (last == null || frames != last) {
-        last = frames;
-        still = 0;
-        _netGraceTicks = null;
         if (state.phase == WebRtcLivePhase.stalled) {
-          _diag('stall-recovered');
+          final info = stallInfo()..remove('still');
+          _diag('stall-recovered', {'stalled_ticks': still, ...info});
           state = state.copyWith(phase: WebRtcLivePhase.streaming);
           _armStableTimer(gen);
         }
+        last = frames;
+        still = 0;
+        atProgress = s;
+        _netGraceTicks = null;
         return;
       }
 
@@ -992,7 +1025,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (grace != null) {
         if (grace <= 1) {
           _netGraceTicks = null;
-          _diag('network-no-progress');
+          _diag('network-no-progress', stallInfo());
           // 사용자 이탈(closed)이 아니라 재생 실패다 — 정지율 집계용.
           _endAttempt(gen, 'stalled');
           _reconnectNow('network');
@@ -1001,13 +1034,13 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         _netGraceTicks = grace - 1;
       }
       if (still >= kWebRtcHardStallTicks) {
-        _diag('stall-hard', {'still': still});
+        _diag('stall-hard', stallInfo());
         _fail(gen, outcome: 'stalled');
         return;
       }
       if (still >= kWebRtcSoftStallTicks &&
           state.phase == WebRtcLivePhase.streaming) {
-        _diag('stall-soft', {'still': still});
+        _diag('stall-soft', stallInfo());
         _stableTimer?.cancel(); // 불안정 구간 — 안정 판정을 다시 센다
         state = state.copyWith(phase: WebRtcLivePhase.stalled);
       }
@@ -1028,8 +1061,11 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     });
   }
 
-  /// 수신 영상 디코딩 누적 프레임 수. 못 읽으면 null.
-  Future<int?> _framesDecoded(RTCPeerConnection pc) async {
+  /// 수신 영상 누계(inbound-rtp video). 통계를 못 읽거나 프레임 수가 없으면
+  /// null. 바이트·손실은 플랫폼이 안 주면 null로 둔다(0으로 채우지 않는다).
+  Future<_Inbound?> _inbound(RTCPeerConnection pc) async {
+    int? asInt(Object? v) =>
+        v is num ? v.toInt() : (v is String ? int.tryParse(v) : null);
     try {
       final reports = await pc.getStats();
       for (final r in reports) {
@@ -1037,13 +1073,21 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         final v = r.values;
         final kind = v['kind'] ?? v['mediaType'];
         if (kind != null && kind != 'video') continue;
-        final f = v['framesDecoded'];
-        if (f is num) return f.toInt();
-        if (f is String) return int.tryParse(f);
+        final frames = asInt(v['framesDecoded']);
+        if (frames == null) continue;
+        return _Inbound(
+          frames: frames,
+          bytes: asInt(v['bytesReceived']),
+          lost: asInt(v['packetsLost']),
+        );
       }
     } catch (_) {}
     return null;
   }
+
+  /// 누계 차이. 한쪽이라도 없거나 카운터가 줄었으면(SSRC 교체·리셋) null.
+  static int? _delta(int? from, int? to) =>
+      from == null || to == null || to < from ? null : to - from;
 
   // ── ICE gathering 대기 ────────────────────────────────────────────────────
 
