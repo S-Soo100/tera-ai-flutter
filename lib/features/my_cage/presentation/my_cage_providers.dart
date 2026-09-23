@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/config/env_config.dart';
 import '../../../core/network/auth_session.dart';
 import '../../../core/network/terra_rest_client.dart';
+import '../../../core/supabase/realtime_binding.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/camera_repository.dart';
 import '../data/enclosure_repository.dart';
@@ -149,21 +150,23 @@ final camerasProvider = StreamProvider<List<TerraCamera>>((ref) {
 
   unawaited(reload()); // 최초 seed
 
-  final channel = supabase.channel('cameras-rt');
-  channel
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'cameras',
-        callback: (_) => unawaited(reload()),
-      )
-      .subscribe();
+  // 구독이 죽었다 살아나면(재합류) 끊긴 사이의 온라인 변화를 놓쳤을 수 있다 —
+  // 목록을 다시 읽는다. 폰 망이 끊긴 사이 낡은 is_online=false가 남아 라이브가
+  // "카메라 오프라인"에 갇힌 적이 있다(2026-09-24).
+  bindResilientChannel(
+    ref,
+    supabase: supabase,
+    name: 'cameras-rt',
+    configure: (c) => c.onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'cameras',
+      callback: (_) => unawaited(reload()),
+    ),
+    onRejoined: () => unawaited(reload()),
+  );
 
-  ref.onDispose(() {
-    // ignore: discarded_futures
-    supabase.removeChannel(channel);
-    controller.close();
-  });
+  ref.onDispose(controller.close);
 
   return controller.stream;
 });
