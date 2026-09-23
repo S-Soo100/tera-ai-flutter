@@ -351,12 +351,14 @@ void main() {
     expect(h.pcs, hasLength(1));
 
     h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
     expect(h.pcs.first.closed, isTrue);
 
     // 연결이 완전히 끊긴 순간(none)에는 헛시도하지 않는다.
     h.network.add('none');
+    await tester.pump(kWebRtcNetworkDebounce);
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
     await h.dispose();
@@ -402,6 +404,72 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
+    await h.dispose();
+  });
+
+  testWidgets('1초 안에 wifi→mobile→wifi로 돌아오면 재연결하지 않는다', (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _settleConnect(tester);
+    h.network.add('mobile');
+    await tester.pump(const Duration(milliseconds: 300));
+    h.network.add('wifi');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(1));
+    expect(h.diag.events.where((e) => e.event == 'restart'), isEmpty);
+    await h.dispose();
+  });
+
+  testWidgets('망이 없으면 재시도를 멈추고, 돌아오면 곧바로 붙는다', (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _settleConnect(tester);
+    h.network.add('none');
+    await tester.pump(kWebRtcNetworkDebounce);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.errorKey, 'crecam_live_error_no_network');
+    await tester.pump(const Duration(minutes: 2));
+    expect(h.pcs, hasLength(1), reason: '망 없이 offer를 반복하지 않는다');
+    h.network.add('wifi');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    await h.dispose();
+  });
+
+  testWidgets('정리 중 겹친 재시작 요청은 병합돼 offer가 하나만 나간다', (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    final n = h.container.read(webrtcLiveControllerProvider(_cam).notifier);
+    unawaited(n.retry());
+    unawaited(n.retry());
+    unawaited(n.retry());
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    expect(
+        h.diag.events.where((e) => e.event == 'restart-merged'), hasLength(2));
+    await h.dispose();
+  });
+
+  testWidgets('연결 성공만으로는 백오프가 초기화되지 않는다', (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    // 1차 실패 → 3초, 2차 실패 → 6초.
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    await tester.pump(const Duration(seconds: 3));
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
+    // 영상 없이 곧 죽는 연결.
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    await tester.pump(const Duration(seconds: 3));
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2), reason: '3초 뒤가 아니라 6초 뒤에 붙어야 한다');
+    await tester.pump(const Duration(seconds: 3));
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(3));
     await h.dispose();
   });
 
@@ -483,6 +551,7 @@ void main() {
     await _settleConnect(tester);
     expect(h.state.phase, WebRtcLivePhase.connectingIce);
     h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
     await _settleConnect(tester);
     expect(h.logs.first.outcome, 'cancelled');
     expect(h.logs.first.failPhase, 'connectingIce');

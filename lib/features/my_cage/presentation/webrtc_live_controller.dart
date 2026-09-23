@@ -309,13 +309,41 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
 
   AppLifecycleListener? _lifecycle;
 
+  /// 재시작이 이전 세대를 정리하는 중 — 이때 온 재시작 요청은 병합한다.
+  bool _cleaningUp = false;
+
+  // 네트워크 신호 — connectivity_plus는 같은 변화에 여러 이벤트를 낼 수 있어
+  // [kWebRtcNetworkDebounce] 동안 합친 뒤 마지막 값만 반영한다.
+  Timer? _netDebounce;
+  String? _lastNetwork; // 마지막 신호
+  String? _netApplied; // 연결에 반영한 망(기준선)
+  bool _waitingNetwork = false; // 망 없음으로 재시도를 멈춘 상태
+
+  /// 망 변경 후 프레임 진행을 기다리는 남은 틱 — 재생 감시가 소비한다.
+  int? _netGraceTicks;
+
+  bool _isNoNetwork(String? sig) =>
+      sig == null || sig.isEmpty || sig == ConnectivityResult.none.name;
+
   void _scheduleReconnect(int gen) {
     if (!_isCurrent(gen)) return;
     _reconnectTimer?.cancel();
     if (_cameraOffline()) {
       // 꺼진 카메라에 무한히 offer를 보내 봐야 매번 15초 무응답이다.
       _waitingOnline = true;
+      state = state.copyWith(
+          phase: WebRtcLivePhase.failed,
+          errorKey: 'crecam_live_error_camera_offline');
       _diag('wait-online');
+      return;
+    }
+    if (_isNoNetwork(_lastNetwork) && _netApplied != null) {
+      // 망 자체가 없다 — 카메라 탓으로 그리지 않고 복구 신호를 기다린다.
+      _waitingNetwork = true;
+      state = state.copyWith(
+          phase: WebRtcLivePhase.failed,
+          errorKey: 'crecam_live_error_no_network');
+      _diag('wait-network');
       return;
     }
     // 3·6·12·24·48·60초 — 지수는 5에서 멈춘다(상한 60초에 이미 도달;
@@ -330,7 +358,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (!_isCurrent(gen)) return;
       // 서버 ICE 설정(TURN 자격 등)이 바뀌었을 수 있어 자동 재연결도 새로 받는다.
       ref.invalidate(webrtcConfigProvider);
-      unawaited(_restart());
+      unawaited(_restart(reason: 'timer'));
     });
   }
 
@@ -341,14 +369,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (s == AppLifecycleState.paused) unawaited(_suspend());
       if (s == AppLifecycleState.resumed) _resume();
     });
-    ref.listen<AsyncValue<String>>(webrtcNetworkSignalProvider, (prev, next) {
-      final before = prev?.valueOrNull;
+    ref.listen<AsyncValue<String>>(webrtcNetworkSignalProvider, (_, next) {
       final now = next.valueOrNull;
-      if (before == null || now == null || before == now) return;
-      if (now.isEmpty || now == ConnectivityResult.none.name) return;
-      if (_suspended || _disposed) return;
-      _diag('network-changed', {'from': before, 'to': now});
-      _reconnectNow();
+      if (now == null) return;
+      _lastNetwork = now;
+      _netDebounce?.cancel();
+      _netDebounce = Timer(kWebRtcNetworkDebounce, _onNetworkSettled);
     });
     ref.listen<AsyncValue<List<TerraCamera>>>(camerasProvider, (_, next) {
       if (!_waitingOnline || _suspended || _disposed) return;
@@ -356,7 +382,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
           next.valueOrNull?.where((c) => c.id == cameraUuid).firstOrNull;
       if (cam?.isOnline ?? false) {
         _diag('camera-online');
-        _reconnectNow();
+        _reconnectNow('camera-online');
       }
     });
   }
@@ -367,11 +393,45 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     return cam != null && !cam.isOnline;
   }
 
-  void _reconnectNow() {
+  /// 디바운스가 끝난 망 신호 처리. 첫 값은 기준선만 잡고, 되돌아온 변화는
+  /// 무시하며, 영상이 나오는 중이면 연결을 유지한 채 프레임 진행으로 판단한다.
+  void _onNetworkSettled() {
+    if (_suspended || _disposed) return;
+    final now = _lastNetwork;
+    if (_isNoNetwork(now)) {
+      _diag('network-none');
+      return; // 기준선은 그대로 — 돌아오면 그때 비교한다
+    }
+    if (_waitingNetwork) {
+      _waitingNetwork = false;
+      _netApplied = now;
+      _diag('network-back', {'to': now});
+      _reconnectNow('network-back');
+      return;
+    }
+    if (_netApplied == null) {
+      _netApplied = now;
+      return;
+    }
+    if (now == _netApplied) return;
+    final before = _netApplied;
+    _netApplied = now;
+    _diag('network-changed', {'from': before, 'to': now});
+    if (state.phase.hasVideo) {
+      // 영상이 진행 중이면 철거하지 않는다 — 감시 루프가 유예 틱 안에 프레임이
+      // 안 늘면 그때 다시 붙인다.
+      _netGraceTicks = kWebRtcNetworkFrameGraceTicks;
+      return;
+    }
+    _reconnectNow('network');
+  }
+
+  /// 환경이 바뀌어 즉시 다시 붙는다(망·복귀·카메라 온라인). 백오프는
+  /// 초기화하지 않는다 — 흔들리는 망에서 즉시 재시도가 무한 반복된다(A3).
+  void _reconnectNow(String reason) {
     _waitingOnline = false;
-    _reconnectAttempt = 0;
     _reconnectTimer?.cancel();
-    unawaited(_restart());
+    unawaited(_restart(reason: reason, force: true));
   }
 
   /// 백그라운드 진입 — 연결을 내린다. 화면에 안 보이는 동안 카메라 세션과
@@ -394,7 +454,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (!_suspended || _disposed) return;
     _suspended = false;
     _diag('resume');
-    _reconnectNow();
+    _reconnectNow('resume');
   }
 
   // ── 공개 API ────────────────────────────────────────────────────────────────
@@ -405,21 +465,35 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   Future<void> retry() async {
     _autoRetried = false;
     _waitingOnline = false;
-    _reconnectAttempt = 0;
+    _waitingNetwork = false;
+    _reconnectAttempt = 0; // 사용자 의도 — 백오프를 처음부터
     _reconnectTimer?.cancel();
     ref.invalidate(webrtcConfigProvider);
-    await _restart();
+    await _restart(reason: 'manual', force: true);
   }
 
   /// 새 세대로 다시 붙는다. 세대를 **먼저** 올려 이전 세대의 잔여 작업을 즉시
   /// 무효로 만들고, 정리 도중 더 새로운 재시작이 오면 이쪽은 물러난다.
-  Future<void> _restart() async {
+  ///
+  /// 병합 규칙(A1): 정리 중이면 무시(이미 새 세대가 온다). 연결 시퀀스가 진행
+  /// 중인데 [force]가 아니면 무시(같은 환경에서 offer를 두 번 내지 않는다).
+  /// 환경이 바뀐 요청(망·복귀·수동)은 [force]로 현재 시도를 취소하고 새로 간다.
+  Future<void> _restart({String reason = 'timer', bool force = false}) async {
     if (_disposed || _suspended) return;
-    _diag('restart');
+    if (_cleaningUp || (!force && state.phase.isConnecting)) {
+      _diag('restart-merged', {'reason': reason});
+      return;
+    }
+    _diag('restart', {'reason': reason});
     _endAttempt(_gen, null);
     final gen = ++_gen;
     _cancelTimers();
-    await _cleanup(closeRemote: true);
+    _cleaningUp = true;
+    try {
+      await _cleanup(closeRemote: true);
+    } finally {
+      _cleaningUp = false;
+    }
     if (!_isCurrent(gen)) return;
     _pendingCandidates.clear();
     state = const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig);
@@ -440,6 +514,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _disposed = true;
     _gen++;
     _lifecycle?.dispose();
+    _netDebounce?.cancel();
     _cancelTimers();
     _cleanup(closeRemote: true);
     super.dispose();
@@ -468,7 +543,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         _endAttempt(gen, 'unresponsive');
         await Future<void>.delayed(kWebRtcUnresponsiveRetryDelay);
         if (!_isCurrent(gen)) return;
-        await _restart();
+        await _restart(reason: 'unresponsive-retry', force: true);
         return;
       }
       _fail(gen,
@@ -660,8 +735,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
           a.msConnected = _timing.elapsedMilliseconds;
           a.candidates = _candidateTypes(pc);
         }
-        // 연결 성공 — 재연결 백오프 리셋.
-        _reconnectAttempt = 0;
+        // 백오프는 여기서 초기화하지 않는다 — 영상이 30초 안정된 뒤에만(A3).
         _reconnectTimer?.cancel();
         _disconnectGrace?.cancel();
         if (connected) return; // disconnected에서 스스로 복구 — 감시는 그대로.
