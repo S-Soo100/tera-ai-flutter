@@ -846,6 +846,28 @@ void main() {
     await h.dispose();
   });
 
+  testWidgets('멈추기 직전에만 조금 오고 그 뒤 끊기면 no-data(최근 수신 기준)',
+      (tester) async {
+    // S21+ 실측(03:14): 5초·15초 시점 누계가 똑같이 20,608B — 손상된 꼬리만
+    // 오고 수신이 끊겼는데 누계 기준이라 data-no-decode로 찍혔다.
+    final h = _Harness();
+    await _stream(tester, h);
+    h.pc
+      ..bytes = 1000
+      ..lost = 0;
+    await _ticks(tester, 1);
+    h.pc
+      ..bytes = 21608
+      ..lost = 16;
+    await _ticks(tester, 2); // 정지 초반에만 조금 들어온다
+    await _ticks(tester, kWebRtcSoftStallTicks - 2);
+    final d = stallData(h, 'stall-soft');
+    expect(d['cause'], 'no-data');
+    expect(d['recent_bytes'], 0);
+    expect(d['bytes_delta'], 20608, reason: '정지 구간 누계는 참고로 남긴다');
+    await h.dispose();
+  });
+
   testWidgets('수신 바이트 통계가 없으면 unknown — 추측하지 않는다', (tester) async {
     final h = _Harness();
     await _stream(tester, h);
