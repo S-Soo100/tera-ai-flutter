@@ -233,6 +233,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _logSink = ref.read(webrtcConnectLogSinkProvider);
     _diagBuffer = ref.read(webrtcDiagBufferProvider);
     _watchEnvironment();
+    _startRecoveryWindow();
     _diag('start');
     unawaited(_start(_gen));
   }
@@ -344,12 +345,17 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       _diag('wait-network');
       return;
     }
-    // 3·6·12·24·48·60초 — 지수는 5에서 멈춘다(상한 60초에 이미 도달;
-    // 무한 증가시키면 pow가 언젠가 inf로 넘친다).
-    final delay = Duration(
-        seconds: math.min(
-            60, 3 * math.pow(2, math.min(5, _reconnectAttempt)).toInt()));
-    _reconnectAttempt++;
+    final Duration delay;
+    if (_recoveryExhausted) {
+      delay = kWebRtcLowRetryInterval;
+    } else {
+      // 3·6·12·24·48·60초 — 지수는 5에서 멈춘다(상한 60초에 이미 도달;
+      // 무한 증가시키면 pow가 언젠가 inf로 넘친다).
+      delay = Duration(
+          seconds: math.min(
+              60, 3 * math.pow(2, math.min(5, _reconnectAttempt)).toInt()));
+      _reconnectAttempt++;
+    }
     _diag('reconnect-scheduled',
         {'delay_s': delay.inSeconds, 'attempt': _reconnectAttempt});
     _reconnectTimer = Timer(delay, () {
@@ -442,6 +448,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _endAttempt(_gen, null);
     _gen++;
     _cancelTimers();
+    _recoveryDeadline?.cancel(); // 백그라운드 시간은 세지 않는다
     await _cleanup(closeRemote: true);
     if (!_disposed) {
       state = const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig);
@@ -452,6 +459,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (!_suspended || _disposed) return;
     _suspended = false;
     _diag('resume');
+    _startRecoveryWindow();
     _reconnectNow('resume');
   }
 
@@ -466,6 +474,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _waitingNetwork = false;
     _reconnectAttempt = 0; // 사용자 의도 — 백오프를 처음부터
     _reconnectTimer?.cancel();
+    _startRecoveryWindow();
     ref.invalidate(webrtcConfigProvider);
     await _restart(reason: 'manual', force: true);
   }
@@ -515,6 +524,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _gen++;
     _lifecycle?.dispose();
     _netDebounce?.cancel();
+    _recoveryDeadline?.cancel();
     _cancelTimers();
     _cleanup(closeRemote: true);
     super.dispose();
@@ -580,8 +590,53 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _cancelTimers();
     final next = ++_gen;
     unawaited(_cleanup(closeRemote: true));
-    state = WebRtcLiveState(phase: WebRtcLivePhase.failed, errorKey: errorKey);
-    if (reconnect) _scheduleReconnect(next);
+    if (!reconnect) {
+      state = WebRtcLiveState(phase: WebRtcLivePhase.failed, errorKey: errorKey);
+      return;
+    }
+    // 안정 재생으로 닫혔던 창이면 이 실패가 새 창을 연다.
+    if (!_recoveryExhausted && _recoveryDeadline == null) {
+      _startRecoveryWindow();
+    }
+    _lastErrorKey = errorKey;
+    state = _recoveryExhausted
+        ? WebRtcLiveState(phase: WebRtcLivePhase.failed, errorKey: errorKey)
+        : const WebRtcLiveState(phase: WebRtcLivePhase.recovering);
+    _scheduleReconnect(next);
+  }
+
+  // ── 집중 복구 예산(A5) ────────────────────────────────────────────────────
+
+  /// 집중 복구 예산 창. 열려 있으면 실패는 `recovering`, 소진되면 `failed`.
+  /// 진입·복귀·수동 재시도에서 열고, 안정 재생 30초에서 닫는다.
+  Timer? _recoveryDeadline;
+  bool _recoveryExhausted = false;
+
+  /// recovering 중 소진되면 그때 보여 줄 사유.
+  String _lastErrorKey = 'crecam_live_error_failed';
+
+  void _startRecoveryWindow() {
+    _recoveryExhausted = false;
+    _recoveryDeadline?.cancel();
+    _recoveryDeadline = Timer(kWebRtcRecoveryBudget, () {
+      if (_disposed) return;
+      _recoveryExhausted = true;
+      _diag('recovery-budget-exhausted', {'phase': state.phase.name});
+      if (state.phase == WebRtcLivePhase.recovering) {
+        // 백오프 대기 중 — 화면을 정직하게 바꾸고, 걸려 있던 백오프 타이머를
+        // 저빈도 타이머로 교체한다(_scheduleReconnect가 exhausted를 보고 60초).
+        state = state.copyWith(
+            phase: WebRtcLivePhase.failed, errorKey: _lastErrorKey);
+        _scheduleReconnect(_gen);
+      }
+      // 연결 시도 중이면 그 시도가 끝날 때 _fail이 exhausted를 반영한다.
+    });
+  }
+
+  void _closeRecoveryWindow() {
+    _recoveryDeadline?.cancel();
+    _recoveryDeadline = null;
+    _recoveryExhausted = false;
   }
 
   // ── 연결 결과 기록 ────────────────────────────────────────────────────────
@@ -942,6 +997,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       _diag('stable');
       _reconnectAttempt = 0;
       _autoRetried = false;
+      _closeRecoveryWindow();
     });
   }
 

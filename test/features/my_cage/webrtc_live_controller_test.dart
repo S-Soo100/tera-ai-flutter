@@ -237,7 +237,7 @@ void main() {
     final old = h.pc;
 
     old.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
-    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
     await tester.pump(const Duration(seconds: 3)); // 백오프 3초
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
@@ -304,7 +304,7 @@ void main() {
     h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
     await tester.pump(kWebRtcFirstFrameTimeout);
     await tester.pump();
-    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
     await tester.pump(const Duration(seconds: 3));
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
@@ -324,7 +324,7 @@ void main() {
     expect(h.state.phase, WebRtcLivePhase.stalled);
     expect(h.state.renderer, isNotNull, reason: '마지막 장면을 지우지 않는다');
     await _ticks(tester, kWebRtcHardStallTicks - kWebRtcSoftStallTicks);
-    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
     expect(h.logs.last.outcome, 'stalled');
     expect(h.logs.last.failPhase, 'streaming');
     await h.dispose();
@@ -577,6 +577,68 @@ void main() {
     await h.dispose();
   });
 
+  testWidgets('예산 안의 실패는 recovering(버튼 없음), 90초 넘기면 failed + 60초 간격',
+      (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
+    expect(h.state.errorKey, isNull);
+    // 90초를 흘린다. 그동안 재연결·60초 시도 예산 실패가 섞여 돌지만, 소진
+    // 시점에 (a) 백오프 대기 중이면 즉시 failed, (b) 연결 시도 중이면 그 시도가
+    // 실패할 때 failed — 둘 다 만들어 준다.
+    await tester.pump(kWebRtcRecoveryBudget);
+    await tester.pump();
+    if (h.state.phase.isConnecting) {
+      h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+      await tester.pump();
+    }
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.errorKey, 'crecam_live_error_failed');
+    // 소진 뒤 재시도는 60초 간격 — 59초까지는 새 피어가 없고 61초에 하나.
+    final before = h.pcs.length;
+    await tester.pump(const Duration(seconds: 59));
+    expect(h.pcs.length, before);
+    await tester.pump(const Duration(seconds: 2));
+    await _settleConnect(tester);
+    expect(h.pcs.length, before + 1);
+    await h.dispose();
+  });
+
+  testWidgets('안정 재생 뒤 끊기면 새 90초 창이 열린다', (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    for (var i = 0; i < 31; i++) {
+      h.pc.frames += 6;
+      await _ticks(tester, 1);
+    }
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
+    await tester.pump(const Duration(seconds: 80));
+    expect(h.state.phase, isNot(WebRtcLivePhase.failed));
+    await h.dispose();
+  });
+
+  testWidgets('수동 다시 연결은 예산 창을 새로 연다', (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    await tester.pump(kWebRtcRecoveryBudget);
+    await tester.pump();
+    if (h.state.phase.isConnecting) {
+      h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+      await tester.pump();
+    }
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    unawaited(h.container
+        .read(webrtcLiveControllerProvider(_cam).notifier)
+        .retry());
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
+    await h.dispose();
+  });
+
   // ── 연결 결과 기록(webrtc_connect_logs, 2026-09-23) ─────────────────────
 
   testWidgets('기록 — 첫 프레임에 streaming 행, 화면을 떠나면 closed 행', (tester) async {
@@ -613,7 +675,7 @@ void main() {
     // 가짜 피어는 ICE 수집이 즉시 끝나 1차 504 → 2초 뒤 2차 504가 이 안에 끝난다.
     await _settleConnect(tester);
     await tester.pump();
-    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
     expect(h.logs.map((l) => l.outcome), ['unresponsive', 'unresponsive']);
     expect(h.logs.every((l) => l.offerAttempts == 3), isTrue);
     expect(h.logs.every((l) => l.failPhase == 'offering'), isTrue);
