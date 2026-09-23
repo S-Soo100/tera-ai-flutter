@@ -317,13 +317,20 @@ Future<void> sendMistWith(
     return;
   }
   final lockNotifier = container.read(mistLockProvider(deviceId).notifier);
-  lockNotifier.state = MistLock.startingAt(DateTime.now(), mist: duration);
+  final lock = MistLock.startingAt(DateTime.now(), mist: duration);
+  lockNotifier.state = lock;
+  // 이 분무가 건 잠금만 푼다 — 실패로 일찍 풀린 뒤 새 분무가 건 잠금을 옛
+  // 타이머가 지우면 안 된다.
+  void unlock() {
+    if (lockNotifier.mounted && identical(lockNotifier.state, lock)) {
+      lockNotifier.state = const MistLock(lockedUntil: null);
+    }
+  }
+
   // 만료를 깨우는 주체를 명시적으로 둔다. 예전엔 무관한 provider(telemetry
   // 3초 틱)가 우연히 리빌드해 주기를 기다렸고, 그게 멈추면 버튼이 잠긴 채
   // 남았다.
-  Timer(MistLock.lockFor(duration), () {
-    lockNotifier.state = const MistLock(lockedUntil: null);
-  });
+  Timer(MistLock.lockFor(duration), unlock);
 
   final DeviceCommand command;
   try {
@@ -332,6 +339,9 @@ Future<void> sendMistWith(
         .send(deviceId, CommandAction.mist, payload: duration.payload);
   } catch (e, st) {
     pending.cancel();
+    // 타일은 잠금을 "작동 중"으로 그린다 — 안 나간 분무를 뿌리는 중으로
+    // 보이면 습도에 대한 거짓 확신이 된다(리뷰 2026-09-23).
+    unlock();
     debugPrint('[cage-control] mist failed: $e\n$st');
     toast('home_mist_failed_toast', icon: FigmaIcons.cancel);
     return;
@@ -343,6 +353,8 @@ Future<void> sendMistWith(
     // Figma 1106:6646 토스트 "분무가 실행되었습니다".
     toast('home_mist_done_toast');
   } else {
+    // 거절·미전달이면 분사가 없었다(또는 모른다) — 잠금·"작동 중"을 푼다.
+    unlock();
     showControlOutcome(messenger, outcome);
   }
 }

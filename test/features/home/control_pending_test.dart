@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/home/domain/mist_duration.dart';
+import 'package:vivanaut/features/home/domain/mist_lock.dart';
 import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivanaut/features/home/domain/schedule_device.dart';
 import 'package:vivanaut/features/home/presentation/control_pending.dart';
@@ -199,6 +200,55 @@ void main() {
     expect(find.text('home_mist_failed_toast'), findsOneWidget);
     container.read(controlPendingProvider(kTestDeviceId).notifier).cancel();
     await tester.pump(const Duration(seconds: 10));
+  });
+
+  testWidgets('분무 거절 — 잠금을 바로 풀어 타일이 "작동 중"으로 남지 않는다',
+      (tester) async {
+    await _pump(tester, (status: 'rejected', result: null),
+        device: ScheduleDevice.mist);
+    final ctx = tester.element(find.byType(DeviceControlSheet));
+    final container = ProviderScope.containerOf(ctx);
+    unawaited(sendMistWith(container, ScaffoldMessenger.of(ctx), kTestDeviceId,
+        MistDuration.tenSeconds,
+        toastContext: ctx));
+    await tester.pump();
+    // 송신 직후엔 잠김(분사 중으로 본다).
+    expect(
+        container
+            .read(mistLockProvider(kTestDeviceId))
+            .isLocked(DateTime.now()),
+        isTrue);
+    await tester.pump(kControlPollInterval + const Duration(milliseconds: 100));
+    await tester.pump();
+    // 거절 확정 — 12초를 기다리지 않고 풀린다.
+    expect(
+        container
+            .read(mistLockProvider(kTestDeviceId))
+            .isLocked(DateTime.now()),
+        isFalse);
+    expect(find.text('device_state_running'), findsNothing);
+    await tester.pump(const Duration(seconds: 15));
+  });
+
+  testWidgets('옛 분무의 만료 타이머는 새 분무의 잠금을 지우지 않는다', (tester) async {
+    await _pump(tester, (status: 'rejected', result: null),
+        device: ScheduleDevice.mist);
+    final ctx = tester.element(find.byType(DeviceControlSheet));
+    final container = ProviderScope.containerOf(ctx);
+    unawaited(sendMistWith(container, ScaffoldMessenger.of(ctx), kTestDeviceId,
+        MistDuration.fiveSeconds,
+        toastContext: ctx));
+    await tester.pump(kControlPollInterval + const Duration(milliseconds: 100));
+    await tester.pump();
+    // 거절로 풀린 뒤 다른 곳에서 새 잠금이 걸렸다고 치자.
+    final newer = MistLock(lockedUntil: DateTime.now().add(const Duration(minutes: 1)));
+    container.read(mistLockProvider(kTestDeviceId).notifier).state = newer;
+    // 옛 분무(5초 → 7초 잠금)의 타이머가 돈다.
+    await tester.pump(const Duration(seconds: 7));
+    expect(
+        identical(container.read(mistLockProvider(kTestDeviceId)), newer),
+        isTrue);
+    await tester.pump(const Duration(seconds: 15));
   });
 
   test('classifyCommand — 확정 결과 분류', () {
