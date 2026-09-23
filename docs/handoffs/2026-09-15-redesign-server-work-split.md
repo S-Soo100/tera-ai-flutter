@@ -120,7 +120,9 @@
 
 ### P2: 하이라이트 공개 배치
 
-기존 [하이라이트 FCM 전달안](2026-09-15-petcam-lab-highlight-slack-script.md)에 이어 동일 배치 ID·검수 완료 snapshot·공개 시각을 앱 조회 응답에도 연결한다. 도착/읽음 UI와 푸시가 다른 배치 체계를 사용하지 않게 한다. 메타 미지원 동안 촬영시각을 공개 시각으로 대체하지 않는다.
+> 2026-09-23 정리 주석: 아래는 9/15 당시 요청 이력이다. 승인 스냅샷 요구는 9/19 철회됐으며 현재 작업은 [하이라이트 정책 v2 요청](2026-09-19-petcam-lab-highlight-policy-v2-request.md)을 따른다.
+
+당시 [하이라이트 FCM 전달안(과거 이력)](https://github.com/S-Soo100/tera-ai-flutter/blob/ba747f1606eacffdec8d14ee7da5266e2c913714/docs/handoffs/2026-09-15-petcam-lab-highlight-slack-script.md)에 이어 동일 배치 ID·검수 완료 snapshot·공개 시각을 앱 조회 응답에도 연결하도록 요청했다. 도착/읽음 UI와 푸시가 다른 배치 체계를 사용하지 않게 하는 목적이었다.
 
 FCM의 촬영/검수/발송 시간 정책과 MyCre의 00:00 일자 경계는 목적이 다르다. 이번 MyCre 결정을 이유로 승인된 FCM 촬영 창이나 발송 시각을 바꾸지 않는다.
 

@@ -123,9 +123,9 @@ Android 앱·Supabase 알림 저장소·Firebase 발송 함수·1분 주기 disp
 
 ## 9. 외부 전달 문서
 
-- 이관훈님 Slack 복사본: `docs/handoffs/2026-09-15-terra-server-slack-script.md`
+- 이관훈님 Slack 복사본은 2026-09-23 중복 정리로 삭제. 아래 상세 기술 계약과 [후속 결정 답신](2026-09-16-lee-gwanhun-reply-2-decisions.md)을 확인한다.
 - 이관훈님 상세 기술 계약: `docs/handoffs/2026-09-15-terra-server-notification-events-request.md`
-- petcam-lab Slack 복사본: `docs/handoffs/2026-09-15-petcam-lab-highlight-slack-script.md`
+- petcam-lab 현재 전달안: [하이라이트 정책 v2 요청](2026-09-19-petcam-lab-highlight-policy-v2-request.md). 기존 승인 스냅샷 요청은 철회됐다.
 - 배포·운영 체크리스트: `docs/handoffs/2026-09-15-fcm-deployment-checklist.md`
 - 전체 업무 분장: `docs/fcm-notification-work-split.md`
 - 설계 SOT: `docs/superpowers/specs/2026-09-15-android-fcm-notifications-design.md`

@@ -182,7 +182,7 @@ e1712d3 feat: LED 작동 시간 칩·예약 LED 밝기·냉각팬 예약 duratio
 
 ## 11. 서버·펌웨어 확인 요청 (사용자가 전송)
 
-[2026-09-16-server-request-led-timer-schedule-payload.md](../../handoffs/2026-09-16-server-request-led-timer-schedule-payload.md) — 이관훈님 대상. ① `led_on` + `duration_ms` 자동 꺼짐 ② `schedules.payload.brightness` ③ `schedules.payload.duration_ms`(fan2_on). 앱은 회신 전까지 위 payload를 미리 보낸다(사용자 결정). 미지원 회신 시 되돌릴 방법을 문서 §5에 적었다.
+[2026-09-16-server-request-led-timer-schedule-payload.md(과거 요청 이력)](https://github.com/S-Soo100/tera-ai-flutter/blob/ba747f1606eacffdec8d14ee7da5266e2c913714/docs/handoffs/2026-09-16-server-request-led-timer-schedule-payload.md) — 이관훈님 대상. 당시 요청은 ① `led_on` + `duration_ms` 자동 꺼짐 ② `schedules.payload.brightness` ③ `schedules.payload.duration_ms`(fan2_on)였다. 이후 [9/16 결정 답신 §2](../../handoffs/2026-09-16-lee-gwanhun-reply-2-decisions.md#2-led-타이머--a안-확정)에서 LED 타이머 제거와 예약 payload 유지로 정리됐다(2026-09-23 정리 주석).
 
 
 [2026-09-16-lee-gwanhun-reply-groups-and-push.md](../../handoffs/2026-09-16-lee-gwanhun-reply-groups-and-push.md) — 이관훈님 9/15 회신 2건(재설계·푸시)에 대한 답신. 그룹·이름 규칙은 서버에 없고(회신 §3) RPC 초안은 앱 팀 작성·백엔드 적용으로 합의됐으나(§4.3) 초안 전달 기록이 없어 `supabase/drafts/20260915_*.sql` 5개를 이 문서로 전달한다. 회신이 기다리던 앱 팀 답(이름 비교 규칙·기기 이름 중복 범위·푸시 6건)을 포함. 운영 DB에는 `redesign_` 함수가 없음을 2026-09-16 읽기 전용 조회로 확인. 사용자 확인 필요 결정: ended=A안, timer 미전송, guard 스킵 2차, 무응답 실패 알림 필요(예약 한정), 이름 대소문자 구분 유지.

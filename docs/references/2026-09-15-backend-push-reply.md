@@ -1,6 +1,6 @@
 # 백엔드 회신 — 예약/타이머 실행 푸시 이벤트 연동 (2026-09-15)
 
-> **회신 대상**: 앱(Flutter) `2026-09-15-terra-server-slack-script.md` (Android 알림 연동 요청)
+> **회신 대상**: 앱(Flutter) [2026-09-15-terra-server-slack-script.md(과거 이력)](https://github.com/S-Soo100/tera-ai-flutter/blob/ba747f1606eacffdec8d14ee7da5266e2c913714/docs/handoffs/2026-09-15-terra-server-slack-script.md) (Android 알림 연동 요청; 2026-09-23 중복 전달문 삭제, 회신 본문은 보존)
 > **작성**: terra-server 백엔드 담당
 > **성격**: 코드 실측 대조 + 설계 회신. 요청하신 확인 5건에 답하고, 계약 조정이 필요한 3건을 제기합니다.
 > **결론 먼저**: **`device.action.started` 와 `device.action.failed` 는 구현 가능**합니다.

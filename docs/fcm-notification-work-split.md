@@ -75,9 +75,9 @@
 - **계정 소유자**: Apple Developer 계정 준비 후 APNs key와 iOS Firebase 앱을 구성한다.
 - **우리**: iOS 권한과 수신 경로를 추가한다.
 
-## 지금 보내야 할 문서
+## 외부 전달 문서 (2026-09-23 정리)
 
-- 이관훈님 Slack 복사본: `docs/handoffs/2026-09-15-terra-server-slack-script.md`
+- 이관훈님 Slack 복사본은 상세 계약과 중복돼 삭제했다. 최신 회신 반영은 [9/16 결정 답신](handoffs/2026-09-16-lee-gwanhun-reply-2-decisions.md)을 확인한다.
 - 이관훈님 상세 계약: `docs/handoffs/2026-09-15-terra-server-notification-events-request.md`
-- petcam-lab Slack 복사본: `docs/handoffs/2026-09-15-petcam-lab-highlight-slack-script.md`
+- petcam-lab: [하이라이트 정책 v2 요청](handoffs/2026-09-19-petcam-lab-highlight-policy-v2-request.md). 기존 승인 스냅샷 전달문을 대체한다.
 - 두 생산자에게 실제 `PUSH_EVENT_INGEST_SECRET`을 문서나 Slack 평문으로 보내지 않고 안전한 채널로 별도 전달한다.

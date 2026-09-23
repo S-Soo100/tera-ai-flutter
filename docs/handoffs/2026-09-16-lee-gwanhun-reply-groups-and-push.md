@@ -138,4 +138,4 @@ BLE 어댑터가 `WIFI_OK`(Wi-Fi 연결)와 `PAIR_OK <device_id>`(서버 등록)
 
 ## 5. 별도 대기 중
 
-9/16에 보내드린 [LED 작동 시간·예약 payload 확인 요청](2026-09-16-server-request-led-timer-schedule-payload.md) 3건은 이 문서와 별개로 회신을 기다리고 있습니다.
+당시 보낸 [LED 작동 시간·예약 payload 확인 요청(과거 이력)](https://github.com/S-Soo100/tera-ai-flutter/blob/ba747f1606eacffdec8d14ee7da5266e2c913714/docs/handoffs/2026-09-16-server-request-led-timer-schedule-payload.md) 3건은 작성 시점에 회신 대기였습니다. 이후 [결정 답신 §2](2026-09-16-lee-gwanhun-reply-2-decisions.md#2-led-타이머--a안-확정)에서 LED 타이머 제거와 예약 payload 유지로 정리됐습니다(2026-09-23 정리 주석).

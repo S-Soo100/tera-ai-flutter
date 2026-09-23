@@ -1,7 +1,7 @@
 # petcam-lab 요청서 — 하이라이트 정책 v2 (2026-09-19)
 
 > 대상: petcam-lab(petcam-api·GME 파이프라인) 담당. 배경·전체 정책은 [`기획 확정서`](../superpowers/specs/2026-09-19-highlight-policy-v2-design.md).
-> **이 문서는 [`2026-09-15 하이라이트 FCM 요청`](2026-09-15-petcam-lab-highlight-slack-script.md)을 대체한다.** 그 문서의 "사람 검수 승인 스냅샷·불변 `highlight_batch_id` 확정 뒤 발송"은 **철회**한다.
+> **이 문서는 [2026-09-15 하이라이트 FCM 요청(과거 이력)](https://github.com/S-Soo100/tera-ai-flutter/blob/ba747f1606eacffdec8d14ee7da5266e2c913714/docs/handoffs/2026-09-15-petcam-lab-highlight-slack-script.md)을 대체한다.** 그 문서의 "사람 검수 승인 스냅샷·불변 `highlight_batch_id` 확정 뒤 발송"은 **철회**한다. 구 전달문은 2026-09-23 정리로 삭제하고 git 이력에 보존했다.
 
 ## ⚠️ 선결 과제 — 운영 GME 기준이 9/14에서 멈춤 (2026-09-19 앱 실측)
 
