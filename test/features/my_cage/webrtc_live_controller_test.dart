@@ -109,6 +109,9 @@ class _FakeSignaling extends Fake implements WebRtcSignalingRepository {
   /// 남은 504 응답 횟수.
   int unresponsive = 0;
 
+  /// 다음 offer를 이 예외로 실패시킨다(1회).
+  Object? failOfferWith;
+
   @override
   Future<
       ({
@@ -120,6 +123,11 @@ class _FakeSignaling extends Fake implements WebRtcSignalingRepository {
     final id = 's${++_offers}';
     final hold = holdOffer;
     if (hold != null) await hold.future;
+    final fail = failOfferWith;
+    if (fail != null) {
+      failOfferWith = null;
+      throw fail;
+    }
     if (unresponsive > 0) {
       unresponsive--;
       throw const CameraUnresponsiveException();
@@ -364,6 +372,34 @@ void main() {
     expect(h.pcs, hasLength(1), reason: '꺼진 카메라에 offer를 계속 보내지 않는다');
 
     h.cameras.add([_camera(online: true)]);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    await h.dispose();
+  });
+
+  testWidgets('인증 실패(401)는 자동 재시도하지 않고 failed로 멈춘다', (tester) async {
+    final h = _Harness();
+    h.signaling.failOfferWith = const BackendException(401, 'expired');
+    await _settleConnect(tester);
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.errorKey, 'crecam_live_error_auth');
+    await tester.pump(const Duration(minutes: 3));
+    expect(h.pcs, hasLength(1), reason: '토큰이 죽었는데 offer를 반복하면 안 된다');
+    await h.dispose();
+  });
+
+  testWidgets('ICE가 60초 안에 붙지도 실패하지도 않으면 시도 예산으로 끊고 다시 붙인다',
+      (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    expect(h.state.phase, WebRtcLivePhase.connectingIce);
+    final first = h.pc;
+    await tester.pump(kWebRtcAttemptBudget);
+    await tester.pump();
+    expect(first.closed, isTrue);
+    expect(h.logs.single.outcome, 'failed');
+    expect(h.logs.single.failPhase, 'connectingIce');
+    await tester.pump(const Duration(seconds: 3));
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
     await h.dispose();

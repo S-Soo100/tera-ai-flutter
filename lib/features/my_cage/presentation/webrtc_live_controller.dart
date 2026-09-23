@@ -152,6 +152,7 @@ const _kFailPhase = {
   WebRtcLivePhase.connectingIce: 'connectingIce',
   WebRtcLivePhase.waitingVideo: 'waitingVideo',
   WebRtcLivePhase.streaming: 'streaming',
+  WebRtcLivePhase.stalled: 'streaming',
 };
 
 // ── 타이밍 상수 ──────────────────────────────────────────────────────────────
@@ -297,6 +298,9 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   Timer? _frameTimer;
   Timer? _frameDeadline;
 
+  /// 개별 시도 전체 예산 — ICE 연결 단계엔 다른 한도가 없다.
+  Timer? _attemptDeadline;
+
   /// 앱이 백그라운드에 있어 연결을 내려 둔 상태.
   bool _suspended = false;
 
@@ -414,7 +418,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _diag('restart');
     _endAttempt(_gen, null);
     final gen = ++_gen;
-    _cancelTimers(keepReconnect: true);
+    _cancelTimers();
     await _cleanup(closeRemote: true);
     if (!_isCurrent(gen)) return;
     _pendingCandidates.clear();
@@ -422,11 +426,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     await _start(gen);
   }
 
-  void _cancelTimers({bool keepReconnect = false}) {
-    if (!keepReconnect) _reconnectTimer?.cancel();
+  void _cancelTimers() {
+    _reconnectTimer?.cancel();
     _disconnectGrace?.cancel();
     _frameTimer?.cancel();
     _frameDeadline?.cancel();
+    _attemptDeadline?.cancel();
   }
 
   @override
@@ -445,52 +450,63 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   Future<void> _start(int gen) async {
     _attempt = _Attempt(gen, _reconnectAttempt,
         ref.read(webrtcNetworkSignalProvider).valueOrNull);
+    _attemptDeadline?.cancel();
+    _attemptDeadline = Timer(kWebRtcAttemptBudget, () {
+      if (!_isCurrent(gen) || state.phase.hasVideo) return;
+      _diag('attempt-budget-exhausted', {'phase': state.phase.name});
+      _fail(gen);
+    });
     try {
       await _doConnect(gen);
     } on CameraUnresponsiveException {
       if (!_isCurrent(gen)) return;
       // 504 = 서버가 3회 모두 무응답(정의상 offer_attempts=3, 백엔드 회신 §1.3).
       _attempt?.offerAttempts = 3;
-      _endAttempt(gen, 'unresponsive');
       if (!_autoRetried) {
         // 펌웨어가 offer를 놓친 일시 무응답일 수 있어 1회만 자동 재시도.
         _autoRetried = true;
+        _endAttempt(gen, 'unresponsive');
         await Future<void>.delayed(kWebRtcUnresponsiveRetryDelay);
         if (!_isCurrent(gen)) return;
         await _restart();
         return;
       }
-      debugPrint(
-        '[webrtc-timing] cam=$cameraUuid FAILED(unresponsive) '
-        'config=${_attempt?.msConfig}ms at=${_timing.elapsedMilliseconds}ms',
-      );
-      state = const WebRtcLiveState(
-        phase: WebRtcLivePhase.failed,
-        errorKey: 'crecam_live_error_unresponsive',
-      );
-      _scheduleReconnect(gen);
+      _fail(gen,
+          outcome: 'unresponsive',
+          errorKey: 'crecam_live_error_unresponsive');
+    } on BackendException catch (e) {
+      if (!_isCurrent(gen)) return;
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        // 세션 복구까지 한 번 거친 뒤의 401 — 반복해 봐야 같은 답이다.
+        _fail(gen, errorKey: 'crecam_live_error_auth', reconnect: false);
+        return;
+      }
+      _diag('error', {'status': e.statusCode});
+      _fail(gen);
     } catch (e) {
       if (!_isCurrent(gen)) return;
-      debugPrint(
-        '[webrtc-timing] cam=$cameraUuid FAILED phase=${state.phase} '
-        'config=${_attempt?.msConfig}ms answer=${_attempt?.msAnswer}ms '
-        'at=${_timing.elapsedMilliseconds}ms err=$e',
-      );
+      _diag('error', {'err': e.runtimeType.toString()});
       _fail(gen);
     }
   }
 
-  void _fail(int gen, {String outcome = 'failed'}) {
+  /// 이 세대를 실패로 끝낸다. 세대를 **올려** 늦게 오는 offer 응답·콜백·폴링이
+  /// 실패 화면을 덮지 못하게 하고, 피어·세션·렌더러를 정리한다.
+  /// [reconnect]가 false면(인증 실패) 자동 재시도 없이 버튼만 남긴다.
+  void _fail(
+    int gen, {
+    String outcome = 'failed',
+    String errorKey = 'crecam_live_error_failed',
+    bool reconnect = true,
+  }) {
     if (!_isCurrent(gen)) return;
     _endAttempt(gen, outcome);
     _diag('fail', {'outcome': outcome, 'phase': state.phase.name});
     _cancelTimers();
-    state = WebRtcLiveState(
-      phase: WebRtcLivePhase.failed,
-      errorKey: 'crecam_live_error_failed',
-      renderer: _renderer,
-    );
-    _scheduleReconnect(gen);
+    final next = ++_gen;
+    unawaited(_cleanup(closeRemote: true));
+    state = WebRtcLiveState(phase: WebRtcLivePhase.failed, errorKey: errorKey);
+    if (reconnect) _scheduleReconnect(next);
   }
 
   // ── 연결 결과 기록 ────────────────────────────────────────────────────────
@@ -766,6 +782,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   void _enterStreaming(int gen, RTCPeerConnection pc, RTCVideoRenderer r) {
     if (!_isCurrent(gen) || state.phase == WebRtcLivePhase.streaming) return;
     _frameDeadline?.cancel();
+    _attemptDeadline?.cancel();
     state = state.copyWith(
         phase: WebRtcLivePhase.streaming, clearError: true, renderer: r);
     final a = _attempt;
