@@ -287,8 +287,8 @@ void main() {
       expect(find.text('player-screen'), findsOneWidget);
       expect(pushedClipId, 'f2');
       expect(pushedPlaylist, ['f1', 'f2', 'f3']);
-      // 재생 시작점(play_from_sec)은 값 있는 클립만 맵으로 함께 전달된다.
-      expect(pushedPlayFromSec, {'f1': 8.8});
+      // 재생 시작점(play_from_sec)은 넘기지 않는다 — 항상 0초부터(2026-09-24).
+      expect(pushedPlayFromSec, isEmpty);
     });
 
     testWidgets('배너 탭(X 제외) → 대표 1위부터 대표 재생목록', (tester) async {
@@ -297,7 +297,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(pushedClipId, 'f1'); // 배너 얼굴 = rank 1위
       expect(pushedPlaylist, ['f1', 'f2', 'f3']);
-      expect(pushedPlayFromSec, {'f1': 8.8});
+      expect(pushedPlayFromSec, isEmpty);
     });
   });
 }
