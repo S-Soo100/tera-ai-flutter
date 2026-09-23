@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../core/theme/viva_colors.dart';
 import '../../../../shared/widgets/skeleton_loading.dart';
+import '../../../community/presentation/widgets/community_share_prompt.dart';
 import 'clip_toast.dart';
 import '../../domain/clip_memo.dart';
 import '../bookmark_controller.dart';
@@ -46,6 +47,8 @@ Future<void> toggleClipBookmark(
   // 경우(saveBookmark 없음)는 여기로 오지 않는다.
   if (saved && context.mounted && ref.read(clipMemoAccountProvider) == owner) {
     showClipToast(context, text: 'clip_bookmark_saved_toast'.tr());
+    // 저장된 그 자리에서 커뮤니티 공유를 제안한다(2026-09-24).
+    await offerCommunityShare(context, ref, clipId);
   }
 }
 

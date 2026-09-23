@@ -10,6 +10,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/theme/app_styles.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
+import '../../community/presentation/widgets/community_share_prompt.dart';
 import '../domain/clip_playback.dart';
 import '../domain/motion_clip.dart';
 import 'my_cage_providers.dart';
@@ -226,6 +227,7 @@ class _MotionClipPlayerScreenState
     setState(() => _busy = true);
     final repo = ref.read(favoriteClipRepositoryProvider);
     final messenger = ScaffoldMessenger.of(context);
+    var added = false;
     try {
       if (repo.isFavorite(widget.clipId)) {
         final cameraId = await repo.remove(widget.clipId);
@@ -247,12 +249,15 @@ class _MotionClipPlayerScreenState
         ref.invalidate(allFavoriteClipsProvider);
         messenger
             .showSnackBar(SnackBar(content: Text('clip_favorite_added'.tr())));
+        added = true;
       }
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text('clip_save_failed'.tr())));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+    // 저장된 그 자리에서 커뮤니티 공유를 제안한다(2026-09-24, 새 플레이어와 동일).
+    if (added && mounted) await offerCommunityShare(context, ref, widget.clipId);
   }
 
   @override
