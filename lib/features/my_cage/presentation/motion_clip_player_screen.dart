@@ -257,7 +257,24 @@ class _MotionClipPlayerScreenState
       if (mounted) setState(() => _busy = false);
     }
     // 저장된 그 자리에서 커뮤니티 공유를 제안한다(2026-09-24, 새 플레이어와 동일).
-    if (added && mounted) await offerCommunityShare(context, ref, widget.clipId);
+    // 이 화면은 가로 고정이고 캡션 화면은 세로다 — 이동 전에 방향을 풀고, 돌아오면
+    // 다시 가로로(게시하면 스택이 교체돼 dispose가 세로로 되돌린다).
+    if (added && mounted) {
+      await offerCommunityShare(context, ref, widget.clipId,
+          beforeShare: () async {
+        await SystemChrome.setPreferredOrientations(
+            [DeviceOrientation.portraitUp]);
+        await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+            overlays: SystemUiOverlay.values);
+      }, afterShare: () {
+        if (!mounted) return;
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        ]);
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      });
+    }
   }
 
   @override

@@ -429,7 +429,6 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
 
   Future<void> _updateWifi(DeviceAddCandidate candidate, String id, String ssid,
       String password, bool remember) async {
-    final started = DateTime.now();
     final receipt = await _gateway.provision(candidate,
         ssid: ssid,
         password: password,
@@ -448,8 +447,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     // BLE 회신은 힌트일 뿐, 최종 판정은 서버 last_seen_at이다(2026-09-24):
     // 카메라는 Wi-Fi에 붙으면 재부팅하며 BLE를 끊어 WIFI_OK가 유실되기 쉬웠고,
     // 실제론 붙은 카메라를 '연결 실패'로 표시했다(사육장+카메라 동시 등록 사고).
-    // last_seen_at을 볼 수 없을 때만 예전처럼 즉시 실패.
-    final probe = _lastSeen != null;
+    // 단 기기가 WIFI_FAIL로 실패를 확정했거나 CONNECT가 가기도 전에 끊겼으면
+    // 서버 감시가 오히려 오판한다(옛 Wi-Fi 하트비트가 계속 온다) — 즉시 실패.
+    // last_seen_at을 볼 수 없을 때도 예전처럼 즉시 실패.
+    final lastSeen = _lastSeen;
+    final probe = lastSeen != null && receipt.worthWatching;
     final result = receipt.wifiConnected || probe
         ? DeviceAddResult(
             candidate: candidate,
@@ -463,15 +465,34 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         results: Map.unmodifiable({...state.results, candidate.kind: result}));
     if (receipt.wifiConnected) _completed?.call();
     if (result.reconnect == CameraReconnect.waiting) {
-      unawaited(_watchReconnect(candidate.kind, id, started));
+      // 기준값은 영수증 '뒤'에 읽는다 — BLE 세션 중 옛 Wi-Fi로 보낸 하트비트가
+      // 새 Wi-Fi 접속으로 읽히면 안 된다. 폰 시계와 서버 시계가 어긋나도
+      // '기준값보다 새로운 last_seen_at'은 흔들리지 않는다. 기준값을 못 읽으면
+      // 영수증 시각(폰 시계)으로 대신한다.
+      final since = DateTime.now();
+      DateTime? baseline;
+      var baselineKnown = false;
+      try {
+        baseline = await lastSeen!(id);
+        baselineKnown = true;
+      } catch (_) {/* 아래 폴백 */}
+      if (!_active) return;
+      unawaited(_watchReconnect(candidate.kind, id,
+          since: since, baseline: baseline, baselineKnown: baselineKnown));
     }
   }
 
   /// 재부팅한 카메라가 기존 행으로 다시 붙는지 last_seen_at으로 본다.
-  Future<void> _watchReconnect(
-      PairTargetKind kind, String id, DateTime since) async {
+  /// [baselineKnown]이면 [baseline]보다 새로운 값만, 아니면 [since] 이후 값을 접속으로.
+  Future<void> _watchReconnect(PairTargetKind kind, String id,
+      {required DateTime since,
+      required DateTime? baseline,
+      required bool baselineKnown}) async {
     final lastSeen = _lastSeen;
     if (lastSeen == null) return;
+    bool isNew(DateTime seen) => baselineKnown
+        ? (baseline == null || seen.isAfter(baseline))
+        : seen.isAfter(since);
     final deadline = DateTime.now().add(reconnectTimeout);
     while (true) {
       await Future<void>.delayed(reconnectPoll);
@@ -486,7 +507,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         seen = await lastSeen(id);
       } catch (_) {/* 다음 주기에 다시 본다. */}
       if (!_active) return;
-      final online = seen != null && seen.isAfter(since);
+      final online = seen != null && isNew(seen);
       final expired = !DateTime.now().isBefore(deadline);
       if (!online && !expired) continue;
       final latest = state.results[kind];

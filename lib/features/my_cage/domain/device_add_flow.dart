@@ -156,6 +156,8 @@ class DeviceProvisionReceipt {
       {required this.wifiConnected,
       this.hardwareId,
       this.retrySafe = false,
+      this.connectSent = false,
+      this.wifiRejected = false,
       this.issue,
       this.issueDetail});
   final bool wifiConnected;
@@ -165,6 +167,21 @@ class DeviceProvisionReceipt {
 
   /// False after CONNECT when registration could have occurred without ACK.
   final bool retrySafe;
+
+  /// `CONNECT`가 기기에 갔다 — 기기가 새 자격증명을 시도했을 수 있다. 거짓이면
+  /// (BLE 연결 실패·계정 전환 등 그 전 단계 예외) 기기는 아무것도 안 했다.
+  final bool connectSent;
+
+  /// 기기가 `WIFI_FAIL`로 실패를 확정했다(비밀번호 오류 등). BLE 끊김·무응답과
+  /// 달리 추측할 여지가 없다.
+  final bool wifiRejected;
+
+  /// Wi-Fi 변경 결과를 서버 last_seen_at으로 판정할 근거가 있는가 —
+  /// BLE가 성공을 확정했거나, `CONNECT`는 갔는데 회신 없이 끊긴 경우만.
+  /// 기기가 실패를 확정했거나 시도조차 안 했으면 서버 감시는 오판(옛 Wi-Fi
+  /// 하트비트가 계속 온다)이라 즉시 실패로 둔다.
+  bool get worthWatching =>
+      wifiConnected || (connectSent && !wifiRejected);
 }
 
 abstract interface class DeviceAddGateway {

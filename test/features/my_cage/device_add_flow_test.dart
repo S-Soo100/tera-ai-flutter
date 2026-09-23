@@ -267,10 +267,13 @@ void main() {
 
     // BLE 회신은 힌트일 뿐(2026-09-24): 카메라는 Wi-Fi에 붙으면 재부팅하며
     // BLE를 끊어 WIFI_OK가 유실된다 — 실제론 붙은 카메라를 실패로 표시했다.
-    test('BLE가 Wi-Fi 성공을 안 줘도 last_seen_at이 갱신되면 연결 완료다', () async {
+    // CONNECT 뒤 BLE가 끊긴 영수증(카메라 재부팅으로 WIFI_OK 유실).
+    const droppedAfterConnect = DeviceProvisionReceipt(
+        wifiConnected: false, retrySafe: true, connectSent: true);
+
+    test('CONNECT 뒤 BLE가 끊겨도 last_seen_at이 새로 갱신되면 연결 완료다', () async {
       known[camera.physicalId] = 'existing-camera';
-      gateway.receipts[camera.physicalId] =
-          const DeviceProvisionReceipt(wifiConnected: false, retrySafe: true);
+      gateway.receipts[camera.physicalId] = droppedAfterConnect;
       controller.select(camera);
       await controller.connect('home', 'password');
       final result = controller.state.results[PairTargetKind.camera]!;
@@ -284,11 +287,64 @@ void main() {
           CameraReconnect.online);
     });
 
-    test('BLE 실패 뒤 끝내 안 붙으면 실패로 다시 연결할 수 있다', () async {
+    // 리뷰 지적(2026-09-24): 옛 Wi-Fi로 계속 오던 하트비트가 새 접속으로 읽히면
+    // 안 된다 — 영수증 뒤 읽은 기준값보다 '새로운' last_seen_at만 접속이다.
+    // 폰 시계로 미래(서버 시계 앞섬)인 값이어도 기준값과 같으면 아니다.
+    test('영수증 전부터 있던 last_seen_at(시계 오차로 미래여도)은 접속이 아니다',
+        () async {
       known[camera.physicalId] = 'existing-camera';
-      lastSeen = DateTime(2020);
+      lastSeen = DateTime.now().add(const Duration(minutes: 5));
+      gateway.receipts[camera.physicalId] = droppedAfterConnect;
+      controller.select(camera);
+      await controller.connect('home', 'password');
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+          CameraReconnect.missing);
+    });
+
+    test('기준값보다 새 하트비트가 오면 그때 접속이다', () async {
+      known[camera.physicalId] = 'existing-camera';
+      final stale = DateTime.now().add(const Duration(minutes: 5));
+      lastSeen = stale;
+      gateway.receipts[camera.physicalId] = droppedAfterConnect;
+      controller.select(camera);
+      await controller.connect('home', 'password');
+      lastSeen = stale.add(const Duration(seconds: 15));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+          CameraReconnect.online);
+    });
+
+    test('기기가 WIFI_FAIL로 실패를 확정하면 서버를 보지 않고 즉시 실패다', () async {
+      known[camera.physicalId] = 'existing-camera';
+      lastSeen = DateTime.now(); // 옛 Wi-Fi 하트비트가 살아 있어도
+      gateway.receipts[camera.physicalId] = const DeviceProvisionReceipt(
+          wifiConnected: false,
+          retrySafe: true,
+          connectSent: true,
+          wifiRejected: true);
+      controller.select(camera);
+      await controller.connect('home', 'password');
+      final result = controller.state.results[PairTargetKind.camera]!;
+      expect(result.outcome, DeviceAddOutcome.wifiFailed);
+      expect(result.canRetry, isTrue);
+    });
+
+    test('CONNECT를 보내기 전에 끊겼으면 기기는 시도조차 안 했다 — 즉시 실패', () async {
+      known[camera.physicalId] = 'existing-camera';
+      lastSeen = DateTime.now();
       gateway.receipts[camera.physicalId] =
           const DeviceProvisionReceipt(wifiConnected: false, retrySafe: true);
+      controller.select(camera);
+      await controller.connect('home', 'password');
+      expect(controller.state.results[PairTargetKind.camera]!.outcome,
+          DeviceAddOutcome.wifiFailed);
+    });
+
+    test('BLE 끊김 뒤 끝내 안 붙으면 실패로 다시 연결할 수 있다', () async {
+      known[camera.physicalId] = 'existing-camera';
+      lastSeen = DateTime(2020);
+      gateway.receipts[camera.physicalId] = droppedAfterConnect;
       controller.select(camera);
       await controller.connect('home', 'password');
       await Future<void>.delayed(const Duration(milliseconds: 80));

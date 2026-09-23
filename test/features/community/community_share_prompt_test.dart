@@ -30,9 +30,12 @@ void main() {
   late _Store store;
   late List<Object?> pushedExtras;
 
+  late List<String> hooks;
+
   Future<void> pump(WidgetTester tester,
       {FavoriteClip? Function(String)? lookup, String clipId = 'clip-1'}) async {
     pushedExtras = [];
+    hooks = [];
     final router = GoRouter(routes: [
       GoRoute(
           path: '/',
@@ -40,13 +43,19 @@ void main() {
               body: Consumer(
                   builder: (context, ref, _) => TextButton(
                       key: const Key('trigger'),
-                      onPressed: () => offerCommunityShare(context, ref, clipId),
+                      onPressed: () => offerCommunityShare(context, ref, clipId,
+                          beforeShare: () async => hooks.add('before'),
+                          afterShare: () => hooks.add('after')),
                       child: const Text('go'))))),
       GoRoute(
           path: '/community-share/caption',
           builder: (context, state) {
             pushedExtras.add(state.extra);
-            return const Scaffold(body: Text('caption-screen'));
+            return Scaffold(
+                body: TextButton(
+                    key: const Key('caption-back'),
+                    onPressed: () => context.pop(),
+                    child: const Text('caption-screen')));
           }),
     ]);
     await tester.pumpWidget(ProviderScope(
@@ -77,6 +86,27 @@ void main() {
     expect(pushedExtras, hasLength(1));
     expect((pushedExtras.single as ComposeDraft).fav.clipId, 'clip-1');
     expect(store.dismissed, isFalse);
+    // 이동 직전 before, 돌아온 뒤 after(가로 고정 화면의 방향 풀기/되돌리기).
+    expect(hooks, ['before']);
+    await tester.tap(find.byKey(const Key('caption-back')));
+    await tester.pumpAndSettle();
+    expect(hooks, ['before', 'after']);
+  });
+
+  // 리뷰 지적(2026-09-24): 시트가 떠 있는 동안 북마크가 지워지거나 계정이 바뀌면
+  // 죽은 메타로 캡션 화면에 들어가면 안 된다 — 닫힌 뒤 다시 읽는다.
+  testWidgets('시트가 떠 있는 동안 북마크가 사라지면 공유하기를 눌러도 이동하지 않는다',
+      (tester) async {
+    var present = true;
+    await pump(tester, lookup: (id) => present ? _fav : null);
+    await trigger(tester);
+    expect(find.byKey(const Key('community_share_prompt')), findsOneWidget);
+    present = false;
+    await tester.tap(find.byKey(const Key('community_share_prompt_share')));
+    await tester.pumpAndSettle();
+    expect(find.text('caption-screen'), findsNothing);
+    expect(pushedExtras, isEmpty);
+    expect(hooks, isEmpty);
   });
 
   testWidgets('나중에 + 다시 묻지 않기 → 이동 없이 기억하고, 다음부턴 묻지 않는다',

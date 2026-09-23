@@ -147,14 +147,19 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
                 e is BlePairFail ||
                 e is BlePairingErr,
             wifiTimeout);
+        log('CONNECT(wifi-only) -> ${_describe(result)}');
         if (result is! BleWifiOk) {
-          return const DeviceProvisionReceipt(
-              wifiConnected: false, retrySafe: true);
+          // WIFI_FAIL은 기기가 실패를 확정한 것 — 서버 판정 대상이 아니다.
+          return DeviceProvisionReceipt(
+              wifiConnected: false,
+              retrySafe: true,
+              connectSent: true,
+              wifiRejected: result is BleWifiFail);
         }
         wifi = true;
         if (isCurrent()) await onWifiConnected();
         return const DeviceProvisionReceipt(
-            wifiConnected: true, retrySafe: true);
+            wifiConnected: true, retrySafe: true, connectSent: true);
       }
       if (candidate.kind == PairTargetKind.device) {
         await command('UNPAIR');
@@ -225,26 +230,34 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
       log('CONNECT -> ${_describe(result)}');
       if (result is BleWifiFail) {
         return const DeviceProvisionReceipt(
-            wifiConnected: false, retrySafe: true);
+            wifiConnected: false,
+            retrySafe: true,
+            connectSent: true,
+            wifiRejected: true);
       }
       if (result is BlePairOk && supportsRegistration) {
         // PAIR_OK implies server access but remember requires explicit WIFI_OK.
         return DeviceProvisionReceipt(
-            wifiConnected: false, hardwareId: result.hardwareId);
+            wifiConnected: false,
+            connectSent: true,
+            hardwareId: result.hardwareId);
       }
       if (result is BlePairFail) {
         return DeviceProvisionReceipt(
             wifiConnected: false,
+            connectSent: true,
             issue: DeviceRegistrationIssue.pairFailed,
             issueDetail: result.reason);
       }
       if (result is! BleWifiOk) {
-        return DeviceProvisionReceipt(wifiConnected: false, issue: issue);
+        return DeviceProvisionReceipt(
+            wifiConnected: false, connectSent: true, issue: issue);
       }
       wifi = true;
       if (isCurrent()) await onWifiConnected();
       if (!supportsRegistration) {
-        return DeviceProvisionReceipt(wifiConnected: true, issue: issue);
+        return DeviceProvisionReceipt(
+            wifiConnected: true, connectSent: true, issue: issue);
       }
       // PAIR_FAIL은 등록 확인 대기를 일찍 끝낸다(등록 대기로 남아 재확인 가능).
       issue = DeviceRegistrationIssue.noPairReply;
@@ -253,19 +266,24 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
           registrationTimeout);
       log('pair -> ${_describe(pair)}');
       return switch (pair) {
-        BlePairOk(:final hardwareId) =>
-          DeviceProvisionReceipt(wifiConnected: true, hardwareId: hardwareId),
+        BlePairOk(:final hardwareId) => DeviceProvisionReceipt(
+            wifiConnected: true, connectSent: true, hardwareId: hardwareId),
         BlePairFail(:final reason) => DeviceProvisionReceipt(
             wifiConnected: true,
+            connectSent: true,
             issue: DeviceRegistrationIssue.pairFailed,
             issueDetail: reason),
-        _ => DeviceProvisionReceipt(wifiConnected: true, issue: issue),
+        _ => DeviceProvisionReceipt(
+            wifiConnected: true, connectSent: true, issue: issue),
       };
     } catch (error) {
-      log('ended: ${error.runtimeType}');
+      // 어느 단계에서 끊겼는지 남긴다 — CONNECT 뒤 끊김은 카메라가 Wi-Fi에 붙어
+      // 재부팅한 신호일 수 있어 서버 last_seen_at으로 판정한다(2026-09-24).
+      log('ended: ${error.runtimeType} connectSent=$connectSent');
       return DeviceProvisionReceipt(
           wifiConnected: wifi,
           retrySafe: wifiOnly || !connectSent,
+          connectSent: connectSent,
           issue: connectSent ? issue : null);
     } finally {
       await inbox?.dispose();
