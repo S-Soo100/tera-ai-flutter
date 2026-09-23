@@ -265,14 +265,44 @@ void main() {
       expect(groups, isEmpty);
     });
 
-    test('Wi-Fi 실패는 다시 시도해도 안전하다', () async {
+    // BLE 회신은 힌트일 뿐(2026-09-24): 카메라는 Wi-Fi에 붙으면 재부팅하며
+    // BLE를 끊어 WIFI_OK가 유실된다 — 실제론 붙은 카메라를 실패로 표시했다.
+    test('BLE가 Wi-Fi 성공을 안 줘도 last_seen_at이 갱신되면 연결 완료다', () async {
       known[camera.physicalId] = 'existing-camera';
       gateway.receipts[camera.physicalId] =
-          const DeviceProvisionReceipt(wifiConnected: false);
+          const DeviceProvisionReceipt(wifiConnected: false, retrySafe: true);
       controller.select(camera);
       await controller.connect('home', 'password');
-      expect(controller.state.results[PairTargetKind.camera]!.outcome,
-          DeviceAddOutcome.wifiFailed);
+      final result = controller.state.results[PairTargetKind.camera]!;
+      expect(result.outcome, DeviceAddOutcome.wifiUpdated);
+      expect(result.wifiConnected, isFalse);
+      expect(result.reconnect, CameraReconnect.waiting);
+      expect(result.canRetry, isFalse); // 확인 중엔 다시 연결 버튼 없음
+      lastSeen = DateTime.now().add(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+          CameraReconnect.online);
+    });
+
+    test('BLE 실패 뒤 끝내 안 붙으면 실패로 다시 연결할 수 있다', () async {
+      known[camera.physicalId] = 'existing-camera';
+      lastSeen = DateTime(2020);
+      gateway.receipts[camera.physicalId] =
+          const DeviceProvisionReceipt(wifiConnected: false, retrySafe: true);
+      controller.select(camera);
+      await controller.connect('home', 'password');
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      final result = controller.state.results[PairTargetKind.camera]!;
+      expect(result.reconnect, CameraReconnect.missing);
+      expect(result.unconfirmedFailed, isTrue);
+      expect(result.canRetry, isTrue);
+      // 다시 연결하면 Wi-Fi만 다시 보낸다(새 등록 아님).
+      gateway.receipts[camera.physicalId] =
+          const DeviceProvisionReceipt(wifiConnected: true);
+      await controller.connect('home', 'password');
+      expect(gateway.wifiOnly, [true, true]);
+      expect(controller.state.results[PairTargetKind.camera]!.wifiConnected,
+          isTrue);
     });
 
     test('다시 접속하면 재연결 확인으로 바뀐다', () async {

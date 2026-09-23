@@ -853,6 +853,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     final footer = <Widget>[
       if (retry)
         ManagementButton(
+            key: const Key('device_add_retry_failed'),
             label: 'device_add_retry_failed'.tr(),
             onPressed: state.busy ? null : () => _network(state.ssid)),
       if (pending)
@@ -917,7 +918,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
 
   static bool _succeeded(DeviceAddResult r) =>
       r.outcome == DeviceAddOutcome.registered ||
-      r.outcome == DeviceAddOutcome.wifiUpdated;
+      (r.outcome == DeviceAddOutcome.wifiUpdated && !r.unconfirmedFailed);
 
   /// 이미 등록된 카메라의 Wi-Fi만 바꾼 결과(2026-09-21). 새 등록이 아니라서
   /// 도마뱀 등록·기기 이어 추가를 권하지 않는다. 카메라가 재부팅 뒤 끝내 안
@@ -927,6 +928,15 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     final result = state.results.values.first;
     final reconnect = result.reconnect;
     final missing = reconnect == CameraReconnect.missing;
+    // BLE가 성공을 주지 않은 경우(2026-09-24) — 서버 last_seen_at으로 확인 중엔
+    // '확인 중', 끝내 안 붙으면 '연결 실패'(다시 연결 + 새 카메라 등록).
+    final checking = result.unconfirmed && reconnect == CameraReconnect.waiting;
+    final failed = result.unconfirmedFailed;
+    final (titleKey, titleId) = failed
+        ? ('device_add_results', 'device_add_wifi_failed')
+        : checking
+            ? ('device_add_wifi_checking', 'device_add_wifi_checking')
+            : ('device_add_wifi_updated', 'device_add_wifi_updated');
     final body = [
       SizedBox(height: math.min(186, MediaQuery.sizeOf(context).height * 0.27)),
       Center(
@@ -939,16 +949,20 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
               size: 64,
               color: context.glass.textPrimary)),
       const SizedBox(height: 24),
-      Text('device_add_wifi_updated'.tr(),
-          key: const Key('device_add_wifi_updated'),
+      Text(titleKey.tr(),
+          key: Key(titleId),
           textAlign: TextAlign.center,
           style: managementStyle(context, size: 18, weight: FontWeight.w600)
               .copyWith(height: 21.48046875 / 18)),
       const SizedBox(height: 8),
       Text(
           switch (reconnect) {
-            CameraReconnect.waiting => 'device_add_wifi_updated_waiting',
-            CameraReconnect.missing => 'device_add_wifi_updated_missing',
+            CameraReconnect.waiting => checking
+                ? 'device_add_checking_hint'
+                : 'device_add_wifi_updated_waiting',
+            CameraReconnect.missing => failed
+                ? 'device_add_wifi_updated_failed'
+                : 'device_add_wifi_updated_missing',
             _ => 'device_add_wifi_updated_online',
           }
               .tr(),
@@ -957,6 +971,11 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
               .copyWith(height: 19.09375 / 16)),
     ];
     final footer = <Widget>[
+      if (failed)
+        ManagementButton(
+            key: const Key('device_add_retry_failed'),
+            label: 'device_add_retry_failed'.tr(),
+            onPressed: state.busy ? null : () => _network(state.ssid)),
       if (missing)
         ManagementButton(
             key: const Key('device_add_register_new'),
@@ -987,7 +1006,12 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             DeviceAddOutcome.wifiFailed ||
             DeviceAddOutcome.failed =>
               'device_add_failed'.tr(),
-            DeviceAddOutcome.wifiUpdated => 'device_add_wifi_updated_line'.tr(),
+            DeviceAddOutcome.wifiUpdated => (result.unconfirmedFailed
+                    ? 'device_add_failed'
+                    : result.unconfirmed
+                        ? 'device_add_checking'
+                        : 'device_add_wifi_updated_line')
+                .tr(),
           }}${_issue(result).map((text) => '\n$text').join()}',
           textAlign: TextAlign.center,
           style: managementStyle(context)));
@@ -995,6 +1019,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
   /// 등록 확인이 안 된 이유 — '등록 확인 대기' 한 줄로는 구 펌웨어와 서버
   /// 등록 실패를 가릴 수 없다(2026-09-21).
   Iterable<String> _issue(DeviceAddResult result) sync* {
+    if (result.unconfirmed && result.reconnect == CameraReconnect.waiting) {
+      yield 'device_add_checking_hint'.tr(); // 기다리는 이유를 밝힌다.
+      return;
+    }
     if (result.outcome != DeviceAddOutcome.registrationPending) return;
     switch (result.issue) {
       case DeviceRegistrationIssue.legacyFirmware:

@@ -445,19 +445,24 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
           }
         });
     if (!_active) return;
-    final result = receipt.wifiConnected
+    // BLE 회신은 힌트일 뿐, 최종 판정은 서버 last_seen_at이다(2026-09-24):
+    // 카메라는 Wi-Fi에 붙으면 재부팅하며 BLE를 끊어 WIFI_OK가 유실되기 쉬웠고,
+    // 실제론 붙은 카메라를 '연결 실패'로 표시했다(사육장+카메라 동시 등록 사고).
+    // last_seen_at을 볼 수 없을 때만 예전처럼 즉시 실패.
+    final probe = _lastSeen != null;
+    final result = receipt.wifiConnected || probe
         ? DeviceAddResult(
             candidate: candidate,
             outcome: DeviceAddOutcome.wifiUpdated,
             registeredId: id,
-            wifiConnected: true,
-            reconnect: _lastSeen == null ? null : CameraReconnect.waiting)
+            wifiConnected: receipt.wifiConnected,
+            reconnect: probe ? CameraReconnect.waiting : null)
         : DeviceAddResult(
             candidate: candidate, outcome: DeviceAddOutcome.wifiFailed);
     state = state.copyWith(
         results: Map.unmodifiable({...state.results, candidate.kind: result}));
-    if (receipt.wifiConnected) {
-      _completed?.call();
+    if (receipt.wifiConnected) _completed?.call();
+    if (result.reconnect == CameraReconnect.waiting) {
       unawaited(_watchReconnect(candidate.kind, id, started));
     }
   }
@@ -492,6 +497,8 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         kind: latest!.withReconnect(
             online ? CameraReconnect.online : CameraReconnect.missing)
       }));
+      // BLE 성공 없이 서버로만 확인된 경우 — 지금이 연결 완료 시점이다.
+      if (online && !latest.wifiConnected) _completed?.call();
       return;
     }
   }

@@ -75,11 +75,21 @@ class DeviceAddResult {
   /// 사육장은 등록 대기여도 다시 보낼 수 있다 — `UNPAIR` 뒤 같은 `device_id`로
   /// 재등록돼 행이 늘지 않는다. 카메라는 JWT를 받을 때마다 새 `camera_id`로
   /// 등록하므로 등록 대기면 막는다(중복 행).
+  /// Wi-Fi만 바꾼 카메라가 BLE로 성공을 알리지 않았고(끊김·무응답·WIFI_FAIL)
+  /// 서버 last_seen_at으로도 끝내 안 붙었으면 실패다 — 다시 보낼 수 있다.
   bool get canRetry =>
       outcome == DeviceAddOutcome.failed ||
       outcome == DeviceAddOutcome.wifiFailed ||
       (outcome == DeviceAddOutcome.registrationPending &&
-          candidate.kind == PairTargetKind.device);
+          candidate.kind == PairTargetKind.device) ||
+      unconfirmedFailed;
+
+  /// BLE가 Wi-Fi 성공을 주지 않은 Wi-Fi 변경 — 최종 판정은 서버 last_seen_at.
+  bool get unconfirmed =>
+      outcome == DeviceAddOutcome.wifiUpdated && !wifiConnected;
+
+  bool get unconfirmedFailed =>
+      unconfirmed && reconnect == CameraReconnect.missing;
 }
 
 class DeviceAddState {
