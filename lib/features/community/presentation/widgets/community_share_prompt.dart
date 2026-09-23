@@ -45,12 +45,16 @@ class CommunityShareChoice {
 
 /// 북마크가 실제로 저장된 뒤 호출한다. 묻지 않기로 했거나 북마크 메타가 없으면
 /// (저장 직후 계정 전환 등) 조용히 끝난다. [context]는 루트 내비게이터 아래.
+/// [beforeShare]는 캡션 화면으로 가기 직전, [afterShare]는 거기서 돌아온 뒤
+/// (게시로 스택이 교체돼도 돌아온 것으로 본다) — 가로 고정 화면이 세로 캡션
+/// 화면 앞뒤로 방향을 풀고 되돌리는 데 쓴다.
 Future<void> offerCommunityShare(
-    BuildContext context, WidgetRef ref, String clipId) async {
+    BuildContext context, WidgetRef ref, String clipId,
+    {Future<void> Function()? beforeShare, void Function()? afterShare}) async {
   final store = ref.read(communitySharePromptStoreProvider);
   if (store.dismissed) return;
-  final fav = ref.read(communityShareClipLookupProvider)(clipId);
-  if (fav == null || !context.mounted) return;
+  final lookup = ref.read(communityShareClipLookupProvider);
+  if (lookup(clipId) == null || !context.mounted) return;
   final choice = await showModalBottomSheet<CommunityShareChoice>(
       context: context,
       useRootNavigator: true,
@@ -59,9 +63,15 @@ Future<void> offerCommunityShare(
   // 바깥 탭·뒤로 가기로 닫으면 답하지 않은 것 — 설정을 건드리지 않는다.
   if (choice == null) return;
   if (choice.dontAskAgain) await store.dismiss();
-  if (choice.share && context.mounted) {
-    context.push('/community-share/caption', extra: ComposeDraft(fav));
-  }
+  if (!choice.share || !context.mounted) return;
+  // 시트가 떠 있는 동안 북마크가 지워지거나(클라우드 동기화) 계정이 바뀌었을 수
+  // 있다 — 게시에 쓸 메타는 지금 다시 읽는다.
+  final fav = lookup(clipId);
+  if (fav == null) return;
+  await beforeShare?.call();
+  if (!context.mounted) return;
+  await context.push('/community-share/caption', extra: ComposeDraft(fav));
+  afterShare?.call();
 }
 
 class CommunitySharePrompt extends StatefulWidget {

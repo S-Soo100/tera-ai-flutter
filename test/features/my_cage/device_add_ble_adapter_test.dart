@@ -17,6 +17,9 @@ class Repository extends BlePairingRepository {
       loggingSuppressed = false;
   int jwtLength = 0;
   int chunkLimit = 200;
+
+  /// 이 명령을 쓰는 순간 BLE가 끊긴다(기기 재부팅·거리 이탈).
+  String? dropOn;
   @override
   int get jwtChunkSize => chunkLimit;
   String jwt = '';
@@ -47,6 +50,9 @@ class Repository extends BlePairingRepository {
   Future<void> sendPairingCommand(String command) async {
     expect(loggingSuppressed, isTrue);
     commands.add(command);
+    if (dropOn != null && command.startsWith(dropOn!)) {
+      throw StateError('BLE disconnected');
+    }
     if (command.startsWith('NAME:')) {
       tx.add(modern ? BleNameOk() : BlePairingErr(code: 'UNKNOWN_CMD'));
     }
@@ -193,6 +199,73 @@ void main() {
         isCurrent: () => true);
     expect(result.retrySafe, true);
     expect(result.wifiConnected, false);
+    // 기기가 실패를 확정했다 — 서버 last_seen_at으로 되살리지 않는다(2026-09-24).
+    expect(result.connectSent, true);
+    expect(result.wifiRejected, true);
+    expect(result.worthWatching, false);
+  });
+  // Wi-Fi 변경 결과의 서버 판정 근거(2026-09-24): CONNECT가 간 뒤 끊긴 것만.
+  test('BLE drop after CONNECT is worth watching on the server', () async {
+    repo.dropOn = 'CONNECT';
+    final result = await adapter.provision(candidate,
+        ssid: 'home',
+        password: 'pw',
+        name: '',
+        jwt: '',
+        wifiOnly: true,
+        onWifiConnected: () async {},
+        isCurrent: () => true);
+    expect(result.wifiConnected, false);
+    expect(result.retrySafe, true);
+    expect(result.connectSent, true);
+    expect(result.wifiRejected, false);
+    expect(result.worthWatching, true);
+  });
+  test('BLE drop before CONNECT means the device never tried', () async {
+    repo.dropOn = 'PASS:';
+    final result = await adapter.provision(candidate,
+        ssid: 'home',
+        password: 'pw',
+        name: '',
+        jwt: '',
+        wifiOnly: true,
+        onWifiConnected: () async {},
+        isCurrent: () => true);
+    expect(result.wifiConnected, false);
+    expect(result.retrySafe, true);
+    expect(result.connectSent, false);
+    expect(result.worthWatching, false);
+    expect(repo.commands.contains('CONNECT'), false);
+  });
+  test('wifi-only WIFI_FAIL is rejected by the device, not worth watching',
+      () async {
+    repo.wifiFail = true;
+    final result = await adapter.provision(candidate,
+        ssid: 'home',
+        password: 'pw',
+        name: '',
+        jwt: '',
+        wifiOnly: true,
+        onWifiConnected: () async => fail('failed WiFi saved'),
+        isCurrent: () => true);
+    expect(result.wifiConnected, false);
+    expect(result.connectSent, true);
+    expect(result.wifiRejected, true);
+    expect(result.worthWatching, false);
+  });
+  test('legacy WIFI_OK receipt is worth watching', () async {
+    repo.modern = false;
+    final result = await adapter.provision(candidate,
+        ssid: 'home',
+        password: 'pw',
+        name: '',
+        jwt: '',
+        wifiOnly: true,
+        onWifiConnected: () async {},
+        isCurrent: () => true);
+    expect(result.wifiConnected, true);
+    expect(result.connectSent, true);
+    expect(result.worthWatching, true);
   });
   test('account changed before writes sends no JWT or CONNECT', () async {
     final result = await adapter.provision(candidate,
