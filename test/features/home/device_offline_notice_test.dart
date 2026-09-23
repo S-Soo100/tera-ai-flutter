@@ -19,7 +19,7 @@ Device _device({DateTime? lastSeen}) => Device(
 
 Future<void> _pump(
   WidgetTester tester, {
-  required bool online,
+  required ModuleLink link,
   DateTime? lastSeen,
   String? deviceId = _deviceId,
 }) async {
@@ -29,7 +29,7 @@ Future<void> _pump(
         currentDeviceIdProvider.overrideWith((ref) async => deviceId),
         currentDeviceProvider
             .overrideWith((ref) async => _device(lastSeen: lastSeen)),
-        moduleOnlineProvider(_deviceId).overrideWithValue(online),
+        moduleLinkProvider(_deviceId).overrideWithValue(link),
         nowTickProvider
             .overrideWith((ref) => Stream.value(DateTime(2026, 8, 12, 10))),
       ],
@@ -43,22 +43,28 @@ Future<void> _pump(
 
 void main() {
   testWidgets('오프라인이면 왜 못 누르는지 밝힌다 — 회색 버튼만 두면 고장으로 읽힌다', (tester) async {
-    await _pump(tester, online: false, lastSeen: DateTime(2026, 8, 12, 2));
+    await _pump(tester, link: ModuleLink.offline, lastSeen: DateTime(2026, 8, 12, 2));
     expect(find.byKey(DeviceOfflineNotice.noticeKey), findsOneWidget);
   });
 
   testWidgets('온라인이면 아무것도 그리지 않는다 — 늘 떠 있는 배너는 곧 안 읽힌다', (tester) async {
-    await _pump(tester, online: true, lastSeen: DateTime(2026, 8, 12, 9, 59));
+    await _pump(tester, link: ModuleLink.online, lastSeen: DateTime(2026, 8, 12, 9, 59));
     expect(find.byKey(DeviceOfflineNotice.noticeKey), findsNothing);
   });
 
   testWidgets('마지막 신호 시각을 몰라도 뜬다 — 시각이 없다고 침묵하면 안 된다', (tester) async {
-    await _pump(tester, online: false, lastSeen: null);
+    await _pump(tester, link: ModuleLink.offline, lastSeen: null);
     expect(find.byKey(DeviceOfflineNotice.noticeKey), findsOneWidget);
   });
 
+  testWidgets('아직 모르면(조회 중) 오프라인이 아니라 "확인 중"으로 그린다', (tester) async {
+    await _pump(tester, link: ModuleLink.unknown, lastSeen: null);
+    expect(find.byKey(DeviceOfflineNotice.checkingKey), findsOneWidget);
+    expect(find.byKey(DeviceOfflineNotice.noticeKey), findsNothing);
+  });
+
   testWidgets('제어기가 없는 세트(캠 단품)에서는 뜨지 않는다', (tester) async {
-    await _pump(tester, online: false, deviceId: null);
+    await _pump(tester, link: ModuleLink.offline, deviceId: null);
     expect(find.byKey(DeviceOfflineNotice.noticeKey), findsNothing);
   });
 }

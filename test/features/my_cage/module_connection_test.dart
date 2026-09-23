@@ -117,4 +117,39 @@ void main() {
       async.flushMicrotasks();
     });
   });
+
+  test('moduleLink — 기기 조회 전·실패는 unknown(오프라인으로 그리지 않음), 제어는 차단',
+      () {
+    fakeAsync((async) {
+      final pending = ProviderContainer(overrides: [
+        currentDeviceProvider
+            .overrideWith((ref) => Completer<Device?>().future),
+        telemetryStreamProvider('d1')
+            .overrideWith((ref) => const Stream.empty()),
+      ]);
+      addTearDown(pending.dispose);
+      pending.listen(moduleLinkProvider('d1'), (_, __) {});
+      async.flushMicrotasks();
+      expect(pending.read(moduleLinkProvider('d1')), ModuleLink.unknown);
+      expect(pending.read(moduleOnlineProvider('d1')), isFalse,
+          reason: '모를 때도 제어는 보수적으로 막는다');
+
+      final failed = ProviderContainer(overrides: [
+        currentDeviceProvider
+            .overrideWith((ref) => Future<Device?>.error(Exception('x'))),
+        telemetryStreamProvider('d1')
+            .overrideWith((ref) => const Stream.empty()),
+      ]);
+      addTearDown(failed.dispose);
+      failed.listen(moduleLinkProvider('d1'), (_, __) {});
+      async.flushMicrotasks();
+      expect(failed.read(moduleLinkProvider('d1')), ModuleLink.unknown);
+
+      final offline = _container(StreamController<TelemetryReading?>(),
+          isOnline: false);
+      addTearDown(offline.dispose);
+      async.flushMicrotasks();
+      expect(offline.read(moduleLinkProvider('d1')), ModuleLink.offline);
+    });
+  });
 }

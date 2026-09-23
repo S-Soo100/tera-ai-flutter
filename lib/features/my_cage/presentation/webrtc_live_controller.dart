@@ -12,7 +12,9 @@ import '../data/webrtc_connect_log_repository.dart';
 import '../data/webrtc_signaling_repository.dart';
 import '../domain/terra_camera.dart';
 import '../domain/webrtc_connect_log.dart';
+import '../domain/webrtc_diag.dart';
 import 'my_cage_providers.dart';
+import 'webrtc_diag_providers.dart';
 
 // ── 상태 정의 ─────────────────────────────────────────────────────────────────
 
@@ -24,7 +26,27 @@ enum WebRtcLivePhase {
   /// ICE는 붙었고 첫 영상 프레임을 기다리는 중(키프레임 대기).
   waitingVideo,
   streaming,
+
+  /// 재생 중 디코딩이 [kWebRtcSoftStallTicks]초 멈춤 — renderer는 살아 있어
+  /// 마지막 장면이 남고, 위에 "잠시 멈췄어요" 안내를 얹는다.
+  stalled,
+
+  /// 실패 뒤 집중 복구 예산([kWebRtcRecoveryBudget]) 안의 자동 재시도 대기.
+  /// 사용자에게 버튼을 요구하지 않는다.
+  recovering,
+
+  /// 집중 복구 예산 소진·카메라 오프라인·망 없음·인증 실패. "다시 연결" 버튼이
+  /// 있고 저빈도([kWebRtcLowRetryInterval]) 자동 재시도만 돈다.
   failed,
+}
+
+extension WebRtcLivePhaseX on WebRtcLivePhase {
+  /// 영상 면을 그릴 renderer가 있는 단계.
+  bool get hasVideo =>
+      this == WebRtcLivePhase.streaming || this == WebRtcLivePhase.stalled;
+
+  /// 연결 시퀀스 진행 중(config~첫 프레임 대기).
+  bool get isConnecting => index <= WebRtcLivePhase.waitingVideo.index;
 }
 
 class WebRtcLiveState {
@@ -32,10 +54,15 @@ class WebRtcLiveState {
   final String? errorKey; // ko.json 키
   final RTCVideoRenderer? renderer;
 
+  /// 재생 중 통계를 [kWebRtcStatsUnknownTicks]초 연속 못 읽음 — 영상은 나올 수
+  /// 있으니 가리지 않고, "영상 상태 확인 중"만 얹는다.
+  final bool statsUnknown;
+
   const WebRtcLiveState({
     required this.phase,
     this.errorKey,
     this.renderer,
+    this.statsUnknown = false,
   });
 
   WebRtcLiveState copyWith({
@@ -43,11 +70,13 @@ class WebRtcLiveState {
     String? errorKey,
     bool clearError = false,
     RTCVideoRenderer? renderer,
+    bool? statsUnknown,
   }) {
     return WebRtcLiveState(
       phase: phase ?? this.phase,
       errorKey: clearError ? null : (errorKey ?? this.errorKey),
       renderer: renderer ?? this.renderer,
+      statsUnknown: statsUnknown ?? this.statsUnknown,
     );
   }
 }
@@ -123,6 +152,7 @@ const _kFailPhase = {
   WebRtcLivePhase.connectingIce: 'connectingIce',
   WebRtcLivePhase.waitingVideo: 'waitingVideo',
   WebRtcLivePhase.streaming: 'streaming',
+  WebRtcLivePhase.stalled: 'streaming',
 };
 
 // ── 타이밍 상수 ──────────────────────────────────────────────────────────────
@@ -140,10 +170,37 @@ const kWebRtcUnresponsiveRetryDelay = Duration(seconds: 2);
 /// 넉넉히 둔다. 넘기면 영상 없는 연결로 보고 다시 붙인다.
 const kWebRtcFirstFrameTimeout = Duration(seconds: 30);
 
-/// 재생 중 멈춤 감시 주기와 허용 횟수 — 디코딩 프레임 수가 3회 연속(15초)
-/// 그대로면 얼어붙은 화면으로 보고 다시 붙인다.
-const kWebRtcStallCheckInterval = Duration(seconds: 5);
-const kWebRtcStallChecks = 3;
+/// 재생 중 통계 샘플 주기. getStats는 겹치지 않게 호출한다(busy 가드).
+const kWebRtcStatsInterval = Duration(seconds: 1);
+
+/// 디코딩 프레임이 이 틱만큼 연속 그대로면 `stalled`(안내만, 연결 유지).
+/// GOP 15/6fps = 키프레임 2.5초라 3초면 정상 손실에도 깜빡인다(기획 §11.3).
+const kWebRtcSoftStallTicks = 5;
+
+/// 이 틱만큼 연속 그대로면 재연결. 시각이 아니라 틱으로 세는 이유: 테스트의
+/// 가짜 시계는 Timer만 흘린다(기획 §11.3).
+const kWebRtcHardStallTicks = 15;
+
+/// 통계를 이 틱만큼 연속 못 읽으면 `statsUnknown`(연결은 끊지 않는다).
+const kWebRtcStatsUnknownTicks = 10;
+
+/// 첫 프레임 뒤 이 시간 동안 `streaming`이 유지돼야 백오프·복구 예산을 초기화.
+const kWebRtcStableAfter = Duration(seconds: 30);
+
+/// 개별 연결 시도(config 수신~첫 프레임) 전체 예산. ICE 연결 단계엔 다른
+/// 한도가 없어 이것이 유일한 상한이다(기획 §11.2).
+const kWebRtcAttemptBudget = Duration(seconds: 60);
+
+/// 시청 진입·끊김 뒤 자동 복구를 `recovering`으로 조용히 반복하는 예산.
+/// 넘기면 `failed`(버튼) + 저빈도 재시도.
+const kWebRtcRecoveryBudget = Duration(seconds: 90);
+const kWebRtcLowRetryInterval = Duration(seconds: 60);
+
+/// connectivity_plus 신호 합치기 창.
+const kWebRtcNetworkDebounce = Duration(seconds: 1);
+
+/// 망 신호가 바뀌어도 프레임이 이 틱 안에 진행하면 연결을 유지한다.
+const kWebRtcNetworkFrameGraceTicks = 3;
 
 // ── 컨트롤러 ─────────────────────────────────────────────────────────────────
 
@@ -174,8 +231,27 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (_started) return;
     _started = true;
     _logSink = ref.read(webrtcConnectLogSinkProvider);
+    _diagBuffer = ref.read(webrtcDiagBufferProvider);
     _watchEnvironment();
+    _startRecoveryWindow();
+    _diag('start');
     unawaited(_start(_gen));
+  }
+
+  /// 로컬 진단(메모리 버퍼 + debugPrint). 시작 때 잡아 둔다 — dispose 중엔
+  /// ref를 못 읽는다.
+  WebRtcDiagBuffer? _diagBuffer;
+
+  void _diag(String event, [Map<String, Object?> data = const {}]) {
+    final row = <String, Object?>{'t_ms': _timing.elapsedMilliseconds, ...data};
+    debugPrint('[webrtc-timing] cam=$cameraUuid gen=$_gen $event $row');
+    _diagBuffer?.add(WebRtcDiagEvent(
+      at: DateTime.now(),
+      cameraId: cameraUuid,
+      gen: _gen,
+      event: event,
+      data: row,
+    ));
   }
 
   RTCPeerConnection? _pc;
@@ -218,6 +294,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   Timer? _frameTimer;
   Timer? _frameDeadline;
 
+  /// 개별 시도 전체 예산 — ICE 연결 단계엔 다른 한도가 없다.
+  Timer? _attemptDeadline;
+
+  /// 첫 프레임 뒤 30초 안정 판정 타이머.
+  Timer? _stableTimer;
+
   /// 앱이 백그라운드에 있어 연결을 내려 둔 상태.
   bool _suspended = false;
 
@@ -226,30 +308,61 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
 
   AppLifecycleListener? _lifecycle;
 
+  /// 재시작이 이전 세대를 정리하는 중 — 이때 온 재시작 요청은 병합한다.
+  bool _cleaningUp = false;
+
+  // 네트워크 신호 — connectivity_plus는 같은 변화에 여러 이벤트를 낼 수 있어
+  // [kWebRtcNetworkDebounce] 동안 합친 뒤 마지막 값만 반영한다.
+  Timer? _netDebounce;
+  String? _lastNetwork; // 마지막 신호
+  String? _netApplied; // 연결에 반영한 망(기준선)
+  bool _waitingNetwork = false; // 망 없음으로 재시도를 멈춘 상태
+
+  /// 망 변경 후 프레임 진행을 기다리는 남은 틱 — 재생 감시가 소비한다.
+  int? _netGraceTicks;
+
+  bool _isNoNetwork(String? sig) =>
+      sig == null || sig.isEmpty || sig == ConnectivityResult.none.name;
+
   void _scheduleReconnect(int gen) {
     if (!_isCurrent(gen)) return;
     _reconnectTimer?.cancel();
     if (_cameraOffline()) {
       // 꺼진 카메라에 무한히 offer를 보내 봐야 매번 15초 무응답이다.
       _waitingOnline = true;
-      debugPrint('[webrtc-timing] cam=$cameraUuid offline — wait for online');
+      state = state.copyWith(
+          phase: WebRtcLivePhase.failed,
+          errorKey: 'crecam_live_error_camera_offline');
+      _diag('wait-online');
       return;
     }
-    // 3·6·12·24·48·60초 — 지수는 5에서 멈춘다(상한 60초에 이미 도달;
-    // 무한 증가시키면 pow가 언젠가 inf로 넘친다).
-    final delay = Duration(
-        seconds: math.min(
-            60, 3 * math.pow(2, math.min(5, _reconnectAttempt)).toInt()));
-    _reconnectAttempt++;
-    debugPrint(
-      '[webrtc-timing] cam=$cameraUuid auto-reconnect in ${delay.inSeconds}s '
-      '(attempt $_reconnectAttempt)',
-    );
+    if (_isNoNetwork(_lastNetwork) && _netApplied != null) {
+      // 망 자체가 없다 — 카메라 탓으로 그리지 않고 복구 신호를 기다린다.
+      _waitingNetwork = true;
+      state = state.copyWith(
+          phase: WebRtcLivePhase.failed,
+          errorKey: 'crecam_live_error_no_network');
+      _diag('wait-network');
+      return;
+    }
+    final Duration delay;
+    if (_recoveryExhausted) {
+      delay = kWebRtcLowRetryInterval;
+    } else {
+      // 3·6·12·24·48·60초 — 지수는 5에서 멈춘다(상한 60초에 이미 도달;
+      // 무한 증가시키면 pow가 언젠가 inf로 넘친다).
+      delay = Duration(
+          seconds: math.min(
+              60, 3 * math.pow(2, math.min(5, _reconnectAttempt)).toInt()));
+      _reconnectAttempt++;
+    }
+    _diag('reconnect-scheduled',
+        {'delay_s': delay.inSeconds, 'attempt': _reconnectAttempt});
     _reconnectTimer = Timer(delay, () {
       if (!_isCurrent(gen)) return;
       // 서버 ICE 설정(TURN 자격 등)이 바뀌었을 수 있어 자동 재연결도 새로 받는다.
       ref.invalidate(webrtcConfigProvider);
-      unawaited(_restart());
+      unawaited(_restart(reason: 'timer'));
     });
   }
 
@@ -260,22 +373,28 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (s == AppLifecycleState.paused) unawaited(_suspend());
       if (s == AppLifecycleState.resumed) _resume();
     });
-    ref.listen<AsyncValue<String>>(webrtcNetworkSignalProvider, (prev, next) {
-      final before = prev?.valueOrNull;
+    // 망 신호 provider는 앱 전역에서 데워져 있다(non-autoDispose) — listen은
+    // 현재 값을 다시 주지 않으므로 기준선을 직접 채운다. 안 하면 나중에 만든
+    // 컨트롤러(카메라 탭·확대)가 첫 전환을 기준선으로 삼켜 재연결하지 않는다.
+    final initial = ref.read(webrtcNetworkSignalProvider).valueOrNull;
+    if (initial != null) {
+      _lastNetwork = initial;
+      if (!_isNoNetwork(initial)) _netApplied = initial;
+    }
+    ref.listen<AsyncValue<String>>(webrtcNetworkSignalProvider, (_, next) {
       final now = next.valueOrNull;
-      if (before == null || now == null || before == now) return;
-      if (now.isEmpty || now == ConnectivityResult.none.name) return;
-      if (_suspended || _disposed) return;
-      debugPrint('[webrtc-timing] cam=$cameraUuid network $before→$now');
-      _reconnectNow();
+      if (now == null) return;
+      _lastNetwork = now;
+      _netDebounce?.cancel();
+      _netDebounce = Timer(kWebRtcNetworkDebounce, _onNetworkSettled);
     });
     ref.listen<AsyncValue<List<TerraCamera>>>(camerasProvider, (_, next) {
       if (!_waitingOnline || _suspended || _disposed) return;
       final cam =
           next.valueOrNull?.where((c) => c.id == cameraUuid).firstOrNull;
       if (cam?.isOnline ?? false) {
-        debugPrint('[webrtc-timing] cam=$cameraUuid back online');
-        _reconnectNow();
+        _diag('camera-online');
+        _reconnectNow('camera-online');
       }
     });
   }
@@ -286,11 +405,45 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     return cam != null && !cam.isOnline;
   }
 
-  void _reconnectNow() {
+  /// 디바운스가 끝난 망 신호 처리. 첫 값은 기준선만 잡고, 되돌아온 변화는
+  /// 무시하며, 영상이 나오는 중이면 연결을 유지한 채 프레임 진행으로 판단한다.
+  void _onNetworkSettled() {
+    if (_suspended || _disposed) return;
+    final now = _lastNetwork;
+    if (_isNoNetwork(now)) {
+      _diag('network-none');
+      return; // 기준선은 그대로 — 돌아오면 그때 비교한다
+    }
+    if (_waitingNetwork) {
+      _waitingNetwork = false;
+      _netApplied = now;
+      _diag('network-back', {'to': now});
+      _reconnectNow('network-back');
+      return;
+    }
+    if (_netApplied == null) {
+      _netApplied = now;
+      return;
+    }
+    if (now == _netApplied) return;
+    final before = _netApplied;
+    _netApplied = now;
+    _diag('network-changed', {'from': before, 'to': now});
+    if (state.phase.hasVideo) {
+      // 영상이 진행 중이면 철거하지 않는다 — 감시 루프가 유예 틱 안에 프레임이
+      // 안 늘면 그때 다시 붙인다.
+      _netGraceTicks = kWebRtcNetworkFrameGraceTicks;
+      return;
+    }
+    _reconnectNow('network');
+  }
+
+  /// 환경이 바뀌어 즉시 다시 붙는다(망·복귀·카메라 온라인). 백오프는
+  /// 초기화하지 않는다 — 흔들리는 망에서 즉시 재시도가 무한 반복된다(A3).
+  void _reconnectNow(String reason) {
     _waitingOnline = false;
-    _reconnectAttempt = 0;
     _reconnectTimer?.cancel();
-    unawaited(_restart());
+    unawaited(_restart(reason: reason, force: true));
   }
 
   /// 백그라운드 진입 — 연결을 내린다. 화면에 안 보이는 동안 카메라 세션과
@@ -298,12 +451,17 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 기다리지 않고 새로 붙이는 편이 빠르다.
   Future<void> _suspend() async {
     if (_suspended || _disposed) return;
+    _diag('suspend');
     _suspended = true;
     _endAttempt(_gen, null);
-    _gen++;
+    final gen = ++_gen;
     _cancelTimers();
+    _recoveryDeadline?.cancel(); // 백그라운드 시간은 세지 않는다
     await _cleanup(closeRemote: true);
-    if (!_disposed) {
+    // close 응답이 늦는 사이(최대 15~30초) 복귀해 새 세대가 재생 중일 수 있다 —
+    // 그때 이 늦은 정리가 새 상태를 덮으면 영상은 흐르는데 화면은 "연결 중"에
+    // 갇힌다(A1).
+    if (!_disposed && _suspended && _gen == gen) {
       state = const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig);
     }
   }
@@ -311,7 +469,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   void _resume() {
     if (!_suspended || _disposed) return;
     _suspended = false;
-    _reconnectNow();
+    _diag('resume');
+    // 백그라운드 동안의 망 변화는 무시했다 — 지금 붙을 망을 기준선으로 삼는다.
+    // 안 하면 복귀 뒤 같은 신호의 재알림을 "변경"으로 보고 새 시도를 취소한다.
+    if (!_isNoNetwork(_lastNetwork)) _netApplied = _lastNetwork;
+    _startRecoveryWindow();
+    _reconnectNow('resume');
   }
 
   // ── 공개 API ────────────────────────────────────────────────────────────────
@@ -322,31 +485,50 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   Future<void> retry() async {
     _autoRetried = false;
     _waitingOnline = false;
-    _reconnectAttempt = 0;
+    _waitingNetwork = false;
+    _reconnectAttempt = 0; // 사용자 의도 — 백오프를 처음부터
     _reconnectTimer?.cancel();
+    _startRecoveryWindow();
     ref.invalidate(webrtcConfigProvider);
-    await _restart();
+    await _restart(reason: 'manual', force: true);
   }
 
   /// 새 세대로 다시 붙는다. 세대를 **먼저** 올려 이전 세대의 잔여 작업을 즉시
   /// 무효로 만들고, 정리 도중 더 새로운 재시작이 오면 이쪽은 물러난다.
-  Future<void> _restart() async {
+  ///
+  /// 병합 규칙(A1): 정리 중이면 무시(이미 새 세대가 온다). 연결 시퀀스가 진행
+  /// 중인데 [force]가 아니면 무시(같은 환경에서 offer를 두 번 내지 않는다).
+  /// 환경이 바뀐 요청(망·복귀·수동)은 [force]로 현재 시도를 취소하고 새로 간다.
+  Future<void> _restart({String reason = 'timer', bool force = false}) async {
     if (_disposed || _suspended) return;
+    if (_cleaningUp || (!force && state.phase.isConnecting)) {
+      _diag('restart-merged', {'reason': reason});
+      return;
+    }
+    _diag('restart', {'reason': reason});
     _endAttempt(_gen, null);
     final gen = ++_gen;
-    _cancelTimers(keepReconnect: true);
-    await _cleanup(closeRemote: true);
+    _cancelTimers();
+    _cleaningUp = true;
+    try {
+      await _cleanup(closeRemote: true);
+    } finally {
+      _cleaningUp = false;
+    }
     if (!_isCurrent(gen)) return;
     _pendingCandidates.clear();
     state = const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig);
     await _start(gen);
   }
 
-  void _cancelTimers({bool keepReconnect = false}) {
-    if (!keepReconnect) _reconnectTimer?.cancel();
+  void _cancelTimers() {
+    _reconnectTimer?.cancel();
     _disconnectGrace?.cancel();
     _frameTimer?.cancel();
     _frameDeadline?.cancel();
+    _attemptDeadline?.cancel();
+    _stableTimer?.cancel();
+    _netGraceTicks = null;
   }
 
   @override
@@ -355,6 +537,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _disposed = true;
     _gen++;
     _lifecycle?.dispose();
+    _netDebounce?.cancel();
+    _recoveryDeadline?.cancel();
     _cancelTimers();
     _cleanup(closeRemote: true);
     super.dispose();
@@ -365,51 +549,108 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   Future<void> _start(int gen) async {
     _attempt = _Attempt(gen, _reconnectAttempt,
         ref.read(webrtcNetworkSignalProvider).valueOrNull);
+    _attemptDeadline?.cancel();
+    _attemptDeadline = Timer(kWebRtcAttemptBudget, () {
+      if (!_isCurrent(gen) || state.phase.hasVideo) return;
+      _diag('attempt-budget-exhausted', {'phase': state.phase.name});
+      _fail(gen);
+    });
     try {
       await _doConnect(gen);
     } on CameraUnresponsiveException {
       if (!_isCurrent(gen)) return;
       // 504 = 서버가 3회 모두 무응답(정의상 offer_attempts=3, 백엔드 회신 §1.3).
       _attempt?.offerAttempts = 3;
-      _endAttempt(gen, 'unresponsive');
       if (!_autoRetried) {
         // 펌웨어가 offer를 놓친 일시 무응답일 수 있어 1회만 자동 재시도.
         _autoRetried = true;
+        _endAttempt(gen, 'unresponsive');
         await Future<void>.delayed(kWebRtcUnresponsiveRetryDelay);
         if (!_isCurrent(gen)) return;
-        await _restart();
+        await _restart(reason: 'unresponsive-retry', force: true);
         return;
       }
-      debugPrint(
-        '[webrtc-timing] cam=$cameraUuid FAILED(unresponsive) '
-        'config=${_attempt?.msConfig}ms at=${_timing.elapsedMilliseconds}ms',
-      );
-      state = const WebRtcLiveState(
-        phase: WebRtcLivePhase.failed,
-        errorKey: 'crecam_live_error_unresponsive',
-      );
-      _scheduleReconnect(gen);
+      _fail(gen,
+          outcome: 'unresponsive',
+          errorKey: 'crecam_live_error_unresponsive');
+    } on BackendException catch (e) {
+      if (!_isCurrent(gen)) return;
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        // 세션 복구까지 한 번 거친 뒤의 401 — 반복해 봐야 같은 답이다.
+        _fail(gen, errorKey: 'crecam_live_error_auth', reconnect: false);
+        return;
+      }
+      _diag('error', {'status': e.statusCode});
+      _fail(gen);
     } catch (e) {
       if (!_isCurrent(gen)) return;
-      debugPrint(
-        '[webrtc-timing] cam=$cameraUuid FAILED phase=${state.phase} '
-        'config=${_attempt?.msConfig}ms answer=${_attempt?.msAnswer}ms '
-        'at=${_timing.elapsedMilliseconds}ms err=$e',
-      );
+      _diag('error', {'err': e.runtimeType.toString()});
       _fail(gen);
     }
   }
 
-  void _fail(int gen, {String outcome = 'failed'}) {
+  /// 이 세대를 실패로 끝낸다. 세대를 **올려** 늦게 오는 offer 응답·콜백·폴링이
+  /// 실패 화면을 덮지 못하게 하고, 피어·세션·렌더러를 정리한다.
+  /// [reconnect]가 false면(인증 실패) 자동 재시도 없이 버튼만 남긴다.
+  void _fail(
+    int gen, {
+    String outcome = 'failed',
+    String errorKey = 'crecam_live_error_failed',
+    bool reconnect = true,
+  }) {
     if (!_isCurrent(gen)) return;
     _endAttempt(gen, outcome);
+    _diag('fail', {'outcome': outcome, 'phase': state.phase.name});
     _cancelTimers();
-    state = WebRtcLiveState(
-      phase: WebRtcLivePhase.failed,
-      errorKey: 'crecam_live_error_failed',
-      renderer: _renderer,
-    );
-    _scheduleReconnect(gen);
+    final next = ++_gen;
+    unawaited(_cleanup(closeRemote: true));
+    if (!reconnect) {
+      state = WebRtcLiveState(phase: WebRtcLivePhase.failed, errorKey: errorKey);
+      return;
+    }
+    // 안정 재생으로 닫혔던 창이면 이 실패가 새 창을 연다.
+    if (!_recoveryExhausted && _recoveryDeadline == null) {
+      _startRecoveryWindow();
+    }
+    _lastErrorKey = errorKey;
+    state = _recoveryExhausted
+        ? WebRtcLiveState(phase: WebRtcLivePhase.failed, errorKey: errorKey)
+        : const WebRtcLiveState(phase: WebRtcLivePhase.recovering);
+    _scheduleReconnect(next);
+  }
+
+  // ── 집중 복구 예산(A5) ────────────────────────────────────────────────────
+
+  /// 집중 복구 예산 창. 열려 있으면 실패는 `recovering`, 소진되면 `failed`.
+  /// 진입·복귀·수동 재시도에서 열고, 안정 재생 30초에서 닫는다.
+  Timer? _recoveryDeadline;
+  bool _recoveryExhausted = false;
+
+  /// recovering 중 소진되면 그때 보여 줄 사유.
+  String _lastErrorKey = 'crecam_live_error_failed';
+
+  void _startRecoveryWindow() {
+    _recoveryExhausted = false;
+    _recoveryDeadline?.cancel();
+    _recoveryDeadline = Timer(kWebRtcRecoveryBudget, () {
+      if (_disposed) return;
+      _recoveryExhausted = true;
+      _diag('recovery-budget-exhausted', {'phase': state.phase.name});
+      if (state.phase == WebRtcLivePhase.recovering) {
+        // 백오프 대기 중 — 화면을 정직하게 바꾸고, 걸려 있던 백오프 타이머를
+        // 저빈도 타이머로 교체한다(_scheduleReconnect가 exhausted를 보고 60초).
+        state = state.copyWith(
+            phase: WebRtcLivePhase.failed, errorKey: _lastErrorKey);
+        _scheduleReconnect(_gen);
+      }
+      // 연결 시도 중이면 그 시도가 끝날 때 _fail이 exhausted를 반영한다.
+    });
+  }
+
+  void _closeRecoveryWindow() {
+    _recoveryDeadline?.cancel();
+    _recoveryDeadline = null;
+    _recoveryExhausted = false;
   }
 
   // ── 연결 결과 기록 ────────────────────────────────────────────────────────
@@ -516,10 +757,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     var frameSeen = false;
     renderer.onFirstFrameRendered = () {
       if (!_isCurrent(gen)) return;
-      debugPrint(
-        '[webrtc-timing] cam=$cameraUuid firstFrame='
-        '${_timing.elapsedMilliseconds}ms',
-      );
+      _diag('first-frame');
       frameSeen = true;
       _attempt?.msFirstFrame ??= _timing.elapsedMilliseconds;
       if (connected) _enterStreaming(gen, pc, renderer);
@@ -561,16 +799,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (!_isCurrent(gen)) return;
       if (s == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
         final a = _attempt;
-        debugPrint(
-          '[webrtc-timing] cam=$cameraUuid config=${a?.msConfig}ms '
-          'answer=${a?.msAnswer}ms connected=${_timing.elapsedMilliseconds}ms',
-        );
+        _diag('connected', {'config_ms': a?.msConfig, 'answer_ms': a?.msAnswer});
         if (a != null && a.gen == gen && a.msConnected == null) {
           a.msConnected = _timing.elapsedMilliseconds;
           a.candidates = _candidateTypes(pc);
         }
-        // 연결 성공 — 재연결 백오프 리셋.
-        _reconnectAttempt = 0;
+        // 백오프는 여기서 초기화하지 않는다 — 영상이 30초 안정된 뒤에만(A3).
         _reconnectTimer?.cancel();
         _disconnectGrace?.cancel();
         if (connected) return; // disconnected에서 스스로 복구 — 감시는 그대로.
@@ -587,6 +821,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         // 일시 장애면 WebRTC가 스스로 돌아온다 — 10초 유예 후에도 그대로면
         // failed 취급해 재연결 루프에 태운다(마지막 프레임이 얼어붙은 채
         // "LIVE"로 남는 것 방지).
+        _diag('disconnected');
         _disconnectGrace?.cancel();
         _disconnectGrace = Timer(const Duration(seconds: 10), () {
           if (!_isCurrent(gen)) return;
@@ -628,6 +863,11 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     }
 
     _sessionId = offerResult.sessionId;
+    _diag('answer', {
+      'session': offerResult.sessionId,
+      'offer_attempts': offerResult.offerAttempts,
+      'answer_ms': offerResult.answerMs,
+    });
     _attempt
       ?..msAnswer = _timing.elapsedMilliseconds
       ..offerAttempts = offerResult.offerAttempts
@@ -680,36 +920,100 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     });
   }
 
-  /// 재생 시작 + 멈춤 감시. 디코딩 프레임 수가 [kWebRtcStallChecks]회 연속
-  /// 그대로면 다시 붙인다. 통계를 못 읽으면 판단하지 않는다(겁주지 않는다).
+  /// 재생 시작 + 감시. 1초마다 디코딩 프레임 수를 읽어
+  /// - 진행(값이 달라짐 — 증가·감소·첫 값)이면 기준을 갱신하고 `stalled`면 복귀
+  /// - [kWebRtcSoftStallTicks] 연속 그대로면 `stalled`(안내만, 연결 유지)
+  /// - [kWebRtcHardStallTicks] 연속 그대로면 재연결
+  /// - 통계를 못 읽으면 정지도 진행도 아니다 — [kWebRtcStatsUnknownTicks] 뒤
+  ///   `statsUnknown`만 켠다(겁주지 않는다)
+  /// - 망 변경 유예([_netGraceTicks])는 무진행 틱에서만 줄어들고 0이면 재연결
   void _enterStreaming(int gen, RTCPeerConnection pc, RTCVideoRenderer r) {
-    if (!_isCurrent(gen) || state.phase == WebRtcLivePhase.streaming) return;
+    if (!_isCurrent(gen) || state.phase.hasVideo) return;
     _frameDeadline?.cancel();
-    state = state.copyWith(
-        phase: WebRtcLivePhase.streaming, clearError: true, renderer: r);
+    _attemptDeadline?.cancel();
+    state = WebRtcLiveState(phase: WebRtcLivePhase.streaming, renderer: r);
     final a = _attempt;
     if (a != null && a.gen == gen && a.playing == null) {
       a.msFirstFrame ??= _timing.elapsedMilliseconds;
       a.playing = Stopwatch()..start();
       _writeLog(a, 'streaming');
     }
+    _diag('streaming');
+    _armStableTimer(gen);
+
     int? last;
     var still = 0;
+    var noStats = 0;
+    var busy = false;
     _frameTimer?.cancel();
-    _frameTimer = Timer.periodic(kWebRtcStallCheckInterval, (_) async {
-      if (!_isCurrent(gen)) return;
+    _frameTimer = Timer.periodic(kWebRtcStatsInterval, (_) async {
+      if (!_isCurrent(gen) || busy) return;
+      busy = true;
       final frames = await _framesDecoded(pc);
+      busy = false;
       if (!_isCurrent(gen)) return;
+
       if (frames == null) {
-        still = 0;
+        noStats++;
+        if (noStats >= kWebRtcStatsUnknownTicks && !state.statsUnknown) {
+          _diag('stats-unknown');
+          state = state.copyWith(statsUnknown: true);
+        }
         return;
       }
-      still = frames == last ? still + 1 : 0;
-      last = frames;
-      if (still >= kWebRtcStallChecks) {
-        debugPrint('[webrtc-timing] cam=$cameraUuid FAILED(stalled)');
-        _fail(gen, outcome: 'stalled');
+      noStats = 0;
+      if (state.statsUnknown) state = state.copyWith(statsUnknown: false);
+
+      if (last == null || frames != last) {
+        last = frames;
+        still = 0;
+        _netGraceTicks = null;
+        if (state.phase == WebRtcLivePhase.stalled) {
+          _diag('stall-recovered');
+          state = state.copyWith(phase: WebRtcLivePhase.streaming);
+          _armStableTimer(gen);
+        }
+        return;
       }
+
+      still++;
+      final grace = _netGraceTicks;
+      if (grace != null) {
+        if (grace <= 1) {
+          _netGraceTicks = null;
+          _diag('network-no-progress');
+          // 사용자 이탈(closed)이 아니라 재생 실패다 — 정지율 집계용.
+          _endAttempt(gen, 'stalled');
+          _reconnectNow('network');
+          return;
+        }
+        _netGraceTicks = grace - 1;
+      }
+      if (still >= kWebRtcHardStallTicks) {
+        _diag('stall-hard', {'still': still});
+        _fail(gen, outcome: 'stalled');
+        return;
+      }
+      if (still >= kWebRtcSoftStallTicks &&
+          state.phase == WebRtcLivePhase.streaming) {
+        _diag('stall-soft', {'still': still});
+        _stableTimer?.cancel(); // 불안정 구간 — 안정 판정을 다시 센다
+        state = state.copyWith(phase: WebRtcLivePhase.stalled);
+      }
+    });
+  }
+
+  /// [kWebRtcStableAfter] 동안 `streaming`이 이어지면 백오프·504 가드를
+  /// 초기화한다. connected만으로 초기화하면 "영상 있음 → 즉시 실패"가 짧은
+  /// 간격으로 반복돼 카메라 세션을 압박한다(A3).
+  void _armStableTimer(int gen) {
+    _stableTimer?.cancel();
+    _stableTimer = Timer(kWebRtcStableAfter, () {
+      if (!_isCurrent(gen) || state.phase != WebRtcLivePhase.streaming) return;
+      _diag('stable');
+      _reconnectAttempt = 0;
+      _autoRetried = false;
+      _closeRecoveryWindow();
     });
   }
 

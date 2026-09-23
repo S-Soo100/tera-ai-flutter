@@ -11,7 +11,9 @@ import 'package:vivanaut/features/my_cage/data/webrtc_signaling_repository.dart'
 import 'package:vivanaut/features/my_cage/data/camera_exceptions.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/domain/webrtc_connect_log.dart';
+import 'package:vivanaut/features/my_cage/domain/webrtc_diag.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/webrtc_diag_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
 
 const _cam = 'cam-1';
@@ -22,6 +24,9 @@ class _FakePc extends Fake implements RTCPeerConnection {
   final added = <String?>[];
   bool closed = false;
   int frames = 0;
+
+  /// true면 getStats가 실패한다(통계 없음).
+  bool statsBroken = false;
   RTCPeerConnectionState? _state;
 
   @override
@@ -64,7 +69,9 @@ class _FakePc extends Fake implements RTCPeerConnection {
   Future<void> addCandidate(RTCIceCandidate candidate) async =>
       added.add(candidate.candidate);
   @override
-  Future<List<StatsReport>> getStats([MediaStreamTrack? track]) async => [
+  Future<List<StatsReport>> getStats([MediaStreamTrack? track]) async {
+    if (statsBroken) throw StateError('no stats');
+    return [
         StatsReport('in', 'inbound-rtp', 0,
             {'kind': 'video', 'framesDecoded': frames}),
         StatsReport('t', 'transport', 0, {'selectedCandidatePairId': 'p'}),
@@ -73,6 +80,7 @@ class _FakePc extends Fake implements RTCPeerConnection {
         StatsReport('l', 'local-candidate', 0, {'candidateType': 'srflx'}),
         StatsReport('r', 'remote-candidate', 0, {'candidateType': 'host'}),
       ];
+  }
   @override
   Future<void> close() async {
     closed = true;
@@ -107,6 +115,9 @@ class _FakeSignaling extends Fake implements WebRtcSignalingRepository {
   /// 남은 504 응답 횟수.
   int unresponsive = 0;
 
+  /// 다음 offer를 이 예외로 실패시킨다(1회).
+  Object? failOfferWith;
+
   @override
   Future<
       ({
@@ -118,6 +129,11 @@ class _FakeSignaling extends Fake implements WebRtcSignalingRepository {
     final id = 's${++_offers}';
     final hold = holdOffer;
     if (hold != null) await hold.future;
+    final fail = failOfferWith;
+    if (fail != null) {
+      failOfferWith = null;
+      throw fail;
+    }
     if (unresponsive > 0) {
       unresponsive--;
       throw const CameraUnresponsiveException();
@@ -137,8 +153,17 @@ class _FakeSignaling extends Fake implements WebRtcSignalingRepository {
       Map<String, dynamic> candidateJson) async {}
 
   @override
-  Future<void> closeSession(String cameraUuid, String sessionId) async =>
-      closedSessions.add(sessionId);
+  Future<void> closeSession(String cameraUuid, String sessionId) async {
+    closedSessions.add(sessionId);
+    final hold = holdClose;
+    if (hold != null) {
+      holdClose = null; // 다음 close 한 번만 잡는다
+      await hold.future;
+    }
+  }
+
+  /// 다음 closeSession 응답을 테스트가 잡아 둔다(느린 서버 흉내).
+  Completer<void>? holdClose;
 }
 
 TerraCamera _camera({required bool online}) => TerraCamera(
@@ -154,9 +179,12 @@ class _Harness {
   final network = StreamController<String>();
   final cameras = StreamController<List<TerraCamera>>();
   final logs = <WebRtcConnectLog>[];
+  final diag = WebRtcDiagBuffer();
   late final ProviderContainer container;
 
-  _Harness() {
+  /// [start]가 false면 컨트롤러를 아직 만들지 않는다 — 테스트가 다른
+  /// provider를 먼저 데운 뒤 [startController]로 시작한다.
+  _Harness({bool start = true}) {
     container = ProviderContainer(overrides: [
       webrtcSignalingRepositoryProvider.overrideWithValue(signaling),
       webrtcConfigProvider.overrideWith((ref) async => <String, dynamic>{}),
@@ -170,10 +198,14 @@ class _Harness {
       webrtcNetworkSignalProvider.overrideWith((ref) => network.stream),
       camerasProvider.overrideWith((ref) => cameras.stream),
       webrtcConnectLogSinkProvider.overrideWithValue(logs.add),
+      webrtcDiagBufferProvider.overrideWithValue(diag),
     ]);
-    container.listen(webrtcLiveControllerProvider(_cam), (_, __) {});
+    if (start) startController();
     container.listen(camerasProvider, (_, __) {});
   }
+
+  void startController() =>
+      container.listen(webrtcLiveControllerProvider(_cam), (_, __) {});
 
   WebRtcLiveState get state => container.read(webrtcLiveControllerProvider(_cam));
   _FakePc get pc => pcs.last;
@@ -193,6 +225,23 @@ Future<void> _settleConnect(WidgetTester tester) async {
   await tester.pump();
 }
 
+/// 재생 중 통계 틱을 [n]번 흘린다.
+Future<void> _ticks(WidgetTester tester, int n) async {
+  for (var i = 0; i < n; i++) {
+    await tester.pump(kWebRtcStatsInterval);
+    await tester.pump();
+  }
+}
+
+/// 연결→첫 프레임까지 흘려 streaming 상태로 만든다.
+Future<void> _stream(WidgetTester tester, _Harness h, {int frames = 5}) async {
+  await _settleConnect(tester);
+  h.pc.frames = frames;
+  h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
+  h.renderer.onFirstFrameRendered!();
+  expect(h.state.phase, WebRtcLivePhase.streaming);
+}
+
 void main() {
   testWidgets('재연결 후 이전 세션의 ICE 후보가 새 피어에 섞이지 않는다', (tester) async {
     final h = _Harness();
@@ -202,7 +251,7 @@ void main() {
     final old = h.pc;
 
     old.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
-    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
     await tester.pump(const Duration(seconds: 3)); // 백오프 3초
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
@@ -269,33 +318,114 @@ void main() {
     h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
     await tester.pump(kWebRtcFirstFrameTimeout);
     await tester.pump();
-    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
     await tester.pump(const Duration(seconds: 3));
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
     await h.dispose();
   });
 
-  testWidgets('재생 중 프레임이 15초간 멈추면 다시 붙인다', (tester) async {
+  testWidgets('재생 중 프레임이 5초 멈추면 stalled 안내, 15초면 다시 붙인다', (tester) async {
     final h = _Harness();
+    await _stream(tester, h);
+    for (var i = 0; i < 4; i++) {
+      h.pc.frames += 6;
+      await _ticks(tester, 1);
+    }
+    expect(h.state.phase, WebRtcLivePhase.streaming);
+    // 마지막 진행 뒤 5틱 무진행이면 stalled.
+    await _ticks(tester, kWebRtcSoftStallTicks);
+    expect(h.state.phase, WebRtcLivePhase.stalled);
+    expect(h.state.renderer, isNotNull, reason: '마지막 장면을 지우지 않는다');
+    await _ticks(tester, kWebRtcHardStallTicks - kWebRtcSoftStallTicks);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
+    expect(h.logs.last.outcome, 'stalled');
+    expect(h.logs.last.failPhase, 'streaming');
+    await h.dispose();
+  });
+
+  testWidgets('stalled 중 프레임이 다시 늘면 streaming으로 돌아온다', (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    await _ticks(tester, 1 + kWebRtcSoftStallTicks);
+    expect(h.state.phase, WebRtcLivePhase.stalled);
+    h.pc.frames += 1;
+    await _ticks(tester, 1);
+    expect(h.state.phase, WebRtcLivePhase.streaming);
+    expect(h.pcs, hasLength(1));
+    await h.dispose();
+  });
+
+  testWidgets('카운터가 줄어도(리셋) 정지로 보지 않고, 정적 피사체(프레임은 옴)는 멀쩡하다',
+      (tester) async {
+    final h = _Harness();
+    await _stream(tester, h, frames: 900);
+    await _ticks(tester, 1);
+    h.pc.frames = 3; // SSRC 교체/카운터 리셋
+    await _ticks(tester, 1);
+    for (var i = 0; i < 20; i++) {
+      h.pc.frames += 6; // 화면은 안 변해도 프레임은 온다
+      await _ticks(tester, 1);
+    }
+    expect(h.state.phase, WebRtcLivePhase.streaming);
+    await h.dispose();
+  });
+
+  testWidgets('통계를 10초 못 읽으면 statsUnknown만 켜고 연결은 유지한다', (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    h.pc.statsBroken = true;
+    await _ticks(tester, kWebRtcStatsUnknownTicks);
+    expect(h.state.phase, WebRtcLivePhase.streaming);
+    expect(h.state.statsUnknown, isTrue);
+    await _ticks(tester, 30);
+    expect(h.pcs, hasLength(1), reason: '통계 부재만으로 끊지 않는다');
+    h.pc.statsBroken = false;
+    h.pc.frames += 6;
+    await _ticks(tester, 1);
+    expect(h.state.statsUnknown, isFalse);
+    await h.dispose();
+  });
+
+  testWidgets('영상이 30초 안정되면 백오프가 초기화된다', (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    await tester.pump(const Duration(seconds: 3));
     await _settleConnect(tester);
     h.pc.frames = 5;
     h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
     h.renderer.onFirstFrameRendered!();
-    expect(h.state.phase, WebRtcLivePhase.streaming);
-    // 프레임이 늘어나는 동안은 멀쩡하다.
-    for (var i = 0; i < 4; i++) {
-      h.pc.frames += 10;
-      await tester.pump(kWebRtcStallCheckInterval);
-      await tester.pump();
+    for (var i = 0; i < 31; i++) {
+      h.pc.frames += 6;
+      await _ticks(tester, 1);
     }
-    expect(h.state.phase, WebRtcLivePhase.streaming);
-    // 멈춤: 같은 값이 3회 연속이면 실패(그다음 주기엔 이미 재연결 중이다).
-    for (var i = 0; i < kWebRtcStallChecks; i++) {
-      await tester.pump(kWebRtcStallCheckInterval);
-      await tester.pump();
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    await tester.pump(const Duration(seconds: 3));
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(3), reason: '초기화됐으면 6초가 아니라 3초 뒤에 붙는다');
+    await h.dispose();
+  });
+
+  testWidgets('망 변경 뒤 프레임이 3틱 안에 안 늘면 그때 다시 붙는다', (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _stream(tester, h);
+    await _ticks(tester, 1);
+    h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
+    // 프레임이 계속 오면 유지.
+    for (var i = 0; i < 5; i++) {
+      h.pc.frames += 6;
+      await _ticks(tester, 1);
     }
-    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.pcs, hasLength(1));
+    // 다시 바뀌었는데 이번엔 프레임이 멈춤 → 3틱 뒤 재연결.
+    h.network.add('wifi');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _ticks(tester, kWebRtcNetworkFrameGraceTicks);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
     await h.dispose();
   });
 
@@ -339,12 +469,14 @@ void main() {
     expect(h.pcs, hasLength(1));
 
     h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
     expect(h.pcs.first.closed, isTrue);
 
     // 연결이 완전히 끊긴 순간(none)에는 헛시도하지 않는다.
     h.network.add('none');
+    await tester.pump(kWebRtcNetworkDebounce);
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
     await h.dispose();
@@ -362,6 +494,261 @@ void main() {
     h.cameras.add([_camera(online: true)]);
     await _settleConnect(tester);
     expect(h.pcs, hasLength(2));
+    await h.dispose();
+  });
+
+  testWidgets('인증 실패(401)는 자동 재시도하지 않고 failed로 멈춘다', (tester) async {
+    final h = _Harness();
+    h.signaling.failOfferWith = const BackendException(401, 'expired');
+    await _settleConnect(tester);
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.errorKey, 'crecam_live_error_auth');
+    await tester.pump(const Duration(minutes: 3));
+    expect(h.pcs, hasLength(1), reason: '토큰이 죽었는데 offer를 반복하면 안 된다');
+    await h.dispose();
+  });
+
+  testWidgets('ICE가 60초 안에 붙지도 실패하지도 않으면 시도 예산으로 끊고 다시 붙인다',
+      (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    expect(h.state.phase, WebRtcLivePhase.connectingIce);
+    final first = h.pc;
+    await tester.pump(kWebRtcAttemptBudget);
+    await tester.pump();
+    expect(first.closed, isTrue);
+    expect(h.logs.single.outcome, 'failed');
+    expect(h.logs.single.failPhase, 'connectingIce');
+    await tester.pump(const Duration(seconds: 3));
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    await h.dispose();
+  });
+
+  testWidgets('1초 안에 wifi→mobile→wifi로 돌아오면 재연결하지 않는다', (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _settleConnect(tester);
+    h.network.add('mobile');
+    await tester.pump(const Duration(milliseconds: 300));
+    h.network.add('wifi');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(1));
+    expect(h.diag.events.where((e) => e.event == 'restart'), isEmpty);
+    await h.dispose();
+  });
+
+  testWidgets('망이 없으면 재시도를 멈추고, 돌아오면 곧바로 붙는다', (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _settleConnect(tester);
+    h.network.add('none');
+    await tester.pump(kWebRtcNetworkDebounce);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.errorKey, 'crecam_live_error_no_network');
+    await tester.pump(const Duration(minutes: 2));
+    expect(h.pcs, hasLength(1), reason: '망 없이 offer를 반복하지 않는다');
+    h.network.add('wifi');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    await h.dispose();
+  });
+
+  testWidgets('정리 중 겹친 재시작 요청은 병합돼 offer가 하나만 나간다', (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    final n = h.container.read(webrtcLiveControllerProvider(_cam).notifier);
+    unawaited(n.retry());
+    unawaited(n.retry());
+    unawaited(n.retry());
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    expect(
+        h.diag.events.where((e) => e.event == 'restart-merged'), hasLength(2));
+    await h.dispose();
+  });
+
+  testWidgets('연결 성공만으로는 백오프가 초기화되지 않는다', (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    // 1차 실패 → 3초, 2차 실패 → 6초.
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    await tester.pump(const Duration(seconds: 3));
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
+    // 영상 없이 곧 죽는 연결.
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    await tester.pump(const Duration(seconds: 3));
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2), reason: '3초 뒤가 아니라 6초 뒤에 붙어야 한다');
+    await tester.pump(const Duration(seconds: 3));
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(3));
+    await h.dispose();
+  });
+
+  testWidgets('예산 안의 실패는 recovering(버튼 없음), 90초 넘기면 failed + 60초 간격',
+      (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
+    expect(h.state.errorKey, isNull);
+    // 90초를 흘린다. 그동안 재연결·60초 시도 예산 실패가 섞여 돌지만, 소진
+    // 시점에 (a) 백오프 대기 중이면 즉시 failed, (b) 연결 시도 중이면 그 시도가
+    // 실패할 때 failed — 둘 다 만들어 준다.
+    await tester.pump(kWebRtcRecoveryBudget);
+    await tester.pump();
+    if (h.state.phase.isConnecting) {
+      h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+      await tester.pump();
+    }
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.errorKey, 'crecam_live_error_failed');
+    // 소진 뒤 재시도는 60초 간격 — 59초까지는 새 피어가 없고 61초에 하나.
+    final before = h.pcs.length;
+    await tester.pump(const Duration(seconds: 59));
+    expect(h.pcs.length, before);
+    await tester.pump(const Duration(seconds: 2));
+    await _settleConnect(tester);
+    expect(h.pcs.length, before + 1);
+    await h.dispose();
+  });
+
+  testWidgets('안정 재생 뒤 끊기면 새 90초 창이 열린다', (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    for (var i = 0; i < 31; i++) {
+      h.pc.frames += 6;
+      await _ticks(tester, 1);
+    }
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
+    await tester.pump(const Duration(seconds: 80));
+    expect(h.state.phase, isNot(WebRtcLivePhase.failed));
+    await h.dispose();
+  });
+
+  testWidgets('수동 다시 연결은 예산 창을 새로 연다', (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    await tester.pump(kWebRtcRecoveryBudget);
+    await tester.pump();
+    if (h.state.phase.isConnecting) {
+      h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+      await tester.pump();
+    }
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    unawaited(h.container
+        .read(webrtcLiveControllerProvider(_cam).notifier)
+        .retry());
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
+    await h.dispose();
+  });
+
+  // ── 코드 리뷰 지적(2026-09-24) ───────────────────────────────────────
+
+  testWidgets('망 신호가 이미 데워져 있어도 첫 전환에 다시 붙는다', (tester) async {
+    final h = _Harness(start: false);
+    // 홈 라이브가 먼저 떠서 망 신호 provider가 이미 값을 들고 있는 상황.
+    h.container.listen(webrtcNetworkSignalProvider, (_, __) {});
+    h.network.add('wifi');
+    await tester.pump();
+    h.startController();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
+    expect(h.pcs, hasLength(1));
+    h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2), reason: '첫 전환을 기준선으로 삼켜서는 안 된다');
+    await h.dispose();
+  });
+
+  testWidgets('빠른 복귀 뒤 늦게 끝난 이전 정리가 새 재생 상태를 덮지 않는다',
+      (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    h.signaling.holdClose = Completer();
+    final slowClose = h.signaling.holdClose!;
+    for (final s in [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await tester.pump();
+    for (final s in [
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await _stream(tester, h);
+    expect(h.pcs, hasLength(2));
+    slowClose.complete(); // 이전 세션 close가 이제야 끝난다
+    await tester.pump();
+    await tester.pump();
+    expect(h.state.phase, WebRtcLivePhase.streaming);
+    expect(h.state.renderer, isNotNull);
+    await h.dispose();
+  });
+
+  testWidgets('백그라운드 중 망이 바뀌어도 복귀 뒤 같은 신호로 다시 붙지 않는다',
+      (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _stream(tester, h);
+    for (final s in [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await tester.pump();
+    h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
+    for (final s in [
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    // 복귀 직후 connectivity가 같은 값을 다시 알린다.
+    h.network.add('wifi,mobile');
+    await tester.pump();
+    h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2), reason: '이미 LTE로 붙은 연결을 다시 취소하면 안 된다');
+    await h.dispose();
+  });
+
+  testWidgets('망 변경 뒤 무진행 재연결은 stalled로 기록한다(closed 아님)', (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _stream(tester, h);
+    await _ticks(tester, 1);
+    h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _ticks(tester, kWebRtcNetworkFrameGraceTicks);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    expect(h.logs.map((l) => l.outcome), ['streaming', 'stalled']);
+    expect(h.logs.last.failPhase, 'streaming');
     await h.dispose();
   });
 
@@ -401,7 +788,7 @@ void main() {
     // 가짜 피어는 ICE 수집이 즉시 끝나 1차 504 → 2초 뒤 2차 504가 이 안에 끝난다.
     await _settleConnect(tester);
     await tester.pump();
-    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
     expect(h.logs.map((l) => l.outcome), ['unresponsive', 'unresponsive']);
     expect(h.logs.every((l) => l.offerAttempts == 3), isTrue);
     expect(h.logs.every((l) => l.failPhase == 'offering'), isTrue);
@@ -425,11 +812,7 @@ void main() {
     h.pc.frames = 5;
     h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
     h.renderer.onFirstFrameRendered!();
-    // 첫 주기는 기준값을 잡을 뿐이라 한 주기 더 흘린다.
-    for (var i = 0; i <= kWebRtcStallChecks; i++) {
-      await tester.pump(kWebRtcStallCheckInterval);
-      await tester.pump();
-    }
+    await _ticks(tester, 1 + kWebRtcHardStallTicks);
     expect(h.logs.map((l) => l.outcome), ['no_video', 'streaming', 'stalled']);
     expect(h.logs[1].reconnectAttempt, 1);
     expect(h.logs.last.failPhase, 'streaming');
@@ -443,6 +826,7 @@ void main() {
     await _settleConnect(tester);
     expect(h.state.phase, WebRtcLivePhase.connectingIce);
     h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
     await _settleConnect(tester);
     expect(h.logs.first.outcome, 'cancelled');
     expect(h.logs.first.failPhase, 'connectingIce');

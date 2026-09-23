@@ -19,14 +19,15 @@ class DeviceOfflineNotice extends ConsumerWidget {
   const DeviceOfflineNotice({super.key});
 
   static const noticeKey = Key('device_offline_notice');
+  static const checkingKey = Key('device_link_checking_notice');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
     if (deviceId == null) return const SizedBox.shrink();
-    if (ref.watch(moduleOnlineProvider(deviceId))) {
-      return const SizedBox.shrink();
-    }
+    final link = ref.watch(moduleLinkProvider(deviceId));
+    if (link == ModuleLink.online) return const SizedBox.shrink();
+    if (link == ModuleLink.unknown) return const _CheckingNotice();
 
     final device = ref.watch(currentDeviceProvider).valueOrNull;
     // 1분 틱에 맞춰 다시 그린다. 안 그러면 "8시간 전"이 그대로 멈춘다.
@@ -71,6 +72,43 @@ class DeviceOfflineNotice extends ConsumerWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 제어기 상태를 아직 모를 때 — 경고색이 아니라 중립색. 고장이 아니라 확인 중이다
+/// (2026-09-23: 앱을 켜자마자 "끊겼어요"가 떠 카메라까지 고장으로 읽혔다).
+class _CheckingNotice extends StatelessWidget {
+  const _CheckingNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: Container(
+        key: DeviceOfflineNotice.checkingKey,
+        padding: const EdgeInsets.all(AppStyles.spacing12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppStyles.cardRadius),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.sync_outlined,
+                size: 18, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: AppStyles.spacing8),
+            Expanded(
+              child: Text(
+                'home_device_link_checking'.tr(),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ],

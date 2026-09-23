@@ -1,20 +1,20 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-
-import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/live_surface.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/live_surface.dart';
 import '../webrtc_live_controller.dart';
 
 /// WebRTC 라이브 뷰.
 ///
-/// - 연결 중 단계: shimmer 스켈레톤 + 단계 문구 (CircularProgressIndicator 금지)
-/// - streaming: RTCVideoView
-/// - failed: 아이콘 + 에러 메시지 + "다시 연결" 버튼
+/// 고객에게 내부 단계(config/offering/ICE)를 나열하지 않는다(2026-09-23 기획 §5):
+/// - 연결 중·자동 복구 중: shimmer 스켈레톤 + 한 줄 문구 (CircularProgressIndicator 금지)
+/// - streaming/stalled: RTCVideoView (+ 정지·관측 불가 알약)
+/// - failed: 사유 + "다시 연결" — 집중 복구 예산이 끝났거나 카메라/망/인증 문제일 때만
 class WebRtcLiveView extends ConsumerWidget {
   const WebRtcLiveView({
     super.key,
@@ -28,26 +28,33 @@ class WebRtcLiveView extends ConsumerWidget {
   /// 쓴다. 기본 false(contain) — 카메라 상세는 프레임 전체를 보여준다.
   final bool cover;
 
+  static const retryButtonKey = Key('webrtc_live_retry');
+  static const pillKey = Key('webrtc_live_pill');
+
+  /// 영상 위에 얹을 알약 문구 키. 정지가 관측 불가보다 우선한다.
+  static String? pillKeyFor(WebRtcLiveState s) {
+    if (s.phase == WebRtcLivePhase.stalled) return 'crecam_live_stalled';
+    if (s.statsUnknown) return 'crecam_live_stats_unknown';
+    return null;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(webrtcLiveControllerProvider(cameraUuid));
 
     return switch (state.phase) {
-      WebRtcLivePhase.connectingConfig => _ConnectingView(
-          labelKey: 'crecam_live_phase_config',
-        ),
-      WebRtcLivePhase.offering => _ConnectingView(
-          labelKey: 'crecam_live_phase_offering',
-        ),
-      WebRtcLivePhase.connectingIce => _ConnectingView(
-          labelKey: 'crecam_live_phase_ice',
-        ),
-      WebRtcLivePhase.waitingVideo => _ConnectingView(
-          labelKey: 'crecam_live_phase_video',
-        ),
-      WebRtcLivePhase.streaming => _StreamingView(
+      WebRtcLivePhase.connectingConfig ||
+      WebRtcLivePhase.offering ||
+      WebRtcLivePhase.connectingIce =>
+        const _ConnectingView(labelKey: 'crecam_live_connecting'),
+      WebRtcLivePhase.waitingVideo =>
+        const _ConnectingView(labelKey: 'crecam_live_loading_video'),
+      WebRtcLivePhase.recovering =>
+        const _ConnectingView(labelKey: 'crecam_live_recovering'),
+      WebRtcLivePhase.streaming || WebRtcLivePhase.stalled => _StreamingView(
           renderer: state.renderer!,
           cover: cover,
+          pillLabelKey: pillKeyFor(state),
         ),
       WebRtcLivePhase.failed => _FailedView(
           errorKey: state.errorKey ?? 'crecam_live_error_failed',
@@ -59,7 +66,38 @@ class WebRtcLiveView extends ConsumerWidget {
   }
 }
 
-// ── 연결 중 (shimmer 스켈레톤 + 단계 문구) ────────────────────────────────────
+// ── 알약 (연결 중 문구·영상 위 안내 공용) ──────────────────────────────────────
+
+class _LivePill extends StatelessWidget {
+  const _LivePill({required this.labelKey});
+
+  final String labelKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: WebRtcLiveView.pillKey,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppStyles.spacing12,
+        vertical: AppStyles.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(AppStyles.chipRadius),
+      ),
+      child: Text(
+        labelKey.tr(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+// ── 연결 중 (shimmer 스켈레톤 + 한 줄 문구) ───────────────────────────────────
 
 class _ConnectingView extends StatelessWidget {
   const _ConnectingView({required this.labelKey});
@@ -82,55 +120,48 @@ class _ConnectingView extends StatelessWidget {
           child: Container(color: baseColor),
         ),
         // 하단이 아니라 **가운데**에 둔다. 하단은 페이지 인디케이터 자리라
-        // 겹친다(실기기에서 알약과 점이 포개졌다). 연결 중에는 이 문구가
-        // 화면의 주된 메시지이므로 가운데가 맞기도 하다.
-        Center(
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppStyles.spacing12,
-                vertical: AppStyles.spacing4,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(AppStyles.chipRadius),
-              ),
-              child: Text(
-                labelKey.tr(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-        ),
+        // 겹친다(실기기에서 알약과 점이 포개졌다).
+        Center(child: _LivePill(labelKey: labelKey)),
       ],
     );
   }
 }
 
-// ── 스트리밍 ────────────────────────────────────────────────────────────────
+// ── 스트리밍 (+ 정지·관측 불가 알약) ─────────────────────────────────────────
 
 class _StreamingView extends StatelessWidget {
-  const _StreamingView({required this.renderer, required this.cover});
+  const _StreamingView({
+    required this.renderer,
+    required this.cover,
+    this.pillLabelKey,
+  });
 
   final RTCVideoRenderer renderer;
   final bool cover;
+  final String? pillLabelKey;
 
   @override
   Widget build(BuildContext context) {
-    return RTCVideoView(
+    final video = RTCVideoView(
       renderer,
       objectFit: cover
           ? RTCVideoViewObjectFit.RTCVideoViewObjectFitCover
           : RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
     );
+    final key = pillLabelKey;
+    if (key == null) return video;
+    // 영상은 가리지 않는다 — 마지막 장면이 남아 있는 편이 멈춤을 이해하기 쉽다.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        video,
+        Center(child: _LivePill(labelKey: key)),
+      ],
+    );
   }
 }
 
-// ── 에러 ─────────────────────────────────────────────────────────────────────
+// ── 실패 ─────────────────────────────────────────────────────────────────────
 
 class _FailedView extends StatelessWidget {
   const _FailedView({required this.errorKey, required this.onRetry});
@@ -145,8 +176,9 @@ class _FailedView extends StatelessWidget {
     return ColoredBox(
       color: AppTheme.liveSurface,
       child: LiveSurfaceNotice(
+        key: WebRtcLiveView.retryButtonKey,
         title: errorKey.tr(),
-        actionLabel: 'retry'.tr(),
+        actionLabel: 'crecam_live_retry'.tr(),
         onAction: onRetry,
       ),
     );

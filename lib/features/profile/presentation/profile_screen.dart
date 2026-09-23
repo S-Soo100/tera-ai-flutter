@@ -9,6 +9,7 @@ import '../../../core/theme/theme_mode_provider.dart';
 import '../../../shared/widgets/figma_icon.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../community/presentation/community_providers.dart';
+import '../../my_cage/presentation/live_diag_export.dart';
 import '../../my_cage/presentation/management_colors.dart';
 import '../../my_cage/presentation/widgets/management_widgets.dart';
 import '../../notification/presentation/notification_providers.dart';
@@ -23,7 +24,8 @@ import 'widgets/my_page_widgets.dart';
 /// 내 계정(→ `/profile/account`) · 버전 정보 — 여기까지 원본 좌표(348/420/492).
 /// 그 아래는 원본에 없는 행: 받은 알림(→ `/notifications`, 알림 내역 화면이 갈
 /// 곳이 없어 남긴다, 미읽음 점 유지) · 화면 모드(사용자 결정 전까지 유지) ·
-/// 디자인 랩(개발 빌드만). 로그아웃은 내 계정 화면으로 옮겼다.
+/// 라이브 연결 진단 내보내기(지원용, 2026-09-23) · 디자인 랩(개발 빌드만).
+/// 로그아웃은 내 계정 화면으로 옮겼다.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -34,6 +36,7 @@ class ProfileScreen extends ConsumerWidget {
   static const accountRowKey = Key('mypage_account_row');
   static const versionRowKey = Key('mypage_version_row');
   static const themeRowKey = Key('mypage_theme_row');
+  static const liveDiagRowKey = Key('mypage_live_diag_row');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -113,6 +116,13 @@ class ProfileScreen extends ConsumerWidget {
             icon: Icon(Icons.brightness_6_outlined, size: 24, color: iconColor),
             trailingText: _themeLabel(ref.watch(themeModeProvider)),
             onTap: () => _pickTheme(context, ref)),
+        const SizedBox(height: 8),
+        MyPageRow(
+            key: liveDiagRowKey,
+            title: 'live_diag_export_title'.tr(),
+            subtitle: 'live_diag_export_subtitle'.tr(),
+            icon: Icon(Icons.bug_report_outlined, size: 24, color: iconColor),
+            onTap: () => shareLiveDiag(context, ref)),
         if (kDebugMode) ...[
           const SizedBox(height: 8),
           MyPageRow(
