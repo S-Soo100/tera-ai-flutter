@@ -168,6 +168,111 @@ void main() {
       await tester.pump();
     });
   }
+  // BLE가 Wi-Fi 성공을 주지 않은 Wi-Fi 변경(2026-09-24) — 서버 last_seen_at
+  // 확인 중엔 '확인 중', 끝내 안 붙으면 실패(다시 연결 + 새 카메라 등록).
+  for (final reconnect in CameraReconnect.values) {
+    testWidgets('BLE 미확인 Wi-Fi 변경 결과 · ${reconnect.name}', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 568);
+      addTearDown(tester.view.reset);
+      final initial =
+          DeviceAddState(step: DeviceAddStep.results, ssid: 'home', results: {
+        PairTargetKind.camera: DeviceAddResult(
+            candidate: camera,
+            outcome: DeviceAddOutcome.wifiUpdated,
+            registeredId: 'existing',
+            wifiConnected: false,
+            reconnect: reconnect),
+      });
+      await tester.pumpWidget(EasyLocalization(
+          supportedLocales: const [Locale('ko')],
+          path: 'assets/l10n',
+          assetLoader: const Translations(),
+          child: Builder(
+              builder: (context) => ProviderScope(
+                      overrides: [
+                        deviceAddAccountProvider.overrideWithValue('a'),
+                        deviceAddFlowProvider('test')
+                            .overrideWith((ref) => Controller(initial)),
+                      ],
+                      child: MaterialApp(
+                          theme: AppTheme.light,
+                          locale: context.locale,
+                          supportedLocales: context.supportedLocales,
+                          localizationsDelegates: context.localizationDelegates,
+                          home: const DeviceAddFlowScreen(flowKey: 'test'))))));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      final missing = reconnect == CameraReconnect.missing;
+      expect(find.byKey(const Key('device_add_wifi_checking')),
+          reconnect == CameraReconnect.waiting ? findsOneWidget : findsNothing);
+      expect(find.byKey(const Key('device_add_wifi_failed')),
+          missing ? findsOneWidget : findsNothing);
+      expect(find.byKey(const Key('device_add_wifi_updated')),
+          reconnect == CameraReconnect.online ? findsOneWidget : findsNothing);
+      expect(find.byKey(const Key('device_add_retry_failed')),
+          missing ? findsOneWidget : findsNothing);
+      expect(find.byKey(const Key('device_add_register_new')),
+          missing ? findsOneWidget : findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+  }
+  // 사육장 등록 완료 + 카메라 BLE 미확인(첨부 스크린샷 사고) — 확인 중엔
+  // '연결 실패'·다시 연결 버튼이 없고, 끝내 안 붙을 때만 나온다.
+  for (final reconnect in [CameraReconnect.waiting, CameraReconnect.missing]) {
+    testWidgets('사육장 등록 + 카메라 BLE 미확인 · ${reconnect.name}',
+        (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(393, 852);
+      addTearDown(tester.view.reset);
+      final initial =
+          DeviceAddState(step: DeviceAddStep.results, ssid: 'home', results: {
+        PairTargetKind.device: const DeviceAddResult(
+            candidate: device,
+            outcome: DeviceAddOutcome.registered,
+            registeredId: 'device-uuid',
+            wifiConnected: true),
+        PairTargetKind.camera: DeviceAddResult(
+            candidate: camera,
+            outcome: DeviceAddOutcome.wifiUpdated,
+            registeredId: 'existing',
+            wifiConnected: false,
+            reconnect: reconnect),
+      });
+      await tester.pumpWidget(EasyLocalization(
+          supportedLocales: const [Locale('ko')],
+          path: 'assets/l10n',
+          assetLoader: const Translations(),
+          child: Builder(
+              builder: (context) => ProviderScope(
+                      overrides: [
+                        deviceAddAccountProvider.overrideWithValue('a'),
+                        deviceAddFlowProvider('test')
+                            .overrideWith((ref) => Controller(initial)),
+                      ],
+                      child: MaterialApp(
+                          theme: AppTheme.light,
+                          locale: context.locale,
+                          supportedLocales: context.supportedLocales,
+                          localizationsDelegates: context.localizationDelegates,
+                          home: const DeviceAddFlowScreen(flowKey: 'test'))))));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      final missing = reconnect == CameraReconnect.missing;
+      expect(find.textContaining('device_add_checking'.tr()),
+          missing ? findsNothing : findsOneWidget);
+      expect(find.textContaining('device_add_failed'.tr()),
+          missing ? findsOneWidget : findsNothing);
+      expect(find.byKey(const Key('device_add_retry_failed')),
+          missing ? findsOneWidget : findsNothing);
+      expect(find.byKey(const Key('device_add_link_existing')), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+  }
   // 등록을 마친 기기도 몇 분간 광고한다(2026-09-21) — 이 폰이 등록한 기기는
   // '이미 등록됨'으로 표시하고 아래로 내린다.
   testWidgets('이미 등록한 기기는 표시하고 목록 아래로 내린다', (tester) async {
