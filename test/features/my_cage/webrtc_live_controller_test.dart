@@ -11,7 +11,9 @@ import 'package:vivanaut/features/my_cage/data/webrtc_signaling_repository.dart'
 import 'package:vivanaut/features/my_cage/data/camera_exceptions.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/domain/webrtc_connect_log.dart';
+import 'package:vivanaut/features/my_cage/domain/webrtc_diag.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/webrtc_diag_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
 
 const _cam = 'cam-1';
@@ -154,6 +156,7 @@ class _Harness {
   final network = StreamController<String>();
   final cameras = StreamController<List<TerraCamera>>();
   final logs = <WebRtcConnectLog>[];
+  final diag = WebRtcDiagBuffer();
   late final ProviderContainer container;
 
   _Harness() {
@@ -170,6 +173,7 @@ class _Harness {
       webrtcNetworkSignalProvider.overrideWith((ref) => network.stream),
       camerasProvider.overrideWith((ref) => cameras.stream),
       webrtcConnectLogSinkProvider.overrideWithValue(logs.add),
+      webrtcDiagBufferProvider.overrideWithValue(diag),
     ]);
     container.listen(webrtcLiveControllerProvider(_cam), (_, __) {});
     container.listen(camerasProvider, (_, __) {});

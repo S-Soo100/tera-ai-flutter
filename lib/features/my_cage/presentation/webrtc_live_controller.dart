@@ -12,7 +12,9 @@ import '../data/webrtc_connect_log_repository.dart';
 import '../data/webrtc_signaling_repository.dart';
 import '../domain/terra_camera.dart';
 import '../domain/webrtc_connect_log.dart';
+import '../domain/webrtc_diag.dart';
 import 'my_cage_providers.dart';
+import 'webrtc_diag_providers.dart';
 
 // ── 상태 정의 ─────────────────────────────────────────────────────────────────
 
@@ -174,8 +176,26 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (_started) return;
     _started = true;
     _logSink = ref.read(webrtcConnectLogSinkProvider);
+    _diagBuffer = ref.read(webrtcDiagBufferProvider);
     _watchEnvironment();
+    _diag('start');
     unawaited(_start(_gen));
+  }
+
+  /// 로컬 진단(메모리 버퍼 + debugPrint). 시작 때 잡아 둔다 — dispose 중엔
+  /// ref를 못 읽는다.
+  WebRtcDiagBuffer? _diagBuffer;
+
+  void _diag(String event, [Map<String, Object?> data = const {}]) {
+    final row = <String, Object?>{'t_ms': _timing.elapsedMilliseconds, ...data};
+    debugPrint('[webrtc-timing] cam=$cameraUuid gen=$_gen $event $row');
+    _diagBuffer?.add(WebRtcDiagEvent(
+      at: DateTime.now(),
+      cameraId: cameraUuid,
+      gen: _gen,
+      event: event,
+      data: row,
+    ));
   }
 
   RTCPeerConnection? _pc;
@@ -232,7 +252,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (_cameraOffline()) {
       // 꺼진 카메라에 무한히 offer를 보내 봐야 매번 15초 무응답이다.
       _waitingOnline = true;
-      debugPrint('[webrtc-timing] cam=$cameraUuid offline — wait for online');
+      _diag('wait-online');
       return;
     }
     // 3·6·12·24·48·60초 — 지수는 5에서 멈춘다(상한 60초에 이미 도달;
@@ -241,10 +261,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         seconds: math.min(
             60, 3 * math.pow(2, math.min(5, _reconnectAttempt)).toInt()));
     _reconnectAttempt++;
-    debugPrint(
-      '[webrtc-timing] cam=$cameraUuid auto-reconnect in ${delay.inSeconds}s '
-      '(attempt $_reconnectAttempt)',
-    );
+    _diag('reconnect-scheduled',
+        {'delay_s': delay.inSeconds, 'attempt': _reconnectAttempt});
     _reconnectTimer = Timer(delay, () {
       if (!_isCurrent(gen)) return;
       // 서버 ICE 설정(TURN 자격 등)이 바뀌었을 수 있어 자동 재연결도 새로 받는다.
@@ -266,7 +284,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (before == null || now == null || before == now) return;
       if (now.isEmpty || now == ConnectivityResult.none.name) return;
       if (_suspended || _disposed) return;
-      debugPrint('[webrtc-timing] cam=$cameraUuid network $before→$now');
+      _diag('network-changed', {'from': before, 'to': now});
       _reconnectNow();
     });
     ref.listen<AsyncValue<List<TerraCamera>>>(camerasProvider, (_, next) {
@@ -274,7 +292,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       final cam =
           next.valueOrNull?.where((c) => c.id == cameraUuid).firstOrNull;
       if (cam?.isOnline ?? false) {
-        debugPrint('[webrtc-timing] cam=$cameraUuid back online');
+        _diag('camera-online');
         _reconnectNow();
       }
     });
@@ -298,6 +316,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 기다리지 않고 새로 붙이는 편이 빠르다.
   Future<void> _suspend() async {
     if (_suspended || _disposed) return;
+    _diag('suspend');
     _suspended = true;
     _endAttempt(_gen, null);
     _gen++;
@@ -311,6 +330,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   void _resume() {
     if (!_suspended || _disposed) return;
     _suspended = false;
+    _diag('resume');
     _reconnectNow();
   }
 
@@ -332,6 +352,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 무효로 만들고, 정리 도중 더 새로운 재시작이 오면 이쪽은 물러난다.
   Future<void> _restart() async {
     if (_disposed || _suspended) return;
+    _diag('restart');
     _endAttempt(_gen, null);
     final gen = ++_gen;
     _cancelTimers(keepReconnect: true);
@@ -403,6 +424,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   void _fail(int gen, {String outcome = 'failed'}) {
     if (!_isCurrent(gen)) return;
     _endAttempt(gen, outcome);
+    _diag('fail', {'outcome': outcome, 'phase': state.phase.name});
     _cancelTimers();
     state = WebRtcLiveState(
       phase: WebRtcLivePhase.failed,
@@ -516,10 +538,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     var frameSeen = false;
     renderer.onFirstFrameRendered = () {
       if (!_isCurrent(gen)) return;
-      debugPrint(
-        '[webrtc-timing] cam=$cameraUuid firstFrame='
-        '${_timing.elapsedMilliseconds}ms',
-      );
+      _diag('first-frame');
       frameSeen = true;
       _attempt?.msFirstFrame ??= _timing.elapsedMilliseconds;
       if (connected) _enterStreaming(gen, pc, renderer);
@@ -561,10 +580,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (!_isCurrent(gen)) return;
       if (s == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
         final a = _attempt;
-        debugPrint(
-          '[webrtc-timing] cam=$cameraUuid config=${a?.msConfig}ms '
-          'answer=${a?.msAnswer}ms connected=${_timing.elapsedMilliseconds}ms',
-        );
+        _diag('connected', {'config_ms': a?.msConfig, 'answer_ms': a?.msAnswer});
         if (a != null && a.gen == gen && a.msConnected == null) {
           a.msConnected = _timing.elapsedMilliseconds;
           a.candidates = _candidateTypes(pc);
@@ -587,6 +603,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         // 일시 장애면 WebRTC가 스스로 돌아온다 — 10초 유예 후에도 그대로면
         // failed 취급해 재연결 루프에 태운다(마지막 프레임이 얼어붙은 채
         // "LIVE"로 남는 것 방지).
+        _diag('disconnected');
         _disconnectGrace?.cancel();
         _disconnectGrace = Timer(const Duration(seconds: 10), () {
           if (!_isCurrent(gen)) return;
@@ -628,6 +645,11 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     }
 
     _sessionId = offerResult.sessionId;
+    _diag('answer', {
+      'session': offerResult.sessionId,
+      'offer_attempts': offerResult.offerAttempts,
+      'answer_ms': offerResult.answerMs,
+    });
     _attempt
       ?..msAnswer = _timing.elapsedMilliseconds
       ..offerAttempts = offerResult.offerAttempts
