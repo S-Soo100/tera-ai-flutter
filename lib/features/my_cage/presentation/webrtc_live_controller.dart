@@ -202,11 +202,6 @@ const kWebRtcNetworkDebounce = Duration(seconds: 1);
 /// 망 신호가 바뀌어도 프레임이 이 틱 안에 진행하면 연결을 유지한다.
 const kWebRtcNetworkFrameGraceTicks = 3;
 
-/// 재생 중 멈춤 감시 주기와 허용 횟수 — 디코딩 프레임 수가 3회 연속(15초)
-/// 그대로면 얼어붙은 화면으로 보고 다시 붙인다.
-const kWebRtcStallCheckInterval = Duration(seconds: 5);
-const kWebRtcStallChecks = 3;
-
 // ── 컨트롤러 ─────────────────────────────────────────────────────────────────
 
 /// 연결 한 번(= 세대). 재연결·일시정지마다 세대를 올리고, 이전 세대의 비동기
@@ -300,6 +295,9 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
 
   /// 개별 시도 전체 예산 — ICE 연결 단계엔 다른 한도가 없다.
   Timer? _attemptDeadline;
+
+  /// 첫 프레임 뒤 30초 안정 판정 타이머.
+  Timer? _stableTimer;
 
   /// 앱이 백그라운드에 있어 연결을 내려 둔 상태.
   bool _suspended = false;
@@ -506,6 +504,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _frameTimer?.cancel();
     _frameDeadline?.cancel();
     _attemptDeadline?.cancel();
+    _stableTimer?.cancel();
+    _netGraceTicks = null;
   }
 
   @override
@@ -851,37 +851,97 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     });
   }
 
-  /// 재생 시작 + 멈춤 감시. 디코딩 프레임 수가 [kWebRtcStallChecks]회 연속
-  /// 그대로면 다시 붙인다. 통계를 못 읽으면 판단하지 않는다(겁주지 않는다).
+  /// 재생 시작 + 감시. 1초마다 디코딩 프레임 수를 읽어
+  /// - 진행(값이 달라짐 — 증가·감소·첫 값)이면 기준을 갱신하고 `stalled`면 복귀
+  /// - [kWebRtcSoftStallTicks] 연속 그대로면 `stalled`(안내만, 연결 유지)
+  /// - [kWebRtcHardStallTicks] 연속 그대로면 재연결
+  /// - 통계를 못 읽으면 정지도 진행도 아니다 — [kWebRtcStatsUnknownTicks] 뒤
+  ///   `statsUnknown`만 켠다(겁주지 않는다)
+  /// - 망 변경 유예([_netGraceTicks])는 무진행 틱에서만 줄어들고 0이면 재연결
   void _enterStreaming(int gen, RTCPeerConnection pc, RTCVideoRenderer r) {
-    if (!_isCurrent(gen) || state.phase == WebRtcLivePhase.streaming) return;
+    if (!_isCurrent(gen) || state.phase.hasVideo) return;
     _frameDeadline?.cancel();
     _attemptDeadline?.cancel();
-    state = state.copyWith(
-        phase: WebRtcLivePhase.streaming, clearError: true, renderer: r);
+    state = WebRtcLiveState(phase: WebRtcLivePhase.streaming, renderer: r);
     final a = _attempt;
     if (a != null && a.gen == gen && a.playing == null) {
       a.msFirstFrame ??= _timing.elapsedMilliseconds;
       a.playing = Stopwatch()..start();
       _writeLog(a, 'streaming');
     }
+    _diag('streaming');
+    _armStableTimer(gen);
+
     int? last;
     var still = 0;
+    var noStats = 0;
+    var busy = false;
     _frameTimer?.cancel();
-    _frameTimer = Timer.periodic(kWebRtcStallCheckInterval, (_) async {
-      if (!_isCurrent(gen)) return;
+    _frameTimer = Timer.periodic(kWebRtcStatsInterval, (_) async {
+      if (!_isCurrent(gen) || busy) return;
+      busy = true;
       final frames = await _framesDecoded(pc);
+      busy = false;
       if (!_isCurrent(gen)) return;
+
       if (frames == null) {
-        still = 0;
+        noStats++;
+        if (noStats >= kWebRtcStatsUnknownTicks && !state.statsUnknown) {
+          _diag('stats-unknown');
+          state = state.copyWith(statsUnknown: true);
+        }
         return;
       }
-      still = frames == last ? still + 1 : 0;
-      last = frames;
-      if (still >= kWebRtcStallChecks) {
-        debugPrint('[webrtc-timing] cam=$cameraUuid FAILED(stalled)');
-        _fail(gen, outcome: 'stalled');
+      noStats = 0;
+      if (state.statsUnknown) state = state.copyWith(statsUnknown: false);
+
+      if (last == null || frames != last) {
+        last = frames;
+        still = 0;
+        _netGraceTicks = null;
+        if (state.phase == WebRtcLivePhase.stalled) {
+          _diag('stall-recovered');
+          state = state.copyWith(phase: WebRtcLivePhase.streaming);
+          _armStableTimer(gen);
+        }
+        return;
       }
+
+      still++;
+      final grace = _netGraceTicks;
+      if (grace != null) {
+        if (grace <= 1) {
+          _netGraceTicks = null;
+          _diag('network-no-progress');
+          _reconnectNow('network');
+          return;
+        }
+        _netGraceTicks = grace - 1;
+      }
+      if (still >= kWebRtcHardStallTicks) {
+        _diag('stall-hard', {'still': still});
+        _fail(gen, outcome: 'stalled');
+        return;
+      }
+      if (still >= kWebRtcSoftStallTicks &&
+          state.phase == WebRtcLivePhase.streaming) {
+        _diag('stall-soft', {'still': still});
+        _stableTimer?.cancel(); // 불안정 구간 — 안정 판정을 다시 센다
+        state = state.copyWith(phase: WebRtcLivePhase.stalled);
+      }
+    });
+  }
+
+  /// [kWebRtcStableAfter] 동안 `streaming`이 이어지면 백오프·504 가드를
+  /// 초기화한다. connected만으로 초기화하면 "영상 있음 → 즉시 실패"가 짧은
+  /// 간격으로 반복돼 카메라 세션을 압박한다(A3).
+  void _armStableTimer(int gen) {
+    _stableTimer?.cancel();
+    _stableTimer = Timer(kWebRtcStableAfter, () {
+      if (!_isCurrent(gen) || state.phase != WebRtcLivePhase.streaming) return;
+      _diag('stable');
+      _reconnectAttempt = 0;
+      _autoRetried = false;
     });
   }
 

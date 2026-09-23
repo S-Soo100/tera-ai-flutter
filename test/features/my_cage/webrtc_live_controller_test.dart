@@ -24,6 +24,9 @@ class _FakePc extends Fake implements RTCPeerConnection {
   final added = <String?>[];
   bool closed = false;
   int frames = 0;
+
+  /// true면 getStats가 실패한다(통계 없음).
+  bool statsBroken = false;
   RTCPeerConnectionState? _state;
 
   @override
@@ -66,7 +69,9 @@ class _FakePc extends Fake implements RTCPeerConnection {
   Future<void> addCandidate(RTCIceCandidate candidate) async =>
       added.add(candidate.candidate);
   @override
-  Future<List<StatsReport>> getStats([MediaStreamTrack? track]) async => [
+  Future<List<StatsReport>> getStats([MediaStreamTrack? track]) async {
+    if (statsBroken) throw StateError('no stats');
+    return [
         StatsReport('in', 'inbound-rtp', 0,
             {'kind': 'video', 'framesDecoded': frames}),
         StatsReport('t', 'transport', 0, {'selectedCandidatePairId': 'p'}),
@@ -75,6 +80,7 @@ class _FakePc extends Fake implements RTCPeerConnection {
         StatsReport('l', 'local-candidate', 0, {'candidateType': 'srflx'}),
         StatsReport('r', 'remote-candidate', 0, {'candidateType': 'host'}),
       ];
+  }
   @override
   Future<void> close() async {
     closed = true;
@@ -205,6 +211,23 @@ Future<void> _settleConnect(WidgetTester tester) async {
   await tester.pump();
 }
 
+/// 재생 중 통계 틱을 [n]번 흘린다.
+Future<void> _ticks(WidgetTester tester, int n) async {
+  for (var i = 0; i < n; i++) {
+    await tester.pump(kWebRtcStatsInterval);
+    await tester.pump();
+  }
+}
+
+/// 연결→첫 프레임까지 흘려 streaming 상태로 만든다.
+Future<void> _stream(WidgetTester tester, _Harness h, {int frames = 5}) async {
+  await _settleConnect(tester);
+  h.pc.frames = frames;
+  h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
+  h.renderer.onFirstFrameRendered!();
+  expect(h.state.phase, WebRtcLivePhase.streaming);
+}
+
 void main() {
   testWidgets('재연결 후 이전 세션의 ICE 후보가 새 피어에 섞이지 않는다', (tester) async {
     final h = _Harness();
@@ -288,26 +311,107 @@ void main() {
     await h.dispose();
   });
 
-  testWidgets('재생 중 프레임이 15초간 멈추면 다시 붙인다', (tester) async {
+  testWidgets('재생 중 프레임이 5초 멈추면 stalled 안내, 15초면 다시 붙인다', (tester) async {
     final h = _Harness();
+    await _stream(tester, h);
+    for (var i = 0; i < 4; i++) {
+      h.pc.frames += 6;
+      await _ticks(tester, 1);
+    }
+    expect(h.state.phase, WebRtcLivePhase.streaming);
+    // 마지막 진행 뒤 5틱 무진행이면 stalled.
+    await _ticks(tester, kWebRtcSoftStallTicks);
+    expect(h.state.phase, WebRtcLivePhase.stalled);
+    expect(h.state.renderer, isNotNull, reason: '마지막 장면을 지우지 않는다');
+    await _ticks(tester, kWebRtcHardStallTicks - kWebRtcSoftStallTicks);
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.logs.last.outcome, 'stalled');
+    expect(h.logs.last.failPhase, 'streaming');
+    await h.dispose();
+  });
+
+  testWidgets('stalled 중 프레임이 다시 늘면 streaming으로 돌아온다', (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    await _ticks(tester, 1 + kWebRtcSoftStallTicks);
+    expect(h.state.phase, WebRtcLivePhase.stalled);
+    h.pc.frames += 1;
+    await _ticks(tester, 1);
+    expect(h.state.phase, WebRtcLivePhase.streaming);
+    expect(h.pcs, hasLength(1));
+    await h.dispose();
+  });
+
+  testWidgets('카운터가 줄어도(리셋) 정지로 보지 않고, 정적 피사체(프레임은 옴)는 멀쩡하다',
+      (tester) async {
+    final h = _Harness();
+    await _stream(tester, h, frames: 900);
+    await _ticks(tester, 1);
+    h.pc.frames = 3; // SSRC 교체/카운터 리셋
+    await _ticks(tester, 1);
+    for (var i = 0; i < 20; i++) {
+      h.pc.frames += 6; // 화면은 안 변해도 프레임은 온다
+      await _ticks(tester, 1);
+    }
+    expect(h.state.phase, WebRtcLivePhase.streaming);
+    await h.dispose();
+  });
+
+  testWidgets('통계를 10초 못 읽으면 statsUnknown만 켜고 연결은 유지한다', (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    h.pc.statsBroken = true;
+    await _ticks(tester, kWebRtcStatsUnknownTicks);
+    expect(h.state.phase, WebRtcLivePhase.streaming);
+    expect(h.state.statsUnknown, isTrue);
+    await _ticks(tester, 30);
+    expect(h.pcs, hasLength(1), reason: '통계 부재만으로 끊지 않는다');
+    h.pc.statsBroken = false;
+    h.pc.frames += 6;
+    await _ticks(tester, 1);
+    expect(h.state.statsUnknown, isFalse);
+    await h.dispose();
+  });
+
+  testWidgets('영상이 30초 안정되면 백오프가 초기화된다', (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    await tester.pump(const Duration(seconds: 3));
     await _settleConnect(tester);
     h.pc.frames = 5;
     h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
     h.renderer.onFirstFrameRendered!();
-    expect(h.state.phase, WebRtcLivePhase.streaming);
-    // 프레임이 늘어나는 동안은 멀쩡하다.
-    for (var i = 0; i < 4; i++) {
-      h.pc.frames += 10;
-      await tester.pump(kWebRtcStallCheckInterval);
-      await tester.pump();
+    for (var i = 0; i < 31; i++) {
+      h.pc.frames += 6;
+      await _ticks(tester, 1);
     }
-    expect(h.state.phase, WebRtcLivePhase.streaming);
-    // 멈춤: 같은 값이 3회 연속이면 실패(그다음 주기엔 이미 재연결 중이다).
-    for (var i = 0; i < kWebRtcStallChecks; i++) {
-      await tester.pump(kWebRtcStallCheckInterval);
-      await tester.pump();
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    await tester.pump(const Duration(seconds: 3));
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(3), reason: '초기화됐으면 6초가 아니라 3초 뒤에 붙는다');
+    await h.dispose();
+  });
+
+  testWidgets('망 변경 뒤 프레임이 3틱 안에 안 늘면 그때 다시 붙는다', (tester) async {
+    final h = _Harness();
+    h.network.add('wifi');
+    await _stream(tester, h);
+    await _ticks(tester, 1);
+    h.network.add('mobile');
+    await tester.pump(kWebRtcNetworkDebounce);
+    // 프레임이 계속 오면 유지.
+    for (var i = 0; i < 5; i++) {
+      h.pc.frames += 6;
+      await _ticks(tester, 1);
     }
-    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.pcs, hasLength(1));
+    // 다시 바뀌었는데 이번엔 프레임이 멈춤 → 3틱 뒤 재연결.
+    h.network.add('wifi');
+    await tester.pump(kWebRtcNetworkDebounce);
+    await _ticks(tester, kWebRtcNetworkFrameGraceTicks);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
     await h.dispose();
   });
 
@@ -533,11 +637,7 @@ void main() {
     h.pc.frames = 5;
     h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
     h.renderer.onFirstFrameRendered!();
-    // 첫 주기는 기준값을 잡을 뿐이라 한 주기 더 흘린다.
-    for (var i = 0; i <= kWebRtcStallChecks; i++) {
-      await tester.pump(kWebRtcStallCheckInterval);
-      await tester.pump();
-    }
+    await _ticks(tester, 1 + kWebRtcHardStallTicks);
     expect(h.logs.map((l) => l.outcome), ['no_video', 'streaming', 'stalled']);
     expect(h.logs[1].reconnectAttempt, 1);
     expect(h.logs.last.failPhase, 'streaming');
