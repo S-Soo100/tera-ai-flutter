@@ -153,22 +153,35 @@ final telemetryStaleProvider =
   return controller.stream;
 });
 
-/// 사육장 제어 가능 여부 = `device.is_online` 스냅샷 **AND** telemetry 최신성.
-/// 둘 중 하나라도 끊기면 `false`(오프라인). 연결 끊김 시 제어 차단에 사용한다.
+/// 사육장 제어기 연결 상태 3값(2026-09-23). "모름"을 오프라인으로 그리면 앱을
+/// 켜자마자 "기기 연결이 끊겼어요"가 보이고 카메라까지 고장으로 읽힌다.
+enum ModuleLink { unknown, online, offline }
+
+/// - `unknown`: 기기를 아직 못 받았거나(조회 중·실패) 값이 없음
+/// - `online`: `device.is_online` 스냅샷 **AND** telemetry 최신 — 제어 허용
+/// - `offline`: 둘 중 하나라도 끊김
 ///
-/// - `device.is_online`: 진입 시점 스냅샷(devices realtime 미구독) — 초기 판정.
-/// - `telemetryStale`: 3초 주기 telemetry 기반 실시간 watchdog — 진입 후 끊김 감지.
-///
-/// AND 결합은 보수적(둘 다 살아 있어야 제어 허용)이라 "오프라인인데 제어됨"
-/// (위음성)을 최소화한다. 반대 위양성(정상인데 차단)은 재시도로 해소한다.
-final moduleOnlineProvider =
-    Provider.autoDispose.family<bool, String>((ref, deviceId) {
-  final device = ref.watch(currentDeviceProvider).valueOrNull;
-  final isOnlineSnapshot = device?.isOnline ?? false;
+/// `device.is_online`은 진입 시점 스냅샷(devices realtime 미구독)이고,
+/// `telemetryStale`는 3초 주기 telemetry 기반 실시간 watchdog이다.
+/// 재조회 중에는 이전 값을 유지한다(`hasValue`) — `isLoading`으로 판정하면
+/// 재조회마다 "확인 중"이 깜빡인다(2026-09-19 교훈).
+final moduleLinkProvider =
+    Provider.autoDispose.family<ModuleLink, String>((ref, deviceId) {
+  final device = ref.watch(currentDeviceProvider);
+  if (!device.hasValue) return ModuleLink.unknown;
+  final snapshot = device.value?.isOnline;
+  if (snapshot == null) return ModuleLink.unknown;
   final isStale =
       ref.watch(telemetryStaleProvider(deviceId)).valueOrNull ?? false;
-  return isOnlineSnapshot && !isStale;
+  return snapshot && !isStale ? ModuleLink.online : ModuleLink.offline;
 });
+
+/// 사육장 제어 가능 여부 = [moduleLinkProvider]가 `online`. 미확인도 차단한다
+/// — AND 결합은 보수적(둘 다 살아 있어야 제어 허용)이라 "오프라인인데 제어됨"
+/// (위음성)을 최소화한다. 반대 위양성(정상인데 잠깐 차단)은 재시도로 해소한다.
+final moduleOnlineProvider = Provider.autoDispose.family<bool, String>(
+    (ref, deviceId) =>
+        ref.watch(moduleLinkProvider(deviceId)) == ModuleLink.online);
 
 // ── 상대 시간 tick ──────────────────────────────────────────────────────────────
 
