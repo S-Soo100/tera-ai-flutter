@@ -1,7 +1,7 @@
 name: vivanaut
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.133.13+342
+version: 0.133.14+343
 
 environment:
   sdk: ^3.5.0

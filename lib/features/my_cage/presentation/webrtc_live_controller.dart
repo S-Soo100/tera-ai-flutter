@@ -189,6 +189,11 @@ const kWebRtcSoftStallTicks = 5;
 /// 가짜 시계는 Timer만 흘린다(기획 §11.3).
 const kWebRtcHardStallTicks = 15;
 
+/// 정지 원인 판정에 쓰는 최근 구간(틱). 정지 구간 **전체 누계**로 판정하면
+/// 멈추기 직전의 손상된 꼬리 몇 KB 때문에 이후 완전 무수신도 "데이터는 옴"으로
+/// 찍힌다(2026-09-24 S21+ 실측). 최근 이만큼의 수신량으로 가른다.
+const kWebRtcRecentBytesTicks = 3;
+
 /// 통계를 이 틱만큼 연속 못 읽으면 `statsUnknown`(연결은 끊지 않는다).
 const kWebRtcStatsUnknownTicks = 10;
 
@@ -971,15 +976,23 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     // 여기서부터 잰다(기획 A4·범위 문서 §6: 수신 멈춤 vs 디코딩 멈춤).
     _Inbound? atProgress;
     _Inbound? latest;
+    // 최근 [kWebRtcRecentBytesTicks] 구간을 재려고 샘플 하나를 더 둔다.
+    final recent = <_Inbound>[];
     Map<String, Object?> stallInfo() {
       final bytesDelta = _delta(atProgress?.bytes, latest?.bytes);
+      final recentBytes = recent.length > kWebRtcRecentBytesTicks
+          ? _delta(recent.first.bytes, recent.last.bytes)
+          : null;
+      // 최근 구간을 못 재면(정지 직후·통계 누락) 정지 구간 누계로 대신한다.
+      final basis = recentBytes ?? bytesDelta;
       return {
         'still': still,
-        'cause': bytesDelta == null
+        'cause': basis == null
             ? 'unknown'
-            : bytesDelta > 0
+            : basis > 0
                 ? 'data-no-decode'
                 : 'no-data',
+        'recent_bytes': recentBytes,
         'bytes_delta': bytesDelta,
         'lost_delta': _delta(atProgress?.lost, latest?.lost),
       };
@@ -993,7 +1006,11 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       busy = false;
       if (!_isCurrent(gen)) return;
       final frames = s?.frames;
-      if (s != null) latest = s;
+      if (s != null) {
+        latest = s;
+        recent.add(s);
+        if (recent.length > kWebRtcRecentBytesTicks + 1) recent.removeAt(0);
+      }
 
       if (frames == null) {
         noStats++;
