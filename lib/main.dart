@@ -2,9 +2,7 @@ import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:clarity_flutter/clarity_flutter.dart';
 
-import 'core/analytics/clarity_setup.dart';
 import 'core/theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -87,14 +85,11 @@ Future<void> main() async {
       supportedLocales: const [Locale('ko')],
       path: 'assets/l10n',
       fallbackLocale: const Locale('ko'),
-      // Clarity(세션 리플레이·히트맵)는 MaterialApp 바로 바깥에서 감싼다.
-      // EasyLocalization·ProviderScope 안쪽이라 `App`은 그대로 두 컨텍스트를 본다.
-      child: ProviderScope(
-        child: ClarityWidget(
-          app: const App(),
-          clarityConfig: buildClarityConfig(),
-        ),
-      ),
+      // Clarity 세션 리플레이는 2026-09-25 사용자 결정으로 꺼 두었다 — 동의·마스킹
+      // 정책(archive/codex/clarity-policy)이 재설계 이전 화면 기준이라 현재 구조에
+      // 맞춰 다시 설계하기 전까지 수집하지 않는다. 재개 시 `ClarityWidget`으로
+      // `App`을 감싸고 `core/analytics/clarity_setup.dart`의 설정을 넘긴다.
+      child: const ProviderScope(child: App()),
     ),
   );
 }

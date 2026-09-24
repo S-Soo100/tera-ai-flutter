@@ -8,6 +8,8 @@ const String kClarityProjectId = 'ygr536qm34';
 
 /// 앱 진입점(`main.dart`)의 `ClarityWidget`에 넘기는 설정.
 ///
+/// ⚠️ 2026-09-25부터 사용하지 않는다(수집 중단 — `main.dart` 주석 참고).
+///
 /// - 디버그 빌드: `Verbose` — 초기화 실패를 콘솔에서 바로 볼 수 있게.
 /// - 릴리즈 빌드: `None` — SDK도 릴리즈에선 강제로 None이지만 의도를 명시.
 ///
