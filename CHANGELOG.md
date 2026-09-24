@@ -5,7 +5,7 @@
 ### 추가
 - 카메라 라이브를 한 번 볼 때마다(화면을 연 순간부터 떠나거나 앱을 내릴 때까지) 요약 기록 1건을 운영 DB(`webrtc_view_logs`)에 남깁니다. 결국 영상을 봤는지, 첫 영상까지 걸린 시간, 연결 중·재생·정지·자동 복구·실패 화면에 머문 시간, 수동 다시 연결 횟수, 재연결 사유별 횟수가 담깁니다. 화면과 동작은 바뀌지 않습니다.
 - 기존 연결 기록(`webrtc_connect_logs`)에 같은 시청 세션 id와 당시 카메라 펌웨어 버전을 붙여, 펌웨어 버전별로 품질을 비교할 수 있습니다.
-- 운영자용 조회 view(`ops.live_views`·`ops.live_daily`·`ops.live_timeline`) SQL 초안을 추가했습니다(`supabase/drafts/20260925_webrtc_view_logs.sql`). ⚠️ 이 버전을 배포하기 전에 운영 DB에 먼저 적용해야 합니다. 적용하지 않으면 새 컬럼이 없어 연결 기록 저장이 실패합니다.
+- 운영자용 조회 view(`ops.live_views`·`ops.live_daily`·`ops.live_timeline`)를 추가했습니다(`supabase/migrations/20260925_webrtc_view_logs.sql`). 로그인 사용자에게 노출되지 않는 `ops` 스키마에 있으며, 운영 DB에 2026-09-25 적용을 마쳤습니다.
 
 ## 0.134.2+348 — 2026-09-25
 

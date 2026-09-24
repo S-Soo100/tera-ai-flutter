@@ -1,7 +1,8 @@
 -- 캠 라이브 시청 세션 기록 (2026-09-25)
 -- 기획: docs/superpowers/specs/2026-09-25-live-view-session-logging-design.md
--- ⚠️ 운영 적용은 사용자 확인 후. 앱 배포보다 먼저 적용해야 한다(새 컬럼 없는
---    DB에 새 앱이 INSERT하면 연결 행까지 거부된다).
+-- ✅ 운영 적용 2026-09-25(Supabase migration `webrtc_view_logs`, 사용자 승인).
+--    앱(0.135.0)보다 먼저 적용해야 했다 — 새 컬럼 없는 DB에 새 앱이 INSERT하면
+--    연결 행까지 거부된다.
 
 begin;
 

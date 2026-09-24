@@ -74,6 +74,8 @@ PostgREST에 노출되지 않는 **`ops` 스키마**에 둔다(public에 두면 
 
 ## 6. 적용 순서
 
+> **상태(2026-09-25):** 운영 DB 적용 완료(migration `webrtc_view_logs`) → 앱 0.135.0 main 병합. 운영에서 authenticated INSERT 성공(롤백 확인), `ops` 스키마 anon/authenticated 접근 불가 확인. 서버 담당 공유는 미완.
+
 1. SQL 초안 `supabase/drafts/20260925_webrtc_view_logs.sql` — 로컬 임시 Postgres에서 RLS·view 검증.
 2. 앱 구현·테스트. **새 컬럼·테이블이 없는 동안에도 안전해야 한다** — 운영 DB 적용 전 배포되면 INSERT가 실패(컬럼 없음)해 연결 행까지 잃는다. 그래서 **운영 DB 적용 → 앱 배포** 순서를 지킨다.
 3. 운영 DB 적용은 사용자 확인 후. `webrtc_connect_logs`는 terra-server 쪽이 만든 테이블이라 컬럼 추가를 서버 담당에게 공유한다.
