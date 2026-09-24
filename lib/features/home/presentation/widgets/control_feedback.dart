@@ -20,7 +20,8 @@ class ControlFeedback {
 
   final OverlayState? overlay;
 
-  static OverlayEntry? _current;
+  /// 떠 있는 안내를 닫는 함수 — 제거는 늘 그 안내의 close 한 곳으로만 한다.
+  static VoidCallback? _closeCurrent;
 
   bool get mounted => overlay?.mounted ?? false;
 
@@ -34,14 +35,16 @@ class ControlFeedback {
     hideCurrent();
     late final OverlayEntry entry;
     var removed = false;
-    void close() {
+    late final VoidCallback close;
+    // 새 안내가 이전 안내를 걷을 때도 이 close를 거친다 — 따로 remove하면
+    // 호출부가 나중에 부르는 close가 같은 엔트리를 두 번 remove해 릴리스에서
+    // 예외가 나고 호출부(분무 전송 등)가 중단됐다(2026-09-25 리뷰).
+    close = () {
       if (removed) return;
       removed = true;
-      if (identical(_current, entry)) _current = null;
-      // 새 안내가 hideCurrent()로 이미 걷었을 수 있다 — 두 번 remove하면
-      // 릴리스에서 예외가 나 호출부(분무 전송 등)가 중단된다.
-      if (entry.mounted) entry.remove();
-    }
+      if (identical(_closeCurrent, close)) _closeCurrent = null;
+      entry.remove();
+    };
 
     entry = OverlayEntry(
         builder: (_) => _FeedbackBar(
@@ -55,7 +58,7 @@ class ControlFeedback {
                     close();
                     onAction();
                   }));
-    _current = entry;
+    _closeCurrent = close;
     o.insert(entry);
     return close;
   }
@@ -68,11 +71,7 @@ class ControlFeedback {
   }
 
   /// 떠 있는 안내를 걷는다.
-  static void hideCurrent() {
-    final e = _current;
-    _current = null;
-    if (e != null && e.mounted) e.remove();
-  }
+  static void hideCurrent() => _closeCurrent?.call();
 }
 
 class _FeedbackBar extends StatefulWidget {
