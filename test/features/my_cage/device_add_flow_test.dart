@@ -472,4 +472,44 @@ void main() {
     expect(c.state.results[PairTargetKind.camera]?.registeredId, 'camera-new');
     expect(unlinked, ['camera-old']);
   });
+
+  test('새 카메라 등록이 다시 확인으로 늦게 확인돼도 옛 행을 해제한다', () async {
+    final unlinked = <String>[];
+    final known = <String, String>{'physical-b': 'camera-old'};
+    var confirmCalls = 0;
+    final c = DeviceAddFlowController(
+        gateway: gateway,
+        accountId: 'owner',
+        isCurrent: () => true,
+        token: () => 'jwt',
+        namePrefix: (_) => '카메라',
+        names: () async => [],
+        // 첫 확인은 아직 행이 없고, 다시 확인에서 보인다.
+        confirm: (kind, id) async => confirmCalls++ == 0 ? null : 'camera-new',
+        saveCredentials: (_, __) async {},
+        readCredentials: () async => {},
+        autoGroup: (_, __) async => 'group',
+        knownCamera: (candidate) async => known[candidate.physicalId],
+        forgetCamera: (candidate) async => known.remove(candidate.physicalId),
+        rememberCamera: (candidate, id) async => known[candidate.physicalId] = id,
+        cameraLastSeen: (_) async => null,
+        unlinkCamera: (id) async => unlinked.add(id),
+        reconnectPoll: const Duration(milliseconds: 1),
+        reconnectTimeout: Duration.zero);
+    addTearDown(c.dispose);
+    c.select(camera);
+    gateway.receipts[camera.physicalId] = const DeviceProvisionReceipt(
+        wifiConnected: false, retrySafe: true, connectSent: true);
+    await c.connect('home', 'password');
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await c.registerAsNew(PairTargetKind.camera);
+    gateway.receipts[camera.physicalId] =
+        const DeviceProvisionReceipt(wifiConnected: true, hardwareId: 'mqtt');
+    await c.connect('home', 'password');
+    expect(c.state.results[PairTargetKind.camera]?.outcome,
+        DeviceAddOutcome.registrationPending);
+    expect(unlinked, isEmpty);
+    expect(await c.recheckRegistration(), isTrue);
+    expect(unlinked, ['camera-old']);
+  });
 }

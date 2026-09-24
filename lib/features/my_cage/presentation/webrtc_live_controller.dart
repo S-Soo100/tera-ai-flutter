@@ -677,7 +677,11 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 중인데 [force]가 아니면 무시(같은 환경에서 offer를 두 번 내지 않는다).
   /// 환경이 바뀐 요청(망·복귀·수동)은 [force]로 현재 시도를 취소하고 새로 간다.
   Future<void> _restart({String reason = 'timer', bool force = false}) async {
-    if (_disposed || _suspended) return;
+    if (_disposed || _suspended) {
+      // 강제 시도 요청이 무시됐다 — 나중 자동 시작에 새어 나가지 않게 푼다.
+      _forceAttempt = false;
+      return;
+    }
     if (_cleaningUp || (!force && state.phase.isConnecting)) {
       _diag('restart-merged', {'reason': reason});
       return;

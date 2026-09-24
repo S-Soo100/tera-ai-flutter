@@ -8,7 +8,8 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:hive/hive.dart';
+import '../../features/notification/data/push_preferences.dart';
+import '../../features/notification/domain/push_consent_flow.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -139,10 +140,12 @@ class LocalNotifications {
   /// 프리팝업에서 '받지 않기'를 고른 뒤에도 예약 화면·팬 타이머가 OS 창을
   /// 바로 띄웠다(2026-09-25 점검). 허용했다면 이미 권한이 있다. 아직 안
   /// 물은 사용자(프리팝업 전 등록)는 예전처럼 묻는다.
-  Future<void> requestPermissionUnlessPrompted() async {
-    final box =
-        Hive.isBoxOpen('app_settings') ? Hive.box<dynamic>('app_settings') : null;
-    if (box?.get('push_prompt_asked_device') == true) return;
+  /// 물었는지는 프리팝업과 같은 저장소([PushPreferences])로 본다 — 키 규칙을
+  /// 여기서 따로 적으면 한쪽만 바뀌었을 때 조용히 어긋난다.
+  Future<void> requestPermissionUnlessPrompted(
+      {PushPreferences? preferences}) async {
+    final prefs = preferences ?? HivePushPreferences();
+    if (prefs.promptAsked(PushTopic.device.name)) return;
     await requestPermission();
   }
 

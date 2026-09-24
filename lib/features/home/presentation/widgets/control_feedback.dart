@@ -38,7 +38,9 @@ class ControlFeedback {
       if (removed) return;
       removed = true;
       if (identical(_current, entry)) _current = null;
-      entry.remove();
+      // 새 안내가 hideCurrent()로 이미 걷었을 수 있다 — 두 번 remove하면
+      // 릴리스에서 예외가 나 호출부(분무 전송 등)가 중단된다.
+      if (entry.mounted) entry.remove();
     }
 
     entry = OverlayEntry(

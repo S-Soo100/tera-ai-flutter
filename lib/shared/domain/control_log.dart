@@ -185,9 +185,10 @@ List<ControlLogEntry> buildControlLog({
         at: h.at,
         id: h.id,
         // 서버 이음 행은 원래 요청(예: 10초)에 이미 들어 있다 — 더하지 않는다.
-        timerMs: p.continuation
+        // 길이를 모르는 옛 행(relay_toggle)끼리면 null로 둔다 — 0초로 쓰면 안 된다.
+        timerMs: p.continuation || p.timerMs == null
             ? h.timerMs
-            : (h.timerMs ?? 0) + (p.timerMs ?? 0),
+            : (h.timerMs ?? 0) + p.timerMs!,
         continuation: h.continuation,
       );
       chainLast = p.at;
