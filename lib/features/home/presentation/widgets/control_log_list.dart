@@ -175,7 +175,11 @@ class _LogRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _stateKey[entry.state]!.tr(args: [name]),
+                // 분무는 분사 시간을 밝힌다 — 이어 보낸 회차는 한 줄로 합쳐졌다.
+                entry.sprayMs != null
+                    ? 'env_detail_ran_for'
+                        .tr(args: [name, '${(entry.sprayMs! / 1000).round()}'])
+                    : _stateKey[entry.state]!.tr(args: [name]),
                 style: TextStyle(
                   fontFamily: 'Pretendard',
                   fontSize: 16,

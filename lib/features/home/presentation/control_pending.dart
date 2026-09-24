@@ -7,7 +7,9 @@
 /// 잠근다**(2026-09-22 사용자 결정). 끝나는 조건:
 /// - 기기 텔레메트리가 목표 상태를 보고 → 성공
 /// - 명령이 거절(`busy`/`error`/`rejected`)·미전달(`no_ack`/`expired`/`lost`) → 즉시 실패 안내
-/// - [kControlConfirmPolls]초 안에 둘 다 없음 → ACK 성공이었으면 조용히 해제, 아니면 무응답 안내
+/// - [kControlConfirmPolls]초 안에 둘 다 없음 → ACK 성공이었으면 조용히 해제, 아니면
+///   "응답이 늦어요"(미확정) 안내 — 서버는 30초 뒤에야 무응답을 확정하므로
+///   "실행되지 않았다"고 단정하지 않는다(2026-09-25, 늦게 도착해 두 번 실행 방지)
 library;
 
 import 'dart:async';
@@ -22,6 +24,7 @@ import '../../my_cage/domain/device_command.dart';
 import '../../my_cage/domain/telemetry_reading.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../domain/schedule_device.dart';
+import 'widgets/control_feedback.dart';
 
 /// 확인을 기다리는 최대 횟수(1초 간격) — 실측 반영 최대 5.8초에 여유.
 const kControlConfirmPolls = 8;
@@ -38,8 +41,9 @@ class ControlPending {
   final bool? expectOn;
 }
 
-/// 명령 처리 결과.
-enum ControlOutcome { ok, busy, rejected, noResponse }
+/// 명령 처리 결과. [noResponse]는 서버가 미전달을 확정한 것, [unconfirmed]는
+/// 확인 창 안에 아무 결론이 없던 것(늦게 실행될 수 있다).
+enum ControlOutcome { ok, busy, rejected, noResponse, unconfirmed }
 
 /// `commands` 행의 status/result → 확정 결과. 아직 모르면 null.
 ControlOutcome? classifyCommand(String? status, String? result) =>
@@ -60,6 +64,7 @@ String? controlOutcomeMessageKey(ControlOutcome o) => switch (o) {
       ControlOutcome.busy => 'module_command_busy',
       ControlOutcome.rejected => 'module_command_rejected',
       ControlOutcome.noResponse => 'module_command_no_ack',
+      ControlOutcome.unconfirmed => 'module_command_unconfirmed',
     };
 
 typedef CommandStatusFetcher = Future<({String? status, String? result})?>
@@ -161,17 +166,16 @@ class ControlPendingNotifier extends FamilyNotifier<ControlPending?, String> {
       }
     }
     // ACK는 됐는데 반영 보고가 늦은 경우는 실패로 겁주지 않는다.
-    finish(acked ? ControlOutcome.ok : ControlOutcome.noResponse);
+    finish(acked ? ControlOutcome.ok : ControlOutcome.unconfirmed);
     _end();
     return done.future;
   }
 }
 
-/// 확인 결과를 스낵바로 알린다(성공은 조용히).
-void showControlOutcome(ScaffoldMessengerState messenger, ControlOutcome o) {
+/// 확인 결과를 알린다(성공은 조용히). 시트 위에서도 보이게 루트 Overlay에
+/// 띄운다([ControlFeedback]).
+void showControlOutcome(ControlFeedback feedback, ControlOutcome o) {
   final key = controlOutcomeMessageKey(o);
-  if (key == null || !messenger.mounted) return;
-  messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(key.tr())));
+  if (key == null || !feedback.mounted) return;
+  feedback.show(key.tr());
 }

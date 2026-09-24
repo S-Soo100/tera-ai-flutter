@@ -194,23 +194,91 @@ final telemetryStaleProvider =
   return controller.stream;
 });
 
+/// 기기 1대의 연결 상태(`is_online`·`last_seen_at`).
+///
+/// 목록 스냅샷으로 시작해 `devices` UPDATE 실시간과 재합류 재조회로 갱신한다
+/// (2026-09-25). 전엔 앱을 켤 때 읽은 목록 값만 봐서, 켤 때 꺼져 있던 사육장은
+/// 복구돼도 재시작 전까지 "기기 연결이 끊겼어요"+제어 잠금이었다. 해제됐거나
+/// 목록에 없으면 null.
+final deviceLinkStatusProvider = StreamProvider.autoDispose
+    .family<DeviceLinkStatus?, String>((ref, deviceId) {
+  final supabase = ref.watch(supabaseClientProvider);
+  final repo = ref.watch(supabaseModuleControlRepositoryProvider);
+  final listFuture = ref.watch(deviceListProvider.future);
+  final controller = StreamController<DeviceLinkStatus?>();
+  var live = false; // 실시간·재조회 값이 오면 목록 스냅샷으로 덮지 않는다.
+  var emitted = false;
+  DeviceLinkStatus? last;
+
+  void emit(DeviceLinkStatus? s, {bool fromLive = true}) {
+    if (controller.isClosed) return;
+    if (!fromLive && live) return;
+    if (fromLive) live = true;
+    if (emitted && s == last) return; // 같은 값 재방출은 하위를 흔들기만 한다.
+    emitted = true;
+    last = s;
+    controller.add(s);
+  }
+
+  unawaited(() async {
+    try {
+      final list = await listFuture;
+      final device = list.where((d) => d.id == deviceId).firstOrNull;
+      emit(device == null ? null : DeviceLinkStatus.of(device),
+          fromLive: false);
+    } catch (e, st) {
+      if (!live && !controller.isClosed) controller.addError(e, st);
+    }
+  }());
+
+  bindResilientChannel(
+    ref,
+    supabase: supabase,
+    name: 'device-link-$deviceId',
+    configure: (c) => c.onPostgresChanges(
+      event: PostgresChangeEvent.update,
+      schema: 'public',
+      table: 'devices',
+      filter: PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'id',
+        value: deviceId,
+      ),
+      callback: (payload) => emit(payload.newRecord['unlinked_at'] != null
+          ? null
+          : DeviceLinkStatus.fromJson(payload.newRecord)),
+    ),
+    // 끊긴 사이의 온라인 변화를 놓쳤을 수 있다 — 서버 값으로 다시 맞춘다.
+    onRejoined: () async {
+      try {
+        emit(await repo.fetchLinkStatus(deviceId));
+      } catch (_) {/* 다음 재합류·UPDATE에서 다시 맞춘다 */}
+    },
+  );
+
+  ref.onDispose(controller.close);
+  return controller.stream;
+});
+
 /// 사육장 제어기 연결 상태 3값(2026-09-23). "모름"을 오프라인으로 그리면 앱을
 /// 켜자마자 "기기 연결이 끊겼어요"가 보이고 카메라까지 고장으로 읽힌다.
 enum ModuleLink { unknown, online, offline }
 
 /// - `unknown`: 기기를 아직 못 받았거나(조회 중·실패) 값이 없음
-/// - `online`: `device.is_online` 스냅샷 **AND** telemetry 최신 — 제어 허용
+/// - `online`: `device.is_online` **AND** telemetry 최신 — 제어 허용
 /// - `offline`: 둘 중 하나라도 끊김
 ///
-/// `device.is_online`은 진입 시점 스냅샷(devices realtime 미구독)이고,
-/// `telemetryStale`는 3초 주기 telemetry 기반 실시간 watchdog이다.
+/// `is_online`은 **이 기기**의 실시간 값([deviceLinkStatusProvider])이다 — 전엔
+/// 목록 첫 기기의 앱 시작 시점 스냅샷을 봐서, 사육장이 2대면 다른 기기 상태로
+/// 판정했다(2026-09-25). `telemetryStale`는 3초 주기 telemetry watchdog이다.
 /// 재조회 중에는 이전 값을 유지한다(`hasValue`) — `isLoading`으로 판정하면
 /// 재조회마다 "확인 중"이 깜빡인다(2026-09-19 교훈).
 final moduleLinkProvider =
     Provider.autoDispose.family<ModuleLink, String>((ref, deviceId) {
-  final device = ref.watch(currentDeviceProvider);
-  if (!device.hasValue) return ModuleLink.unknown;
-  final snapshot = device.value?.isOnline;
+  final status = ref.watch(deviceLinkStatusProvider(deviceId)
+      .select((s) => (s.hasValue, s.valueOrNull?.isOnline)));
+  if (!status.$1) return ModuleLink.unknown;
+  final snapshot = status.$2;
   if (snapshot == null) return ModuleLink.unknown;
   final isStale =
       ref.watch(telemetryStaleProvider(deviceId)).valueOrNull ?? false;

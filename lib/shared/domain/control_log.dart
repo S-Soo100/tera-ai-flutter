@@ -27,6 +27,11 @@ class ControlLogEntry {
 
   /// Matched successful ON command, not an inferred firmware transition.
   final DateTime? startedAt;
+
+  /// 분무 한 번의 총 분사 시간(ms). 이어 보낸 3초 명령·서버가 이은 5초
+  /// 명령은 한 줄로 묶어 합친다(2026-09-25) — 9초가 세 줄로 찍히면 세 번
+  /// 뿌린 것으로 읽힌다.
+  final int? sprayMs;
   Duration? get duration => state != ControlLogState.off ||
           startedAt == null ||
           !at.isAfter(startedAt!)
@@ -42,8 +47,12 @@ class ControlLogEntry {
     this.deltaTemperature,
     this.deltaHumidity,
     this.startedAt,
+    this.sprayMs,
   });
 }
+
+/// 이어진 분무로 볼 최대 간격 — 앱의 회차 간격 5초·서버 이어 붙이기 약 7초.
+const kMistChainGap = Duration(seconds: 8);
 
 /// action 문자열 → (kind, state).
 ///
@@ -120,7 +129,8 @@ List<ControlLogEntry> buildControlLog({
     ControlLogState state,
     DateTime at,
     String id,
-    int? timerMs
+    int? timerMs,
+    bool continuation
   })>[];
   for (final r in commandRows) {
     if (r['status'] != 'acked' || r['result'] != 'ok') continue;
@@ -139,7 +149,9 @@ List<ControlLogEntry> buildControlLog({
       state: entry.state,
       at: raw.toLocal(),
       id: r['id'] is String ? r['id']! as String : '',
-      timerMs: duration is int && duration > 0 ? duration : null
+      timerMs: duration is int && duration > 0 ? duration : null,
+      // 서버가 펌웨어 5초 상한 때문에 이어 보낸 분무(원래 요청의 나머지).
+      continuation: r['source'] == 'timer'
     ));
   }
   parsed.sort((a, b) {
@@ -147,10 +159,51 @@ List<ControlLogEntry> buildControlLog({
     return time != 0 ? time : a.id.compareTo(b.id);
   });
 
+  // 이어진 분무(앱 3초×N·서버 5초+5초)는 첫 명령 한 줄로 묶고 분사 시간을
+  // 합친다. 간격은 직전 **회차**부터 잰다.
+  final merged = <({
+    MarkerKind kind,
+    ControlLogState state,
+    DateTime at,
+    String id,
+    int? timerMs,
+    bool continuation
+  })>[];
+  int? head; // 묶는 중인 분무의 merged 인덱스
+  DateTime? chainLast; // 그 묶음의 마지막 회차 시각
+  for (final p in parsed) {
+    final isMist =
+        p.kind == MarkerKind.mist && p.state == ControlLogState.ran;
+    if (isMist &&
+        head != null &&
+        chainLast != null &&
+        p.at.difference(chainLast) <= kMistChainGap) {
+      final h = merged[head];
+      merged[head] = (
+        kind: h.kind,
+        state: h.state,
+        at: h.at,
+        id: h.id,
+        // 서버 이음 행은 원래 요청(예: 10초)에 이미 들어 있다 — 더하지 않는다.
+        timerMs: p.continuation
+            ? h.timerMs
+            : (h.timerMs ?? 0) + (p.timerMs ?? 0),
+        continuation: h.continuation,
+      );
+      chainLast = p.at;
+      continue;
+    }
+    merged.add(p);
+    if (isMist) {
+      head = merged.length - 1;
+      chainLast = p.at;
+    }
+  }
+
   // 마지막으로 본 on 로우 (kind별) — off가 나오면 소진한다.
   final lastOn = <MarkerKind, ({ControlLogEntry entry, int? timerMs})>{};
   final out = <ControlLogEntry>[];
-  for (final p in parsed) {
+  for (final p in merged) {
     final env =
         (t: nearest(p.at, (b) => b.tAvg), h: nearest(p.at, (b) => b.hAvg));
     double? dT;
@@ -188,6 +241,9 @@ List<ControlLogEntry> buildControlLog({
       deltaTemperature: dT,
       deltaHumidity: dH,
       startedAt: startedAt,
+      sprayMs: p.kind == MarkerKind.mist && p.state == ControlLogState.ran
+          ? p.timerMs
+          : null,
     );
     if (p.state == ControlLogState.on) {
       lastOn[p.kind] = (entry: entry, timerMs: p.timerMs);

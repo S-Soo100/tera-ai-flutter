@@ -2,14 +2,19 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/user_facing_error.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/num_format.dart';
 import '../../../shared/widgets/figma_icon.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../my_cage/presentation/management_colors.dart';
 import '../../my_cage/presentation/widgets/management_widgets.dart';
+import '../../my_cage/domain/actuator_state.dart';
+import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../domain/schedule.dart';
+import '../domain/schedule_last_run.dart';
 import '../domain/schedule_device.dart';
+import 'home_control_providers.dart';
 import 'schedule_draft_apply.dart';
 import 'schedule_providers.dart';
 import 'widgets/schedule_device_badge.dart';
@@ -107,7 +112,9 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
                           child: Padding(
                               padding: EdgeInsets.fromLTRB(12, 16, 12, 0),
                               child: SkeletonListLoading(itemCount: 3))),
-                      error: (e, _) => _ErrorNote(message: '$e'),
+                      error: (e, _) => _ErrorNote(
+                          message: userFacingError(e),
+                          onRetry: () => ref.invalidate(schedulesProvider)),
                       // Expanded는 세로를 꽉 채우라고 하므로 상자는 Align으로
                       // 느슨하게 받아야 64를 지킨다.
                       data: (list) => rows.isEmpty
@@ -151,6 +158,7 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
   }
 
   Widget _row(Object row, List<Schedule> all) {
+    final runs = ref.watch(scheduleLastRunsProvider).valueOrNull ?? const {};
     final id = _rowId(row);
     final selected = _selected.contains(id);
     void toggleSelect() => setState(() {
@@ -167,6 +175,8 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
           scheduleStateLabel(p.enabled),
           if (on.guard case final g? when g.enabled) _guardLabel(g),
           if (p.isSkewed) 'routine_pair_skewed'.tr(),
+          if (latestOf(runs, [on.id, p.off.id]) case final r?)
+            scheduleLastRunLabel(r),
         ],
         enabled: p.enabled,
         toggleKey: Key('schedule_pair_toggle_${p.pairId}'),
@@ -188,6 +198,7 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
         scheduleRepeatLabel(s.kind, s.daysOfWeek),
         scheduleStateLabel(s.enabled),
         if (s.guard case final g? when g.enabled) _guardLabel(g),
+        if (runs[s.id] case final r?) scheduleLastRunLabel(r),
       ],
       enabled: s.enabled,
       toggleKey: Key('schedule_toggle_${s.id}'),
@@ -203,8 +214,19 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
   // ── 추가 ────────────────────────────────────────────────────────────────
 
   Future<void> _add() async {
+    // 냉각팬 없는 보드(fan2 unavailable)는 냉각팬 예약을 고를 수 없다 — 홈
+    // 타일과 같은 기준.
+    final deviceId = ref.read(currentDeviceIdProvider).valueOrNull;
+    final t = deviceId == null
+        ? null
+        : ref.read(telemetryStreamProvider(deviceId)).valueOrNull;
+    final devices = [
+      for (final d in ScheduleDevice.pickable)
+        if (d != ScheduleDevice.cool || t?.fan2 != ActuatorState.unavailable) d
+    ];
     final result = await Navigator.of(context).push<Object>(MaterialPageRoute(
         builder: (_) => ScheduleDevicePickerScreen(
+            devices: devices,
             onPick: (ctx, device) => showScheduleEditor(ctx, device: device))));
     if (result is! ScheduleDraft || !mounted) return;
     await _guard(() => applyScheduleDraft(ref, result));
@@ -279,7 +301,9 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
         failed = true;
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('routine_action_failed'.tr(args: ['$e']))),
+          SnackBar(
+              content: Text(
+                  'routine_action_failed'.tr(args: [userFacingError(e)]))),
         );
         break;
       }
@@ -348,7 +372,9 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('routine_action_failed'.tr(args: ['$e']))),
+        SnackBar(
+              content: Text(
+                  'routine_action_failed'.tr(args: [userFacingError(e)]))),
       );
     }
   }
@@ -395,6 +421,26 @@ String scheduleSingleTitle(Schedule s, ScheduleDevice? device) {
 
 String scheduleStateLabel(bool enabled) =>
     (enabled ? 'device_state_on' : 'device_state_off').tr();
+
+/// 목록 부제의 "마지막 실행" 조각. 오늘이면 시각만, 아니면 날짜를 붙인다.
+/// 실패면 사유를 밝힌다 — 알림만 보고 "돌았겠지" 믿지 않게(2026-09-25).
+String scheduleLastRunLabel(ScheduleLastRun run, {DateTime? now}) {
+  final at = run.issuedAt.toLocal();
+  final today = now ?? DateTime.now();
+  final hhmm =
+      '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}';
+  final when = at.year == today.year &&
+          at.month == today.month &&
+          at.day == today.day
+      ? hhmm
+      : '${at.month}/${at.day} $hhmm';
+  final failure = run.failureKey;
+  if (failure != null) {
+    return 'schedule_last_run_failed'.tr(args: [when, failure.tr()]);
+  }
+  if (run.pending) return 'schedule_last_run_pending'.tr(args: [when]);
+  return 'schedule_last_run'.tr(args: [when]);
+}
 
 /// `습도>70%면 건너뜀` 식. 키는 `routine_guard_chip_<wire 뒷부분>`.
 String _guardLabel(ScheduleGuard g) {
@@ -576,20 +622,25 @@ class _EmptyBox extends StatelessWidget {
 }
 
 class _ErrorNote extends StatelessWidget {
-  const _ErrorNote({required this.message});
+  const _ErrorNote({required this.message, required this.onRetry});
 
   final String message;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Text(
-        'routine_load_failed'.tr(args: [message]),
-        style:
-            theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
-      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(
+          'routine_load_failed'.tr(args: [message]),
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.error),
+        ),
+        // 실패를 '예약 없음'처럼 두면 유저가 같은 예약을 또 만든다(2026-09-25).
+        TextButton(onPressed: onRetry, child: Text('retry'.tr())),
+      ]),
     );
   }
 }

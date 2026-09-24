@@ -28,6 +28,25 @@ class ScheduleNotificationSync {
 
   final LocalNotifications _core;
 
+  /// [deviceIds]에 없는 기기(해제·삭제·다른 계정)의 예약 알림을 내린다.
+  /// 동기화는 지금 보는 기기만 하므로, 지운 기기의 반복 알림은 여기서만
+  /// 정리된다(2026-09-25 점검 — 삭제 후에도 매일 울렸다).
+  Future<void> pruneExcept(Set<String> deviceIds) async {
+    try {
+      await _core.ensureInitialized();
+      final plugin = _core.plugin;
+      for (final p in await plugin.pendingNotificationRequests()) {
+        final payload = p.payload;
+        if (payload == null || !payload.startsWith('sched:')) continue;
+        if (!deviceIds.contains(payload.substring('sched:'.length))) {
+          await plugin.cancel(id: p.id);
+        }
+      }
+    } catch (e, st) {
+      debugPrint('[sched-notif] prune failed: $e\n$st');
+    }
+  }
+
   /// [schedules]는 [deviceId] 기기의 **전체** 예약 목록이어야 한다 — 여기
   /// 없는 예약의 알림은 지워진 것으로 보고 취소한다.
   Future<void> sync(String deviceId, List<Schedule> schedules) async {
@@ -44,7 +63,7 @@ class ScheduleNotificationSync {
 
       final specs = scheduleNotificationSpecs(schedules);
       if (specs.isEmpty) return;
-      await _core.requestPermission();
+      await _core.requestPermissionUnlessPrompted();
 
       final mode = await _core.scheduleMode();
       final now = DateTime.now();

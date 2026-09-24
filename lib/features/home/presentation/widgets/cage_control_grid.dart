@@ -73,6 +73,10 @@ class CageControlGrid extends ConsumerWidget {
       return expect ? ActuatorState.on : ActuatorState.off;
     }
 
+    // 다른 제어의 확인을 기다리는 동안 눌리지 않는 타일은 흐리게 — 멀쩡해
+    // 보이는데 안 눌려 고장으로 읽혔다(2026-09-25 점검).
+    final controlLocked = pending != null || mistWaiting;
+    final mistRun = ref.watch(mistRunProvider(deviceId));
     final lock = ref.watch(mistLockProvider(deviceId));
     final glass = context.glass;
     final mistLocked = lock.isLocked(DateTime.now());
@@ -119,6 +123,7 @@ class CageControlGrid extends ConsumerWidget {
             size: 40),
         active: fanOn,
         loading: loading(ScheduleDevice.fan),
+        dimmed: controlLocked && !loading(ScheduleDevice.fan),
         tileColor: fanOn ? glass.deviceFanBg : glass.surfaceTint,
         iconCircleColor: fanOn ? glass.deviceFan : glass.deviceOff,
         onTap: online ? () => open(ScheduleDevice.fan) : null,
@@ -129,7 +134,13 @@ class CageControlGrid extends ConsumerWidget {
       _DeviceTile(
         key: mistKey,
         name: 'device_mist'.tr(),
-        status: mistOn ? 'device_state_running'.tr() : 'device_state_off'.tr(),
+        // 6·9초를 이어 보내는 중이면 몇 번째인지(2026-09-25).
+        status: mistRun != null && mistRun.duration.parts > 1
+            ? 'home_mist_running_part'
+                .tr(args: ['${mistRun.part}', '${mistRun.duration.parts}'])
+            : mistOn
+                ? 'device_state_running'.tr()
+                : 'device_state_off'.tr(),
         // 꺼짐=format_color_reset(사선 물방울, 원 40 프레임 export라 40),
         // 켜짐=humidity_high(물방울, 글리프만 17×20 → 20) — 2026-09-08
         // 사용자 지시.
@@ -137,6 +148,7 @@ class CageControlGrid extends ConsumerWidget {
             size: 40),
         active: mistOn,
         loading: loading(ScheduleDevice.mist),
+        dimmed: controlLocked && !loading(ScheduleDevice.mist),
         tileColor: mistOn ? glass.deviceMistBg : glass.surfaceTint,
         iconCircleColor: mistOn ? glass.deviceMist : glass.deviceOff,
         onTap: online ? () => open(ScheduleDevice.mist) : null,
@@ -152,6 +164,7 @@ class CageControlGrid extends ConsumerWidget {
             size: 40),
         active: coolOn,
         loading: loading(ScheduleDevice.cool),
+        dimmed: controlLocked && !loading(ScheduleDevice.cool),
         tileColor: coolOn ? glass.deviceCoolBg : glass.surfaceTint,
         iconCircleColor: coolOn ? glass.deviceCool : glass.deviceOff,
         onTap: online && coolAvailable ? () => open(ScheduleDevice.cool) : null,
@@ -168,6 +181,7 @@ class CageControlGrid extends ConsumerWidget {
             size: 40),
         active: ledOn,
         loading: loading(ScheduleDevice.led),
+        dimmed: controlLocked && !loading(ScheduleDevice.led),
         tileColor: ledOn ? glass.deviceLedBg : glass.surfaceTint,
         iconCircleColor: ledOn ? glass.deviceLed : glass.deviceOff,
         gaugeFraction: ledOn && t?.ledBrightness != null
@@ -267,6 +281,7 @@ class _DeviceTile extends StatelessWidget {
     required this.glyph,
     required this.active,
     this.loading = false,
+    this.dimmed = false,
     required this.tileColor,
     required this.iconCircleColor,
     this.gaugeFraction,
@@ -284,6 +299,9 @@ class _DeviceTile extends StatelessWidget {
 
   /// 기기 확인 대기 중 — 타일 위에 shimmer를 흘린다.
   final bool loading;
+
+  /// 다른 제어 확인 대기로 잠김 — 흐리게 그린다.
+  final bool dimmed;
   final Color tileColor;
   final Color iconCircleColor;
 
@@ -297,7 +315,7 @@ class _DeviceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
-    return ClipRRect(
+    final tile = ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: Stack(
         fit: StackFit.expand,
@@ -379,5 +397,6 @@ class _DeviceTile extends StatelessWidget {
         ],
       ),
     );
+    return dimmed ? Opacity(opacity: 0.5, child: tile) : tile;
   }
 }

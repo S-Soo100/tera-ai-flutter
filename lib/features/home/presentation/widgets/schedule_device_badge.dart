@@ -57,7 +57,12 @@ class ScheduleDeviceBadge extends StatelessWidget {
 /// 기기 선택 전체 화면(Figma 1106:4955) — 4타일 180.5×72, 고르면 편집기를
 /// 열고 편집기 결과를 그대로 돌려준다(부모는 한 번의 push로 초안을 받는다).
 class ScheduleDevicePickerScreen extends StatelessWidget {
-  const ScheduleDevicePickerScreen({super.key, required this.onPick});
+  const ScheduleDevicePickerScreen(
+      {super.key, required this.onPick, this.devices = ScheduleDevice.pickable});
+
+  /// 고를 수 있는 기기. 냉각팬이 없는 보드는 뺀다 — 홈 타일은 막혀 있는데
+  /// 예약은 만들 수 있으면 돌지 않는 예약이 생긴다(2026-09-25 점검).
+  final List<ScheduleDevice> devices;
 
   /// 고른 기기로 편집기를 열고 결과를 돌려준다. null이면 취소.
   final Future<Object?> Function(BuildContext context, ScheduleDevice device)
@@ -92,7 +97,7 @@ class ScheduleDevicePickerScreen extends StatelessWidget {
                               style: managementStyle(context,
                                   weight: FontWeight.w600))),
                     ])))));
-    final tiles = ScheduleDevice.pickable;
+    final tiles = devices;
     return Scaffold(
         backgroundColor: glass.surfaceTint,
         body: SafeArea(

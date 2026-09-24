@@ -52,6 +52,7 @@ final pushLifecycleControllerProvider =
         'route': message.route
       }),
     ),
+    clearLocalNotifications: core.cancelAll,
     navigate: (route) {
       final router = ref.read(routerProvider);
       if (router.routeInformationProvider.value.uri.path != route) {

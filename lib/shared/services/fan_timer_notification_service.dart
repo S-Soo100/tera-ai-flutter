@@ -88,7 +88,7 @@ class FanTimerNotificationService {
   }
 
   Future<void> _schedule(String deviceId, ScheduleFanDone plan) async {
-    await _core.requestPermission();
+    await _core.requestPermissionUnlessPrompted();
     await _core.plugin.zonedSchedule(
       id: notificationIdFor(deviceId, actuator: plan.actuator),
       title: _titleKey(plan.actuator).tr(),

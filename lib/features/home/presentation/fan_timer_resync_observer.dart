@@ -10,6 +10,7 @@ import '../../../core/supabase/supabase_provider.dart';
 import '../../../shared/services/fan_timer_notification_service.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../data/fan_timer_notification_resync.dart';
+import 'schedule_providers.dart';
 
 final fanTimerNotificationResyncProvider =
     Provider<FanTimerNotificationResync>((ref) => FanTimerNotificationResync(
@@ -64,6 +65,11 @@ class _FanTimerResyncObserverState
       await ref
           .read(fanTimerNotificationResyncProvider)
           .run(devices.map((d) => d.id));
+      if (!mounted) return;
+      // 지운 기기의 예약 알림도 같이 정리한다.
+      await ref
+          .read(scheduleNotificationSyncProvider)
+          .pruneExcept({for (final d in devices) d.id});
     } catch (e) {
       // 알림 정합은 부가 기능 — 네트워크 오류로 앱 기동을 방해하지 않는다.
       debugPrint('[fan-timer-notif] resync skipped: $e');

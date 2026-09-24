@@ -297,9 +297,11 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
     }
     if (_isMistPoint) {
       final saved = (widget.initial?.payload?['duration_ms'] as num?)?.toInt();
+      final kept = MistDuration.tryFromMilliseconds(saved);
       _mistChoice = widget.initial == null
           ? MistDuration.defaultValue
-          : MistDuration.tryFromMilliseconds(saved);
+          // 예약에 못 쓰는 값(6·9초)은 고른 것으로 두지 않는다 — 저장이 막힌다.
+          : (kept != null && kept.schedulable ? kept : null);
     }
     _days = {...?base?.daysOfWeek};
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -388,7 +390,7 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
       if (_isMistPoint) ...[
         const SizedBox(height: 24),
         // 냉각팬 종료 칩과 같은 행(높이 44, 간격 6, y310) — 두 편집기가 같은
-        // 자리에 칩과 반복을 둔다. 칩은 2개라 반씩 나눈다.
+        // 자리에 칩과 반복을 둔다. 칩은 3개라 셋으로 나눈다.
         ScheduleSection(
             label: 'home_mist_duration_label'.tr(),
             gap: 8,
@@ -401,9 +403,19 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
                         label: 'home_mist_seconds'.tr(args: ['${d.seconds}']),
                         selected: _mistChoice == d,
                         accent: accent,
+                        // 예약은 서버가 한 번에 실행해 앱이 이어 보낼 수 없다 —
+                        // 서버가 6·9초를 받기 전까지 3초만(2026-09-25).
+                        enabled: d.schedulable,
                         onTap: () => _update(() => _mistChoice = d))),
               ],
             ])),
+        if (MistDuration.values.any((d) => !d.schedulable)) ...[
+          const SizedBox(height: 8),
+          Text('home_mist_schedule_only_three'.tr(),
+              key: const Key('routine_mist_only_three'),
+              style: managementStyle(context,
+                  size: 14, color: context.glass.textTertiary)),
+        ],
       ],
       if (_kind == ScheduleEditorKind.span) ...[
         const SizedBox(height: 24),

@@ -52,3 +52,31 @@ class Device {
     );
   }
 }
+
+/// 기기 연결 상태만 — `devices` 실시간 UPDATE와 목록 스냅샷 공용(2026-09-25).
+class DeviceLinkStatus {
+  const DeviceLinkStatus({required this.isOnline, required this.lastSeenAt});
+
+  final bool isOnline;
+  final DateTime? lastSeenAt;
+
+  factory DeviceLinkStatus.of(Device d) =>
+      DeviceLinkStatus(isOnline: d.isOnline, lastSeenAt: d.lastSeenAt);
+
+  factory DeviceLinkStatus.fromJson(Map<String, dynamic> j) =>
+      DeviceLinkStatus(
+        isOnline: j['is_online'] as bool? ?? false,
+        lastSeenAt: j['last_seen_at'] != null
+            ? DateTime.tryParse(j['last_seen_at'].toString())
+            : null,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      other is DeviceLinkStatus &&
+      other.isOnline == isOnline &&
+      other.lastSeenAt == lastSeenAt;
+
+  @override
+  int get hashCode => Object.hash(isOnline, lastSeenAt);
+}

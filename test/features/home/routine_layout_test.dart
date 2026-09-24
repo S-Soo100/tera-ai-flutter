@@ -241,7 +241,7 @@ void main() {
     expect(tester.getRect(find.byKey(const Key('routine_day_1'))).top, 405);
   });
 
-  testWidgets('분무 편집기 — 시작 + 분사 시간 칩 2개 @ y310, 반복 378/405',
+  testWidgets('분무 편집기 — 시작 + 분사 시간 칩 3개 @ y310, 예약 3초 안내 뒤 반복',
       (tester) async {
     await pump(tester, const []);
     await tester.tap(find.byKey(RoutineSettingsScreen.addKey));
@@ -250,15 +250,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('분무 예약'), findsOneWidget);
     expect(find.text('종료'), findsNothing);
-    // 냉각팬 종료 칩과 같은 줄(2026-09-23 분사 시간 5/10초, 칩 2개 반씩).
+    // 냉각팬 종료 칩과 같은 줄(2026-09-25 분사 시간 3/6/9초, 칩 3개 셋으로).
     expect(find.text('분사 시간'), findsOneWidget);
-    expect(tester.getRect(find.byKey(const Key('routine_mist_5'))),
-        const Rect.fromLTWH(24, 310, 169.5, 44));
-    expect(tester.getRect(find.byKey(const Key('routine_mist_10'))),
-        const Rect.fromLTWH(199.5, 310, 169.5, 44));
-    expect(find.byKey(const Key('routine_mist_7')), findsNothing);
-    expect(tester.getRect(find.text('반복')).top, 378);
-    expect(tester.getRect(find.byKey(const Key('routine_day_1'))).top, 405);
+    expect(tester.getRect(find.byKey(const Key('routine_mist_3'))),
+        const Rect.fromLTWH(24, 310, 111, 44));
+    expect(tester.getRect(find.byKey(const Key('routine_mist_6'))),
+        const Rect.fromLTWH(141, 310, 111, 44));
+    expect(tester.getRect(find.byKey(const Key('routine_mist_9'))),
+        const Rect.fromLTWH(258, 310, 111, 44));
+    // Figma 밖(사용자 결정): 서버가 6·9초 예약을 받기 전까지 3초만 된다는
+    // 안내가 칩 아래 붙어 반복이 그만큼 내려간다.
+    final note = tester.getRect(find.byKey(const Key('routine_mist_only_three')));
+    expect(note.top, 362);
+    expect(tester.getRect(find.text('반복')).top, note.bottom + 24);
   });
 
   testWidgets('수정 — 저장 696 위에, "예약 삭제" 752 (글자 중심 780)', (tester) async {

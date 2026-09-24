@@ -29,10 +29,11 @@ class DeviceOfflineNotice extends ConsumerWidget {
     if (link == ModuleLink.online) return const SizedBox.shrink();
     if (link == ModuleLink.unknown) return const _CheckingNotice();
 
-    final device = ref.watch(currentDeviceProvider).valueOrNull;
+    // 이 기기의 실시간 값 — 목록 첫 기기·앱 시작 시점 값이 아니다(2026-09-25).
+    final lastSeen =
+        ref.watch(deviceLinkStatusProvider(deviceId)).valueOrNull?.lastSeenAt;
     // 1분 틱에 맞춰 다시 그린다. 안 그러면 "8시간 전"이 그대로 멈춘다.
     final now = ref.watch(nowTickProvider).valueOrNull ?? DateTime.now();
-    final lastSeen = device?.lastSeenAt;
 
     final theme = Theme.of(context);
     // 홈 단일 스크롤의 카드 리듬(좌우 12·섹션 간 12)에 맞춘다 — 구 서브탭
