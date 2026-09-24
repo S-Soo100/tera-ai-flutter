@@ -975,6 +975,40 @@ void main() {
     expect(h.logs.last.viewId, second.viewId);
   });
 
+  testWidgets('시청 세션 — 이전 정리가 안 끝난 빠른 복귀는 옛 재생 상태를 새 세션에 넘기지 않는다',
+      (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    h.signaling.holdClose = Completer();
+    final slowClose = h.signaling.holdClose!;
+    for (final s in [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await tester.pump();
+    expect(h.state.phase, WebRtcLivePhase.streaming); // 정리 대기 중 — 옛 상태
+    for (final s in [
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await _settleConnect(tester); // 새 연결은 영상 없이 끝난다
+    slowClose.complete();
+    await tester.pump();
+    await h.dispose();
+    await tester.pump();
+
+    expect(h.views, hasLength(2));
+    final second = h.views.last;
+    expect(second.firstVideoMs, isNull);
+    expect(second.msVideo, 0);
+  });
+
   testWidgets('시청 세션 — 실패 화면 시간·수동 재시도·재연결 사유를 남긴다', (tester) async {
     final h = _Harness();
     await _settleConnect(tester);

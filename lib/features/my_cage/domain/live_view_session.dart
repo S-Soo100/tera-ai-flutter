@@ -24,19 +24,28 @@ class LiveViewSession {
     this.network,
     this.cameraOnline,
     DateTime Function()? clock,
-  })  : _clock = clock ?? _now,
-        startedAt = (clock ?? _now)();
+    Stopwatch Function()? stopwatch,
+  })  : startedAt = (clock ?? _now)(),
+        _watch = (stopwatch ?? _monotonic)()..start();
 
   // package:clock — 위젯 테스트의 가짜 시계를 따른다(DateTime.now는 안 흐른다).
   static DateTime _now() => clock.now();
+
+  /// 경과 시간은 **단조 시계**로 잰다 — 벽시계 차이는 NTP 보정·시간 변경으로
+  /// 음수가 되고 DB CHECK(`duration_ms >= 0`)에 행 전체가 거부된다(리뷰
+  /// 2026-09-25). 네이티브 Stopwatch는 가짜 시계를 따르지 않아, 위젯 테스트가
+  /// 가짜 시계를 걸었을 때만 그 시계 기반 스톱워치를 쓴다.
+  static Stopwatch _monotonic() =>
+      identical(clock, const Clock()) ? Stopwatch() : clock.stopwatch();
 
   final String viewId;
   final String cameraId;
   String? firmwareVer;
   String? network;
   bool? cameraOnline;
+  /// 시작 벽시계 시각 — DB `started_at` 표기용. 경과 계산에는 쓰지 않는다.
   final DateTime startedAt;
-  final DateTime Function() _clock;
+  final Stopwatch _watch;
 
   /// 시작 때 몰랐던 환경값만 채운다(카메라 목록·망 신호가 늦게 오는 경우).
   /// 이미 있는 값은 덮지 않는다 — "시작 시점" 값이 기준이다.
@@ -49,7 +58,7 @@ class LiveViewSession {
   final Map<LiveViewBucket, int> _ms = {};
   final Map<String, int> _restarts = {};
   LiveViewBucket? _bucket;
-  DateTime? _since;
+  int? _since; // 현재 칸에 들어온 경과 ms
   int? _firstVideoMs;
   int _attempts = 0;
   int _stallCount = 0;
@@ -57,23 +66,23 @@ class LiveViewSession {
   int _manualRetries = 0;
   bool _finished = false;
 
-  int _elapsed(DateTime at) => at.difference(startedAt).inMilliseconds;
+  int _elapsed() => _watch.elapsedMilliseconds;
 
-  void _close(DateTime at) {
+  void _close(int at) {
     final b = _bucket;
     final since = _since;
     if (b == null || since == null) return;
-    _ms[b] = (_ms[b] ?? 0) + at.difference(since).inMilliseconds;
+    _ms[b] = (_ms[b] ?? 0) + (at - since);
   }
 
   /// 화면 상태 변화. 같은 칸 재통지는 무시한다(진입 횟수를 늘리지 않는다).
   void onPhase(LiveViewBucket bucket) {
     if (_finished || bucket == _bucket) return;
-    final at = _clock();
+    final at = _elapsed();
     _close(at);
     _bucket = bucket;
     _since = at;
-    if (bucket == LiveViewBucket.video) _firstVideoMs ??= _elapsed(at);
+    if (bucket == LiveViewBucket.video) _firstVideoMs ??= at;
     if (bucket == LiveViewBucket.stalled) _stallCount++;
     if (bucket == LiveViewBucket.failed) _failedCount++;
   }
@@ -97,7 +106,8 @@ class LiveViewSession {
   LiveViewSummary? finish(LiveViewEnd end) {
     if (_finished) return null;
     _finished = true;
-    final at = _clock();
+    final at = _elapsed();
+    _watch.stop();
     _close(at);
     return LiveViewSummary(
       viewId: viewId,
@@ -107,7 +117,7 @@ class LiveViewSession {
       network: network,
       cameraOnline: cameraOnline,
       endReason: end,
-      durationMs: _elapsed(at),
+      durationMs: at,
       firstVideoMs: _firstVideoMs,
       attempts: _attempts,
       msConnecting: _ms[LiveViewBucket.connecting] ?? 0,
