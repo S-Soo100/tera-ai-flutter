@@ -74,6 +74,22 @@ List<TerraCamera> orderCamerasBySets(
   return ordered;
 }
 
+/// 카메라 탭에서 고른 카메라를 홈에도 반영 — 그 카메라가 물린 세트가 있으면
+/// 홈 세트 선택을 옮긴다(TopFixedArea의 기존 listen이 페이지를 움직인다).
+/// 스와이프와 카메라 탭 드롭다운이 함께 쓴다(2026-09-25 — 드롭다운으로 바꾸면
+/// 홈이 따라가지 않아 두 화면이 다른 카메라를 동시에 연결했다).
+void syncHomeSetToCamera(WidgetRef ref, String cameraId) {
+  final sets =
+      ref.read(enclosureSetsProvider).valueOrNull ?? const <EnclosureSet>[];
+  final i = sets.indexWhere((s) => s.camera?.id == cameraId);
+  if (i < 0) return; // 세트 밖 카메라 — 홈은 그대로 둔다.
+  final deviceId = sets[i].device?.id;
+  if (deviceId == null) return;
+  ref.read(selectedHomeDeviceIdProvider.notifier).state = deviceId;
+  if (ref.read(selectedSetIndexProvider) == i) return;
+  ref.read(selectedSetIndexProvider.notifier).state = i;
+}
+
 class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
   late final PageController _controller;
 
@@ -95,19 +111,7 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
     return i >= 0 ? i : 0;
   }
 
-  /// 여기서 고른 카메라를 홈에도 반영 — 그 카메라가 물린 세트가 있으면
-  /// 홈 세트 선택을 옮긴다(TopFixedArea의 기존 listen이 페이지를 움직인다).
-  void _syncHomeSet(String cameraId) {
-    final sets =
-        ref.read(enclosureSetsProvider).valueOrNull ?? const <EnclosureSet>[];
-    final i = sets.indexWhere((s) => s.camera?.id == cameraId);
-    if (i < 0) return; // 세트 밖 카메라 — 홈은 그대로 둔다.
-    final deviceId = sets[i].device?.id;
-    if (deviceId == null) return;
-    ref.read(selectedHomeDeviceIdProvider.notifier).state = deviceId;
-    if (ref.read(selectedSetIndexProvider) == i) return;
-    ref.read(selectedSetIndexProvider.notifier).state = i;
-  }
+  void _syncHomeSet(String cameraId) => syncHomeSetToCamera(ref, cameraId);
 
   @override
   void initState() {
@@ -154,6 +158,9 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
     final camerasAsync = ref.watch(camerasProvider);
     return camerasAsync.when(
       skipLoadingOnReload: true,
+      // 재조회가 한 번 실패해도 이전 목록으로 계속 그린다 — 오류 카드로 바꾸면
+      // 라이브가 철거되고 망 없음 안내도 가려졌다(2026-09-25 점검).
+      skipError: true,
       loading: () => const AspectRatio(
         aspectRatio: CameraLiveArea.aspectRatio,
         child: SkeletonLoading(
@@ -217,23 +224,33 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
       aspectRatio: CameraLiveArea.aspectRatio,
       // 좌상단 연결 배지 — 스트림 phase 기준(홈과 동일 공용 위젯, A3 복원).
       status: null,
-      child: PageView.builder(
-        key: CameraLiveArea.pageViewKey,
-        controller: _controller,
-        itemCount: cameras.length,
-        onPageChanged: (i) {
-          final id = cameras[i].id;
+      // 넘기기가 **끝난 뒤** 카메라를 확정한다. onPageChanged는 드래그가 절반을
+      // 넘는 순간 불려, 선택이 바뀌며 라이브 영역이 통째로 다시 만들어져
+      // 드래그가 끊기고 되돌릴 수 없었다(2026-09-25 점검).
+      child: NotificationListener<ScrollEndNotification>(
+        onNotification: (n) {
+          if (n.depth != 0 || !_controller.hasClients) return false;
+          final page = _controller.page?.round();
+          if (page == null || page < 0 || page >= cameras.length) return false;
+          final id = cameras[page].id;
           if (ref.read(selectedCrecamCameraProvider) != id) {
             ref.read(selectedCrecamCameraProvider.notifier).state = id;
+            // 홈도 따라간다(양방향 동기화의 카메라→홈 방향).
+            _syncHomeSet(id);
           }
-          // 홈도 따라간다(양방향 동기화의 카메라→홈 방향).
-          _syncHomeSet(id);
+          return false;
         },
-        // 정착 페이지만 라이브 — 드래그로 스쳐 가는 이웃 페이지가 세션
-        // 생성→즉시 철거(offer/ICE/closeSession 왕복)를 반복하지 않게
-        // (리뷰 2026-09-04 효율). 정착(onPageChanged) 시 active가 되며 연결.
-        itemBuilder: (_, i) =>
-            _CameraPane(camera: cameras[i], active: i == selected),
+        child: PageView.builder(
+          key: CameraLiveArea.pageViewKey,
+          controller: _controller,
+          itemCount: cameras.length,
+          // 정착 페이지만 라이브 — 드래그로 스쳐 가는 이웃 페이지가 세션
+          // 생성→즉시 철거(offer/ICE/closeSession 왕복)를 반복하지 않게
+          // (리뷰 2026-09-04 효율). 넘기기가 끝나면 active가 되며 연결하고,
+          // 방금 본 카메라는 잠깐 연결을 유지한다(kWebRtcHiddenGrace).
+          itemBuilder: (_, i) =>
+              _CameraPane(camera: cameras[i], active: i == selected),
+        ),
       ),
     );
 

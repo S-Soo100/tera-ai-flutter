@@ -149,8 +149,11 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
               ],
               selectedId: selectedCamera,
               emptyLabel: 'device_camera_label'.tr(),
-              onSelected: (id) =>
-                  ref.read(selectedCrecamCameraProvider.notifier).state = id,
+              onSelected: (id) {
+                ref.read(selectedCrecamCameraProvider.notifier).state = id;
+                // 홈도 같은 카메라로 — 스와이프와 같은 동기화(2026-09-25).
+                syncHomeSetToCamera(ref, id);
+              },
             ),
           ),
           Expanded(

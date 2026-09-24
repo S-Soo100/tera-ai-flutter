@@ -2,6 +2,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/user_facing_error.dart';
+
 import '../../../home/presentation/home_set_providers.dart';
 import '../my_cage_providers.dart';
 
@@ -31,6 +33,10 @@ class CameraRotateTile extends ConsumerStatefulWidget {
   ConsumerState<CameraRotateTile> createState() => _CameraRotateTileState();
 }
 
+/// 회전 적용까지 걸리는 시간(카메라 재부팅 ~20초 + 여유). 이 동안 회전
+/// 버튼을 다시 누르지 못하게 잡는다(2026-09-25).
+const kRotateRebootHold = Duration(seconds: 25);
+
 /// 회전 PATCH + 결과 스낵바 공용 실행부 — 환경설정 타일과 라이브 전체화면
 /// 버튼([CameraLiveFullscreenScreen])이 공유한다. 성공 시 재부팅 예고
 /// 스낵바(후속 통보 09-09 §1), 실패 시 사유 스낵바. 반환은 성공 여부.
@@ -59,7 +65,8 @@ Future<bool> submitRotate180(
     debugPrint('[rotate] PATCH failed '
         'in ${DateTime.now().difference(started).inMilliseconds}ms: $e');
     messenger.showSnackBar(
-      SnackBar(content: Text('camera_rotate_failed'.tr(args: ['$e']))),
+      SnackBar(
+          content: Text('camera_rotate_failed'.tr(args: [userFacingError(e)]))),
     );
     return false;
   }

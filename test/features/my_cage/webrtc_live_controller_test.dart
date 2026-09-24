@@ -237,6 +237,14 @@ Future<void> _settleConnect(WidgetTester tester) async {
   await tester.pump();
 }
 
+/// 영상이 계속 흐르는 채로 [seconds]초를 흘린다(정지 감시가 끊지 않게).
+Future<void> _play(WidgetTester tester, _Harness h, int seconds) async {
+  for (var i = 0; i < seconds; i++) {
+    h.pc.frames += 6;
+    await _ticks(tester, 1);
+  }
+}
+
 /// 재생 중 통계 틱을 [n]번 흘린다.
 Future<void> _ticks(WidgetTester tester, int n) async {
   for (var i = 0; i < n; i++) {
@@ -620,7 +628,9 @@ void main() {
       await tester.pump();
     }
     expect(h.state.phase, WebRtcLivePhase.failed);
-    expect(h.state.errorKey, 'crecam_live_error_failed');
+    // ICE 실패는 원인별 문구(2026-09-25), 시도 예산 초과는 일반 문구.
+    expect(h.state.errorKey,
+        anyOf('crecam_live_error_ice', 'crecam_live_error_failed'));
     // 소진 뒤 재시도는 60초 간격 — 59초까지는 새 피어가 없고 61초에 하나.
     final before = h.pcs.length;
     await tester.pump(const Duration(seconds: 59));
@@ -769,9 +779,10 @@ void main() {
   testWidgets('휴대폰 망이 없으면 카메라 목록이 오프라인이어도 "인터넷 없음"으로 안내한다',
       (tester) async {
     final h = _Harness();
-    h.cameras.add([_camera(online: false)]); // 망 끊긴 사이 낡은 목록
+    h.cameras.add([_camera(online: true)]);
     h.network.add('wifi');
     await _stream(tester, h);
+    h.cameras.add([_camera(online: false)]); // 망 끊긴 사이 낡은 목록
     h.network.add('none');
     await tester.pump(kWebRtcNetworkDebounce);
     h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
@@ -786,13 +797,50 @@ void main() {
     await h.dispose();
   });
 
-  testWidgets('카메라 오프라인 대기 중에도 폰 망이 끊겼다 돌아오면 한 번 다시 붙는다',
+  testWidgets('DB가 이미 오프라인이면 연결을 시도하지 않고 바로 오프라인으로 안내한다',
       (tester) async {
-    final h = _Harness();
+    // 전엔 offer 무응답(15~21초)을 두 번 기다린 뒤에야 안내했다(2026-09-25).
+    final h = _Harness(start: false);
     h.cameras.add([_camera(online: false)]);
     h.network.add('wifi');
+    await tester.pump();
+    h.startController();
     await _settleConnect(tester);
-    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.pcs, isEmpty);
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    expect(h.state.errorKey, 'crecam_live_error_camera_offline');
+    // 온라인 신호가 오면 곧바로 붙는다.
+    h.cameras.add([_camera(online: true)]);
+    await tester.pump();
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(1));
+    await h.dispose();
+  });
+
+  testWidgets('오프라인이어도 수동 다시 연결은 한 번 실제로 시도한다', (tester) async {
+    final h = _Harness(start: false);
+    h.cameras.add([_camera(online: false)]);
+    h.network.add('wifi');
+    await tester.pump();
+    h.startController();
+    await _settleConnect(tester);
+    expect(h.pcs, isEmpty);
+    unawaited(h.container
+        .read(webrtcLiveControllerProvider(_cam).notifier)
+        .retry());
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(1), reason: 'is_online은 낡을 수 있다');
+    await h.dispose();
+  });
+
+  testWidgets('카메라 오프라인 대기 중에도 폰 망이 끊겼다 돌아오면 한 번 다시 붙는다',
+      (tester) async {
+    final h = _Harness(start: false);
+    h.cameras.add([_camera(online: false)]);
+    h.network.add('wifi');
+    await tester.pump();
+    h.startController();
+    await _settleConnect(tester);
     expect(h.state.errorKey, 'crecam_live_error_camera_offline');
     // 폰이 잠깐 오프라인 — 그동안 카메라 온라인 알림(Realtime)을 놓칠 수 있다.
     h.network.add('none');
@@ -800,7 +848,7 @@ void main() {
     h.network.add('wifi');
     await tester.pump(kWebRtcNetworkDebounce);
     await _settleConnect(tester);
-    expect(h.pcs, hasLength(2), reason: '같은 Wi-Fi로 돌아와도 갇히면 안 된다');
+    expect(h.pcs, hasLength(1), reason: '같은 Wi-Fi로 돌아와도 갇히면 안 된다');
     await h.dispose();
   });
 
@@ -1104,5 +1152,93 @@ void main() {
     final row = const WebRtcConnectLog(cameraId: 'c', outcome: 'failed')
         .toRow(appVersion: '1.0.0+1');
     expect(row, {'camera_id': 'c', 'outcome': 'failed', 'app_version': '1.0.0+1'});
+  });
+
+  // ── 화면 노출·조용한 재시도·첫 영상 한도 (2026-09-25) ─────────────────
+
+  testWidgets('안 보이면 시청 기록을 바로 닫고, 30초 뒤 연결을 내린다 — 다시 보이면 붙는다',
+      (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    final c = h.container.read(webrtcLiveControllerProvider(_cam).notifier);
+    final viewer = Object();
+    c.setViewerVisible(viewer, true);
+    await tester.pump();
+    expect(h.views, isEmpty);
+
+    // 다른 탭으로 — 시청 기록은 바로 닫힌다.
+    c.setViewerVisible(viewer, false);
+    await tester.pump();
+    expect(h.views, hasLength(1));
+    expect(h.views.single.endReason, LiveViewEnd.closed);
+    final first = h.pc;
+    // 유예 안이면 연결은 그대로.
+    await _play(tester, h, 29);
+    expect(first.closed, isFalse);
+    await _play(tester, h, 2);
+    await tester.pump();
+    expect(first.closed, isTrue, reason: '안 보는 동안 영상을 받지 않는다');
+
+    // 다시 보이면 새 연결 + 새 시청.
+    c.setViewerVisible(viewer, true);
+    await _settleConnect(tester);
+    expect(h.pcs, hasLength(2));
+    await h.dispose();
+    await tester.pump();
+    expect(h.views, hasLength(2));
+  });
+
+  testWidgets('유예 안에 다시 보이면 연결을 유지한 채 새 시청을 연다', (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    final c = h.container.read(webrtcLiveControllerProvider(_cam).notifier);
+    final viewer = Object();
+    c.setViewerVisible(viewer, true);
+    c.setViewerVisible(viewer, false);
+    await _play(tester, h, 5);
+    c.setViewerVisible(viewer, true);
+    await _play(tester, h, 40);
+    expect(h.pcs, hasLength(1), reason: '짧은 탭 이동에 다시 연결하지 않는다');
+    expect(h.pc.closed, isFalse);
+    await h.dispose();
+    await tester.pump();
+    // 첫 시청(닫힘) + 다시 보인 뒤의 시청 — 두 번째는 영상이 바로 보인다.
+    expect(h.views, hasLength(2));
+    expect(h.views.last.firstVideoMs, 0);
+  });
+
+  testWidgets('예산 소진 뒤 저빈도 재시도 중에도 실패 사유를 유지한다(조용한 재시도)',
+      (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    await tester.pump(kWebRtcRecoveryBudget);
+    await tester.pump();
+    if (h.state.phase.isConnecting) {
+      h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+      await tester.pump();
+    }
+    expect(h.state.phase, WebRtcLivePhase.failed);
+    final reason = h.state.errorKey;
+    await tester.pump(kWebRtcLowRetryInterval + const Duration(seconds: 1));
+    await tester.pump();
+    expect(h.state.phase.isConnecting, isTrue);
+    expect(h.state.quietRetry, isTrue,
+        reason: '화면은 실패 그대로 — 사유와 버튼이 사라지지 않는다');
+    expect(h.state.errorKey, reason);
+    await h.dispose();
+  });
+
+  testWidgets('첫 영상이 10초 안에 안 오면 "영상이 오지 않아요"로 판정한다', (tester) async {
+    expect(kWebRtcFirstFrameTimeout, const Duration(seconds: 10));
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateConnected);
+    await tester.pump();
+    expect(h.state.phase, WebRtcLivePhase.waitingVideo);
+    await tester.pump(kWebRtcFirstFrameTimeout + const Duration(seconds: 1));
+    await tester.pump();
+    expect(h.logs.map((l) => l.outcome), contains('no_video'));
+    await h.dispose();
   });
 }
