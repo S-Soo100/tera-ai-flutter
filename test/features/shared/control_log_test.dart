@@ -63,6 +63,16 @@ void main() {
     expect(log.single.sprayMs, 10000);
   });
 
+  test('길이를 모르는 옛 분무(relay_toggle)끼리 합쳐도 0초로 쓰지 않는다', () {
+    final at = DateTime(2026, 9, 25, 9);
+    final log = buildControlLog(commandRows: [
+      row('relay_toggle', at),
+      row('relay_toggle', at.add(const Duration(seconds: 3))),
+    ], buckets: []);
+    expect(log, hasLength(1));
+    expect(log.single.sprayMs, isNull);
+  });
+
   test('acked failure is not rendered as successful operation', () {
     final at = DateTime(2026, 9, 3);
     final failed = row('fan_on', at)..['result'] = 'error';

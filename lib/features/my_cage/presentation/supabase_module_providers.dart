@@ -244,9 +244,16 @@ final deviceLinkStatusProvider = StreamProvider.autoDispose
         column: 'id',
         value: deviceId,
       ),
-      callback: (payload) => emit(payload.newRecord['unlinked_at'] != null
-          ? null
-          : DeviceLinkStatus.fromJson(payload.newRecord)),
+      callback: (payload) {
+        if (payload.newRecord['unlinked_at'] != null) {
+          // 다른 폰에서 해제됐다 — 목록을 다시 읽어 홈에서 빠지게 한다.
+          // 안 하면 "확인 중"에 갇힌 채 남는다.
+          emit(null);
+          ref.invalidate(deviceListProvider);
+          return;
+        }
+        emit(DeviceLinkStatus.fromJson(payload.newRecord));
+      },
     ),
     // 끊긴 사이의 온라인 변화를 놓쳤을 수 있다 — 서버 값으로 다시 맞춘다.
     onRejoined: () async {

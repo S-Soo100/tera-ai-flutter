@@ -398,6 +398,8 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
               hardwareId: result.hardwareId,
               wifiConnected: result.wifiConnected);
           await _remember(result.candidate, id);
+          // "새 카메라로 등록"이 늦게 확인돼도 옛 행을 해제한다.
+          await _unlinkReplaced(entry.key, id);
           _completed?.call();
           confirmed = true;
         }
