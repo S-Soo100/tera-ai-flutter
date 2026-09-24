@@ -10,6 +10,9 @@ class TerraCamera {
   final String name;
   final String? model;
   final String? resolution;
+
+  /// 펌웨어 버전(서버 보고값). 라이브 기록에 시점값으로 붙인다(2026-09-25).
+  final String? firmwareVer;
   final bool isOnline;
   final DateTime? lastSeenAt;
   final String? enclosureId;
@@ -29,6 +32,7 @@ class TerraCamera {
     required this.name,
     this.model,
     this.resolution,
+    this.firmwareVer,
     required this.isOnline,
     this.lastSeenAt,
     this.enclosureId,
@@ -45,6 +49,7 @@ class TerraCamera {
       name == other.name &&
       model == other.model &&
       resolution == other.resolution &&
+      firmwareVer == other.firmwareVer &&
       isOnline == other.isOnline &&
       enclosureId == other.enclosureId &&
       createdAt == other.createdAt &&
@@ -59,6 +64,7 @@ class TerraCamera {
       name: j['name'] as String? ?? '',
       model: j['model'] as String?,
       resolution: j['resolution'] as String?,
+      firmwareVer: j['firmware_ver'] as String?,
       isOnline: j['is_online'] as bool? ?? false,
       lastSeenAt: j['last_seen_at'] != null
           ? DateTime.tryParse(j['last_seen_at'].toString())

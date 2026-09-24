@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../domain/live_view_session.dart';
 import '../domain/webrtc_connect_log.dart';
 
 /// 라이브 연결 결과를 `webrtc_connect_logs`에 직접 INSERT한다(2026-09-23).
@@ -29,6 +30,20 @@ class WebRtcConnectLogRepository {
           ));
     } catch (e) {
       debugPrint('[webrtc-log] insert failed: $e');
+    }
+  }
+
+  /// 시청 세션 요약 1행(`webrtc_view_logs`, 2026-09-25). 연결 행과 같은 규칙 —
+  /// 본인 INSERT만, `.select()` 금지, 절대 던지지 않는다.
+  Future<void> insertView(LiveViewSummary view) async {
+    try {
+      final version = await (_version ??= _readVersion());
+      await _supabase.from('webrtc_view_logs').insert(view.toRow(
+            appVersion: version,
+            platform: defaultTargetPlatform.name.toLowerCase(),
+          ));
+    } catch (e) {
+      debugPrint('[webrtc-log] view insert failed: $e');
     }
   }
 

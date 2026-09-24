@@ -27,6 +27,8 @@ class WebRtcConnectLog {
     this.streamedSec,
     this.offerAttempts,
     this.answerMs,
+    this.viewId,
+    this.firmwareVer,
   });
 
   final String cameraId;
@@ -43,6 +45,12 @@ class WebRtcConnectLog {
   final int? streamedSec;
   final int? offerAttempts;
   final int? answerMs;
+
+  /// 소속 시청 세션(`webrtc_view_logs.view_id`, 2026-09-25).
+  final String? viewId;
+
+  /// 시도 시점의 카메라 펌웨어 버전.
+  final String? firmwareVer;
 
   /// `user_id`는 DB 기본값(auth.uid())이 채운다. null 필드는 보내지 않는다.
   Map<String, dynamic> toRow({String? appVersion, String? platform}) {
@@ -63,6 +71,8 @@ class WebRtcConnectLog {
       'streamed_sec': streamedSec,
       'offer_attempts': offerAttempts,
       'answer_ms': answerMs,
+      'view_id': viewId,
+      'firmware_ver': firmwareVer,
     };
     row.removeWhere((_, v) => v == null);
     return row;

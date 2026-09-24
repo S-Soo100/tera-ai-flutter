@@ -5,11 +5,13 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
 import '../data/camera_exceptions.dart';
 import '../data/webrtc_connect_log_repository.dart';
 import '../data/webrtc_signaling_repository.dart';
+import '../domain/live_view_session.dart';
 import '../domain/terra_camera.dart';
 import '../domain/webrtc_connect_log.dart';
 import '../domain/webrtc_diag.dart';
@@ -119,12 +121,33 @@ final webrtcConnectLogSinkProvider = Provider<WebRtcConnectLogSink>((ref) {
   return (log) => unawaited(repo.insert(log));
 });
 
+/// 시청 세션 요약 기록(`webrtc_view_logs`, 2026-09-25). 테스트가 목록으로 받는다.
+typedef WebRtcViewLogSink = void Function(LiveViewSummary view);
+
+final webrtcViewLogSinkProvider = Provider<WebRtcViewLogSink>((ref) {
+  final repo = WebRtcConnectLogRepository(ref.watch(supabaseClientProvider));
+  return (view) => unawaited(repo.insertView(view));
+});
+
+LiveViewBucket _bucketOf(WebRtcLivePhase p) => switch (p) {
+      WebRtcLivePhase.streaming => LiveViewBucket.video,
+      WebRtcLivePhase.stalled => LiveViewBucket.stalled,
+      WebRtcLivePhase.recovering => LiveViewBucket.recovering,
+      WebRtcLivePhase.failed => LiveViewBucket.failed,
+      _ => LiveViewBucket.connecting,
+    };
+
 /// 연결 한 번(세대)의 계측값. 결과 행과 재생 종료 행이 같은 값을 공유한다.
 class _Attempt {
-  _Attempt(this.gen, this.reconnectAttempt, this.network);
+  _Attempt(this.gen, this.reconnectAttempt, this.network,
+      {this.viewId, this.firmwareVer});
 
   final int gen;
   final int reconnectAttempt;
+
+  /// 소속 시청 세션·시도 시점 펌웨어(2026-09-25).
+  final String? viewId;
+  final String? firmwareVer;
 
   /// 시도 시작 때의 네트워크 종류. 첫 시도는 신호가 아직 안 와 있을 수 있어
   /// config 단계에서 한 번 더 채운다.
@@ -244,11 +267,46 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (_started) return;
     _started = true;
     _logSink = ref.read(webrtcConnectLogSinkProvider);
+    _viewSink = ref.read(webrtcViewLogSinkProvider);
     _diagBuffer = ref.read(webrtcDiagBufferProvider);
+    _openView();
+    addListener((s) => _view?.onPhase(_bucketOf(s.phase)));
     _watchEnvironment();
     _startRecoveryWindow();
     _diag('start');
     unawaited(_start(_gen));
+  }
+
+  // ── 시청 세션(view) 기록 (2026-09-25) ─────────────────────────────────────
+  // 시작·복귀에 열고 백그라운드·dispose에 닫아 요약 1행을 쓴다. 화면 동작에는
+  // 관여하지 않는다 — state 리스너로 상태 시간만 잰다.
+
+  WebRtcViewLogSink? _viewSink;
+  LiveViewSession? _view;
+
+  TerraCamera? _camera() => ref
+      .read(camerasProvider)
+      .valueOrNull
+      ?.where((c) => c.id == cameraUuid)
+      .firstOrNull;
+
+  void _openView() {
+    final cam = _camera();
+    _view = LiveViewSession(
+      viewId: const Uuid().v4(),
+      cameraId: cameraUuid,
+      firmwareVer: cam?.firmwareVer,
+      network: ref.read(webrtcNetworkSignalProvider).valueOrNull,
+      cameraOnline: cam?.isOnline,
+    )..onPhase(_bucketOf(state.phase));
+  }
+
+  /// dispose 중에도 부른다 — ref를 읽지 않는다.
+  void _closeView(LiveViewEnd end) {
+    final summary = _view?.finish(end);
+    _view = null;
+    final sink = _viewSink;
+    if (summary != null && sink != null) sink(summary);
   }
 
   /// 로컬 진단(메모리 버퍼 + debugPrint). 시작 때 잡아 둔다 — dispose 중엔
@@ -417,8 +475,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   }
 
   bool _cameraOffline() {
-    final cams = ref.read(camerasProvider).valueOrNull;
-    final cam = cams?.where((c) => c.id == cameraUuid).firstOrNull;
+    final cam = _camera();
     return cam != null && !cam.isOnline;
   }
 
@@ -478,6 +535,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _diag('suspend');
     _suspended = true;
     _endAttempt(_gen, null);
+    _closeView(LiveViewEnd.background);
     final gen = ++_gen;
     _cancelTimers();
     _recoveryDeadline?.cancel(); // 백그라운드 시간은 세지 않는다
@@ -494,6 +552,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (!_suspended || _disposed) return;
     _suspended = false;
     _diag('resume');
+    _openView();
     // 백그라운드 동안의 망 변화는 무시했다 — 지금 붙을 망을 기준선으로 삼는다.
     // 안 하면 복귀 뒤 같은 신호의 재알림을 "변경"으로 보고 새 시도를 취소한다.
     if (!_isNoNetwork(_lastNetwork)) _netApplied = _lastNetwork;
@@ -507,6 +566,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 걸려 있던 자동 재연결 백오프도 즉시 실행으로 대체한다. 오프라인 대기도
   /// 풀어 한 번은 실제로 시도한다.
   Future<void> retry() async {
+    _view?.onManualRetry();
     _autoRetried = false;
     _waitingOnline = false;
     _waitingNetwork = false;
@@ -530,6 +590,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       return;
     }
     _diag('restart', {'reason': reason});
+    _view?.onRestart(reason);
     _endAttempt(_gen, null);
     final gen = ++_gen;
     _cancelTimers();
@@ -558,6 +619,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   @override
   void dispose() {
     _endAttempt(_gen, null);
+    _closeView(LiveViewEnd.closed);
     _disposed = true;
     _gen++;
     _lifecycle?.dispose();
@@ -571,8 +633,16 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   // ── 연결 시퀀스 ────────────────────────────────────────────────────────────
 
   Future<void> _start(int gen) async {
-    _attempt = _Attempt(gen, _reconnectAttempt,
-        ref.read(webrtcNetworkSignalProvider).valueOrNull);
+    final cam = _camera();
+    final network = ref.read(webrtcNetworkSignalProvider).valueOrNull;
+    _attempt = _Attempt(gen, _reconnectAttempt, network,
+        viewId: _view?.viewId, firmwareVer: cam?.firmwareVer);
+    _view
+      ?..onAttempt()
+      ..fillEnv(
+          firmwareVer: cam?.firmwareVer,
+          network: network,
+          cameraOnline: cam?.isOnline);
     _attemptDeadline?.cancel();
     _attemptDeadline = Timer(kWebRtcAttemptBudget, () {
       if (!_isCurrent(gen) || state.phase.hasVideo) return;
@@ -717,6 +787,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         streamedSec: streamedSec,
         offerAttempts: a.offerAttempts,
         answerMs: a.answerMs,
+        viewId: a.viewId,
+        firmwareVer: a.firmwareVer,
       ));
     }
 
