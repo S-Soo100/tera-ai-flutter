@@ -1,8 +1,11 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/my_cage/domain/live_view_session.dart';
 
 void main() {
+  // now = 기기 벽시계(시작 시각용), mono = 단조 시계(경과 시간용).
   late DateTime now;
+  late DateTime mono;
   LiveViewSession open({bool? online = true}) => LiveViewSession(
         viewId: 'v1',
         cameraId: 'cam',
@@ -10,10 +13,17 @@ void main() {
         network: 'wifi',
         cameraOnline: online,
         clock: () => now,
+        stopwatch: () => Clock(() => mono).stopwatch(),
       );
-  void tick(int ms) => now = now.add(Duration(milliseconds: ms));
+  void tick(int ms) {
+    now = now.add(Duration(milliseconds: ms));
+    mono = mono.add(Duration(milliseconds: ms));
+  }
 
-  setUp(() => now = DateTime.utc(2026, 9, 25, 12));
+  setUp(() {
+    now = DateTime.utc(2026, 9, 25, 12);
+    mono = DateTime.utc(2000);
+  });
 
   test('성공 흐름: 연결 → 영상 — 첫 영상 시각과 상태별 시간', () {
     final s = open();
@@ -90,6 +100,21 @@ void main() {
     final r = s.finish(LiveViewEnd.closed)!;
     expect(r.firstVideoMs, isNull);
     expect(r.cameraOnline, isFalse);
+  });
+
+  test('기기 시계가 뒤로 가도 경과 시간은 음수가 되지 않는다(단조 시계)', () {
+    final s = open();
+    s.onPhase(LiveViewBucket.connecting);
+    tick(2000);
+    now = now.subtract(const Duration(hours: 1)); // NTP 보정·수동 변경
+    s.onPhase(LiveViewBucket.video);
+    tick(3000);
+    final r = s.finish(LiveViewEnd.closed)!;
+    expect(r.durationMs, 5000);
+    expect(r.firstVideoMs, 2000);
+    expect(r.msConnecting, 2000);
+    expect(r.msVideo, 3000);
+    expect(r.toRow()['started_at'], '2026-09-25T12:00:00.000Z');
   });
 
   test('fillEnv는 비어 있던 값만 채운다', () {

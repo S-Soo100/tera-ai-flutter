@@ -298,7 +298,11 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       firmwareVer: cam?.firmwareVer,
       network: ref.read(webrtcNetworkSignalProvider).valueOrNull,
       cameraOnline: cam?.isOnline,
-    )..onPhase(_bucketOf(state.phase));
+      // 항상 "연결 중"에서 시작한다. 빠른 복귀면 이전 세션 정리(_suspend의
+      // close)가 안 끝나 state가 아직 옛 streaming/failed일 수 있다 — 그걸
+      // 넘기면 영상 없이 first_video_ms=0이 찍힌다(리뷰 2026-09-25). 복귀는
+      // 항상 새로 연결하고, 첫 시작도 connectingConfig다.
+    )..onPhase(LiveViewBucket.connecting);
   }
 
   /// dispose 중에도 부른다 — ref를 읽지 않는다.
