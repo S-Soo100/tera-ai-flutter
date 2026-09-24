@@ -246,22 +246,24 @@ void main() {
     expect(repo.calls.where((c) => c.startsWith('create:')).toList(),
         ['create:mist:12:00:d=']);
     expect(repo.pairIds, [null]);
-    // 새 분무 예약은 기본 5초.
+    // 새 분무 예약은 기본 3초.
     expect(repo.payloads, [
-      {'duration_ms': 5000}
+      {'duration_ms': 3000}
     ]);
   });
 
-  testWidgets('분무 예약 — 분사 시간 칩 10초를 고르면 duration_ms 10000', (tester) async {
+  testWidgets('분무 예약 — 6·9초는 서버 지원 전이라 못 고르고 3초로 저장된다',
+      (tester) async {
     final repo = _FakeRepo();
     await _pump(tester, repo);
     await _openEditor(tester, 'mist');
     expect(find.text('home_mist_duration_label'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('routine_mist_10')));
+    expect(find.text('home_mist_schedule_only_three'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('routine_mist_9')));
     await tester.pump();
     await _save(tester);
     expect(repo.payloads, [
-      {'duration_ms': 10000}
+      {'duration_ms': 3000}
     ]);
   });
 
@@ -564,7 +566,7 @@ void main() {
     expect(patch, contains('duration_ms: 2000'));
   });
 
-  testWidgets('옛 2초 분무 예약 — 칩 미선택으로 열리고, 10초를 고르면 10000으로 바뀐다',
+  testWidgets('옛 2초 분무 예약 — 칩 미선택으로 열리고, 3초를 고르면 3000으로 바뀐다',
       (tester) async {
     final repo = _FakeRepo(items: [_schedule(id: 'a', hour: 8)]);
     await _pump(tester, repo);
@@ -572,7 +574,7 @@ void main() {
     expect(find.text('08:00 home_mist_seconds'), findsOneWidget);
     await tester.tap(find.byKey(const Key('schedule_a')));
     await tester.pumpAndSettle();
-    for (final sec in [5, 10]) {
+    for (final sec in [3, 6, 9]) {
       expect(
           tester
               .widget<ScheduleChoiceChip>(find.byKey(Key('routine_mist_$sec')))
@@ -580,11 +582,11 @@ void main() {
           isFalse,
           reason: '$sec초');
     }
-    await tester.tap(find.byKey(const Key('routine_mist_10')));
+    await tester.tap(find.byKey(const Key('routine_mist_3')));
     await tester.pump();
     await _save(tester);
     final patch = repo.calls.firstWhere((c) => c.startsWith('patch:a'));
-    expect(patch, contains('duration_ms: 10000'));
+    expect(patch, contains('duration_ms: 3000'));
   });
 
   test('addSpan: weekly + 자정 넘김이면 off 요일이 하루 밀린다', () async {

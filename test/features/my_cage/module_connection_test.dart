@@ -42,8 +42,8 @@ ProviderContainer _container(StreamController<TelemetryReading?> tele,
     {required bool isOnline}) {
   final c = ProviderContainer(
     overrides: [
-      currentDeviceProvider
-          .overrideWith((ref) => Future.value(_device(isOnline: isOnline))),
+      deviceLinkStatusProvider('d1').overrideWith((ref) =>
+          Stream.value(DeviceLinkStatus.of(_device(isOnline: isOnline)))),
       telemetryStreamProvider('d1').overrideWith((ref) => tele.stream),
     ],
   );
@@ -122,8 +122,8 @@ void main() {
       () {
     fakeAsync((async) {
       final pending = ProviderContainer(overrides: [
-        currentDeviceProvider
-            .overrideWith((ref) => Completer<Device?>().future),
+        deviceLinkStatusProvider('d1')
+            .overrideWith((ref) => const Stream<DeviceLinkStatus?>.empty()),
         telemetryStreamProvider('d1')
             .overrideWith((ref) => const Stream.empty()),
       ]);
@@ -135,8 +135,8 @@ void main() {
           reason: '모를 때도 제어는 보수적으로 막는다');
 
       final failed = ProviderContainer(overrides: [
-        currentDeviceProvider
-            .overrideWith((ref) => Future<Device?>.error(Exception('x'))),
+        deviceLinkStatusProvider('d1').overrideWith(
+            (ref) => Stream<DeviceLinkStatus?>.error(Exception('x'))),
         telemetryStreamProvider('d1')
             .overrideWith((ref) => const Stream.empty()),
       ]);
@@ -150,6 +150,35 @@ void main() {
       addTearDown(offline.dispose);
       async.flushMicrotasks();
       expect(offline.read(moduleLinkProvider('d1')), ModuleLink.offline);
+    });
+  });
+
+  test('판정은 이 기기의 실시간 상태를 따른다 — 켤 때 꺼져 있던 기기가 켜지면 풀린다',
+      () {
+    fakeAsync((async) {
+      final status = StreamController<DeviceLinkStatus?>();
+      final tele = StreamController<TelemetryReading?>();
+      final c = ProviderContainer(overrides: [
+        deviceLinkStatusProvider('d1').overrideWith((ref) => status.stream),
+        telemetryStreamProvider('d1').overrideWith((ref) => tele.stream),
+      ]);
+      addTearDown(c.dispose);
+      c.listen(moduleLinkProvider('d1'), (_, __) {});
+
+      status.add(const DeviceLinkStatus(isOnline: false, lastSeenAt: null));
+      async.flushMicrotasks();
+      expect(c.read(moduleLinkProvider('d1')), ModuleLink.offline);
+
+      // 기기 복구: 서버 is_online=true UPDATE + 새 telemetry.
+      status.add(const DeviceLinkStatus(isOnline: true, lastSeenAt: null));
+      tele.add(_telemetry());
+      async.flushMicrotasks();
+      expect(c.read(moduleLinkProvider('d1')), ModuleLink.online,
+          reason: '앱 재시작 없이 제어가 다시 열린다');
+
+      status.close();
+      tele.close();
+      async.flushMicrotasks();
     });
   });
 }

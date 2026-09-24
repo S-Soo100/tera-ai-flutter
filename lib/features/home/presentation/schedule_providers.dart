@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/network/terra_rest_client.dart';
+import '../../../core/supabase/supabase_provider.dart';
+import '../data/command_history_repository.dart';
 import '../data/schedule_notification_sync.dart';
 import '../data/schedule_repository.dart';
 import '../domain/schedule.dart';
+import '../domain/schedule_last_run.dart';
 import 'home_control_providers.dart';
 
 final scheduleRepositoryProvider = Provider<ScheduleRepository>((ref) {
@@ -15,6 +18,24 @@ final scheduleRepositoryProvider = Provider<ScheduleRepository>((ref) {
 
 final scheduleNotificationSyncProvider =
     Provider<ScheduleNotificationSync>((ref) => ScheduleNotificationSync());
+
+/// 현재 사육장 예약들의 마지막 실행 결과(최근 7일, 예약 id → 결과).
+///
+/// 예약 목록을 다시 읽으면 같이 다시 읽는다. 실패하면 결과 표시만 빠진다.
+final scheduleLastRunsProvider =
+    FutureProvider.autoDispose<Map<String, ScheduleLastRun>>((ref) async {
+  // watch는 전부 await 앞에서 — 뒤에서 하면 의존이 늦게 걸린다.
+  final deviceIdFuture = ref.watch(currentDeviceIdProvider.future);
+  final schedulesFuture = ref.watch(schedulesProvider.future);
+  final client = ref.watch(supabaseClientProvider);
+  final deviceId = await deviceIdFuture;
+  await schedulesFuture;
+  if (deviceId == null) return const {};
+  final rows = await CommandHistoryRepository(client).recentScheduleRuns(
+      deviceId,
+      since: DateTime.now().subtract(const Duration(days: 7)));
+  return latestScheduleRuns(rows);
+});
 
 /// 현재 사육장의 예약 목록.
 ///

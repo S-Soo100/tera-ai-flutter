@@ -195,8 +195,12 @@ class RedesignGroupRepository {
     } on ManagementFailure {
       rethrow;
     } on TerraRestException catch (error) {
-      // 404/405: 해제 endpoint 미배포(또는 소유 아님 — 서버는 소유권 위반도 404).
-      if (error.statusCode == 404 || error.statusCode == 405) {
+      // 해제 endpoint는 2026-09-16 배포됐다 — 404는 이미 지워졌거나 이 계정 것이
+      // 아닌 기기다(서버는 소유권 위반도 404). "서버 미지원"으로 안내하면 틀린다.
+      if (error.statusCode == 404) {
+        throw const ManagementFailure('management_not_found');
+      }
+      if (error.statusCode == 405) {
         throw const ManagementFailure('management_server_unsupported');
       }
       if (error.statusCode == 401 || error.statusCode == 403) {

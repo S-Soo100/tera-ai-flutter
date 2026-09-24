@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/home/domain/mist_duration.dart';
 import 'package:vivanaut/features/home/domain/running_timer.dart';
+import 'package:vivanaut/shared/domain/fan_actuator.dart';
 import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivanaut/features/home/presentation/control_pending.dart';
 import 'package:vivanaut/features/home/domain/schedule.dart';
@@ -156,7 +157,7 @@ void main() {
     await _flush(tester);
   });
 
-  testWidgets('분무 — 전원 행 없이 분사 시간 칩(5/10초, 기본 5초) + CTA',
+  testWidgets('분무 — 전원 행 없이 분사 시간 칩(3/6/9초, 기본 3초) + CTA',
       (tester) async {
     final sent = await _pump(tester, ScheduleDevice.mist);
     expect(find.byKey(DeviceControlSheet.powerRowKey), findsNothing);
@@ -165,17 +166,17 @@ void main() {
     for (final d in MistDuration.values) {
       final chip = tester.widget<ScheduleChoiceChip>(
           find.byKey(DeviceControlSheet.mistChipKey(d)));
-      expect(chip.selected, d == MistDuration.fiveSeconds, reason: '$d');
+      expect(chip.selected, d == MistDuration.threeSeconds, reason: '$d');
     }
     // 칩은 선택만 — 송신은 CTA뿐.
     await tester.tap(find.byKey(DeviceControlSheet.mistChipKey(
-        MistDuration.tenSeconds)));
+        MistDuration.nineSeconds)));
     await tester.pump();
     expect(sent, isEmpty);
     expect(
         tester
             .widget<ScheduleChoiceChip>(find.byKey(
-                DeviceControlSheet.mistChipKey(MistDuration.tenSeconds)))
+                DeviceControlSheet.mistChipKey(MistDuration.nineSeconds)))
             .selected,
         isTrue);
     expect(
@@ -263,37 +264,85 @@ void main() {
     await _flush(tester);
   });
 
-  testWidgets('분무 — 실행 취소하면 안 보내고, 창이 지나면 기본 mist 5000ms', (tester) async {
+  testWidgets('분무 — 실행 취소하면 안 보내고, 창이 지나면 기본 mist 3000ms', (tester) async {
     final sent = await _pump(tester, ScheduleDevice.mist);
     await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
     await tester.pump();
-    expect(cancelPendingMist(kTestDeviceId), isTrue);
+    // 실행 취소 안내가 시트 위(루트 Overlay)에 보인다 — 스낵바였을 때는 시트
+    // 뒤에 그려져 누를 수 없었다(2026-09-25).
+    expect(find.text('home_mist_undo'), findsOneWidget);
+    await tester.tap(find.text('home_mist_undo'));
     await tester.pump(const Duration(seconds: 3));
     expect(sent, isEmpty);
-    // 5초 잠금이 없으니 바로 다시 누를 수 있다.
+    // 잠금이 없으니 바로 다시 누를 수 있다.
     await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
     await tester.pump(kMistUndoWindow + const Duration(milliseconds: 100));
     expect(sent.single.$1, CommandAction.mist);
-    expect(sent.single.$2, {'duration_ms': 5000});
-    await tester.pump(const Duration(seconds: 8)); // 잠금 타이머(5+2초)
+    expect(sent.single.$2, {'duration_ms': 3000});
+    await tester.pump(const Duration(seconds: 8)); // 잠금 타이머
     await _flush(tester);
   });
 
-  testWidgets('분무 10초 선택 → mist 10000ms, 분사+2초 동안 CTA 잠금', (tester) async {
+  testWidgets('분무 9초 — 3초를 ACK마다 5초 간격으로 세 번 이어 보내고 진행을 보인다',
+      (tester) async {
     final sent = await _pump(tester, ScheduleDevice.mist);
     await tester.tap(find.byKey(
-        DeviceControlSheet.mistChipKey(MistDuration.tenSeconds)));
+        DeviceControlSheet.mistChipKey(MistDuration.nineSeconds)));
     await tester.pump();
     await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
     await tester.pump(kMistUndoWindow + const Duration(milliseconds: 100));
-    expect(sent.single.$1, CommandAction.mist);
-    expect(sent.single.$2, {'duration_ms': 10000});
-    FilledButton cta() => tester.widget<FilledButton>(find.descendant(
-        of: find.byKey(DeviceControlSheet.mistStartKey),
-        matching: find.byType(FilledButton)));
-    // 옛 5초 잠금이면 여기서 풀렸다 — 10초 분사 중엔 잠겨 있어야 한다.
-    await tester.pump(const Duration(seconds: 8));
-    expect(cta().onPressed, isNull);
+    expect(sent, hasLength(1));
+    expect(sent.single.$2, {'duration_ms': 3000});
+    expect(find.text('home_mist_running_part'), findsOneWidget);
+    expect(find.byKey(DeviceControlSheet.mistStopKey), findsOneWidget);
+    // ACK(1초 조회) 뒤 분사 3초 + 쉼 2초 = 발행 5초 뒤 다음 회차.
+    await tester.pump(const Duration(seconds: 4));
+    expect(sent, hasLength(1), reason: '분사 중에 보내면 busy로 거절된다');
+    await tester.pump(const Duration(milliseconds: 1100));
+    expect(sent, hasLength(2));
+    await tester.pump(const Duration(seconds: 5));
+    expect(sent, hasLength(3));
+    expect(sent.every((c) => c.$1 == CommandAction.mist), isTrue);
+    await tester.pump(const Duration(seconds: 2));
+    // 다 뿌리면 진행 표시가 사라지고 완료 토스트.
+    expect(find.byKey(DeviceControlSheet.mistStopKey), findsNothing);
+    expect(find.text('home_mist_done_toast'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 20));
+    await _flush(tester);
+  });
+
+  testWidgets('분무 6초 중지 — 남은 회차는 보내지 않고 실제로 뿌린 시간을 알린다',
+      (tester) async {
+    final sent = await _pump(tester, ScheduleDevice.mist);
+    await tester.tap(find.byKey(
+        DeviceControlSheet.mistChipKey(MistDuration.sixSeconds)));
+    await tester.pump();
+    await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
+    await tester.pump(kMistUndoWindow + const Duration(milliseconds: 100));
+    expect(sent, hasLength(1));
+    await tester.tap(find.byKey(DeviceControlSheet.mistStopKey));
+    await tester.pump(const Duration(seconds: 6));
+    expect(sent, hasLength(1));
+    expect(find.text('home_mist_partial'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 20));
+    await _flush(tester);
+  });
+
+  testWidgets('켜진 팬의 이미 고른 칩을 다시 누르면 보내지 않는다', (tester) async {
+    final sent = await _pump(tester, ScheduleDevice.fan,
+        fan: ActuatorState.on,
+        timers: [
+          RunningTimer(
+              id: 't1',
+              deviceId: kTestDeviceId,
+              actuatorLabelKey: FanActuator.ventilation.labelKey,
+              endsAt: DateTime.now().add(const Duration(minutes: 20)),
+              durationMinutes: 30)
+        ]);
+    await tester.tap(find.byKey(const Key('fan_timer_30')));
+    await tester.pump();
+    expect(sent, isEmpty,
+        reason: '같은 명령 재전송은 busy 거절이나 타이머 리셋만 낳는다');
     await _flush(tester);
   });
 }

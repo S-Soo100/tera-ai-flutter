@@ -67,6 +67,18 @@ class SupabaseModuleControlRepository {
         .toList();
   }
 
+  /// 기기 1대의 연결 상태. 해제(`unlinked_at`)됐거나 안 보이면 null.
+  Future<DeviceLinkStatus?> fetchLinkStatus(String deviceId) async {
+    final rows = await _supabase
+        .from('devices')
+        .select('is_online,last_seen_at,unlinked_at')
+        .eq('id', deviceId)
+        .limit(1);
+    final list = (rows as List).cast<Map<String, dynamic>>();
+    if (list.isEmpty || list.first['unlinked_at'] != null) return null;
+    return DeviceLinkStatus.fromJson(list.first);
+  }
+
   /// 디바이스를 사육장에 배정. enclosureId=null 이면 배정 해제.
   /// RLS(owner_id=auth.uid)로 본인 디바이스만 UPDATE 가능.
   Future<void> assignEnclosure(String deviceId, String? enclosureId) async {

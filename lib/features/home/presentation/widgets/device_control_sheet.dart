@@ -2,7 +2,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/user_facing_error.dart';
 import '../../../../core/theme/glass_palette.dart';
+import '../../../../shared/widgets/skeleton_loading.dart';
 import '../../../../shared/domain/fan_actuator.dart';
 import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/domain/device_command.dart';
@@ -15,6 +17,7 @@ import '../../domain/mist_duration.dart';
 import '../../domain/running_timer.dart';
 import '../../domain/schedule.dart';
 import '../../domain/schedule_device.dart';
+import '../../domain/schedule_last_run.dart';
 import '../cage_control_actions.dart';
 import '../control_pending.dart';
 import '../home_control_providers.dart';
@@ -22,12 +25,14 @@ import '../routine_settings_screen.dart'
     show
         ScheduleRow,
         ScheduleSwitch,
+        scheduleLastRunLabel,
         scheduleRepeatLabel,
         scheduleRows,
         scheduleSingleTitle,
         scheduleStateLabel;
 import '../schedule_draft_apply.dart';
 import '../schedule_providers.dart';
+import 'control_feedback.dart';
 import 'control_loading_overlay.dart';
 import 'led_brightness_row.dart';
 import 'running_timer_chip.dart';
@@ -93,6 +98,8 @@ class DeviceControlSheet extends ConsumerStatefulWidget {
   static const powerSwitchKey = Key('device_sheet_power_switch');
   static const loadingKey = Key('device_sheet_loading');
   static const mistStartKey = Key('device_sheet_mist_start');
+  static const mistStopKey = Key('device_sheet_mist_stop');
+  static const mistProgressKey = Key('device_sheet_mist_progress');
   static Key mistChipKey(MistDuration d) => Key('mist_duration_${d.seconds}');
   static const addScheduleKey = Key('device_sheet_add_schedule');
   static const saveScheduleKey = Key('device_sheet_save_schedule');
@@ -120,7 +127,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   FanTimerDuration? _fanChoice;
   bool _fanChoiceSeeded = false;
 
-  /// 분무 분사 시간 — 직전 선택(미저장이면 5초).
+  /// 분무 분사 시간 — 직전 선택(미저장이면 3초).
   late MistDuration _mistChoice =
       ref.read(mistChoiceStoreProvider).load(widget.deviceId);
   double _brightness = 60;
@@ -165,7 +172,9 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
       };
 
   /// 환기팬 칩 시드: 진행 중 타이머 → 그 길이, 켜짐(타이머 없음) → 계속,
-  /// 꺼짐 → 직전 저장값(기본 30분). 냉각팬은 계속이 없어 30분.
+  /// 꺼짐 → 직전 저장값(기본 30분). 냉각팬은 '계속' 칩이 없어, 타이머 없이
+  /// 켜져 있으면 아무 칩도 고르지 않는다 — 전엔 '30분 뒤'가 선택돼 보여 30분
+  /// 뒤 꺼질 거라고 믿게 했다(2026-09-25).
   void _seedFanChoice(bool on, RunningTimer? timer) {
     if (_fanChoiceSeeded) return;
     _fanChoiceSeeded = true;
@@ -178,7 +187,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
       return;
     }
     if (on) {
-      _fanChoice = cooling ? FanTimerDuration.m30 : null;
+      _fanChoice = null;
       return;
     }
     final saved = ref
@@ -205,38 +214,59 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
 
   bool _targetStillValid() {
     if (_currentDeviceId != widget.deviceId || !_online) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('home_fan_target_changed'.tr())));
+      ControlFeedback.of(context).show('home_fan_target_changed'.tr());
       return false;
     }
     return true;
   }
 
-  Future<void> _fanPower(bool on) => _locked(() async {
-        final actuator = _actuator!;
-        if (!_targetStillValid()) return;
-        if (!on) {
-          await stopFan(context, ref, widget.deviceId, actuator: actuator);
-          return;
-        }
-        final wasOn = actuatorStateOf(
-                ref.read(telemetryStreamProvider(widget.deviceId)).valueOrNull,
-                widget.device) ==
-            ActuatorState.on;
-        final choice = _fanChoice;
-        // await 뒤에 ref를 쓰지 않도록 저장소를 먼저 잡는다(시트가 닫힐 수 있다).
-        final store = ref.read(fanChoiceStoreProvider);
-        final key = actuator.storageKey(widget.deviceId);
-        await startFan(context, ref, widget.deviceId, choice,
-            actuator: actuator, wasOn: wasOn);
-        await store.save(key, choice);
-      });
+  /// 반환값은 기기가 받아들였는지.
+  Future<bool> _fanPower(bool on) async {
+    var ok = false;
+    await _locked(() async {
+      final actuator = _actuator!;
+      if (!_targetStillValid()) return;
+      if (!on) {
+        await stopFan(context, ref, widget.deviceId, actuator: actuator);
+        ok = true;
+        return;
+      }
+      final wasOn = actuatorStateOf(
+              ref.read(telemetryStreamProvider(widget.deviceId)).valueOrNull,
+              widget.device) ==
+          ActuatorState.on;
+      // 냉각팬엔 '계속'이 없다 — 아무 칩도 없으면(타이머 없이 켜져 있던 상태)
+      // 기본 30분으로 켠다.
+      final choice = _fanChoice ??
+          (actuator == FanActuator.cooling ? FanTimerDuration.m30 : null);
+      // await 뒤에 ref를 쓰지 않도록 저장소를 먼저 잡는다(시트가 닫힐 수 있다).
+      final store = ref.read(fanChoiceStoreProvider);
+      final key = actuator.storageKey(widget.deviceId);
+      ok = await startFan(context, ref, widget.deviceId, choice,
+          actuator: actuator, wasOn: wasOn);
+      // 기기가 받아들인 값만 기억한다 — 거절된 선택이 다음에 열 때 남으면
+      // 연장된 것처럼 보인다(2026-09-25).
+      if (ok) await store.save(key, choice);
+    });
+    return ok;
+  }
 
   Future<void> _fanChip(FanTimerDuration? d, bool on) async {
     if (_busy) return;
+    // 꺼져 있으면 선택만.
+    if (!on) {
+      setState(() => _fanChoice = d);
+      return;
+    }
+    // 켜진 채 이미 고른 칩을 다시 누르면 보내지 않는다 — 같은 명령 재전송은
+    // 기기 busy 거절이나 타이머 리셋만 낳는다(2026-09-25 점검: 운영 busy의
+    // 대부분이 성공 0.7~2.4초 뒤 같은 명령).
+    if (d == _fanChoice) return;
+    // 켜진 채 바꾸면 그 값으로 다시 켠다(타이머 교체). 실패하면 칩을 되돌린다.
+    final previous = _fanChoice;
     setState(() => _fanChoice = d);
-    // 켜진 채 바꾸면 그 값으로 다시 켠다(타이머 교체). 꺼져 있으면 선택만.
-    if (on) await _fanPower(true);
+    final ok = await _fanPower(true);
+    if (!ok && mounted) setState(() => _fanChoice = previous);
   }
 
   Future<void> _ledPower(bool on) => _locked(() async {
@@ -275,8 +305,8 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('routine_action_failed'.tr(args: ['$e']))));
+      ControlFeedback.of(context)
+          .show('routine_action_failed'.tr(args: [userFacingError(e)]));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -287,8 +317,8 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
       await run();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('routine_action_failed'.tr(args: ['$e']))));
+      ControlFeedback.of(context)
+          .show('routine_action_failed'.tr(args: [userFacingError(e)]));
     }
   }
 
@@ -489,8 +519,10 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   Widget _mist(BuildContext context, Color accent) {
     final locked =
         ref.watch(mistLockProvider(widget.deviceId)).isLocked(DateTime.now());
+    final run = ref.watch(mistRunProvider(widget.deviceId));
     final pending = ref.watch(mistPendingProvider(widget.deviceId)) ||
-        ref.watch(controlPendingProvider(widget.deviceId)) != null;
+        ref.watch(controlPendingProvider(widget.deviceId)) != null ||
+        run != null;
     // 분무 편집기·목록과 같은 #2E408C(humidAccent).
     final color = context.glass.humidAccent;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -511,20 +543,37 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
             ],
           ])),
       const SizedBox(height: 24),
-      _SheetCta(
-          key: DeviceControlSheet.mistStartKey,
-          label: 'home_mist_start_once'.tr(),
-          color: color,
-          onPressed: locked || pending
-              ? null
-              : () {
-                  if (!_targetStillValid()) return;
-                  final choice = _mistChoice;
-                  ref
-                      .read(mistChoiceStoreProvider)
-                      .save(widget.deviceId, choice);
-                  mistWithUndo(context, ref, widget.deviceId, choice);
-                }),
+      // 6·9초는 3초씩 이어 보낸다 — 도는 동안 몇 번째인지와 [중지]를 보인다
+      // (2026-09-25 사용자 결정, 서버가 긴 분사를 받기 전까지).
+      if (run != null && run.duration.parts > 1) ...[
+        Text(
+            'home_mist_running_part'
+                .tr(args: ['${run.part}', '${run.duration.parts}']),
+            key: DeviceControlSheet.mistProgressKey,
+            textAlign: TextAlign.center,
+            style: managementStyle(context,
+                size: 14, color: context.glass.textTertiary)),
+        const SizedBox(height: 8),
+        _SheetCta(
+            key: DeviceControlSheet.mistStopKey,
+            label: 'home_mist_stop'.tr(),
+            color: color,
+            onPressed: () => stopMistRun(widget.deviceId)),
+      ] else
+        _SheetCta(
+            key: DeviceControlSheet.mistStartKey,
+            label: 'home_mist_start_once'.tr(),
+            color: color,
+            onPressed: locked || pending
+                ? null
+                : () {
+                    if (!_targetStillValid()) return;
+                    final choice = _mistChoice;
+                    ref
+                        .read(mistChoiceStoreProvider)
+                        .save(widget.deviceId, choice);
+                    mistWithUndo(context, ref, widget.deviceId, choice);
+                  }),
     ]);
   }
 
@@ -532,6 +581,23 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
 
   Widget _scheduled(BuildContext context, Color accent) {
     final schedules = ref.watch(schedulesProvider);
+    // 불러오는 중·실패를 '예약 없음'처럼 그리면 유저가 같은 예약을 또 만든다
+    // (2026-09-25 점검).
+    if (!schedules.hasValue) {
+      if (schedules.hasError) {
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('routine_load_failed'.tr(args: [userFacingError(schedules.error!)]),
+              style: managementStyle(context,
+                  size: 14, color: Theme.of(context).colorScheme.error)),
+          const SizedBox(height: 8),
+          _SheetCta(
+              label: 'retry'.tr(),
+              color: accent,
+              onPressed: () => ref.invalidate(schedulesProvider)),
+        ]);
+      }
+      return const SkeletonListLoading(itemCount: 2);
+    }
     final all = schedules.valueOrNull ?? const <Schedule>[];
     final rows = scheduleRows(all
         .where((s) => ScheduleDevice.of(s.action) == widget.device)
@@ -581,6 +647,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   }
 
   Widget _row(Object row) {
+    final runs = ref.watch(scheduleLastRunsProvider).valueOrNull ?? const {};
     if (row case final SchedulePair p) {
       final on = p.on;
       return ScheduleRow(
@@ -591,6 +658,8 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
           scheduleRepeatLabel(on.kind, on.daysOfWeek),
           scheduleStateLabel(p.enabled),
           if (p.isSkewed) 'routine_pair_skewed'.tr(),
+          if (latestOf(runs, [on.id, p.off.id]) case final r?)
+            scheduleLastRunLabel(r),
         ],
         enabled: p.enabled,
         toggleKey: Key('schedule_pair_toggle_${p.pairId}'),
@@ -613,6 +682,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
       parts: [
         scheduleRepeatLabel(s.kind, s.daysOfWeek),
         scheduleStateLabel(s.enabled),
+        if (runs[s.id] case final r?) scheduleLastRunLabel(r),
       ],
       enabled: s.enabled,
       toggleKey: Key('schedule_toggle_${s.id}'),

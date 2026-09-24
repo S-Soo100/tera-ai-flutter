@@ -20,6 +20,17 @@ void showClipToast(BuildContext context,
     Duration duration = const Duration(seconds: 2)}) {
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return;
+  showClipToastOn(overlay, text: text, icon: icon, duration: duration);
+}
+
+/// [OverlayState]를 직접 받는 버전 — 루트 Navigator 자신의 context처럼 위로
+/// Overlay가 없는 곳에서 쓴다. 분무 완료 토스트가 그 context로 Overlay를 찾다
+/// null이라 한 번도 뜨지 않았다(2026-09-25). `Navigator.overlay`를 넘긴다.
+void showClipToastOn(OverlayState overlay,
+    {required String text,
+    String icon = 'redesign_v2/check',
+    Duration duration = const Duration(seconds: 2)}) {
+  if (!overlay.mounted) return;
   _timer?.cancel();
   _current?.remove();
   final entry =

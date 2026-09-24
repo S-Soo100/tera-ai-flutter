@@ -6,6 +6,7 @@ import '../../../../shared/widgets/figma_icon.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../data/lcd_repository.dart';
 import '../management_colors.dart';
+import '../supabase_module_providers.dart';
 import 'device_setting_sheet.dart';
 import 'management_widgets.dart';
 
@@ -94,6 +95,9 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
     final glass = context.glass;
     final sending = ref.watch(_lcdSendingProvider(_identity));
     final last = ref.watch(lastLcdTextProvider(widget.deviceId));
+    // 기기가 꺼져 있어도 서버는 받아 주고 "전송했어요"가 떴다 — 실제로는
+    // 기기에 안 가 같은 문구를 다시 보낼 수도 없게 됐다(2026-09-25 점검).
+    final online = ref.watch(moduleOnlineProvider(widget.deviceId));
     final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
         backgroundColor: glass.surfaceHeader,
@@ -128,6 +132,15 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
                           style: managementStyle(context,
                                   color: glass.bodySecondary)
                               .copyWith(height: 19.09375 / 16)),
+                      if (!online) ...[
+                        const SizedBox(height: 8),
+                        Text('lcd_offline_note'.tr(),
+                            key: const Key('lcd_offline_note'),
+                            textAlign: TextAlign.center,
+                            style: managementStyle(context,
+                                size: 14,
+                                color: Theme.of(context).colorScheme.error)),
+                      ],
                       const SizedBox(height: 16),
                       Container(
                           key: const Key('lcd_field'),
@@ -180,6 +193,7 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
                       child: FilledButton(
                           key: const Key('lcd_apply'),
                           onPressed: sending ||
+                                  !online ||
                                   _text.text.trim().isEmpty ||
                                   _text.text == last
                               ? null

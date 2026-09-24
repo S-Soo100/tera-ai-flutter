@@ -27,8 +27,8 @@ Future<void> _pump(
     ProviderScope(
       overrides: [
         currentDeviceIdProvider.overrideWith((ref) async => deviceId),
-        currentDeviceProvider
-            .overrideWith((ref) async => _device(lastSeen: lastSeen)),
+        deviceLinkStatusProvider(_deviceId).overrideWith((ref) =>
+            Stream.value(DeviceLinkStatus.of(_device(lastSeen: lastSeen)))),
         moduleLinkProvider(_deviceId).overrideWithValue(link),
         nowTickProvider
             .overrideWith((ref) => Stream.value(DateTime(2026, 8, 12, 10))),

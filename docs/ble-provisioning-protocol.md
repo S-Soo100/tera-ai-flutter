@@ -3,7 +3,7 @@
 > **단일 진실 소스.** 사육장(`terra-iot`)·카메라(`FB2_P4_CAM`) 기판을 Wi-Fi에 연결하는 BLE 규격과 앱 구현 계약.
 > 원본 스펙: `~/Desktop/사육장 ble_protocol.md`, `~/Desktop/camera BLE_WIFI_PROVISIONING.md`
 > 관련 문서: terra-server IoT 계약 `~/Downloads/APP_INTEGRATION.md`, DB 스키마 `docs/supabase-schema.md`
-> 최종 갱신: 2026-09-18 (사육장 앱 경유 등록 복원 — 펌웨어 요청서 `~/Desktop/APP_REQUEST_DEVICE_PAIRING_2026-09-17.md`)
+> 최종 갱신: 2026-09-25 (재등록 시 새 행 정정·BLE 실패 분류·카메라 우선 연결) · 2026-09-18 (사육장 앱 경유 등록 복원 — 펌웨어 요청서 `~/Desktop/APP_REQUEST_DEVICE_PAIRING_2026-09-17.md`)
 
 ## 0-A. 2026-09-18 개정 — 사육장은 기기가 직접 서버 등록 (현행)
 
@@ -11,8 +11,8 @@
 
 | 대상 | 앱 → 기기 시퀀스 | 완료 판정 |
 |---|---|---|
-| 사육장 `terra-iot` | `UNPAIR` → `SSID:` → `PASS:` → `NAME:<기본 이름>` → `JWT_BEGIN <길이>` → `JWT:<청크>`×N → `CONNECT` | `PAIR_OK <device_id>` → `devices`에서 `owner_id`+`device_id`로 확인되면 **등록 완료**. `PAIR_OK`가 없거나 `PAIR_FAIL <사유>`면 **등록 대기** — 결과 화면에 사유(구 펌웨어/`PAIR_FAIL` 사유/무응답, `DeviceRegistrationIssue`)를 밝히고 **사육장은 다시 연결 가능**(UNPAIR 뒤 같은 `device_id`로 재등록돼 행이 늘지 않음, 2026-09-21). 앱은 id를 추측하거나 목록 차이로 새 기기를 판정하지 않는다 |
-| 카메라 `FB2_P4_CAM` | `SSID:` → `PASS:` → `NAME:` → (`NAME_OK`면 `JWT_BEGIN`/`JWT`) → `CONNECT` | `UNPAIR`는 보내지 않는다(플래시 때 개발 계정으로 된 등록이 지워질 수 있음). 현 카메라 펌웨어는 `NAME:`을 모르므로(§2-3 전) `ERR:UNKNOWN_CMD`/무응답 → JWT 없이 Wi-Fi만 연결, 등록 대기로 표시 |
+| 사육장 `terra-iot` | `UNPAIR` → `SSID:` → `PASS:` → `NAME:<기본 이름>` → `JWT_BEGIN <길이>` → `JWT:<청크>`×N → `CONNECT` | `PAIR_OK <device_id>` → `devices`에서 `owner_id`+`device_id`로 확인되면 **등록 완료**. `PAIR_OK`가 없거나 `PAIR_FAIL <사유>`면 **등록 대기** — 결과 화면에 사유(구 펌웨어/`PAIR_FAIL` 사유/무응답, `DeviceRegistrationIssue`)를 밝히고 **사육장은 다시 연결 가능**(⚠️ 2026-09-25 정정: UNPAIR 뒤 재등록하면 서버 `pair_device`가 순수 INSERT라 **새 `device_id`로 새 행**이 생긴다 — 운영 DB에서 같은 `hw_id`가 여러 행. 늦게 등록된 앞 행은 해제 없이 남을 수 있다). 앱은 id를 추측하거나 목록 차이로 새 기기를 판정하지 않는다 |
+| 카메라 `FB2_P4_CAM` | `SSID:` → `PASS:` → `NAME:` → (`NAME_OK`면 `JWT_BEGIN`/`JWT`) → `CONNECT` | `UNPAIR`는 보내지 않는다(플래시 때 개발 계정으로 된 등록이 지워질 수 있음). `NAME:`에 `ERR:UNKNOWN_CMD`/무응답인 구 펌웨어는 JWT 없이 Wi-Fi만 연결하고 등록 대기로 표시한다. (2026-09-25: 운영 카메라 펌웨어 fb2-p4 0.1.0은 NAME/JWT를 받아 **매번 새 `camera_id`로 등록**한다 — 운영 DB 확인) |
 | 스캔 목록 '이미 등록됨' (2026-09-21) | (명령 없음) | 등록을 마친 기기도 몇 분간 광고한다(카메라는 3분 뒤 꺼짐, 관훈님 회신). 이 폰이 등록한 기기(BLE 주소+광고 이름 → 행 id, Hive `known_camera_*`/`known_device_*`)이고 그 행이 이 계정에 해제 없이 남아 있으면 목록에 '이미 등록됨'을 붙이고 아래로 내린다(`KnownDeviceStore`, `DeviceAddState.registered`). 사육장 기억은 표시 전용 — 연결하면 늘 새로 등록 |
 | 카메라 Wi-Fi 변경 (2026-09-21) | `SSID:` → `PASS:` → `CONNECT` (`NAME`·`JWT` 생략) | 이 폰이 등록한 카메라(BLE 주소+광고 이름 `FB2_P4_CAM_<MAC 하위 2바이트>` → `cameras.id`, Hive `known_camera_<계정>_<주소>`)이고 그 행이 이 계정에 해제 없이 남아 있으면 이 경로. 펌웨어는 JWT가 없으면 pair를 호출하지 않고 재부팅 뒤 NVS의 기존 `camera_id`로 재접속한다(app_ble_prov.c `have_jwt`). JWT를 보내면 매번 새 `camera_id`로 등록돼 행이 늘어난다. 90초 안에 `last_seen_at`이 갱신되지 않으면 결과 화면에 '새 카메라로 등록' |
 
@@ -21,6 +21,7 @@
 - 기본 이름: 종류별 접두(`device_add_device`/`device_add_camera`) + 사육장·카메라 이름 전체에서 쓰지 않는 번호(`nextManagementName`, 재설계 확정 기획 §7).
 - 그룹 배정: 등록 요청에 그룹 id가 없어 등록 뒤 사육장 연동 화면에서 배정(Supabase 직결 UPDATE, RLS owner). 펌웨어 `ENC:`(§2-4)가 생기면 시퀀스에 추가 검토.
 - 로그: 자격증명·JWT가 흘러나가지 않도록 BLE SDK 로그를 끄고(`suppressCredentialLogging`) 명령 내용은 남기지 않는다.
+- 2026-09-25 앱 동작: `CONNECT` 전에 끝난 실패는 `DeviceProvisionFailure`(ble·session·rejected)로 나눠 비밀번호 오류(`WIFI_FAIL`)와 구분해 안내한다. 사육장·카메라를 함께 고르면 카메라부터 보낸다(3분 광고). 이미 등록된 사육장을 고르면 "새 기기로 등록된다" 확인을 받는다. "새 카메라로 등록"은 새 등록 성공 뒤 옛 `cameras` 행을 REST `unlink`한다.
 - 구현: `DeviceAddBleAdapter.provision`(`device_add_ble_adapter.dart`) + `DeviceAddFlowController`/`DeviceAddRegistrationRepository`, 화면 `DeviceAddFlowRoute`(구 `/smart-cage/devices/pair`·`/crecam/cameras/pair`도 이 흐름으로 연결). 테스트 `test/features/my_cage/device_add_ble_adapter_test.dart`. (2026-09-18 main의 `sendWifiCredentials(registration:)`/`PairingRegistrar` 구현은 재설계 병합 때 이 흐름으로 통합·제거)
 
 ## 0. 페어링 아키텍처 결정 (2026-07-02 — 사육장은 §0-A로 대체, 카메라는 유지)

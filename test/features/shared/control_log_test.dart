@@ -32,6 +32,37 @@ TelemetryBucket bucket(DateTime at, {double? t, double? h}) {
 }
 
 void main() {
+  test('이어 보낸 분무(3초×3, 5초 간격)는 한 줄 9초로 합친다', () {
+    final at = DateTime(2026, 9, 25, 9);
+    Map<String, dynamic> mist(int sec, int ms) =>
+        row('mist', at.add(Duration(seconds: sec)))
+          ..['payload'] = {'duration_ms': ms};
+    final log = buildControlLog(commandRows: [
+      mist(0, 3000),
+      mist(5, 3000),
+      mist(10, 3000),
+      // 한참 뒤 다른 분무는 따로.
+      mist(120, 3000),
+    ], buckets: []);
+    expect(log, hasLength(2));
+    expect(log.first.at, at);
+    expect(log.first.sprayMs, 9000);
+    expect(log.last.sprayMs, 3000);
+  });
+
+  test('서버가 이은 10초(5초 + 약 7초 뒤 5초)도 한 줄로', () {
+    final at = DateTime(2026, 9, 25, 9);
+    final log = buildControlLog(commandRows: [
+      row('mist', at)..['payload'] = {'duration_ms': 10000},
+      row('mist', at.add(const Duration(milliseconds: 7200)))
+        ..['payload'] = {'duration_ms': 5000}
+        ..['source'] = 'timer',
+    ], buckets: []);
+    // 서버 이음 행(source=timer)은 원래 10초 요청의 나머지 — 더하지 않는다.
+    expect(log, hasLength(1));
+    expect(log.single.sprayMs, 10000);
+  });
+
   test('acked failure is not rendered as successful operation', () {
     final at = DateTime(2026, 9, 3);
     final failed = row('fan_on', at)..['result'] = 'error';

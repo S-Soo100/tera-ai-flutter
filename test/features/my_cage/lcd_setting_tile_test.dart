@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/home/presentation/home_screen.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
@@ -42,6 +43,7 @@ Future<void> _pump(WidgetTester tester, _FakeLcdRepo repo,
     ProviderScope(
       overrides: [
         lcdRepositoryProvider.overrideWithValue(repo),
+        moduleOnlineProvider.overrideWith((ref, id) => true),
         currentSetProvider.overrideWith((ref) async => deviceId == null
             ? null
             : EnclosureSet(
@@ -188,6 +190,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(
         overrides: [
           lcdRepositoryProvider.overrideWithValue(repo),
+          moduleOnlineProvider.overrideWith((ref, id) => true),
           currentSetProvider.overrideWith((ref) async => EnclosureSet(
               enclosure: Enclosure(
                   id: 'e1', name: '1번', createdAt: DateTime(2026, 8, 1)),

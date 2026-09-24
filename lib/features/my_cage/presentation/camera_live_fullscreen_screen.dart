@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:math' as math;
 import '../../../core/theme/glass_palette.dart';
 import 'widgets/crecam_detail_top_bar.dart';
@@ -58,20 +60,36 @@ class _CameraLiveFullscreenScreenState
 
   @override
   void dispose() {
+    _rotateHold?.cancel();
     if (_restoreOverlayStyle != null) {
       SystemChrome.setSystemUIOverlayStyle(_restoreOverlayStyle!);
     }
     super.dispose();
   }
 
+  /// 성공한 회전 뒤 버튼을 잠가 두는 타이머.
+  Timer? _rotateHold;
+
   Future<void> _toggleRotate(String cameraUuid, bool next) async {
     ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state = true;
-    await submitRotate180(context, ref, cameraUuid: cameraUuid, next: next);
-    // 성공/실패 무관 버튼만 해제 — 표시 상태는 없고(아이콘 버튼), 반영은
-    // cameras Realtime → 라이브 재부팅 재연결로 돌아온다.
-    if (mounted) {
+    final ok = await submitRotate180(context, ref,
+        cameraUuid: cameraUuid, next: next);
+    if (!mounted) return;
+    if (!ok) {
       ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state = false;
+      return;
     }
+    // 회전은 카메라 재부팅(약 20초) 뒤에 적용된다. 그동안 화면이 멈춰 실패로
+    // 보고 다시 누르면 반대 값이 가서 되돌아가고 재부팅이 한 번 더 난다
+    // (2026-09-25 점검) — 적용될 때까지 버튼을 잠근다. 반영은 cameras
+    // Realtime → 라이브 재연결로 돌아온다.
+    _rotateHold?.cancel();
+    _rotateHold = Timer(kRotateRebootHold, () {
+      if (mounted) {
+        ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state =
+            false;
+      }
+    });
   }
 
   @override

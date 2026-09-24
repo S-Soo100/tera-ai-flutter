@@ -9,6 +9,8 @@ import '../../../shared/widgets/glass_tab_shell.dart';
 import '../../../shared/widgets/figma_icon.dart';
 import '../../../shared/widgets/redesign_empty_state.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
+import '../../my_cage/presentation/my_cage_providers.dart';
+import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../../my_cage/presentation/widgets/lcd_setting_tile.dart';
 import 'home_set_providers.dart';
 import 'widgets/cage_control_grid.dart';
@@ -64,7 +66,13 @@ class HomeScreen extends ConsumerWidget {
                     const SkeletonLoading(width: double.infinity, height: 280),
                 error: (_, __) => Center(
                     child: TextButton(
-                        onPressed: () => ref.invalidate(homeDeviceSetsProvider),
+                        // 실패는 원천(기기·사육장 목록)에 캐시돼 있다 — 세트만
+                        // 다시 조립하면 같은 오류가 다시 나온다(2026-09-25).
+                        onPressed: () => ref
+                          ..invalidate(deviceListProvider)
+                          ..invalidate(enclosuresProvider)
+                          ..invalidate(enclosureSetsProvider)
+                          ..invalidate(homeDeviceSetsProvider),
                         child: Text('retry'.tr()))),
                 data: (items) => items.isEmpty
                     ? RedesignEmptyState(
@@ -238,7 +246,12 @@ class HomeLcdRow extends ConsumerWidget {
                 ),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 118),
-                  child: Text(device.hardwareId ?? '--',
+                  // 이번 세션에 보낸 문구가 있으면 그것 — 늘 하드웨어 ID만
+                  // 보여 바꾼 문구가 적용됐는지 알 수 없었다(2026-09-25).
+                  child: Text(
+                      ref.watch(lastLcdTextProvider(device.id)) ??
+                          device.hardwareId ??
+                          '--',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

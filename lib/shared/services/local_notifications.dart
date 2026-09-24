@@ -8,6 +8,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:hive/hive.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -23,6 +24,13 @@ class LocalNotifications {
   Future<void>? _initializing;
   bool _initialTapDelivered = false;
   void Function(String payload)? onTap;
+
+  /// 이 폰에 걸어 둔 로컬 알림(예약 시각·팬 타이머)을 모두 내린다. 로그아웃
+  /// 뒤에도 이전 계정 기기의 예약 알림이 매일 울렸다(2026-09-25 점검).
+  Future<void> cancelAll() async {
+    await ensureInitialized();
+    await plugin.cancelAll();
+  }
 
   /// 지연 초기화 — 알림을 처음 쓸 때 한 번. 앱 기동을 안 건드리고, 알림을 한
   /// 번도 안 쓰는 사용자는 timezone DB 파싱 비용도 안 낸다.
@@ -125,6 +133,17 @@ class LocalNotifications {
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, sound: true);
+  }
+
+  /// 사육장 알림 프리팝업을 이미 거쳤으면 OS 권한 창을 다시 띄우지 않는다 —
+  /// 프리팝업에서 '받지 않기'를 고른 뒤에도 예약 화면·팬 타이머가 OS 창을
+  /// 바로 띄웠다(2026-09-25 점검). 허용했다면 이미 권한이 있다. 아직 안
+  /// 물은 사용자(프리팝업 전 등록)는 예전처럼 묻는다.
+  Future<void> requestPermissionUnlessPrompted() async {
+    final box =
+        Hive.isBoxOpen('app_settings') ? Hive.box<dynamic>('app_settings') : null;
+    if (box?.get('push_prompt_asked_device') == true) return;
+    await requestPermission();
   }
 
   /// SCHEDULE_EXACT_ALARM은 Android 14+에서 기본 거부다. 설정 화면으로

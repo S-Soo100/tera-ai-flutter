@@ -98,8 +98,9 @@ void main() {
     expect(groups, isEmpty);
     gateway.receipts.clear();
     await controller.connect('home', 'password');
+    // 카메라부터 보낸다 — 켜진 뒤 3분만 검색된다(2026-09-25).
     expect(gateway.sent,
-        [device.physicalId, camera.physicalId, camera.physicalId]);
+        [camera.physicalId, device.physicalId, camera.physicalId]);
     expect(groups.single.values.toSet(), {'device-uuid', 'camera-uuid'});
   });
   test('camera ambiguous receipt never claims registration or resends',
@@ -115,8 +116,9 @@ void main() {
     expect(gateway.sent, [camera.physicalId]);
     expect(saved, isEmpty);
   });
-  // 사육장은 UNPAIR 뒤 같은 device_id로 재등록돼 행이 늘지 않는다 — 등록
-  // 대기면 다시 보내도 안전하다(2026-09-21, 기기가 pair를 안 한 사고).
+  // 사육장은 등록 대기면 다시 보낼 수 있다(2026-09-21, 기기가 pair를 안 한
+  // 사고). ⚠️ 다시 보내면 서버가 새 device_id로 새 행을 만든다(2026-09-25 운영
+  // 확인) — "같은 행으로 잡힌다"던 옛 주석은 틀렸다.
   test('device registration pending keeps issue and can be re-provisioned',
       () async {
     controller.select(device);
@@ -390,5 +392,84 @@ void main() {
       expect(controller.state.results[PairTargetKind.camera]!.outcome,
           DeviceAddOutcome.registered);
     });
+  });
+
+  // ── 2026-09-25 흐름 점검 ─────────────────────────────────────────────
+
+  test('CONNECT 전 블루투스 실패는 비밀번호 오류(wifiFailed)가 아니라 연결 실패', () async {
+    controller.select(camera);
+    gateway.receipts[camera.physicalId] = const DeviceProvisionReceipt(
+        wifiConnected: false,
+        retrySafe: true,
+        failure: DeviceProvisionFailure.ble);
+    await controller.connect('home', 'password');
+    final result = controller.state.results.values.single;
+    expect(result.outcome, DeviceAddOutcome.failed);
+    expect(result.failure, DeviceProvisionFailure.ble);
+    expect(result.canRetry, isTrue);
+  });
+
+  test('기기가 WIFI_FAIL로 거절하면 여전히 Wi-Fi 실패', () async {
+    controller.select(camera);
+    gateway.receipts[camera.physicalId] = const DeviceProvisionReceipt(
+        wifiConnected: false,
+        retrySafe: true,
+        connectSent: true,
+        wifiRejected: true);
+    await controller.connect('home', 'password');
+    expect(controller.state.results.values.single.outcome,
+        DeviceAddOutcome.wifiFailed);
+  });
+
+  test('등록 확인할 것이 없으면 다시 확인은 false — 화면이 알린다', () async {
+    controller.select(device);
+    gateway.receipts[device.physicalId] = const DeviceProvisionReceipt(
+        wifiConnected: true,
+        connectSent: true,
+        issue: DeviceRegistrationIssue.noPairReply);
+    await controller.connect('home', 'password');
+    expect(controller.state.results.values.single.outcome,
+        DeviceAddOutcome.registrationPending);
+    expect(await controller.recheckRegistration(), isFalse);
+  });
+
+  test('새 카메라로 등록 — 새 등록이 성공한 뒤에만 옛 카메라 행을 해제한다', () async {
+    final unlinked = <String>[];
+    final known = <String, String>{};
+    final c = DeviceAddFlowController(
+        gateway: gateway,
+        accountId: 'owner',
+        isCurrent: () => true,
+        token: () => 'jwt',
+        namePrefix: (_) => '카메라',
+        names: () async => [],
+        confirm: (kind, id) async => 'camera-new',
+        saveCredentials: (_, __) async {},
+        readCredentials: () async => {},
+        autoGroup: (_, __) async => 'group',
+        knownCamera: (candidate) async => known[candidate.physicalId],
+        forgetCamera: (candidate) async => known.remove(candidate.physicalId),
+        rememberCamera: (candidate, id) async => known[candidate.physicalId] = id,
+        cameraLastSeen: (_) async => null,
+        unlinkCamera: (id) async => unlinked.add(id),
+        reconnectPoll: const Duration(milliseconds: 1),
+        reconnectTimeout: Duration.zero);
+    addTearDown(c.dispose);
+    known[camera.physicalId] = 'camera-old';
+    c.select(camera);
+    // Wi-Fi만 변경 → 끝내 안 붙음(missing).
+    gateway.receipts[camera.physicalId] = const DeviceProvisionReceipt(
+        wifiConnected: false, retrySafe: true, connectSent: true);
+    await c.connect('home', 'password');
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(c.state.results[PairTargetKind.camera]?.reconnect,
+        CameraReconnect.missing);
+    await c.registerAsNew(PairTargetKind.camera);
+    expect(unlinked, isEmpty, reason: '새 등록 전에 지우면 실패 시 카메라가 사라진다');
+    gateway.receipts[camera.physicalId] =
+        const DeviceProvisionReceipt(wifiConnected: true, hardwareId: 'mqtt');
+    await c.connect('home', 'password');
+    expect(c.state.results[PairTargetKind.camera]?.registeredId, 'camera-new');
+    expect(unlinked, ['camera-old']);
   });
 }

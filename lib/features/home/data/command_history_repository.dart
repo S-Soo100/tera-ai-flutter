@@ -20,7 +20,21 @@ class CommandHistoryRepository {
   const CommandHistoryRepository(this.client);
   final SupabaseClient client;
   static const pageSize = 500;
-  static const _columns = 'id,action,status,result,issued_at,payload';
+  static const _columns = 'id,action,status,result,issued_at,payload,source';
+
+  /// 예약이 낸 명령(`source='schedule'`) 최근 [since]부터, 최신순 최대 200건.
+  Future<List<CommandHistoryRow>> recentScheduleRuns(String deviceId,
+      {required DateTime since}) async {
+    final rows = await client
+        .from('commands')
+        .select('source_id,status,result,issued_at')
+        .eq('device_id', deviceId)
+        .eq('source', 'schedule')
+        .gte('issued_at', since.toUtc().toIso8601String())
+        .order('issued_at', ascending: false)
+        .limit(200);
+    return [for (final r in rows) Map<String, Object?>.from(r)];
+  }
 
   Future<List<CommandHistoryRow>> readPeriod(
     String deviceId, {

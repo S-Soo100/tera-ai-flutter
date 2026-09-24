@@ -53,14 +53,14 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
     if (_disposed) return;
     if (permissions[Permission.bluetoothScan]?.isPermanentlyDenied == true ||
         permissions[Permission.bluetoothConnect]?.isPermanentlyDenied == true) {
-      throw StateError('Bluetooth permission denied');
+      throw const DeviceAddScanException(DeviceAddScanProblem.permission);
     }
     final adapter = await _repo.adapterState
         .firstWhere((value) => value != BluetoothAdapterState.unknown)
         .timeout(replyTimeout);
     if (_disposed) return;
     if (adapter != BluetoothAdapterState.on) {
-      throw StateError('Bluetooth unavailable');
+      throw const DeviceAddScanException(DeviceAddScanProblem.bluetoothOff);
     }
     _candidates.clear();
     _scan.add(const []);
@@ -284,6 +284,7 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
           wifiConnected: wifi,
           retrySafe: wifiOnly || !connectSent,
           connectSent: connectSent,
+          failure: connectSent ? null : _failureOf(error),
           issue: connectSent ? issue : null);
     } finally {
       await inbox?.dispose();
@@ -341,4 +342,15 @@ class _BleInbox {
   }
 
   Future<void> dispose() => _subscription.cancel();
+}
+
+/// `CONNECT` 전 실패의 종류. 우리가 던진 [StateError]는 세션·기기 거절이고,
+/// 그 밖(블루투스 SDK 예외·응답 시간 초과)은 블루투스 연결 문제다.
+DeviceProvisionFailure _failureOf(Object error) {
+  if (error is StateError) {
+    return error.message == 'Session unavailable'
+        ? DeviceProvisionFailure.session
+        : DeviceProvisionFailure.rejected;
+  }
+  return DeviceProvisionFailure.ble;
 }

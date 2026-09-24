@@ -51,10 +51,16 @@ class RedesignEmptyState extends StatelessWidget {
       required this.image,
       required this.message,
       required this.buttonText,
-      required this.onPressed});
+      required this.onPressed,
+      this.secondaryText,
+      this.onSecondary});
   final ImageProvider image;
   final String message, buttonText;
   final VoidCallback onPressed;
+
+  /// 빈 상태에서도 남은 기록으로 가는 길(예: 카메라를 다 지웠어도 북마크).
+  final String? secondaryText;
+  final VoidCallback? onSecondary;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +86,14 @@ class RedesignEmptyState extends StatelessWidget {
                       color: glass.bodySecondary)),
               const SizedBox(height: 16),
               RedesignPillCta(label: buttonText, onPressed: onPressed),
+              if (secondaryText != null && onSecondary != null) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                    key: const Key('redesign_empty_secondary'),
+                    onPressed: onSecondary,
+                    child: Text(secondaryText!,
+                        style: TextStyle(color: glass.textSecondary))),
+              ],
             ])),
       ),
     ));

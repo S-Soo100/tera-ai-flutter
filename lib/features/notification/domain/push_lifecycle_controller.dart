@@ -19,7 +19,8 @@ class PushLifecycleController {
       required this.display,
       required this.navigate,
       required this.permissionChanged,
-      required this.reportError});
+      required this.reportError,
+      this.clearLocalNotifications});
 
   final PushMessagingPort messaging;
   final PushDevicePort devices;
@@ -32,6 +33,10 @@ class PushLifecycleController {
   final void Function(String) navigate;
   final void Function(PushPermission) permissionChanged;
   final void Function(String) reportError;
+
+  /// 로그아웃 뒤 이 폰의 로컬 알림을 내린다 — 예약·팬 타이머 알림은 기기(계정)
+  /// 몫이라 다음 계정에 남으면 안 된다(2026-09-25).
+  final Future<void> Function()? clearLocalNotifications;
 
   final _subscriptions = <StreamSubscription<Object?>>[];
   final _displayed = <String>{};
@@ -165,6 +170,8 @@ class PushLifecycleController {
       await _deleteTransport();
       await signOut();
       _userId = null;
+      final clear = clearLocalNotifications;
+      if (clear != null) await _guard(clear, 'local_notifications');
     } catch (_) {
       // Failed signout leaves the session authenticated; allow a later retry.
       _loggingOut = false;

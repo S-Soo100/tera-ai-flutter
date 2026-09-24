@@ -7,6 +7,8 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/live_surface.dart';
+import '../../../../shared/domain/time_ago.dart';
+import '../my_cage_providers.dart';
 import '../webrtc_live_controller.dart';
 
 /// WebRTC 라이브 뷰.
@@ -15,7 +17,7 @@ import '../webrtc_live_controller.dart';
 /// - 연결 중·자동 복구 중: shimmer 스켈레톤 + 한 줄 문구 (CircularProgressIndicator 금지)
 /// - streaming/stalled: RTCVideoView (+ 정지·관측 불가 알약)
 /// - failed: 사유 + "다시 연결" — 집중 복구 예산이 끝났거나 카메라/망/인증 문제일 때만
-class WebRtcLiveView extends ConsumerWidget {
+class WebRtcLiveView extends ConsumerStatefulWidget {
   const WebRtcLiveView({
     super.key,
     required this.cameraUuid,
@@ -38,10 +40,85 @@ class WebRtcLiveView extends ConsumerWidget {
     return null;
   }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(webrtcLiveControllerProvider(cameraUuid));
+  /// 실패 사유별 "유저가 할 일" 문구 키(2026-09-25) — 전엔 원인이 달라도
+  /// "라이브에 연결하지 못했어요"만 반복돼 무엇을 해야 할지 몰랐다.
+  static String? hintKeyFor(String errorKey) => switch (errorKey) {
+        'crecam_live_error_no_video' ||
+        'crecam_live_error_unresponsive' =>
+          'crecam_live_hint_power_cycle',
+        'crecam_live_error_stalled' => 'crecam_live_hint_stalled',
+        'crecam_live_error_ice' => 'crecam_live_hint_network',
+        'crecam_live_error_camera_offline' => 'crecam_live_hint_offline',
+        'crecam_live_error_failed' => 'crecam_live_hint_generic',
+        _ => null,
+      };
 
+  @override
+  ConsumerState<WebRtcLiveView> createState() => _WebRtcLiveViewState();
+}
+
+class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
+  WebRtcLiveController? _controller;
+  bool? _visible;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _report();
+  }
+
+  @override
+  void didUpdateWidget(WebRtcLiveView old) {
+    super.didUpdateWidget(old);
+    if (old.cameraUuid != widget.cameraUuid) _report();
+  }
+
+  /// 이 뷰가 화면에 보이는지 컨트롤러에 알린다. 다른 탭(indexedStack)이거나
+  /// 불투명한 화면이 위를 덮으면 TickerMode가 꺼진다(2026-09-25).
+  void _report() {
+    final visible = TickerMode.of(context);
+    final controller =
+        ref.read(webrtcLiveControllerProvider(widget.cameraUuid).notifier);
+    if (identical(controller, _controller) && visible == _visible) return;
+    if (!identical(controller, _controller)) _detach();
+    _controller = controller;
+    _visible = visible;
+    // 빌드 중에 컨트롤러 상태를 건드리지 않도록 프레임 뒤에 알린다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && identical(_controller, controller) && controller.mounted) {
+        controller.setViewerVisible(this, visible);
+      }
+    });
+  }
+
+  void _detach() {
+    final c = _controller;
+    _controller = null;
+    _visible = null;
+    if (c != null && c.mounted) c.removeViewer(this);
+  }
+
+  @override
+  void dispose() {
+    _detach();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cameraUuid = widget.cameraUuid;
+    final state = ref.watch(webrtcLiveControllerProvider(cameraUuid));
+    void retry() =>
+        ref.read(webrtcLiveControllerProvider(cameraUuid).notifier).retry();
+
+    // 실패 화면의 저빈도 재시도 중엔 실패 화면을 유지한다(2026-09-25).
+    if (state.quietRetry && state.phase.isConnecting) {
+      return _FailedView(
+          cameraUuid: cameraUuid,
+          errorKey: state.errorKey ?? 'crecam_live_error_failed',
+          retrying: true,
+          onRetry: retry);
+    }
     return switch (state.phase) {
       WebRtcLivePhase.connectingConfig ||
       WebRtcLivePhase.offering ||
@@ -53,14 +130,13 @@ class WebRtcLiveView extends ConsumerWidget {
         const _ConnectingView(labelKey: 'crecam_live_recovering'),
       WebRtcLivePhase.streaming || WebRtcLivePhase.stalled => _StreamingView(
           renderer: state.renderer!,
-          cover: cover,
-          pillLabelKey: pillKeyFor(state),
+          cover: widget.cover,
+          pillLabelKey: WebRtcLiveView.pillKeyFor(state),
         ),
       WebRtcLivePhase.failed => _FailedView(
+          cameraUuid: cameraUuid,
           errorKey: state.errorKey ?? 'crecam_live_error_failed',
-          onRetry: () => ref
-              .read(webrtcLiveControllerProvider(cameraUuid).notifier)
-              .retry(),
+          onRetry: retry,
         ),
     };
   }
@@ -163,14 +239,40 @@ class _StreamingView extends StatelessWidget {
 
 // ── 실패 ─────────────────────────────────────────────────────────────────────
 
-class _FailedView extends StatelessWidget {
-  const _FailedView({required this.errorKey, required this.onRetry});
+class _FailedView extends ConsumerWidget {
+  const _FailedView(
+      {required this.cameraUuid,
+      required this.errorKey,
+      required this.onRetry,
+      this.retrying = false});
 
+  final String cameraUuid;
   final String errorKey;
   final VoidCallback onRetry;
 
+  /// 뒤에서 자동으로 다시 확인하는 중.
+  final bool retrying;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hintKey = WebRtcLiveView.hintKeyFor(errorKey);
+    String? hint = hintKey?.tr();
+    if (errorKey == 'crecam_live_error_camera_offline') {
+      // 언제부터 꺼져 있었는지 — 방금인지 며칠째인지에 따라 할 일이 다르다.
+      final seen = ref
+          .watch(camerasProvider)
+          .valueOrNull
+          ?.where((c) => c.id == cameraUuid)
+          .firstOrNull
+          ?.lastSeenAt;
+      if (seen != null) {
+        hint = 'crecam_live_hint_offline_seen'.tr(args: [timeAgo(seen)]);
+      }
+    }
+    final detail = [
+      if (hint != null) hint,
+      if (retrying) 'crecam_live_quiet_retry'.tr(),
+    ].join('\n');
     // 영상 면은 실패해도 어둡다. 여기서 테마 surface를 쓰면 밝은 회색이 되어
     // 위아래 어두운 덩어리가 깨진다(실기기에서 제어 바만 검게 떠 있었다).
     return ColoredBox(
@@ -178,6 +280,7 @@ class _FailedView extends StatelessWidget {
       child: LiveSurfaceNotice(
         key: WebRtcLiveView.retryButtonKey,
         title: errorKey.tr(),
+        detail: detail.isEmpty ? null : detail,
         actionLabel: 'crecam_live_retry'.tr(),
         onAction: onRetry,
       ),

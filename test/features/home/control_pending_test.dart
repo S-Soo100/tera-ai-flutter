@@ -13,6 +13,7 @@ import 'package:vivanaut/features/home/presentation/control_pending.dart';
 import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart'
     show ScheduleSwitch;
 import 'package:vivanaut/features/home/presentation/widgets/cage_control_grid.dart';
+import 'package:vivanaut/features/home/presentation/widgets/control_feedback.dart';
 import 'package:vivanaut/features/home/presentation/widgets/device_control_sheet.dart';
 import 'package:vivanaut/features/my_cage/domain/actuator_state.dart';
 import 'package:vivanaut/features/my_cage/domain/device_command.dart';
@@ -117,16 +118,20 @@ void main() {
     await tester.pump(const Duration(seconds: 10));
   });
 
-  testWidgets('ACK도 보고도 없이 8초 — 무응답 안내 후 해제', (tester) async {
+  testWidgets('ACK도 보고도 없이 8초 — "응답이 늦어요" 안내 후 해제(미전달로 단정 안 함)',
+      (tester) async {
     await _pump(tester, (status: 'sent', result: null));
     await tester.tap(find.byKey(DeviceControlSheet.powerSwitchKey));
     await tester.pump(const Duration(seconds: 5));
     expect(find.byKey(DeviceControlSheet.loadingKey), findsOneWidget);
-    expect(find.text('module_command_no_ack'), findsNothing);
+    expect(find.text('module_command_unconfirmed'), findsNothing);
 
     await tester.pump(kControlPollInterval * kControlConfirmPolls);
     await tester.pump();
-    expect(find.text('module_command_no_ack'), findsOneWidget);
+    // 서버는 30초 뒤에야 무응답을 확정한다 — "실행되지 않았다"고 단정하면
+    // 늦게 도착한 명령과 겹쳐 두 번 실행될 수 있다(2026-09-25).
+    expect(find.text('module_command_unconfirmed'), findsOneWidget);
+    expect(find.text('module_command_no_ack'), findsNothing);
     expect(find.byKey(DeviceControlSheet.loadingKey), findsNothing);
     expect(_switchOn(tester), isFalse);
     await tester.pump(const Duration(seconds: 10));
@@ -192,9 +197,8 @@ void main() {
     container
         .read(controlPendingProvider(kTestDeviceId).notifier)
         .begin(ScheduleDevice.fan, true);
-    unawaited(sendMistWith(container, ScaffoldMessenger.of(ctx), kTestDeviceId,
-        MistDuration.fiveSeconds,
-        toastContext: ctx));
+    unawaited(sendMistWith(container, ControlFeedback.of(ctx), kTestDeviceId,
+        MistDuration.threeSeconds));
     await tester.pump();
     expect(sent, isEmpty);
     expect(find.text('home_mist_failed_toast'), findsOneWidget);
@@ -208,9 +212,8 @@ void main() {
         device: ScheduleDevice.mist);
     final ctx = tester.element(find.byType(DeviceControlSheet));
     final container = ProviderScope.containerOf(ctx);
-    unawaited(sendMistWith(container, ScaffoldMessenger.of(ctx), kTestDeviceId,
-        MistDuration.tenSeconds,
-        toastContext: ctx));
+    unawaited(sendMistWith(container, ControlFeedback.of(ctx), kTestDeviceId,
+        MistDuration.nineSeconds));
     await tester.pump();
     // 송신 직후엔 잠김(분사 중으로 본다).
     expect(
@@ -235,15 +238,14 @@ void main() {
         device: ScheduleDevice.mist);
     final ctx = tester.element(find.byType(DeviceControlSheet));
     final container = ProviderScope.containerOf(ctx);
-    unawaited(sendMistWith(container, ScaffoldMessenger.of(ctx), kTestDeviceId,
-        MistDuration.fiveSeconds,
-        toastContext: ctx));
+    unawaited(sendMistWith(container, ControlFeedback.of(ctx), kTestDeviceId,
+        MistDuration.threeSeconds));
     await tester.pump(kControlPollInterval + const Duration(milliseconds: 100));
     await tester.pump();
     // 거절로 풀린 뒤 다른 곳에서 새 잠금이 걸렸다고 치자.
     final newer = MistLock(lockedUntil: DateTime.now().add(const Duration(minutes: 1)));
     container.read(mistLockProvider(kTestDeviceId).notifier).state = newer;
-    // 옛 분무(5초 → 7초 잠금)의 타이머가 돈다.
+    // 옛 분무(3초 → 5초 잠금)의 타이머가 돈다.
     await tester.pump(const Duration(seconds: 7));
     expect(
         identical(container.read(mistLockProvider(kTestDeviceId)), newer),

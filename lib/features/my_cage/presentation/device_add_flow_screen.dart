@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/figma_icon.dart';
+import '../../../shared/widgets/viva_modal.dart';
 import '../../notification/domain/push_consent_flow.dart';
 import '../../notification/presentation/push_pre_popup.dart';
 import '../domain/device_add_flow.dart';
@@ -76,6 +78,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
   /// '기존 기기와 연결'(그룹 편집기) 경로.
   bool _joinPrompted = false;
   String? _joinedGroupId;
+  bool _joinedGroupHasPet = false;
 
   Future<void> _maybeOfferJoin(DeviceAddState state) async {
     // 새로 등록한 기기만 — Wi-Fi만 바꾼 카메라는 이미 제 자리가 있다.
@@ -156,7 +159,16 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                 ref.read(managementMutationCompletedProvider)();
               },
             )));
-    if (joined == true && mounted) setState(() => _joinedGroupId = group.id);
+    if (joined == true && mounted) {
+      setState(() {
+        _joinedGroupId = group.id;
+        // 이미 도마뱀이 있는 환경이면 "도마뱀을 등록해 주세요"를 권하지 않는다
+        // (2026-09-25 점검).
+        _joinedGroupHasPet = inventory
+            .members(group.id)
+            .any((i) => i.key.kind == ManagementKind.pet);
+      });
+    }
   }
 
   Future<void> _close() async {
@@ -356,7 +368,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                       children: [
                         ...body,
                         if (state.errorKey case final error?)
-                          if (step != DeviceAddStep.credentials)
+                          if (step != DeviceAddStep.credentials) ...[
                             Padding(
                                 padding: const EdgeInsets.all(12),
                                 child: Text(error.tr(),
@@ -364,6 +376,19 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                         color: Theme.of(context)
                                             .colorScheme
                                             .error))),
+                            // 영구 거부면 앱에서 다시 물을 수 없다 — 설정으로
+                            // 가는 길을 준다(2026-09-25).
+                            if (error == kDeviceAddPermissionError)
+                              Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _PairingTextButton(
+                                      key: const Key(
+                                          'device_add_open_settings'),
+                                      onPressed: () =>
+                                          unawaited(openAppSettings()),
+                                      child: Text(
+                                          'device_add_open_settings'.tr()))),
+                          ],
                       ])),
               // Figma 공통 하단 CTA — 콘텐츠 위 플로팅. 단일 y696, 둘이면
               // 696/752, 키보드가 있으면 키보드 위 43.
@@ -487,7 +512,29 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                     key: Key('device_add_candidate_${c.physicalId}'),
                     onTap: state.results[c.kind]?.canRetry == false
                         ? null
-                        : () => controller.select(c),
+                        : () async {
+                            // 등록된 사육장을 다시 연결하면 서버가 새 기기로
+                            // 등록한다(UNPAIR) — 이름·그룹·예약·기록이 끊긴다는
+                            // 걸 먼저 알린다(2026-09-25).
+                            final choosing =
+                                state.selected[c.kind]?.physicalId !=
+                                    c.physicalId;
+                            if (choosing &&
+                                c.kind == PairTargetKind.device &&
+                                state.registered.contains(c.physicalId)) {
+                              final ok = await showVivaModal(context,
+                                  message:
+                                      'device_add_reconnect_registered_warning'
+                                          .tr(),
+                                  cancelLabel: 'common_cancel'.tr(),
+                                  confirmLabel:
+                                      'device_add_continue_anyway'.tr(),
+                                  confirmKey: const Key(
+                                      'device_add_reconnect_registered_ok'));
+                              if (!ok || !mounted) return;
+                            }
+                            controller.select(c);
+                          },
                     child: ConstrainedBox(
                         constraints: const BoxConstraints(minHeight: 64),
                         child: Padding(
@@ -570,6 +617,13 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                             ])))))
         ]),
     ];
+    // 안 보일 때 할 일 — 카메라는 켜진 뒤 3분만 검색된다(2026-09-25 점검).
+    body.add(Padding(
+        padding: const EdgeInsets.fromLTRB(4, 12, 4, 0),
+        child: Text('device_add_scan_hint'.tr(),
+            key: const Key('device_add_scan_hint'),
+            style: managementStyle(context,
+                size: 14, color: context.glass.bodySecondary))));
     // Figma 971:1837/990:11220 — 미선택은 '다시 스캔'(스캔 중 회색), 선택하면
     // '기기 N개 추가'. 재검색은 선택 해제로 되돌아온다(중복 CTA 없음).
     final footer = [
@@ -636,6 +690,13 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                         ]))))
         ]),
     ];
+    // 5GHz 전용 공유기는 목록에 안 보인다 — 직접 입력해도 실패만 반복된다.
+    body.add(Padding(
+        padding: const EdgeInsets.fromLTRB(4, 12, 4, 0),
+        child: Text('device_add_network_band_hint'.tr(),
+            key: const Key('device_add_network_band_hint'),
+            style: managementStyle(context,
+                size: 14, color: context.glass.bodySecondary))));
     final footer = [
       ManagementButton(
           key: const Key('device_add_network_rescan'),
@@ -814,7 +875,9 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       // 뜨면 모순된다(2026-09-22).
       if (!retry && !pending && !updated && confirmed > 0 && !state.groupError)
         Text(
-            (confirmed == 2 || _joinedGroupId != null
+            (_joinedGroupId != null && _joinedGroupHasPet
+                    ? 'device_add_joined_subtitle'
+                    : confirmed == 2 || _joinedGroupId != null
                     ? 'device_add_done_subtitle'
                     : isNew(PairTargetKind.device)
                         ? 'device_add_continue_camera_subtitle'
@@ -858,7 +921,15 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             onPressed: state.busy ? null : () => _network(state.ssid)),
       if (pending)
         _PairingTextButton(
-            onPressed: state.busy ? null : controller.recheckRegistration,
+            onPressed: state.busy
+                ? null
+                : () async {
+                    final confirmed = await controller.recheckRegistration();
+                    // 눌러도 아무 반응이 없으면 고장으로 읽힌다(2026-09-25).
+                    if (!confirmed && mounted) {
+                      await _showErrorModal('device_add_recheck_none');
+                    }
+                  },
             child: Text('device_add_recheck'.tr())),
       if (state.groupError)
         ManagementButton(
@@ -872,7 +943,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                     : 'device_add_continue_device')
                 .tr(),
             onPressed: state.busy ? null : controller.continueAdding),
-      if ((confirmed == 2 && !state.groupError) || _joinedGroupId != null)
+      if ((confirmed == 2 && !state.groupError) ||
+          (_joinedGroupId != null && !_joinedGroupHasPet))
         ManagementButton(
             key: const Key('device_add_pet'),
             label: 'device_add_pet'.tr(),
@@ -932,11 +1004,15 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     // '확인 중', 끝내 안 붙으면 '연결 실패'(다시 연결 + 새 카메라 등록).
     final checking = result.unconfirmed && reconnect == CameraReconnect.waiting;
     final failed = result.unconfirmedFailed;
+    // 끝내 안 붙었으면 "변경완료"라고 쓰지 않는다 — ✕ 아이콘·"다시 연결되지
+    // 않았어요"와 제목이 어긋났다(2026-09-25).
     final (titleKey, titleId) = failed
         ? ('device_add_results', 'device_add_wifi_failed')
-        : checking
-            ? ('device_add_wifi_checking', 'device_add_wifi_checking')
-            : ('device_add_wifi_updated', 'device_add_wifi_updated');
+        : missing
+            ? ('device_add_wifi_missing_title', 'device_add_wifi_missing')
+            : checking
+                ? ('device_add_wifi_checking', 'device_add_wifi_checking')
+                : ('device_add_wifi_updated', 'device_add_wifi_updated');
     final body = [
       SizedBox(height: math.min(186, MediaQuery.sizeOf(context).height * 0.27)),
       Center(
@@ -983,6 +1059,12 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             onPressed: state.busy
                 ? null
                 : () async {
+                    final ok = await showVivaModal(context,
+                        message: 'device_add_register_new_warning'.tr(),
+                        cancelLabel: 'common_cancel'.tr(),
+                        confirmLabel: 'device_add_continue_anyway'.tr(),
+                        confirmKey: const Key('device_add_register_new_ok'));
+                    if (!ok || !mounted) return;
                     await controller.registerAsNew(result.candidate.kind);
                     if (mounted) await _network(state.ssid);
                   }),
@@ -1021,6 +1103,20 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
   Iterable<String> _issue(DeviceAddResult result) sync* {
     if (result.unconfirmed && result.reconnect == CameraReconnect.waiting) {
       yield 'device_add_checking_hint'.tr(); // 기다리는 이유를 밝힌다.
+      return;
+    }
+    if (result.outcome == DeviceAddOutcome.failed) {
+      // 비밀번호 문제가 아니다 — 무엇을 하면 되는지 밝힌다(2026-09-25).
+      switch (result.failure) {
+        case DeviceProvisionFailure.ble:
+          yield 'device_add_ble_failed_hint'.tr();
+        case DeviceProvisionFailure.session:
+          yield 'device_add_session_failed_hint'.tr();
+        case DeviceProvisionFailure.rejected:
+          yield 'device_add_rejected_hint'.tr();
+        case null:
+          break;
+      }
       return;
     }
     if (result.outcome != DeviceAddOutcome.registrationPending) return;

@@ -60,11 +60,17 @@ class WebRtcLiveState {
   /// 있으니 가리지 않고, "영상 상태 확인 중"만 얹는다.
   final bool statsUnknown;
 
+  /// 실패 화면에서 도는 저빈도 자동 재시도 중 — 화면은 실패 사유·버튼을
+  /// **그대로** 두고 "다시 확인하는 중"만 붙인다. 전엔 60초마다 "연결 중"
+  /// 스켈레톤으로 바뀌며 사유와 버튼이 사라져 무한 루프처럼 보였다(2026-09-25).
+  final bool quietRetry;
+
   const WebRtcLiveState({
     required this.phase,
     this.errorKey,
     this.renderer,
     this.statsUnknown = false,
+    this.quietRetry = false,
   });
 
   WebRtcLiveState copyWith({
@@ -73,12 +79,14 @@ class WebRtcLiveState {
     bool clearError = false,
     RTCVideoRenderer? renderer,
     bool? statsUnknown,
+    bool? quietRetry,
   }) {
     return WebRtcLiveState(
       phase: phase ?? this.phase,
       errorKey: clearError ? null : (errorKey ?? this.errorKey),
       renderer: renderer ?? this.renderer,
       statsUnknown: statsUnknown ?? this.statsUnknown,
+      quietRetry: quietRetry ?? this.quietRetry,
     );
   }
 }
@@ -196,10 +204,16 @@ const kWebRtcIceGatherWait = Duration(seconds: 2);
 /// 보내면 같은 이유로 또 놓친다.
 const kWebRtcUnresponsiveRetryDelay = Duration(seconds: 2);
 
-/// ICE 연결 후 첫 영상 프레임을 기다리는 한도. 펌웨어 키프레임 간격 때문에
-/// 첫 화면까지 ~18초가 실측됐다(메모리 webrtc_first_frame_keyframe_gap) — 그보다
-/// 넉넉히 둔다. 넘기면 영상 없는 연결로 보고 다시 붙인다.
-const kWebRtcFirstFrameTimeout = Duration(seconds: 30);
+/// ICE 연결 후 첫 영상 프레임을 기다리는 한도. 07월엔 펌웨어 키프레임 간격 때문에
+/// ~18초가 실측돼 30초였다. 2026-09-25 운영 재측정(성공 219건)은 연결→첫 프레임
+/// p99 4.7초·최대 5.6초 — 영상이 안 오는 카메라에서 매번 30초 헛대기하지 않게
+/// 10초로 줄였다. 넘기면 영상 없는 연결로 보고 다시 붙인다.
+const kWebRtcFirstFrameTimeout = Duration(seconds: 10);
+
+/// 화면에서 안 보인 뒤(다른 탭·위를 덮은 화면·넘긴 카메라) 연결을 유지하는 시간.
+/// 짧게 오가면 다시 연결(3~5초)하지 않고, 오래 안 보면 데이터·배터리와 카메라
+/// 시청 자리를 놓는다(2026-09-25).
+const kWebRtcHiddenGrace = Duration(seconds: 30);
 
 /// 재생 중 통계 샘플 주기. getStats는 겹치지 않게 호출한다(busy 가드).
 const kWebRtcStatsInterval = Duration(seconds: 1);
@@ -270,7 +284,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _viewSink = ref.read(webrtcViewLogSinkProvider);
     _diagBuffer = ref.read(webrtcDiagBufferProvider);
     _openView();
-    addListener((s) => _view?.onPhase(_bucketOf(s.phase)));
+    addListener((s) => _view?.onPhase(_bucketOfState(s)));
     _watchEnvironment();
     _startRecoveryWindow();
     _diag('start');
@@ -290,7 +304,11 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       ?.where((c) => c.id == cameraUuid)
       .firstOrNull;
 
-  void _openView() {
+  /// 화면에 보이는 동안의 상태 — 조용한 재시도 중엔 화면이 실패 그대로다.
+  LiveViewBucket _bucketOfState(WebRtcLiveState s) =>
+      s.quietRetry ? LiveViewBucket.failed : _bucketOf(s.phase);
+
+  void _openView({bool fromCurrent = false}) {
     final cam = _camera();
     _view = LiveViewSession(
       viewId: const Uuid().v4(),
@@ -298,11 +316,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       firmwareVer: cam?.firmwareVer,
       network: ref.read(webrtcNetworkSignalProvider).valueOrNull,
       cameraOnline: cam?.isOnline,
-      // 항상 "연결 중"에서 시작한다. 빠른 복귀면 이전 세션 정리(_suspend의
-      // close)가 안 끝나 state가 아직 옛 streaming/failed일 수 있다 — 그걸
-      // 넘기면 영상 없이 first_video_ms=0이 찍힌다(리뷰 2026-09-25). 복귀는
-      // 항상 새로 연결하고, 첫 시작도 connectingConfig다.
-    )..onPhase(LiveViewBucket.connecting);
+      // 새로 연결하는 경우엔 항상 "연결 중"에서 시작한다. 빠른 복귀면 이전
+      // 세션 정리(_suspend의 close)가 안 끝나 state가 아직 옛 streaming/failed일
+      // 수 있다 — 그걸 넘기면 영상 없이 first_video_ms=0이 찍힌다(리뷰
+      // 2026-09-25). [fromCurrent]는 연결을 유지한 채 다시 보이게 된 경우다.
+    )..onPhase(
+        fromCurrent ? _bucketOfState(state) : LiveViewBucket.connecting);
   }
 
   /// dispose 중에도 부른다 — ref를 읽지 않는다.
@@ -375,8 +394,62 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 첫 프레임 뒤 30초 안정 판정 타이머.
   Timer? _stableTimer;
 
-  /// 앱이 백그라운드에 있어 연결을 내려 둔 상태.
-  bool _suspended = false;
+  /// 연결을 내려 둔 이유 — `background`(앱이 백그라운드), `hidden`(화면에서
+  /// [kWebRtcHiddenGrace] 넘게 안 보임). 하나라도 있으면 내려 둔 상태다. 둘이
+  /// 겹칠 수 있어(안 보이는 탭에서 앱을 내림) 이유별로 센다.
+  final Set<String> _pauseReasons = {};
+  bool get _suspended => _pauseReasons.isNotEmpty;
+
+  // ── 화면 노출 (2026-09-25) ─────────────────────────────────────────────────
+  // 탭 셸(indexedStack)은 방문한 탭을 화면 밖에 살려 둔다 — 전엔 커뮤니티
+  // 탭에 있어도 홈·카메라 탭 라이브가 계속 영상을 받고, 실패면 60초마다
+  // 재시도했으며, 시청 기록에 안 본 시간이 섞였다. 라이브 뷰가 보임을 알린다.
+  final Set<Object> _visibleViewers = {};
+  bool _hasViewers = false; // 뷰가 한 번이라도 붙었나 — 전엔 보이는 것으로 본다
+  Timer? _hiddenTimer;
+
+  bool get _visible => !_hasViewers || _visibleViewers.isNotEmpty;
+
+  /// 라이브 뷰가 붙거나 보임이 바뀌면 부른다(TickerMode — 다른 탭·위를 덮은
+  /// 화면이면 false).
+  void setViewerVisible(Object viewer, bool visible) {
+    _hasViewers = true;
+    if (visible) {
+      _visibleViewers.add(viewer);
+    } else {
+      _visibleViewers.remove(viewer);
+    }
+    _onVisibilityChanged();
+  }
+
+  /// 라이브 뷰가 사라지면 부른다.
+  void removeViewer(Object viewer) {
+    _visibleViewers.remove(viewer);
+    _onVisibilityChanged();
+  }
+
+  void _onVisibilityChanged() {
+    if (_disposed || !_started) return;
+    if (_visible) {
+      _hiddenTimer?.cancel();
+      _hiddenTimer = null;
+      if (_pauseReasons.contains('hidden')) {
+        _resume('hidden');
+      } else if (_view == null && !_suspended) {
+        // 연결은 살아 있었다 — 지금 상태 그대로 새 시청을 연다.
+        _diag('visible');
+        _openView(fromCurrent: true);
+      }
+      return;
+    }
+    // 안 보인다 — 시청 기록은 바로 닫고, 연결은 잠깐 뒤에 내린다.
+    if (_view != null) _diag('hidden');
+    _closeView(LiveViewEnd.closed);
+    _hiddenTimer ??= Timer(kWebRtcHiddenGrace, () {
+      _hiddenTimer = null;
+      if (!_visible) unawaited(_suspend('hidden'));
+    });
+  }
 
   /// 카메라가 오프라인이라 자동 재연결을 멈춘 상태 — 온라인 신호에 재개.
   bool _waitingOnline = false;
@@ -449,8 +522,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
 
   void _watchEnvironment() {
     _lifecycle = AppLifecycleListener(onStateChange: (s) {
-      if (s == AppLifecycleState.paused) unawaited(_suspend());
-      if (s == AppLifecycleState.resumed) _resume();
+      if (s == AppLifecycleState.paused) unawaited(_suspend('background'));
+      if (s == AppLifecycleState.resumed) _resume('background');
     });
     // 망 신호 provider는 앱 전역에서 데워져 있다(non-autoDispose) — listen은
     // 현재 값을 다시 주지 않으므로 기준선을 직접 채운다. 안 하면 나중에 만든
@@ -503,7 +576,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       _sawNoNetwork = false;
       _netApplied = now;
       _diag('network-back', {'to': now});
-      if (wasWaiting || !state.phase.hasVideo) _reconnectNow('network-back');
+      if (wasWaiting || !state.phase.hasVideo) {
+        // 끊긴 사이의 카메라 목록은 낡았을 수 있다 — 오프라인 표시를 믿지 않고
+        // 한 번은 실제로 시도한다.
+        _forceAttempt = true;
+        _reconnectNow('network-back');
+      }
       return;
     }
     if (_netApplied == null) {
@@ -534,12 +612,16 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 백그라운드 진입 — 연결을 내린다. 화면에 안 보이는 동안 카메라 세션과
   /// 재연결 타이머를 붙잡고 있을 이유가 없고, 복귀 때 죽은 연결을 실패 판정까지
   /// 기다리지 않고 새로 붙이는 편이 빠르다.
-  Future<void> _suspend() async {
-    if (_suspended || _disposed) return;
-    _diag('suspend');
-    _suspended = true;
+  Future<void> _suspend(String reason) async {
+    if (_disposed) return;
+    final already = _suspended;
+    _pauseReasons.add(reason);
+    if (already) return;
+    _diag('suspend', {'reason': reason});
     _endAttempt(_gen, null);
-    _closeView(LiveViewEnd.background);
+    _closeView(reason == 'background'
+        ? LiveViewEnd.background
+        : LiveViewEnd.closed);
     final gen = ++_gen;
     _cancelTimers();
     _recoveryDeadline?.cancel(); // 백그라운드 시간은 세지 않는다
@@ -552,10 +634,14 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     }
   }
 
-  void _resume() {
-    if (!_suspended || _disposed) return;
-    _suspended = false;
-    _diag('resume');
+  void _resume(String reason) {
+    if (_disposed || !_pauseReasons.remove(reason) || _suspended) return;
+    if (!_visible) {
+      // 앱으로 돌아왔지만 이 라이브는 화면에 안 보인다 — 계속 내려 둔다.
+      _pauseReasons.add('hidden');
+      return;
+    }
+    _diag('resume', {'reason': reason});
     _openView();
     // 백그라운드 동안의 망 변화는 무시했다 — 지금 붙을 망을 기준선으로 삼는다.
     // 안 하면 복귀 뒤 같은 신호의 재알림을 "변경"으로 보고 새 시도를 취소한다.
@@ -571,6 +657,9 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 풀어 한 번은 실제로 시도한다.
   Future<void> retry() async {
     _view?.onManualRetry();
+    // 사용자가 직접 누르면 DB가 오프라인이라고 해도 한 번은 실제로 시도한다
+    // (is_online은 낡을 수 있다).
+    _forceAttempt = true;
     _autoRetried = false;
     _waitingOnline = false;
     _waitingNetwork = false;
@@ -595,6 +684,10 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     }
     _diag('restart', {'reason': reason});
     _view?.onRestart(reason);
+    // 실패 화면의 저빈도 자동 재시도는 화면을 "연결 중"으로 바꾸지 않는다.
+    final quiet =
+        reason == 'timer' && state.phase == WebRtcLivePhase.failed;
+    final quietErrorKey = state.errorKey;
     _endAttempt(_gen, null);
     final gen = ++_gen;
     _cancelTimers();
@@ -606,7 +699,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     }
     if (!_isCurrent(gen)) return;
     _pendingCandidates.clear();
-    state = const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig);
+    state = quiet
+        ? WebRtcLiveState(
+            phase: WebRtcLivePhase.connectingConfig,
+            errorKey: quietErrorKey,
+            quietRetry: true)
+        : const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig);
     await _start(gen);
   }
 
@@ -628,6 +726,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _gen++;
     _lifecycle?.dispose();
     _netDebounce?.cancel();
+    _hiddenTimer?.cancel();
     _recoveryDeadline?.cancel();
     _cancelTimers();
     _cleanup(closeRemote: true);
@@ -636,8 +735,25 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
 
   // ── 연결 시퀀스 ────────────────────────────────────────────────────────────
 
+  /// 다음 시도는 DB 오프라인 표시를 무시하고 실제로 보낸다(수동 재시도).
+  bool _forceAttempt = false;
+
   Future<void> _start(int gen) async {
     final cam = _camera();
+    final force = _forceAttempt;
+    _forceAttempt = false;
+    if (!force && cam != null && !cam.isOnline) {
+      // DB가 이미 오프라인이면 offer로 15~21초씩 두 번 헛대기하지 않고 바로
+      // 알린다(2026-09-25 점검: 30~45초 "연결 중" 뒤에야 오프라인 안내).
+      // 온라인 신호가 오면 camerasProvider 감시가 곧바로 다시 붙이고, 낡은
+      // 값이면 사용자가 [다시 연결]로 강제할 수 있다.
+      _waitingOnline = true;
+      _diag('skip-offline');
+      state = const WebRtcLiveState(
+          phase: WebRtcLivePhase.failed,
+          errorKey: 'crecam_live_error_camera_offline');
+      return;
+    }
     final network = ref.read(webrtcNetworkSignalProvider).valueOrNull;
     _attempt = _Attempt(gen, _reconnectAttempt, network,
         viewId: _view?.viewId, firmwareVer: cam?.firmwareVer);
@@ -651,7 +767,10 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _attemptDeadline = Timer(kWebRtcAttemptBudget, () {
       if (!_isCurrent(gen) || state.phase.hasVideo) return;
       _diag('attempt-budget-exhausted', {'phase': state.phase.name});
-      _fail(gen);
+      _fail(gen,
+          errorKey: state.phase == WebRtcLivePhase.connectingIce
+              ? 'crecam_live_error_ice'
+              : 'crecam_live_error_failed');
     });
     try {
       await _doConnect(gen);
@@ -915,7 +1034,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
           _awaitFirstFrame(gen, pc, renderer);
         }
       } else if (s == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
-        _fail(gen);
+        _fail(gen, errorKey: 'crecam_live_error_ice');
       } else if (s ==
           RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
         // 일시 장애면 WebRTC가 스스로 돌아온다 — 10초 유예 후에도 그대로면
@@ -927,7 +1046,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
           if (!_isCurrent(gen)) return;
           if (pc.connectionState ==
               RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
-            _fail(gen);
+            _fail(gen, errorKey: 'crecam_live_error_ice');
           }
         });
       }
@@ -938,6 +1057,9 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     state = WebRtcLiveState(
       phase: WebRtcLivePhase.offering,
       renderer: renderer,
+      // 조용한 재시도면 실패 화면(사유)을 계속 보인다.
+      quietRetry: state.quietRetry,
+      errorKey: state.quietRetry ? state.errorKey : null,
     );
 
     // 8. createOffer → setLocalDescription
@@ -1019,7 +1141,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         return;
       }
       _diag('no-video', {'bytes': bytes});
-      _fail(gen, outcome: 'no_video');
+      _fail(gen,
+          outcome: 'no_video', errorKey: 'crecam_live_error_no_video');
     });
   }
 
@@ -1128,7 +1251,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       }
       if (still >= kWebRtcHardStallTicks) {
         _diag('stall-hard', stallInfo());
-        _fail(gen, outcome: 'stalled');
+        _fail(gen,
+            outcome: 'stalled', errorKey: 'crecam_live_error_stalled');
         return;
       }
       if (still >= kWebRtcSoftStallTicks &&
@@ -1301,5 +1425,18 @@ final webrtcLiveControllerProvider = StateNotifierProvider.autoDispose
     .family<WebRtcLiveController, WebRtcLiveState, String>(
   // 시작은 여기서 — 위젯 테스트는 startConnection() 없이 생성만 하는
   // 오버라이드로 실피어를 차단한다(클래스 doc).
-  (ref, cameraUuid) => WebRtcLiveController(ref, cameraUuid)..startConnection(),
+  (ref, cameraUuid) {
+    // 방금 본 카메라는 잠깐 붙여 둔다 — 카메라를 넘겼다 돌아오거나 화면을
+    // 잠깐 옮길 때 처음부터 다시 연결(3~5초)하지 않게(2026-09-25). 안 보이는
+    // 동안 시청 기록은 닫혀 있다([WebRtcLiveController.removeViewer]).
+    final link = ref.keepAlive();
+    Timer? linger;
+    ref.onCancel(() {
+      linger?.cancel();
+      linger = Timer(kWebRtcHiddenGrace, link.close);
+    });
+    ref.onResume(() => linger?.cancel());
+    ref.onDispose(() => linger?.cancel());
+    return WebRtcLiveController(ref, cameraUuid)..startConnection();
+  },
 );
