@@ -24,12 +24,16 @@ final scheduleNotificationSyncProvider =
 /// 예약 목록을 다시 읽으면 같이 다시 읽는다. 실패하면 결과 표시만 빠진다.
 final scheduleLastRunsProvider =
     FutureProvider.autoDispose<Map<String, ScheduleLastRun>>((ref) async {
-  final deviceId = await ref.watch(currentDeviceIdProvider.future);
-  await ref.watch(schedulesProvider.future);
+  // watch는 전부 await 앞에서 — 뒤에서 하면 의존이 늦게 걸린다.
+  final deviceIdFuture = ref.watch(currentDeviceIdProvider.future);
+  final schedulesFuture = ref.watch(schedulesProvider.future);
+  final client = ref.watch(supabaseClientProvider);
+  final deviceId = await deviceIdFuture;
+  await schedulesFuture;
   if (deviceId == null) return const {};
-  final rows = await CommandHistoryRepository(ref.watch(supabaseClientProvider))
-      .recentScheduleRuns(deviceId,
-          since: DateTime.now().subtract(const Duration(days: 7)));
+  final rows = await CommandHistoryRepository(client).recentScheduleRuns(
+      deviceId,
+      since: DateTime.now().subtract(const Duration(days: 7)));
   return latestScheduleRuns(rows);
 });
 
