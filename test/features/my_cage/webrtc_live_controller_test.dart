@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:vivanaut/features/my_cage/data/webrtc_signaling_repository.dart';
 import 'package:vivanaut/features/my_cage/data/camera_exceptions.dart';
+import 'package:vivanaut/features/my_cage/domain/live_view_session.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/domain/webrtc_connect_log.dart';
 import 'package:vivanaut/features/my_cage/domain/webrtc_diag.dart';
@@ -178,6 +179,7 @@ TerraCamera _camera({required bool online}) => TerraCamera(
     id: _cam,
     cameraId: 'p4cam',
     name: 'cam',
+    firmwareVer: '1.2.0',
     isOnline: online,
     createdAt: DateTime(2026, 9, 22));
 
@@ -187,6 +189,7 @@ class _Harness {
   final network = StreamController<String>();
   final cameras = StreamController<List<TerraCamera>>();
   final logs = <WebRtcConnectLog>[];
+  final views = <LiveViewSummary>[];
   final diag = WebRtcDiagBuffer();
   late final ProviderContainer container;
 
@@ -206,6 +209,7 @@ class _Harness {
       webrtcNetworkSignalProvider.overrideWith((ref) => network.stream),
       camerasProvider.overrideWith((ref) => cameras.stream),
       webrtcConnectLogSinkProvider.overrideWithValue(logs.add),
+      webrtcViewLogSinkProvider.overrideWithValue(views.add),
       webrtcDiagBufferProvider.overrideWithValue(diag),
     ]);
     if (start) startController();
@@ -903,6 +907,94 @@ void main() {
     expect(h.logs.last.outcome, 'closed');
     expect(h.logs.last.failPhase, isNull);
     expect(h.logs.last.streamedSec, isNotNull);
+  });
+
+  testWidgets('시청 세션 — 화면을 떠나면 요약 1행, 연결 행과 view_id·펌웨어로 묶인다',
+      (tester) async {
+    // 실제 앱처럼 카메라 목록이 로드된 뒤 라이브를 시작한다.
+    final h = _Harness(start: false);
+    h.cameras.add([_camera(online: true)]);
+    h.network.add('wifi');
+    h.container.listen(webrtcNetworkSignalProvider, (_, __) {});
+    await tester.pump();
+    h.startController();
+    await _stream(tester, h);
+    await tester.pump(const Duration(seconds: 4));
+    expect(h.views, isEmpty); // 끝나기 전엔 쓰지 않는다
+
+    await h.dispose();
+    await tester.pump();
+    final v = h.views.single;
+    expect(v.endReason, LiveViewEnd.closed);
+    expect(v.firstVideoMs, isNotNull);
+    expect(v.attempts, 1);
+    expect(v.msVideo, greaterThanOrEqualTo(4000));
+    expect(v.firmwareVer, '1.2.0');
+    expect(v.cameraOnline, isTrue);
+    expect(v.network, 'wifi');
+    expect(h.logs, isNotEmpty);
+    for (final l in h.logs) {
+      expect(l.viewId, v.viewId);
+      expect(l.firmwareVer, '1.2.0');
+    }
+  });
+
+  testWidgets('시청 세션 — 백그라운드에서 닫히고, 복귀하면 새 세션이 열린다', (tester) async {
+    final h = _Harness();
+    await _stream(tester, h);
+    for (final s in [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await tester.pump();
+    expect(h.views, hasLength(1));
+    expect(h.views.first.endReason, LiveViewEnd.background);
+
+    await tester.pump(const Duration(minutes: 2)); // 백그라운드 시간은 안 센다
+    for (final s in [
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(s);
+    }
+    await _settleConnect(tester);
+    await h.dispose();
+    await tester.pump();
+
+    expect(h.views, hasLength(2));
+    final second = h.views.last;
+    expect(second.viewId, isNot(h.views.first.viewId));
+    expect(second.endReason, LiveViewEnd.closed);
+    expect(second.restarts, {'resume': 1});
+    expect(second.firstVideoMs, isNull); // 복귀 뒤엔 영상 전에 떠났다
+    expect(second.durationMs, lessThan(60000));
+    expect(h.logs.last.viewId, second.viewId);
+  });
+
+  testWidgets('시청 세션 — 실패 화면 시간·수동 재시도·재연결 사유를 남긴다', (tester) async {
+    final h = _Harness();
+    await _settleConnect(tester);
+    h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+    expect(h.state.phase, WebRtcLivePhase.recovering);
+    await tester.pump(const Duration(seconds: 3)); // 백오프 → timer 재연결
+    await _settleConnect(tester);
+    unawaited(h.container
+        .read(webrtcLiveControllerProvider(_cam).notifier)
+        .retry());
+    await _settleConnect(tester);
+    await h.dispose();
+    await tester.pump();
+
+    final v = h.views.single;
+    expect(v.manualRetries, 1);
+    expect(v.restarts, {'timer': 1, 'manual': 1});
+    expect(v.attempts, 3);
+    expect(v.msRecovering, greaterThanOrEqualTo(3000));
+    expect(v.firstVideoMs, isNull);
   });
 
   testWidgets('기록 — 504 두 번이면 unresponsive 행 둘(offer_attempts=3)',
