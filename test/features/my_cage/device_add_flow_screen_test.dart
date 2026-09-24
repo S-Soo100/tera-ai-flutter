@@ -159,7 +159,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
-      expect(find.byKey(const Key('device_add_wifi_updated')), findsOneWidget);
+      // 끝내 안 붙었으면 "변경완료"라고 쓰지 않는다(2026-09-25).
+      expect(
+          find.byKey(Key(reconnect == CameraReconnect.missing
+              ? 'device_add_wifi_missing'
+              : 'device_add_wifi_updated')),
+          findsOneWidget);
       expect(find.byKey(const Key('device_add_pet')), findsNothing);
       expect(find.byKey(const Key('device_add_continue_kind')), findsNothing);
       expect(find.byKey(const Key('device_add_register_new')),

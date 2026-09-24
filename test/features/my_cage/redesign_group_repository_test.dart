@@ -169,7 +169,8 @@ void main() {
     Future<void> failing(int status) async =>
         throw TerraRestException(status, 'x');
     for (final (status, key) in [
-      (404, 'management_server_unsupported'),
+      // 해제는 2026-09-16 배포 — 404는 이미 지웠거나 남의 기기다.
+      (404, 'management_not_found'),
       (405, 'management_server_unsupported'),
       (401, 'management_auth_changed'),
       (500, 'management_save_failed'),

@@ -1,3 +1,5 @@
+import 'device_management_controller.dart';
+import 'package:uuid/uuid.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:easy_localization/easy_localization.dart';
@@ -22,6 +24,9 @@ final deviceAddGatewayFactoryProvider =
 /// 끼운다. 그래서 둘 다 scope 대상(`dependencies`)으로 선언하고, 이를 읽는
 /// [deviceAddFlowProvider]도 `dependencies`에 적는다 — 안 적으면 flow가 최상위
 /// 컨테이너에 만들어져 아래 기본값(항상 실패)을 읽는다(2026-09-22 사고).
+/// 블루투스 권한이 영구 거부됐을 때 — 화면이 [설정 열기]를 붙인다.
+const kDeviceAddPermissionError = 'device_add_permission_denied';
+
 final deviceAddAutoGroupProvider = Provider<DeviceAddAutoGroup>(
     (ref) =>
         (account, ids) async => throw StateError('Atomic grouping unavailable'),
@@ -86,7 +91,14 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
       rememberCamera: (candidate, id) => known.save(account!, candidate, id),
       forgetCamera: (candidate) => known.forget(account!, candidate),
       cameraLastSeen: (id) async =>
-          (await registration.ownedCamera(account!, id))?.lastSeen);
+          (await registration.ownedCamera(account!, id))?.lastSeen,
+      // "새 카메라로 등록"이 대체한 옛 행 해제 — 서버 소프트 해제(REST).
+      unlinkCamera: (id) async {
+        final repo = ref.read(redesignGroupRepositoryProvider);
+        if (repo == null) return;
+        await repo.unlink(ManagementKey(kind: ManagementKind.camera, id: id),
+            requestId: const Uuid().v4());
+      });
 }, dependencies: [deviceAddAutoGroupProvider, deviceAddCompletedProvider]);
 
 class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
@@ -107,6 +119,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       Future<void> Function(DeviceAddCandidate, String)? rememberCamera,
       Future<void> Function(DeviceAddCandidate)? forgetCamera,
       Future<DateTime?> Function(String)? cameraLastSeen,
+      Future<void> Function(String cameraId)? unlinkCamera,
       this.reconnectPoll = const Duration(seconds: 5),
       this.reconnectTimeout = const Duration(seconds: 90)})
       : _known = knownCamera,
@@ -114,6 +127,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         _rememberCamera = rememberCamera,
         _forgetCamera = forgetCamera,
         _lastSeen = cameraLastSeen,
+        _unlinkCamera = unlinkCamera,
         _gateway = gateway,
         _account = accountId,
         _isCurrent = isCurrent,
@@ -168,6 +182,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   final Future<void> Function(DeviceAddCandidate, String)? _rememberCamera;
   final Future<void> Function(DeviceAddCandidate)? _forgetCamera;
   final Future<DateTime?> Function(String)? _lastSeen;
+  final Future<void> Function(String cameraId)? _unlinkCamera;
 
   /// 카메라는 Wi-Fi를 받으면 재부팅한 뒤 서버에 붙는다(~20초).
   final Duration reconnectPoll, reconnectTimeout;
@@ -186,6 +201,15 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
           state = state.copyWith(busy: false);
         }
       });
+    } on DeviceAddScanException catch (e) {
+      if (_active) {
+        state = state.copyWith(
+            busy: false,
+            errorKey: switch (e.problem) {
+              DeviceAddScanProblem.permission => kDeviceAddPermissionError,
+              DeviceAddScanProblem.bluetoothOff => 'device_add_bluetooth_off',
+            });
+      }
     } catch (_) {
       if (_active) {
         state = state.copyWith(busy: false, errorKey: 'device_add_scan_error');
@@ -259,7 +283,14 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     }
     final pending = state.selected.values
         .where((c) => state.results[c.kind]?.canRetry != false)
-        .toList();
+        .toList()
+      // 카메라부터 — 카메라는 켜진 뒤 3분만 검색·연결된다. 사육장(최대 약
+      // 100초)을 먼저 하면 카메라 차례에 광고가 끝나 있기 쉬웠다(2026-09-25).
+      ..sort((a, b) => a.kind == b.kind
+          ? 0
+          : a.kind == PairTargetKind.camera
+              ? -1
+              : 1);
     if (pending.isEmpty) return;
     final remember = state.remember;
     state =
@@ -310,16 +341,22 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
             registeredName: name,
             issue: id != null ? null : receipt.issue,
             issueDetail: id != null ? null : receipt.issueDetail,
+            failure: id != null ? null : receipt.failure,
             outcome: id != null
                 ? DeviceAddOutcome.registered
                 : receipt.retrySafe
-                    ? DeviceAddOutcome.wifiFailed
+                    // CONNECT 전에 끝난 실패는 비밀번호 문제가 아니다 — 블루투스·
+                    // 세션·기기 거절로 따로 밝힌다(2026-09-25).
+                    ? (receipt.failure != null
+                        ? DeviceAddOutcome.failed
+                        : DeviceAddOutcome.wifiFailed)
                     : DeviceAddOutcome.registrationPending);
         state = state.copyWith(
             results:
                 Map.unmodifiable({...state.results, candidate.kind: result}));
         if (id != null) {
           await _remember(candidate, id);
+          await _unlinkReplaced(candidate.kind, id);
           _completed?.call();
         }
       }
@@ -336,8 +373,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     }
   }
 
-  Future<void> recheckRegistration() async {
-    if (!_active || state.busy) return;
+  /// 반환값: 새로 등록이 확인된 기기가 있는가 — 없으면 화면이 "아직 확인되지
+  /// 않았어요"를 알린다(전엔 눌러도 아무 반응이 없었다, 2026-09-25).
+  Future<bool> recheckRegistration() async {
+    if (!_active || state.busy) return false;
+    var confirmed = false;
     state = state.copyWith(busy: true);
     final results = {...state.results};
     for (final entry in results.entries.toList()) {
@@ -348,7 +388,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       }
       try {
         final id = await _confirm(entry.key, result.hardwareId!);
-        if (!_active) return;
+        if (!_active) return confirmed;
         if (id != null) {
           results[entry.key] = DeviceAddResult(
               candidate: result.candidate,
@@ -359,12 +399,14 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
               wifiConnected: result.wifiConnected);
           await _remember(result.candidate, id);
           _completed?.call();
+          confirmed = true;
         }
       } catch (_) {/* Read failure cannot turn into a re-pair. */}
     }
-    if (!_active) return;
+    if (!_active) return confirmed;
     state = state.copyWith(results: Map.unmodifiable(results), busy: false);
     await groupConfirmed();
+    return confirmed;
   }
 
   Future<void> groupConfirmed() async {
@@ -460,7 +502,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
             wifiConnected: receipt.wifiConnected,
             reconnect: probe ? CameraReconnect.waiting : null)
         : DeviceAddResult(
-            candidate: candidate, outcome: DeviceAddOutcome.wifiFailed);
+            candidate: candidate,
+            outcome: receipt.failure != null
+                ? DeviceAddOutcome.failed
+                : DeviceAddOutcome.wifiFailed,
+            failure: receipt.failure);
     state = state.copyWith(
         results: Map.unmodifiable({...state.results, candidate.kind: result}));
     if (receipt.wifiConnected) _completed?.call();
@@ -524,11 +570,29 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     }
   }
 
+  /// "새 카메라로 등록"이 대체하는 옛 카메라 행 — 새 등록이 **성공한 뒤** 해제한다.
+  /// 전엔 해제하지 않아 옛 행이 그룹·영상을 쥔 채 오프라인 유령으로 남고, 새
+  /// 카메라는 그룹 밖에 생겼다(2026-09-25 점검). 먼저 해제하면 새 등록이 실패할
+  /// 때 카메라가 아예 사라진다.
+  final Map<PairTargetKind, String> _replacing = {};
+
+  Future<void> _unlinkReplaced(PairTargetKind kind, String newId) async {
+    final old = _replacing.remove(kind);
+    final unlink = _unlinkCamera;
+    if (old == null || old == newId || unlink == null) return;
+    try {
+      await unlink(old);
+    } catch (_) {
+      // 못 풀면 기기 관리에서 지울 수 있다 — 새 등록을 되돌리지 않는다.
+    }
+  }
+
   /// 저장값이 지워진 카메라처럼 Wi-Fi 변경으로는 안 붙는 경우 — 기억을 지우고
-  /// 다음 연결에서 새로 등록한다.
+  /// 다음 연결에서 새로 등록한다. 옛 행은 새 등록 성공 뒤 해제한다.
   Future<void> registerAsNew(PairTargetKind kind) async {
     final result = state.results[kind];
     if (!_active || state.busy || result == null) return;
+    if (result.registeredId case final old?) _replacing[kind] = old;
     try {
       await _forgetCamera?.call(result.candidate);
     } catch (_) {/* 기억이 남으면 다시 Wi-Fi만 바꾸게 된다. */}

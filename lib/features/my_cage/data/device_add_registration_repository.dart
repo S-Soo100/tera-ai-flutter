@@ -17,15 +17,22 @@ class DeviceAddRegistrationRepository {
 
   Future<List<String>> names(String account) async {
     _guard(account);
-    final devices =
-        await client.from('devices').select('name').eq('owner_id', account);
+    final devices = await client
+        .from('devices')
+        .select('name,unlinked_at')
+        .eq('owner_id', account);
     _guard(account);
-    final cameras =
-        await client.from('cameras').select('name').eq('owner_id', account);
+    final cameras = await client
+        .from('cameras')
+        .select('name,unlinked_at')
+        .eq('owner_id', account);
     _guard(account);
+    // 해제된 행의 이름은 세지 않는다 — 지웠다 다시 붙일 때마다 번호만 커졌다
+    // (2026-09-25 점검). 서버 이름 중복 검사도 unlinked_at IS NULL만 본다.
     return [
       for (final row in [...devices, ...cameras])
-        if (row['name'] case final String name) name
+        if (row['unlinked_at'] == null)
+          if (row['name'] case final String name) name
     ];
   }
 

@@ -162,7 +162,17 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
                     image: FigmaImages.emptyCamera,
                     message: 'redesign_empty_camera'.tr(),
                     buttonText: 'redesign_device_add'.tr(),
-                    onPressed: () => context.push('/devices/add'))
+                    onPressed: () => context.push('/devices/add'),
+                    // 카메라를 모두 지워도 북마크는 남아 재생된다 — 가는 길을
+                    // 남긴다(전엔 진입 카드와 함께 사라졌다, 2026-09-25).
+                    secondaryText: (ref
+                                .watch(allFavoriteClipsProvider)
+                                .valueOrNull
+                                ?.isNotEmpty ??
+                            false)
+                        ? 'crecam_empty_bookmarks'.tr()
+                        : null,
+                    onSecondary: () => context.push('/crecam/bookmarks'))
                 : NotificationListener<ScrollNotification>(
                     onNotification: _onScroll,
                     child: RefreshIndicator(

@@ -300,7 +300,8 @@ void main() {
     expect(server.groupOf('device', 'D-new'), 'g1');
     expect(server.groupOf('camera', 'C-old'), 'g1');
     expect(server.groupOf('pet', 'P1'), 'g1');
-    expect(find.byKey(const Key('device_add_pet')), findsOneWidget);
+    // 이미 도마뱀이 있는 환경이면 도마뱀 등록을 권하지 않는다(2026-09-25).
+    expect(find.byKey(const Key('device_add_pet')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

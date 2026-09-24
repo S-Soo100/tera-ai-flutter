@@ -275,9 +275,15 @@ class ManagementItemRow extends StatelessWidget {
                             managementStyle(context, weight: FontWeight.w600)),
                     const SizedBox(height: 4),
                     Text(
+                        // 기기는 실제 연결 상태 — 전엔 늘 "ON"이라 꺼진 기기·다른
+                        // 계정으로 넘어간 유령 행을 구분할 수 없었다(2026-09-25).
                         item.key.kind == ManagementKind.pet
                             ? item.subtitle ?? '--'
-                            : 'management_power_on_label'.tr(),
+                            : switch (item.isOnline) {
+                                true => 'management_online'.tr(),
+                                false => 'management_offline'.tr(),
+                                null => 'management_power_on_label'.tr(),
+                              },
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: managementStyle(context,

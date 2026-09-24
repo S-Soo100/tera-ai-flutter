@@ -26,6 +26,12 @@ enum CameraReconnect { waiting, online, missing }
 /// [noPairReply]: JWT·CONNECT까지 갔지만 `PAIR_OK`/`PAIR_FAIL`이 오지 않았다.
 enum DeviceRegistrationIssue { legacyFirmware, pairFailed, noPairReply }
 
+/// `CONNECT` 전에 끝난 실패의 종류(2026-09-25). 전엔 모두 Wi-Fi 실패로 묶여
+/// 블루투스가 안 붙어도 "비밀번호를 다시 확인해 주세요"가 떴다.
+/// [ble]: 기기를 못 찾았거나 블루투스 연결·응답이 끊겼다(멀다·광고 끝남).
+/// [session]: 로그인 토큰을 못 얻었다. [rejected]: 기기가 이름·토큰을 거절했다.
+enum DeviceProvisionFailure { ble, session, rejected }
+
 class DeviceAddCandidate {
   const DeviceAddCandidate(
       {required this.physicalId,
@@ -48,8 +54,12 @@ class DeviceAddResult {
       this.wifiConnected = false,
       this.reconnect,
       this.issue,
-      this.issueDetail});
+      this.issueDetail,
+      this.failure});
   final DeviceAddCandidate candidate;
+
+  /// [DeviceAddOutcome.failed]의 이유 — 결과 화면이 할 일을 밝힌다.
+  final DeviceProvisionFailure? failure;
   final DeviceAddOutcome outcome;
   final String? registeredId;
 
@@ -70,11 +80,13 @@ class DeviceAddResult {
       wifiConnected: wifiConnected,
       reconnect: value,
       issue: issue,
-      issueDetail: issueDetail);
+      issueDetail: issueDetail,
+      failure: failure);
 
-  /// 사육장은 등록 대기여도 다시 보낼 수 있다 — `UNPAIR` 뒤 같은 `device_id`로
-  /// 재등록돼 행이 늘지 않는다. 카메라는 JWT를 받을 때마다 새 `camera_id`로
-  /// 등록하므로 등록 대기면 막는다(중복 행).
+  /// 사육장은 등록 대기여도 다시 보낼 수 있다. ⚠️ 다시 보내면 `UNPAIR` 뒤 서버가
+  /// **새 `device_id`로 새 행**을 만든다(2026-09-25 운영 확인 — 전엔 같은 행으로
+  /// 잡힌다고 잘못 적혀 있었다). 늦게 등록된 앞 행은 남을 수 있다. 카메라는 JWT를
+  /// 받을 때마다 새 `camera_id`로 등록하므로 등록 대기면 막는다(중복 행).
   /// Wi-Fi만 바꾼 카메라가 BLE로 성공을 알리지 않았고(끊김·무응답·WIFI_FAIL)
   /// 서버 last_seen_at으로도 끝내 안 붙었으면 실패다 — 다시 보낼 수 있다.
   bool get canRetry =>
@@ -158,10 +170,14 @@ class DeviceProvisionReceipt {
       this.retrySafe = false,
       this.connectSent = false,
       this.wifiRejected = false,
+      this.failure,
       this.issue,
       this.issueDetail});
   final bool wifiConnected;
   final String? hardwareId;
+
+  /// `CONNECT` 전에 끝났으면 그 이유. Wi-Fi 거절([wifiRejected])과 다르다.
+  final DeviceProvisionFailure? failure;
   final DeviceRegistrationIssue? issue;
   final String? issueDetail;
 
@@ -202,3 +218,13 @@ abstract interface class DeviceAddGateway {
 
 typedef DeviceAddAutoGroup = Future<String> Function(
     String accountId, Map<PairTargetKind, String> registeredIds);
+
+/// 검색을 시작하지 못한 이유 — 유저가 할 일이 다르다(2026-09-25).
+enum DeviceAddScanProblem { permission, bluetoothOff }
+
+class DeviceAddScanException implements Exception {
+  const DeviceAddScanException(this.problem);
+  final DeviceAddScanProblem problem;
+  @override
+  String toString() => 'DeviceAddScanException($problem)';
+}
