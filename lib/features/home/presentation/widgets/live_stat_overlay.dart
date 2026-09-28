@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/glass_palette.dart';
-import '../../../my_cage/presentation/supabase_module_providers.dart';
+import '../../domain/env_realtime_values.dart';
+import '../env_live_providers.dart';
 import '../home_control_providers.dart';
 
 /// 라이브 면 하단의 **전광판 수치 오버레이**(B안, 2026-08-18).
@@ -30,10 +31,18 @@ class LiveStatOverlay extends ConsumerWidget {
     // 제어기 없는 세트(캠 단품)는 온습도가 없다 — 빈 라벨을 띄우지 않는다.
     if (deviceId == null) return const SizedBox.shrink();
 
-    final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
+    // 마지막 정상값을 지우지 않는다 — 센서 단발 실패 행에 "없음"이 깜빡였다
+    // (2026-09-28 백엔드 표시 규칙). 오래되면 흐리게 + 안내.
+    final live = ref.watch(envLiveViewProvider(deviceId));
+    final caption = envLiveCaption(live);
     final glass = context.glass;
     final label = glass.labelCaps.copyWith(color: Colors.white70);
-    final figure = glass.figure.copyWith(color: Colors.white);
+    final figure = glass.figure.copyWith(
+        color: switch (live.freshness) {
+      EnvFreshness.fresh => Colors.white,
+      EnvFreshness.aging => Colors.white60,
+      EnvFreshness.offline => Colors.white38,
+    });
 
     return IgnorePointer(
       key: overlayKey,
@@ -64,21 +73,29 @@ class LiveStatOverlay extends ConsumerWidget {
               children: [
                 _Stat(
                   label: 'home_live_stat_temp'.tr(),
-                  value: t?.tA == null
+                  value: live.temperature == null
                       ? 'home_value_none'.tr()
                       : 'home_live_temp_value'
-                          .tr(args: [t!.tA!.toStringAsFixed(1)]),
+                          .tr(args: [live.temperature!.toStringAsFixed(1)]),
                   labelStyle: label,
                   figureStyle: figure,
                   alignEnd: false,
                 ),
-                const Spacer(),
+                Expanded(
+                    child: caption == null
+                        ? const SizedBox.shrink()
+                        : Text(caption,
+                            key: const Key('env_live_caption'),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: label)),
                 _Stat(
                   label: 'home_live_stat_humid'.tr(),
-                  value: t?.hA == null
+                  value: live.humidity == null
                       ? 'home_value_none'.tr()
                       : 'home_live_humid_value'
-                          .tr(args: [t!.hA!.round().toString()]),
+                          .tr(args: [live.humidity!.round().toString()]),
                   labelStyle: label,
                   figureStyle: figure,
                   alignEnd: true,

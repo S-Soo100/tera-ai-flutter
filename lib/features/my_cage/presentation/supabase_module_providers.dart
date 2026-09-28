@@ -162,7 +162,8 @@ final telemetryStreamProvider = StreamProvider.autoDispose
 /// 일시적 지터는 흡수하고 실제 끊김만 감지한다.
 const telemetryStaleThreshold = Duration(seconds: 12);
 
-/// telemetry 최신성 감시자.
+/// telemetry 최신성 감시자 — **제어 허용 판정([moduleLinkProvider]) 전용**.
+/// 현재 온습도 표시는 이것으로 값을 지우지 않는다(`envLiveViewProvider`, 2026-09-28).
 ///
 /// [telemetryStreamProvider]가 새 값을 방출할 때마다 이 provider가 재실행되어
 /// watchdog 타이머를 리셋한다. [telemetryStaleThreshold] 동안 새 telemetry가

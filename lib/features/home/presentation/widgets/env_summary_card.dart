@@ -6,8 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/domain/num_format.dart';
 import '../../../../shared/widgets/figma_icon.dart';
-import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../env_detail_providers.dart';
+import '../env_live_providers.dart';
 import '../home_control_providers.dart';
 import '../../domain/env_realtime_values.dart';
 
@@ -30,16 +30,17 @@ class EnvSummaryCard extends ConsumerWidget {
     final deviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
     if (deviceId == null) return const SizedBox.shrink();
 
-    final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
+    // 마지막 정상값을 지우지 않고, 오래되면 흐리게 + 안내(2026-09-28 백엔드
+    // 표시 규칙). 전엔 센서 단발 실패·12초 무소식·폰 시계 차이마다 `--`가 됐다.
+    final values = ref.watch(envLiveViewProvider(deviceId));
+    final caption = envLiveCaption(values);
     final ex = ref.watch(homeTodayExtremesProvider).valueOrNull;
-    final stale =
-        ref.watch(telemetryStaleProvider(deviceId)).valueOrNull ?? false;
-    final values = realtimeEnvironment(t,
-        deviceId: deviceId,
-        now: DateTime.now(),
-        freshness: telemetryStaleThreshold,
-        stale: stale);
     final glass = context.glass;
+    final valueColor = switch (values.freshness) {
+      EnvFreshness.fresh => glass.textPrimary,
+      EnvFreshness.aging => glass.textTertiary,
+      EnvFreshness.offline => glass.deviceOff,
+    };
 
     return Material(
       key: cardKey,
@@ -50,34 +51,52 @@ class EnvSummaryCard extends ConsumerWidget {
         onTap: () => context.push('/env-detail'),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _EnvColumn(
-                  value: values.temperature == null
-                      ? '--'
-                      : 'home_live_temp_value'
-                          .tr(args: [formatCompact(values.temperature!)]),
-                  minMax: 'home_env_minmax_temp'.tr(args: [
-                    _fmt(ex?.tempMax),
-                    _fmt(ex?.tempMin),
-                  ]),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _EnvColumn(
+                      value: values.temperature == null
+                          ? '--'
+                          : 'home_live_temp_value'
+                              .tr(args: [formatCompact(values.temperature!)]),
+                      color: valueColor,
+                      minMax: 'home_env_minmax_temp'.tr(args: [
+                        _fmt(ex?.tempMax),
+                        _fmt(ex?.tempMin),
+                      ]),
+                    ),
+                  ),
+                  Expanded(
+                    child: _EnvColumn(
+                      value: values.humidity == null
+                          ? '--'
+                          : 'home_live_humid_value'
+                              .tr(args: [formatCompact(values.humidity!)]),
+                      color: valueColor,
+                      minMax: 'home_env_minmax_humid'.tr(args: [
+                        _fmt(ex?.humidMax),
+                        _fmt(ex?.humidMin),
+                      ]),
+                    ),
+                  ),
+                  FigmaIcon.tinted(FigmaIcons.arrowNext,
+                      color: glass.textSecondary, size: 18),
+                ],
               ),
-              Expanded(
-                child: _EnvColumn(
-                  value: values.humidity == null
-                      ? '--'
-                      : 'home_live_humid_value'
-                          .tr(args: [formatCompact(values.humidity!)]),
-                  minMax: 'home_env_minmax_humid'.tr(args: [
-                    _fmt(ex?.humidMax),
-                    _fmt(ex?.humidMin),
-                  ]),
-                ),
-              ),
-              FigmaIcon.tinted(FigmaIcons.arrowNext,
-                  color: glass.textSecondary, size: 18),
+              if (caption != null) ...[
+                const SizedBox(height: 6),
+                Text(caption,
+                    key: const Key('env_live_caption'),
+                    style: TextStyle(
+                        fontFamily: 'Pretendard',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: glass.textTertiary)),
+              ],
             ],
           ),
         ),
@@ -89,10 +108,12 @@ class EnvSummaryCard extends ConsumerWidget {
 }
 
 class _EnvColumn extends StatelessWidget {
-  const _EnvColumn({required this.value, required this.minMax});
+  const _EnvColumn(
+      {required this.value, required this.minMax, required this.color});
 
   final String value;
   final String minMax;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +130,7 @@ class _EnvColumn extends StatelessWidget {
             height: 1.193359375,
             fontWeight: FontWeight.w600,
             letterSpacing: 20 * -0.02,
-            color: glass.textPrimary,
+            color: color,
           ),
         ),
         // Figma 668:866 실측 4 (현재값끝 2652 → 최고최저 2656) — 카드 h69의

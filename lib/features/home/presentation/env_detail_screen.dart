@@ -1,4 +1,5 @@
 import '../domain/env_realtime_values.dart';
+import 'env_live_providers.dart';
 import '../../../shared/widgets/figma_icon.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +13,6 @@ import '../../../shared/domain/env_chart_data.dart';
 import '../../../shared/domain/env_day.dart';
 import '../../../shared/domain/num_format.dart';
 import '../../../shared/domain/week_range.dart';
-import '../../my_cage/presentation/supabase_module_providers.dart';
 import 'env_detail_providers.dart';
 import 'home_control_providers.dart';
 import 'widgets/control_log_list.dart';
@@ -346,20 +346,16 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
         day.start.day == now.day;
     double? temp;
     double? humid;
+    // 오늘 현재값 — 홈 카드와 같은 규칙(마지막 정상값 유지 + 신선도, 2026-09-28).
+    EnvLiveView? live;
     if (today) {
       final device = ref.watch(currentDeviceIdProvider);
       final deviceId = device.isLoading ? null : device.valueOrNull;
       if (deviceId != null) {
-        final t = ref.watch(telemetryStreamProvider(deviceId)).valueOrNull;
-        final stale =
-            ref.watch(telemetryStaleProvider(deviceId)).valueOrNull ?? false;
-        final values = realtimeEnvironment(t,
-            deviceId: deviceId,
-            now: DateTime.now(),
-            freshness: telemetryStaleThreshold,
-            stale: stale);
-        temp = values.temperature;
-        humid = values.humidity;
+        final view = ref.watch(envLiveViewProvider(deviceId));
+        live = view;
+        temp = view.temperature;
+        humid = view.humidity;
       }
     } else {
       final average = ref.watch(envDailyAverageProvider);
@@ -373,31 +369,53 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     if (humid != null && (!humid.isFinite || humid <= 0)) humid = null;
 
     String fmt(double? v) => v == null ? '--' : formatCompact(v);
+    final caption = live == null ? null : envLiveCaption(live);
+    // 오래됐으면 값 색을 흐리게(값은 지우지 않는다).
+    final dim = switch (live?.freshness) {
+      EnvFreshness.aging => 0.55,
+      EnvFreshness.offline => 0.35,
+      _ => 1.0,
+    };
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _valueColumn(
-            glass: glass,
-            icon: 'redesign_v2/env_temperature',
-            accent: VivaColors.mainDark,
-            value: temp == null
-                ? '--'
-                : 'home_live_temp_value'.tr(args: [formatCompact(temp)]),
-            minMax: 'home_env_minmax_temp'
-                .tr(args: [fmt(ex?.tempMax), fmt(ex?.tempMin)]),
+          Row(
+            children: [
+              _valueColumn(
+                glass: glass,
+                icon: 'redesign_v2/env_temperature',
+                accent: VivaColors.mainDark.withValues(alpha: dim),
+                value: temp == null
+                    ? '--'
+                    : 'home_live_temp_value'.tr(args: [formatCompact(temp)]),
+                minMax: 'home_env_minmax_temp'
+                    .tr(args: [fmt(ex?.tempMax), fmt(ex?.tempMin)]),
+              ),
+              _valueColumn(
+                glass: glass,
+                icon: 'redesign_v2/env_humidity',
+                accent: VivaColors.subDark.withValues(alpha: dim),
+                value: humid == null
+                    ? '--'
+                    : 'home_live_humid_value'.tr(args: [formatCompact(humid)]),
+                minMax: 'home_env_minmax_humid'
+                    .tr(args: [fmt(ex?.humidMax), fmt(ex?.humidMin)]),
+              ),
+            ],
           ),
-          _valueColumn(
-            glass: glass,
-            icon: 'redesign_v2/env_humidity',
-            accent: VivaColors.subDark,
-            value: humid == null
-                ? '--'
-                : 'home_live_humid_value'.tr(args: [formatCompact(humid)]),
-            minMax: 'home_env_minmax_humid'
-                .tr(args: [fmt(ex?.humidMax), fmt(ex?.humidMin)]),
-          ),
+          if (caption != null) ...[
+            const SizedBox(height: 8),
+            Text(caption,
+                key: const Key('env_live_caption'),
+                style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: glass.textTertiary)),
+          ],
         ],
       ),
     );
