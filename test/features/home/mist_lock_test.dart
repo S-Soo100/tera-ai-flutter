@@ -30,16 +30,16 @@ void main() {
       expect(lock.remaining(DateTime(2026, 8, 5, 12, 0, 9)), Duration.zero);
     });
 
-    test('이어 보내는 분무 전체 동안 잠근다 — 3초는 최소 5초, 회차 간격 5초', () {
+    // 백엔드 규칙 "총 분사 시간 + 3초"(2026-09-28) — 명령 한 번으로 보낸다.
+    test('분사 시간 + 3초 동안 잠근다', () {
       expect(MistLock.lockFor(MistDuration.threeSeconds),
-          const Duration(seconds: 5));
-      // 6초 = 3초 + 쉼 2초 + 3초 + 여유 2초.
+          const Duration(seconds: 6));
       expect(MistLock.lockFor(MistDuration.sixSeconds),
-          const Duration(seconds: 10));
-      final lock = MistLock.startingAt(DateTime(2026, 9, 25, 12),
+          const Duration(seconds: 9));
+      final lock = MistLock.startingAt(DateTime(2026, 9, 28, 12),
           mist: MistDuration.nineSeconds);
-      expect(lock.isLocked(DateTime(2026, 9, 25, 12, 0, 14)), isTrue);
-      expect(lock.isLocked(DateTime(2026, 9, 25, 12, 0, 15)), isFalse);
+      expect(lock.isLocked(DateTime(2026, 9, 28, 12, 0, 11)), isTrue);
+      expect(lock.isLocked(DateTime(2026, 9, 28, 12, 0, 12)), isFalse);
     });
 
     test('분사 시간을 모르면 PRD 최소값 5초', () {
