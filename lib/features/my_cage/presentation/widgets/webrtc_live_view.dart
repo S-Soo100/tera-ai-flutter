@@ -2,12 +2,15 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../../shared/domain/time_ago.dart';
+import '../../domain/device_add_flow.dart';
+import '../../domain/pair_target_kind.dart';
 import '../my_cage_providers.dart';
 import '../webrtc_live_controller.dart';
 
@@ -31,6 +34,7 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
   final bool cover;
 
   static const retryButtonKey = Key('webrtc_live_retry');
+  static const wifiButtonKey = Key('webrtc_live_wifi_change');
   static const pillKey = Key('webrtc_live_pill');
 
   /// 영상 위에 얹을 알약 문구 키. 정지가 관측 불가보다 우선한다.
@@ -257,14 +261,17 @@ class _FailedView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hintKey = WebRtcLiveView.hintKeyFor(errorKey);
     String? hint = hintKey?.tr();
-    if (errorKey == 'crecam_live_error_camera_offline') {
+    final offline = errorKey == 'crecam_live_error_camera_offline';
+    final camera = offline
+        ? ref
+            .watch(camerasProvider)
+            .valueOrNull
+            ?.where((c) => c.id == cameraUuid)
+            .firstOrNull
+        : null;
+    if (offline) {
       // 언제부터 꺼져 있었는지 — 방금인지 며칠째인지에 따라 할 일이 다르다.
-      final seen = ref
-          .watch(camerasProvider)
-          .valueOrNull
-          ?.where((c) => c.id == cameraUuid)
-          .firstOrNull
-          ?.lastSeenAt;
+      final seen = camera?.lastSeenAt;
       if (seen != null) {
         hint = 'crecam_live_hint_offline_seen'.tr(args: [timeAgo(seen)]);
       }
@@ -283,6 +290,16 @@ class _FailedView extends ConsumerWidget {
         detail: detail.isEmpty ? null : detail,
         actionLabel: 'crecam_live_retry'.tr(),
         onAction: onRetry,
+        // 공유기를 바꿨다면 지우지 말고 Wi-Fi만 바꾼다(2026-09-28, 흐름 점검 A1).
+        secondaryLabel: camera == null ? null : 'device_wifi_action'.tr(),
+        secondaryKey: WebRtcLiveView.wifiButtonKey,
+        onSecondary: camera == null
+            ? null
+            : () => context.push('/devices/wifi',
+                extra: WifiChangeTarget(
+                    kind: PairTargetKind.camera,
+                    id: camera.id,
+                    name: camera.name)),
       ),
     );
   }

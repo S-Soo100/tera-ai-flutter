@@ -3,8 +3,70 @@ import 'wifi_access_point.dart';
 
 enum DeviceAddStep { scan, networks, credentials, connecting, results }
 
-/// [wifiUpdated]: 이미 등록된 카메라의 Wi-Fi만 바꿨다 — 새 등록 없이 기존
-/// id를 그대로 쓴다(2026-09-21, 재페어링마다 새 camera_id로 중복 등록되던 문제).
+/// 사육장도 등록을 지우지 않고 Wi-Fi만 바꾼다(2026-09-28). 펌웨어는 저장된
+/// 서버 자격증명이 있으면 `CONNECT` 때 pair를 건너뛴다(terra-server
+/// FIRMWARE_INTEGRATION §2) — 앱이 `UNPAIR`·`NAME`·`JWT`를 빼면 같은
+/// `device_id`로 다시 붙는다. **실기기에서 같은 행으로 안 붙으면 false로
+/// 바꾼다**(사용자 결정: 사육장만 숨기고 카메라는 유지). false면 사육장은 예전처럼
+/// 늘 새로 등록하고, 등록된 사육장을 고르면 '새 기기로 등록' 경고를 띄운다.
+const kWifiChangeDeviceEnabled = true;
+
+/// 이 종류의 기기가 등록을 유지한 채 Wi-Fi만 바꿀 수 있는가.
+bool supportsWifiChange(PairTargetKind kind) =>
+    kind == PairTargetKind.camera || kWifiChangeDeviceEnabled;
+
+/// 기기 상세·라이브 오프라인 안내의 [Wi-Fi 바꾸기] 대상(2026-09-28).
+/// 근처 기기 중 대상을 알아보는 건 서버 `hw_id`([bleMatchesHardware])·이 폰의
+/// 기억이고, 못 알아봐도 유저가 목록에서 고를 수 있다. 최종 판정은 대상 행의
+/// `last_seen_at`이다.
+class WifiChangeTarget {
+  const WifiChangeTarget(
+      {required this.kind, required this.id, required this.name});
+  final PairTargetKind kind;
+
+  /// `devices.id`/`cameras.id`(행 UUID).
+  final String id;
+  final String name;
+}
+
+/// 서버에 남아 있는 이 계정의 기기 행 — 해제·타 계정이면 조회 결과가 null이다.
+typedef OwnedDeviceRow = ({DateTime? lastSeen, String? hardwareId});
+
+/// BLE 기기가 서버 `hw_id`의 그 기기로 보이는가 — 힌트일 뿐이다(2026-09-28).
+/// ESP32는 MAC 4개를 연속으로 쓰고 블루투스 MAC은 기준 MAC+2다. `hw_id`가
+/// Wi-Fi(기준) MAC인지 블루투스 MAC인지 아직 모르므로 차이 0·2만 같은 기기로 본다
+/// (연속 번호 기기끼리는 4씩 벌어져 겹치지 않는다).
+/// - Android: [DeviceAddCandidate.physicalId]가 `AA:BB:CC:DD:EE:FF` MAC.
+/// - iOS: 주소가 폰마다 다른 UUID라 광고 이름 끝 `_XXXX`(MAC 하위 2바이트)만 본다.
+bool bleMatchesHardware(DeviceAddCandidate candidate, String? hardwareId) {
+  final hw = _hex(hardwareId);
+  if (hw == null || hardwareId!.length != 12) return false;
+  bool near(int a, int b, int mask) {
+    final d = (a - b) & mask;
+    return d == 0 || d == 2;
+  }
+
+  final address = candidate.physicalId.replaceAll(':', '');
+  if (address.length == 12) {
+    final ble = _hex(address);
+    if (ble != null) return near(ble, hw, 0xFFFFFFFFFFFF);
+  }
+  final suffix = RegExp(r'_([0-9A-Fa-f]{4})$').firstMatch(candidate.name);
+  if (suffix != null) {
+    return near(int.parse(suffix.group(1)!, radix: 16), hw & 0xFFFF, 0xFFFF);
+  }
+  return false;
+}
+
+int? _hex(String? value) {
+  if (value == null || value.isEmpty) return null;
+  if (!RegExp(r'^[0-9A-Fa-f]+$').hasMatch(value)) return null;
+  return int.parse(value, radix: 16);
+}
+
+/// [wifiUpdated]: 이미 등록된 기기의 Wi-Fi만 바꿨다 — 새 등록 없이 기존
+/// id를 그대로 쓴다(2026-09-21 카메라, 2026-09-28 사육장 — 재페어링마다 새 행으로
+/// 중복 등록되던 문제).
 enum DeviceAddOutcome {
   registered,
   registrationPending,
@@ -94,7 +156,14 @@ class DeviceAddResult {
       outcome == DeviceAddOutcome.wifiFailed ||
       (outcome == DeviceAddOutcome.registrationPending &&
           candidate.kind == PairTargetKind.device) ||
-      unconfirmedFailed;
+      reconnectMissing;
+
+  /// Wi-Fi만 바꿨는데 서버에서 그 기기 신호가 끝내 오지 않았다. `NAME`·`JWT`를
+  /// 안 보냈으니 등록은 일어날 수 없어 다시 보내도 안전하다 — BLE가 WIFI_OK를
+  /// 줬어도(다른 기기를 골랐거나 저장값이 지워진 경우) 다시 시도할 수 있다.
+  bool get reconnectMissing =>
+      outcome == DeviceAddOutcome.wifiUpdated &&
+      reconnect == CameraReconnect.missing;
 
   /// BLE가 Wi-Fi 성공을 주지 않은 Wi-Fi 변경 — 최종 판정은 서버 last_seen_at.
   bool get unconfirmed =>
@@ -119,7 +188,9 @@ class DeviceAddState {
       this.activePhysicalId,
       this.groupId,
       this.groupError = false,
-      this.registered = const {}});
+      this.registered = const {},
+      this.matched = const {},
+      this.targetGone = false});
   final DeviceAddStep step;
   final List<DeviceAddCandidate> candidates;
   final Map<PairTargetKind, DeviceAddCandidate> selected;
@@ -131,6 +202,14 @@ class DeviceAddState {
 
   /// 이 폰이 등록해 계정에 남아 있는 기기의 BLE 주소 — 목록에 '이미 등록됨'.
   final Set<String> registered;
+
+  /// Wi-Fi 바꾸기에서 대상 기기로 보이는 BLE 주소([bleMatchesHardware] 또는 이
+  /// 폰의 기억). 힌트라서 다른 기기를 골라도 막지 않는다.
+  final Set<String> matched;
+
+  /// Wi-Fi 바꾸기 대상 행이 해제됐거나 이 계정 것이 아니다 — Wi-Fi만 붙여도
+  /// 목록에 안 보이니 진행하지 않는다. (errorKey는 다음 갱신에 지워진다.)
+  final bool targetGone;
   DeviceAddState copyWith(
           {DeviceAddStep? step,
           List<DeviceAddCandidate>? candidates,
@@ -145,7 +224,9 @@ class DeviceAddState {
           String? activePhysicalId,
           String? groupId,
           bool? groupError,
-          Set<String>? registered}) =>
+          Set<String>? registered,
+          Set<String>? matched,
+          bool? targetGone}) =>
       DeviceAddState(
           step: step ?? this.step,
           candidates: candidates ?? this.candidates,
@@ -160,7 +241,9 @@ class DeviceAddState {
           activePhysicalId: activePhysicalId,
           groupId: groupId ?? this.groupId,
           groupError: groupError ?? this.groupError,
-          registered: registered ?? this.registered);
+          registered: registered ?? this.registered,
+          matched: matched ?? this.matched,
+          targetGone: targetGone ?? this.targetGone);
 }
 
 class DeviceProvisionReceipt {

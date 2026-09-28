@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../domain/device_add_flow.dart';
 import '../domain/pair_target_kind.dart';
 
 /// Read-only confirmation of the firmware's PAIR_OK identifier. The app never
@@ -52,34 +53,25 @@ class DeviceAddRegistrationRepository {
     return id is String && id.isNotEmpty ? id : null;
   }
 
-  /// 이 계정의 카메라 행이 아직 있으면 마지막 접속 시각과 함께 돌려준다.
+  /// 이 계정의 기기 행이 아직 있으면 마지막 접속 시각·`hw_id`와 함께 돌려준다.
   /// 삭제·해제(`unlinked_at`)됐거나 다른 계정으로 넘어갔으면 null — 새로
   /// 등록해야 한다(해제된 행으로 Wi-Fi만 붙이면 목록에 안 보인다).
-  Future<({DateTime? lastSeen})?> ownedCamera(String account, String id) async {
+  Future<OwnedDeviceRow?> owned(
+      String account, PairTargetKind kind, String id) async {
     _guard(account);
     final rows = await client
-        .from('cameras')
-        .select('id,last_seen_at,unlinked_at')
+        .from(kind == PairTargetKind.camera ? 'cameras' : 'devices')
+        .select('id,last_seen_at,hw_id,unlinked_at')
         .eq('owner_id', account)
         .eq('id', id)
         .limit(1);
     _guard(account);
     if (rows.isEmpty || rows.single['unlinked_at'] != null) return null;
     final raw = rows.single['last_seen_at'];
-    return (lastSeen: raw == null ? null : DateTime.tryParse(raw.toString()));
-  }
-
-  /// 이 계정의 사육장 행이 해제 없이 남아 있는지 — 스캔 목록 '이미 등록됨'용.
-  Future<bool> ownedDevice(String account, String id) async {
-    _guard(account);
-    final rows = await client
-        .from('devices')
-        .select('id')
-        .eq('owner_id', account)
-        .eq('id', id)
-        .isFilter('unlinked_at', null)
-        .limit(1);
-    _guard(account);
-    return rows.isNotEmpty;
+    final hw = rows.single['hw_id'];
+    return (
+      lastSeen: raw == null ? null : DateTime.tryParse(raw.toString()),
+      hardwareId: hw is String && hw.isNotEmpty ? hw : null
+    );
   }
 }

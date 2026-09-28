@@ -98,6 +98,9 @@ class LiveSurfaceNotice extends StatelessWidget {
     this.detail,
     this.actionLabel,
     this.onAction,
+    this.secondaryLabel,
+    this.onSecondary,
+    this.secondaryKey,
   });
 
   final String title;
@@ -105,8 +108,40 @@ class LiveSurfaceNotice extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
 
+  /// 두 번째 할 일(예: 카메라 오프라인의 [Wi-Fi 바꾸기]).
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
+  final Key? secondaryKey;
+
+  static Widget _button(String label, VoidCallback onPressed, {Key? key}) =>
+      OutlinedButton(
+        key: key,
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+          minimumSize: const Size(0, 32),
+          padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing16),
+        ),
+        child: Text(label),
+      );
+
   @override
   Widget build(BuildContext context) {
+    // 면이 낮으면(홈 라이브 16:9·큰 글자) 버튼이 두 줄로 넘어가도 잘리지 않게
+    // 통째로 줄인다 — 할 일 버튼이 넘침 띠에 가려지면 안 된다(2026-09-28).
+    return LayoutBuilder(
+        builder: (context, constraints) => Center(
+            child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: SizedBox(
+                    width: constraints.hasBoundedWidth
+                        ? constraints.maxWidth
+                        : null,
+                    child: _content()))));
+  }
+
+  Widget _content() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppStyles.spacing24),
@@ -135,18 +170,19 @@ class LiveSurfaceNotice extends StatelessWidget {
                 ),
               ),
             ],
-            if (actionLabel != null && onAction != null) ...[
+            if (actionLabel != null && onAction != null ||
+                secondaryLabel != null && onSecondary != null) ...[
               const SizedBox(height: AppStyles.spacing12),
-              OutlinedButton(
-                onPressed: onAction,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-                  minimumSize: const Size(0, 32),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppStyles.spacing16),
-                ),
-                child: Text(actionLabel!),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: AppStyles.spacing8,
+                runSpacing: AppStyles.spacing8,
+                children: [
+                  if (actionLabel != null && onAction != null)
+                    _button(actionLabel!, onAction!),
+                  if (secondaryLabel != null && onSecondary != null)
+                    _button(secondaryLabel!, onSecondary!, key: secondaryKey),
+                ],
               ),
             ],
           ],

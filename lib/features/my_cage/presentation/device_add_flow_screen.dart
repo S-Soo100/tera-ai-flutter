@@ -25,8 +25,16 @@ import 'widgets/management_widgets.dart';
 /// account credentials. Legacy pair routes wrap this same screen.
 class DeviceAddFlowScreen extends ConsumerStatefulWidget {
   const DeviceAddFlowScreen(
-      {super.key, this.initialKind, this.onProvisioned, this.flowKey});
+      {super.key,
+      this.initialKind,
+      this.onProvisioned,
+      this.flowKey,
+      this.wifiTarget});
   final PairTargetKind? initialKind;
+
+  /// [Wi-Fi 바꾸기]로 열었으면 그 기기(2026-09-28) — 목록은 같은 종류만,
+  /// 대상으로 보이는 기기는 미리 골라 두고, 끝나면 연 화면으로 돌아간다.
+  final WifiChangeTarget? wifiTarget;
   final VoidCallback? onProvisioned;
   final Object? flowKey;
   @override
@@ -208,8 +216,19 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
   }
 
   void _home() {
-    if (mounted) context.go('/home');
+    if (!mounted) return;
+    // Wi-Fi 바꾸기는 기기 상세·라이브에서 열었다 — 그 화면으로 돌아간다.
+    if (widget.wifiTarget != null && context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/home');
   }
+
+  /// 종류별 문구 — 결과 문구는 원래 카메라 전용이었다. 사육장도 Wi-Fi만 바꾸게
+  /// 되면서(2026-09-28) `_device` 짝을 둔다.
+  static String _byKind(String key, PairTargetKind kind) =>
+      kind == PairTargetKind.device ? '${key}_device' : key;
 
   /// 모든 결과가 Wi-Fi 실패(비밀번호 오류 계열)인지 — 등록 대기/기타 실패는
   /// 기존 결과 화면 의미를 보존한다(P04: 모든 오류를 비밀번호 오류로 바꾸지 않음).
@@ -342,7 +361,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
               Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: ManagementTopBar(
-                      title: 'device_add_title'.tr(),
+                      title: (widget.wifiTarget == null
+                              ? 'device_add_title'
+                              : 'device_wifi_title')
+                          .tr(),
                       onBack: () => _back(state, controller),
                       close: step == DeviceAddStep.results,
                       onClose: step == DeviceAddStep.networks ||
@@ -431,14 +453,16 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
 
   /// 제목 18/600 (+ 진행 중이면 오른쪽 8에 20 스피너) / 8 / 부제 14/500.
   Widget _heading(BuildContext context, String title, String subtitle,
-          {List<String> args = const [], bool busy = false}) =>
+          {List<String> args = const [],
+          Map<String, String>? titleArgs,
+          bool busy = false}) =>
       Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Flexible(
-                  child: Text(title.tr(),
+                  child: Text(title.tr(namedArgs: titleArgs),
                       style: managementStyle(context,
                               size: 18, weight: FontWeight.w600)
                           .copyWith(height: 21.48046875 / 18))),
@@ -495,10 +519,22 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
         }
         return b.rssi.compareTo(a.rssi);
       });
+    final target = widget.wifiTarget;
     final body = [
-      _heading(context, 'device_add_select_title', 'device_add_select_subtitle',
-          busy: state.busy),
-      if (candidates.isEmpty)
+      if (target == null)
+        _heading(
+            context, 'device_add_select_title', 'device_add_select_subtitle',
+            busy: state.busy)
+      else
+        _heading(
+            context,
+            'device_wifi_select_title',
+            'device_wifi_select_subtitle_${target.kind.name}',
+            titleArgs: {'name': target.name},
+            busy: state.busy),
+      if (state.targetGone)
+        _emptyBox(context, 'device_wifi_target_gone'.tr())
+      else if (candidates.isEmpty)
         _emptyBox(
             context,
             (state.busy ? 'device_add_searching' : 'device_add_no_devices')
@@ -519,8 +555,27 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                             final choosing =
                                 state.selected[c.kind]?.physicalId !=
                                     c.physicalId;
+                            // Wi-Fi 바꾸기에서 대상으로 못 알아본 기기 — 맞는지
+                            // 확인한다. 틀려도 그 기기 Wi-Fi만 바뀌고 등록은
+                            // 그대로다(최종 판정은 대상 행의 서버 신호).
                             if (choosing &&
-                                c.kind == PairTargetKind.device &&
+                                target != null &&
+                                !state.matched.contains(c.physicalId)) {
+                              final ok = await showVivaModal(context,
+                                  message: 'device_wifi_confirm_other'
+                                      .tr(namedArgs: {'name': target.name}),
+                                  cancelLabel: 'common_cancel'.tr(),
+                                  confirmLabel:
+                                      'device_wifi_confirm_other_ok'.tr(),
+                                  confirmKey:
+                                      const Key('device_wifi_confirm_other_ok'));
+                              if (!ok || !context.mounted) return;
+                            }
+                            // 사육장 Wi-Fi 바꾸기를 끈 빌드에서만 — 켜져 있으면
+                            // 등록된 사육장은 Wi-Fi만 바꾼다(2026-09-28).
+                            if (choosing &&
+                                target == null &&
+                                !supportsWifiChange(c.kind) &&
                                 state.registered.contains(c.physicalId)) {
                               final ok = await showVivaModal(context,
                                   message:
@@ -561,13 +616,29 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                         style: managementStyle(context,
                                             weight: FontWeight.w600,
                                             color: context.glass.textPrimary)),
-                                    if (state.registered
-                                        .contains(c.physicalId)) ...[
+                                    if (target != null &&
+                                        state.matched
+                                            .contains(c.physicalId)) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                          key: Key(
+                                              'device_wifi_matched_${c.physicalId}'),
+                                          'device_wifi_matched'.tr(
+                                              namedArgs: {'name': target.name}),
+                                          textAlign: TextAlign.end,
+                                          style: managementStyle(context,
+                                              size: 14,
+                                              color:
+                                                  context.glass.bodySecondary)),
+                                    ],
+                                    if (target == null &&
+                                        state.registered
+                                            .contains(c.physicalId)) ...[
                                       const SizedBox(height: 4),
                                       Text(
                                           key: Key(
                                               'device_add_registered_${c.physicalId}'),
-                                          (c.kind == PairTargetKind.camera
+                                          (supportsWifiChange(c.kind)
                                                   ? 'device_add_already_registered_camera'
                                                   : 'device_add_already_registered')
                                               .tr(),
@@ -636,11 +707,15 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       else
         ManagementButton(
             key: const Key('device_add_continue'),
-            label: 'device_add_selected'.tr(args: ['${state.selected.length}']),
+            label: target == null
+                ? 'device_add_selected'.tr(args: ['${state.selected.length}'])
+                : 'device_wifi_next'.tr(),
             onPressed: controller.loadNetworks),
     ];
-    // Figma 990:7601 — 1개 선택 시에만 안내(y667).
-    final above = state.selected.length == 1 && candidates.length > 1
+    // Figma 990:7601 — 1개 선택 시에만 안내(y667). Wi-Fi 바꾸기는 한 대뿐이다.
+    final above = target == null &&
+            state.selected.length == 1 &&
+            candidates.length > 1
         ? Text('device_add_selection_hint'.tr(),
             key: const Key('device_add_selection_hint'),
             textAlign: TextAlign.center,
@@ -998,6 +1073,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
   (List<Widget>, List<Widget>, Widget?) _wifiUpdated(BuildContext context,
       DeviceAddState state, DeviceAddFlowController controller) {
     final result = state.results.values.first;
+    final kind = result.candidate.kind;
+    final target = widget.wifiTarget;
     final reconnect = result.reconnect;
     final missing = reconnect == CameraReconnect.missing;
     // BLE가 성공을 주지 않은 경우(2026-09-24) — 서버 last_seen_at으로 확인 중엔
@@ -1009,10 +1086,13 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     final (titleKey, titleId) = failed
         ? ('device_add_results', 'device_add_wifi_failed')
         : missing
-            ? ('device_add_wifi_missing_title', 'device_add_wifi_missing')
+            ? (_byKind('device_add_wifi_missing_title', kind),
+                'device_add_wifi_missing')
             : checking
-                ? ('device_add_wifi_checking', 'device_add_wifi_checking')
-                : ('device_add_wifi_updated', 'device_add_wifi_updated');
+                ? (_byKind('device_add_wifi_checking', kind),
+                    'device_add_wifi_checking')
+                : (_byKind('device_add_wifi_updated', kind),
+                    'device_add_wifi_updated');
     final body = [
       SizedBox(height: math.min(186, MediaQuery.sizeOf(context).height * 0.27)),
       Center(
@@ -1032,22 +1112,35 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
               .copyWith(height: 21.48046875 / 18)),
       const SizedBox(height: 8),
       Text(
-          switch (reconnect) {
-            CameraReconnect.waiting => checking
-                ? 'device_add_checking_hint'
-                : 'device_add_wifi_updated_waiting',
-            CameraReconnect.missing => failed
-                ? 'device_add_wifi_updated_failed'
-                : 'device_add_wifi_updated_missing',
-            _ => 'device_add_wifi_updated_online',
-          }
-              .tr(),
+          // Wi-Fi 바꾸기에서 대상 신호가 끝내 안 오면 — 다른 기기를 골랐을 수
+          // 있다. 비밀번호 탓이 아니라 기기 확인이 먼저다.
+          missing && target != null
+              ? 'device_wifi_target_missing'
+                  .tr(namedArgs: {'name': target.name})
+              : _byKind(
+                      switch (reconnect) {
+                        CameraReconnect.waiting => checking
+                            ? 'device_add_checking_hint'
+                            : 'device_add_wifi_updated_waiting',
+                        CameraReconnect.missing => failed
+                            ? 'device_add_wifi_updated_failed'
+                            : 'device_add_wifi_updated_missing',
+                        _ => 'device_add_wifi_updated_online',
+                      },
+                      kind)
+                  .tr(),
           textAlign: TextAlign.center,
           style: managementStyle(context, color: context.glass.bodySecondary)
               .copyWith(height: 19.09375 / 16)),
     ];
     final footer = <Widget>[
-      if (failed)
+      // 대상을 잘못 골랐을 수 있으니 기기 선택부터 다시 한다.
+      if (missing && target != null)
+        ManagementButton(
+            key: const Key('device_wifi_retry'),
+            label: 'device_wifi_retry'.tr(),
+            onPressed: state.busy ? null : controller.continueAdding)
+      else if (result.canRetry)
         ManagementButton(
             key: const Key('device_add_retry_failed'),
             label: 'device_add_retry_failed'.tr(),
@@ -1055,12 +1148,14 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       if (missing)
         ManagementButton(
             key: const Key('device_add_register_new'),
-            label: 'device_add_register_new'.tr(),
+            label: _byKind('device_add_register_new', kind).tr(),
             onPressed: state.busy
                 ? null
                 : () async {
                     final ok = await showVivaModal(context,
-                        message: 'device_add_register_new_warning'.tr(),
+                        message:
+                            _byKind('device_add_register_new_warning', kind)
+                                .tr(),
                         cancelLabel: 'common_cancel'.tr(),
                         confirmLabel: 'device_add_continue_anyway'.tr(),
                         confirmKey: const Key('device_add_register_new_ok'));
