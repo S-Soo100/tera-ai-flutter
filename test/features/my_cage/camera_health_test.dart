@@ -70,7 +70,11 @@ void main() {
       expect(old.resetReason, 'PANIC');
       expect(old.rssi, isNull);
       expect(CameraHealth.fromRow({'clip_stats': null}).uptimeSeconds, isNull);
-      expect(CameraHealth.fromRow({'clip_stats': {'sys': 'x'}}).rssi, isNull);
+      expect(
+          CameraHealth.fromRow({
+            'clip_stats': {'sys': 'x'}
+          }).rssi,
+          isNull);
       expect(
           CameraHealth.fromRow({
             'clip_stats': {
@@ -81,13 +85,13 @@ void main() {
     });
 
     test('완료 = 가동 시간이 줄고 리셋 사유가 MQTT 재시작', () {
-      expect(_h(uptime: 20, reset: kMqttRebootReason).rebootedSince(5000),
-          isTrue);
+      expect(
+          _h(uptime: 20, reset: kMqttRebootReason).rebootedSince(5000), isTrue);
       expect(_h(uptime: 20, reset: 'POWERON').rebootedSince(5000), isFalse);
       expect(_h(uptime: 6000, reset: kMqttRebootReason).rebootedSince(5000),
           isFalse);
-      expect(_h(uptime: 20, reset: kMqttRebootReason).rebootedSince(null),
-          isFalse,
+      expect(
+          _h(uptime: 20, reset: kMqttRebootReason).rebootedSince(null), isFalse,
           reason: '명령 전 값을 모르면 판정하지 않는다(2분 안내로)');
     });
   });
@@ -100,6 +104,20 @@ void main() {
       expect(s.add(_h(rssi: -90, at: 2)), isFalse);
       expect(s.add(_h(rssi: -76, at: 3)), isTrue);
     });
+    // 보충 요청서 §3-1: 3번 연속 뒤 −74가 오면 초기화 — 배너 안 뜸.
+    test('3번 연속 뒤 −74면 처음부터 — 그 뒤 3번으론 안 뜬다', () {
+      final s = WeakSignalStreak();
+      for (var i = 0; i < 3; i++) {
+        expect(s.add(_h(rssi: -80, at: i)), isFalse);
+      }
+      expect(s.add(_h(rssi: -74, at: 3)), isFalse);
+      expect(s.count, 0);
+      for (var i = 4; i < 7; i++) {
+        expect(s.add(_h(rssi: -80, at: i)), isFalse);
+      }
+      expect(s.add(_h(rssi: -80, at: 7)), isTrue);
+    });
+
     test('같은 heartbeat 중복은 한 번, −74가 끼면 0부터', () {
       final s = WeakSignalStreak();
       s.add(_h(rssi: -80, at: 0));
@@ -160,7 +178,8 @@ void main() {
       final c = container.read(cameraRebootProvider(_cam).notifier);
       expect(await c.request(), CameraRebootRequest.notPublished);
       final s = container.read(cameraRebootProvider(_cam));
-      expect(s.rebooting || s.sending || s.coolingDown(DateTime.now()), isFalse);
+      expect(
+          s.rebooting || s.sending || s.coolingDown(DateTime.now()), isFalse);
     });
 
     test('404는 찾을 수 없음, 그 밖은 일반 실패', () async {
@@ -221,13 +240,13 @@ void main() {
       await tester.pumpWidget(ProviderScope(
           key: UniqueKey(),
           overrides: [
-            managementInventoryProvider.overrideWith((ref) async =>
-                ManagementInventory(groups: [], items: [
-                  ManagementItem(
-                      key: const ManagementKey(
-                          kind: ManagementKind.camera, id: _cam),
-                      name: camera.name)
-                ])),
+            managementInventoryProvider.overrideWith(
+                (ref) async => ManagementInventory(groups: [], items: [
+                      ManagementItem(
+                          key: const ManagementKey(
+                              kind: ManagementKind.camera, id: _cam),
+                          name: camera.name)
+                    ])),
             redesignGroupRepositoryProvider.overrideWith((ref) =>
                 RedesignGroupRepository(
                     loadRows: (_) async => [], rpc: (_, __) async => null)),
@@ -277,6 +296,55 @@ void main() {
       expect(find.byKey(const Key('camera_reboot_progress')), findsOneWidget);
       // 2분 시간 초과 타이머가 남지 않게 정리한다.
       await tester.pumpWidget(const SizedBox());
+    });
+
+    // 보충 요청서 §3: 2분 안내는 정상 카메라로 재현이 안 돼 가짜 데이터로 본다.
+    testWidgets('2분 동안 완료 신호가 없으면 전원 재연결 안내', (tester) async {
+      final health = StreamController<CameraHealth>.broadcast();
+      addTearDown(health.close);
+      await pump(tester, cam(fw: 'fb2-p4 0.2.0-20260928'),
+          health: health.stream);
+      health.add(_h(uptime: 5000, reset: 'POWERON'));
+      await tester.pump();
+      final row = find.byKey(CameraRebootRow.rowKey);
+      await tester.ensureVisible(row);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('camera_reboot_ok')));
+      await tester.pump();
+      expect(find.byKey(const Key('camera_reboot_progress')), findsOneWidget);
+      // 재시작 전 값만 계속 온다(완료 신호 없음).
+      health.add(_h(uptime: 5015, reset: 'POWERON', at: 1));
+      await tester.pump(kRebootTimeout);
+      await tester.pumpAndSettle();
+      expect(find.text('camera_reboot_timeout'), findsOneWidget);
+      expect(find.byKey(const Key('camera_reboot_progress')), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(kRebootCooldown);
+    });
+
+    testWidgets('완료 신호가 오면 "재시작 완료", 60초 동안 다시 못 누른다', (tester) async {
+      final health = StreamController<CameraHealth>.broadcast();
+      addTearDown(health.close);
+      await pump(tester, cam(fw: 'fb2-p4 0.2.0-20260928'),
+          health: health.stream);
+      health.add(_h(uptime: 5000, reset: 'POWERON'));
+      await tester.pump();
+      final row = find.byKey(CameraRebootRow.rowKey);
+      await tester.ensureVisible(row);
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('camera_reboot_ok')));
+      await tester.pump();
+      health.add(_h(uptime: 14, reset: kMqttRebootReason, at: 2));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('camera_reboot_done'), findsOneWidget);
+      expect(tester.widget<InkWell>(row).onTap, isNull, reason: '60초 쿨다운');
+      await tester.pump(kRebootCooldown);
+      expect(tester.widget<InkWell>(row).onTap, isNotNull);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(kRebootTimeout);
     });
 
     testWidgets('약한 신호가 이어지면 상단 배너, 닫으면 사라진다', (tester) async {
