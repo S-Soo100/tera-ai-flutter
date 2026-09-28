@@ -8,6 +8,7 @@ import '../../../shared/widgets/figma_icon.dart';
 import '../domain/device_add_flow.dart';
 import '../domain/pair_target_kind.dart';
 import '../domain/redesign_management.dart';
+import 'device_add_flow_controller.dart';
 import 'device_management_controller.dart';
 import 'group_editor_screen.dart';
 import 'widgets/management_widgets.dart';
@@ -253,54 +254,54 @@ class _DeviceDetailBody extends ConsumerWidget {
                                   ]),
                                   // Wi-Fi 바꾸기(2026-09-28, Figma 밖 — 흐름 점검 C1)
                                   // — 공유기를 바꿔도 지우지 않고 같은 기기로 다시
-                                  // 붙인다. 지우고 다시 등록하면 새 기기가 된다.
+                                  // 붙인다. 오른쪽은 이 폰이 마지막에 붙인 Wi-Fi
+                                  // 이름(서버는 모른다), 모르면 '--'.
                                   if (wifiKind != null) ...[
                                     const SizedBox(height: 24),
-                                    Row(children: [
-                                      ManagementSymbolBadge(
-                                          'redesign_v2/wifi'),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                          child: Text(
-                                              (item.isOnline == false
-                                                      ? 'device_wifi_offline_hint'
-                                                      : 'device_wifi_title')
-                                                  .tr(),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
+                                    InkWell(
+                                        key: const Key('device_wifi_change'),
+                                        onTap: draft.saving || dirty
+                                            ? null
+                                            : () => context.push(
+                                                '/devices/wifi',
+                                                extra: WifiChangeTarget(
+                                                    kind: wifiKind,
+                                                    id: item.key.id,
+                                                    name: item.name)),
+                                        child: Row(children: [
+                                          ManagementSymbolBadge(
+                                              'redesign_v2/wifi'),
+                                          const SizedBox(width: 12),
+                                          Text('device_wifi_action'.tr(),
                                               style: managementStyle(context,
-                                                  weight: FontWeight.w600))),
-                                      TextButton(
-                                          key: const Key('device_wifi_change'),
-                                          style: TextButton.styleFrom(
-                                              padding: EdgeInsets.zero,
-                                              minimumSize: const Size(0, 36),
-                                              tapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap),
-                                          onPressed: draft.saving || dirty
-                                              ? null
-                                              : () => context.push(
-                                                  '/devices/wifi',
-                                                  extra: WifiChangeTarget(
-                                                      kind: wifiKind,
-                                                      id: item.key.id,
-                                                      name: item.name)),
-                                          child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text('device_wifi_action'.tr(),
-                                                    style: managementStyle(
-                                                        context,
-                                                        weight:
-                                                            FontWeight.w600)),
-                                                const SizedBox(width: 4),
-                                                FigmaIcon.tinted(
-                                                    FigmaIcons.arrowNext,
-                                                    size: 18,
-                                                    color: glass.textSecondary),
-                                              ])),
-                                    ]),
+                                                  weight: FontWeight.w600)),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                              child: Text(
+                                                  ref
+                                                          .watch(
+                                                              deviceWifiNameProvider(
+                                                                  (
+                                                                wifiKind,
+                                                                item.key.id
+                                                              )))
+                                                          .valueOrNull ??
+                                                      '--',
+                                                  key: const Key(
+                                                      'device_wifi_name'),
+                                                  textAlign: TextAlign.right,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: managementStyle(
+                                                      context,
+                                                      weight:
+                                                          FontWeight.w600))),
+                                          const SizedBox(width: 4),
+                                          FigmaIcon.tinted(FigmaIcons.arrowNext,
+                                              size: 18,
+                                              color: glass.textSecondary),
+                                        ])),
                                   ],
                                 ])),
                             if (draft.errorKey != null)

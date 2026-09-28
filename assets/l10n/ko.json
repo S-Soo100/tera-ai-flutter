@@ -123,7 +123,6 @@
   "device_wifi_target_gone": "이 기기는 더 이상 이 계정에 등록돼 있지 않아요. 기기 추가에서 새로 등록해 주세요",
   "device_wifi_target_missing": "{name}의 신호가 오지 않아요. 고른 기기가 {name}이(가) 맞는지 확인하고 다시 시도해 주세요",
   "device_wifi_retry": "다시 찾기",
-  "device_wifi_offline_hint": "공유기를 바꿨다면 Wi-Fi만 바꿀 수 있어요",
   "redesign_home_device_settings": "기기 설정",
   "redesign_home_schedule_settings": "기기 예약 설정",
   "redesign_home_lcd_label": "모듈 화면 표시 문구",

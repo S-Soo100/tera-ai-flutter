@@ -9,6 +9,7 @@ import '../../../core/supabase/supabase_provider.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/device_add_ble_adapter.dart';
 import '../data/device_add_registration_repository.dart';
+import '../data/device_wifi_name_store.dart';
 import '../data/known_device_store.dart';
 import '../data/wifi_credentials_store.dart';
 import '../domain/device_add_flow.dart';
@@ -20,6 +21,7 @@ final deviceAddAccountProvider = Provider<String?>(
     (ref) => ref.watch(currentUserProvider.select((u) => u?.id)));
 final deviceAddGatewayFactoryProvider =
     Provider<DeviceAddGateway Function()>((ref) => DeviceAddBleAdapter.new);
+
 /// 자동 묶기·완료 콜백은 `DeviceAddFlowRoute`의 안쪽 `ProviderScope`에서 바꿔
 /// 끼운다. 그래서 둘 다 scope 대상(`dependencies`)으로 선언하고, 이를 읽는
 /// [deviceAddFlowProvider]도 `dependencies`에 적는다 — 안 적으면 flow가 최상위
@@ -33,6 +35,16 @@ final deviceAddAutoGroupProvider = Provider<DeviceAddAutoGroup>(
     dependencies: const []);
 final knownDeviceStoreProvider =
     Provider<KnownDeviceStore>((ref) => const HiveKnownDeviceStore());
+final deviceWifiNameStoreProvider =
+    Provider<DeviceWifiNameStore>((ref) => const HiveDeviceWifiNameStore());
+
+/// 기기 상세에 보일 Wi-Fi 이름 — 이 폰이 마지막에 붙인 이름, 모르면 null.
+final deviceWifiNameProvider = StreamProvider.autoDispose
+    .family<String?, (PairTargetKind, String)>((ref, key) {
+  final account = ref.watch(deviceAddAccountProvider);
+  if (account == null) return Stream.value(null);
+  return ref.watch(deviceWifiNameStoreProvider).watch(account, key.$1, key.$2);
+});
 final deviceAddCompletedProvider =
     Provider<void Function()>((ref) => () {}, dependencies: const []);
 
@@ -40,10 +52,12 @@ final deviceAddCompletedProvider =
 /// 넣는다. null이면 일반 기기 추가다(2026-09-28).
 final deviceAddWifiTargetProvider =
     Provider<WifiChangeTarget?>((ref) => null, dependencies: const []);
+
 /// 등록 확인(읽기 전용)·세션 계정 확인. 통합 테스트가 실제 Route·컨트롤러를
 /// 그대로 두고 서버만 바꿔 끼울 수 있게 provider로 뺐다.
 final deviceAddRegistrationProvider = Provider<DeviceAddRegistrationRepository>(
-    (ref) => DeviceAddRegistrationRepository(ref.watch(supabaseClientProvider)));
+    (ref) =>
+        DeviceAddRegistrationRepository(ref.watch(supabaseClientProvider)));
 final deviceAddSessionUserProvider = Provider<String? Function()>((ref) {
   final auth = ref.watch(supabaseClientProvider).auth;
   return () => auth.currentUser?.id;
@@ -60,13 +74,13 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
   final freshToken = ref.watch(freshAccessTokenProvider);
   final known = ref.watch(knownDeviceStoreProvider);
   final target = ref.watch(deviceAddWifiTargetProvider);
+  final wifiNames = ref.watch(deviceWifiNameStoreProvider);
   var active = true;
   ref.onDispose(() => active = false);
   return DeviceAddFlowController(
       gateway: gatewayFactory(),
       accountId: account ?? '',
-      isCurrent: () =>
-          active && account != null && sessionUser() == account,
+      isCurrent: () => active && account != null && sessionUser() == account,
       // 등록 직전에 갱신한 토큰 — 만료 토큰이면 기기의 /devices/pair가 401.
       token: () async => await freshToken() ?? '',
       namePrefix: (kind) => (kind == PairTargetKind.device
@@ -98,6 +112,8 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
       rememberId: (candidate, id) => known.save(account!, candidate, id),
       forgetId: (candidate) => known.forget(account!, candidate),
       owned: (kind, id) => registration.owned(account!, kind, id),
+      rememberWifi: (kind, id, ssid) =>
+          wifiNames.save(account!, kind, id, ssid),
       // "새 기기로 등록"이 대체한 옛 행 해제 — 서버 소프트 해제(REST).
       unlink: (kind, id) async {
         final repo = ref.read(redesignGroupRepositoryProvider);
@@ -136,6 +152,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       Future<void> Function(DeviceAddCandidate)? forgetId,
       Future<OwnedDeviceRow?> Function(PairTargetKind, String)? owned,
       Future<void> Function(PairTargetKind, String)? unlink,
+      Future<void> Function(PairTargetKind, String, String)? rememberWifi,
       this.reconnectPoll = const Duration(seconds: 5),
       this.reconnectTimeout = const Duration(seconds: 90)})
       : _target = target,
@@ -145,6 +162,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         _forgetId = forgetId,
         _owned = owned,
         _unlink = unlink,
+        _rememberWifi = rememberWifi,
         _gateway = gateway,
         _account = accountId,
         _isCurrent = isCurrent,
@@ -212,6 +230,15 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   final Future<void> Function(DeviceAddCandidate)? _forgetId;
   final Future<OwnedDeviceRow?> Function(PairTargetKind, String)? _owned;
   final Future<void> Function(PairTargetKind, String)? _unlink;
+
+  /// 붙인 Wi-Fi 이름을 기기별로 기억한다 — 기기 상세에 보인다. 서버는 모른다.
+  final Future<void> Function(PairTargetKind, String, String)? _rememberWifi;
+
+  Future<void> _saveWifi(PairTargetKind kind, String id, String ssid) async {
+    try {
+      await _rememberWifi?.call(kind, id, ssid);
+    } catch (_) {/* 표시용일 뿐이다. */}
+  }
 
   /// 카메라는 Wi-Fi를 받으면 재부팅한 뒤 서버에 붙는다(~20초). 사육장은
   /// 재부팅 없이 붙어 몇 초 안에 신호가 온다.
@@ -447,6 +474,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
                 Map.unmodifiable({...state.results, candidate.kind: result}));
         if (id != null) {
           await _remember(candidate, id);
+          await _saveWifi(candidate.kind, id, ssid);
           await _unlinkReplaced(candidate.kind, id);
           _completed?.call();
         }
@@ -489,6 +517,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
               hardwareId: result.hardwareId,
               wifiConnected: result.wifiConnected);
           await _remember(result.candidate, id);
+          await _saveWifi(entry.key, id, state.ssid);
           // "새 카메라로 등록"이 늦게 확인돼도 옛 행을 해제한다.
           await _unlinkReplaced(entry.key, id);
           _completed?.call();
@@ -618,6 +647,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     state = state.copyWith(
         results: Map.unmodifiable({...state.results, candidate.kind: result}));
     if (receipt.wifiConnected) _completed?.call();
+    // 서버로 확인할 수 없으면 BLE 성공으로 기억한다. 확인할 수 있으면 그 행
+    // 신호가 온 뒤에 — 다른 기기를 골랐을 수 있다(Wi-Fi 바꾸기).
+    if (receipt.wifiConnected && !probe) {
+      await _saveWifi(candidate.kind, id, ssid);
+    }
     if (result.reconnect == CameraReconnect.waiting) {
       // 기준값은 영수증 '뒤'에 읽는다 — BLE 세션 중 옛 Wi-Fi로 보낸 하트비트가
       // 새 Wi-Fi 접속으로 읽히면 안 된다. 폰 시계와 서버 시계가 어긋나도
@@ -632,14 +666,18 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       } catch (_) {/* 아래 폴백 */}
       if (!_active) return;
       unawaited(_watchReconnect(candidate, id,
-          since: since, baseline: baseline, baselineKnown: baselineKnown));
+          ssid: ssid,
+          since: since,
+          baseline: baseline,
+          baselineKnown: baselineKnown));
     }
   }
 
   /// Wi-Fi를 바꾼 기기가 기존 행으로 다시 붙는지 last_seen_at으로 본다.
   /// [baselineKnown]이면 [baseline]보다 새로운 값만, 아니면 [since] 이후 값을 접속으로.
   Future<void> _watchReconnect(DeviceAddCandidate candidate, String id,
-      {required DateTime since,
+      {required String ssid,
+      required DateTime since,
       required DateTime? baseline,
       required bool baselineKnown}) async {
     final owned = _owned;
@@ -677,7 +715,10 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       if (online && !latest.wifiConnected) _completed?.call();
       // 서버가 그 행으로 확인했으니 이 BLE 주소는 그 기기다 — 다음부턴 목록에서
       // 바로 알아본다(다른 폰에서 등록한 기기를 Wi-Fi 바꾸기로 고른 경우).
-      if (online) await _remember(candidate, id);
+      if (online) {
+        await _remember(candidate, id);
+        await _saveWifi(kind, id, ssid);
+      }
       return;
     }
   }
