@@ -286,7 +286,7 @@ void main() {
   // 2026-09-28: 서버가 기기 상한에 맞춰 나눠 보낸다(terra-server dispatcher) —
   // 앱은 6·9초를 명령 한 번으로 보낸다. 구 펌웨어의 5+4초 분할은 서버 몫이다.
   for (final (mist, ms) in [
-    (MistDuration.sixSeconds, 6000),
+    (MistDuration.fiveSeconds, 5000),
     (MistDuration.nineSeconds, 9000),
   ]) {
     testWidgets('분무 ${mist.seconds}초 — 명령 한 번($ms), 이어 보내지 않는다',

@@ -1008,7 +1008,7 @@
   "home_mist_unconfirmed": "기기 응답이 늦어요. 분사됐을 수 있으니 30초 뒤 상태를 보고 다시 시도해 주세요.",
   "home_mist_running_part": "분사 중 {}/{}",
   "home_mist_stop": "남은 분사 중지",
-  "home_mist_schedule_only_three": "예약은 지금 3초만 설정할 수 있어요. 6·9초는 서버 업데이트 뒤 열려요.",
+  "home_mist_schedule_only_three": "예약은 지금 3·5초만 설정할 수 있어요. 9초는 서버 업데이트 뒤 열려요.",
   "home_led_pick_title": "조명을 켜거나 끕니다",
   "home_led_turn_on": "켜기",
   "home_led_turn_off": "끄기",

@@ -31,12 +31,14 @@ void main() {
     expect(store.load('d2'), MistDuration.threeSeconds);
   });
 
-  test('손상·옛 값(5·10초)은 기본 3초로', () async {
+  test('손상·옛 값(6·10초)은 기본 3초로, 5초는 다시 선택지라 그대로', () async {
     final box = Hive.box<dynamic>(HiveMistChoiceStore.boxName);
     await box.put(HiveMistChoiceStore.keyFor('d1'), 'garbage');
     expect(store.load('d1'), MistDuration.threeSeconds);
-    await box.put(HiveMistChoiceStore.keyFor('d1'), 5000);
+    await box.put(HiveMistChoiceStore.keyFor('d1'), 6000);
     expect(store.load('d1'), MistDuration.threeSeconds);
+    await box.put(HiveMistChoiceStore.keyFor('d1'), 5000);
+    expect(store.load('d1'), MistDuration.fiveSeconds);
     await box.put(HiveMistChoiceStore.keyFor('d1'), 10000);
     expect(store.load('d1'), MistDuration.threeSeconds);
   });
