@@ -5,6 +5,7 @@ import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/my_cage/data/camera_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
+import 'package:vivanaut/features/my_cage/domain/camera_health.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_screen.dart';
@@ -31,6 +32,13 @@ class _FakeCameraRepo implements CameraRepository {
 
   @override
   Future<void> assignEnclosure(String cameraId, String? enclosureId) async {}
+
+  @override
+  Future<CameraHealth> fetchHealth(String cameraUuid) async =>
+      CameraHealth.empty;
+
+  @override
+  Future<bool> reboot(String cameraUuid) async => false;
 }
 
 TerraCamera _camera({bool capable = true, bool rotate180 = false}) =>
