@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/network/terra_rest_client.dart';
+import '../domain/camera_health.dart';
 import '../domain/terra_camera.dart';
 
 class CameraRepository {
@@ -37,6 +38,18 @@ class CameraRepository {
     return TerraCamera.fromJson(list.first);
   }
 
+  /// 재시작 판정·Wi-Fi 약함용 heartbeat 값(`clip_stats`). **직결 조회만** —
+  /// REST `GET /cameras`는 아직 `clip_stats`를 null로 준다(요청서 §1).
+  Future<CameraHealth> fetchHealth(String cameraUuid) async {
+    final rows = await _supabase
+        .from('cameras')
+        .select('clip_stats,clip_stats_at')
+        .eq('id', cameraUuid)
+        .limit(1);
+    final list = (rows as List).cast<Map<String, dynamic>>();
+    return list.isEmpty ? CameraHealth.empty : CameraHealth.fromRow(list.first);
+  }
+
   // 카메라 hard delete는 앱에서 호출하지 않는다(2026-09-15 회신 §2.1 —
   // motion_clips cascade 삭제). 등록 해제는 RedesignGroupRepository.unlink.
 
@@ -57,5 +70,14 @@ class CameraRepository {
   /// Realtime이 되쏘는 UPDATE로 흘러온다.
   Future<void> setRotate180(String cameraUuid, bool on) async {
     await _rest.patch('/cameras/$cameraUuid', {'rotate_180': on});
+  }
+
+  /// 카메라 재시작(요청서 2026-09-28 §2-2) — 본문 없는 POST, 서버가 MQTT로
+  /// 재시작 명령을 발행한다. 반환은 발행 여부(`published`) — false면 브로커에
+  /// 못 보냈다(잠시 뒤 다시). 해제·타인 카메라는 404([TerraRestException]).
+  /// 카메라의 ack는 오지 않는다 — 완료는 `clip_stats` 변화로 판정한다.
+  Future<bool> reboot(String cameraUuid) async {
+    final body = await _rest.post('/cameras/$cameraUuid/reboot');
+    return body is Map && body['published'] == true;
   }
 }
