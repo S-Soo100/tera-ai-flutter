@@ -69,9 +69,10 @@ void main() {
     expect(await repo.confirm('owner', PairTargetKind.device, 'mqtt'), isNull);
   });
 
-  test('ownedCamera는 이 계정 행만 보고, 없으면 null', () async {
+  test('owned는 이 계정 행만 보고, 없으면 null', () async {
     final requests = <http.Request>[];
-    var body = '[{"id":"row","last_seen_at":"2026-09-21T07:05:41Z"}]';
+    var body =
+        '[{"id":"row","last_seen_at":"2026-09-21T07:05:41Z","hw_id":"2884856F2548"}]';
     final client = SupabaseClient('https://example.test', 'anon',
         httpClient: MockClient((request) async {
       requests.add(request);
@@ -81,16 +82,19 @@ void main() {
     addTearDown(client.dispose);
     final repo = DeviceAddRegistrationRepository(client,
         accountIdProvider: () => 'owner');
-    final found = await repo.ownedCamera('owner', 'row');
+    final found = await repo.owned('owner', PairTargetKind.camera, 'row');
     expect(found?.lastSeen, DateTime.utc(2026, 9, 21, 7, 5, 41));
+    expect(found?.hardwareId, '2884856F2548');
+    expect(requests.single.url.path, endsWith('/cameras'));
     expect(requests.single.method, 'GET');
     expect(requests.single.url.queryParameters['owner_id'], 'eq.owner');
     expect(requests.single.url.queryParameters['id'], 'eq.row');
     body = '[]';
-    expect(await repo.ownedCamera('owner', 'row'), isNull);
+    expect(await repo.owned('owner', PairTargetKind.device, 'row'), isNull);
+    expect(requests.last.url.path, endsWith('/devices'));
     body =
         '[{"id":"row","last_seen_at":null,"unlinked_at":"2026-09-20T00:00:00Z"}]';
-    expect(await repo.ownedCamera('owner', 'row'), isNull,
-        reason: '해제한 카메라는 새로 등록해야 목록에 다시 보인다');
+    expect(await repo.owned('owner', PairTargetKind.camera, 'row'), isNull,
+        reason: '해제한 기기는 새로 등록해야 목록에 다시 보인다');
   });
 }

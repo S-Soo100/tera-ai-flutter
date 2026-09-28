@@ -142,11 +142,9 @@ class FakeRegistration implements DeviceAddRegistrationRepository {
   }
 
   @override
-  Future<({DateTime? lastSeen})?> ownedCamera(String account, String id) async =>
+  Future<OwnedDeviceRow?> owned(
+          String account, PairTargetKind kind, String id) async =>
       null;
-
-  @override
-  Future<bool> ownedDevice(String account, String id) async => false;
 }
 
 void main() {

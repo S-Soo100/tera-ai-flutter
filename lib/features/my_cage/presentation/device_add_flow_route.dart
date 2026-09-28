@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/redesign_group_repository.dart';
+import '../domain/device_add_flow.dart';
 import '../domain/pair_target_kind.dart';
 import '../domain/redesign_management.dart';
 import 'device_add_flow_controller.dart';
@@ -13,8 +14,15 @@ import 'device_management_controller.dart';
 /// Scope keeps one idempotency key throughout a physical pairing session.
 class DeviceAddFlowRoute extends ConsumerWidget {
   const DeviceAddFlowRoute(
-      {super.key, this.initialKind, this.onProvisioned, this.flowKey});
+      {super.key,
+      this.initialKind,
+      this.onProvisioned,
+      this.flowKey,
+      this.wifiTarget});
   final PairTargetKind? initialKind;
+
+  /// [Wi-Fi 바꾸기]로 열었으면 그 기기 — 등록 없이 Wi-Fi만 보낸다(2026-09-28).
+  final WifiChangeTarget? wifiTarget;
   final VoidCallback? onProvisioned;
 
   /// 통합 테스트가 이 Route 안의 flow 컨트롤러를 찾을 때만 쓴다.
@@ -26,6 +34,7 @@ class DeviceAddFlowRoute extends ConsumerWidget {
     return ProviderScope(
         key: ValueKey(account),
         overrides: [
+          deviceAddWifiTargetProvider.overrideWithValue(wifiTarget),
           deviceAddCompletedProvider.overrideWith(
               (ref) => ref.read(managementMutationCompletedProvider)),
           deviceAddAutoGroupProvider.overrideWith((ref) {
@@ -76,7 +85,8 @@ class DeviceAddFlowRoute extends ConsumerWidget {
           }),
         ],
         child: DeviceAddFlowScreen(
-            initialKind: initialKind,
+            initialKind: wifiTarget?.kind ?? initialKind,
+            wifiTarget: wifiTarget,
             onProvisioned: onProvisioned,
             flowKey: flowKey));
   }

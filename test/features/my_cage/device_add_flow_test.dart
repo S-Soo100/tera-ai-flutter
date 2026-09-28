@@ -202,14 +202,14 @@ void main() {
           groups.add(ids);
           return 'group';
         },
-        knownCamera: (c) async => known[c.physicalId],
+        knownId: (c) async => known[c.physicalId],
         registered: (c) async => known.containsKey(c.physicalId),
-        rememberCamera: (c, id) async => known[c.physicalId] = id,
-        forgetCamera: (c) async {
+        rememberId: (c, id) async => known[c.physicalId] = id,
+        forgetId: (c) async {
           forgotten.add(c.physicalId);
           known.remove(c.physicalId);
         },
-        cameraLastSeen: (id) async => lastSeen,
+        owned: (kind, id) async => (lastSeen: lastSeen, hardwareId: null),
         reconnectPoll: const Duration(milliseconds: 5),
         reconnectTimeout: const Duration(milliseconds: 40));
     setUp(() {
@@ -231,11 +231,18 @@ void main() {
           controller.state.registered, {device.physicalId, camera.physicalId});
     });
 
-    test('기억한 사육장이어도 Wi-Fi만 바꾸지 않고 새로 등록한다', () async {
+    // 2026-09-28: 사육장도 저장된 자격증명이 있으면 pair를 건너뛴다 — 기억한
+    // 사육장은 UNPAIR 없이 Wi-Fi만 보낸다(kWifiChangeDeviceEnabled로 끌 수 있다).
+    test('기억한 사육장은 Wi-Fi 바꾸기가 켜져 있으면 Wi-Fi만 보낸다', () async {
       known[device.physicalId] = 'existing-device';
       controller.select(device);
       await controller.connect('home', 'password');
-      expect(gateway.wifiOnly, [false]);
+      expect(gateway.wifiOnly, [kWifiChangeDeviceEnabled]);
+      if (kWifiChangeDeviceEnabled) {
+        final result = controller.state.results[PairTargetKind.device]!;
+        expect(result.outcome, DeviceAddOutcome.wifiUpdated);
+        expect(result.registeredId, 'existing-device');
+      }
     });
 
     test('스캔된 기기 중 계정에 남아 있는 기억한 기기만 등록됨으로 표시한다', () async {
@@ -447,11 +454,11 @@ void main() {
         saveCredentials: (_, __) async {},
         readCredentials: () async => {},
         autoGroup: (_, __) async => 'group',
-        knownCamera: (candidate) async => known[candidate.physicalId],
-        forgetCamera: (candidate) async => known.remove(candidate.physicalId),
-        rememberCamera: (candidate, id) async => known[candidate.physicalId] = id,
-        cameraLastSeen: (_) async => null,
-        unlinkCamera: (id) async => unlinked.add(id),
+        knownId: (candidate) async => known[candidate.physicalId],
+        forgetId: (candidate) async => known.remove(candidate.physicalId),
+        rememberId: (candidate, id) async => known[candidate.physicalId] = id,
+        owned: (kind, id) async => (lastSeen: null, hardwareId: null),
+        unlink: (kind, id) async => unlinked.add(id),
         reconnectPoll: const Duration(milliseconds: 1),
         reconnectTimeout: Duration.zero);
     addTearDown(c.dispose);
@@ -489,11 +496,11 @@ void main() {
         saveCredentials: (_, __) async {},
         readCredentials: () async => {},
         autoGroup: (_, __) async => 'group',
-        knownCamera: (candidate) async => known[candidate.physicalId],
-        forgetCamera: (candidate) async => known.remove(candidate.physicalId),
-        rememberCamera: (candidate, id) async => known[candidate.physicalId] = id,
-        cameraLastSeen: (_) async => null,
-        unlinkCamera: (id) async => unlinked.add(id),
+        knownId: (candidate) async => known[candidate.physicalId],
+        forgetId: (candidate) async => known.remove(candidate.physicalId),
+        rememberId: (candidate, id) async => known[candidate.physicalId] = id,
+        owned: (kind, id) async => (lastSeen: null, hardwareId: null),
+        unlink: (kind, id) async => unlinked.add(id),
         reconnectPoll: const Duration(milliseconds: 1),
         reconnectTimeout: Duration.zero);
     addTearDown(c.dispose);
@@ -511,5 +518,173 @@ void main() {
     expect(unlinked, isEmpty);
     expect(await c.recheckRegistration(), isTrue);
     expect(unlinked, ['camera-old']);
+  });
+
+  /// 기기 상세·라이브 오프라인의 [Wi-Fi 바꾸기](2026-09-28). 대상 행으로 Wi-Fi만
+  /// 보내고 그 행의 last_seen_at으로 판정한다 — 이 폰이 등록하지 않은 기기도
+  /// 목록에서 골라 진행할 수 있다(사용자 결정).
+  group('Wi-Fi 바꾸기 대상', () {
+    const target = WifiChangeTarget(
+        kind: PairTargetKind.device, id: 'row-3', name: '사육장 3');
+    const androidCage = DeviceAddCandidate(
+        physicalId: '28:84:85:6F:25:4A',
+        kind: PairTargetKind.device,
+        name: 'terra-iot',
+        rssi: -50);
+    late Map<String, String> known;
+    late List<String> unlinked;
+    late DateTime? lastSeen;
+    late OwnedDeviceRow? row;
+    late List<(PairTargetKind, String)> ownedCalls;
+    DeviceAddFlowController build() => DeviceAddFlowController(
+        gateway: gateway,
+        accountId: 'owner',
+        isCurrent: () => active,
+        token: () => 'jwt',
+        namePrefix: (kind) => kind == PairTargetKind.device ? '사육장' : '카메라',
+        names: () async => [],
+        confirm: (kind, id) async => '${kind.name}-uuid',
+        saveCredentials: (ssid, password) async {},
+        readCredentials: () async => {},
+        autoGroup: (owner, ids) async => 'group',
+        target: target,
+        knownId: (c) async => known[c.physicalId],
+        rememberId: (c, id) async => known[c.physicalId] = id,
+        forgetId: (c) async => known.remove(c.physicalId),
+        owned: (kind, id) async {
+          ownedCalls.add((kind, id));
+          return row == null
+              ? null
+              : (lastSeen: lastSeen, hardwareId: row!.hardwareId);
+        },
+        unlink: (kind, id) async => unlinked.add('${kind.name}:$id'),
+        reconnectPoll: const Duration(milliseconds: 5),
+        reconnectTimeout: const Duration(milliseconds: 40));
+    setUp(() {
+      controller.dispose();
+      gateway = Gateway();
+      known = {};
+      unlinked = [];
+      lastSeen = null;
+      row = (lastSeen: null, hardwareId: '2884856F2548');
+      ownedCalls = [];
+      controller = build();
+    });
+    Future<void> settle() =>
+        Future<void>.delayed(const Duration(milliseconds: 10));
+
+    test('대상과 같은 종류만 보이고, hw_id로 알아본 기기를 골라 둔다', () async {
+      await controller.scan();
+      gateway.events.add([camera, device, androidCage]);
+      await settle();
+      expect(controller.state.candidates.map((c) => c.physicalId),
+          [device.physicalId, androidCage.physicalId]);
+      expect(controller.state.matched, {androidCage.physicalId});
+      expect(controller.state.selected[PairTargetKind.device], androidCage);
+    });
+
+    test('이 폰이 기억한 기기도 대상으로 알아본다', () async {
+      known[device.physicalId] = 'row-3';
+      await controller.scan();
+      gateway.events.add([device]);
+      await settle();
+      expect(controller.state.matched, {device.physicalId});
+      expect(controller.state.selected[PairTargetKind.device], device);
+    });
+
+    test('못 알아본 기기를 골라도 등록 없이 대상 행으로 Wi-Fi만 보낸다', () async {
+      await controller.scan();
+      gateway.events.add([device]);
+      await settle();
+      expect(controller.state.matched, isEmpty);
+      controller.select(device);
+      await controller.connect('home', 'password');
+      expect(gateway.wifiOnly, [true]);
+      final result = controller.state.results[PairTargetKind.device]!;
+      expect(result.outcome, DeviceAddOutcome.wifiUpdated);
+      expect(result.registeredId, 'row-3');
+      expect(ownedCalls.last, (PairTargetKind.device, 'row-3'));
+    });
+
+    test('대상 신호가 새로 오면 연결 완료로 보고 그 BLE 주소를 기억한다', () async {
+      controller.select(device);
+      await controller.connect('home', 'password');
+      expect(controller.state.results[PairTargetKind.device]!.reconnect,
+          CameraReconnect.waiting);
+      lastSeen = DateTime.now().add(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(controller.state.results[PairTargetKind.device]!.reconnect,
+          CameraReconnect.online);
+      expect(known[device.physicalId], 'row-3');
+    });
+
+    test('BLE가 WIFI_OK여도 대상 신호가 안 오면 다른 기기였을 수 있다 — 다시 시도 가능',
+        () async {
+      controller.select(device);
+      await controller.connect('home', 'password');
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      final result = controller.state.results[PairTargetKind.device]!;
+      expect(result.wifiConnected, isTrue);
+      expect(result.reconnect, CameraReconnect.missing);
+      expect(result.canRetry, isTrue);
+      expect(known, isEmpty, reason: '서버가 확인하지 않은 기기는 기억하지 않는다');
+    });
+
+    test('대상 행이 해제됐으면 진행하지 않는다', () async {
+      row = null;
+      await controller.scan();
+      await settle();
+      expect(controller.state.targetGone, isTrue);
+      gateway.events.add([androidCage]);
+      await settle();
+      expect(controller.state.selected, isEmpty);
+      controller.select(androidCage);
+      await controller.connect('home', 'password');
+      expect(gateway.sent, isEmpty);
+    });
+
+    test('"새 기기로 등록"은 등록한 뒤 대상 행을 해제한다', () async {
+      controller.select(device);
+      await controller.connect('home', 'password');
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await controller.registerAsNew(PairTargetKind.device);
+      await controller.connect('home', 'password');
+      expect(gateway.wifiOnly, [true, false]);
+      expect(controller.state.results[PairTargetKind.device]!.outcome,
+          DeviceAddOutcome.registered);
+      expect(unlinked, ['device:row-3']);
+    });
+  });
+
+  group('bleMatchesHardware', () {
+    DeviceAddCandidate ble(String id, [String name = 'terra-iot']) =>
+        DeviceAddCandidate(
+            physicalId: id, kind: PairTargetKind.device, name: name, rssi: 0);
+    test('Android MAC이 hw_id와 같거나 +2면 같은 기기로 본다', () {
+      expect(bleMatchesHardware(ble('28:84:85:6F:25:48'), '2884856F2548'),
+          isTrue);
+      expect(bleMatchesHardware(ble('28:84:85:6F:25:4A'), '2884856F2548'),
+          isTrue);
+      expect(bleMatchesHardware(ble('28:84:85:6F:25:49'), '2884856F2548'),
+          isFalse);
+      expect(bleMatchesHardware(ble('28:84:85:6F:25:4C'), '2884856F2548'),
+          isFalse, reason: '다음 기기(+4)와 겹치면 안 된다');
+      expect(bleMatchesHardware(ble('28:84:85:6F:26:00'), '2884856F25FE'),
+          isTrue, reason: '바이트 경계를 넘는 +2');
+    });
+    test('iOS는 광고 이름 끝 MAC 하위 2바이트로만 본다', () {
+      const uuid = '6F9619FF-8B86-D011-B42D-00C04FC964FF';
+      expect(bleMatchesHardware(ble(uuid, 'FB2_P4_CAM_254A'), '2884856F2548'),
+          isTrue);
+      expect(bleMatchesHardware(ble(uuid, 'FB2_P4_CAM_2550'), '2884856F2548'),
+          isFalse);
+      expect(bleMatchesHardware(ble(uuid, 'terra-iot'), '2884856F2548'),
+          isFalse);
+    });
+    test('hw_id가 없거나 형식이 다르면 알아보지 않는다', () {
+      expect(bleMatchesHardware(ble('28:84:85:6F:25:48'), null), isFalse);
+      expect(bleMatchesHardware(ble('28:84:85:6F:25:48'), 'terra-9e3f0f4a'),
+          isFalse);
+    });
   });
 }

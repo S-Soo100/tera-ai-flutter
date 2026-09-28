@@ -487,4 +487,123 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump();
   });
+
+  // [Wi-Fi 바꾸기](2026-09-28) — 대상 이름으로 찾고, 못 알아본 기기는 맞는지
+  // 확인받고, 대상 신호가 안 오면 기기 선택부터 다시 한다.
+  group('Wi-Fi 바꾸기 화면', () {
+    const target = WifiChangeTarget(
+        kind: PairTargetKind.device, id: 'row-3', name: '사육장 3');
+    Future<void> pump(WidgetTester tester, DeviceAddState initial) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 568);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(EasyLocalization(
+          supportedLocales: const [Locale('ko')],
+          path: 'assets/l10n',
+          assetLoader: const Translations(),
+          child: Builder(
+              builder: (context) => ProviderScope(
+                      overrides: [
+                        deviceAddAccountProvider.overrideWithValue('a'),
+                        deviceAddFlowProvider('test')
+                            .overrideWith((ref) => Controller(initial)),
+                      ],
+                      child: MaterialApp(
+                          theme: AppTheme.light,
+                          locale: context.locale,
+                          supportedLocales: context.supportedLocales,
+                          localizationsDelegates: context.localizationDelegates,
+                          builder: (context, child) => MediaQuery(
+                              data: MediaQuery.of(context).copyWith(
+                                  textScaler: const TextScaler.linear(1.7)),
+                              child: child!),
+                          home: const DeviceAddFlowScreen(
+                              flowKey: 'test', wifiTarget: target))))));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets('대상 이름으로 찾고, 알아본 기기에 표시하고, 버튼은 "다음"', (tester) async {
+      await pump(
+          tester,
+          const DeviceAddState(
+              candidates: [device],
+              matched: {'physical-a'},
+              selected: {PairTargetKind.device: device}));
+      expect(tester.takeException(), isNull);
+      expect(find.text('Wi-Fi 바꾸기'), findsOneWidget);
+      expect(find.text('사육장 3 찾기'), findsOneWidget);
+      expect(find.byKey(const Key('device_wifi_matched_physical-a')),
+          findsOneWidget);
+      expect(find.text('다음'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('못 알아본 기기를 고르면 대상이 맞는지 먼저 묻는다', (tester) async {
+      await pump(tester, const DeviceAddState(candidates: [device]));
+      await tester.tap(find.byKey(const Key('device_add_candidate_physical-a')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('device_wifi_confirm_other_ok')),
+          findsOneWidget);
+      await tester.tap(find.byKey(const Key('device_wifi_confirm_other_ok')));
+      await tester.pumpAndSettle();
+      expect(find.text('다음'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('대상 행이 해제됐으면 목록 대신 안내만 보인다', (tester) async {
+      await pump(tester,
+          const DeviceAddState(candidates: [device], targetGone: true));
+      expect(find.textContaining('더 이상 이 계정에 등록돼 있지 않아요'), findsOneWidget);
+      expect(find.byKey(const Key('device_add_candidate_physical-a')),
+          findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('대상 신호가 안 오면 기기 확인 안내 + 다시 찾기', (tester) async {
+      await pump(
+          tester,
+          const DeviceAddState(
+              step: DeviceAddStep.results,
+              ssid: 'home',
+              results: {
+                PairTargetKind.device: DeviceAddResult(
+                    candidate: device,
+                    outcome: DeviceAddOutcome.wifiUpdated,
+                    registeredId: 'row-3',
+                    wifiConnected: true,
+                    reconnect: CameraReconnect.missing),
+              }));
+      expect(tester.takeException(), isNull);
+      expect(find.text('사육장이 다시 연결되지 않았어요'), findsOneWidget);
+      expect(find.textContaining('사육장 3의 신호가 오지 않아요'), findsOneWidget);
+      expect(find.byKey(const Key('device_wifi_retry')), findsOneWidget);
+      expect(find.text('새 사육장으로 등록'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('사육장이 붙으면 사육장 문구로 완료를 알린다', (tester) async {
+      await pump(
+          tester,
+          const DeviceAddState(
+              step: DeviceAddStep.results,
+              ssid: 'home',
+              results: {
+                PairTargetKind.device: DeviceAddResult(
+                    candidate: device,
+                    outcome: DeviceAddOutcome.wifiUpdated,
+                    registeredId: 'row-3',
+                    wifiConnected: true,
+                    reconnect: CameraReconnect.online),
+              }));
+      expect(find.text('사육장 Wi-Fi 변경완료'), findsOneWidget);
+      expect(find.text('사육장이 새 Wi-Fi로 다시 연결됐어요'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+  });
 }

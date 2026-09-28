@@ -3,6 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
+import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
+import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
 
@@ -92,5 +97,62 @@ void main() {
         WebRtcLiveView.pillKeyFor(
             const WebRtcLiveState(phase: WebRtcLivePhase.streaming)),
         isNull);
+  });
+
+  // 공유기를 바꿔 꺼진 카메라 — 지우지 않고 Wi-Fi만 바꾸는 길을 준다(2026-09-28).
+  testWidgets('오프라인이면 [Wi-Fi 바꾸기]가 그 카메라를 대상으로 연다', (tester) async {
+    Object? pushed;
+    final router = GoRouter(routes: [
+      GoRoute(
+          path: '/',
+          builder: (_, __) => const Scaffold(
+              body: SizedBox(
+                  width: 320,
+                  height: 180,
+                  child: WebRtcLiveView(cameraUuid: _cam)))),
+      GoRoute(
+          path: '/devices/wifi',
+          builder: (_, state) {
+            pushed = state.extra;
+            return const SizedBox();
+          }),
+    ]);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        webrtcLiveControllerProvider(_cam).overrideWith((ref) => _Fixed(
+            ref,
+            _cam,
+            const WebRtcLiveState(
+                phase: WebRtcLivePhase.failed,
+                errorKey: 'crecam_live_error_camera_offline'))),
+        camerasProvider.overrideWith((ref) => Stream.value([
+              TerraCamera(
+                  id: _cam,
+                  cameraId: 'p4cam',
+                  name: '카메라 2',
+                  isOnline: false,
+                  createdAt: DateTime(2026, 9, 8)),
+            ])),
+      ],
+      child: MaterialApp.router(routerConfig: router),
+    ));
+    await tester.pump();
+    await tester.pump();
+    await tester.tap(find.byKey(WebRtcLiveView.wifiButtonKey));
+    await tester.pumpAndSettle();
+    expect(pushed, isA<WifiChangeTarget>());
+    final target = pushed! as WifiChangeTarget;
+    expect(target.kind, PairTargetKind.camera);
+    expect(target.id, _cam);
+    expect(target.name, '카메라 2');
+  });
+
+  testWidgets('오프라인이 아닌 실패엔 [Wi-Fi 바꾸기]가 없다', (tester) async {
+    await _pump(
+        tester,
+        const WebRtcLiveState(
+            phase: WebRtcLivePhase.failed,
+            errorKey: 'crecam_live_error_no_video'));
+    expect(find.byKey(WebRtcLiveView.wifiButtonKey), findsNothing);
   });
 }

@@ -13,6 +13,7 @@ import '../../features/my_cage/presentation/device_add_flow_route.dart';
 import '../../features/my_cage/presentation/device_detail_screen.dart';
 import '../../features/my_cage/presentation/group_editor_screen.dart';
 import '../../features/my_cage/presentation/pairing_pet_selection_screen.dart';
+import '../../features/my_cage/domain/device_add_flow.dart';
 import '../../features/my_cage/domain/redesign_management.dart';
 import '../../features/my_cage/presentation/crecam_screen.dart';
 import '../../features/my_cage/presentation/smart_cage_screen.dart';
@@ -345,6 +346,12 @@ GoRouter buildAppRouter({
       GoRoute(
           path: '/devices/add',
           builder: (context, state) => const DeviceAddFlowRoute()),
+      // [Wi-Fi 바꾸기] — 기기 상세·라이브 오프라인 안내에서 대상과 함께 연다.
+      GoRoute(
+          path: '/devices/wifi',
+          builder: (context, state) => state.extra is WifiChangeTarget
+              ? DeviceAddFlowRoute(wifiTarget: state.extra as WifiChangeTarget)
+              : const ErrorScreen()),
       GoRoute(
           path: '/devices/manage',
           builder: (context, state) => const DeviceManagementScreen()),

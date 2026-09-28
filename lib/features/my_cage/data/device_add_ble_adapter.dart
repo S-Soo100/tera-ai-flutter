@@ -131,9 +131,11 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
       // 재등록되게 한다(펌웨어 요청서 2026-09-17 §2-2). 미지원 펌웨어의
       // ERR:UNKNOWN_CMD·무응답은 삼키고 진행한다. 카메라는 §2-3 전이라 보내지
       // 않는다 — 플래시 때 개발 계정으로 된 등록만 지워질 수 있다.
-      // 이미 등록된 카메라의 Wi-Fi 변경: NAME·JWT를 빼면 펌웨어가 pair를
-      // 호출하지 않고(app_ble_prov.c `have_jwt` 조건) 재부팅 뒤 NVS의 기존
-      // camera_id로 재접속한다. 등록이 일어날 수 없으니 실패는 늘 재시도 안전.
+      // 이미 등록된 기기의 Wi-Fi 변경: UNPAIR·NAME·JWT를 빼면 펌웨어가 pair를
+      // 호출하지 않고 NVS의 기존 id로 재접속한다 — 카메라는 app_ble_prov.c
+      // `have_jwt` 조건(재부팅 뒤), 사육장은 저장된 자격증명이 있으면 pair를
+      // 건너뛴다(terra-server FIRMWARE_INTEGRATION §2, 2026-09-28 실기기 확인 대상).
+      // 등록이 일어날 수 없으니 실패는 늘 재시도 안전.
       if (wifiOnly) {
         await command('SSID:$ssid');
         await command('PASS:$password');

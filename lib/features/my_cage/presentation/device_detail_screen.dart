@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../../shared/widgets/figma_icon.dart';
+import '../domain/device_add_flow.dart';
+import '../domain/pair_target_kind.dart';
 import '../domain/redesign_management.dart';
 import 'device_management_controller.dart';
 import 'group_editor_screen.dart';
@@ -53,6 +55,13 @@ class _DeviceDetailBody extends ConsumerWidget {
     final draft = ref.watch(deviceEditorControllerProvider);
     final glass = context.glass;
     final dirty = draft.name != item.name;
+    // Wi-Fi만 바꿀 수 있는 종류 — 사육장은 실기기 확인 결과에 따라 끈다.
+    final wifiKind = switch (item.key.kind) {
+      ManagementKind.camera => PairTargetKind.camera,
+      ManagementKind.device when supportsWifiChange(PairTargetKind.device) =>
+        PairTargetKind.device,
+      _ => null,
+    };
     Future<void> leave() async {
       if (draft.saving) return;
       if (!dirty ||
@@ -242,6 +251,57 @@ class _DeviceDetailBody extends ConsumerWidget {
                                                   color: glass.textSecondary),
                                             ])),
                                   ]),
+                                  // Wi-Fi 바꾸기(2026-09-28, Figma 밖 — 흐름 점검 C1)
+                                  // — 공유기를 바꿔도 지우지 않고 같은 기기로 다시
+                                  // 붙인다. 지우고 다시 등록하면 새 기기가 된다.
+                                  if (wifiKind != null) ...[
+                                    const SizedBox(height: 24),
+                                    Row(children: [
+                                      ManagementSymbolBadge(
+                                          'redesign_v2/wifi'),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                          child: Text(
+                                              (item.isOnline == false
+                                                      ? 'device_wifi_offline_hint'
+                                                      : 'device_wifi_title')
+                                                  .tr(),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: managementStyle(context,
+                                                  weight: FontWeight.w600))),
+                                      TextButton(
+                                          key: const Key('device_wifi_change'),
+                                          style: TextButton.styleFrom(
+                                              padding: EdgeInsets.zero,
+                                              minimumSize: const Size(0, 36),
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap),
+                                          onPressed: draft.saving || dirty
+                                              ? null
+                                              : () => context.push(
+                                                  '/devices/wifi',
+                                                  extra: WifiChangeTarget(
+                                                      kind: wifiKind,
+                                                      id: item.key.id,
+                                                      name: item.name)),
+                                          child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text('device_wifi_action'.tr(),
+                                                    style: managementStyle(
+                                                        context,
+                                                        weight:
+                                                            FontWeight.w600)),
+                                                const SizedBox(width: 4),
+                                                FigmaIcon.tinted(
+                                                    FigmaIcons.arrowNext,
+                                                    size: 18,
+                                                    color: glass.textSecondary),
+                                              ])),
+                                    ]),
+                                  ],
                                 ])),
                             if (draft.errorKey != null)
                               Padding(

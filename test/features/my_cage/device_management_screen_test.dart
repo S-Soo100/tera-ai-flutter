@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/features/my_cage/data/redesign_group_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
+import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/domain/redesign_management.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_management_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_management_screen.dart';
@@ -316,4 +318,58 @@ void main() {
     expect(writes, 0);
     expect(find.text('Device'), findsWidgets);
   });
+
+  // 기기 상세 [Wi-Fi 바꾸기](2026-09-28) — 지우고 다시 등록하면 새 기기가 된다.
+  for (final kind in [ManagementKind.device, ManagementKind.camera]) {
+    testWidgets('${kind.name} 상세의 Wi-Fi 바꾸기는 그 기기를 대상으로 연다',
+        (tester) async {
+      final inventory = ManagementInventory(groups: [], items: [
+        ManagementItem(
+            key: ManagementKey(kind: kind, id: 'row'),
+            name: '기기 3',
+            isOnline: false)
+      ]);
+      Object? pushed;
+      final router = GoRouter(routes: [
+        GoRoute(
+            path: '/',
+            builder: (_, __) =>
+                DeviceDetailScreen(kind: kind, itemId: 'row')),
+        GoRoute(
+            path: '/devices/wifi',
+            builder: (_, state) {
+              pushed = state.extra;
+              return const SizedBox();
+            }),
+      ]);
+      await tester.pumpWidget(ProviderScope(
+          overrides: [
+            managementInventoryProvider.overrideWith((ref) async => inventory),
+            redesignGroupRepositoryProvider.overrideWith((ref) =>
+                RedesignGroupRepository(
+                    loadRows: (_) async => [], rpc: (_, __) async => null)),
+          ],
+          child: MaterialApp.router(
+              theme: AppTheme.light, routerConfig: router)));
+      await tester.pumpAndSettle();
+      final button = find.byKey(const Key('device_wifi_change'));
+      if (kind == ManagementKind.device && !kWifiChangeDeviceEnabled) {
+        expect(button, findsNothing);
+        return;
+      }
+      // 오프라인이면 왜 누르는지 밝힌다.
+      expect(find.text('device_wifi_offline_hint'), findsOneWidget);
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      final target = pushed! as WifiChangeTarget;
+      expect(target.id, 'row');
+      expect(target.name, '기기 3');
+      expect(
+          target.kind,
+          kind == ManagementKind.device
+              ? PairTargetKind.device
+              : PairTargetKind.camera);
+    });
+  }
 }
