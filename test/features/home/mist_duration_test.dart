@@ -25,18 +25,18 @@ void main() {
       expect(MistDuration.tryFromMilliseconds(null), isNull);
     });
 
-    test('서버가 긴 분사를 받기 전엔 3초씩 이어 보낸다', () {
-      expect(kMistServerSupportsLong, isFalse);
-      expect(MistDuration.threeSeconds.parts, 1);
-      expect(MistDuration.sixSeconds.parts, 2);
-      expect(MistDuration.nineSeconds.parts, 3);
-      // 한 번에 싣는 값은 서버 허용값(1/2/3초) 안의 3초.
+    // 2026-09-28 서버 확인: 즉시 분무는 서버가 기기 상한에 맞춰 나눠 보낸다.
+    test('즉시 분무는 명령 한 번 — 고른 시간 그대로 싣는다', () {
+      expect(kMistServerSupportsLong, isTrue);
       for (final d in MistDuration.values) {
-        expect(d.partPayload, {'duration_ms': 3000});
+        expect(d.parts, 1);
+        expect(d.partPayload, {'duration_ms': d.milliseconds});
       }
     });
 
-    test('예약은 3초만 — 서버가 한 번에 실행해 이어 붙일 수 없다', () {
+    // 예약 REST 검증(1~20초, e2eba29)이 운영에 배포되기 전엔 6·9초가 400이다.
+    test('예약은 서버 배포 확인 전까지 3초만', () {
+      expect(kMistSchedulesSupportLong, isFalse);
       expect(MistDuration.values.where((d) => d.schedulable).toList(),
           [MistDuration.threeSeconds]);
       expect(MistDuration.threeSeconds.payload, {'duration_ms': 3000});

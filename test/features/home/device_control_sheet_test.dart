@@ -283,50 +283,30 @@ void main() {
     await _flush(tester);
   });
 
-  testWidgets('분무 9초 — 3초를 ACK마다 5초 간격으로 세 번 이어 보내고 진행을 보인다',
-      (tester) async {
-    final sent = await _pump(tester, ScheduleDevice.mist);
-    await tester.tap(find.byKey(
-        DeviceControlSheet.mistChipKey(MistDuration.nineSeconds)));
-    await tester.pump();
-    await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
-    await tester.pump(kMistUndoWindow + const Duration(milliseconds: 100));
-    expect(sent, hasLength(1));
-    expect(sent.single.$2, {'duration_ms': 3000});
-    expect(find.text('home_mist_running_part'), findsOneWidget);
-    expect(find.byKey(DeviceControlSheet.mistStopKey), findsOneWidget);
-    // ACK(1초 조회) 뒤 분사 3초 + 쉼 2초 = 발행 5초 뒤 다음 회차.
-    await tester.pump(const Duration(seconds: 4));
-    expect(sent, hasLength(1), reason: '분사 중에 보내면 busy로 거절된다');
-    await tester.pump(const Duration(milliseconds: 1100));
-    expect(sent, hasLength(2));
-    await tester.pump(const Duration(seconds: 5));
-    expect(sent, hasLength(3));
-    expect(sent.every((c) => c.$1 == CommandAction.mist), isTrue);
-    await tester.pump(const Duration(seconds: 2));
-    // 다 뿌리면 진행 표시가 사라지고 완료 토스트.
-    expect(find.byKey(DeviceControlSheet.mistStopKey), findsNothing);
-    expect(find.text('home_mist_done_toast'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 20));
-    await _flush(tester);
-  });
-
-  testWidgets('분무 6초 중지 — 남은 회차는 보내지 않고 실제로 뿌린 시간을 알린다',
-      (tester) async {
-    final sent = await _pump(tester, ScheduleDevice.mist);
-    await tester.tap(find.byKey(
-        DeviceControlSheet.mistChipKey(MistDuration.sixSeconds)));
-    await tester.pump();
-    await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
-    await tester.pump(kMistUndoWindow + const Duration(milliseconds: 100));
-    expect(sent, hasLength(1));
-    await tester.tap(find.byKey(DeviceControlSheet.mistStopKey));
-    await tester.pump(const Duration(seconds: 6));
-    expect(sent, hasLength(1));
-    expect(find.text('home_mist_partial'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 20));
-    await _flush(tester);
-  });
+  // 2026-09-28: 서버가 기기 상한에 맞춰 나눠 보낸다(terra-server dispatcher) —
+  // 앱은 6·9초를 명령 한 번으로 보낸다. 구 펌웨어의 5+4초 분할은 서버 몫이다.
+  for (final (mist, ms) in [
+    (MistDuration.sixSeconds, 6000),
+    (MistDuration.nineSeconds, 9000),
+  ]) {
+    testWidgets('분무 ${mist.seconds}초 — 명령 한 번($ms), 이어 보내지 않는다',
+        (tester) async {
+      final sent = await _pump(tester, ScheduleDevice.mist);
+      await tester.tap(find.byKey(DeviceControlSheet.mistChipKey(mist)));
+      await tester.pump();
+      await tester.tap(find.byKey(DeviceControlSheet.mistStartKey));
+      await tester.pump(kMistUndoWindow + const Duration(milliseconds: 100));
+      expect(sent, hasLength(1));
+      expect(sent.single.$1, CommandAction.mist);
+      expect(sent.single.$2, {'duration_ms': ms});
+      // 회차 진행·"남은 분사 중지"는 이어 보낼 때만 있다.
+      expect(find.text('home_mist_running_part'), findsNothing);
+      expect(find.byKey(DeviceControlSheet.mistStopKey), findsNothing);
+      await tester.pump(const Duration(seconds: 20));
+      expect(sent, hasLength(1));
+      await _flush(tester);
+    });
+  }
 
   testWidgets('켜진 팬의 이미 고른 칩을 다시 누르면 보내지 않는다', (tester) async {
     final sent = await _pump(tester, ScheduleDevice.fan,

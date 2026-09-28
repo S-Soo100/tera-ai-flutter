@@ -4,11 +4,14 @@
 /// 따로 보내지 않는다(`APP_TIMER_MIST.md` §1). 앱에서 ON→지연 OFF로 펄스를
 /// 흉내내면 앱이 백그라운드로 가는 순간 펌프가 계속 돈다.
 ///
-/// 2026-09-25 사용자 결정으로 5/10초 → **3/6/9초**(기본 3초). 서버 허용값
-/// (1/2/3초)과 펌웨어 5초 상한 안에서 한 번에 보낼 수 있는 건 3초뿐이라,
-/// 서버가 6000·9000을 지원하기 전까지 6·9초는 **앱이 3초를 2·3번 이어 보낸다**
-/// ([kMistServerSupportsLong], `sendMistWith`). 예약은 서버가 실행해서 앱이
-/// 이어 붙일 수 없으므로 그때까지 3초만 고를 수 있다([schedulable]).
+/// 2026-09-25 사용자 결정으로 5/10초 → **3/6/9초**(기본 3초). 처음엔 서버 허용값
+/// 밖이라 6·9초를 **앱이 3초씩 이어 보냈다**. 2026-09-28 서버 확인(terra-server
+/// `dispatcher.py` 분할 — 9/23부터 운영): 즉시 분무(commands 직결)는 허용값 검사가
+/// 없고, 기기 상한(`capabilities.mist_max_ms`, 구 펌웨어 5000)을 넘으면 서버가
+/// 상한만큼 먼저 보내고 나머지를 1.5초 뒤 `source='timer'` 후속으로 보낸다(9초 =
+/// 5+4, 신 펌웨어 30초 상한은 한 번에). 그래서 즉시 분무는 **명령 한 번**
+/// ([kMistServerSupportsLong]). 예약은 REST 검증을 거치는데 1~20초 범위(`e2eba29`)가
+/// 운영 배포 전이라 3초만 고른다([kMistSchedulesSupportLong], [schedulable]).
 /// 옛 1/2/3·5/10초 예약·이력은 서버에 그대로 남으므로 [tryFromMilliseconds]가
 /// null을 돌려주고, 화면은 저장된 초를 그대로 보여 준다.
 ///
@@ -43,9 +46,10 @@ enum MistDuration {
   /// 예약 저장용 payload — 예약은 서버가 한 번에 실행한다.
   Map<String, dynamic> get payload => {'duration_ms': milliseconds};
 
-  /// 예약에 고를 수 있는가. 서버 예약 허용값이 1/2/3초라 6·9초는 서버 지원 뒤.
+  /// 예약에 고를 수 있는가. 예약 REST 검증이 1~20초 범위로 바뀌어 운영에
+  /// 배포되기 전엔 6·9초가 400이다([kMistSchedulesSupportLong]).
   bool get schedulable =>
-      kMistServerSupportsLong || milliseconds <= partMilliseconds;
+      kMistSchedulesSupportLong || milliseconds <= partMilliseconds;
 
   /// 선택지에 있는 값이면 그 값, 아니면 null(옛 1/2/3·5/10초·손상 값).
   static MistDuration? tryFromMilliseconds(int? ms) {
@@ -56,7 +60,12 @@ enum MistDuration {
   }
 }
 
-/// 서버가 `mist.duration_ms` 6000·9000을 받아 스스로 이어 붙이는가.
-/// true로 바꾸면 이어 보내기 없이 명령 한 번으로 보내고, 예약도 6·9초를 연다
-/// (이관훈님 회신 대기, 2026-09-25).
-const kMistServerSupportsLong = false;
+/// 즉시 분무 6000·9000을 명령 한 번으로 보내는가 — 서버가 기기 상한에 맞춰
+/// 나눠 보낸다(terra-server `backend/mqtt/dispatcher.py` 2.5단계, 2026-09-28 확인).
+/// false면 앱이 3초를 이어 보낸다(`sendMistWith`, 되돌릴 때를 위해 남겨 둔다).
+const kMistServerSupportsLong = true;
+
+/// 예약에서 6·9초를 고를 수 있는가. 서버 예약 검증이 1~20초 범위로 바뀐
+/// `e2eba29`(2026-09-28)의 **운영 배포가 확인되면** true로 바꾼다 — 배포 전엔
+/// 6000·9000 예약이 400이다(terra-server `docs/APP_MIST_DURATION_2026-09-28.md` §4).
+const kMistSchedulesSupportLong = false;
