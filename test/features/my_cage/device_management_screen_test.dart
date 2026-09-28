@@ -377,6 +377,56 @@ void main() {
               : PairTargetKind.camera);
     });
   }
+
+  Future<void> pumpDetail(WidgetTester tester, ManagementItem item) async {
+    await tester.pumpWidget(ProviderScope(
+        key: UniqueKey(),
+        overrides: [
+          managementInventoryProvider.overrideWith(
+              (ref) async => ManagementInventory(groups: [], items: [item])),
+          redesignGroupRepositoryProvider.overrideWith((ref) =>
+              RedesignGroupRepository(
+                  loadRows: (_) async => [], rpc: (_, __) async => null)),
+          deviceAddAccountProvider.overrideWithValue('a'),
+          deviceWifiNameStoreProvider.overrideWithValue(
+              _WifiNames({('a', PairTargetKind.camera, 'row'): 'local_ssid'})),
+        ],
+        child: MaterialApp(
+            theme: AppTheme.light,
+            home: DeviceDetailScreen(kind: item.key.kind, itemId: 'row'))));
+    await tester.pumpAndSettle();
+  }
+
+  // 리뷰(2026-09-28): 이 폰이 붙인 이름은 다른 폰에서 바꾸면 옛 이름이 된다 —
+  // 기기가 보고한 이름(서버 wifi_ssid)이 오면 그 값이 우선이다.
+  testWidgets('서버가 보고한 Wi-Fi 이름이 이 폰의 기억보다 우선이다', (tester) async {
+    await pumpDetail(
+        tester,
+        const ManagementItem(
+            key: ManagementKey(kind: ManagementKind.camera, id: 'row'),
+            name: '카메라',
+            wifiName: 'server_ssid'));
+    expect(tester.widget<Text>(find.byKey(const Key('device_wifi_name'))).data,
+        'server_ssid');
+    await pumpDetail(
+        tester,
+        const ManagementItem(
+            key: ManagementKey(kind: ManagementKind.camera, id: 'row'),
+            name: '카메라'));
+    expect(tester.widget<Text>(find.byKey(const Key('device_wifi_name'))).data,
+        'local_ssid');
+  });
+
+  testWidgets('삭제 확인은 Wi-Fi 바꾸기가 있는 기기에만 그 안내를 붙인다', (tester) async {
+    await pumpDetail(
+        tester,
+        const ManagementItem(
+            key: ManagementKey(kind: ManagementKind.camera, id: 'row'),
+            name: '카메라'));
+    await tester.tap(find.text('management_delete_device'));
+    await tester.pumpAndSettle();
+    expect(find.text('management_delete_confirm_wifi'), findsOneWidget);
+  });
 }
 
 class _WifiNames implements DeviceWifiNameStore {
@@ -392,4 +442,6 @@ class _WifiNames implements DeviceWifiNameStore {
   @override
   Stream<String?> watch(String account, PairTargetKind kind, String id) =>
       Stream.value(load(account, kind, id));
+  @override
+  Future<void> clearAll() async => values.clear();
 }

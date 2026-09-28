@@ -227,8 +227,7 @@ void main() {
   // 사육장 등록 완료 + 카메라 BLE 미확인(첨부 스크린샷 사고) — 확인 중엔
   // '연결 실패'·다시 연결 버튼이 없고, 끝내 안 붙을 때만 나온다.
   for (final reconnect in [CameraReconnect.waiting, CameraReconnect.missing]) {
-    testWidgets('사육장 등록 + 카메라 BLE 미확인 · ${reconnect.name}',
-        (tester) async {
+    testWidgets('사육장 등록 + 카메라 BLE 미확인 · ${reconnect.name}', (tester) async {
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = const Size(393, 852);
       addTearDown(tester.view.reset);
@@ -542,7 +541,8 @@ void main() {
 
     testWidgets('못 알아본 기기를 고르면 대상이 맞는지 먼저 묻는다', (tester) async {
       await pump(tester, const DeviceAddState(candidates: [device]));
-      await tester.tap(find.byKey(const Key('device_add_candidate_physical-a')));
+      await tester
+          .tap(find.byKey(const Key('device_add_candidate_physical-a')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('device_wifi_confirm_other_ok')),
           findsOneWidget);
@@ -554,8 +554,8 @@ void main() {
     });
 
     testWidgets('대상 행이 해제됐으면 목록 대신 안내만 보인다', (tester) async {
-      await pump(tester,
-          const DeviceAddState(candidates: [device], targetGone: true));
+      await pump(
+          tester, const DeviceAddState(candidates: [device], targetGone: true));
       expect(find.textContaining('더 이상 이 계정에 등록돼 있지 않아요'), findsOneWidget);
       expect(find.byKey(const Key('device_add_candidate_physical-a')),
           findsNothing);
@@ -586,6 +586,29 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('대상인지 확인 못 했으면 "변경완료"라고 단정하지 않는다', (tester) async {
+      await pump(
+          tester,
+          const DeviceAddState(
+              step: DeviceAddStep.results,
+              ssid: 'home',
+              results: {
+                PairTargetKind.device: DeviceAddResult(
+                    candidate: device,
+                    outcome: DeviceAddOutcome.wifiUpdated,
+                    registeredId: 'row-3',
+                    wifiConnected: true,
+                    reconnect: CameraReconnect.online,
+                    unverified: true),
+              }));
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('device_wifi_unverified')), findsOneWidget);
+      expect(find.text('사육장 Wi-Fi 변경완료'), findsNothing);
+      expect(find.byKey(const Key('device_wifi_retry')), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
     testWidgets('사육장이 붙으면 사육장 문구로 완료를 알린다', (tester) async {
       await pump(
           tester,
@@ -605,5 +628,16 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
+  });
+
+  // 리뷰(2026-09-28): 종류별 키는 문자열로 이어 붙여 짝이 없으면 키가 그대로 보인다.
+  test('종류별 결과 문구는 카메라·사육장 짝이 모두 ko.json에 있다', () {
+    final Object? raw =
+        jsonDecode(File('assets/l10n/ko.json').readAsStringSync());
+    final keys = (raw! as Map<String, Object?>).keys.toSet();
+    for (final key in DeviceAddFlowScreenKeys.kindKeyed) {
+      expect(keys, contains(key));
+      expect(keys, contains('${key}_device'));
+    }
   });
 }

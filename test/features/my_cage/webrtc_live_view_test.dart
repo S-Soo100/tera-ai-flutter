@@ -155,4 +155,35 @@ void main() {
             errorKey: 'crecam_live_error_no_video'));
     expect(find.byKey(WebRtcLiveView.wifiButtonKey), findsNothing);
   });
+
+  // 리뷰(2026-09-28): 가로 전체화면에서 열면 Wi-Fi 바꾸기가 가로로 열린다.
+  testWidgets('showWifiChange=false면 오프라인이어도 [Wi-Fi 바꾸기]가 없다', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        webrtcLiveControllerProvider(_cam).overrideWith((ref) => _Fixed(
+            ref,
+            _cam,
+            const WebRtcLiveState(
+                phase: WebRtcLivePhase.failed,
+                errorKey: 'crecam_live_error_camera_offline'))),
+        camerasProvider.overrideWith((ref) => Stream.value([
+              TerraCamera(
+                  id: _cam,
+                  cameraId: 'p4cam',
+                  name: '카메라 2',
+                  isOnline: false,
+                  createdAt: DateTime(2026, 9, 8)),
+            ])),
+      ],
+      child: const MaterialApp(
+          home: SizedBox(
+              width: 320,
+              height: 180,
+              child: WebRtcLiveView(cameraUuid: _cam, showWifiChange: false))),
+    ));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(WebRtcLiveView.retryButtonKey), findsOneWidget);
+    expect(find.byKey(WebRtcLiveView.wifiButtonKey), findsNothing);
+  });
 }

@@ -100,7 +100,10 @@ class RedesignGroupRepository {
                 row[kind == ManagementKind.device ? 'device_id' : 'camera_id']),
             isOnline:
                 row['is_online'] is bool ? row['is_online'] as bool : null,
-            subtitle: kind == ManagementKind.pet ? _text(row['morph']) : null);
+            subtitle: kind == ManagementKind.pet ? _text(row['morph']) : null,
+            // 펌웨어가 보고하면 서버가 채울 컬럼(2026-09-28 요청) — 없으면 null.
+            wifiName:
+                kind == ManagementKind.pet ? null : _text(row['wifi_ssid']));
     return ManagementInventory(groups: [
       for (final row in sortedGroups)
         ManagementGroup(

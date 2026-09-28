@@ -23,8 +23,13 @@ class ManagementItem {
       this.groupId,
       this.hardwareId,
       this.isOnline,
-      this.subtitle});
+      this.subtitle,
+      this.wifiName});
   final ManagementKey key;
+
+  /// 기기가 보고한 연결 Wi-Fi 이름(서버 `wifi_ssid`) — 펌웨어 보고 전엔 null이고
+  /// 기기 상세는 이 폰이 붙인 이름으로 대신한다(2026-09-28 요청).
+  final String? wifiName;
   final String name;
   final String? groupId;
   final String? hardwareId;

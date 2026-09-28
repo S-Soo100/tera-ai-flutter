@@ -63,6 +63,16 @@ class _DeviceDetailBody extends ConsumerWidget {
         PairTargetKind.device,
       _ => null,
     };
+    // 기기가 보고한 이름(서버 wifi_ssid)이 우선, 없으면 이 폰이 마지막에 붙인
+    // 이름 — 다른 폰에서 바꿨으면 옛 이름일 수 있다(펌웨어 보고 요청 2026-09-28).
+    final reported = item.wifiName;
+    final wifiName = reported != null && reported.isNotEmpty
+        ? reported
+        : wifiKind == null
+            ? null
+            : ref
+                .watch(deviceWifiNameProvider((wifiKind, item.key.id)))
+                .valueOrNull;
     Future<void> leave() async {
       if (draft.saving) return;
       if (!dirty ||
@@ -260,7 +270,9 @@ class _DeviceDetailBody extends ConsumerWidget {
                                     const SizedBox(height: 24),
                                     InkWell(
                                         key: const Key('device_wifi_change'),
-                                        onTap: draft.saving || dirty
+                                        // 이름을 고치는 중이어도 연다 — 이 화면은
+                                        // 아래에 남아 돌아오면 이어서 저장한다.
+                                        onTap: draft.saving
                                             ? null
                                             : () => context.push(
                                                 '/devices/wifi',
@@ -278,15 +290,7 @@ class _DeviceDetailBody extends ConsumerWidget {
                                           const SizedBox(width: 12),
                                           Expanded(
                                               child: Text(
-                                                  ref
-                                                          .watch(
-                                                              deviceWifiNameProvider(
-                                                                  (
-                                                                wifiKind,
-                                                                item.key.id
-                                                              )))
-                                                          .valueOrNull ??
-                                                      '--',
+                                                  wifiName ?? '--',
                                                   key: const Key(
                                                       'device_wifi_name'),
                                                   textAlign: TextAlign.right,
@@ -330,7 +334,10 @@ class _DeviceDetailBody extends ConsumerWidget {
                                   ? null
                                   : () async {
                                       if (await managementConfirm(context,
-                                              'management_delete_confirm'.tr(),
+                                              (wifiKind == null
+                                                      ? 'management_delete_confirm'
+                                                      : 'management_delete_confirm_wifi')
+                                                  .tr(),
                                               action:
                                                   'management_delete'.tr()) &&
                                           context.mounted) {

@@ -129,16 +129,17 @@ class LiveSurfaceNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 면이 낮으면(홈 라이브 16:9·큰 글자) 버튼이 두 줄로 넘어가도 잘리지 않게
-    // 통째로 줄인다 — 할 일 버튼이 넘침 띠에 가려지면 안 된다(2026-09-28).
+    // 안에서 스크롤한다 — 줄이면 버튼 터치 영역까지 작아진다(2026-09-28 리뷰).
+    // 넉넉하면 minHeight로 가운데 정렬은 그대로다.
     return LayoutBuilder(
-        builder: (context, constraints) => Center(
-            child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: SizedBox(
-                    width: constraints.hasBoundedWidth
-                        ? constraints.maxWidth
-                        : null,
-                    child: _content()))));
+        builder: (context, constraints) => SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: ConstrainedBox(
+                constraints: BoxConstraints(
+                    minHeight: constraints.hasBoundedHeight
+                        ? constraints.maxHeight
+                        : 0),
+                child: _content())));
   }
 
   Widget _content() {

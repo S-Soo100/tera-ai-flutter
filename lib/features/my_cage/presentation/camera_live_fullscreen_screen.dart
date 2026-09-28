@@ -173,7 +173,12 @@ class _CameraLiveFullscreenScreenState
           children: [
             // contain(기본) — 확대해서 보는 화면이라 프레임 전체를 보여준다.
             // cover면 가로 화면에서 상하가 크롭된다.
-            WebRtcLiveView(key: _liveKey, cameraUuid: widget.cameraId),
+            // 가로 전체화면에선 [Wi-Fi 바꾸기]를 두지 않는다 — 가로·immersive가
+            // 그대로 이어져 기기 목록·비밀번호 입력이 가로로 열린다(2026-09-28).
+            WebRtcLiveView(
+                key: _liveKey,
+                cameraUuid: widget.cameraId,
+                showWifiChange: false),
             // 좌상단 닫기 — 노치/펀치홀을 피해 SafeArea 안쪽. expand된
             // Stack에서 버튼이 늘어나지 않게 Align으로 좌상단 고정.
             SafeArea(
