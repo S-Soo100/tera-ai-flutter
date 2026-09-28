@@ -8,10 +8,11 @@ import '../../../shared/widgets/figma_icon.dart';
 import '../domain/device_add_flow.dart';
 import '../domain/pair_target_kind.dart';
 import '../domain/redesign_management.dart';
+import '../domain/sys_health.dart';
 import 'device_add_flow_controller.dart';
 import 'device_management_controller.dart';
 import 'group_editor_screen.dart';
-import 'widgets/camera_health_widgets.dart';
+import 'widgets/sys_health_widgets.dart';
 import 'widgets/management_widgets.dart';
 
 class DeviceDetailScreen extends ConsumerWidget {
@@ -74,6 +75,12 @@ class _DeviceDetailBody extends ConsumerWidget {
             : ref
                 .watch(deviceWifiNameProvider((wifiKind, item.key.id)))
                 .valueOrNull;
+    // 재시작·Wi-Fi 약함 대상 — 개체(pet)엔 없다.
+    final SysTarget? sysTarget = switch (item.key.kind) {
+      ManagementKind.camera => (PairTargetKind.camera, item.key.id),
+      ManagementKind.device => (PairTargetKind.device, item.key.id),
+      ManagementKind.pet => null,
+    };
     Future<void> leave() async {
       if (draft.saving) return;
       if (!dirty ||
@@ -143,9 +150,9 @@ class _DeviceDetailBody extends ConsumerWidget {
                               padding:
                                   const EdgeInsets.only(top: 16, bottom: 24),
                               children: [
-                            // 카메라: Wi-Fi 약함 배너(요청서 2026-09-28 §3).
-                            if (item.key.kind == ManagementKind.camera)
-                              WeakWifiBannerView(cameraUuid: item.key.id),
+                            // Wi-Fi 약함 배너(카메라·사육장 요청서 2026-09-28 §3).
+                            if (sysTarget != null)
+                              WeakWifiBannerView(target: sysTarget),
                             ManagementLabel('management_device_name'.tr()),
                             const SizedBox(height: 12),
                             ManagementNameField(
@@ -311,10 +318,10 @@ class _DeviceDetailBody extends ConsumerWidget {
                                               color: glass.textSecondary),
                                         ])),
                                   ],
-                                  // 카메라 재시작(요청서 2026-09-28 §2) — 켜져
-                                  // 있고 0.2.0+ 펌웨어일 때만 보인다.
-                                  if (item.key.kind == ManagementKind.camera)
-                                    CameraRebootRow(cameraUuid: item.key.id),
+                                  // 기기 재시작(카메라·사육장 요청서 2026-09-28
+                                  // §2) — 켜져 있고 신 펌웨어일 때만 보인다.
+                                  if (sysTarget != null)
+                                    RebootRow(target: sysTarget),
                                 ])),
                             if (draft.errorKey != null)
                               Padding(
