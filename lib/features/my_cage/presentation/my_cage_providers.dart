@@ -32,7 +32,6 @@ import '../domain/highlight_night_policy.dart';
 import '../domain/motion_clip.dart';
 import '../domain/nightly_highlight.dart';
 import '../domain/nightly_report.dart';
-import '../domain/camera_health.dart';
 import '../domain/terra_camera.dart';
 import '../domain/enclosure.dart';
 import 'highlights_controller.dart';
@@ -169,51 +168,6 @@ final camerasProvider = StreamProvider<List<TerraCamera>>((ref) {
 
   ref.onDispose(controller.close);
 
-  return controller.stream;
-});
-
-/// 카메라 한 대의 heartbeat 값(재시작 판정·Wi-Fi 약함, 2026-09-28).
-///
-/// [camerasProvider]는 생존 신호만 바뀐 갱신을 일부러 버린다(홈 깜빡임) —
-/// `clip_stats`는 heartbeat마다 바뀌므로 거기 넣지 않고, 카메라 상세를 보는
-/// 동안만(autoDispose) 이 카메라 행의 UPDATE를 따로 구독한다. 첫 값은 직결 조회,
-/// 재합류하면 다시 읽는다. 읽기 실패는 "없음"으로 둔다(안내가 안 뜰 뿐).
-final cameraHealthProvider =
-    StreamProvider.autoDispose.family<CameraHealth, String>((ref, cameraUuid) {
-  ref.watch(currentUserProvider.select((u) => u?.id));
-  final repo = ref.watch(cameraRepositoryProvider);
-  final supabase = ref.watch(_supabaseClientProvider);
-  final controller = StreamController<CameraHealth>();
-
-  Future<void> reload() async {
-    try {
-      final health = await repo.fetchHealth(cameraUuid);
-      if (!controller.isClosed) controller.add(health);
-    } catch (_) {
-      if (!controller.isClosed) controller.add(CameraHealth.empty);
-    }
-  }
-
-  unawaited(reload());
-  bindResilientChannel(
-    ref,
-    supabase: supabase,
-    name: 'camera-health-$cameraUuid',
-    configure: (c) => c.onPostgresChanges(
-      event: PostgresChangeEvent.update,
-      schema: 'public',
-      table: 'cameras',
-      filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq, column: 'id', value: cameraUuid),
-      callback: (payload) {
-        if (!controller.isClosed) {
-          controller.add(CameraHealth.fromRow(payload.newRecord));
-        }
-      },
-    ),
-    onRejoined: () => unawaited(reload()),
-  );
-  ref.onDispose(controller.close);
   return controller.stream;
 });
 

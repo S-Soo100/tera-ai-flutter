@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/network/terra_rest_client.dart';
-import '../domain/camera_health.dart';
+import '../domain/sys_health.dart';
 import '../domain/terra_camera.dart';
 
 class CameraRepository {
@@ -40,14 +40,14 @@ class CameraRepository {
 
   /// 재시작 판정·Wi-Fi 약함용 heartbeat 값(`clip_stats`). **직결 조회만** —
   /// REST `GET /cameras`는 아직 `clip_stats`를 null로 준다(요청서 §1).
-  Future<CameraHealth> fetchHealth(String cameraUuid) async {
+  Future<SysHealth> fetchHealth(String cameraUuid) async {
     final rows = await _supabase
         .from('cameras')
         .select('clip_stats,clip_stats_at')
         .eq('id', cameraUuid)
         .limit(1);
     final list = (rows as List).cast<Map<String, dynamic>>();
-    return list.isEmpty ? CameraHealth.empty : CameraHealth.fromRow(list.first);
+    return list.isEmpty ? SysHealth.empty : SysHealth.fromCameraRow(list.first);
   }
 
   // 카메라 hard delete는 앱에서 호출하지 않는다(2026-09-15 회신 §2.1 —
