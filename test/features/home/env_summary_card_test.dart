@@ -47,7 +47,6 @@ Future<void> _pump(
         currentDeviceIdProvider.overrideWith((ref) async => deviceId),
         telemetryStreamProvider
             .overrideWith((ref, id) => Stream.value(reading ?? _reading())),
-        telemetryStaleProvider.overrideWith((ref, id) => Stream.value(false)),
         homeTodayExtremesProvider.overrideWith((ref) async => _extremes),
       ],
       child: MaterialApp.router(routerConfig: _router()),
@@ -71,13 +70,27 @@ GoRouter _router() => GoRouter(
     );
 
 void main() {
-  testWidgets('stale or invalid sensor readings remain unknown',
+  // 2026-09-28 백엔드 표시 규칙: 오래된 값은 지우지 않고 흐리게 + 안내,
+  // 정상값을 한 번도 못 받았으면(실패 행뿐) `--`.
+  testWidgets('오래된 값은 지우지 않고 안내를 붙인다',
       (tester) async {
-    await _pump(tester, reading: _reading(ts: DateTime(2020)));
-    expect(find.text('--'), findsNWidgets(2));
+    await _pump(tester,
+        reading: _reading(
+            ts: DateTime.now().subtract(const Duration(seconds: 40))));
+    expect(find.text('home_live_temp_value'), findsOneWidget);
+    expect(find.byKey(const Key('env_live_caption')), findsOneWidget);
+  });
+
+  testWidgets('정상값을 한 번도 못 받았으면(실패 행뿐) --', (tester) async {
     await _pump(tester, reading: _reading(aOk: false));
     expect(find.text('--'), findsNWidgets(2));
   });
+
+  testWidgets('15초 안의 값엔 아무 안내도 붙이지 않는다', (tester) async {
+    await _pump(tester);
+    expect(find.byKey(const Key('env_live_caption')), findsNothing);
+  });
+
   testWidgets('온도·습도 2열(현재값 + 오늘 최고/최저)을 그린다', (tester) async {
     await _pump(tester);
     // EasyLocalization 미초기화 → tr()은 키를 그대로 돌려준다.

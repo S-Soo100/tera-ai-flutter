@@ -102,6 +102,21 @@ class SupabaseModuleControlRepository {
     return TelemetryReading.fromJson(list.first as Map<String, dynamic>);
   }
 
+  /// 마지막 **정상** 텔레메트리(`a_ok=true`) — 현재 온습도의 첫 값. 최신 1행은
+  /// 센서 단발 실패 행일 수 있다(백엔드 표시 규칙 2026-09-28 §3.1).
+  Future<TelemetryReading?> latestGoodTelemetry(String deviceId) async {
+    final rows = await _supabase
+        .from('telemetry')
+        .select()
+        .eq('device_id', deviceId)
+        .eq('a_ok', true)
+        .order('ts', ascending: false)
+        .limit(1);
+    final list = rows as List;
+    if (list.isEmpty) return null;
+    return TelemetryReading.fromJson(list.first as Map<String, dynamic>);
+  }
+
   // ── 텔레메트리 히스토리 (telemetry_30m, 30분 집계 장기 추이) ──────────────────
 
   /// [deviceId]의 30분 집계 버킷을 [from](inclusive)부터 [to](exclusive, 옵션)까지
