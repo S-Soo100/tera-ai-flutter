@@ -209,7 +209,8 @@ void main() {
           forgotten.add(c.physicalId);
           known.remove(c.physicalId);
         },
-        owned: (kind, id) async => (lastSeen: lastSeen, hardwareId: null),
+        owned: (kind, id) async =>
+            (lastSeen: lastSeen, hardwareId: null, isOnline: false),
         reconnectPoll: const Duration(milliseconds: 5),
         reconnectTimeout: const Duration(milliseconds: 40));
     setUp(() {
@@ -456,7 +457,8 @@ void main() {
         knownId: (candidate) async => known[candidate.physicalId],
         forgetId: (candidate) async => known.remove(candidate.physicalId),
         rememberId: (candidate, id) async => known[candidate.physicalId] = id,
-        owned: (kind, id) async => (lastSeen: null, hardwareId: null),
+        owned: (kind, id) async =>
+            (lastSeen: null, hardwareId: null, isOnline: false),
         unlink: (kind, id) async => unlinked.add(id),
         reconnectPoll: const Duration(milliseconds: 1),
         reconnectTimeout: Duration.zero);
@@ -498,7 +500,8 @@ void main() {
         knownId: (candidate) async => known[candidate.physicalId],
         forgetId: (candidate) async => known.remove(candidate.physicalId),
         rememberId: (candidate, id) async => known[candidate.physicalId] = id,
-        owned: (kind, id) async => (lastSeen: null, hardwareId: null),
+        owned: (kind, id) async =>
+            (lastSeen: null, hardwareId: null, isOnline: false),
         unlink: (kind, id) async => unlinked.add(id),
         reconnectPoll: const Duration(milliseconds: 1),
         reconnectTimeout: Duration.zero);
@@ -555,7 +558,11 @@ void main() {
           ownedCalls.add((kind, id));
           return row == null
               ? null
-              : (lastSeen: lastSeen, hardwareId: row!.hardwareId);
+              : (
+                  lastSeen: lastSeen,
+                  hardwareId: row!.hardwareId,
+                  isOnline: row!.isOnline
+                );
         },
         unlink: (kind, id) async => unlinked.add('${kind.name}:$id'),
         rememberWifi: (kind, id, ssid) async => wifiNames[id] = ssid,
@@ -567,7 +574,8 @@ void main() {
       known = {};
       unlinked = [];
       lastSeen = null;
-      row = (lastSeen: null, hardwareId: '2884856F2548');
+      // 기본은 공유기를 바꿔 꺼진 대상 — 새 신호를 믿을 수 있다.
+      row = (lastSeen: null, hardwareId: '2884856F2548', isOnline: false);
       ownedCalls = [];
       wifiNames = {};
       controller = build();
@@ -631,6 +639,49 @@ void main() {
       expect(result.canRetry, isTrue);
       expect(known, isEmpty, reason: '서버가 확인하지 않은 기기는 기억하지 않는다');
       expect(wifiNames, isEmpty, reason: '다른 기기였을 수 있어 Wi-Fi 이름도 안 남긴다');
+    });
+
+    // 리뷰(2026-09-28): 대상이 원래 Wi-Fi로 온라인이면 새 하트비트가 옛 접속에서도
+    // 온다 — 못 알아본 기기를 골랐으면 성공으로 단정하지도, 기억하지도 않는다.
+    test('대상이 온라인인데 못 알아본 기기를 골랐으면 확인 불가 — 기억하지 않는다', () async {
+      row = (lastSeen: null, hardwareId: '2884856F2548', isOnline: true);
+      controller.select(device);
+      await controller.connect('home', 'password');
+      lastSeen = DateTime.now().add(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      final result = controller.state.results[PairTargetKind.device]!;
+      expect(result.reconnect, CameraReconnect.online);
+      expect(result.unverified, isTrue);
+      expect(known, isEmpty);
+      expect(wifiNames, isEmpty);
+    });
+
+    test('대상이 온라인이어도 알아본 기기를 골랐으면 믿는다', () async {
+      row = (lastSeen: null, hardwareId: '2884856F2548', isOnline: true);
+      await controller.scan();
+      gateway.events.add([androidCage]);
+      await settle();
+      expect(controller.state.selected[PairTargetKind.device], androidCage);
+      await controller.connect('home', 'password');
+      lastSeen = DateTime.now().add(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      final result = controller.state.results[PairTargetKind.device]!;
+      expect(result.unverified, isFalse);
+      expect(known[androidCage.physicalId], 'row-3');
+      expect(wifiNames, {'row-3': 'home'});
+    });
+
+    test('[다시 찾기]는 알아본 대상 기기를 다시 골라 둔다', () async {
+      await controller.scan();
+      gateway.events.add([androidCage]);
+      await settle();
+      await controller.connect('home', 'password');
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(controller.state.results[PairTargetKind.device]!.reconnect,
+          CameraReconnect.missing);
+      await controller.continueAdding();
+      expect(controller.state.step, DeviceAddStep.scan);
+      expect(controller.state.selected[PairTargetKind.device], androidCage);
     });
 
     test('대상 행이 해제됐으면 진행하지 않는다', () async {

@@ -25,6 +25,7 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
     super.key,
     required this.cameraUuid,
     this.cover = false,
+    this.showWifiChange = true,
   });
 
   final String cameraUuid;
@@ -32,6 +33,9 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
   /// true면 영상이 면을 **꽉 채운다**(가장자리 크롭 허용). 홈 풀블리드 면이
   /// 쓴다. 기본 false(contain) — 카메라 상세는 프레임 전체를 보여준다.
   final bool cover;
+
+  /// 카메라 오프라인 안내에 [Wi-Fi 바꾸기]를 둘지 — 가로 전체화면은 끈다.
+  final bool showWifiChange;
 
   static const retryButtonKey = Key('webrtc_live_retry');
   static const wifiButtonKey = Key('webrtc_live_wifi_change');
@@ -121,6 +125,7 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
           cameraUuid: cameraUuid,
           errorKey: state.errorKey ?? 'crecam_live_error_failed',
           retrying: true,
+          showWifiChange: widget.showWifiChange,
           onRetry: retry);
     }
     return switch (state.phase) {
@@ -140,6 +145,7 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
       WebRtcLivePhase.failed => _FailedView(
           cameraUuid: cameraUuid,
           errorKey: state.errorKey ?? 'crecam_live_error_failed',
+          showWifiChange: widget.showWifiChange,
           onRetry: retry,
         ),
     };
@@ -248,7 +254,9 @@ class _FailedView extends ConsumerWidget {
       {required this.cameraUuid,
       required this.errorKey,
       required this.onRetry,
-      this.retrying = false});
+      this.retrying = false,
+      this.showWifiChange = true});
+  final bool showWifiChange;
 
   final String cameraUuid;
   final String errorKey;
@@ -291,9 +299,11 @@ class _FailedView extends ConsumerWidget {
         actionLabel: 'crecam_live_retry'.tr(),
         onAction: onRetry,
         // 공유기를 바꿨다면 지우지 말고 Wi-Fi만 바꾼다(2026-09-28, 흐름 점검 A1).
-        secondaryLabel: camera == null ? null : 'device_wifi_action'.tr(),
+        secondaryLabel: camera == null || !showWifiChange
+            ? null
+            : 'device_wifi_action'.tr(),
         secondaryKey: WebRtcLiveView.wifiButtonKey,
-        onSecondary: camera == null
+        onSecondary: camera == null || !showWifiChange
             ? null
             : () => context.push('/devices/wifi',
                 extra: WifiChangeTarget(

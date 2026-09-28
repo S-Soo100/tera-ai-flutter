@@ -23,6 +23,22 @@ import 'widgets/management_widgets.dart';
 
 /// A route owns a flow identity, so closing it disposes BLE subscriptions and
 /// account credentials. Legacy pair routes wrap this same screen.
+/// 종류별(`_device` 짝) 결과 문구 키 — 테스트가 ko.json에 짝이 모두 있는지 본다.
+abstract final class DeviceAddFlowScreenKeys {
+  static const kindKeyed = {
+    'device_add_wifi_updated',
+    'device_add_wifi_updated_waiting',
+    'device_add_wifi_updated_online',
+    'device_add_wifi_updated_missing',
+    'device_add_wifi_missing_title',
+    'device_add_wifi_checking',
+    'device_add_checking_hint',
+    'device_add_wifi_updated_failed',
+    'device_add_register_new',
+    'device_add_register_new_warning',
+  };
+}
+
 class DeviceAddFlowScreen extends ConsumerStatefulWidget {
   const DeviceAddFlowScreen(
       {super.key,
@@ -128,8 +144,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     // 빼고 보내면 서버가 '구성 변경'(40001)으로 거절하고 — PostgREST는 이를
     // 무한 재시도해 응답이 오지 않는다 — 통과해도 도마뱀이 환경에서 빠진다
     // (2026-09-22).
-    final draft = GroupEditDraft.existing(group, inventory).select(
-        ManagementItem(key: newKey, name: newName, groupId: null));
+    final draft = GroupEditDraft.existing(group, inventory)
+        .select(ManagementItem(key: newKey, name: newName, groupId: null));
     // 시간 초과 뒤 다시 눌러도 같은 요청으로 본다(서버 멱등 키).
     final requestId = const Uuid().v4();
     final joined = await Navigator.of(context).push<bool>(MaterialPageRoute(
@@ -226,9 +242,13 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
   }
 
   /// 종류별 문구 — 결과 문구는 원래 카메라 전용이었다. 사육장도 Wi-Fi만 바꾸게
-  /// 되면서(2026-09-28) `_device` 짝을 둔다.
-  static String _byKind(String key, PairTargetKind kind) =>
-      kind == PairTargetKind.device ? '${key}_device' : key;
+  /// 되면서(2026-09-28) `_device` 짝을 둔다. 짝이 없으면 키가 그대로 보이므로
+  /// 쓰는 키는 [DeviceAddFlowScreenKeys.kindKeyed]에 모으고 테스트가 ko.json의 짝을 확인한다.
+  static String _byKind(String key, PairTargetKind kind) {
+    assert(DeviceAddFlowScreenKeys.kindKeyed.contains(key),
+        'DeviceAddFlowScreenKeys.kindKeyed에 $key 추가');
+    return kind == PairTargetKind.device ? '${key}_device' : key;
+  }
 
   /// 모든 결과가 Wi-Fi 실패(비밀번호 오류 계열)인지 — 등록 대기/기타 실패는
   /// 기존 결과 화면 의미를 보존한다(P04: 모든 오류를 비밀번호 오류로 바꾸지 않음).
@@ -363,7 +383,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                   child: ManagementTopBar(
                       title: (widget.wifiTarget == null
                               ? 'device_add_title'
-                              : 'device_wifi_title')
+                              : 'device_wifi_action')
                           .tr(),
                       onBack: () => _back(state, controller),
                       close: step == DeviceAddStep.results,
@@ -404,8 +424,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                               Align(
                                   alignment: Alignment.centerLeft,
                                   child: _PairingTextButton(
-                                      key: const Key(
-                                          'device_add_open_settings'),
+                                      key:
+                                          const Key('device_add_open_settings'),
                                       onPressed: () =>
                                           unawaited(openAppSettings()),
                                       child: Text(
@@ -526,12 +546,9 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             context, 'device_add_select_title', 'device_add_select_subtitle',
             busy: state.busy)
       else
-        _heading(
-            context,
-            'device_wifi_select_title',
+        _heading(context, 'device_wifi_select_title',
             'device_wifi_select_subtitle_${target.kind.name}',
-            titleArgs: {'name': target.name},
-            busy: state.busy),
+            titleArgs: {'name': target.name}, busy: state.busy),
       if (state.targetGone)
         _emptyBox(context, 'device_wifi_target_gone'.tr())
       else if (candidates.isEmpty)
@@ -567,8 +584,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                   cancelLabel: 'common_cancel'.tr(),
                                   confirmLabel:
                                       'device_wifi_confirm_other_ok'.tr(),
-                                  confirmKey:
-                                      const Key('device_wifi_confirm_other_ok'));
+                                  confirmKey: const Key(
+                                      'device_wifi_confirm_other_ok'));
                               if (!ok || !context.mounted) return;
                             }
                             // 사육장 Wi-Fi 바꾸기를 끈 빌드에서만 — 켜져 있으면
@@ -713,16 +730,15 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             onPressed: controller.loadNetworks),
     ];
     // Figma 990:7601 — 1개 선택 시에만 안내(y667). Wi-Fi 바꾸기는 한 대뿐이다.
-    final above = target == null &&
-            state.selected.length == 1 &&
-            candidates.length > 1
-        ? Text('device_add_selection_hint'.tr(),
-            key: const Key('device_add_selection_hint'),
-            textAlign: TextAlign.center,
-            style: managementStyle(context,
-                    size: 14, color: context.glass.bodySecondary)
-                .copyWith(height: 16.70703125 / 14))
-        : null;
+    final above =
+        target == null && state.selected.length == 1 && candidates.length > 1
+            ? Text('device_add_selection_hint'.tr(),
+                key: const Key('device_add_selection_hint'),
+                textAlign: TextAlign.center,
+                style: managementStyle(context,
+                        size: 14, color: context.glass.bodySecondary)
+                    .copyWith(height: 16.70703125 / 14))
+            : null;
     return (body, footer, above);
   }
 
@@ -953,10 +969,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             (_joinedGroupId != null && _joinedGroupHasPet
                     ? 'device_add_joined_subtitle'
                     : confirmed == 2 || _joinedGroupId != null
-                    ? 'device_add_done_subtitle'
-                    : isNew(PairTargetKind.device)
-                        ? 'device_add_continue_camera_subtitle'
-                        : 'device_add_continue_device_subtitle')
+                        ? 'device_add_done_subtitle'
+                        : isNew(PairTargetKind.device)
+                            ? 'device_add_continue_camera_subtitle'
+                            : 'device_add_continue_device_subtitle')
                 .tr(),
             textAlign: TextAlign.center,
             style: managementStyle(context, color: context.glass.bodySecondary)
@@ -1081,18 +1097,29 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     // '확인 중', 끝내 안 붙으면 '연결 실패'(다시 연결 + 새 카메라 등록).
     final checking = result.unconfirmed && reconnect == CameraReconnect.waiting;
     final failed = result.unconfirmedFailed;
+    // 대상 신호는 왔지만 고른 기기가 대상인지 모른다 — "변경완료"라고 단정하지
+    // 않는다(대상이 원래 Wi-Fi로 계속 연결돼 있었을 수 있다).
+    final unverified = target != null &&
+        result.unverified &&
+        reconnect == CameraReconnect.online;
     // 끝내 안 붙었으면 "변경완료"라고 쓰지 않는다 — ✕ 아이콘·"다시 연결되지
     // 않았어요"와 제목이 어긋났다(2026-09-25).
     final (titleKey, titleId) = failed
         ? ('device_add_results', 'device_add_wifi_failed')
         : missing
-            ? (_byKind('device_add_wifi_missing_title', kind),
-                'device_add_wifi_missing')
+            ? (
+                _byKind('device_add_wifi_missing_title', kind),
+                'device_add_wifi_missing'
+              )
             : checking
-                ? (_byKind('device_add_wifi_checking', kind),
-                    'device_add_wifi_checking')
-                : (_byKind('device_add_wifi_updated', kind),
-                    'device_add_wifi_updated');
+                ? (
+                    _byKind('device_add_wifi_checking', kind),
+                    'device_add_wifi_checking'
+                  )
+                : (
+                    _byKind('device_add_wifi_updated', kind),
+                    'device_add_wifi_updated'
+                  );
     final body = [
       SizedBox(height: math.min(186, MediaQuery.sizeOf(context).height * 0.27)),
       Center(
@@ -1105,8 +1132,12 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
               size: 64,
               color: context.glass.textPrimary)),
       const SizedBox(height: 24),
-      Text(titleKey.tr(),
-          key: Key(titleId),
+      Text(
+          unverified
+              ? 'device_wifi_unverified_title'
+                  .tr(namedArgs: {'name': target.name})
+              : titleKey.tr(),
+          key: Key(unverified ? 'device_wifi_unverified' : titleId),
           textAlign: TextAlign.center,
           style: managementStyle(context, size: 18, weight: FontWeight.w600)
               .copyWith(height: 21.48046875 / 18)),
@@ -1114,28 +1145,30 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       Text(
           // Wi-Fi 바꾸기에서 대상 신호가 끝내 안 오면 — 다른 기기를 골랐을 수
           // 있다. 비밀번호 탓이 아니라 기기 확인이 먼저다.
-          missing && target != null
-              ? 'device_wifi_target_missing'
-                  .tr(namedArgs: {'name': target.name})
-              : _byKind(
-                      switch (reconnect) {
-                        CameraReconnect.waiting => checking
-                            ? 'device_add_checking_hint'
-                            : 'device_add_wifi_updated_waiting',
-                        CameraReconnect.missing => failed
-                            ? 'device_add_wifi_updated_failed'
-                            : 'device_add_wifi_updated_missing',
-                        _ => 'device_add_wifi_updated_online',
-                      },
-                      kind)
-                  .tr(),
+          unverified
+              ? 'device_wifi_unverified'.tr(namedArgs: {'name': target.name})
+              : missing && target != null
+                  ? 'device_wifi_target_missing'
+                      .tr(namedArgs: {'name': target.name})
+                  : _byKind(
+                          switch (reconnect) {
+                            CameraReconnect.waiting => checking
+                                ? 'device_add_checking_hint'
+                                : 'device_add_wifi_updated_waiting',
+                            CameraReconnect.missing => failed
+                                ? 'device_add_wifi_updated_failed'
+                                : 'device_add_wifi_updated_missing',
+                            _ => 'device_add_wifi_updated_online',
+                          },
+                          kind)
+                      .tr(),
           textAlign: TextAlign.center,
           style: managementStyle(context, color: context.glass.bodySecondary)
               .copyWith(height: 19.09375 / 16)),
     ];
     final footer = <Widget>[
       // 대상을 잘못 골랐을 수 있으니 기기 선택부터 다시 한다.
-      if (missing && target != null)
+      if ((missing || unverified) && target != null)
         ManagementButton(
             key: const Key('device_wifi_retry'),
             label: 'device_wifi_retry'.tr(),

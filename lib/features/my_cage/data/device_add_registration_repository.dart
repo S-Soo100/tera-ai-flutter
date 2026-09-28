@@ -61,7 +61,7 @@ class DeviceAddRegistrationRepository {
     _guard(account);
     final rows = await client
         .from(kind == PairTargetKind.camera ? 'cameras' : 'devices')
-        .select('id,last_seen_at,hw_id,unlinked_at')
+        .select('id,last_seen_at,hw_id,is_online,unlinked_at')
         .eq('owner_id', account)
         .eq('id', id)
         .limit(1);
@@ -69,9 +69,11 @@ class DeviceAddRegistrationRepository {
     if (rows.isEmpty || rows.single['unlinked_at'] != null) return null;
     final raw = rows.single['last_seen_at'];
     final hw = rows.single['hw_id'];
+    final online = rows.single['is_online'];
     return (
       lastSeen: raw == null ? null : DateTime.tryParse(raw.toString()),
-      hardwareId: hw is String && hw.isNotEmpty ? hw : null
+      hardwareId: hw is String && hw.isNotEmpty ? hw : null,
+      isOnline: online is bool ? online : null
     );
   }
 }

@@ -30,7 +30,13 @@ class WifiChangeTarget {
 }
 
 /// 서버에 남아 있는 이 계정의 기기 행 — 해제·타 계정이면 조회 결과가 null이다.
-typedef OwnedDeviceRow = ({DateTime? lastSeen, String? hardwareId});
+/// [isOnline]은 Wi-Fi 변경 판정에 쓴다: 대상이 원래 Wi-Fi로 온라인이면 새
+/// 하트비트가 새 Wi-Fi 접속인지 옛 접속인지 가릴 수 없다.
+typedef OwnedDeviceRow = ({
+  DateTime? lastSeen,
+  String? hardwareId,
+  bool? isOnline
+});
 
 /// BLE 기기가 서버 `hw_id`의 그 기기로 보이는가 — 힌트일 뿐이다(2026-09-28).
 /// ESP32는 MAC 4개를 연속으로 쓰고 블루투스 MAC은 기준 MAC+2다. `hw_id`가
@@ -117,8 +123,14 @@ class DeviceAddResult {
       this.reconnect,
       this.issue,
       this.issueDetail,
-      this.failure});
+      this.failure,
+      this.unverified = false});
   final DeviceAddCandidate candidate;
+
+  /// Wi-Fi 바꾸기에서 대상 신호는 왔지만 고른 기기가 대상인지 확인할 수 없다 —
+  /// 대상이 원래 Wi-Fi로 온라인이었고 목록에서 알아보지 못한 기기를 골랐다.
+  /// 그 기기를 대상으로 기억하지 않는다(다음 등록이 Wi-Fi 변경으로 샌다).
+  final bool unverified;
 
   /// [DeviceAddOutcome.failed]의 이유 — 결과 화면이 할 일을 밝힌다.
   final DeviceProvisionFailure? failure;
@@ -133,17 +145,20 @@ class DeviceAddResult {
   final CameraReconnect? reconnect;
   final DeviceRegistrationIssue? issue;
   final String? issueDetail;
-  DeviceAddResult withReconnect(CameraReconnect value) => DeviceAddResult(
-      candidate: candidate,
-      outcome: outcome,
-      registeredId: registeredId,
-      registeredName: registeredName,
-      hardwareId: hardwareId,
-      wifiConnected: wifiConnected,
-      reconnect: value,
-      issue: issue,
-      issueDetail: issueDetail,
-      failure: failure);
+  DeviceAddResult withReconnect(CameraReconnect value,
+          {bool unverified = false}) =>
+      DeviceAddResult(
+          candidate: candidate,
+          outcome: outcome,
+          registeredId: registeredId,
+          registeredName: registeredName,
+          hardwareId: hardwareId,
+          wifiConnected: wifiConnected,
+          reconnect: value,
+          issue: issue,
+          issueDetail: issueDetail,
+          failure: failure,
+          unverified: unverified);
 
   /// 사육장은 등록 대기여도 다시 보낼 수 있다. ⚠️ 다시 보내면 `UNPAIR` 뒤 서버가
   /// **새 `device_id`로 새 행**을 만든다(2026-09-25 운영 확인 — 전엔 같은 행으로
@@ -279,8 +294,7 @@ class DeviceProvisionReceipt {
   /// BLE가 성공을 확정했거나, `CONNECT`는 갔는데 회신 없이 끊긴 경우만.
   /// 기기가 실패를 확정했거나 시도조차 안 했으면 서버 감시는 오판(옛 Wi-Fi
   /// 하트비트가 계속 온다)이라 즉시 실패로 둔다.
-  bool get worthWatching =>
-      wifiConnected || (connectSent && !wifiRejected);
+  bool get worthWatching => wifiConnected || (connectSent && !wifiRejected);
 }
 
 abstract interface class DeviceAddGateway {

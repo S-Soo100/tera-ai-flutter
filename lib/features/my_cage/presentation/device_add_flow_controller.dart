@@ -315,8 +315,9 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     }
     final hint = bleMatchesHardware(candidate, _targetHardware);
     // 실기기로 hw_id ↔ 블루투스 주소 관계를 확인하려는 기록(2026-09-28).
-    debugPrint('[device-add] wifi-target ble=${candidate.physicalId} '
-        'name=${candidate.name} hw=$_targetHardware match=$hint '
+    // 릴리스 logcat에도 남으니 끝 4자리만 — 차이(0·2·…)를 보기엔 충분하다.
+    debugPrint('[device-add] wifi-target ble=…${_tail(candidate.physicalId)} '
+        'name=${candidate.name} hw=…${_tail(_targetHardware)} match=$hint '
         'remembered=$remembered');
     if (!hint && !remembered) return;
     if (state.matched.contains(candidate.physicalId)) return;
@@ -325,6 +326,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         selected: state.selected.isEmpty && state.step == DeviceAddStep.scan
             ? Map.unmodifiable({candidate.kind: candidate})
             : null);
+  }
+
+  static String _tail(String? value) {
+    final hex = (value ?? '').replaceAll(':', '');
+    return hex.length <= 4 ? hex : hex.substring(hex.length - 4);
   }
 
   void select(DeviceAddCandidate candidate) {
@@ -660,13 +666,23 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       final since = DateTime.now();
       DateTime? baseline;
       var baselineKnown = false;
+      var wasOnline = true; // 모르면 온라인으로 본다(보수적으로).
       try {
-        baseline = (await owned!(candidate.kind, id))?.lastSeen;
+        final row = await owned!(candidate.kind, id);
+        baseline = row?.lastSeen;
+        wasOnline = row?.isOnline != false;
         baselineKnown = true;
       } catch (_) {/* 아래 폴백 */}
       if (!_active) return;
+      // 대상이 원래 Wi-Fi로 온라인이면 새 하트비트는 옛 접속에서도 온다 —
+      // 목록에서 알아본 기기(이 폰의 기억·hw_id)를 골랐을 때만 그 신호를 이
+      // 기기의 새 접속으로 믿는다. 일반 기기 추가의 Wi-Fi 변경은 기억한 기기다.
+      final trusted = _target == null ||
+          state.matched.contains(candidate.physicalId) ||
+          !wasOnline;
       unawaited(_watchReconnect(candidate, id,
           ssid: ssid,
+          trusted: trusted,
           since: since,
           baseline: baseline,
           baselineKnown: baselineKnown));
@@ -677,6 +693,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   /// [baselineKnown]이면 [baseline]보다 새로운 값만, 아니면 [since] 이후 값을 접속으로.
   Future<void> _watchReconnect(DeviceAddCandidate candidate, String id,
       {required String ssid,
+      required bool trusted,
       required DateTime since,
       required DateTime? baseline,
       required bool baselineKnown}) async {
@@ -709,13 +726,16 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
           results: Map.unmodifiable({
         ...state.results,
         kind: latest!.withReconnect(
-            online ? CameraReconnect.online : CameraReconnect.missing)
+            online ? CameraReconnect.online : CameraReconnect.missing,
+            unverified: online && !trusted)
       }));
       // BLE 성공 없이 서버로만 확인된 경우 — 지금이 연결 완료 시점이다.
       if (online && !latest.wifiConnected) _completed?.call();
       // 서버가 그 행으로 확인했으니 이 BLE 주소는 그 기기다 — 다음부턴 목록에서
       // 바로 알아본다(다른 폰에서 등록한 기기를 Wi-Fi 바꾸기로 고른 경우).
-      if (online) {
+      // 확인할 수 없으면 기억하지 않는다 — 다른 기기를 대상으로 기억하면 그
+      // 기기의 다음 등록이 Wi-Fi 변경으로 새어 영영 등록되지 않는다.
+      if (online && trusted) {
         await _remember(candidate, id);
         await _saveWifi(kind, id, ssid);
       }
@@ -761,8 +781,18 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
 
   Future<void> continueAdding() async {
     if (!_active || state.busy) return;
+    // Wi-Fi 바꾸기의 [다시 찾기] — 알아본 대상 기기는 처음처럼 골라 둔다.
+    final matched = _target == null
+        ? null
+        : state.candidates
+            .where((c) => state.matched.contains(c.physicalId))
+            .firstOrNull;
     state = state.copyWith(
-        selected: const {}, step: DeviceAddStep.scan, networks: const []);
+        selected: matched == null
+            ? const {}
+            : Map.unmodifiable({matched.kind: matched}),
+        step: DeviceAddStep.scan,
+        networks: const []);
     await scan();
   }
 
