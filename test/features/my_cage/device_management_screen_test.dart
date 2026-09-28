@@ -7,6 +7,8 @@ import 'package:vivanaut/features/my_cage/data/redesign_group_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
 import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/domain/redesign_management.dart';
+import 'package:vivanaut/features/my_cage/data/device_wifi_name_store.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_management_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_management_screen.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_detail_screen.dart';
@@ -321,8 +323,7 @@ void main() {
 
   // 기기 상세 [Wi-Fi 바꾸기](2026-09-28) — 지우고 다시 등록하면 새 기기가 된다.
   for (final kind in [ManagementKind.device, ManagementKind.camera]) {
-    testWidgets('${kind.name} 상세의 Wi-Fi 바꾸기는 그 기기를 대상으로 연다',
-        (tester) async {
+    testWidgets('${kind.name} 상세의 Wi-Fi 바꾸기는 그 기기를 대상으로 연다', (tester) async {
       final inventory = ManagementInventory(groups: [], items: [
         ManagementItem(
             key: ManagementKey(kind: kind, id: 'row'),
@@ -333,8 +334,7 @@ void main() {
       final router = GoRouter(routes: [
         GoRoute(
             path: '/',
-            builder: (_, __) =>
-                DeviceDetailScreen(kind: kind, itemId: 'row')),
+            builder: (_, __) => DeviceDetailScreen(kind: kind, itemId: 'row')),
         GoRoute(
             path: '/devices/wifi',
             builder: (_, state) {
@@ -348,17 +348,22 @@ void main() {
             redesignGroupRepositoryProvider.overrideWith((ref) =>
                 RedesignGroupRepository(
                     loadRows: (_) async => [], rpc: (_, __) async => null)),
+            deviceAddAccountProvider.overrideWithValue('a'),
+            deviceWifiNameStoreProvider.overrideWithValue(
+                _WifiNames({('a', PairTargetKind.device, 'row'): 'home_2.4G'})),
           ],
-          child: MaterialApp.router(
-              theme: AppTheme.light, routerConfig: router)));
+          child:
+              MaterialApp.router(theme: AppTheme.light, routerConfig: router)));
       await tester.pumpAndSettle();
       final button = find.byKey(const Key('device_wifi_change'));
       if (kind == ManagementKind.device && !kWifiChangeDeviceEnabled) {
         expect(button, findsNothing);
         return;
       }
-      // 오프라인이면 왜 누르는지 밝힌다.
-      expect(find.text('device_wifi_offline_hint'), findsOneWidget);
+      // 오른쪽은 이 폰이 마지막에 붙인 Wi-Fi 이름, 모르면 '--'.
+      final name =
+          tester.widget<Text>(find.byKey(const Key('device_wifi_name')));
+      expect(name.data, kind == ManagementKind.device ? 'home_2.4G' : '--');
       await tester.ensureVisible(button);
       await tester.tap(button);
       await tester.pumpAndSettle();
@@ -372,4 +377,19 @@ void main() {
               : PairTargetKind.camera);
     });
   }
+}
+
+class _WifiNames implements DeviceWifiNameStore {
+  _WifiNames(this.values);
+  final Map<(String, PairTargetKind, String), String> values;
+  @override
+  String? load(String account, PairTargetKind kind, String id) =>
+      values[(account, kind, id)];
+  @override
+  Future<void> save(
+          String account, PairTargetKind kind, String id, String ssid) async =>
+      values[(account, kind, id)] = ssid;
+  @override
+  Stream<String?> watch(String account, PairTargetKind kind, String id) =>
+      Stream.value(load(account, kind, id));
 }

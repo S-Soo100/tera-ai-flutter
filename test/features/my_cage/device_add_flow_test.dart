@@ -299,8 +299,7 @@ void main() {
     // 리뷰 지적(2026-09-24): 옛 Wi-Fi로 계속 오던 하트비트가 새 접속으로 읽히면
     // 안 된다 — 영수증 뒤 읽은 기준값보다 '새로운' last_seen_at만 접속이다.
     // 폰 시계로 미래(서버 시계 앞섬)인 값이어도 기준값과 같으면 아니다.
-    test('영수증 전부터 있던 last_seen_at(시계 오차로 미래여도)은 접속이 아니다',
-        () async {
+    test('영수증 전부터 있던 last_seen_at(시계 오차로 미래여도)은 접속이 아니다', () async {
       known[camera.physicalId] = 'existing-camera';
       lastSeen = DateTime.now().add(const Duration(minutes: 5));
       gateway.receipts[camera.physicalId] = droppedAfterConnect;
@@ -536,6 +535,7 @@ void main() {
     late DateTime? lastSeen;
     late OwnedDeviceRow? row;
     late List<(PairTargetKind, String)> ownedCalls;
+    late Map<String, String> wifiNames;
     DeviceAddFlowController build() => DeviceAddFlowController(
         gateway: gateway,
         accountId: 'owner',
@@ -558,6 +558,7 @@ void main() {
               : (lastSeen: lastSeen, hardwareId: row!.hardwareId);
         },
         unlink: (kind, id) async => unlinked.add('${kind.name}:$id'),
+        rememberWifi: (kind, id, ssid) async => wifiNames[id] = ssid,
         reconnectPoll: const Duration(milliseconds: 5),
         reconnectTimeout: const Duration(milliseconds: 40));
     setUp(() {
@@ -568,6 +569,7 @@ void main() {
       lastSeen = null;
       row = (lastSeen: null, hardwareId: '2884856F2548');
       ownedCalls = [];
+      wifiNames = {};
       controller = build();
     });
     Future<void> settle() =>
@@ -616,10 +618,10 @@ void main() {
       expect(controller.state.results[PairTargetKind.device]!.reconnect,
           CameraReconnect.online);
       expect(known[device.physicalId], 'row-3');
+      expect(wifiNames, {'row-3': 'home'}, reason: '기기 상세에 보일 Wi-Fi 이름');
     });
 
-    test('BLE가 WIFI_OK여도 대상 신호가 안 오면 다른 기기였을 수 있다 — 다시 시도 가능',
-        () async {
+    test('BLE가 WIFI_OK여도 대상 신호가 안 오면 다른 기기였을 수 있다 — 다시 시도 가능', () async {
       controller.select(device);
       await controller.connect('home', 'password');
       await Future<void>.delayed(const Duration(milliseconds: 80));
@@ -628,6 +630,7 @@ void main() {
       expect(result.reconnect, CameraReconnect.missing);
       expect(result.canRetry, isTrue);
       expect(known, isEmpty, reason: '서버가 확인하지 않은 기기는 기억하지 않는다');
+      expect(wifiNames, isEmpty, reason: '다른 기기였을 수 있어 Wi-Fi 이름도 안 남긴다');
     });
 
     test('대상 행이 해제됐으면 진행하지 않는다', () async {
@@ -653,6 +656,7 @@ void main() {
       expect(controller.state.results[PairTargetKind.device]!.outcome,
           DeviceAddOutcome.registered);
       expect(unlinked, ['device:row-3']);
+      expect(wifiNames, {'device-uuid': 'home'}, reason: '새로 등록한 행에 이름을 남긴다');
     });
   });
 
@@ -661,16 +665,18 @@ void main() {
         DeviceAddCandidate(
             physicalId: id, kind: PairTargetKind.device, name: name, rssi: 0);
     test('Android MAC이 hw_id와 같거나 +2면 같은 기기로 본다', () {
-      expect(bleMatchesHardware(ble('28:84:85:6F:25:48'), '2884856F2548'),
-          isTrue);
-      expect(bleMatchesHardware(ble('28:84:85:6F:25:4A'), '2884856F2548'),
-          isTrue);
+      expect(
+          bleMatchesHardware(ble('28:84:85:6F:25:48'), '2884856F2548'), isTrue);
+      expect(
+          bleMatchesHardware(ble('28:84:85:6F:25:4A'), '2884856F2548'), isTrue);
       expect(bleMatchesHardware(ble('28:84:85:6F:25:49'), '2884856F2548'),
           isFalse);
-      expect(bleMatchesHardware(ble('28:84:85:6F:25:4C'), '2884856F2548'),
-          isFalse, reason: '다음 기기(+4)와 겹치면 안 된다');
-      expect(bleMatchesHardware(ble('28:84:85:6F:26:00'), '2884856F25FE'),
-          isTrue, reason: '바이트 경계를 넘는 +2');
+      expect(
+          bleMatchesHardware(ble('28:84:85:6F:25:4C'), '2884856F2548'), isFalse,
+          reason: '다음 기기(+4)와 겹치면 안 된다');
+      expect(
+          bleMatchesHardware(ble('28:84:85:6F:26:00'), '2884856F25FE'), isTrue,
+          reason: '바이트 경계를 넘는 +2');
     });
     test('iOS는 광고 이름 끝 MAC 하위 2바이트로만 본다', () {
       const uuid = '6F9619FF-8B86-D011-B42D-00C04FC964FF';
@@ -678,8 +684,8 @@ void main() {
           isTrue);
       expect(bleMatchesHardware(ble(uuid, 'FB2_P4_CAM_2550'), '2884856F2548'),
           isFalse);
-      expect(bleMatchesHardware(ble(uuid, 'terra-iot'), '2884856F2548'),
-          isFalse);
+      expect(
+          bleMatchesHardware(ble(uuid, 'terra-iot'), '2884856F2548'), isFalse);
     });
     test('hw_id가 없거나 형식이 다르면 알아보지 않는다', () {
       expect(bleMatchesHardware(ble('28:84:85:6F:25:48'), null), isFalse);
