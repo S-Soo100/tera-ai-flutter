@@ -250,15 +250,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('분무 예약'), findsOneWidget);
     expect(find.text('종료'), findsNothing);
-    // 냉각팬 종료 칩과 같은 줄(2026-09-25 분사 시간 3/6/9초, 칩 3개 셋으로).
+    // 냉각팬 종료 칩과 같은 줄(2026-09-29 분사 시간 3/5/9초, 칩 3개 셋으로).
     expect(find.text('분사 시간'), findsOneWidget);
     expect(tester.getRect(find.byKey(const Key('routine_mist_3'))),
         const Rect.fromLTWH(24, 310, 111, 44));
-    expect(tester.getRect(find.byKey(const Key('routine_mist_6'))),
+    expect(tester.getRect(find.byKey(const Key('routine_mist_5'))),
         const Rect.fromLTWH(141, 310, 111, 44));
     expect(tester.getRect(find.byKey(const Key('routine_mist_9'))),
         const Rect.fromLTWH(258, 310, 111, 44));
-    // Figma 밖(사용자 결정): 서버가 6·9초 예약을 받기 전까지 3초만 된다는
+    // Figma 밖(사용자 결정): 서버가 9초 예약을 받기 전까지 3·5초만 된다는
     // 안내가 칩 아래 붙어 반복이 그만큼 내려간다.
     final note = tester.getRect(find.byKey(const Key('routine_mist_only_three')));
     expect(note.top, 362);

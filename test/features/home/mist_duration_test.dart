@@ -3,9 +3,9 @@ import 'package:vivanaut/features/home/domain/mist_duration.dart';
 
 void main() {
   group('MistDuration', () {
-    test('선택지는 3/6/9초 (2026-09-25 사용자 결정)', () {
+    test('선택지는 3/5/9초 (2026-09-29 사용자 결정)', () {
       expect(MistDuration.values.map((d) => d.milliseconds).toList(),
-          [3000, 6000, 9000]);
+          [3000, 5000, 9000]);
     });
 
     test('기본값은 3초', () {
@@ -18,9 +18,9 @@ void main() {
       }
     });
 
-    test('옛 1/2·5/10초·모르는 값은 null — 화면이 저장값을 그대로 둔다', () {
+    test('옛 1/2·6/10초·모르는 값은 null — 화면이 저장값을 그대로 둔다', () {
       expect(MistDuration.tryFromMilliseconds(1000), isNull);
-      expect(MistDuration.tryFromMilliseconds(5000), isNull);
+      expect(MistDuration.tryFromMilliseconds(6000), isNull);
       expect(MistDuration.tryFromMilliseconds(10000), isNull);
       expect(MistDuration.tryFromMilliseconds(null), isNull);
     });
@@ -34,11 +34,12 @@ void main() {
       }
     });
 
-    // 예약 REST 검증(1~20초, e2eba29)이 운영에 배포되기 전엔 6·9초가 400이다.
-    test('예약은 서버 배포 확인 전까지 3초만', () {
+    // 3·5초는 서버 예약의 옛 허용값에 있다. 9초는 1~20초 범위 검증(e2eba29)이
+    // 운영에 배포되기 전엔 400이다.
+    test('예약은 서버 배포 확인 전까지 3·5초만', () {
       expect(kMistSchedulesSupportLong, isFalse);
       expect(MistDuration.values.where((d) => d.schedulable).toList(),
-          [MistDuration.threeSeconds]);
+          [MistDuration.threeSeconds, MistDuration.fiveSeconds]);
       expect(MistDuration.threeSeconds.payload, {'duration_ms': 3000});
     });
 

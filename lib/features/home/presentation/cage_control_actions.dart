@@ -310,7 +310,7 @@ const kMistPartLateLimit = Duration(seconds: 10);
 
 /// [mistOnce]의 컨테이너 버전.
 ///
-/// 서버가 6000·9000을 받기 전까지 6·9초는 3초를 2·3번 **이어 보낸다**
+/// [kMistServerSupportsLong]가 false일 때만 3초씩 **이어 보낸다**(되돌림용 — 지금은 명령 한 번)
 /// (2026-09-25 사용자 결정, [MistDuration.parts]). 회차마다 기기 ACK를 받고,
 /// 분사가 끝나고 2초 쉰 뒤([MistLock.partInterval]) 다음을 보낸다. 중간에
 /// 거절·무응답·중지·지연이 나면 남은 회차는 보내지 않고 **실제로 뿌린 시간**을

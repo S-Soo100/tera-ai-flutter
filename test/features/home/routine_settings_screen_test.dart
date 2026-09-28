@@ -252,7 +252,7 @@ void main() {
     ]);
   });
 
-  testWidgets('분무 예약 — 6·9초는 서버 지원 전이라 못 고르고 3초로 저장된다',
+  testWidgets('분무 예약 — 9초는 서버 지원 전이라 못 고르고, 5초는 된다',
       (tester) async {
     final repo = _FakeRepo();
     await _pump(tester, repo);
@@ -261,9 +261,11 @@ void main() {
     expect(find.text('home_mist_schedule_only_three'), findsOneWidget);
     await tester.tap(find.byKey(const Key('routine_mist_9')));
     await tester.pump();
+    await tester.tap(find.byKey(const Key('routine_mist_5')));
+    await tester.pump();
     await _save(tester);
     expect(repo.payloads, [
-      {'duration_ms': 3000}
+      {'duration_ms': 5000}
     ]);
   });
 
@@ -574,7 +576,7 @@ void main() {
     expect(find.text('08:00 home_mist_seconds'), findsOneWidget);
     await tester.tap(find.byKey(const Key('schedule_a')));
     await tester.pumpAndSettle();
-    for (final sec in [3, 6, 9]) {
+    for (final sec in [3, 5, 9]) {
       expect(
           tester
               .widget<ScheduleChoiceChip>(find.byKey(Key('routine_mist_$sec')))

@@ -34,8 +34,8 @@ void main() {
     test('분사 시간 + 3초 동안 잠근다', () {
       expect(MistLock.lockFor(MistDuration.threeSeconds),
           const Duration(seconds: 6));
-      expect(MistLock.lockFor(MistDuration.sixSeconds),
-          const Duration(seconds: 9));
+      expect(MistLock.lockFor(MistDuration.fiveSeconds),
+          const Duration(seconds: 8));
       final lock = MistLock.startingAt(DateTime(2026, 9, 28, 12),
           mist: MistDuration.nineSeconds);
       expect(lock.isLocked(DateTime(2026, 9, 28, 12, 0, 11)), isTrue);
