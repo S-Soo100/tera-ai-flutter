@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/network/auth_session.dart';
 
@@ -35,18 +36,29 @@ class WebRtcSignalingRepository {
   /// 한 번의 호출로만 보인다. 1이면 이후 실패는 ICE/NAT, 2 이상이면 펌웨어.
   /// 구 서버는 안 주므로 null.
   ///
+  /// 라이브 시청 제한(2026-09-30): [viewerId]·[viewerLabel]로 한 기기 판정,
+  /// [takeover]는 사용자가 "이 기기로 시청"을 고른 요청에만 true. 구 서버는
+  /// 모르는 필드를 무시한다. `liveUntil`은 서버가 라이브를 끝낼 시각(UTC,
+  /// 구 서버 null).
+  ///
   /// 504 → [CameraUnresponsiveException]
   /// 502 → [SignalingGatewayException]
+  /// 409 → [LiveInUseException]
+  /// 429 → [LiveCooldownException] / [LiveRateLimitedException]
   Future<
       ({
         String sessionId,
         String answerSdp,
         int? offerAttempts,
         int? answerMs,
+        DateTime? liveUntil,
       })> sendOffer(
     String cameraUuid,
-    String sdp,
-  ) async {
+    String sdp, {
+    String? viewerId,
+    String? viewerLabel,
+    bool takeover = false,
+  }) async {
     // 서버가 펌웨어 answer를 timeout_sec(15s)까지 동기 대기하므로
     // http 타임아웃은 그보다 길게 — 504 응답을 받아야 "카메라 응답 없음" 구분 가능
     final resp = await _authedRequest(
@@ -57,6 +69,9 @@ class WebRtcSignalingRepository {
           'sdp': sdp,
           'type': 'offer',
           'timeout_sec': 15.0,
+          if (viewerId != null) 'viewer_id': viewerId,
+          if (viewerLabel != null) 'viewer_label': viewerLabel,
+          if (takeover) 'takeover': true,
         }),
       ),
       timeoutSec: 25,
@@ -64,15 +79,47 @@ class WebRtcSignalingRepository {
 
     if (resp.statusCode == 504) throw const CameraUnresponsiveException();
     if (resp.statusCode == 502) throw const SignalingGatewayException();
+    final limit = liveLimitException(resp);
+    if (limit != null) throw limit;
     _checkStatus(resp);
 
     final body = jsonDecode(resp.body) as Map<String, dynamic>;
+    final until = body['live_until'];
     return (
       sessionId: body['session_id'] as String,
       answerSdp: body['sdp'] as String,
       offerAttempts: (body['offer_attempts'] as num?)?.toInt(),
       answerMs: (body['answer_ms'] as num?)?.toInt(),
+      liveUntil: until is String ? DateTime.tryParse(until) : null,
     );
+  }
+
+  /// offer 409·429 응답을 시청 제한 예외로 바꾼다. 해당 없으면 null.
+  /// body `{"detail": {"code": ..., "retry_after": N, "viewer": ...}}`.
+  /// 구 서버 429는 detail이 문자열이다 — 시간당 상한(rate_limited)으로 본다.
+  @visibleForTesting
+  static Exception? liveLimitException(http.Response resp) {
+    if (resp.statusCode != 409 && resp.statusCode != 429) return null;
+    Map<String, dynamic> detail = const {};
+    try {
+      final d = (jsonDecode(resp.body) as Map)['detail'];
+      if (d is Map<String, dynamic>) detail = d;
+    } catch (_) {}
+    final code = detail['code'];
+    if (resp.statusCode == 409) {
+      // 다른 409(예: 등록 충돌)는 offer에서 나오지 않지만, code가 다르면 건드리지 않는다.
+      if (code != 'live_in_use') return null;
+      final viewer = detail['viewer'];
+      return LiveInUseException(
+          viewer is String && viewer.trim().isNotEmpty ? viewer.trim() : null);
+    }
+    final secs = (detail['retry_after'] as num?)?.toInt() ??
+        int.tryParse(resp.headers['retry-after'] ?? '') ??
+        60;
+    final after = Duration(seconds: secs < 1 ? 1 : secs);
+    return code == 'live_cooldown'
+        ? LiveCooldownException(after)
+        : LiveRateLimitedException(after);
   }
 
   /// POST /cameras/{cameraUuid}/webrtc/ice — fire-and-forget, 실패 무시

@@ -9,12 +9,15 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
 import '../data/camera_exceptions.dart';
+import '../data/live_viewer_identity.dart';
 import '../data/webrtc_connect_log_repository.dart';
 import '../data/webrtc_signaling_repository.dart';
+import '../domain/live_limit.dart';
 import '../domain/live_view_session.dart';
 import '../domain/terra_camera.dart';
 import '../domain/webrtc_connect_log.dart';
 import '../domain/webrtc_diag.dart';
+import 'camera_live_session_provider.dart';
 import 'my_cage_providers.dart';
 import 'webrtc_diag_providers.dart';
 
@@ -40,6 +43,11 @@ enum WebRtcLivePhase {
   /// 집중 복구 예산 소진·카메라 오프라인·망 없음·인증 실패. "다시 연결" 버튼이
   /// 있고 저빈도([kWebRtcLowRetryInterval]) 자동 재시도만 돈다.
   failed,
+
+  /// 서버 시청 제한([WebRtcLiveState.limit] — 다른 기기 시청 중·가져가짐·15분
+  /// 뒤 쉼·시도 과다). **자동 재시도가 전혀 없다** — 망 변화·앱 복귀·카메라
+  /// 온라인에도 그대로이고, 사용자가 버튼을 눌러야 다시 요청한다(2026-09-30).
+  limited,
 }
 
 extension WebRtcLivePhaseX on WebRtcLivePhase {
@@ -65,12 +73,20 @@ class WebRtcLiveState {
   /// 스켈레톤으로 바뀌며 사유와 버튼이 사라져 무한 루프처럼 보였다(2026-09-25).
   final bool quietRetry;
 
+  /// [WebRtcLivePhase.limited]의 이유.
+  final LiveLimit? limit;
+
+  /// 서버가 이 라이브를 끝낼 시각(폰 시계, 15분 상한). 구 서버면 null.
+  final DateTime? liveUntil;
+
   const WebRtcLiveState({
     required this.phase,
     this.errorKey,
     this.renderer,
     this.statsUnknown = false,
     this.quietRetry = false,
+    this.limit,
+    this.liveUntil,
   });
 
   WebRtcLiveState copyWith({
@@ -87,6 +103,8 @@ class WebRtcLiveState {
       renderer: renderer ?? this.renderer,
       statsUnknown: statsUnknown ?? this.statsUnknown,
       quietRetry: quietRetry ?? this.quietRetry,
+      limit: limit,
+      liveUntil: liveUntil,
     );
   }
 }
@@ -352,6 +370,9 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   RTCVideoRenderer? _renderer;
   String? _sessionId;
 
+  /// 이 세션을 서버가 끝낼 시각(폰 시계). 첫 프레임 때 state에 싣는다.
+  DateTime? _liveUntil;
+
   /// 연결 때 잡아 둔 시그널링 — 정리([_cleanup])가 ref 없이 세션을 닫는다.
   WebRtcSignalingRepository? _signaling;
 
@@ -435,7 +456,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       _hiddenTimer = null;
       if (_pauseReasons.contains('hidden')) {
         _resume('hidden');
-      } else if (_view == null && !_suspended) {
+      } else if (_view == null && !_suspended && _limit == null) {
         // 연결은 살아 있었다 — 지금 상태 그대로 새 시청을 연다.
         _diag('visible');
         _openView(fromCurrent: true);
@@ -540,6 +561,26 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       _netDebounce?.cancel();
       _netDebounce = Timer(kWebRtcNetworkDebounce, _onNetworkSettled);
     });
+    // 다른 기기가 가져감·15분 끝 — 자동 재연결 대신 안내(2026-09-30).
+    ref.listen<AsyncValue<CameraLiveSession>>(
+        cameraLiveSessionProvider(cameraUuid), (_, next) {
+      final row = next.valueOrNull;
+      final mine = _sessionId;
+      if (row == null || mine == null || _limit != null) return;
+      final ended = row.endedFor(mine, DateTime.now());
+      if (ended == null) return;
+      _diag('live-ended-by-server', {
+        'kind': ended.kind.name,
+        'row_session': row.sessionId,
+        'reason': row.endReason,
+      });
+      // 서버가 카메라 쪽 세션을 이미 닫았다 — 우리가 close를 또 보내지 않는다.
+      _enterLimited(_gen, ended,
+          outcome: ended.kind == LiveLimitKind.takenOver
+              ? 'taken_over'
+              : 'time_limit',
+          closeRemote: false);
+    });
     ref.listen<AsyncValue<List<TerraCamera>>>(camerasProvider, (_, next) {
       if (!_waitingOnline || _suspended || _disposed) return;
       final cam =
@@ -559,7 +600,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 디바운스가 끝난 망 신호 처리. 첫 값은 기준선만 잡고, 되돌아온 변화는
   /// 무시하며, 영상이 나오는 중이면 연결을 유지한 채 프레임 진행으로 판단한다.
   void _onNetworkSettled() {
-    if (_suspended || _disposed) return;
+    if (_suspended || _disposed || _limit != null) return;
     final now = _lastNetwork;
     if (_isNoNetwork(now)) {
       _sawNoNetwork = true;
@@ -629,7 +670,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     // close 응답이 늦는 사이(최대 15~30초) 복귀해 새 세대가 재생 중일 수 있다 —
     // 그때 이 늦은 정리가 새 상태를 덮으면 영상은 흐르는데 화면은 "연결 중"에
     // 갇힌다(A1).
-    if (!_disposed && _suspended && _gen == gen) {
+    if (!_disposed && _suspended && _gen == gen && _limit == null) {
       state = const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig);
     }
   }
@@ -642,6 +683,10 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       return;
     }
     _diag('resume', {'reason': reason});
+    if (_limit != null) {
+      // 제한 안내는 돌아와도 그대로 — 다시 요청은 사용자가 누를 때만.
+      return;
+    }
     _openView();
     // 백그라운드 동안의 망 변화는 무시했다 — 지금 붙을 망을 기준선으로 삼는다.
     // 안 하면 복귀 뒤 같은 신호의 재알림을 "변경"으로 보고 새 시도를 취소한다.
@@ -656,6 +701,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 걸려 있던 자동 재연결 백오프도 즉시 실행으로 대체한다. 오프라인 대기도
   /// 풀어 한 번은 실제로 시도한다.
   Future<void> retry() async {
+    _clearLimit();
     _view?.onManualRetry();
     // 사용자가 직접 누르면 DB가 오프라인이라고 해도 한 번은 실제로 시도한다
     // (is_online은 낡을 수 있다).
@@ -670,6 +716,59 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     await _restart(reason: 'manual', force: true);
   }
 
+  /// "이 기기로 시청"(다른 기기 시청 중 → 가져오기). 다음 offer 한 번만
+  /// `takeover: true`로 보낸다 — 자동 재연결은 절대 가져오지 않는다.
+  Future<void> takeover() async {
+    _takeoverNext = true;
+    await retry();
+  }
+
+  /// 제한 상태. null이 아니면 자동 재시도를 모두 멈춘다.
+  LiveLimit? _limit;
+
+  /// 다음 offer에 `takeover: true`를 싣는다(사용자가 고른 한 번만).
+  bool _takeoverNext = false;
+
+  /// 409 확인 모달을 이 제한에서 이미 띄웠나 — 같은 카메라 라이브 뷰가 여럿
+  /// (홈·카메라 탭)이어도 한 번만 묻는다.
+  bool _inUsePromptTaken = true;
+
+  /// 라이브 뷰가 409 확인 모달을 띄워도 되는지 — 제한당 한 번만 true.
+  bool takeInUsePrompt() {
+    if (_inUsePromptTaken || _limit?.kind != LiveLimitKind.inUse) return false;
+    _inUsePromptTaken = true;
+    return true;
+  }
+
+  void _clearLimit() {
+    if (_limit == null) return;
+    _limit = null;
+    // 제한 중엔 시청 기록을 닫아 두었다 — 다시 시도는 새 시청이다.
+    if (_view == null && !_suspended && _visible) _openView();
+  }
+
+  /// 시청 제한으로 멈춘다 — 피어·세션을 정리하고 **어떤 자동 재시도도 걸지
+  /// 않는다**. [closeRemote]가 false면(서버가 이미 닫음) close를 보내지 않는다.
+  void _enterLimited(int gen, LiveLimit limit,
+      {required String outcome, bool closeRemote = true}) {
+    if (!_isCurrent(gen)) return;
+    _endAttempt(gen, outcome);
+    _diag('limited', {'kind': limit.kind.name, 'viewer': limit.viewer});
+    _cancelTimers();
+    _closeRecoveryWindow();
+    _waitingOnline = false;
+    _waitingNetwork = false;
+    _takeoverNext = false;
+    ++_gen;
+    if (!closeRemote) _sessionId = null;
+    unawaited(_cleanup(closeRemote: closeRemote));
+    _limit = limit;
+    _inUsePromptTaken = false;
+    // 볼 수 없는 시간은 시청으로 세지 않는다.
+    _closeView(LiveViewEnd.closed);
+    state = WebRtcLiveState(phase: WebRtcLivePhase.limited, limit: limit);
+  }
+
   /// 새 세대로 다시 붙는다. 세대를 **먼저** 올려 이전 세대의 잔여 작업을 즉시
   /// 무효로 만들고, 정리 도중 더 새로운 재시작이 오면 이쪽은 물러난다.
   ///
@@ -679,6 +778,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   Future<void> _restart({String reason = 'timer', bool force = false}) async {
     if (_disposed || _suspended) {
       // 강제 시도 요청이 무시됐다 — 나중 자동 시작에 새어 나가지 않게 푼다.
+      _forceAttempt = false;
+      return;
+    }
+    if (_limit != null) {
+      // 제한 중 자동 재시작(망·복귀·타이머)은 없다 — retry()가 먼저 푼다.
+      _diag('restart-blocked', {'reason': reason});
       _forceAttempt = false;
       return;
     }
@@ -794,6 +899,21 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       _fail(gen,
           outcome: 'unresponsive',
           errorKey: 'crecam_live_error_unresponsive');
+    } on LiveInUseException catch (e) {
+      _enterLimited(gen, LiveLimit(LiveLimitKind.inUse, viewer: e.viewer),
+          outcome: 'in_use');
+    } on LiveCooldownException catch (e) {
+      _enterLimited(
+          gen,
+          LiveLimit(LiveLimitKind.cooldown,
+              until: DateTime.now().add(e.retryAfter)),
+          outcome: 'cooldown');
+    } on LiveRateLimitedException catch (e) {
+      _enterLimited(
+          gen,
+          LiveLimit(LiveLimitKind.rateLimited,
+              until: DateTime.now().add(e.retryAfter)),
+          outcome: 'rate_limited');
     } on BackendException catch (e) {
       if (!_isCurrent(gen)) return;
       if (e.statusCode == 401 || e.statusCode == 403) {
@@ -1077,9 +1197,21 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
 
     // 10. gathered SDP로 offer 전송
     final localDesc = await pc.getLocalDescription();
+    // 이 설치가 누구인지(한 기기 판정). 못 구하면 구버전처럼 보낸다 — 라이브를
+    // 막을 이유는 아니다.
+    LiveViewer? viewer;
+    try {
+      viewer = await ref.read(liveViewerProvider.future);
+    } catch (_) {}
+    if (!_isCurrent(gen)) return;
+    final takeover = _takeoverNext;
+    _takeoverNext = false;
     final offerResult = await signalingRepo.sendOffer(
       cameraUuid,
       localDesc!.sdp!,
+      viewerId: viewer?.id,
+      viewerLabel: viewer?.label,
+      takeover: takeover,
     );
     if (!_isCurrent(gen)) {
       // 기다리는 사이 새 세대로 넘어갔다 — 이 세션은 아무도 안 쓴다. 닫지 않으면
@@ -1089,7 +1221,13 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     }
 
     _sessionId = offerResult.sessionId;
+    final until = offerResult.liveUntil;
+    _liveUntil = until == null
+        ? null
+        : clampServerDeadline(until, DateTime.now(), kLiveMaxDuration);
     _diag('answer', {
+      'live_until': until?.toIso8601String(),
+      'takeover': takeover,
       'session': offerResult.sessionId,
       'offer_attempts': offerResult.offerAttempts,
       'answer_ms': offerResult.answerMs,
@@ -1161,7 +1299,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (!_isCurrent(gen) || state.phase.hasVideo) return;
     _frameDeadline?.cancel();
     _attemptDeadline?.cancel();
-    state = WebRtcLiveState(phase: WebRtcLivePhase.streaming, renderer: r);
+    state = WebRtcLiveState(
+        phase: WebRtcLivePhase.streaming, renderer: r, liveUntil: _liveUntil);
     final a = _attempt;
     if (a != null && a.gen == gen && a.playing == null) {
       a.msFirstFrame ??= _timing.elapsedMilliseconds;
