@@ -8,10 +8,14 @@ import '../../features/my_cage/presentation/widgets/management_widgets.dart';
 /// 문구 18/500/28 가운데, 24 아래 버튼 44 r12. 버튼 하나(297 폭 `#1E1E1E`)
 /// 또는 둘(취소 검정 + 확인 [confirmColor], 사이 13, r8).
 ///
+/// [detail]은 문구 아래 보조 설명(Figma 밖, 2026-09-30 시청 기기 전환에서 추가 —
+/// 제목만으론 결과를 알 수 없을 때).
+///
 /// 돌려주는 값: 확인 true, 취소·바깥 탭 false.
 Future<bool> showVivaModal(
   BuildContext context, {
   required String message,
+  String? detail,
   String? confirmLabel,
   String? cancelLabel,
   Color? confirmColor,
@@ -59,6 +63,15 @@ Future<bool> showVivaModal(
                             style: managementStyle(ctx,
                                     size: 18, color: glass.textPrimary)
                                 .copyWith(height: 28 / 18)),
+                        if (detail != null) ...[
+                          const SizedBox(height: 8),
+                          Text(detail,
+                              key: const Key('viva_modal_detail'),
+                              textAlign: TextAlign.center,
+                              style: managementStyle(ctx,
+                                      size: 14, color: glass.bodySecondary)
+                                  .copyWith(height: 20 / 14)),
+                        ],
                         const SizedBox(height: 24),
                         if (!two)
                           button(confirmLabel ?? 'common_confirm'.tr(),

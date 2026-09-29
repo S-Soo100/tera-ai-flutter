@@ -50,3 +50,36 @@ class SignalingGatewayException implements Exception {
   @override
   String toString() => 'SignalingGatewayException: signaling gateway error';
 }
+
+// ── 라이브 시청 제한 (2026-09-30, terra-server APP_LIVE_VIEW_LIMIT) ─────────────
+// 셋 다 **자동 재시도 금지** — 사용자가 버튼을 눌렀을 때만 다시 요청한다.
+
+/// WebRTC offer 409 `live_in_use` — 같은 카메라를 다른 기기가 보고 있다.
+/// [viewer]는 서버가 준 그 기기 이름("iPhone 15"). `takeover: true`로 다시
+/// 보내면 가져온다.
+class LiveInUseException implements Exception {
+  final String? viewer;
+  const LiveInUseException(this.viewer);
+
+  @override
+  String toString() => 'LiveInUseException: $viewer';
+}
+
+/// WebRTC offer 429 `live_cooldown` — 15분 시청 뒤 5분 쉼. [retryAfter] 뒤 가능.
+class LiveCooldownException implements Exception {
+  final Duration retryAfter;
+  const LiveCooldownException(this.retryAfter);
+
+  @override
+  String toString() => 'LiveCooldownException: ${retryAfter.inSeconds}s';
+}
+
+/// WebRTC offer 429 `rate_limited` — 카메라당 시간당 offer 상한(재연결 루프
+/// 안전망). 구 서버는 code 없이 문자열 detail만 준다 — 그것도 이쪽이다.
+class LiveRateLimitedException implements Exception {
+  final Duration retryAfter;
+  const LiveRateLimitedException(this.retryAfter);
+
+  @override
+  String toString() => 'LiveRateLimitedException: ${retryAfter.inSeconds}s';
+}

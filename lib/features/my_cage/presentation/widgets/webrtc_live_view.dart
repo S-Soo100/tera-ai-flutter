@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,8 @@ import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../../shared/domain/time_ago.dart';
+import '../../../../shared/widgets/viva_modal.dart';
+import '../../domain/live_limit.dart';
 import '../../domain/device_add_flow.dart';
 import '../../domain/pair_target_kind.dart';
 import '../my_cage_providers.dart';
@@ -20,6 +24,8 @@ import '../webrtc_live_controller.dart';
 /// - 연결 중·자동 복구 중: shimmer 스켈레톤 + 한 줄 문구 (CircularProgressIndicator 금지)
 /// - streaming/stalled: RTCVideoView (+ 정지·관측 불가 알약)
 /// - failed: 사유 + "다시 연결" — 집중 복구 예산이 끝났거나 카메라/망/인증 문제일 때만
+/// - limited: 서버 시청 제한(2026-09-30) — 다른 기기 시청 중(확인 모달 + 면
+///   안내)·가져가짐·15분 뒤 쉼(카운트다운)·시도 과다. 자동 재시도 없음
 class WebRtcLiveView extends ConsumerStatefulWidget {
   const WebRtcLiveView({
     super.key,
@@ -40,6 +46,7 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
   static const retryButtonKey = Key('webrtc_live_retry');
   static const wifiButtonKey = Key('webrtc_live_wifi_change');
   static const pillKey = Key('webrtc_live_pill');
+  static const limitActionKey = Key('webrtc_live_limit_action');
 
   /// 영상 위에 얹을 알약 문구 키. 정지가 관측 불가보다 우선한다.
   static String? pillKeyFor(WebRtcLiveState s) {
@@ -99,6 +106,27 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
     });
   }
 
+  /// 다른 기기 시청 중(409)이면 한 번 묻는다 — 보이는 뷰에서만, 제한당 한 번.
+  /// 취소하면 면에 같은 안내와 [이 기기로 시청]이 남는다.
+  Future<void> _maybePromptTakeover(WebRtcLiveState s) async {
+    if (s.phase != WebRtcLivePhase.limited ||
+        s.limit?.kind != LiveLimitKind.inUse ||
+        !TickerMode.of(context)) {
+      return;
+    }
+    final controller =
+        ref.read(webrtcLiveControllerProvider(widget.cameraUuid).notifier);
+    if (!controller.takeInUsePrompt()) return;
+    final ok = await showVivaModal(
+      context,
+      message: 'crecam_live_in_use_title'.tr(),
+      detail: 'crecam_live_in_use_body'.tr(),
+      cancelLabel: 'common_cancel'.tr(),
+      confirmLabel: 'crecam_live_in_use_confirm'.tr(),
+    );
+    if (ok && controller.mounted) unawaited(controller.takeover());
+  }
+
   void _detach() {
     final c = _controller;
     _controller = null;
@@ -116,6 +144,8 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
   Widget build(BuildContext context) {
     final cameraUuid = widget.cameraUuid;
     final state = ref.watch(webrtcLiveControllerProvider(cameraUuid));
+    ref.listen<WebRtcLiveState>(webrtcLiveControllerProvider(cameraUuid),
+        (_, next) => unawaited(_maybePromptTakeover(next)));
     void retry() =>
         ref.read(webrtcLiveControllerProvider(cameraUuid).notifier).retry();
 
@@ -141,6 +171,15 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
           renderer: state.renderer!,
           cover: widget.cover,
           pillLabelKey: WebRtcLiveView.pillKeyFor(state),
+          liveUntil: state.liveUntil,
+        ),
+      WebRtcLivePhase.limited => _LimitedView(
+          limit: state.limit ??
+              const LiveLimit(LiveLimitKind.rateLimited),
+          onRetry: retry,
+          onTakeover: () => ref
+              .read(webrtcLiveControllerProvider(cameraUuid).notifier)
+              .takeover(),
         ),
       WebRtcLivePhase.failed => _FailedView(
           cameraUuid: cameraUuid,
@@ -155,9 +194,10 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
 // ── 알약 (연결 중 문구·영상 위 안내 공용) ──────────────────────────────────────
 
 class _LivePill extends StatelessWidget {
-  const _LivePill({required this.labelKey});
+  const _LivePill({required this.labelKey, this.args});
 
   final String labelKey;
+  final List<String>? args;
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +212,7 @@ class _LivePill extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppStyles.chipRadius),
       ),
       child: Text(
-        labelKey.tr(),
+        labelKey.tr(args: args),
         style: const TextStyle(
           color: Colors.white,
           fontSize: 12,
@@ -220,11 +260,15 @@ class _StreamingView extends StatelessWidget {
     required this.renderer,
     required this.cover,
     this.pillLabelKey,
+    this.liveUntil,
   });
 
   final RTCVideoRenderer renderer;
   final bool cover;
   final String? pillLabelKey;
+
+  /// 서버가 라이브를 끝낼 시각 — 마지막 [kLiveEndingSoon]만 알약으로 알린다.
+  final DateTime? liveUntil;
 
   @override
   Widget build(BuildContext context) {
@@ -235,14 +279,116 @@ class _StreamingView extends StatelessWidget {
           : RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
     );
     final key = pillLabelKey;
-    if (key == null) return video;
+    final until = liveUntil;
+    if (key == null && until == null) return video;
     // 영상은 가리지 않는다 — 마지막 장면이 남아 있는 편이 멈춤을 이해하기 쉽다.
     return Stack(
       fit: StackFit.expand,
       children: [
         video,
-        Center(child: _LivePill(labelKey: key)),
+        if (key != null)
+          Center(child: _LivePill(labelKey: key))
+        else
+          _Ticker(builder: (now) {
+            final left = until!.difference(now);
+            if (left > kLiveEndingSoon || left.isNegative) {
+              return const SizedBox.shrink();
+            }
+            return Center(
+                child: _LivePill(
+                    labelKey: 'crecam_live_ending_soon',
+                    args: [formatCountdown(left)]));
+          }),
       ],
+    );
+  }
+}
+
+/// `1:05`·`0:09` — 올림(남은 0.3초도 1초로 보인다, 0이 되는 순간 버튼이 열린다).
+@visibleForTesting
+String formatCountdown(Duration d) {
+  final secs = (d.inMilliseconds / 1000).ceil().clamp(0, 99 * 60);
+  return '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}';
+}
+
+/// 1초마다 다시 그린다(화면에 있는 동안만). 카운트다운 전용.
+class _Ticker extends StatefulWidget {
+  const _Ticker({required this.builder});
+  final Widget Function(DateTime now) builder;
+
+  @override
+  State<_Ticker> createState() => _TickerState();
+}
+
+class _TickerState extends State<_Ticker> {
+  late final Stream<DateTime> _clock =
+      Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
+
+  @override
+  Widget build(BuildContext context) => StreamBuilder<DateTime>(
+        stream: _clock,
+        builder: (_, snap) => widget.builder(snap.data ?? DateTime.now()),
+      );
+}
+
+// ── 시청 제한 (2026-09-30) ────────────────────────────────────────────────────
+
+class _LimitedView extends StatelessWidget {
+  const _LimitedView({
+    required this.limit,
+    required this.onRetry,
+    required this.onTakeover,
+  });
+
+  final LiveLimit limit;
+  final VoidCallback onRetry;
+  final VoidCallback onTakeover;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget body = switch (limit.kind) {
+      LiveLimitKind.inUse => LiveSurfaceNotice(
+          title: 'crecam_live_in_use_surface'.tr(),
+          detail: 'crecam_live_in_use_surface_detail'.tr(),
+          actionLabel: 'crecam_live_in_use_confirm'.tr(),
+          onAction: onTakeover,
+        ),
+      LiveLimitKind.takenOver => LiveSurfaceNotice(
+          title: limit.viewer == null
+              ? 'crecam_live_taken_over_unknown'.tr()
+              : 'crecam_live_taken_over'.tr(args: [limit.viewer!]),
+          actionLabel: 'crecam_live_watch_again'.tr(),
+          onAction: onRetry,
+        ),
+      LiveLimitKind.cooldown || LiveLimitKind.rateLimited => _Ticker(
+          builder: (now) {
+            final cooldown = limit.kind == LiveLimitKind.cooldown;
+            final left = limit.remaining(now);
+            final waiting = left > Duration.zero;
+            return LiveSurfaceNotice(
+              title: (cooldown
+                      ? 'crecam_live_cooldown_title'
+                      : 'crecam_live_rate_limited_title')
+                  .tr(),
+              detail: waiting
+                  ? (cooldown
+                          ? 'crecam_live_cooldown_wait'
+                          : 'crecam_live_rate_limited_wait')
+                      .tr(args: [formatCountdown(left)])
+                  : null,
+              // 기다리는 동안은 버튼이 없다 — 눌러도 서버가 같은 이유로 거절한다.
+              actionLabel: waiting
+                  ? null
+                  : (cooldown ? 'crecam_live_watch_again' : 'crecam_live_retry')
+                      .tr(),
+              onAction: waiting ? null : onRetry,
+            );
+          },
+        ),
+    };
+    return ColoredBox(
+      color: AppTheme.liveSurface,
+      child: KeyedSubtree(key: WebRtcLiveView.limitActionKey, child: body),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
+import 'package:vivanaut/features/my_cage/domain/live_limit.dart';
 import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
@@ -18,8 +19,15 @@ class _Fixed extends WebRtcLiveController {
     state = s;
   }
   int retries = 0;
+  int takeovers = 0;
+  int prompts = 0;
   @override
   Future<void> retry() async => retries++;
+  @override
+  Future<void> takeover() async => takeovers++;
+  @override
+  bool takeInUsePrompt() => prompts++ == 0;
+  void set(WebRtcLiveState s) => state = s;
 }
 
 Future<_Fixed> _pump(WidgetTester tester, WebRtcLiveState s) async {
@@ -185,5 +193,97 @@ void main() {
     await tester.pump();
     expect(find.byKey(WebRtcLiveView.retryButtonKey), findsOneWidget);
     expect(find.byKey(WebRtcLiveView.wifiButtonKey), findsNothing);
+  });
+
+  // ── 시청 제한 (2026-09-30) ─────────────────────────────────────────────────
+
+  Finder limitButton() => find.descendant(
+      of: find.byKey(WebRtcLiveView.limitActionKey),
+      matching: find.byType(OutlinedButton));
+
+  testWidgets('다른 기기 시청 중 — 면 안내의 [이 기기로 시청]은 가져오기', (tester) async {
+    final c = await _pump(
+        tester,
+        const WebRtcLiveState(
+            phase: WebRtcLivePhase.limited,
+            limit: LiveLimit(LiveLimitKind.inUse, viewer: 'Galaxy S24')));
+    expect(find.text('crecam_live_in_use_surface'), findsOneWidget);
+    expect(find.text('crecam_live_in_use_surface_detail'), findsOneWidget);
+    await tester.tap(limitButton());
+    await tester.pump();
+    expect(c.takeovers, 1);
+    expect(c.retries, 0);
+  });
+
+  testWidgets('409가 오면 확인 모달 — 이 기기로 시청이면 가져오기', (tester) async {
+    final c = await _pump(
+        tester, const WebRtcLiveState(phase: WebRtcLivePhase.offering));
+    c.set(const WebRtcLiveState(
+        phase: WebRtcLivePhase.limited,
+        limit: LiveLimit(LiveLimitKind.inUse)));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('crecam_live_in_use_title'), findsOneWidget);
+    expect(find.text('crecam_live_in_use_body'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('viva_modal_confirm')));
+    await tester.pump();
+    expect(c.takeovers, 1);
+  });
+
+  testWidgets('확인 모달에서 취소하면 요청 없이 면 안내만 남는다', (tester) async {
+    final c = await _pump(
+        tester, const WebRtcLiveState(phase: WebRtcLivePhase.offering));
+    c.set(const WebRtcLiveState(
+        phase: WebRtcLivePhase.limited,
+        limit: LiveLimit(LiveLimitKind.inUse)));
+    await tester.pump();
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('viva_modal_cancel')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(c.takeovers, 0);
+    expect(c.retries, 0);
+    expect(find.text('crecam_live_in_use_title'), findsNothing);
+    expect(find.text('crecam_live_in_use_surface'), findsOneWidget);
+  });
+
+  testWidgets('가져가짐 — 누가 가져갔는지 + 다시 보기(일반 요청)', (tester) async {
+    final c = await _pump(
+        tester,
+        const WebRtcLiveState(
+            phase: WebRtcLivePhase.limited,
+            limit: LiveLimit(LiveLimitKind.takenOver, viewer: 'Galaxy S24')));
+    expect(find.text('crecam_live_taken_over'), findsOneWidget);
+    await tester.tap(limitButton());
+    await tester.pump();
+    expect(c.retries, 1);
+    expect(c.takeovers, 0);
+  });
+
+  testWidgets('쉼 — 카운트다운 동안 버튼 없음, 끝나면 다시 보기', (tester) async {
+    final c = await _pump(
+        tester,
+        WebRtcLiveState(
+            phase: WebRtcLivePhase.limited,
+            limit: LiveLimit(LiveLimitKind.cooldown,
+                until: DateTime.now().add(const Duration(seconds: 3)))));
+    expect(find.text('crecam_live_cooldown_title'), findsOneWidget);
+    expect(find.text('crecam_live_cooldown_wait'), findsOneWidget);
+    expect(limitButton(), findsNothing);
+    // 가짜 시계는 DateTime.now()를 옮기지 않는다 — 실제 시간을 흘린다.
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 3100)));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('crecam_live_watch_again'), findsOneWidget);
+    await tester.tap(limitButton());
+    await tester.pump();
+    expect(c.retries, 1);
+  });
+
+  test('카운트다운 표기는 m:ss, 남은 조각 초는 올림', () {
+    expect(formatCountdown(const Duration(seconds: 240)), '4:00');
+    expect(formatCountdown(const Duration(milliseconds: 59100)), '1:00');
+    expect(formatCountdown(const Duration(milliseconds: 8200)), '0:09');
+    expect(formatCountdown(Duration.zero), '0:00');
   });
 }
