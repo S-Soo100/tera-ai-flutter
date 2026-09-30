@@ -7,7 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
 import 'features/home/presentation/fan_timer_resync_observer.dart';
 import 'features/notification/presentation/push_lifecycle_observer.dart';
-import 'shared/widgets/offline_overlay.dart';
+import 'shared/widgets/offline_banner.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});
@@ -39,9 +39,13 @@ class App extends ConsumerWidget {
               child: Stack(
                 children: [
                   child!,
+                  // 연결이 끊겨도 화면을 덮지 않는다 — 위쪽 안내만(UX-05).
                   if (!online)
-                    Positioned.fill(
-                      child: OfflineOverlay(
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      child: OfflineBanner(
                         onRetry: () => ref.invalidate(connectivityProvider),
                       ),
                     ),
