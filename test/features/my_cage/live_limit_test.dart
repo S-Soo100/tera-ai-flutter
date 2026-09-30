@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:vivanaut/features/my_cage/data/camera_exceptions.dart';
-import 'package:vivanaut/features/my_cage/data/live_viewer_identity.dart';
 import 'package:vivanaut/features/my_cage/data/webrtc_signaling_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/live_limit.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_limit_providers.dart';
@@ -14,11 +13,10 @@ Exception? _parse(int code, String body, {Map<String, String>? headers}) =>
 
 void main() {
   group('offer 응답 → 시청 제한 예외', () {
-    test('409 live_in_use — 시청 기기 이름', () {
+    test('409 live_in_use — 기기 이름은 쓰지 않는다', () {
       final e = _parse(409,
           '{"detail":{"code":"live_in_use","viewer":"iPhone 15","since":"x"}}');
       expect(e, isA<LiveInUseException>());
-      expect((e as LiveInUseException).viewer, 'iPhone 15');
     });
 
     test('409 다른 code는 건드리지 않는다', () {
@@ -61,11 +59,9 @@ void main() {
       final r = CameraLiveSession.fromRow({
         'live_session_id': 'other',
         'live_viewer_id': 'install-b',
-        'live_viewer': 'Galaxy S24',
         'live_end_reason': 'taken_over',
       }).endedFor('mine', 'me', now)!;
       expect(r.kind, LiveLimitKind.takenOver);
-      expect(r.viewer, 'Galaxy S24');
     });
 
     test('우리 기기의 옛 세션 행(taken_over 잔존)은 가져가짐이 아니다', () {
@@ -73,7 +69,6 @@ void main() {
       final row = CameraLiveSession.fromRow({
         'live_session_id': 'mine-old',
         'live_viewer_id': 'me',
-        'live_viewer': 'iPhone 15',
         'live_end_reason': 'taken_over',
       });
       expect(row.endedFor('mine', 'me', now), isNull);
@@ -112,12 +107,6 @@ void main() {
       expect(CameraLiveSession.fromRow({'is_online': true}).endedFor('mine', 'me', now),
           isNull);
     });
-  });
-
-  test('안드로이드 기기 이름 — 제조사 + 모델 코드', () {
-    expect(androidLabel('samsung', 'SM-S921N'), 'Samsung SM-S921N');
-    expect(androidLabel('Xiaomi', 'Xiaomi 13T'), 'Xiaomi 13T');
-    expect(androidLabel('', 'Pixel 8'), 'Pixel 8');
   });
 
   group('끝나기 직전 알약 카운트', () {

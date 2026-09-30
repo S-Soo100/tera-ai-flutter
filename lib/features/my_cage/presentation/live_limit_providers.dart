@@ -2,17 +2,27 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../../core/app_installation.dart';
 
 import '../../../core/supabase/realtime_binding.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import '../../auth/presentation/auth_providers.dart';
-import '../data/live_viewer_identity.dart';
 import '../domain/live_limit.dart';
 
 // 라이브 시청 제한(2026-09-30) provider 모음.
 
-/// 이 설치(시청자) — 설치 ID·기기 이름. 실패해도 대체값으로 채운다.
-final liveViewerProvider = FutureProvider<LiveViewer>((ref) => loadLiveViewer());
+/// 이 설치(시청자) ID — 한 기기 판정용, 푸시 기기 등록과 같은 값. 기기 이름은
+/// 보내지 않는다(2026-09-30 사용자 결정 — 다른 기기엔 "다른 기기"로만 보인다).
+/// 못 구하면 이번 실행 동안만 쓰는 값으로 대신한다 — 라이브를 막을 이유는 아니다.
+final liveViewerIdProvider = FutureProvider<String>((ref) async {
+  try {
+    return await appInstallationId();
+  } catch (_) {
+    return const Uuid().v4();
+  }
+});
 
 /// 서버가 라이브를 끝낼 시각까지 남은 시간 — 마지막 [kLiveEndingSoon]만 센다.
 ///

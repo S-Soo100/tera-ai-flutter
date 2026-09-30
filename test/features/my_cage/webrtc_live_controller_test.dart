@@ -9,7 +9,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:vivanaut/features/my_cage/data/webrtc_signaling_repository.dart';
 import 'package:vivanaut/features/my_cage/data/camera_exceptions.dart';
-import 'package:vivanaut/features/my_cage/data/live_viewer_identity.dart';
 import 'package:vivanaut/features/my_cage/domain/live_limit.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_limit_providers.dart';
 import 'package:vivanaut/features/my_cage/domain/live_view_session.dart';
@@ -139,9 +138,9 @@ class _FakeSignaling extends Fake implements WebRtcSignalingRepository {
         int? answerMs,
         DateTime? liveUntil,
       })> sendOffer(String cameraUuid, String sdp,
-      {String? viewerId, String? viewerLabel, bool takeover = false}) async {
+      {String? viewerId, bool takeover = false}) async {
     final id = 's${++_offers}';
-    offers.add((viewerId: viewerId, viewerLabel: viewerLabel, takeover: takeover));
+    offers.add((viewerId: viewerId, takeover: takeover));
     final hold = holdOffer;
     if (hold != null) await hold.future;
     final fail = failOfferWith;
@@ -164,7 +163,7 @@ class _FakeSignaling extends Fake implements WebRtcSignalingRepository {
 
   /// 보낸 offer의 시청자 필드.
   final offers =
-      <({String? viewerId, String? viewerLabel, bool takeover})>[];
+      <({String? viewerId, bool takeover})>[];
 
   /// 성공 응답의 `live_until`.
   DateTime? liveUntil;
@@ -237,8 +236,7 @@ class _Harness {
       webrtcConnectLogSinkProvider.overrideWithValue(logs.add),
       webrtcViewLogSinkProvider.overrideWithValue(views.add),
       webrtcDiagBufferProvider.overrideWithValue(diag),
-      liveViewerProvider.overrideWith((ref) async =>
-          const LiveViewer(id: 'install-1', label: 'iPhone 15')),
+      liveViewerIdProvider.overrideWith((ref) async => 'install-1'),
       cameraLiveSessionProvider(_cam)
           .overrideWith((ref) => liveRows.stream),
     ]);
@@ -1283,7 +1281,7 @@ void main() {
       final h = _Harness();
       await _settleConnect(tester);
       expect(h.signaling.offers.single,
-          (viewerId: 'install-1', viewerLabel: 'iPhone 15', takeover: false));
+          (viewerId: 'install-1', takeover: false));
       await h.dispose();
     });
 
@@ -1291,11 +1289,10 @@ void main() {
         (tester) async {
       final h = _Harness();
       h.network.add('wifi');
-      h.signaling.failOfferWith = const LiveInUseException('Galaxy S24');
+      h.signaling.failOfferWith = const LiveInUseException();
       await _settleConnect(tester);
       expect(h.state.phase, WebRtcLivePhase.limited);
       expect(h.state.limit!.kind, LiveLimitKind.inUse);
-      expect(h.state.limit!.viewer, 'Galaxy S24');
       expect(h.logs.last.outcome, 'in_use');
 
       h.network.add('mobile');
@@ -1308,7 +1305,7 @@ void main() {
 
     testWidgets('확인 모달은 제한당 한 번만 띄운다', (tester) async {
       final h = _Harness();
-      h.signaling.failOfferWith = const LiveInUseException(null);
+      h.signaling.failOfferWith = const LiveInUseException();
       await _settleConnect(tester);
       expect(ctl(h).takeInUsePrompt(), isTrue);
       expect(ctl(h).takeInUsePrompt(), isFalse);
@@ -1317,7 +1314,7 @@ void main() {
 
     testWidgets('이 기기로 시청 → 다음 offer 한 번만 takeover', (tester) async {
       final h = _Harness();
-      h.signaling.failOfferWith = const LiveInUseException('Galaxy S24');
+      h.signaling.failOfferWith = const LiveInUseException();
       await _settleConnect(tester);
       unawaited(ctl(h).takeover());
       await _settleConnect(tester);
@@ -1370,12 +1367,10 @@ void main() {
       h.liveRows.add(const CameraLiveSession(
           sessionId: 'other',
           viewerId: 'install-2',
-          viewer: 'Galaxy S24',
           endReason: 'taken_over'));
       await tester.pump();
       expect(h.state.phase, WebRtcLivePhase.limited);
       expect(h.state.limit!.kind, LiveLimitKind.takenOver);
-      expect(h.state.limit!.viewer, 'Galaxy S24');
       expect(pc.closed, isTrue);
       expect(h.signaling.closedSessions, isNot(contains('s1')),
           reason: '서버가 이미 닫았다 — 새 시청자 세션을 건드리지 않는다');
@@ -1412,13 +1407,12 @@ void main() {
       final h = _Harness();
       await _stream(tester, h);
       h.liveRows.add(const CameraLiveSession(
-          sessionId: 's1', viewer: 'iPhone 15', endReason: 'taken_over'));
+          sessionId: 's1', endReason: 'taken_over'));
       h.liveRows.add(const CameraLiveSession(endReason: 'closed'));
       // 우리가 예전에 가져온 옛 세션 행이 늦게 와도 자기 자신에게 쫓겨나지 않는다.
       h.liveRows.add(const CameraLiveSession(
           sessionId: 's0',
           viewerId: 'install-1',
-          viewer: 'iPhone 15',
           endReason: 'taken_over'));
       await tester.pump();
       expect(h.state.phase, WebRtcLivePhase.streaming);
@@ -1427,7 +1421,7 @@ void main() {
 
     testWidgets('제한 중 백그라운드→복귀해도 다시 요청하지 않는다', (tester) async {
       final h = _Harness();
-      h.signaling.failOfferWith = const LiveInUseException('Galaxy S24');
+      h.signaling.failOfferWith = const LiveInUseException();
       await _settleConnect(tester);
       for (final s in [
         AppLifecycleState.inactive,
@@ -1457,7 +1451,7 @@ void main() {
 
     testWidgets('limit 로그는 fail_phase를 비운다', (tester) async {
       final h = _Harness();
-      h.signaling.failOfferWith = const LiveInUseException('Galaxy S24');
+      h.signaling.failOfferWith = const LiveInUseException();
       await _settleConnect(tester);
       expect(h.logs.last.outcome, 'in_use');
       expect(h.logs.last.failPhase, isNull);
@@ -1467,7 +1461,7 @@ void main() {
     testWidgets('가져오기 시도가 offer 전에 끊기면 이후 자동 재연결은 가져오지 않는다',
         (tester) async {
       final h = _Harness();
-      h.signaling.failOfferWith = const LiveInUseException('Galaxy S24');
+      h.signaling.failOfferWith = const LiveInUseException();
       await _settleConnect(tester);
       h.failConfig = true;
       unawaited(ctl(h).takeover());
@@ -1494,7 +1488,6 @@ void main() {
       h.liveRows.add(const CameraLiveSession(
           sessionId: 'other',
           viewerId: 'install-2',
-          viewer: 'Galaxy S24',
           endReason: 'taken_over'));
       await tester.pump();
       final hold = h.signaling.holdOffer!;
@@ -1507,7 +1500,6 @@ void main() {
       h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
       expect(h.state.phase, WebRtcLivePhase.limited);
       expect(h.state.limit!.kind, LiveLimitKind.takenOver);
-      expect(h.state.limit!.viewer, 'Galaxy S24');
       await tester.pump(const Duration(minutes: 2));
       expect(h.signaling.offers, hasLength(1));
       await h.dispose();

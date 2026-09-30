@@ -206,7 +206,7 @@ void main() {
         tester,
         const WebRtcLiveState(
             phase: WebRtcLivePhase.limited,
-            limit: LiveLimit(LiveLimitKind.inUse, viewer: 'Galaxy S24')));
+            limit: LiveLimit(LiveLimitKind.inUse)));
     expect(find.text('crecam_live_in_use_surface'), findsOneWidget);
     expect(find.text('crecam_live_in_use_surface_detail'), findsOneWidget);
     await tester.tap(limitButton());
@@ -252,7 +252,7 @@ void main() {
         tester,
         const WebRtcLiveState(
             phase: WebRtcLivePhase.limited,
-            limit: LiveLimit(LiveLimitKind.takenOver, viewer: 'Galaxy S24')));
+            limit: LiveLimit(LiveLimitKind.takenOver)));
     expect(find.text('crecam_live_taken_over'), findsOneWidget);
     await tester.tap(limitButton());
     await tester.pump();
