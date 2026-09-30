@@ -33,6 +33,8 @@ final managementMutationCompletedProvider = Provider<VoidCallback>((ref) => () {
       ref.invalidate(enclosuresProvider);
       ref.invalidate(deviceListProvider);
       ref.invalidate(camerasProvider);
+      // 조회 상태도 함께 되돌려 재조회 동안 "개체 없음"이 번쩍이지 않게(UX-02).
+      ref.invalidate(petListLoadProvider);
       ref.invalidate(petListProvider);
       ref.invalidate(petCameraAssignmentsProvider);
     });
