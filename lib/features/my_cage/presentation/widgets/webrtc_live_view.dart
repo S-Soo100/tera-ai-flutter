@@ -11,10 +11,12 @@ import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../../shared/domain/time_ago.dart';
+import '../../../../shared/providers/clock_providers.dart';
 import '../../../../shared/widgets/viva_modal.dart';
 import '../../domain/live_limit.dart';
 import '../../domain/device_add_flow.dart';
 import '../../domain/pair_target_kind.dart';
+import '../live_limit_providers.dart';
 import '../my_cage_providers.dart';
 import '../webrtc_live_controller.dart';
 
@@ -289,15 +291,17 @@ class _StreamingView extends StatelessWidget {
         if (key != null)
           Center(child: _LivePill(labelKey: key))
         else
-          _Ticker(builder: (now) {
-            final left = until!.difference(now);
-            if (left > kLiveEndingSoon || left.isNegative) {
-              return const SizedBox.shrink();
-            }
+          Consumer(builder: (context, ref, _) {
+            final left = ref.watch(liveEndingSoonProvider(until!)).valueOrNull;
+            if (left == null) return const SizedBox.shrink();
+            // 0이 돼도 서버 스윕(15초 주기)까지 영상이 조금 더 나온다 — 알약을
+            // 거두지 않고 "곧"으로 둔다.
             return Center(
-                child: _LivePill(
-                    labelKey: 'crecam_live_ending_soon',
-                    args: [formatCountdown(left)]));
+                child: left > Duration.zero
+                    ? _LivePill(
+                        labelKey: 'crecam_live_ending_soon',
+                        args: [formatCountdown(left)])
+                    : const _LivePill(labelKey: 'crecam_live_ending_now'));
           }),
       ],
     );
@@ -311,29 +315,9 @@ String formatCountdown(Duration d) {
   return '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}';
 }
 
-/// 1초마다 다시 그린다(화면에 있는 동안만). 카운트다운 전용.
-class _Ticker extends StatefulWidget {
-  const _Ticker({required this.builder});
-  final Widget Function(DateTime now) builder;
-
-  @override
-  State<_Ticker> createState() => _TickerState();
-}
-
-class _TickerState extends State<_Ticker> {
-  late final Stream<DateTime> _clock =
-      Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
-
-  @override
-  Widget build(BuildContext context) => StreamBuilder<DateTime>(
-        stream: _clock,
-        builder: (_, snap) => widget.builder(snap.data ?? DateTime.now()),
-      );
-}
-
 // ── 시청 제한 (2026-09-30) ────────────────────────────────────────────────────
 
-class _LimitedView extends StatelessWidget {
+class _LimitedView extends ConsumerWidget {
   const _LimitedView({
     required this.limit,
     required this.onRetry,
@@ -345,7 +329,7 @@ class _LimitedView extends StatelessWidget {
   final VoidCallback onTakeover;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final Widget body = switch (limit.kind) {
       LiveLimitKind.inUse => LiveSurfaceNotice(
           title: 'crecam_live_in_use_surface'.tr(),
@@ -360,8 +344,11 @@ class _LimitedView extends StatelessWidget {
           actionLabel: 'crecam_live_watch_again'.tr(),
           onAction: onRetry,
         ),
-      LiveLimitKind.cooldown || LiveLimitKind.rateLimited => _Ticker(
-          builder: (now) {
+      LiveLimitKind.cooldown || LiveLimitKind.rateLimited => Builder(
+          builder: (context) {
+            // 기다리는 동안만 1초씩 다시 그린다.
+            final now =
+                ref.watch(secondTickProvider).valueOrNull ?? DateTime.now();
             final cooldown = limit.kind == LiveLimitKind.cooldown;
             final left = limit.remaining(now);
             final waiting = left > Duration.zero;
