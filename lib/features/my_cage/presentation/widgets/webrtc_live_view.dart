@@ -338,9 +338,7 @@ class _LimitedView extends ConsumerWidget {
           onAction: onTakeover,
         ),
       LiveLimitKind.takenOver => LiveSurfaceNotice(
-          title: limit.viewer == null
-              ? 'crecam_live_taken_over_unknown'.tr()
-              : 'crecam_live_taken_over'.tr(args: [limit.viewer!]),
+          title: 'crecam_live_taken_over'.tr(),
           actionLabel: 'crecam_live_watch_again'.tr(),
           onAction: onRetry,
         ),

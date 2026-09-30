@@ -36,7 +36,7 @@ class WebRtcSignalingRepository {
   /// 한 번의 호출로만 보인다. 1이면 이후 실패는 ICE/NAT, 2 이상이면 펌웨어.
   /// 구 서버는 안 주므로 null.
   ///
-  /// 라이브 시청 제한(2026-09-30): [viewerId]·[viewerLabel]로 한 기기 판정,
+  /// 라이브 시청 제한(2026-09-30): [viewerId](설치 ID)로 한 기기 판정,
   /// [takeover]는 사용자가 "이 기기로 시청"을 고른 요청에만 true. 구 서버는
   /// 모르는 필드를 무시한다. `liveUntil`은 서버가 라이브를 끝낼 시각(UTC,
   /// 구 서버 null).
@@ -56,7 +56,6 @@ class WebRtcSignalingRepository {
     String cameraUuid,
     String sdp, {
     String? viewerId,
-    String? viewerLabel,
     bool takeover = false,
   }) async {
     // 서버가 펌웨어 answer를 timeout_sec(15s)까지 동기 대기하므로
@@ -70,7 +69,6 @@ class WebRtcSignalingRepository {
           'type': 'offer',
           'timeout_sec': 15.0,
           if (viewerId != null) 'viewer_id': viewerId,
-          if (viewerLabel != null) 'viewer_label': viewerLabel,
           if (takeover) 'takeover': true,
         }),
       ),
@@ -95,7 +93,7 @@ class WebRtcSignalingRepository {
   }
 
   /// offer 409·429 응답을 시청 제한 예외로 바꾼다. 해당 없으면 null.
-  /// body `{"detail": {"code": ..., "retry_after": N, "viewer": ...}}`.
+  /// body `{"detail": {"code": ..., "retry_after": N}}`.
   /// 구 서버 429는 detail이 문자열이다 — 시간당 상한(rate_limited)으로 본다.
   @visibleForTesting
   static Exception? liveLimitException(http.Response resp) {
@@ -109,9 +107,7 @@ class WebRtcSignalingRepository {
     if (resp.statusCode == 409) {
       // 다른 409(예: 등록 충돌)는 offer에서 나오지 않지만, code가 다르면 건드리지 않는다.
       if (code != 'live_in_use') return null;
-      final viewer = detail['viewer'];
-      return LiveInUseException(
-          viewer is String && viewer.trim().isNotEmpty ? viewer.trim() : null);
+      return const LiveInUseException();
     }
     final secs = (detail['retry_after'] as num?)?.toInt() ??
         int.tryParse(resp.headers['retry-after'] ?? '') ??

@@ -21,13 +21,14 @@ enum LiveLimitKind {
   rateLimited,
 }
 
+/// 구버전 앱(viewer_id 없음)을 서버가 부르는 ID — 우리가 설치 ID를 못 보냈을
+/// 때 행의 `live_viewer_id`가 이 값이면 우리다.
+const kLegacyLiveViewerId = 'legacy';
+
 class LiveLimit {
-  const LiveLimit(this.kind, {this.viewer, this.until});
+  const LiveLimit(this.kind, {this.until});
 
   final LiveLimitKind kind;
-
-  /// 다른 기기 이름(inUse·takenOver). 서버가 안 주면 null.
-  final String? viewer;
 
   /// 이 시각(폰 시계)부터 다시 볼 수 있다(cooldown·rateLimited).
   final DateTime? until;
@@ -60,7 +61,6 @@ class CameraLiveSession {
   const CameraLiveSession({
     this.sessionId,
     this.viewerId,
-    this.viewer,
     this.endReason,
     this.cooldownUntil,
   });
@@ -70,9 +70,6 @@ class CameraLiveSession {
 
   /// 지금(또는 마지막) 시청 기기의 설치 ID(`legacy` = 구버전 앱).
   final String? viewerId;
-
-  /// 지금(또는 마지막) 시청 기기 이름.
-  final String? viewer;
 
   /// `time_limit` | `taken_over` | `closed` | `failed`.
   final String? endReason;
@@ -89,7 +86,6 @@ class CameraLiveSession {
     return CameraLiveSession(
       sessionId: text('live_session_id'),
       viewerId: text('live_viewer_id'),
-      viewer: text('live_viewer'),
       endReason: text('live_end_reason'),
       cooldownUntil: cooldown == null ? null : DateTime.tryParse(cooldown),
     );
@@ -103,7 +99,7 @@ class CameraLiveSession {
   LiveLimit? heldByOther(String myViewerId) {
     if (sessionId == null || endReason != 'taken_over') return null;
     if (viewerId == myViewerId) return null;
-    return LiveLimit(LiveLimitKind.takenOver, viewer: viewer);
+    return const LiveLimit(LiveLimitKind.takenOver);
   }
 
   /// 내 세션([mySessionId])이 이 행 변경으로 끝났는지. 아니면 null.

@@ -9,7 +9,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/supabase/supabase_provider.dart';
 import '../data/camera_exceptions.dart';
-import '../data/live_viewer_identity.dart';
 import '../data/webrtc_connect_log_repository.dart';
 import '../data/webrtc_signaling_repository.dart';
 import '../domain/live_limit.dart';
@@ -784,7 +783,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       {required String outcome, bool closeRemote = true}) {
     if (!_isCurrent(gen)) return;
     _endAttempt(gen, outcome);
-    _diag('limited', {'kind': limit.kind.name, 'viewer': limit.viewer});
+    _diag('limited', {'kind': limit.kind.name});
     _cancelTimers();
     _closeRecoveryWindow();
     _waitingOnline = false;
@@ -945,8 +944,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       _fail(gen,
           outcome: 'unresponsive',
           errorKey: 'crecam_live_error_unresponsive');
-    } on LiveInUseException catch (e) {
-      _enterLimited(gen, LiveLimit(LiveLimitKind.inUse, viewer: e.viewer),
+    } on LiveInUseException {
+      _enterLimited(gen, const LiveLimit(LiveLimitKind.inUse),
           outcome: 'in_use');
     } on LiveCooldownException catch (e) {
       _enterLimited(
@@ -1253,18 +1252,17 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     final localDesc = await pc.getLocalDescription();
     // 이 설치가 누구인지(한 기기 판정). 못 구하면 구버전처럼 보낸다 — 라이브를
     // 막을 이유는 아니다.
-    LiveViewer? viewer;
+    String? viewerId;
     try {
-      viewer = await ref.read(liveViewerProvider.future);
+      viewerId = await ref.read(liveViewerIdProvider.future);
     } catch (_) {}
     if (!_isCurrent(gen)) return;
     final takeover = _takeoverGen == gen;
-    _myViewerId = viewer?.id ?? kLegacyLiveViewerId;
+    _myViewerId = viewerId ?? kLegacyLiveViewerId;
     final offerResult = await signalingRepo.sendOffer(
       cameraUuid,
       localDesc!.sdp!,
-      viewerId: viewer?.id,
-      viewerLabel: viewer?.label,
+      viewerId: viewerId,
       takeover: takeover,
     );
     if (!_isCurrent(gen)) {
