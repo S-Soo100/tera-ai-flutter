@@ -9,6 +9,7 @@ import '../../../shared/widgets/figma_icon.dart';
 import '../../my_cage/presentation/widgets/management_widgets.dart';
 import '../domain/pet.dart';
 import 'my_pets_providers.dart';
+import 'widgets/pet_list_status_view.dart';
 import 'widgets/pet_form_screen.dart';
 
 final _petDeletingProvider = StateProvider.autoDispose<String?>((ref) => null);
@@ -56,6 +57,8 @@ class PetManagementScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pets = ref.watch(petListProvider);
+    final load =
+        pets.isEmpty ? ref.watch(petListLoadProvider) : PetListLoad.ready;
     final deleting = ref.watch(_petDeletingProvider);
     final p = context.glass;
     void add() => onAdd != null ? onAdd!() : context.push('/my-pets/add');
@@ -72,20 +75,26 @@ class PetManagementScreen extends ConsumerWidget {
                 close: true,
                 onBack: () => Navigator.of(context).pop()),
             Expanded(
-              child: pets.isEmpty
-                  ? const Center(
-                      child: Image(
-                          image: FigmaImages.emptyPet, width: 345, height: 227))
-                  : ListView.separated(
-                      padding: const EdgeInsets.only(top: 16, bottom: 24),
-                      itemCount: pets.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (_, index) => _PetManagementCard(
-                          pet: pets[index],
-                          enabled: deleting == null,
-                          onEdit: () => edit(pets[index]),
-                          onDelete: () => _delete(context, ref, pets[index])),
-                    ),
+              child: pets.isEmpty && PetListStatusView.showsInsteadOfEmpty(load)
+                  ? PetListStatusView(load: load)
+                  : pets.isEmpty
+                      ? const Center(
+                          child: Image(
+                              image: FigmaImages.emptyPet,
+                              width: 345,
+                              height: 227))
+                      : ListView.separated(
+                          padding: const EdgeInsets.only(top: 16, bottom: 24),
+                          itemCount: pets.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (_, index) => _PetManagementCard(
+                              pet: pets[index],
+                              enabled: deleting == null,
+                              onEdit: () => edit(pets[index]),
+                              onDelete: () =>
+                                  _delete(context, ref, pets[index])),
+                        ),
             ),
             ManagementButton(
                 key: const Key('pet_management_add'),

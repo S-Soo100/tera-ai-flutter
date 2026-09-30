@@ -72,40 +72,47 @@ class GlassDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: glass.tabBar,
-        border: Border(top: BorderSide(color: glass.border)),
-      ),
-      // 리플이 앉을 면 — 없으면 잉크가 불투명 바 뒤에 그려져 안 보인다.
-      child: Material(
-        type: MaterialType.transparency,
-        child: SafeArea(
-          top: false,
-          minimum: const EdgeInsets.only(bottom: 26),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(28.5, 12, 28.5, 0),
-            child: SizedBox(
-              height: 28 + MediaQuery.textScalerOf(context).scale(14.3203125),
-              child: Row(
-                children: [
-                  for (var i = 0; i < items.length; i++)
-                    Expanded(
-                      child: _DockButton(
-                        item: items[i],
-                        selected: i == currentIndex,
-                        selectedColor: glass.navSelected,
-                        unselectedColor: glass.navUnselected,
-                        onTap: () => onSelected(i),
+    // 탭 라벨은 짧고 아이콘 크기가 고정이라 1.5배에서 멈춘다(UX-06 — 휴대폰
+    // 글자 2배에서도 탭바가 화면을 먹지 않게).
+    return MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.5,
+        child: Builder(
+            builder: (context) => DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: glass.tabBar,
+                    border: Border(top: BorderSide(color: glass.border)),
+                  ),
+                  // 리플이 앉을 면 — 없으면 잉크가 불투명 바 뒤에 그려져 안 보인다.
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: SafeArea(
+                      top: false,
+                      minimum: const EdgeInsets.only(bottom: 26),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(28.5, 12, 28.5, 0),
+                        child: SizedBox(
+                          height: 28 +
+                              MediaQuery.textScalerOf(context)
+                                  .scale(14.3203125),
+                          child: Row(
+                            children: [
+                              for (var i = 0; i < items.length; i++)
+                                Expanded(
+                                  child: _DockButton(
+                                    item: items[i],
+                                    selected: i == currentIndex,
+                                    selectedColor: glass.navSelected,
+                                    unselectedColor: glass.navUnselected,
+                                    onTap: () => onSelected(i),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+                  ),
+                )));
   }
 }
 

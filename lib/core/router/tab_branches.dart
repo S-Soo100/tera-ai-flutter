@@ -49,5 +49,6 @@ const List<String> kPublicPaths = [
   '/login',
   '/signup',
   '/verify-email',
+  '/forgot-password',
   '/error',
 ];

@@ -56,6 +56,10 @@ class MyPetsScreen extends ConsumerWidget {
               onSelected: (id) =>
                   ref.read(selectedMyCrePetIdProvider.notifier).state = id)),
       pet: selected,
+      // 조회 상태는 보일 개체가 없을 때만 의미가 있다(UX-02).
+      petLoad: selected == null
+          ? ref.watch(petListLoadProvider)
+          : PetListLoad.ready,
       userId: userId,
       hasCameraConnection: selected?.enclosureId == null
           ? false

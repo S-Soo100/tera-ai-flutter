@@ -10,6 +10,8 @@ import '../domain/activity_summary.dart';
 import '../domain/activity_window.dart';
 import '../domain/pet.dart';
 import 'activity_providers.dart';
+import 'my_pets_providers.dart';
+import 'widgets/pet_list_status_view.dart';
 import 'widgets/activity_day_chart.dart';
 import 'widgets/activity_pet_header.dart';
 import 'widgets/activity_week_chart.dart';
@@ -25,11 +27,16 @@ class MyCreActivityScreen extends ConsumerWidget {
       required this.hasCameraConnection,
       required this.assignments,
       required this.onAddPet,
+      this.petLoad = PetListLoad.ready,
       this.assignmentNotice,
       this.onEditPet,
       this.onConnectCamera});
   final Widget header;
   final Pet? pet;
+
+  /// 개체 목록 조회 상태(UX-02). [pet]이 null이어도 조회 중·실패면 "개체를
+  /// 추가하세요" 대신 로딩·재시도를 보인다.
+  final PetListLoad petLoad;
   final String? userId;
   final bool? hasCameraConnection;
   final VoidCallback? onConnectCamera;
@@ -41,6 +48,18 @@ class MyCreActivityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = pet;
+    if (selected == null && PetListStatusView.showsInsteadOfEmpty(petLoad)) {
+      return Scaffold(
+          body: SafeArea(
+              bottom: false,
+              child: Column(children: [
+                header,
+                Expanded(
+                    child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: PetListStatusView(load: petLoad))),
+              ])));
+    }
     if (selected == null) {
       return Scaffold(
           body: SafeArea(

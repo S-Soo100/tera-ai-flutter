@@ -8,6 +8,8 @@ import '../../../shared/widgets/figma_icon.dart';
 import '../../../shared/widgets/viva_modal.dart';
 import '../../../shared/widgets/viva_text_field.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../auth/domain/password_rule.dart';
+import '../../auth/presentation/auth_error_text.dart';
 import 'widgets/my_page_widgets.dart';
 
 /// 비밀번호 변경(Figma MyAcc_pwchange 1134:7865 / 7996 / 8076 / 8146).
@@ -22,13 +24,9 @@ class PasswordChangeScreen extends ConsumerStatefulWidget {
   static const confirmKey = Key('pw_change_confirm');
   static const submitKey = Key('pw_change_submit');
 
-  /// 영문·숫자·특수문자를 모두 포함한 6~12자.
-  static bool meetsRule(String v) =>
-      v.length >= 6 &&
-      v.length <= 12 &&
-      RegExp(r'[A-Za-z]').hasMatch(v) &&
-      RegExp(r'[0-9]').hasMatch(v) &&
-      RegExp(r'[^A-Za-z0-9]').hasMatch(v);
+  /// 영문·숫자·특수문자를 모두 포함한 6~12자 — 가입·재설정과 같은 규칙
+  /// ([meetsPasswordRule], UX-07).
+  static bool meetsRule(String v) => meetsPasswordRule(v);
 
   @override
   ConsumerState<PasswordChangeScreen> createState() =>
@@ -87,10 +85,10 @@ class _PasswordChangeScreenState extends ConsumerState<PasswordChangeScreen> {
       if (!mounted) return;
       await showVivaModal(context, message: 'pw_change_current_mismatch'.tr());
     } on AuthException catch (e) {
-      // 새 비밀번호가 거절된 경우(same_password 등) — 서버 사유를 그대로 보인다.
+      // 새 비밀번호가 거절된 경우(same_password 등) — 서버 사유를 한글로 보인다.
       if (!mounted) return;
       await showVivaModal(context,
-          message: '${'pw_change_failed'.tr()}\n${e.message}');
+          message: 'pw_change_failed'.tr(), detail: authErrorText(e));
     } catch (_) {
       if (!mounted) return;
       await showVivaModal(context, message: 'pw_change_failed'.tr());

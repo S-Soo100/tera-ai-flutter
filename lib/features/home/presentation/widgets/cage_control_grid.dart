@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -197,6 +199,11 @@ class CageControlGrid extends ConsumerWidget {
             shownState: shown(ScheduleDevice.heater)),
     ];
 
+    // 휴대폰 글자를 키우면 이름·상태 두 줄이 72에 안 들어간다 — 글자 높이만큼
+    // 타일을 늘린다(UX-06). 기본 배율(1.15)에선 72 그대로.
+    final scaler = MediaQuery.textScalerOf(context);
+    final tileHeight = math.max(
+        _tileHeight, (scaler.scale(16) + scaler.scale(14)) * 1.2 + 4 + 16);
     return Column(
       children: [
         for (var row = 0; row * 2 < tiles.length; row++) ...[
@@ -204,12 +211,12 @@ class CageControlGrid extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: SizedBox(height: _tileHeight, child: tiles[row * 2]),
+                child: SizedBox(height: tileHeight, child: tiles[row * 2]),
               ),
               const SizedBox(width: _gap),
               Expanded(
                 child: SizedBox(
-                  height: _tileHeight,
+                  height: tileHeight,
                   child: row * 2 + 1 < tiles.length
                       ? tiles[row * 2 + 1]
                       // 마지막 홀수 칸은 빈 칸(Figma A.4 ④).

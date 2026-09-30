@@ -54,6 +54,34 @@ class AuthRepository {
     );
   }
 
+  /// 비밀번호 재설정 인증번호 요청(UX-01, 2026-10-01). 메일 링크가 아니라
+  /// 가입 인증과 같은 **6자리 코드** 방식 — 앱에 딥링크 설정이 없어서다.
+  /// ⚠️ Supabase 대시보드 "Reset Password" 메일 양식에 `{{ .Token }}`이 있어야
+  /// 코드가 메일에 찍힌다(`docs/handoffs/2026-10-01-password-reset-otp-template.md`).
+  /// 가입되지 않은 이메일도 서버는 성공으로 답한다(계정 존재 노출 방지).
+  Future<void> sendPasswordResetCode({required String email}) async {
+    await _client.auth.resetPasswordForEmail(email);
+  }
+
+  /// 재설정 코드 확인. 성공하면 복구 세션이 생긴다(= 로그인 상태) —
+  /// 이어서 [updatePassword]로 새 비밀번호를 저장한다.
+  Future<void> verifyPasswordResetCode({
+    required String email,
+    required String token,
+  }) async {
+    await _client.auth.verifyOTP(
+      email: email,
+      token: token,
+      type: OtpType.recovery,
+    );
+  }
+
+  /// 복구 세션에서 새 비밀번호 저장. 현재 비밀번호 확인이 없는 경로라
+  /// 재설정 화면에서만 쓴다(로그인 후 변경은 [changePassword]).
+  Future<void> updatePassword(String next) async {
+    await _client.auth.updateUser(UserAttributes(password: next));
+  }
+
   Future<void> signOut() async {
     await _client.auth.signOut();
   }

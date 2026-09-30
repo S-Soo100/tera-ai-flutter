@@ -9,6 +9,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_styles.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/viva_modal.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../home/presentation/home_set_providers.dart';
 import '../../my_cage/presentation/my_cage_providers.dart';
@@ -39,10 +40,39 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   double? _progress; // null = 대기, 0~1 = 게시 중
   String? _error;
 
+  /// 사용자가 개체를 직접 바꿨는가(자동 연결 결과는 변경이 아니다).
+  bool _petTouched = false;
+  bool _published = false;
+  bool _exitDialogOpen = false;
+
+  /// 나가면 잃는 입력이 있는가(UX-04) — 캡션 또는 직접 고른 개체.
+  bool get _dirty => _caption.text.trim().isNotEmpty || _petTouched;
+
   @override
   void initState() {
     super.initState();
     _resolvePet();
+    // 캡션이 비었다/찼다가 바뀔 때만 다시 그려 뒤로 가기 보호를 켜고 끈다.
+    var wasDirty = false;
+    _caption.addListener(() {
+      if (!mounted || _dirty == wasDirty) return;
+      wasDirty = _dirty;
+      setState(() {});
+    });
+  }
+
+  /// 뒤로(앱바·시스템): 작성 중이면 "계속 작성 / 나가기" 확인(UX-04).
+  Future<void> _confirmExit() async {
+    if (_progress != null || _exitDialogOpen) return;
+    _exitDialogOpen = true;
+    final leave = await showVivaModal(context,
+        message: 'community_compose_exit_title'.tr(),
+        detail: 'community_compose_exit_body'.tr(),
+        cancelLabel: 'community_compose_exit_stay'.tr(),
+        confirmLabel: 'community_compose_exit_leave'.tr(),
+        confirmKey: const Key('compose_exit_leave'));
+    _exitDialogOpen = false;
+    if (leave && mounted) Navigator.of(context).pop();
   }
 
   /// 카메라→사육장→개체 1:1 자동 연결. 세트 미구성이면 null(수동 선택 가능).
@@ -157,12 +187,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final flow = ref.read(currentUserProvider) == null
           ? null
           : ref.read(pushConsentFlowProvider);
+      _published = true; // 이탈 확인이 게시 후 이동을 막지 않게
       context.go('/community');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final rootContext = root.currentContext;
         if (flow != null && rootContext != null && rootContext.mounted) {
-          unawaited(
-              askPushConsentWith(rootContext, flow, PushTopic.community));
+          unawaited(askPushConsentWith(rootContext, flow, PushTopic.community));
         }
       });
     } on ClipExpiredException {
@@ -197,14 +227,20 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   ''),
               onTap: () {
                 Navigator.pop(ctx);
-                setState(() => _pet = p);
+                setState(() {
+                  _petTouched = _petTouched || p.id != _pet?.id;
+                  _pet = p;
+                });
               },
             ),
           ListTile(
             title: Text('community_pet_none'.tr()),
             onTap: () {
               Navigator.pop(ctx);
-              setState(() => _pet = null);
+              setState(() {
+                _petTouched = _petTouched || _pet != null;
+                _pet = null;
+              });
             },
           ),
         ]),
@@ -217,7 +253,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final glass = context.glass;
     final publishing = _progress != null;
     return PopScope(
-      canPop: !publishing, // 게시 중 이탈 방지
+      // 게시 중 이탈 방지 + 작성 중이면 확인(UX-04). 게시 성공 뒤엔 막지 않는다.
+      canPop: _published || (!publishing && !_dirty),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !publishing && !_published) _confirmExit();
+      },
       child: Scaffold(
         appBar: AppBar(
           title: Text('community_compose_title'.tr()),
