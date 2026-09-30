@@ -41,6 +41,7 @@ import '../../features/profile/presentation/withdraw_screen.dart';
 import '../../features/community/presentation/user_posts_screen.dart';
 import '../../features/error/presentation/error_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/password_reset_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/auth/presentation/email_verification_screen.dart';
 import '../../features/auth/presentation/auth_providers.dart';
@@ -327,7 +328,15 @@ GoRouter buildAppRouter({
       ),
       GoRoute(
         path: '/login',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) =>
+            LoginScreen(initialEmail: state.uri.queryParameters['email']),
+      ),
+      // 비밀번호 재설정(UX-01) — 비로그인 공개. 코드 확인 뒤엔 복구 세션으로
+      // 로그인 상태가 되지만 아래 redirect의 홈 이동 대상이 아니라 유지된다.
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => PasswordResetScreen(
+            initialEmail: state.uri.queryParameters['email'] ?? ''),
       ),
       GoRoute(
         path: '/signup',

@@ -2,8 +2,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/auth_repository.dart';
+import '../domain/password_rule.dart';
+import 'auth_error_text.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -44,10 +45,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         context.go(
             '/verify-email?email=${Uri.encodeComponent(_emailController.text.trim())}');
       }
-    } on AuthException catch (e) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
+          SnackBar(content: Text(authErrorText(e))),
         );
       }
     } finally {
@@ -107,6 +108,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     controller: _passwordController,
                     decoration: InputDecoration(
                       labelText: 'auth_password'.tr(),
+                      helperText: 'login_password_rule'.tr(),
                       prefixIcon: const Icon(Icons.lock_outlined),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -122,11 +124,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       ),
                     ),
                     obscureText: _obscurePassword,
+                    // 가입·재설정·변경 공통 규칙(UX-07) — 안내와 검증이 같다.
                     validator: (v) {
                       if (v == null || v.isEmpty) {
                         return 'auth_password_required'.tr();
                       }
-                      if (v.length < 6) return 'auth_password_min_length'.tr();
+                      if (!meetsPasswordRule(v)) {
+                        return 'login_password_rule'.tr();
+                      }
                       return null;
                     },
                   ),
@@ -164,13 +169,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   // 가입 버튼
                   FilledButton(
                     onPressed: _isLoading ? null : _signup,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text('auth_signup'.tr()),
+                    child: Text(
+                        (_isLoading ? 'auth_signup_in_progress' : 'auth_signup')
+                            .tr()),
                   ),
                   const SizedBox(height: 16),
 

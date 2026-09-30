@@ -20,10 +20,15 @@ import '../data/login_prefs_repository.dart';
 ///
 /// 검증(계획 B5): 아이디는 이메일 형식, 비밀번호는 6자 이상만 막는다 —
 /// 기존 계정의 비밀번호가 "영문+숫자+특수문자 6~12자" 규칙을 만족한다는 보장이
-/// 없어 로그인에서 그 규칙을 강제하면 잠긴다(규칙은 가입 화면 몫). 규칙 문구는
-/// 힌트와 짧은 비밀번호 오류에만 쓴다. 서버 인증 실패도 같은 자리에 적는다.
+/// 없어 로그인에서 그 규칙을 강제하면 잠긴다(규칙은 가입 화면 몫). 2026-10-01
+/// UX-07: 로그인 힌트·오류에서도 가입 규칙 문구를 빼고 "가입할 때 정한 비밀번호"를
+/// 묻는다(기존 비밀번호가 규칙과 다르면 틀렸다고 오해했다). 서버 인증 실패도
+/// 같은 자리에 적는다. 체크 행 아래에 비밀번호 재설정 진입점(UX-01).
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.initialEmail});
+
+  /// 비밀번호 재설정에서 돌아올 때 그 이메일을 채운다(없으면 마지막 로그인 이메일).
+  final String? initialEmail;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -45,7 +50,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void initState() {
     super.initState();
     final prefs = ref.read(loginPrefsProvider);
-    _emailController.text = prefs.lastEmail ?? '';
+    _emailController.text = widget.initialEmail ?? prefs.lastEmail ?? '';
     _autoLogin = prefs.autoLogin;
     // 고치기 시작하면 **그 칸의** 오류만 지운다(다른 칸 오류는 유지 — 리뷰
     // 2026-09-16). CTA 활성도 글자 수에 달려 있어 매 입력마다 다시 그린다.
@@ -73,7 +78,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() {
       _emailError =
           _emailPattern.hasMatch(email) ? null : 'login_email_invalid'.tr();
-      _passwordError = password.length >= 6 ? null : 'login_password_rule'.tr();
+      _passwordError =
+          password.length >= 6 ? null : 'login_password_too_short'.tr();
     });
     return _emailError == null && _passwordError == null;
   }
@@ -163,7 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   label: 'auth_password'.tr(),
                   controller: _passwordController,
                   focusNode: _passwordFocus,
-                  hintText: 'login_password_rule'.tr(),
+                  hintText: 'login_password_hint'.tr(),
                   errorText: passwordErrorInRow,
                   showErrorBelow: false,
                   obscureText: _obscurePassword,
@@ -216,6 +222,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                     ]),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    key: const ValueKey('login-forgot-password'),
+                    onPressed: () {
+                      final email = _emailController.text.trim();
+                      context.push(email.isEmpty
+                          ? '/forgot-password'
+                          : '/forgot-password?email=${Uri.encodeComponent(email)}');
+                    },
+                    style: TextButton.styleFrom(
+                        minimumSize: const Size(48, 44),
+                        foregroundColor: glass.textSecondary,
+                        textStyle: vivaFieldText(context).copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.28)),
+                    child: Text('login_forgot_password'.tr()),
                   ),
                 ),
               ],
