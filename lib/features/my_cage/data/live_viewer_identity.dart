@@ -1,9 +1,9 @@
 import 'dart:io' show Platform;
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
+
+import '../../../core/app_installation.dart';
 
 /// 라이브 시청자 = 이 앱 설치(2026-09-30, 서버 라이브 시청 제한).
 ///
@@ -17,29 +17,22 @@ class LiveViewer {
   final String label;
 }
 
-/// 설치 ID·기기 이름. 실패해도 라이브를 막지 않는다 — 이름은 OS 이름, ID는
-/// 이번 실행 동안만 쓰는 값으로 대신한다(서버는 같은 실행 안에선 같은 기기로 본다).
-final liveViewerProvider = FutureProvider<LiveViewer>((ref) async {
-  return LiveViewer(id: await _installId(), label: await _deviceLabel());
-});
-
-const _kViewerIdKey = 'live_viewer_id';
-
-Future<String> _installId() async {
+/// 설치 ID·기기 이름을 읽는다. 실패해도 라이브를 막지 않는다 — 이름은 OS
+/// 이름, ID는 이번 실행 동안만 쓰는 값으로 대신한다(서버는 같은 실행 안에선
+/// 같은 기기로 본다). 설치 ID는 푸시 기기 등록과 같은 값([appInstallationId]).
+Future<LiveViewer> loadLiveViewer() async {
+  String id;
   try {
-    if (Hive.isBoxOpen('app_settings')) {
-      final box = Hive.box('app_settings');
-      final existing = box.get(_kViewerIdKey);
-      if (existing is String && Uuid.isValidUUID(fromString: existing)) {
-        return existing;
-      }
-      final id = const Uuid().v4();
-      await box.put(_kViewerIdKey, id);
-      return id;
-    }
-  } catch (_) {}
-  return const Uuid().v4();
+    id = await appInstallationId();
+  } catch (_) {
+    id = const Uuid().v4();
+  }
+  return LiveViewer(id: id, label: await _deviceLabel());
 }
+
+/// 구버전 앱(viewer_id 없음)을 서버가 부르는 이름 — 우리가 ID를 못 보냈을 때
+/// 행의 `live_viewer_id`가 이 값이면 우리다.
+const kLegacyLiveViewerId = 'legacy';
 
 Future<String> _deviceLabel() async {
   try {

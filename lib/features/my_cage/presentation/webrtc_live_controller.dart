@@ -17,7 +17,7 @@ import '../domain/live_view_session.dart';
 import '../domain/terra_camera.dart';
 import '../domain/webrtc_connect_log.dart';
 import '../domain/webrtc_diag.dart';
-import 'camera_live_session_provider.dart';
+import 'live_limit_providers.dart';
 import 'my_cage_providers.dart';
 import 'webrtc_diag_providers.dart';
 
@@ -202,6 +202,15 @@ class _Inbound {
   final int? bytes;
   final int? lost;
 }
+
+/// 서버 시청 제한으로 끝난 결과 — 실패가 아니라 `fail_phase`를 비운다.
+const _kLimitOutcomes = {
+  'in_use',
+  'cooldown',
+  'rate_limited',
+  'taken_over',
+  'time_limit',
+};
 
 const _kFailPhase = {
   WebRtcLivePhase.connectingConfig: 'config',
@@ -565,9 +574,10 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     ref.listen<AsyncValue<CameraLiveSession>>(
         cameraLiveSessionProvider(cameraUuid), (_, next) {
       final row = next.valueOrNull;
+      if (row != null) _lastLiveRow = row;
       final mine = _sessionId;
       if (row == null || mine == null || _limit != null) return;
-      final ended = row.endedFor(mine, DateTime.now());
+      final ended = row.endedFor(mine, _myViewerId, DateTime.now());
       if (ended == null) return;
       _diag('live-ended-by-server', {
         'kind': ended.kind.name,
@@ -600,7 +610,10 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 디바운스가 끝난 망 신호 처리. 첫 값은 기준선만 잡고, 되돌아온 변화는
   /// 무시하며, 영상이 나오는 중이면 연결을 유지한 채 프레임 진행으로 판단한다.
   void _onNetworkSettled() {
-    if (_suspended || _disposed || _limit != null) return;
+    // 제한 중에도 기준선은 갱신한다 — 재시작은 [_restart]가 막는다. 여기서
+    // 먼저 돌아서면 제한 동안의 망 변화가 사라져, 다시 보기 뒤 멀쩡한 연결을
+    // "망 변경"으로 끊는다.
+    if (_suspended || _disposed) return;
     final now = _lastNetwork;
     if (_isNoNetwork(now)) {
       _sawNoNetwork = true;
@@ -683,14 +696,14 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       return;
     }
     _diag('resume', {'reason': reason});
+    // 백그라운드 동안의 망 변화는 무시했다 — 지금 붙을 망을 기준선으로 삼는다.
+    // 안 하면 복귀 뒤 같은 신호의 재알림을 "변경"으로 보고 새 시도를 취소한다.
+    if (!_isNoNetwork(_lastNetwork)) _netApplied = _lastNetwork;
     if (_limit != null) {
       // 제한 안내는 돌아와도 그대로 — 다시 요청은 사용자가 누를 때만.
       return;
     }
     _openView();
-    // 백그라운드 동안의 망 변화는 무시했다 — 지금 붙을 망을 기준선으로 삼는다.
-    // 안 하면 복귀 뒤 같은 신호의 재알림을 "변경"으로 보고 새 시도를 취소한다.
-    if (!_isNoNetwork(_lastNetwork)) _netApplied = _lastNetwork;
     _startRecoveryWindow();
     _reconnectNow('resume');
   }
@@ -719,15 +732,33 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// "이 기기로 시청"(다른 기기 시청 중 → 가져오기). 다음 offer 한 번만
   /// `takeover: true`로 보낸다 — 자동 재연결은 절대 가져오지 않는다.
   Future<void> takeover() async {
-    _takeoverNext = true;
+    _takeoverPending = true;
     await retry();
   }
 
   /// 제한 상태. null이 아니면 자동 재시도를 모두 멈춘다.
   LiveLimit? _limit;
 
-  /// 다음 offer에 `takeover: true`를 싣는다(사용자가 고른 한 번만).
-  bool _takeoverNext = false;
+  /// [takeover]가 요청됨 — 다음 [_restart]가 만드는 세대에 붙는다.
+  bool _takeoverPending = false;
+
+  /// `takeover: true`로 offer를 보낼 **그 세대 하나**. 그 시도가 offer 전에
+  /// 죽으면(설정 실패·망 변경) 이후 자동 재연결은 새 세대라 가져오지 않는다 —
+  /// 사용자가 고른 뒤 몇 분 지나 나중에 온 기기를 조용히 끊는 일이 없게.
+  int? _takeoverGen;
+
+  /// 마지막으로 받은 cameras 행의 라이브 세션 값.
+  CameraLiveSession? _lastLiveRow;
+
+  /// 마지막 offer에 실은 설치 ID. 못 구했으면 서버가 부르는 구버전 이름.
+  String _myViewerId = kLegacyLiveViewerId;
+
+  /// 연결이 실패했을 때, 다른 기기가 가져가 보고 있는 중인지. offer를 기다리는
+  /// 사이 가져가지면 세션 ID가 없어 Realtime 판정을 못 하니 여기서 한 번 더 본다
+  /// — 안 보면 자동 재연결 → 409 → "시청 기기 전환" 모달이 가져가진 쪽에 뜬다.
+  /// 이 세대가 가져오기 중이면 보지 않는다(우리 가져오기가 아직 행에 안 온 것).
+  LiveLimit? _heldByOther(int gen) =>
+      _takeoverGen == gen ? null : _lastLiveRow?.heldByOther(_myViewerId);
 
   /// 409 확인 모달을 이 제한에서 이미 띄웠나 — 같은 카메라 라이브 뷰가 여럿
   /// (홈·카메라 탭)이어도 한 번만 묻는다.
@@ -758,7 +789,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _closeRecoveryWindow();
     _waitingOnline = false;
     _waitingNetwork = false;
-    _takeoverNext = false;
+    _takeoverPending = false;
+    _takeoverGen = null;
     ++_gen;
     if (!closeRemote) _sessionId = null;
     unawaited(_cleanup(closeRemote: closeRemote));
@@ -779,16 +811,23 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (_disposed || _suspended) {
       // 강제 시도 요청이 무시됐다 — 나중 자동 시작에 새어 나가지 않게 푼다.
       _forceAttempt = false;
+      _takeoverPending = false;
       return;
     }
     if (_limit != null) {
       // 제한 중 자동 재시작(망·복귀·타이머)은 없다 — retry()가 먼저 푼다.
       _diag('restart-blocked', {'reason': reason});
       _forceAttempt = false;
+      _takeoverPending = false;
       return;
     }
     if (_cleaningUp || (!force && state.phase.isConnecting)) {
       _diag('restart-merged', {'reason': reason});
+      // 정리 중인 재시작이 곧 새 세대로 시작한다 — 가져오기는 그 세대에 싣는다.
+      if (_takeoverPending) {
+        _takeoverGen = _gen;
+        _takeoverPending = false;
+      }
       return;
     }
     _diag('restart', {'reason': reason});
@@ -799,6 +838,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     final quietErrorKey = state.errorKey;
     _endAttempt(_gen, null);
     final gen = ++_gen;
+    _takeoverGen = _takeoverPending ? gen : null;
+    _takeoverPending = false;
     _cancelTimers();
     _cleaningUp = true;
     try {
@@ -887,6 +928,11 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (!_isCurrent(gen)) return;
       // 504 = 서버가 3회 모두 무응답(정의상 offer_attempts=3, 백엔드 회신 §1.3).
       _attempt?.offerAttempts = 3;
+      final held = _heldByOther(gen);
+      if (held != null) {
+        _enterLimited(gen, held, outcome: 'taken_over', closeRemote: false);
+        return;
+      }
       if (!_autoRetried) {
         // 펌웨어가 offer를 놓친 일시 무응답일 수 있어 1회만 자동 재시도.
         _autoRetried = true;
@@ -940,6 +986,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     bool reconnect = true,
   }) {
     if (!_isCurrent(gen)) return;
+    final held = reconnect ? _heldByOther(gen) : null;
+    if (held != null) {
+      // 끊긴 이유가 가져가짐이다 — 재연결하면 409로 되묻게 된다.
+      _enterLimited(gen, held, outcome: 'taken_over', closeRemote: false);
+      return;
+    }
     _endAttempt(gen, outcome);
     _diag('fail', {'outcome': outcome, 'phase': state.phase.name});
     _cancelTimers();
@@ -1005,7 +1057,9 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     final playing = a.playing;
     final result = outcome ?? (playing != null ? 'closed' : 'cancelled');
     _writeLog(a, result,
-        failPhase: result == 'closed' ? null : _kFailPhase[state.phase],
+        failPhase: result == 'closed' || _kLimitOutcomes.contains(result)
+            ? null
+            : _kFailPhase[state.phase],
         streamedSec: playing?.elapsed.inSeconds);
   }
 
@@ -1204,8 +1258,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       viewer = await ref.read(liveViewerProvider.future);
     } catch (_) {}
     if (!_isCurrent(gen)) return;
-    final takeover = _takeoverNext;
-    _takeoverNext = false;
+    final takeover = _takeoverGen == gen;
+    _myViewerId = viewer?.id ?? kLegacyLiveViewerId;
     final offerResult = await signalingRepo.sendOffer(
       cameraUuid,
       localDesc!.sdp!,

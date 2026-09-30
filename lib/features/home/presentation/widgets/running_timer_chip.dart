@@ -7,15 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/supabase/supabase_provider.dart';
 import '../../../../shared/domain/fan_actuator.dart';
+import '../../../../shared/providers/clock_providers.dart';
 import '../../domain/running_timer.dart';
 import '../home_control_providers.dart';
 
-/// 1초 tick. autoDispose라 홈을 떠나면 타이머가 멈춘다. 제어 타일의 카운트다운
-/// 부제([CageControlGrid])도 이걸 구독한다 — 타이머가 있을 때만.
-final secondTickProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
-  yield DateTime.now();
-  yield* Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
-});
+// 1초 tick은 라이브 쉼 카운트다운도 써서 shared로 옮겼다(2026-09-30). 기존
+// import 경로를 그대로 두려고 다시 내보낸다.
+export '../../../../shared/providers/clock_providers.dart' show secondTickProvider;
+
 
 /// 타이머가 떠 있는 동안의 재검증 주기 ([runningTimersProvider]).
 const _kTimerRevalidateEvery = Duration(seconds: 30);

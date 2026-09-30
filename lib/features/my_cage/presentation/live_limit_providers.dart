@@ -6,7 +6,44 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/realtime_binding.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../data/live_viewer_identity.dart';
 import '../domain/live_limit.dart';
+
+// 라이브 시청 제한(2026-09-30) provider 모음.
+
+/// 이 설치(시청자) — 설치 ID·기기 이름. 실패해도 대체값으로 채운다.
+final liveViewerProvider = FutureProvider<LiveViewer>((ref) => loadLiveViewer());
+
+/// 서버가 라이브를 끝낼 시각까지 남은 시간 — 마지막 [kLiveEndingSoon]만 센다.
+///
+/// 그 전엔 null이고 **타이머 하나만** 걸어 둔다(15분 내내 1초마다 다시 그리지
+/// 않는다). 0이 되면 거기서 멈춘다 — 서버 만료 스윕이 15초 주기라 영상이 조금
+/// 더 나올 수 있어, 알약은 영상이 실제로 끊길 때까지 "곧"으로 남는다.
+final liveEndingSoonProvider = StreamProvider.autoDispose
+    .family<Duration?, DateTime>((ref, until) {
+  final controller = StreamController<Duration?>();
+  Timer? timer;
+  void tick() {
+    if (controller.isClosed) return;
+    final left = until.difference(DateTime.now());
+    if (left > kLiveEndingSoon) {
+      controller.add(null);
+      timer = Timer(left - kLiveEndingSoon, tick);
+    } else if (left > Duration.zero) {
+      controller.add(left);
+      timer = Timer(const Duration(seconds: 1), tick);
+    } else {
+      controller.add(Duration.zero);
+    }
+  }
+
+  tick();
+  ref.onDispose(() {
+    timer?.cancel();
+    controller.close();
+  });
+  return controller.stream;
+});
 
 /// 보고 있는 카메라 한 대의 라이브 세션 컬럼 변화(2026-09-30).
 ///

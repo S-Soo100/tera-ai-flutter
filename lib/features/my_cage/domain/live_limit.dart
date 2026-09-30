@@ -59,6 +59,7 @@ const kLiveEndingSoon = Duration(minutes: 1);
 class CameraLiveSession {
   const CameraLiveSession({
     this.sessionId,
+    this.viewerId,
     this.viewer,
     this.endReason,
     this.cooldownUntil,
@@ -66,6 +67,9 @@ class CameraLiveSession {
 
   /// 지금 시청 중인 WebRTC session_id. 끝났으면 null.
   final String? sessionId;
+
+  /// 지금(또는 마지막) 시청 기기의 설치 ID(`legacy` = 구버전 앱).
+  final String? viewerId;
 
   /// 지금(또는 마지막) 시청 기기 이름.
   final String? viewer;
@@ -84,24 +88,34 @@ class CameraLiveSession {
     final cooldown = text('live_cooldown_until');
     return CameraLiveSession(
       sessionId: text('live_session_id'),
+      viewerId: text('live_viewer_id'),
       viewer: text('live_viewer'),
       endReason: text('live_end_reason'),
       cooldownUntil: cooldown == null ? null : DateTime.tryParse(cooldown),
     );
   }
 
+  /// **다른 기기**가 가져가 지금 보고 있으면 가져가짐. [myViewerId]는 이 설치.
+  ///
+  /// 기기 ID를 꼭 비교한다 — `live_end_reason`은 다음 일반 시청이 시작될 때까지
+  /// 남아서, 우리가 예전에 가져온 행([내 옛 세션, taken_over])이 늦게 도착하면
+  /// 세션 ID만으론 "남이 가져감"과 구분이 안 된다(자기 자신에게 쫓겨남).
+  LiveLimit? heldByOther(String myViewerId) {
+    if (sessionId == null || endReason != 'taken_over') return null;
+    if (viewerId == myViewerId) return null;
+    return LiveLimit(LiveLimitKind.takenOver, viewer: viewer);
+  }
+
   /// 내 세션([mySessionId])이 이 행 변경으로 끝났는지. 아니면 null.
   ///
-  /// - 다른 세션이 들어왔고 `taken_over` → 가져가짐
+  /// - 다른 기기의 세션이 들어왔고 `taken_over` → 가져가짐
   /// - 세션이 비었고 `time_limit` → 15분 끝(쉼)
   /// 그 밖의 변화(생존 신호·내가 닫음·연결 실패)는 기존 흐름에 맡긴다.
-  LiveLimit? endedFor(String mySessionId, DateTime now) {
+  LiveLimit? endedFor(String mySessionId, String myViewerId, DateTime now) {
     final sid = sessionId;
     if (sid == mySessionId) return null;
-    if (sid != null && endReason == 'taken_over') {
-      return LiveLimit(LiveLimitKind.takenOver, viewer: viewer);
-    }
-    if (sid == null && endReason == 'time_limit') {
+    if (sid != null) return heldByOther(myViewerId);
+    if (endReason == 'time_limit') {
       final c = cooldownUntil;
       return LiveLimit(LiveLimitKind.cooldown,
           until: c == null

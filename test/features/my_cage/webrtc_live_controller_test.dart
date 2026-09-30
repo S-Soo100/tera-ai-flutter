@@ -11,7 +11,7 @@ import 'package:vivanaut/features/my_cage/data/webrtc_signaling_repository.dart'
 import 'package:vivanaut/features/my_cage/data/camera_exceptions.dart';
 import 'package:vivanaut/features/my_cage/data/live_viewer_identity.dart';
 import 'package:vivanaut/features/my_cage/domain/live_limit.dart';
-import 'package:vivanaut/features/my_cage/presentation/camera_live_session_provider.dart';
+import 'package:vivanaut/features/my_cage/presentation/live_limit_providers.dart';
 import 'package:vivanaut/features/my_cage/domain/live_view_session.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/domain/webrtc_connect_log.dart';
@@ -208,6 +208,9 @@ class _Harness {
   final network = StreamController<String>();
   final cameras = StreamController<List<TerraCamera>>();
   final liveRows = StreamController<CameraLiveSession>();
+
+  /// true면 ICE 설정 조회가 실패한다(offer 전에 시도가 죽는다).
+  bool failConfig = false;
   final logs = <WebRtcConnectLog>[];
   final views = <LiveViewSummary>[];
   final diag = WebRtcDiagBuffer();
@@ -218,7 +221,10 @@ class _Harness {
   _Harness({bool start = true}) {
     container = ProviderContainer(overrides: [
       webrtcSignalingRepositoryProvider.overrideWithValue(signaling),
-      webrtcConfigProvider.overrideWith((ref) async => <String, dynamic>{}),
+      webrtcConfigProvider.overrideWith((ref) async {
+        if (failConfig) throw StateError('config');
+        return <String, dynamic>{};
+      }),
       webrtcPeerConnectionFactoryProvider.overrideWithValue((_) async {
         final pc = _FakePc(pcs.length + 1);
         pcs.add(pc);
@@ -1362,7 +1368,10 @@ void main() {
       await _stream(tester, h);
       final pc = h.pc;
       h.liveRows.add(const CameraLiveSession(
-          sessionId: 'other', viewer: 'Galaxy S24', endReason: 'taken_over'));
+          sessionId: 'other',
+          viewerId: 'install-2',
+          viewer: 'Galaxy S24',
+          endReason: 'taken_over'));
       await tester.pump();
       expect(h.state.phase, WebRtcLivePhase.limited);
       expect(h.state.limit!.kind, LiveLimitKind.takenOver);
@@ -1405,6 +1414,12 @@ void main() {
       h.liveRows.add(const CameraLiveSession(
           sessionId: 's1', viewer: 'iPhone 15', endReason: 'taken_over'));
       h.liveRows.add(const CameraLiveSession(endReason: 'closed'));
+      // 우리가 예전에 가져온 옛 세션 행이 늦게 와도 자기 자신에게 쫓겨나지 않는다.
+      h.liveRows.add(const CameraLiveSession(
+          sessionId: 's0',
+          viewerId: 'install-1',
+          viewer: 'iPhone 15',
+          endReason: 'taken_over'));
       await tester.pump();
       expect(h.state.phase, WebRtcLivePhase.streaming);
       await h.dispose();
@@ -1437,6 +1452,86 @@ void main() {
       h.signaling.liveUntil = until.toUtc();
       await _stream(tester, h);
       expect(h.state.liveUntil, until.toUtc());
+      await h.dispose();
+    });
+
+    testWidgets('limit 로그는 fail_phase를 비운다', (tester) async {
+      final h = _Harness();
+      h.signaling.failOfferWith = const LiveInUseException('Galaxy S24');
+      await _settleConnect(tester);
+      expect(h.logs.last.outcome, 'in_use');
+      expect(h.logs.last.failPhase, isNull);
+      await h.dispose();
+    });
+
+    testWidgets('가져오기 시도가 offer 전에 끊기면 이후 자동 재연결은 가져오지 않는다',
+        (tester) async {
+      final h = _Harness();
+      h.signaling.failOfferWith = const LiveInUseException('Galaxy S24');
+      await _settleConnect(tester);
+      h.failConfig = true;
+      unawaited(ctl(h).takeover());
+      await tester.pump();
+      await tester.pump();
+      expect(h.state.phase, WebRtcLivePhase.recovering,
+          reason: '가져오기 세대는 offer 전에 죽었다');
+      expect(h.signaling.offers, hasLength(1));
+      h.failConfig = false;
+      await tester.pump(const Duration(seconds: 3)); // 자동 재연결 백오프
+      await _settleConnect(tester);
+      expect(h.signaling.offers, hasLength(2));
+      expect(h.signaling.offers.last.takeover, isFalse);
+      await h.dispose();
+    });
+
+    testWidgets('offer 대기 중 가져가진 뒤 끊기면 재연결 대신 가져가짐 안내',
+        (tester) async {
+      final h = _Harness();
+      h.signaling.holdOffer = Completer();
+      await tester.pump();
+      await tester.pump(kWebRtcIceGatherWait + const Duration(milliseconds: 50));
+      // 세션 ID를 받기 전 — Realtime 판정은 건너뛴다.
+      h.liveRows.add(const CameraLiveSession(
+          sessionId: 'other',
+          viewerId: 'install-2',
+          viewer: 'Galaxy S24',
+          endReason: 'taken_over'));
+      await tester.pump();
+      final hold = h.signaling.holdOffer!;
+      h.signaling.holdOffer = null;
+      hold.complete();
+      await tester.pump();
+      await tester.pump();
+      expect(h.state.phase, isNot(WebRtcLivePhase.limited));
+      // 서버가 우리 세션을 닫아 피어가 실패한다.
+      h.pc.emit(RTCPeerConnectionState.RTCPeerConnectionStateFailed);
+      expect(h.state.phase, WebRtcLivePhase.limited);
+      expect(h.state.limit!.kind, LiveLimitKind.takenOver);
+      expect(h.state.limit!.viewer, 'Galaxy S24');
+      await tester.pump(const Duration(minutes: 2));
+      expect(h.signaling.offers, hasLength(1));
+      await h.dispose();
+    });
+
+    testWidgets('제한 중 망이 바뀌어도 기준선은 갱신 — 다시 보기 뒤 헛재연결 없음',
+        (tester) async {
+      final h = _Harness();
+      h.network.add('wifi');
+      h.signaling.failOfferWith =
+          const LiveCooldownException(Duration(seconds: 5));
+      await _settleConnect(tester);
+      h.network.add('mobile');
+      await tester.pump(kWebRtcNetworkDebounce);
+      expect(h.signaling.offers, hasLength(1));
+      unawaited(ctl(h).retry());
+      await _stream(tester, h);
+      final pcs = h.pcs.length;
+      // 같은 망 신호가 다시 와도 "변경"이 아니다.
+      h.network.add('mobile');
+      await tester.pump(kWebRtcNetworkDebounce);
+      await _play(tester, h, 5);
+      expect(h.pcs, hasLength(pcs));
+      expect(h.state.phase, WebRtcLivePhase.streaming);
       await h.dispose();
     });
   });
