@@ -108,7 +108,9 @@ class _OtpCodeFieldState extends State<OtpCodeField> {
             child: Text(
               i < text.length ? text[i] : '',
               style: theme.textTheme.headlineSmall,
-              textScaler: TextScaler.noScaling,
+              // 칸 크기는 폭에 맞춰 정해져 글자만 커지면 넘친다 — 1.3배까지만.
+              textScaler:
+                  MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
             ),
           ));
         }

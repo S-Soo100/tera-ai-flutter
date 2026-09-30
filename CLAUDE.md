@@ -172,6 +172,8 @@ lib/
 - **시각 디자인 방향**: `docs/design-direction.md` — 위계·타이포·색 역할·시그니처(밤 띠). **팔레트·컴포넌트 규격 SOT는 Figma**(`docs/figma-final-design-transcript.md` §4)
 - **디자인 시스템(구)**: `docs/design-system.md` — 토큰·공유 위젯 정의
 - **하드코딩 색상 금지**. `AppTheme` 또는 `Theme.of(context)` 사용.
+- **글자 배율(2026-10-01, UX-06)**: 전역은 `AppTextScaler`(`core/theme/app_text_scaler.dart`) = 디자인 기준 1.15 × 휴대폰 글자 설정, 최대 2.0. 고정 `TextScaler.linear(1.15)`로 되돌리지 말 것(접근성 설정 무시). 고정 높이 행은 글자 높이에 맞춰 늘리거나(`CageControlGrid` 타일) 짧은 라벨만 제한(`GlassDock` 1.5). 회귀 검사 `test/design/text_scale_overflow_test.dart`(1.0/1.3/상한) — 새 주요 화면은 여기 추가.
+- **오프라인 안내(2026-10-01, UX-05)**: 화면을 덮지 않는 상단 `OfflineBanner`. 전체 차단 오버레이를 되살리지 말 것 — 서버 작업 실패는 작업별로 알린다.
 - **하드코딩 문자열 금지**. `assets/l10n/ko.json`에 키 추가 후 `.tr()` 사용.
 - **Primary: `#192553`**(Figma 메인컬러, `AppTheme.brandNavy`). 구 Green 800은 2026-08-08 폐기 — 결정 로그 D2-1
 - 의미색: `AppTheme.success`(서브 초록) / `warning`(#FF8F00, **Figma 미정의**) / `danger`(서브 빨강). 브랜드 빨강 `#D61619`(VIVA Main_light)는 라이트 온도 최고값·경보 역할에 배정
