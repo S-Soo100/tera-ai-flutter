@@ -79,7 +79,7 @@ class NotificationCenterScreen extends ConsumerWidget {
                                   color: colors.error,
                                   key: ValueKey(
                                       'notification_unread_${item.id}')),
-                          title: Text(item.displayTitle,
+                          title: Text(item.title,
                               style: Theme.of(context)
                                   .textTheme
                                   .titleSmall
@@ -90,7 +90,7 @@ class NotificationCenterScreen extends ConsumerWidget {
                           subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(item.displayBody),
+                                Text(item.body),
                                 const SizedBox(height: 6),
                                 Text(
                                     '${_category(item.category)} · ${_time(item.createdAt)}',
