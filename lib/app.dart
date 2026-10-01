@@ -31,7 +31,7 @@ class App extends ConsumerWidget {
         final mq = MediaQuery.of(context);
         final online = ref.watch(connectivityProvider).valueOrNull ?? true;
         return MediaQuery(
-          // 디자인 기준 1.15배 × 휴대폰 글자 크기 설정(최대 2배, UX-06).
+          // Figma 크기 그대로 × 휴대폰 글자 크기 설정(최대 2배, UX-06).
           data: mq.copyWith(textScaler: AppTextScaler(mq.textScaler)),
           // 앱 열 때(콜드 스타트·복귀) 팬 타이머 알림을 commands 이력과
           // 재동기화 — 다른 폰에서 취소된 타이머의 유령 알림을 내린다.

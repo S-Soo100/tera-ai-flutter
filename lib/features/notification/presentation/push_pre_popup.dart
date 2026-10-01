@@ -142,7 +142,7 @@ class _VivaPopupFrame extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 제목은 Figma 줄 구성(\n) 그대로 줄마다 한 줄 — 전역 글자 확대(1.15)로
+              // 제목은 Figma 줄 구성(\n) 그대로 줄마다 한 줄 — 휴대폰 글자 확대로
               // 넘치면 어절 중간("켜시겠습/니까?")에서 접는 대신 축소한다.
               for (final line in title.split('\n'))
                 FittedBox(
