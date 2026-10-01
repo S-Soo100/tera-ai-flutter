@@ -3,10 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/favorite_clip.dart';
+import 'dart:io';
+
+import '../data/live_recording_repository.dart';
+import '../domain/live_recording.dart';
+import 'live_recording_controller.dart';
 import 'my_cage_providers.dart';
 import 'clip_visibility_providers.dart';
 import 'clip_memo_providers.dart';
@@ -38,6 +44,9 @@ class BookmarksScreen extends ConsumerWidget {
     final glass = context.glass;
     final favoritesAsync = ref.watch(allFavoriteClipsProvider);
     final day = ref.watch(bookmarksDayFilterProvider);
+    // 직접 녹화(2026-10-01) — 기기 안 보관, 북마크와 같은 목록에 시각순으로.
+    final recordings =
+        ref.watch(liveRecordingsProvider).valueOrNull ?? const [];
 
     return Scaffold(
       backgroundColor: glass.wallpaper,
@@ -81,7 +90,8 @@ class BookmarksScreen extends ConsumerWidget {
                           ref.invalidate(allFavoriteClipsProvider);
                         },
                       ),
-                      data: (favorites) => _list(context, favorites, day),
+                      data: (favorites) =>
+                          _list(context, favorites, recordings, day),
                     ),
                   ),
                 ],
@@ -100,8 +110,8 @@ class BookmarksScreen extends ConsumerWidget {
     ref.read(bookmarksDayFilterProvider.notifier).state = picked;
   }
 
-  Widget _list(
-      BuildContext context, List<FavoriteClip> favorites, DateTime? day) {
+  Widget _list(BuildContext context, List<FavoriteClip> favorites,
+      List<LiveRecording> recordings, DateTime? day) {
     final sorted = [...favorites]
       ..sort((a, b) => b.favoritedAt.compareTo(a.favoritedAt));
     final filtered = day == null
@@ -113,10 +123,18 @@ class BookmarksScreen extends ConsumerWidget {
                 t.day == day.day;
           }).toList();
 
-    if (filtered.isEmpty) {
+    bool sameDay(DateTime t) {
+      final l = t.toLocal();
+      return day == null ||
+          (l.year == day.year && l.month == day.month && l.day == day.day);
+    }
+
+    final recs = recordings.where((r) => sameDay(r.startedAt)).toList();
+
+    if (filtered.isEmpty && recs.isEmpty) {
       // 북마크 자체가 없으면 기존 즐겨찾기 빈 문구, 필터 결과만 없으면 날짜 문구.
       return CrecamEmptyMessage(
-        message: favorites.isEmpty
+        message: favorites.isEmpty && recordings.isEmpty
             ? 'clip_favorites_empty'.tr()
             : 'crecam_home_empty_day'.tr(),
       );
@@ -125,13 +143,19 @@ class BookmarksScreen extends ConsumerWidget {
     // 재생목록 = 현재 필터·정렬 순서의 북마크 clip id 전체.
     final playlist = [for (final f in filtered) f.clipId];
 
+    // 북마크(북마크한 시각)와 직접 녹화(찍은 시각)를 최신순으로 섞는다.
+    final items = <({DateTime at, Widget card})>[
+      for (final f in filtered)
+        (at: f.favoritedAt, card: _BookmarkCard(clip: f, playlist: playlist)),
+      for (final r in recs) (at: r.startedAt, card: _RecordingCard(rec: r)),
+    ]..sort((a, b) => b.at.compareTo(a.at));
+
     return ListView.separated(
       // top 24 — Figma 668:717 상단바(4238)→첫 카드(4261) 실측 23≈24.
       padding: const EdgeInsets.fromLTRB(_margin, 24, _margin, 24),
-      itemCount: filtered.length,
+      itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 20),
-      itemBuilder: (context, i) =>
-          _BookmarkCard(clip: filtered[i], playlist: playlist),
+      itemBuilder: (context, i) => items[i].card,
     );
   }
 }
@@ -197,6 +221,87 @@ class _BookmarkCard extends ConsumerWidget {
   /// "2026. 08. 12 · 오전 12:50" — 시각은 공용 [formatAmPmTime].
   static String _headerLabel(DateTime t) =>
       '${DateFormat('yyyy. MM. dd').format(t)} · ${formatAmPmTime(t)}';
+}
+
+/// 직접 녹화 카드 — 북마크 카드와 같은 틀 + "직접 녹화 · 0:42" 배지.
+class _RecordingCard extends ConsumerWidget {
+  const _RecordingCard({required this.rec});
+
+  final LiveRecording rec;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final glass = context.glass;
+    final repo = ref.watch(liveRecordingRepositoryProvider);
+    final secs = rec.duration.inSeconds;
+    return GestureDetector(
+      key: ValueKey('live_recording_card_${rec.id}'),
+      behavior: HitTestBehavior.opaque,
+      onTap: () => context.push('/crecam/recordings/${rec.id}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            _BookmarkCard._headerLabel(rec.startedAt.toLocal()),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 16,
+              height: 19.09375 / 16,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 16 * -0.02,
+              color: glass.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 180,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(12)),
+              child: Stack(fit: StackFit.expand, children: [
+                ColoredBox(color: glass.surfaceTint),
+                if (rec.thumbPath != null)
+                  FutureBuilder<String>(
+                    future: repo.resolve(rec.thumbPath!),
+                    builder: (_, snap) => snap.hasData
+                        ? Image.file(File(snap.data!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox.shrink())
+                        : const SizedBox.shrink(),
+                  ),
+                Positioned(
+                  left: 8,
+                  bottom: 8,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.liveScrim,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'live_recording_badge'.tr(namedArgs: {
+                        'len':
+                            '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}'
+                      }),
+                      style: const TextStyle(
+                        fontFamily: 'Pretendard',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.liveOnDark,
+                      ),
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// 로딩 스켈레톤 — 카드 2장(헤더 줄 + 썸네일 면, shimmer, CPI 금지).

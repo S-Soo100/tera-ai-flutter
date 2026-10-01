@@ -1289,5 +1289,18 @@
   "device_add_join_separate": "따로 사용하기",
   "pet_form_link_title": "도마뱀과 기기를 연결합니다",
   "pet_form_link_subtitle": "도마뱀의 활동 리포트를 받아볼수 있어요",
-  "pet_form_link_confirm": "이 사육 환경에서 키우기"
+  "pet_form_link_confirm": "이 사육 환경에서 키우기",
+  "live_record_start": "녹화 시작",
+  "live_record_stop": "녹화 끝내기",
+  "live_record_rec": "REC {left}",
+  "live_record_saving": "녹화 저장 중…",
+  "live_record_saved": "북마크에 저장했어요",
+  "live_record_saved_partial": "연결이 끊겨 {sec}초까지 저장했어요",
+  "live_record_too_short": "녹화가 너무 짧아 저장하지 않았어요",
+  "live_record_failed": "녹화하지 못했어요. 다시 시도해 주세요",
+  "live_record_view": "보기",
+  "live_recording_badge": "직접 녹화 · {len}",
+  "live_recording_delete_title": "이 녹화를 삭제할까요?",
+  "live_recording_delete_confirm": "삭제",
+  "live_recording_load_failed": "녹화 파일을 열 수 없어요"
 }

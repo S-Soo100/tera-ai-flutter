@@ -23,6 +23,7 @@ import '../../features/my_cage/presentation/clip_player_screen.dart';
 import '../../features/my_cage/presentation/motion_clip_player_screen.dart';
 import '../../features/my_cage/presentation/clip_playlist_player_screen.dart';
 import '../../features/my_cage/presentation/bookmarks_screen.dart';
+import '../../features/my_cage/presentation/live_recording_player_screen.dart';
 import '../../features/my_cage/presentation/highlights_screen.dart';
 import '../../features/my_cage/presentation/device_pairing_screen.dart';
 import '../../features/my_cage/presentation/camera_pairing_screen.dart';
@@ -294,6 +295,12 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/crecam/bookmarks',
         builder: (context, state) => const BookmarksScreen(),
+      ),
+      // 라이브 직접 녹화 재생(2026-10-01, 기기 안 파일).
+      GoRoute(
+        path: '/crecam/recordings/:id',
+        builder: (context, state) => LiveRecordingPlayerScreen(
+            recordingId: state.pathParameters['id']!),
       ),
       // 사육장 (탭에서 제거 — 홈 탭이 흡수. 화면·딥링크는 보존)
       GoRoute(

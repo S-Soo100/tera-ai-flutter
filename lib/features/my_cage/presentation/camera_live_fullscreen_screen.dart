@@ -10,10 +10,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../domain/live_recording.dart';
+import 'live_recording_controller.dart';
 import 'my_cage_providers.dart';
 import 'player_view_providers.dart';
 import '../../../shared/widgets/figma_icon.dart';
 import 'widgets/camera_rotate_tile.dart';
+import 'widgets/live_record_controls.dart';
 import 'widgets/webrtc_live_view.dart';
 
 /// 라이브 전체화면 — 세로 기본, 화면 방향은 전용 버튼으로만 전환한다.
@@ -106,6 +109,11 @@ class _CameraLiveFullscreenScreenState
         .firstOrNull;
     final landscape = ref.watch(playerOrientationProvider(_orientationKey));
     final rotateBusy = ref.watch(_liveRotateBusyProvider(widget.cameraId));
+    // 녹화는 세로로 돌려도 이어진다 — 화면 전체에서 구독해 두고(autoDispose
+    // 유지), 버튼만 가로에 둔다(2026-10-01 사용자 결정).
+    if (kLiveRecordingEnabled) {
+      ref.watch(liveRecordingControllerProvider(widget.cameraId));
+    }
 
     if (!landscape) {
       final glass = context.glass;
@@ -215,6 +223,8 @@ class _CameraLiveFullscreenScreenState
                         .toggle(),
                   )),
             )),
+            if (kLiveRecordingEnabled)
+              LiveRecordControls(cameraId: widget.cameraId),
             // 우상단 화면 뒤집기(180°) — 닫기의 반대편(2026-09-09 사용자
             // 지시: 거꾸로 보이는 걸 알아채는 곳이 바로 이 화면이다).
             // 항상 표시(2026-09-23 사용자 지시 — 위 build 주석 참조).
