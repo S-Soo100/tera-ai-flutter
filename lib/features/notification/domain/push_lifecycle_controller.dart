@@ -214,8 +214,8 @@ class PushLifecycleController {
           notificationId: item.id,
           kind: item.kind,
           route: item.safeRoute,
-          title: item.displayTitle,
-          body: item.displayBody));
+          title: item.title,
+          body: item.body));
       delivered = true;
       _bound(_displayed);
     } finally {
