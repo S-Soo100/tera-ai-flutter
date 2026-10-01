@@ -21,6 +21,9 @@ class ScheduleLastRun {
           },
         'rejected' => 'schedule_run_rejected',
         'no_ack' || 'expired' || 'lost' => 'schedule_run_no_ack',
+        // 예약 시각에 기기 오프라인 — 서버가 명령 없이 건너뜀(terra-server#16).
+        'skipped' when result == 'device_offline' =>
+          'schedule_run_device_offline',
         _ => null,
       };
 

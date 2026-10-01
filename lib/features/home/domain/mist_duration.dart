@@ -42,8 +42,7 @@ enum MistDuration {
 
   /// 명령 한 번의 `commands.payload`. 다른 키는 서버가 받지 않는다.
   Map<String, dynamic> get partPayload => {
-        'duration_ms':
-            kMistServerSupportsLong ? milliseconds : partMilliseconds
+        'duration_ms': kMistServerSupportsLong ? milliseconds : partMilliseconds
       };
 
   /// 예약 저장용 payload — 예약은 서버가 한 번에 실행한다.

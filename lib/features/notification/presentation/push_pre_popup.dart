@@ -22,8 +22,9 @@ final pushConsentFlowProvider = Provider<PushConsentFlow>((ref) {
         .requestPermission(retry: retry),
     setTopic: (topic, on) {
       final prefs = ref.read(notificationPrefsProvider);
-      return ref.read(notificationPrefsProvider.notifier).update(
-          switch (topic) {
+      return ref
+          .read(notificationPrefsProvider.notifier)
+          .update(switch (topic) {
             PushTopic.highlight => prefs.copyWith(highlight: on),
             PushTopic.community => prefs.copyWith(comment: on, like: on),
             PushTopic.device => prefs, // 토글 없음 — flow가 호출하지 않는다
@@ -125,10 +126,9 @@ class _VivaPopupFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
-    TextStyle text(double size, FontWeight weight) =>
-        managementStyle(context,
-                size: size, weight: weight, color: glass.textPrimary)
-            .copyWith(height: 28 / size);
+    TextStyle text(double size, FontWeight weight) => managementStyle(context,
+            size: size, weight: weight, color: glass.textPrimary)
+        .copyWith(height: 28 / size);
     return Dialog(
       backgroundColor: glass.surfaceHeader,
       surfaceTintColor: glass.surfaceHeader,
@@ -202,8 +202,7 @@ class _PopupButton extends StatelessWidget {
 }
 
 /// 화면이 실제로 보일 때 한 번만 [topic]을 묻도록 post-frame으로 예약한다.
-void schedulePushConsent(
-    BuildContext context, WidgetRef ref, PushTopic topic) {
+void schedulePushConsent(BuildContext context, WidgetRef ref, PushTopic topic) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     if (context.mounted) unawaited(askPushConsent(context, ref, topic));
   });

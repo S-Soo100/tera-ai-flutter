@@ -63,7 +63,7 @@ void main() {
               locale: context.locale,
               home: Consumer(
                   builder: (context, ref, _) => Scaffold(
-                      body: Column(children: [
+                          body: Column(children: [
                         TextButton(
                             onPressed: () => askPushConsent(
                                 context, ref, PushTopic.highlight),
@@ -73,8 +73,8 @@ void main() {
                                 context, ref, PushTopic.community),
                             child: const Text('ask-community')),
                         TextButton(
-                            onPressed: () => askPushConsent(
-                                context, ref, PushTopic.device),
+                            onPressed: () =>
+                                askPushConsent(context, ref, PushTopic.device),
                             child: const Text('ask-device')),
                       ]))),
             ))));
@@ -87,23 +87,24 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('하이라이트 프리팝업 — Figma 문구·크기, 받기는 주제 켜고 시스템 팝업',
-      (tester) async {
+  testWidgets('하이라이트 프리팝업 — Figma 문구·크기, 받기는 주제 켜고 시스템 팝업', (tester) async {
     final (messaging, repo, _) =
         await pump(tester, PushPermission.notDetermined);
     await ask(tester, 'highlight');
     expect(find.text('하이라이트 영상 알림을 켜시겠습니까?'), findsOneWidget);
     expect(
-        find.text(keepAllWords(
-            '도마뱀이 활발하게 움직인 순간을 감지하여 하이라이트 영상으로 선별해 보내드립니다')),
+        find.text(keepAllWords('도마뱀이 활발하게 움직인 순간을 감지하여 하이라이트 영상으로 선별해 보내드립니다')),
         findsOneWidget);
     expect(keepAllWords('감지 하여').split(' ').first, '감\u2060지',
         reason: '어절 안에서는 줄이 바뀌지 않는다');
-    final card = tester.getRect(find.descendant(
-        of: find.byKey(const Key('push_prepopup_highlight')),
-        matching: find.byType(ConstrainedBox)).first);
+    final card = tester.getRect(find
+        .descendant(
+            of: find.byKey(const Key('push_prepopup_highlight')),
+            matching: find.byType(ConstrainedBox))
+        .first);
     expect(card.width, 345);
-    final accept = tester.getRect(find.byKey(const Key('push_prepopup_accept')));
+    final accept =
+        tester.getRect(find.byKey(const Key('push_prepopup_accept')));
     final decline =
         tester.getRect(find.byKey(const Key('push_prepopup_decline')));
     expect(accept.height, 44);
@@ -119,10 +120,8 @@ void main() {
     expect(find.text('수신 거부 완료'), findsNothing);
   });
 
-  testWidgets('시스템 알림이 켜진 상태에서 받지 않기 → 주제 끄고 수신 거부 완료',
-      (tester) async {
-    final (messaging, repo, _) =
-        await pump(tester, PushPermission.authorized);
+  testWidgets('시스템 알림이 켜진 상태에서 받지 않기 → 주제 끄고 수신 거부 완료', (tester) async {
+    final (messaging, repo, _) = await pump(tester, PushPermission.authorized);
     await ask(tester, 'community');
     // Figma 두 줄 제목은 줄마다 한 줄(좁으면 축소).
     expect(find.text('커뮤니티 댓글 및 좋아요'), findsOneWidget);
@@ -170,8 +169,7 @@ void main() {
     expect(preferences.asked, {'device'});
   });
 
-  testWidgets('사육장 — 이미 허용됐으면 묻지 않고 기회도 소모하지 않는다',
-      (tester) async {
+  testWidgets('사육장 — 이미 허용됐으면 묻지 않고 기회도 소모하지 않는다', (tester) async {
     final (_, _, preferences) = await pump(tester, PushPermission.authorized);
     await ask(tester, 'device');
     expect(find.text('사육장 알림을 켜시겠습니까?'), findsNothing);
