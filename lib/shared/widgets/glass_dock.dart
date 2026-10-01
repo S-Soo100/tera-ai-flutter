@@ -91,9 +91,12 @@ class GlassDock extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(28.5, 12, 28.5, 0),
                         child: SizedBox(
+                          // 라벨 줄높이를 올림 — 배율에 따라 실제 글줄이
+                          // 소수점 아래로 넘쳐 0.4px 오버플로가 났다(1.3배).
                           height: 28 +
                               MediaQuery.textScalerOf(context)
-                                  .scale(14.3203125),
+                                  .scale(14.3203125)
+                                  .ceilToDouble(),
                           child: Row(
                             children: [
                               for (var i = 0; i < items.length; i++)

@@ -200,7 +200,7 @@ class CageControlGrid extends ConsumerWidget {
     ];
 
     // 휴대폰 글자를 키우면 이름·상태 두 줄이 72에 안 들어간다 — 글자 높이만큼
-    // 타일을 늘린다(UX-06). 기본 배율(1.15)에선 72 그대로.
+    // 타일을 늘린다(UX-06). 기본 배율(1.0)에선 72 그대로.
     final scaler = MediaQuery.textScalerOf(context);
     final tileHeight = math.max(
         _tileHeight, (scaler.scale(16) + scaler.scale(14)) * 1.2 + 4 + 16);

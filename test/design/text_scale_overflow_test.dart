@@ -1,5 +1,5 @@
 // UX-06 (2026-10-01): 휴대폰 글자 크기 설정이 앱에 반영된다(AppTextScaler =
-// 1.15 × 시스템, 최대 2.0). 주요 화면을 시스템 배율 1.0·1.3·최대(2.0 상한)로
+// 1.0(Figma) × 시스템, 최대 2.0). 주요 화면을 시스템 배율 1.0·1.3·최대(2.0 상한)로
 // 그려 넘침(RenderFlex overflow 등)이 없는지 본다. 393×852·Pretendard 기준.
 import 'dart:convert';
 import 'dart:io';
@@ -96,7 +96,7 @@ Future<void> _pump(WidgetTester tester, double system, Widget home,
                   locale: c.locale,
                   supportedLocales: c.supportedLocales,
                   localizationsDelegates: c.localizationDelegates,
-                  // lib/app.dart와 같은 조립 — 시스템 배율에 앱 기준 1.15를 곱한다.
+                  // lib/app.dart와 같은 조립 — 시스템 배율에 앱 기준(1.0)을 곱한다.
                   builder: (context, child) => MediaQuery(
                       data: MediaQuery.of(context).copyWith(
                           padding: const EdgeInsets.only(top: 62, bottom: 34),
@@ -118,16 +118,16 @@ void main() {
     await fonts.load();
   });
 
-  test('배율 = 1.15 × 시스템, 최대 2.0', () {
+  test('배율 = 1.0(Figma) × 시스템, 최대 2.0', () {
     expect(const AppTextScaler(TextScaler.noScaling).scale(10),
-        closeTo(11.5, 1e-9));
+        closeTo(10, 1e-9));
     expect(const AppTextScaler(TextScaler.linear(1.3)).scale(10),
-        closeTo(14.95, 1e-9));
+        closeTo(13, 1e-9));
     expect(const AppTextScaler(TextScaler.linear(3)).scale(10), 20);
   });
 
-  // 시스템 1.0(=지금 화면), 1.3, 1.74(=상한 2.0).
-  for (final system in [1.0, 1.3, 1.74]) {
+  // 시스템 1.0(=Figma 그대로), 1.3, 2.0(=상한).
+  for (final system in [1.0, 1.3, 2.0]) {
     group('시스템 글자 $system배', () {
       testWidgets('홈 — 라이브·온습도·제어 타일·탭바', (tester) async {
         final sets = [
