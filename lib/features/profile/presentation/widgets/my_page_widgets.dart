@@ -190,8 +190,10 @@ class MyPageScaffold extends StatelessWidget {
                         onBack: () => Navigator.of(context).maybePop())),
                 Expanded(
                     child: SingleChildScrollView(
+                        // 하단은 항상 시스템 바(안드로이드 3버튼 등) 높이를 더한다 —
+                        // SafeArea(bottom:false)라 안 더하면 마지막 줄이 가려진다.
                         padding: floating == null
-                            ? padding
+                            ? padding.copyWith(bottom: padding.bottom + bottom)
                             : padding.copyWith(
                                 bottom: padding.bottom + bottom + 66 + 56),
                         child: child)),
