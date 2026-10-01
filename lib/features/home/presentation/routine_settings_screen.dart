@@ -15,7 +15,6 @@ import '../domain/schedule.dart';
 import '../domain/schedule_last_run.dart';
 import '../domain/schedule_device.dart';
 import 'home_control_providers.dart';
-import 'home_set_providers.dart';
 import 'schedule_draft_apply.dart';
 import 'schedule_providers.dart';
 import 'widgets/schedule_device_badge.dart';
@@ -106,8 +105,6 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
                                     color: rows.isEmpty
                                         ? glass.deviceOff
                                         : glass.textSecondary)))),
-                    _CageSelector(
-                        onChanged: _deleteMode ? _exitDeleteMode : null),
                     Expanded(
                         child: schedules.when(
                       loading: () => const Align(
@@ -575,59 +572,6 @@ class ScheduleSwitch extends StatelessWidget {
                         decoration: BoxDecoration(
                             color: glass.surfaceTint,
                             borderRadius: BorderRadius.circular(14)))))));
-  }
-}
-
-/// 사육장이 여럿이면 지금 목록이 어느 사육장 예약인지 보여주고 바로 바꾼다.
-///
-/// 예약은 기기(사육장)별이라, 전엔 홈에서 사육장을 바꿔 하나씩 들어가야
-/// 어디에 잡혔는지 알 수 있었다. 선택은 홈과 같은 상태를 쓴다(홈도 따라 바뀜).
-class _CageSelector extends ConsumerWidget {
-  const _CageSelector({this.onChanged});
-
-  /// 선택이 바뀔 때 먼저 부를 콜백(삭제 모드 해제 — 다른 사육장 줄 선택 방지).
-  final VoidCallback? onChanged;
-
-  static const chipKeyPrefix = 'routine_cage_chip_';
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sets = ref.watch(homeDeviceSetsProvider).valueOrNull ?? const [];
-    if (sets.length < 2) return const SizedBox.shrink();
-    final currentId = ref.watch(currentDeviceIdProvider).valueOrNull;
-    final glass = context.glass;
-    return SizedBox(
-        height: 52,
-        child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-            children: [
-              for (final set in sets)
-                if (set.device != null)
-                  Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                          key: Key('$chipKeyPrefix${set.device!.id}'),
-                          label: Text(set.homeLabel),
-                          selected: set.device!.id == currentId,
-                          showCheckmark: false,
-                          labelStyle: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: set.device!.id == currentId
-                                  ? ManagementColors.buttonForeground(context)
-                                  : glass.textSecondary),
-                          selectedColor: glass.textPrimary,
-                          backgroundColor: glass.surfaceHeader,
-                          side: BorderSide(color: glass.border),
-                          onSelected: (_) {
-                            if (set.device!.id == currentId) return;
-                            onChanged?.call();
-                            ref
-                                .read(selectedHomeDeviceIdProvider.notifier)
-                                .state = set.device!.id;
-                          })),
-            ]));
   }
 }
 
