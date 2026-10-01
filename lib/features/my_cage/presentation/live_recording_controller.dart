@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:uuid/uuid.dart';
@@ -153,7 +154,8 @@ class LiveRecordingController extends StateNotifier<LiveRecordingState> {
         await _repo.discardFile(file.abs);
         return;
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[live-rec] start failed: $e');
       if (mounted) await _cleanupFailed();
       return;
     }
@@ -215,7 +217,8 @@ class LiveRecordingController extends StateNotifier<LiveRecordingState> {
     if (ok) {
       try {
         await recorder.stop();
-      } catch (_) {
+      } catch (e) {
+        debugPrint('[live-rec] stop failed: $e');
         ok = false;
       }
     }
