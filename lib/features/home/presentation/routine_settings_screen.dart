@@ -305,8 +305,8 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  'routine_action_failed'.tr(args: [userFacingError(e)]))),
+              content:
+                  Text('routine_action_failed'.tr(args: [userFacingError(e)]))),
         );
         break;
       }
@@ -376,8 +376,8 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-              content: Text(
-                  'routine_action_failed'.tr(args: [userFacingError(e)]))),
+            content:
+                Text('routine_action_failed'.tr(args: [userFacingError(e)]))),
       );
     }
   }
@@ -432,11 +432,10 @@ String scheduleLastRunLabel(ScheduleLastRun run, {DateTime? now}) {
   final today = now ?? DateTime.now();
   final hhmm =
       '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}';
-  final when = at.year == today.year &&
-          at.month == today.month &&
-          at.day == today.day
-      ? hhmm
-      : '${at.month}/${at.day} $hhmm';
+  final when =
+      at.year == today.year && at.month == today.month && at.day == today.day
+          ? hhmm
+          : '${at.month}/${at.day} $hhmm';
   final failure = run.failureKey;
   if (failure != null) {
     return 'schedule_last_run_failed'.tr(args: [when, failure.tr()]);
@@ -593,41 +592,55 @@ class _CageSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sets = ref.watch(homeDeviceSetsProvider).valueOrNull ?? const [];
-    if (sets.length < 2) return const SizedBox.shrink();
+    final devices = [
+      for (final s in sets)
+        if (s.device != null) s
+    ];
+    if (devices.length < 2) return const SizedBox.shrink();
     final currentId = ref.watch(currentDeviceIdProvider).valueOrNull;
     final glass = context.glass;
+    // Figma 1334:6951 — 상단바 아래 16, 칩 44·r16·좌우 16·사이 8, 테두리 없음.
+    // 선택 #1E1E1E 바탕 + #FAFAFA 16 Bold, 나머지 #FFFFFF + #3C3C3C 16 SemiBold.
     return SizedBox(
-        height: 52,
-        child: ListView(
+        height: 16 + 44,
+        child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-            children: [
-              for (final set in sets)
-                if (set.device != null)
-                  Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                          key: Key('$chipKeyPrefix${set.device!.id}'),
-                          label: Text(set.homeLabel),
-                          selected: set.device!.id == currentId,
-                          showCheckmark: false,
-                          labelStyle: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: set.device!.id == currentId
-                                  ? ManagementColors.buttonForeground(context)
-                                  : glass.textSecondary),
-                          selectedColor: glass.textPrimary,
-                          backgroundColor: glass.surfaceHeader,
-                          side: BorderSide(color: glass.border),
-                          onSelected: (_) {
-                            if (set.device!.id == currentId) return;
-                            onChanged?.call();
-                            ref
-                                .read(selectedHomeDeviceIdProvider.notifier)
-                                .state = set.device!.id;
-                          })),
-            ]));
+            padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+            itemCount: devices.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, i) {
+              final set = devices[i];
+              final id = set.device!.id;
+              final selected = id == currentId;
+              return Material(
+                  key: Key('$chipKeyPrefix$id'),
+                  color: selected ? glass.textPrimary : glass.surfaceHeader,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: selected
+                          ? null
+                          : () {
+                              onChanged?.call();
+                              ref
+                                  .read(selectedHomeDeviceIdProvider.notifier)
+                                  .state = id;
+                            },
+                      child: Container(
+                          height: 44,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          alignment: Alignment.center,
+                          child: Text(set.homeLabel,
+                              maxLines: 1,
+                              style: managementStyle(context,
+                                  weight: selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w600,
+                                  color: selected
+                                      ? ManagementColors.buttonForeground(
+                                          context)
+                                      : glass.textSecondary)))));
+            }));
   }
 }
 
