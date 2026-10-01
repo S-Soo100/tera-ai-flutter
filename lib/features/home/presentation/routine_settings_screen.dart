@@ -483,8 +483,9 @@ class ScheduleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
+    // Figma 1334:6907 — 카드 바탕 #FFFFFF(칩 비선택과 같은 면).
     return Material(
-        color: ManagementColors.buttonForeground(context),
+        color: context.glass.surfaceHeader,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
             borderRadius: BorderRadius.circular(12),
