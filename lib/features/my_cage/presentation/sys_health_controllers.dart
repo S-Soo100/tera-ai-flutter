@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -116,6 +117,7 @@ class RebootState {
   const RebootState(
       {this.sending = false,
       this.rebooting = false,
+      this.slow = false,
       this.cooldownUntil,
       this.outcome,
       this.round = 0});
@@ -125,6 +127,9 @@ class RebootState {
 
   /// 명령은 나갔고 완료 신호를 기다리는 중 — "재시작 중…".
   final bool rebooting;
+
+  /// 재시작 중인데 [kRebootSlowAfter]가 지났다 — "확인이 늦어지고 있어요".
+  final bool slow;
 
   /// 이때까지 다시 누를 수 없다(명령 발행 뒤 60초).
   final DateTime? cooldownUntil;
@@ -137,83 +142,134 @@ class RebootState {
       cooldownUntil != null && now.isBefore(cooldownUntil!);
 }
 
-/// 기기 재시작 진행. 완료는 heartbeat의 가동 시간이 명령 전보다 줄고 리셋 사유가
-/// MQTT 재시작일 때. 사육장은 명령 결과도 본다 — **`status`만 보지 않는다**:
-/// 기기가 거부해도(`unknown_action`) `acked`로 기록되고 `result`만 다르다. 성공은
-/// `result == ok`뿐이고, ok면 재부팅 직전이라 계속 기다린다. 화면을 나가면
-/// (autoDispose) 진행 표시는 버린다.
+/// 카메라 한 대의 재시작 대상 키.
+SysTarget cameraRebootTarget(String cameraUuid) =>
+    (PairTargetKind.camera, cameraUuid);
+
+/// 기기 재시작 진행. 완료는 heartbeat로 판정한다([SysHealth.rebootedSince]).
+/// 사육장은 명령 결과도 본다 — **`status`만 보지 않는다**: 기기가 거부해도
+/// (`unknown_action`) `acked`로 기록되고 `result`만 다르다. 성공은
+/// `result == ok`뿐이고, ok면 재부팅 직전이라 계속 기다린다.
+///
+/// 진행 중에는 화면이 없어도 살아 있다(2026-10-03) — 기기 상세에서 누르고
+/// 카메라 탭으로 가도 라이브가 "재시작 중"을 알고, 끝나면 다시 붙는다. 끝나면
+/// 놓아 준다. heartbeat 구독도 누른 뒤에만 연다 — 라이브 제어기가 이 provider를
+/// 늘 듣고 있어서, 평소에 열면 라이브마다 Realtime 채널이 하나씩 붙는다.
 final rebootProvider = NotifierProvider.autoDispose
     .family<RebootController, RebootState, SysTarget>(RebootController.new);
 
 class RebootController
     extends AutoDisposeFamilyNotifier<RebootState, SysTarget> {
   Timer? _timeout;
+  Timer? _slow;
   Timer? _cooldown;
   ProviderSubscription<AsyncValue<RebootCommandState?>>? _command;
+  ProviderSubscription<AsyncValue<SysHealth>>? _health;
+  KeepAliveLink? _alive;
   int? _uptimeBefore;
+  Stopwatch? _sincePress;
 
   @override
   RebootState build(SysTarget target) {
     ref.onDispose(() {
       _timeout?.cancel();
+      _slow?.cancel();
       _cooldown?.cancel();
       _command?.close();
-    });
-    // 재시작 중이면 보고마다 완료 신호를 본다. 중간에 is_online이 false가
-    // 돼도(서버 판정 3분) 2분 한도까지는 그대로 기다린다.
-    ref.listen(sysHealthProvider(target), (_, next) {
-      final health = next.valueOrNull;
-      if (health == null || !state.rebooting) return;
-      if (health.rebootedSince(_uptimeBefore)) _finish(RebootOutcome.done);
+      _health?.close();
     });
     return const RebootState();
   }
 
-  RebootState _keep(
-          {bool sending = false, bool rebooting = false, DateTime? until}) =>
+  RebootState _copy(
+          {bool sending = false,
+          bool rebooting = false,
+          bool slow = false,
+          DateTime? until}) =>
       RebootState(
           sending: sending,
           rebooting: rebooting,
+          slow: slow,
           cooldownUntil: until,
           outcome: state.outcome,
           round: state.round);
+
+  /// 보낼 때부터 끝날 때까지 붙잡는 것(화면 없이도 유지·heartbeat 구독).
+  void _hold() {
+    _alive ??= ref.keepAlive();
+    _health?.close();
+    // 첫 값(직결 조회)이 누르기 직전 가동 시간이다 — 이미 상세가 읽어 두었으면
+    // 즉시 온다. 중간에 is_online이 false가 돼도(서버 판정 3분) 한도까지 기다린다.
+    _health = ref.listen(sysHealthProvider(arg), (_, next) {
+      final health = next.valueOrNull;
+      if (health == null) return;
+      if (state.sending) {
+        _uptimeBefore ??= health.uptimeSeconds;
+      } else if (state.rebooting &&
+          health.rebootedSince(_uptimeBefore,
+              sincePress: _sincePress?.elapsed)) {
+        _finish(RebootOutcome.done);
+      }
+    }, fireImmediately: true);
+  }
+
+  void _release() {
+    _health?.close();
+    _health = null;
+    _alive?.close();
+    _alive = null;
+  }
 
   Future<RebootRequest> request() async {
     if (state.sending || state.rebooting || state.coolingDown(DateTime.now())) {
       return RebootRequest.notPublished;
     }
     final (kind, id) = arg;
-    // 누르기 직전 가동 시간 — 완료 판정의 기준.
-    _uptimeBefore = ref.read(sysHealthProvider(arg)).valueOrNull?.uptimeSeconds;
-    state = _keep(sending: true);
+    _uptimeBefore = null;
+    // clock — 테스트의 가짜 시계가 흘린다.
+    _sincePress = clock.stopwatch()..start();
+    state = _copy(sending: true);
+    _hold();
     try {
       String? commandId;
       if (kind == PairTargetKind.camera) {
         if (!await ref.read(cameraRepositoryProvider).reboot(id)) {
-          state = _keep();
+          state = _copy();
+          _release();
           return RebootRequest.notPublished;
         }
       } else {
         commandId = await ref.read(deviceHealthRepositoryProvider).reboot(id);
       }
-      state =
-          _keep(rebooting: true, until: DateTime.now().add(kRebootCooldown));
+      state = _copy(rebooting: true, until: DateTime.now().add(kRebootCooldown));
       _timeout?.cancel();
       _timeout = Timer(kRebootTimeout, () => _finish(RebootOutcome.timedOut));
+      _slow?.cancel();
+      _slow = Timer(kRebootSlowAfter, () {
+        if (state.rebooting) {
+          state = _copy(rebooting: true, slow: true, until: state.cooldownUntil);
+        }
+      });
       // 쿨다운이 끝나면 버튼을 다시 그린다.
       _cooldown?.cancel();
       _cooldown = Timer(kRebootCooldown, () {
-        state = _keep(rebooting: state.rebooting);
+        state = _copy(rebooting: state.rebooting, slow: state.slow);
       });
       if (commandId != null) _watchCommand(commandId);
       return RebootRequest.published;
     } on TerraRestException catch (e) {
-      state = _keep();
-      return e.statusCode == 404
-          ? RebootRequest.notFound
-          : RebootRequest.failed;
+      state = _copy();
+      final notFound = e.statusCode == 404;
+      // 해제됐거나 다른 계정 카메라 — 목록에서 빠지게 다시 읽는다. 붙잡은 것을
+      // 놓기([_release]) **전에** — 놓으면 이 provider가 곧 정리될 수 있다.
+      if (notFound && kind == PairTargetKind.camera) {
+        ref.invalidate(camerasProvider);
+      }
+      _release();
+      return notFound ? RebootRequest.notFound : RebootRequest.failed;
     } catch (_) {
-      state = _keep();
+      state = _copy();
+      _release();
       return RebootRequest.failed;
     }
   }
@@ -242,12 +298,16 @@ class RebootController
   void _finish(RebootOutcome outcome) {
     if (!state.rebooting) return;
     _timeout?.cancel();
+    _slow?.cancel();
     _command?.close();
     _command = null;
+    _sincePress = null;
     state = RebootState(
         cooldownUntil: state.cooldownUntil,
         outcome: outcome,
         round: state.round + 1);
+    // 결과를 들을 화면이 있으면 그쪽이 잡고 있다 — 없으면 여기서 사라진다.
+    _release();
   }
 }
 

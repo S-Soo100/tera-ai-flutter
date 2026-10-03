@@ -18,6 +18,7 @@ import '../domain/webrtc_connect_log.dart';
 import '../domain/webrtc_diag.dart';
 import 'live_limit_providers.dart';
 import 'my_cage_providers.dart';
+import 'sys_health_controllers.dart';
 import 'webrtc_diag_providers.dart';
 
 // ── 상태 정의 ─────────────────────────────────────────────────────────────────
@@ -47,6 +48,11 @@ enum WebRtcLivePhase {
   /// 뒤 쉼·시도 과다). **자동 재시도가 전혀 없다** — 망 변화·앱 복귀·카메라
   /// 온라인에도 그대로이고, 사용자가 버튼을 눌러야 다시 요청한다(2026-09-30).
   limited,
+
+  /// 사용자가 카메라를 재시작했고 다시 켜지길 기다리는 중(2026-10-03,
+  /// [rebootProvider]). 꺼질 카메라에 offer를 보내 실패를 쌓지 않도록 모든
+  /// 재연결을 멈추고, 완료 신호가 오면 바로 다시 붙는다.
+  rebooting,
 }
 
 extension WebRtcLivePhaseX on WebRtcLivePhase {
@@ -309,9 +315,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _logSink = ref.read(webrtcConnectLogSinkProvider);
     _viewSink = ref.read(webrtcViewLogSinkProvider);
     _diagBuffer = ref.read(webrtcDiagBufferProvider);
-    _openView();
     addListener((s) => _view?.onPhase(_bucketOfState(s)));
     _watchEnvironment();
+    // 이미 재시작 중인 카메라(기기 상세에서 누르고 넘어옴) — 시청 기록도 연결도
+    // 열지 않고, 끝나면 [_leaveRebooting]이 붙는다.
+    if (_rebooting) return;
+    _openView();
     _startRecoveryWindow();
     _diag('start');
     unawaited(_start(_gen));
@@ -391,7 +400,20 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 현재 세대. [_restart]·[_suspend]·[dispose]가 올린다.
   int _gen = 0;
   bool _disposed = false;
-  bool _isCurrent(int gen) => !_disposed && gen == _gen && !_suspended;
+  bool _isCurrent(int gen) =>
+      !_disposed && gen == _gen && !_suspended && !_rebooting;
+
+  /// 카메라 재시작을 기다리는 중 — 어떤 연결도 시작하지 않는다.
+  bool _rebooting = false;
+
+  /// 재시작이 시간 초과로 끝났는데 그때 화면에 없었다 — 돌아오면 일반 연결 대신
+  /// 전원 재연결 안내부터 보여 준다(리뷰 2026-10-03).
+  bool _rebootTimedOutAway = false;
+
+  /// 자동 재연결(망·복귀·타이머·보임)을 멈춰 두는 상태 — 서버 시청 제한
+  /// ([_limit], [retry]가 푼다) 또는 카메라 재시작 대기([_rebooting], 끝나면
+  /// [_onReboot]가 푼다). 진입점마다 둘을 따로 검사하지 않고 이것만 본다.
+  bool get _held => _limit != null || _rebooting;
 
   // ICE 후보: sessionId 확보 전 로컬 큐
   final List<RTCIceCandidate> _pendingCandidates = [];
@@ -464,7 +486,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       _hiddenTimer = null;
       if (_pauseReasons.contains('hidden')) {
         _resume('hidden');
-      } else if (_view == null && !_suspended && _limit == null) {
+      } else if (_view == null && !_suspended && !_held) {
         // 연결은 살아 있었다 — 지금 상태 그대로 새 시청을 연다.
         _diag('visible');
         _openView(fromCurrent: true);
@@ -590,6 +612,10 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
               : 'time_limit',
           closeRemote: false);
     });
+    // 카메라 재시작(라이브 실패 화면·기기 상세) — 진행 중이면 기다렸다 붙는다.
+    ref.listen<RebootState>(rebootProvider(cameraRebootTarget(cameraUuid)),
+        (_, next) => _onReboot(next),
+        fireImmediately: true);
     ref.listen<AsyncValue<List<TerraCamera>>>(camerasProvider, (_, next) {
       if (!_waitingOnline || _suspended || _disposed) return;
       final cam =
@@ -682,7 +708,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     // close 응답이 늦는 사이(최대 15~30초) 복귀해 새 세대가 재생 중일 수 있다 —
     // 그때 이 늦은 정리가 새 상태를 덮으면 영상은 흐르는데 화면은 "연결 중"에
     // 갇힌다(A1).
-    if (!_disposed && _suspended && _gen == gen && _limit == null) {
+    if (!_disposed && _suspended && _gen == gen && !_held) {
       state = const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig);
     }
   }
@@ -698,11 +724,18 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     // 백그라운드 동안의 망 변화는 무시했다 — 지금 붙을 망을 기준선으로 삼는다.
     // 안 하면 복귀 뒤 같은 신호의 재알림을 "변경"으로 보고 새 시도를 취소한다.
     if (!_isNoNetwork(_lastNetwork)) _netApplied = _lastNetwork;
-    if (_limit != null) {
+    if (_held) {
       // 제한 안내는 돌아와도 그대로 — 다시 요청은 사용자가 누를 때만.
+      // 재시작 중이면 끝날 때 붙는다.
       return;
     }
     _openView();
+    if (_rebootTimedOutAway) {
+      // 없는 동안 재시작이 시간 초과로 끝났다 — 그 안내를 먼저 보인다.
+      _rebootTimedOutAway = false;
+      _showRebootTimeout();
+      return;
+    }
     _startRecoveryWindow();
     _reconnectNow('resume');
   }
@@ -713,6 +746,12 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
   /// 걸려 있던 자동 재연결 백오프도 즉시 실행으로 대체한다. 오프라인 대기도
   /// 풀어 한 번은 실제로 시도한다.
   Future<void> retry() async {
+    if (_rebooting) {
+      // 재시작이 끝나면 저절로 붙는다. 가져오기 요청([takeover])도 버린다 —
+      // 남겨 두면 재시작 뒤 자동 재연결이 다른 기기의 시청을 가져간다.
+      _takeoverPending = false;
+      return;
+    }
     _clearLimit();
     _view?.onManualRetry();
     // 사용자가 직접 누르면 DB가 오프라인이라고 해도 한 번은 실제로 시도한다
@@ -800,6 +839,83 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     state = WebRtcLiveState(phase: WebRtcLivePhase.limited, limit: limit);
   }
 
+  // ── 카메라 재시작 (2026-10-03) ───────────────────────────────────────────
+
+  void _onReboot(RebootState reboot) {
+    if (_disposed) return;
+    if (reboot.rebooting && !_rebooting) {
+      _enterRebooting();
+    } else if (!reboot.rebooting && _rebooting) {
+      _leaveRebooting(reboot.outcome);
+    }
+  }
+
+  /// 재시작 대기에 들어간다 — 지금 연결을 내리고 모든 재시도를 멈춘다.
+  /// 시청 기록도 닫는다(볼 수 없는 시간은 세지 않는다, 제한과 같은 규칙).
+  void _enterRebooting() {
+    _diag('reboot-start');
+    _rebootTimedOutAway = false;
+    _endAttempt(_gen, 'reboot');
+    _rebooting = true;
+    _cancelTimers();
+    _closeRecoveryWindow();
+    _waitingOnline = false;
+    _waitingNetwork = false;
+    _forceAttempt = false;
+    _takeoverPending = false;
+    _takeoverGen = null;
+    // 재시작한 카메라의 시청 자리는 서버가 다시 정한다 — 제한 안내는 거둔다.
+    _limit = null;
+    ++_gen;
+    unawaited(_cleanup(closeRemote: true));
+    _closeView(LiveViewEnd.closed);
+    state = const WebRtcLiveState(phase: WebRtcLivePhase.rebooting);
+  }
+
+  /// 재시작이 끝났다. 켜졌으면(또는 결과를 모르면) 바로 붙고, 2분 무소식이면
+  /// 전원 재연결 안내와 함께 저빈도 재시도만 이어 간다.
+  void _leaveRebooting(RebootOutcome? outcome) {
+    _rebooting = false;
+    _diag('reboot-end', {'outcome': outcome?.name});
+    final timedOut = outcome == RebootOutcome.timedOut;
+    if (_suspended || !_visible) {
+      // 화면에 없는 동안 끝났다 — 안 보이는데 offer를 보내 시청 자리를 잡지
+      // 않는다. 내려 두고, 돌아오면 [_resume]이 붙이거나 시간 초과 안내를 보인다.
+      _rebootTimedOutAway = timedOut;
+      if (!_suspended) {
+        _hiddenTimer?.cancel();
+        _hiddenTimer = null;
+        unawaited(_suspend('hidden'));
+      }
+      state = const WebRtcLiveState(phase: WebRtcLivePhase.connectingConfig);
+      return;
+    }
+    if (_view == null) _openView();
+    if (timedOut) {
+      _showRebootTimeout();
+      return;
+    }
+    _reconnectAttempt = 0;
+    _autoRetried = false;
+    _startRecoveryWindow();
+    // 방금 켜졌다 — DB의 is_online이 아직 낡았어도 한 번은 실제로 시도한다.
+    _forceAttempt = true;
+    _reconnectNow('reboot');
+  }
+
+  /// 재시작했는데 2분 안에 안 켜졌다 — 전원 재연결 안내 + 60초 저빈도 재시도.
+  void _showRebootTimeout() {
+    _reconnectAttempt = 0;
+    _autoRetried = false;
+    _closeRecoveryWindow();
+    _recoveryExhausted = true;
+    _lastErrorKey = 'crecam_live_error_reboot_timeout';
+    state = const WebRtcLiveState(
+        phase: WebRtcLivePhase.failed,
+        errorKey: 'crecam_live_error_reboot_timeout');
+    _scheduleReconnect(_gen);
+  }
+
   /// 새 세대로 다시 붙는다. 세대를 **먼저** 올려 이전 세대의 잔여 작업을 즉시
   /// 무효로 만들고, 정리 도중 더 새로운 재시작이 오면 이쪽은 물러난다.
   ///
@@ -813,8 +929,9 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       _takeoverPending = false;
       return;
     }
-    if (_limit != null) {
+    if (_held) {
       // 제한 중 자동 재시작(망·복귀·타이머)은 없다 — retry()가 먼저 푼다.
+      // 재시작 중도 같다 — 끝나면 [_onReboot]가 붙인다.
       _diag('restart-blocked', {'reason': reason});
       _forceAttempt = false;
       _takeoverPending = false;
@@ -1056,7 +1173,9 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     final playing = a.playing;
     final result = outcome ?? (playing != null ? 'closed' : 'cancelled');
     _writeLog(a, result,
-        failPhase: result == 'closed' || _kLimitOutcomes.contains(result)
+        failPhase: result == 'closed' ||
+                result == 'reboot' ||
+                _kLimitOutcomes.contains(result)
             ? null
             : _kFailPhase[state.phase],
         streamedSec: playing?.elapsed.inSeconds);

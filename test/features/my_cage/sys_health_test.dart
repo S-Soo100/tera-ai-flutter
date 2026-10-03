@@ -128,7 +128,25 @@ void main() {
           isFalse);
       expect(
           _h(uptime: 20, reset: kMqttRebootReason).rebootedSince(null), isFalse,
-          reason: '명령 전 값을 모르면 판정하지 않는다(2분 안내로)');
+          reason: '명령 전 값도 누른 뒤 시간도 모르면 판정하지 않는다');
+    });
+
+    test('누른 뒤 흐른 시간 기준 — 가동 시간이 그 + 2초 이하면 완료', () {
+      const since = Duration(seconds: 20);
+      expect(
+          _h(uptime: 22, reset: kMqttRebootReason)
+              .rebootedSince(null, sincePress: since),
+          isTrue,
+          reason: '경계(20+2)는 완료');
+      expect(
+          _h(uptime: 23, reset: kMqttRebootReason)
+              .rebootedSince(null, sincePress: since),
+          isFalse,
+          reason: '누르기 전에 켜진 것');
+      expect(
+          _h(uptime: 5, reset: 'POWERON').rebootedSince(null, sincePress: since),
+          isFalse,
+          reason: '리셋 사유가 다르면 아니다');
     });
   });
 
@@ -183,6 +201,8 @@ void main() {
         cameraRepositoryProvider.overrideWithValue(repo),
       ]);
       container.listen(rebootProvider(_camT), (_, __) {});
+      // 기기 상세(배너)가 heartbeat를 듣고 있다 — 누르기 직전 값이 남아 있다.
+      container.listen(sysHealthProvider(_camT), (_, __) {});
     });
     tearDown(() {
       container.dispose();
@@ -209,6 +229,60 @@ void main() {
       expect(repo.reboots, 1);
     });
 
+    test('누르기 전 가동 시간을 몰라도 — 누른 뒤에 켜졌으면 완료', () {
+      fakeAsync((async) {
+        final c = container.read(rebootProvider(_camT).notifier);
+        c.request();
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 20));
+        // 누르기 전에 원격 재시작했던 카메라의 낡은 보고(가동 600초) — 아니다.
+        health.add(_h(uptime: 600, reset: kMqttRebootReason, at: 1));
+        async.flushMicrotasks();
+        expect(container.read(rebootProvider(_camT)).rebooting, isTrue);
+        // 누른 지 20초, 가동 15초 — 누른 뒤에 켜졌다.
+        health.add(_h(uptime: 15, reset: kMqttRebootReason, at: 2));
+        async.flushMicrotasks();
+        expect(container.read(rebootProvider(_camT)).outcome,
+            RebootOutcome.done);
+      });
+    });
+
+    test('60초가 지나면 "늦어지고 있어요", 결과는 2분까지 기다린다', () {
+      fakeAsync((async) {
+        final c = container.read(rebootProvider(_camT).notifier);
+        c.request();
+        async.flushMicrotasks();
+        async.elapse(kRebootSlowAfter - const Duration(seconds: 1));
+        expect(container.read(rebootProvider(_camT)).slow, isFalse);
+        async.elapse(const Duration(seconds: 1));
+        final s = container.read(rebootProvider(_camT));
+        expect(s.slow && s.rebooting, isTrue);
+        async.elapse(kRebootTimeout - kRebootSlowAfter);
+        expect(container.read(rebootProvider(_camT)).outcome,
+            RebootOutcome.timedOut);
+      });
+    });
+
+    test('듣는 화면이 없어도 재시작 중엔 유지되고, 끝나면 놓아 준다', () async {
+      final solo = ProviderContainer(overrides: [
+        sysHealthProvider(_camT).overrideWith((ref) => health.stream),
+        cameraRepositoryProvider.overrideWithValue(repo),
+      ]);
+      addTearDown(solo.dispose);
+      final sub = solo.listen(rebootProvider(_camT), (_, __) {});
+      expect(await solo.read(rebootProvider(_camT).notifier).request(),
+          RebootRequest.published);
+      sub.close(); // 기기 상세를 나갔다
+      await tick();
+      expect(solo.read(rebootProvider(_camT)).rebooting, isTrue,
+          reason: '라이브가 이어 받을 수 있게 살아 있다');
+      final again = solo.listen(rebootProvider(_camT), (_, __) {});
+      addTearDown(again.close);
+      health.add(_h(uptime: 1, reset: kMqttRebootReason, at: 3));
+      await tick();
+      expect(solo.read(rebootProvider(_camT)).outcome, RebootOutcome.done);
+    });
+
     test('published=false면 바로 다시 누를 수 있다', () async {
       repo.rebootResult = false;
       final c = container.read(rebootProvider(_camT).notifier);
@@ -224,6 +298,27 @@ void main() {
       expect(await c.request(), RebootRequest.notFound);
       repo.rebootResult = const TerraRestException(503, 'down');
       expect(await c.request(), RebootRequest.failed);
+    });
+
+    test('카메라 404면 카메라 목록을 다시 읽는다', () async {
+      var builds = 0;
+      final c404 = ProviderContainer(overrides: [
+        sysHealthProvider(_camT).overrideWith((ref) => health.stream),
+        cameraRepositoryProvider.overrideWithValue(repo),
+        camerasProvider.overrideWith((ref) {
+          builds++;
+          return Stream.value(const <TerraCamera>[]);
+        }),
+      ]);
+      addTearDown(c404.dispose);
+      c404.listen(camerasProvider, (_, __) {});
+      c404.listen(rebootProvider(_camT), (_, __) {});
+      expect(builds, 1);
+      repo.rebootResult = const TerraRestException(404, 'not found');
+      expect(await c404.read(rebootProvider(_camT).notifier).request(),
+          RebootRequest.notFound);
+      await tick();
+      expect(builds, 2, reason: '해제된 카메라가 목록에서 빠지게');
     });
 
     test('2분 동안 완료 신호가 없으면 시간 초과', () {
@@ -359,7 +454,7 @@ void main() {
       await tester.pump(kRebootCooldown);
     });
 
-    testWidgets('완료 신호가 오면 "재시작 완료", 60초 동안 다시 못 누른다', (tester) async {
+    testWidgets('완료 신호가 오면 "카메라가 다시 켜졌어요", 60초 동안 다시 못 누른다', (tester) async {
       final health = StreamController<SysHealth>.broadcast();
       addTearDown(health.close);
       await pump(tester, cam(fw: 'fb2-p4 0.2.0-20260928'),
@@ -375,7 +470,7 @@ void main() {
       health.add(_h(uptime: 14, reset: kMqttRebootReason, at: 2));
       await tester.pump();
       await tester.pump();
-      expect(find.text('reboot_done'), findsOneWidget);
+      expect(find.text('camera_reboot_done'), findsOneWidget);
       expect(tester.widget<InkWell>(row).onTap, isNull, reason: '60초 쿨다운');
       await tester.pump(kRebootCooldown);
       expect(tester.widget<InkWell>(row).onTap, isNotNull);
@@ -465,6 +560,7 @@ void main() {
         deviceHealthRepositoryProvider.overrideWithValue(repo),
       ]);
       container.listen(rebootProvider(_devT), (_, __) {});
+      container.listen(sysHealthProvider(_devT), (_, __) {});
     });
     tearDown(() {
       container.dispose();
@@ -490,6 +586,17 @@ void main() {
       await tick();
       expect(state().outcome, RebootOutcome.done);
       expect(state().rebooting, isFalse);
+    });
+
+    test('누르기 전 값을 못 읽었어도 누른 뒤에 켜졌으면 완료(사육장)', () {
+      fakeAsync((async) {
+        container.read(rebootProvider(_devT).notifier).request();
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 10));
+        health.add(_d(uptime: 7, reset: kMqttRebootReason, at: 1));
+        async.flushMicrotasks();
+        expect(state().outcome, RebootOutcome.done);
+      });
     });
 
     test('no_ack면 응답 없음', () async {
