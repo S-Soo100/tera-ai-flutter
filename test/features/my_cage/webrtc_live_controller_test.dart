@@ -1615,6 +1615,74 @@ void main() {
       await h.dispose();
     });
 
+    testWidgets('재시작 중 누른 [이 기기로 시청]은 재시작 뒤 자동 연결에 새지 않는다',
+        (tester) async {
+      final h = harness();
+      await _stream(tester, h);
+      await reboot(h).request();
+      await tester.pump();
+      await live(h).takeover();
+      await tester.pump(const Duration(seconds: 15));
+      health.add(booted(12)); // 누른 지 15초, 가동 12초
+      await tester.pump();
+      await _settleConnect(tester);
+      expect(h.signaling.offers, hasLength(2));
+      expect(h.signaling.offers.last.takeover, isFalse);
+      await h.dispose();
+    });
+
+    testWidgets('안 보이는 동안 켜지면 offer를 보내지 않고, 다시 보이면 붙는다',
+        (tester) async {
+      final h = harness();
+      final viewer = Object();
+      live(h).setViewerVisible(viewer, true);
+      await _stream(tester, h);
+      await reboot(h).request();
+      await tester.pump();
+      live(h).setViewerVisible(viewer, false); // 다른 탭으로
+      await tester.pump(const Duration(seconds: 15));
+      health.add(booted(10)); // 누른 지 15초, 가동 10초 — 30초 유예 안에 켜졌다
+      await tester.pump();
+      await _settleConnect(tester);
+      expect(h.state.phase, isNot(WebRtcLivePhase.rebooting));
+      expect(h.pcs, hasLength(1), reason: '안 보는데 시청 자리를 잡지 않는다');
+      live(h).setViewerVisible(viewer, true);
+      await _settleConnect(tester);
+      expect(h.pcs, hasLength(2));
+      await h.dispose();
+    });
+
+    testWidgets('앱을 내린 사이 시간 초과로 끝나면, 돌아와서 전원 안내부터 보인다',
+        (tester) async {
+      final h = harness();
+      await _stream(tester, h);
+      await reboot(h).request();
+      await tester.pump();
+      for (final s in [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(s);
+      }
+      await tester.pump(kRebootTimeout);
+      for (final s in [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(s);
+      }
+      await _settleConnect(tester);
+      expect(h.state.phase, WebRtcLivePhase.failed);
+      expect(h.state.errorKey, 'crecam_live_error_reboot_timeout');
+      expect(h.pcs, hasLength(1));
+      await tester.pump(kWebRtcLowRetryInterval);
+      await tester.pump();
+      expect(h.pcs, hasLength(2), reason: '그 뒤엔 60초 간격으로만');
+      await h.dispose();
+    });
+
     testWidgets('재시작 중 앱을 내렸다 올려도 붙지 않고, 끝나면 붙는다', (tester) async {
       final h = harness();
       await _stream(tester, h);

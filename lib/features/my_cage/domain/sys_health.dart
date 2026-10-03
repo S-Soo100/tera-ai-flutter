@@ -13,6 +13,7 @@
 library;
 
 import 'pair_target_kind.dart';
+import 'terra_camera.dart';
 
 /// 재시작·Wi-Fi 약함 대상 — (종류, 행 id). provider family 키로 쓴다.
 typedef SysTarget = (PairTargetKind, String);
@@ -31,6 +32,13 @@ bool isRebootCapableFirmware(String? firmware) {
   }
   return true;
 }
+
+/// 이 카메라에 재시작을 보여 줄 수 있나 — 켜져 있고 0.2.0 이상 펌웨어.
+/// 기기 상세 줄과 라이브 실패 화면이 같은 조건을 쓴다.
+bool cameraRebootCapable(TerraCamera? camera) =>
+    camera != null &&
+    camera.isOnline &&
+    isRebootCapableFirmware(camera.firmwareVer);
 
 /// Wi-Fi 약함 기준 — 운영 콘솔(−75 이하 빨강)과 같게 **−75 이하 = 약함**.
 const kWeakRssi = -75;

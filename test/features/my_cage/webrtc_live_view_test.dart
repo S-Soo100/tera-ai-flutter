@@ -334,16 +334,41 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('카메라 쪽이 멈춘 실패 3종 — 재시작할 수 있으면 버튼과 재시작 권유',
-        (tester) async {
+    testWidgets('카메라 쪽이 멈춘 실패 3종 — 재시작할 수 있으면 버튼', (tester) async {
       for (final key in WebRtcLiveView.rebootErrorKeys) {
         await pumpFailed(tester, key);
         expect(find.byKey(WebRtcLiveView.rebootButtonKey), findsOneWidget,
             reason: key);
-        expect(find.textContaining('crecam_live_hint_reboot'), findsOneWidget,
-            reason: key);
         expect(find.byKey(WebRtcLiveView.retryButtonKey), findsOneWidget);
       }
+    });
+
+    testWidgets('무응답·영상 없음은 재시작 권유, 멈춤은 공유기 안내를 그대로 둔다',
+        (tester) async {
+      for (final key in [
+        'crecam_live_error_unresponsive',
+        'crecam_live_error_no_video',
+      ]) {
+        await pumpFailed(tester, key);
+        expect(find.textContaining('crecam_live_hint_reboot'), findsOneWidget,
+            reason: key);
+      }
+      await pumpFailed(tester, 'crecam_live_error_stalled');
+      expect(find.textContaining('crecam_live_hint_stalled'), findsOneWidget);
+      expect(find.textContaining('crecam_live_hint_reboot'), findsNothing);
+    });
+
+    testWidgets('재시작을 막 보냈거나 60초 재입력 금지 중이면 버튼을 숨긴다', (tester) async {
+      await pumpFailed(tester, 'crecam_live_error_unresponsive');
+      await tester.tap(find.byKey(WebRtcLiveView.rebootButtonKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('reboot_ok')));
+      await tester.pump();
+      await tester.pump();
+      // 고정 컨트롤러라 면은 실패 그대로 — 버튼만 사라져야 한다.
+      expect(find.byKey(WebRtcLiveView.rebootButtonKey), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(kRebootTimeout);
     });
 
     testWidgets('가로 전체화면(Wi-Fi 버튼 끔)에서도 재시작 버튼은 있다', (tester) async {

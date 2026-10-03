@@ -11,7 +11,6 @@ import '../../auth/presentation/auth_providers.dart';
 import '../data/device_health_repository.dart';
 import '../domain/pair_target_kind.dart';
 import '../domain/sys_health.dart';
-import '../domain/terra_camera.dart';
 import 'my_cage_providers.dart';
 
 /// 기기 한 대의 heartbeat 값(재시작 판정·Wi-Fi 약함) — 카메라·사육장 공통.
@@ -147,13 +146,6 @@ class RebootState {
 SysTarget cameraRebootTarget(String cameraUuid) =>
     (PairTargetKind.camera, cameraUuid);
 
-/// 이 카메라에 재시작을 보여 줄 수 있나 — 켜져 있고 0.2.0 이상 펌웨어.
-/// 기기 상세 줄과 라이브 실패 화면이 같은 조건을 쓴다.
-bool cameraRebootCapable(TerraCamera? camera) =>
-    camera != null &&
-    camera.isOnline &&
-    isRebootCapableFirmware(camera.firmwareVer);
-
 /// 기기 재시작 진행. 완료는 heartbeat로 판정한다([SysHealth.rebootedSince]).
 /// 사육장은 명령 결과도 본다 — **`status`만 보지 않는다**: 기기가 거부해도
 /// (`unknown_action`) `acked`로 기록되고 `result`만 다르다. 성공은
@@ -242,8 +234,8 @@ class RebootController
       String? commandId;
       if (kind == PairTargetKind.camera) {
         if (!await ref.read(cameraRepositoryProvider).reboot(id)) {
-          _release();
           state = _copy();
+          _release();
           return RebootRequest.notPublished;
         }
       } else {
@@ -266,17 +258,18 @@ class RebootController
       if (commandId != null) _watchCommand(commandId);
       return RebootRequest.published;
     } on TerraRestException catch (e) {
-      _release();
       state = _copy();
-      if (e.statusCode == 404) {
-        // 해제됐거나 다른 계정 카메라 — 목록에서 빠지게 다시 읽는다.
-        if (kind == PairTargetKind.camera) ref.invalidate(camerasProvider);
-        return RebootRequest.notFound;
+      final notFound = e.statusCode == 404;
+      // 해제됐거나 다른 계정 카메라 — 목록에서 빠지게 다시 읽는다. 붙잡은 것을
+      // 놓기([_release]) **전에** — 놓으면 이 provider가 곧 정리될 수 있다.
+      if (notFound && kind == PairTargetKind.camera) {
+        ref.invalidate(camerasProvider);
       }
-      return RebootRequest.failed;
-    } catch (_) {
       _release();
+      return notFound ? RebootRequest.notFound : RebootRequest.failed;
+    } catch (_) {
       state = _copy();
+      _release();
       return RebootRequest.failed;
     }
   }

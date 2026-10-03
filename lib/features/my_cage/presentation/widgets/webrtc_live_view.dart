@@ -16,6 +16,7 @@ import '../../../../shared/widgets/viva_modal.dart';
 import '../../domain/live_limit.dart';
 import '../../domain/device_add_flow.dart';
 import '../../domain/pair_target_kind.dart';
+import '../../domain/sys_health.dart';
 import '../live_limit_providers.dart';
 import '../my_cage_providers.dart';
 import '../sys_health_controllers.dart';
@@ -56,6 +57,7 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
 
   /// 카메라 쪽이 멈춘 실패 — 재시작할 수 있는 카메라면 [카메라 재시작]을 준다
   /// (2026-10-03 D1). 망·오프라인·인증 실패는 재시작으로 안 풀려 제외한다.
+  /// 멈춤(stalled)은 기존 공유기 안내를 유지하고 버튼만 더한다.
   static const rebootErrorKeys = {
     'crecam_live_error_unresponsive',
     'crecam_live_error_no_video',
@@ -421,13 +423,11 @@ class _FailedView extends ConsumerWidget {
     final hintKey = WebRtcLiveView.hintKeyFor(errorKey);
     String? hint = hintKey?.tr();
     final offline = errorKey == 'crecam_live_error_camera_offline';
-    final camera = offline
-        ? ref
-            .watch(camerasProvider)
-            .valueOrNull
-            ?.where((c) => c.id == cameraUuid)
-            .firstOrNull
-        : null;
+    final camera = ref
+        .watch(camerasProvider)
+        .valueOrNull
+        ?.where((c) => c.id == cameraUuid)
+        .firstOrNull;
     if (offline) {
       // 언제부터 꺼져 있었는지 — 방금인지 며칠째인지에 따라 할 일이 다르다.
       final seen = camera?.lastSeenAt;
@@ -435,21 +435,25 @@ class _FailedView extends ConsumerWidget {
         hint = 'crecam_live_hint_offline_seen'.tr(args: [timeAgo(seen)]);
       }
     }
-    // 카메라 쪽이 멈췄고 재시작할 수 있는 카메라면 전원 대신 재시작을 권한다.
+    // 카메라 쪽이 멈췄고 재시작할 수 있는 카메라면 재시작을 준다. 방금 보냈거나
+    // 60초 재입력 금지 중이면 숨긴다 — 눌러도 "잠시 후 다시"만 나온다.
+    final reboot = ref.watch(rebootProvider(cameraRebootTarget(cameraUuid)));
     final rebootable = WebRtcLiveView.rebootErrorKeys.contains(errorKey) &&
-        cameraRebootCapable(ref
-            .watch(camerasProvider)
-            .valueOrNull
-            ?.where((c) => c.id == cameraUuid)
-            .firstOrNull);
-    if (rebootable) hint = 'crecam_live_hint_reboot'.tr();
+        cameraRebootCapable(camera) &&
+        !reboot.sending &&
+        !reboot.rebooting &&
+        !reboot.coolingDown(DateTime.now());
+    // 멈춤은 약한 Wi-Fi 탓이 많아 공유기 안내를 그대로 두고 버튼만 더한다.
+    if (rebootable && errorKey != 'crecam_live_error_stalled') {
+      hint = 'crecam_live_hint_reboot'.tr();
+    }
     final detail = [
       if (hint != null) hint,
       if (retrying) 'crecam_live_quiet_retry'.tr(),
     ].join('\n');
     // 재시작은 오프라인이 아닐 때만, Wi-Fi 바꾸기는 오프라인일 때만 — 둘이
     // 같은 자리(두 번째 버튼)를 겹치지 않는다.
-    final wifi = camera != null && showWifiChange;
+    final wifiCamera = offline && showWifiChange ? camera : null;
     // 영상 면은 실패해도 어둡다. 여기서 테마 surface를 쓰면 밝은 회색이 되어
     // 위아래 어두운 덩어리가 깨진다(실기기에서 제어 바만 검게 떠 있었다).
     return ColoredBox(
@@ -463,7 +467,7 @@ class _FailedView extends ConsumerWidget {
         // 공유기를 바꿨다면 지우지 말고 Wi-Fi만 바꾼다(2026-09-28, 흐름 점검 A1).
         secondaryLabel: rebootable
             ? 'crecam_live_reboot_action'.tr()
-            : wifi
+            : wifiCamera != null
                 ? 'device_wifi_action'.tr()
                 : null,
         secondaryKey: rebootable
@@ -472,12 +476,12 @@ class _FailedView extends ConsumerWidget {
         onSecondary: rebootable
             ? () => confirmAndRequestReboot(
                 context, ref, cameraRebootTarget(cameraUuid))
-            : wifi
+            : wifiCamera != null
                 ? () => context.push('/devices/wifi',
                     extra: WifiChangeTarget(
                         kind: PairTargetKind.camera,
-                        id: camera.id,
-                        name: camera.name))
+                        id: wifiCamera.id,
+                        name: wifiCamera.name))
                 : null,
       ),
     );
