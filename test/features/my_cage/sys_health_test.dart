@@ -151,14 +151,20 @@ void main() {
   });
 
   group('카메라 재시작 응답', () {
-    test('서버 버그(published 항상 false) 동안은 200이면 발행 성공', () {
-      expect(kCameraRebootPublishedReliable, isFalse,
-          reason: '서버 배포(terra-server#17) 전 — 배포되면 true로 되돌린다');
-      expect(cameraRebootAccepted({'published': false, 'msg_id': null}), isTrue);
-      expect(cameraRebootAccepted(null), isTrue);
+    test('서버 버그 동안의 우회(published 무시)는 필요할 때만 켠다', () {
+      expect(
+          cameraRebootAccepted({'published': false, 'msg_id': null},
+              publishedReliable: false),
+          isTrue);
     });
 
-    test('서버 수정 뒤엔 published == true만 성공', () {
+    test('서버 수정 배포 뒤(기본값) published == true만 성공', () {
+      expect(kCameraRebootPublishedReliable, isTrue,
+          reason: 'terra-server#17 운영 배포(2026-10-03)');
+      expect(cameraRebootAccepted({'published': true, 'msg_id': 'm1'}), isTrue);
+      expect(cameraRebootAccepted({'published': false, 'msg_id': null}),
+          isFalse);
+      expect(cameraRebootAccepted(null), isFalse);
       expect(
           cameraRebootAccepted({'published': true, 'msg_id': 'm1'},
               publishedReliable: true),

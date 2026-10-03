@@ -1,5 +1,7 @@
 # 카메라 재부팅 API가 성공해도 `published: false`를 돌려줌 (terra-server 확인 요청)
 
+> **해결(2026-10-03):** 서버 버그 확인 → gwanhun/terra-server#17 운영 배포. 앱은 임시로 200=성공(0.151.1) 처리했다가 배포 뒤 `published == true` 기준으로 복귀(0.152.2). 같은 원인으로 `/webrtc/ice`가 늘 502였던 것도 함께 해소(앱은 응답을 보지 않는 fire-and-forget이라 영향 없었음).
+
 > 작성 2026-10-03 · 앱 비바나트 0.151.0 (379) · 근거 가이드 `docs/references/2026-10-03-camera-reboot-app-web-guide.md` §1
 
 ## 현상
