@@ -138,6 +138,10 @@ void main() {
       expect(isMqttRebootReason('SW:mqtt_rebootX'), isFalse);
       expect(isMqttRebootReason('WDT'), isFalse);
       expect(isMqttRebootReason(null), isFalse);
+      // 다른 사유에도 붙을 수 있다(2026-10-03 백엔드 회신) — 괄호 앞부분으로.
+      expect(resetReasonBase('SW:rtc_loop_stall(WDT)'), 'SW:rtc_loop_stall');
+      expect(resetReasonBase('POWERON'), 'POWERON');
+      expect(resetReasonBase(null), isNull);
       expect(
           _h(uptime: 24, reset: 'SW:mqtt_reboot(WDT)').rebootedSince(1044),
           isTrue);
