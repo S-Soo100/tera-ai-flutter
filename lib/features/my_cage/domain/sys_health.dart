@@ -42,6 +42,10 @@ const kWeakRssiStreakDevice = 20;
 /// 재시작 완료 신호가 이만큼 안 오면 전원 재연결을 안내한다.
 const kRebootTimeout = Duration(minutes: 2);
 
+/// 재시작 완료 신호가 이만큼 안 오면 "확인이 늦어지고 있어요"로 바꾼다
+/// (가이드 2026-10-03 §2의 60초 — 끝내지 않고 [kRebootTimeout]까지 기다린다).
+const kRebootSlowAfter = Duration(seconds: 60);
+
 /// 재시작 명령이 나간 뒤 버튼을 다시 누를 수 없는 시간.
 const kRebootCooldown = Duration(seconds: 60);
 
@@ -104,17 +108,26 @@ class SysHealth {
         isOnline: online);
   }
 
-  /// 재시작 명령 뒤 이 값이 "재시작 완료"인가 — 가동 시간이 명령 전보다 줄었고
-  /// 리셋 사유가 MQTT 재시작이다. 명령 전 가동 시간을 몰랐으면 판정할 수 없다
-  /// (2분 뒤 안내로 떨어진다).
-  bool rebootedSince(int? uptimeBefore) {
+  /// 재시작 명령 뒤 이 값이 "재시작 완료"인가 — 리셋 사유가 MQTT 재시작이고,
+  /// 다음 중 하나로 **누른 뒤에 켜졌음**이 확인될 때. 리셋 사유만으로는 보지
+  /// 않는다(직전에도 원격 재시작을 했으면 이미 같은 값이다).
+  ///
+  /// - 가동 시간이 누르기 직전([uptimeBefore])보다 줄었다.
+  /// - 가동 시간이 누른 뒤 흐른 시간([sincePress], 폰 단조 시계) 이하다 —
+  ///   누르기 전 가동 시간을 못 읽었을 때(라이브 실패 화면에서 바로 누름)의
+  ///   기준(2026-10-03). 서버 시각(`clip_stats_at`)과 비교하지 않아 폰 시계가
+  ///   어긋나도 맞다. 보고가 늦게 도착할수록 여유가 커지는 쪽이라 안전하다.
+  bool rebootedSince(int? uptimeBefore, {Duration? sincePress}) {
     final now = uptimeSeconds;
-    return uptimeBefore != null &&
-        now != null &&
-        now < uptimeBefore &&
-        resetReason == kMqttRebootReason;
+    if (now == null || resetReason != kMqttRebootReason) return false;
+    if (uptimeBefore != null && now < uptimeBefore) return true;
+    return sincePress != null &&
+        now <= sincePress.inSeconds + kRebootUptimeSlackSeconds;
   }
 }
+
+/// [SysHealth.rebootedSince]의 가동 시간 반올림 여유(초).
+const kRebootUptimeSlackSeconds = 2;
 
 /// Wi-Fi 약함 연속 횟수 — 상세를 보는 동안만 센다(화면을 나가면 버린다).
 /// 같은 보고(`statsAt`)의 중복 UPDATE는 한 번만, −74 이상이 한 번이라도 오면 0.

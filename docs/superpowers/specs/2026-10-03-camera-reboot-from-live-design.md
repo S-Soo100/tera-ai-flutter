@@ -82,12 +82,13 @@
 ### 4-2. 판정 보강 — 누르기 전 가동 시간을 모를 때
 
 - 라이브 실패 화면에서 바로 누르면 `sysHealthProvider`의 첫 조회가 아직 안 끝났을 수 있다.
-- **보강 규칙:** 누른 시각 `T`를 기억한다. 다음을 모두 만족하면 완료로 본다.
-  - `statsAt > T`
+- **보강 규칙(구현 확정):** 누른 순간부터 폰 단조 시계(`clock.stopwatch()`)로 흐른 시간 `E`를 잰다. 다음을 모두 만족하면 완료로 본다.
   - `reset == SW:mqtt_reboot`
-  - `uptime_s ≤ (statsAt − T) + 5초`
-- 마지막 조건은 "T 이후에 부팅했다"는 뜻이다. "`reset`만 보지 않는다"는 원칙은 지킨다. 가이드의 `uptimeBefore == null`이면 `reset`만으로 완료 처리하는 방식은 쓰지 않는다. 직전에도 원격 재시작을 했다면 오판하기 때문이다.
-- `uptimeBefore`를 알면 지금 규칙을 그대로 쓰고, 모르면 위 규칙을 쓴다. 단위 테스트로 고정한다.
+  - `uptime_s ≤ E + 2초`
+- 두 번째 조건은 "누른 뒤에 부팅했다"는 뜻이다. 처음엔 서버 시각 `statsAt − T`와 비교하려 했으나, 폰 시계가 서버보다 늦은 사례(온습도 표시 사고)가 있어 폰 안에서만 잰다. 보고가 늦게 도착할수록 여유가 커지는 방향이라 안전하다.
+- "`reset`만 보지 않는다"는 원칙은 지킨다. 가이드의 `uptimeBefore == null`이면 `reset`만으로 완료 처리하는 방식은 쓰지 않는다. 직전에도 원격 재시작을 했다면 오판하기 때문이다.
+- `uptimeBefore`(보내는 중에 받은 첫 heartbeat)를 알면 "그보다 줄었다"도 완료로 본다. 두 조건 중 하나만 맞으면 된다(`SysHealth.rebootedSince`).
+- heartbeat 구독은 누른 뒤에만 연다. 라이브 제어기가 `rebootProvider`를 늘 듣고 있어서, 평소에 열면 라이브마다 Realtime 채널이 하나씩 붙기 때문이다.
 
 ### 4-3. 라이브 제어기가 재시작을 안다
 
@@ -99,7 +100,7 @@
     - 망·복귀·타이머로 인한 재연결은 모두 막는다(`limited`와 같은 방식).
   - `done`이면: `'rebooting'`을 빼고 `_forceAttempt` 한 번, 백오프 초기화 후 즉시 연결한다.
   - `timedOut`이면: `failed`로 바꾸고 오류 키는 `crecam_live_error_reboot_timeout`(전원 재연결 안내)이다.
-- **시청 기록:** 재시작 중인 시간은 별도 버킷으로 센다(`LiveViewBucket.rebooting`). 재연결 사유는 `reboot`이다. 그래야 `ops.live_*` 통계가 "카메라가 멈췄다"와 "유저가 재시작했다"를 구분할 수 있다.
+- **시청 기록(구현 확정):** 버킷을 늘리면 `webrtc_view_logs`에 컬럼을 더해야 해서, 시청 제한과 같은 규칙으로 **재시작 동안은 시청 기록을 닫고** 끝나면 새로 연다. 연결 기록(`webrtc_connect_logs`)은 `outcome='reboot'`·`fail_phase` 비움(실패가 아님), 재연결 사유는 `reboot`이다. 그래야 `ops.live_*` 통계가 "카메라가 멈췄다"와 "유저가 재시작했다"를 구분할 수 있다.
 - **진단 버퍼:** `reboot_start`·`reboot_done`·`reboot_timeout` 이벤트를 남긴다.
 
 ### 4-4. 라이브 실패 화면의 버튼
@@ -144,7 +145,6 @@
 - `presentation/webrtc_live_controller.dart`
 - `widgets/webrtc_live_view.dart`
 - `widgets/sys_health_widgets.dart`
-- `domain/live_view_session.dart`(버킷)
 - `assets/l10n/ko.json`
 - 테스트 2~3개
 - `CHANGELOG.md`·`pubspec.yaml`

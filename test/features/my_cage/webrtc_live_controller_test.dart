@@ -9,6 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:vivanaut/features/my_cage/data/webrtc_signaling_repository.dart';
 import 'package:vivanaut/features/my_cage/data/camera_exceptions.dart';
+import 'package:vivanaut/features/my_cage/data/camera_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/sys_health.dart';
+import 'package:vivanaut/features/my_cage/presentation/sys_health_controllers.dart';
 import 'package:vivanaut/features/my_cage/domain/live_limit.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_limit_providers.dart';
 import 'package:vivanaut/features/my_cage/domain/live_view_session.dart';
@@ -217,8 +220,9 @@ class _Harness {
 
   /// [start]가 false면 컨트롤러를 아직 만들지 않는다 — 테스트가 다른
   /// provider를 먼저 데운 뒤 [startController]로 시작한다.
-  _Harness({bool start = true}) {
+  _Harness({bool start = true, List<Override> extra = const []}) {
     container = ProviderContainer(overrides: [
+      ...extra,
       webrtcSignalingRepositoryProvider.overrideWithValue(signaling),
       webrtcConfigProvider.overrideWith((ref) async {
         if (failConfig) throw StateError('config');
@@ -1527,4 +1531,123 @@ void main() {
       await h.dispose();
     });
   });
+
+  group('카메라 재시작 (2026-10-03)', () {
+    late StreamController<SysHealth> health;
+    setUp(() => health = StreamController<SysHealth>.broadcast());
+    tearDown(() => health.close());
+
+    _Harness harness({bool start = true}) => _Harness(start: start, extra: [
+          sysHealthProvider(cameraRebootTarget(_cam))
+              .overrideWith((ref) => health.stream),
+          cameraRepositoryProvider.overrideWithValue(_RebootRepo()),
+        ]);
+    WebRtcLiveController live(_Harness h) =>
+        h.container.read(webrtcLiveControllerProvider(_cam).notifier);
+    RebootController reboot(_Harness h) =>
+        h.container.read(rebootProvider(cameraRebootTarget(_cam)).notifier);
+    SysHealth booted(int uptime) => SysHealth(
+        present: true,
+        uptimeSeconds: uptime,
+        resetReason: kMqttRebootReason,
+        statsAt: DateTime.utc(2026, 10, 3));
+
+    testWidgets('재생 중 재시작하면 연결을 내리고 기다렸다가, 켜지면 바로 붙는다',
+        (tester) async {
+      final h = harness();
+      await _stream(tester, h);
+      final first = h.pc;
+      await reboot(h).request();
+      await tester.pump();
+      expect(h.state.phase, WebRtcLivePhase.rebooting);
+      expect(first.closed, isTrue);
+      expect(h.signaling.closedSessions, contains('s1'));
+      expect(h.logs.last.outcome, 'reboot');
+      expect(h.logs.last.failPhase, isNull, reason: '실패가 아니다');
+      expect(h.views, hasLength(1), reason: '재시작 동안은 시청으로 세지 않는다');
+      // 망이 바뀌거나 시간이 흘러도 꺼질 카메라에 offer를 보내지 않는다.
+      h.network.add('mobile');
+      await tester.pump(const Duration(seconds: 25));
+      expect(h.pcs, hasLength(1));
+      expect(h.state.phase, WebRtcLivePhase.rebooting);
+
+      health.add(booted(20)); // 누른 지 약 26초, 가동 20초 — 누른 뒤 켜졌다
+      await tester.pump();
+      await _settleConnect(tester);
+      expect(h.pcs, hasLength(2));
+      expect(h.state.phase, isNot(WebRtcLivePhase.rebooting));
+      await h.dispose();
+    });
+
+    testWidgets('2분 동안 안 켜지면 전원 안내로 실패, 그 뒤엔 60초 간격으로만 다시 본다',
+        (tester) async {
+      final h = harness();
+      await _stream(tester, h);
+      await reboot(h).request();
+      await tester.pump(kRebootTimeout);
+      await tester.pump();
+      expect(h.state.phase, WebRtcLivePhase.failed);
+      expect(h.state.errorKey, 'crecam_live_error_reboot_timeout');
+      expect(h.pcs, hasLength(1));
+      await tester.pump(kWebRtcLowRetryInterval);
+      await tester.pump();
+      expect(h.pcs, hasLength(2));
+      await h.dispose();
+    });
+
+    testWidgets('이미 재시작 중인 카메라를 열면 연결하지 않고 기다린다', (tester) async {
+      final h = harness(start: false);
+      // 기기 상세에서 누르고 화면을 나왔다 — 듣는 화면이 없어도 유지된다.
+      final sub = h.container
+          .listen(rebootProvider(cameraRebootTarget(_cam)), (_, __) {});
+      await reboot(h).request();
+      sub.close();
+      await tester.pump();
+      h.startController();
+      await tester.pump(const Duration(seconds: 5));
+      expect(h.state.phase, WebRtcLivePhase.rebooting);
+      expect(h.pcs, isEmpty);
+      expect(h.views, isEmpty, reason: '시청 기록을 열지 않았다');
+      health.add(booted(4));
+      await tester.pump();
+      await _settleConnect(tester);
+      expect(h.pcs, hasLength(1));
+      await h.dispose();
+    });
+
+    testWidgets('재시작 중 앱을 내렸다 올려도 붙지 않고, 끝나면 붙는다', (tester) async {
+      final h = harness();
+      await _stream(tester, h);
+      await reboot(h).request();
+      await tester.pump();
+      for (final s in [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(s);
+      }
+      await _settleConnect(tester);
+      expect(h.pcs, hasLength(1));
+      expect(h.state.phase, WebRtcLivePhase.rebooting);
+      unawaited(live(h).retry()); // 버튼은 없지만 눌려도 무시
+      await _settleConnect(tester);
+      expect(h.pcs, hasLength(1));
+      health.add(booted(3));
+      await tester.pump();
+      await _settleConnect(tester);
+      expect(h.pcs, hasLength(2));
+      await h.dispose();
+    });
+  });
+}
+
+class _RebootRepo extends Fake implements CameraRepository {
+  @override
+  Future<bool> reboot(String cameraUuid) async => true;
+  @override
+  Future<SysHealth> fetchHealth(String cameraUuid) async => SysHealth.empty;
 }

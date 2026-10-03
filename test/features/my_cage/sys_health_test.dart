@@ -183,6 +183,8 @@ void main() {
         cameraRepositoryProvider.overrideWithValue(repo),
       ]);
       container.listen(rebootProvider(_camT), (_, __) {});
+      // 기기 상세(배너)가 heartbeat를 듣고 있다 — 누르기 직전 값이 남아 있다.
+      container.listen(sysHealthProvider(_camT), (_, __) {});
     });
     tearDown(() {
       container.dispose();
@@ -207,6 +209,60 @@ void main() {
       expect(s.coolingDown(DateTime.now()), isTrue, reason: '60초는 다시 못 누른다');
       expect(await c.request(), RebootRequest.notPublished);
       expect(repo.reboots, 1);
+    });
+
+    test('누르기 전 가동 시간을 몰라도 — 누른 뒤에 켜졌으면 완료', () {
+      fakeAsync((async) {
+        final c = container.read(rebootProvider(_camT).notifier);
+        c.request();
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 20));
+        // 누르기 전에 원격 재시작했던 카메라의 낡은 보고(가동 600초) — 아니다.
+        health.add(_h(uptime: 600, reset: kMqttRebootReason, at: 1));
+        async.flushMicrotasks();
+        expect(container.read(rebootProvider(_camT)).rebooting, isTrue);
+        // 누른 지 20초, 가동 15초 — 누른 뒤에 켜졌다.
+        health.add(_h(uptime: 15, reset: kMqttRebootReason, at: 2));
+        async.flushMicrotasks();
+        expect(container.read(rebootProvider(_camT)).outcome,
+            RebootOutcome.done);
+      });
+    });
+
+    test('60초가 지나면 "늦어지고 있어요", 결과는 2분까지 기다린다', () {
+      fakeAsync((async) {
+        final c = container.read(rebootProvider(_camT).notifier);
+        c.request();
+        async.flushMicrotasks();
+        async.elapse(kRebootSlowAfter - const Duration(seconds: 1));
+        expect(container.read(rebootProvider(_camT)).slow, isFalse);
+        async.elapse(const Duration(seconds: 1));
+        final s = container.read(rebootProvider(_camT));
+        expect(s.slow && s.rebooting, isTrue);
+        async.elapse(kRebootTimeout - kRebootSlowAfter);
+        expect(container.read(rebootProvider(_camT)).outcome,
+            RebootOutcome.timedOut);
+      });
+    });
+
+    test('듣는 화면이 없어도 재시작 중엔 유지되고, 끝나면 놓아 준다', () async {
+      final solo = ProviderContainer(overrides: [
+        sysHealthProvider(_camT).overrideWith((ref) => health.stream),
+        cameraRepositoryProvider.overrideWithValue(repo),
+      ]);
+      addTearDown(solo.dispose);
+      final sub = solo.listen(rebootProvider(_camT), (_, __) {});
+      expect(await solo.read(rebootProvider(_camT).notifier).request(),
+          RebootRequest.published);
+      sub.close(); // 기기 상세를 나갔다
+      await tick();
+      expect(solo.read(rebootProvider(_camT)).rebooting, isTrue,
+          reason: '라이브가 이어 받을 수 있게 살아 있다');
+      final again = solo.listen(rebootProvider(_camT), (_, __) {});
+      addTearDown(again.close);
+      health.add(_h(uptime: 1, reset: kMqttRebootReason, at: 3));
+      await tick();
+      expect(solo.read(rebootProvider(_camT)).outcome, RebootOutcome.done);
     });
 
     test('published=false면 바로 다시 누를 수 있다', () async {
@@ -359,7 +415,7 @@ void main() {
       await tester.pump(kRebootCooldown);
     });
 
-    testWidgets('완료 신호가 오면 "재시작 완료", 60초 동안 다시 못 누른다', (tester) async {
+    testWidgets('완료 신호가 오면 "카메라가 다시 켜졌어요", 60초 동안 다시 못 누른다', (tester) async {
       final health = StreamController<SysHealth>.broadcast();
       addTearDown(health.close);
       await pump(tester, cam(fw: 'fb2-p4 0.2.0-20260928'),
@@ -375,7 +431,7 @@ void main() {
       health.add(_h(uptime: 14, reset: kMqttRebootReason, at: 2));
       await tester.pump();
       await tester.pump();
-      expect(find.text('reboot_done'), findsOneWidget);
+      expect(find.text('camera_reboot_done'), findsOneWidget);
       expect(tester.widget<InkWell>(row).onTap, isNull, reason: '60초 쿨다운');
       await tester.pump(kRebootCooldown);
       expect(tester.widget<InkWell>(row).onTap, isNotNull);
@@ -465,6 +521,7 @@ void main() {
         deviceHealthRepositoryProvider.overrideWithValue(repo),
       ]);
       container.listen(rebootProvider(_devT), (_, __) {});
+      container.listen(sysHealthProvider(_devT), (_, __) {});
     });
     tearDown(() {
       container.dispose();
