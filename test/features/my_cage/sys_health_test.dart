@@ -131,6 +131,18 @@ void main() {
           reason: '명령 전 값도 누른 뒤 시간도 모르면 판정하지 않는다');
     });
 
+    test('리셋 사유에 하드웨어 사유가 괄호로 붙어도 원격 재시작이다', () {
+      // 2026-10-03 실측: p4cam-3a9f61ce가 `SW:mqtt_reboot(WDT)`로 보고.
+      expect(isMqttRebootReason('SW:mqtt_reboot'), isTrue);
+      expect(isMqttRebootReason('SW:mqtt_reboot(WDT)'), isTrue);
+      expect(isMqttRebootReason('SW:mqtt_rebootX'), isFalse);
+      expect(isMqttRebootReason('WDT'), isFalse);
+      expect(isMqttRebootReason(null), isFalse);
+      expect(
+          _h(uptime: 24, reset: 'SW:mqtt_reboot(WDT)').rebootedSince(1044),
+          isTrue);
+    });
+
     test('누른 뒤 흐른 시간 기준 — 가동 시간이 그 + 2초 이하면 완료', () {
       const since = Duration(seconds: 20);
       expect(

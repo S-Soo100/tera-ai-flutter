@@ -59,7 +59,16 @@ const kRebootCooldown = Duration(seconds: 60);
 
 /// MQTT 재시작 명령으로 재부팅했을 때의 리셋 사유(2026-09-28 백엔드 확정,
 /// 카메라 실측: 버튼→재부팅 1.5초, 재부팅→첫 heartbeat 최대 27초).
+/// **앞부분 일치로 본다** — 2026-10-03 실측에서 `SW:mqtt_reboot(WDT)`처럼 하드웨어
+/// 리셋 사유가 괄호로 붙어 왔다. 정확히 같을 때만 보면 재부팅이 끝나도 2분 뒤
+/// "전원을 뽑았다 꽂아 주세요"가 잘못 뜬다([isMqttRebootReason]).
 const kMqttRebootReason = 'SW:mqtt_reboot';
+
+/// 리셋 사유가 원격(MQTT) 재시작인가 — `SW:mqtt_reboot` 또는 그 뒤에 괄호
+/// 덧붙임(`SW:mqtt_reboot(WDT)` 등).
+bool isMqttRebootReason(String? reason) =>
+    reason != null &&
+    (reason == kMqttRebootReason || reason.startsWith('$kMqttRebootReason('));
 
 /// 카메라 재시작 응답의 `published`를 믿어도 되는가. 2026-10-03 서버가 발행에
 /// 성공해도 `{"published": false}`를 돌려주던 버그(gwanhun/terra-server#17) 동안
@@ -141,7 +150,7 @@ class SysHealth {
   ///   어긋나도 맞다. 보고가 늦게 도착할수록 여유가 커지는 쪽이라 안전하다.
   bool rebootedSince(int? uptimeBefore, {Duration? sincePress}) {
     final now = uptimeSeconds;
-    if (now == null || resetReason != kMqttRebootReason) return false;
+    if (now == null || !isMqttRebootReason(resetReason)) return false;
     if (uptimeBefore != null && now < uptimeBefore) return true;
     return sincePress != null &&
         now <= sincePress.inSeconds + kRebootUptimeSlackSeconds;
