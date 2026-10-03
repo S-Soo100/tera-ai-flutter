@@ -61,6 +61,22 @@ const kRebootCooldown = Duration(seconds: 60);
 /// 카메라 실측: 버튼→재부팅 1.5초, 재부팅→첫 heartbeat 최대 27초).
 const kMqttRebootReason = 'SW:mqtt_reboot';
 
+/// 카메라 재시작 응답의 `published`를 믿어도 되는가. **임시 false**(2026-10-03):
+/// 서버가 발행에 성공해도 매번 `{"published": false, "msg_id": null}`을 돌려주는
+/// 버그가 있었다(gwanhun/terra-server#17, terra-api 재시작 배포 대기). 그동안은
+/// 200이면 발행 성공으로 본다 — 백엔드 회신. 배포 알림을 받으면 true로 되돌려
+/// `published == true`(+`msg_id`) 기준으로 재검증한다. 회신·재현
+/// `docs/handoffs/2026-10-03-camera-reboot-published-false.md`.
+const kCameraRebootPublishedReliable = false;
+
+/// 카메라 재시작 응답(200 본문)이 "발행됨"인가. 401·404·5xx는 이전 단계에서
+/// 예외로 갈린다 — 여기 오면 200이다.
+bool cameraRebootAccepted(Object? body,
+    {bool publishedReliable = kCameraRebootPublishedReliable}) {
+  if (!publishedReliable) return true;
+  return body is Map && body['published'] == true;
+}
+
 /// 사육장 재시작 확인창의 임시 문장("예약으로 켜져 있던 조명·팬은 다음 예약
 /// 시각까지 꺼져 있을 수 있어요") — 서버가 재부팅 뒤 예약 상태를 되살리는 기능을
 /// 배포하면 false로 바꾼다(요청서 §2-2).
