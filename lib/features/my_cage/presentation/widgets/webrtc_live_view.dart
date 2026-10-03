@@ -39,6 +39,7 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
     required this.cameraUuid,
     this.cover = false,
     this.showWifiChange = true,
+    this.showReboot = true,
   });
 
   final String cameraUuid;
@@ -49,6 +50,10 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
 
   /// 카메라 오프라인 안내에 [Wi-Fi 바꾸기]를 둘지 — 가로 전체화면은 끈다.
   final bool showWifiChange;
+
+  /// 실패 안내에 [카메라 재시작]을 둘지 — 세로 확대 화면은 맨 아래에 따로 두어
+  /// 끈다(2026-10-03, 버튼 두 개 방지).
+  final bool showReboot;
 
   static const retryButtonKey = Key('webrtc_live_retry');
   static const wifiButtonKey = Key('webrtc_live_wifi_change');
@@ -174,6 +179,7 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
           errorKey: state.errorKey ?? 'crecam_live_error_failed',
           retrying: true,
           showWifiChange: widget.showWifiChange,
+          showReboot: widget.showReboot,
           onRetry: retry);
     }
     return switch (state.phase) {
@@ -209,6 +215,7 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
           cameraUuid: cameraUuid,
           errorKey: state.errorKey ?? 'crecam_live_error_failed',
           showWifiChange: widget.showWifiChange,
+          showReboot: widget.showReboot,
           onRetry: retry,
         ),
     };
@@ -408,8 +415,10 @@ class _FailedView extends ConsumerWidget {
       required this.errorKey,
       required this.onRetry,
       this.retrying = false,
-      this.showWifiChange = true});
+      this.showWifiChange = true,
+      this.showReboot = true});
   final bool showWifiChange;
+  final bool showReboot;
 
   final String cameraUuid;
   final String errorKey;
@@ -438,13 +447,16 @@ class _FailedView extends ConsumerWidget {
     // 카메라 쪽이 멈췄고 재시작할 수 있는 카메라면 재시작을 준다. 방금 보냈거나
     // 60초 재입력 금지 중이면 숨긴다 — 눌러도 "잠시 후 다시"만 나온다.
     final reboot = ref.watch(rebootProvider(cameraRebootTarget(cameraUuid)));
-    final rebootable = WebRtcLiveView.rebootErrorKeys.contains(errorKey) &&
+    // 버튼을 맨 아래에 따로 두는 화면([showReboot] false)도 안내는 재시작을
+    // 권한다 — 그 버튼을 가리킨다.
+    final canReboot = WebRtcLiveView.rebootErrorKeys.contains(errorKey) &&
         cameraRebootCapable(camera) &&
         !reboot.sending &&
         !reboot.rebooting &&
         !reboot.coolingDown(DateTime.now());
+    final rebootable = showReboot && canReboot;
     // 멈춤은 약한 Wi-Fi 탓이 많아 공유기 안내를 그대로 두고 버튼만 더한다.
-    if (rebootable && errorKey != 'crecam_live_error_stalled') {
+    if (canReboot && errorKey != 'crecam_live_error_stalled') {
       hint = 'crecam_live_hint_reboot'.tr();
     }
     final detail = [
