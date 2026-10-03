@@ -368,6 +368,9 @@ class _LiveRebootFooter extends ConsumerWidget {
               key: CameraLiveFullscreenScreen.rebootButtonKey,
               label: (inProgress ? 'reboot_progress' : 'camera_reboot').tr(),
               icon: 'redesign_v2/restart_alt',
+              // Figma 원본 비활성(#E3E3E3 위 #FAFAFA)은 글자가 안 보인다 —
+              // "재시작 중…"을 읽어야 해서 진한 회색(2026-10-03 사용자 지시).
+              disabledForeground: context.glass.bodySecondary,
               onPressed: enabled
                   ? () => confirmAndRequestReboot(
                       context, ref, cameraRebootTarget(cam.id))
