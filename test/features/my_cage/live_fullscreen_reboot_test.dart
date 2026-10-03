@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:vivanaut/features/my_cage/data/camera_repository.dart';
+import 'package:vivanaut/core/theme/viva_colors.dart';
 import 'package:vivanaut/features/my_cage/domain/sys_health.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_screen.dart';
@@ -139,6 +140,10 @@ void main() {
               .onPressed,
           isNull);
       expect(find.text(reason), findsOneWidget);
+      // Figma 원본 비활성(회색 위 흰 글자)은 안 보여 진한 회색으로(2026-10-03).
+      final text = tester.widget<Text>(find.descendant(
+          of: button, matching: find.text('camera_reboot')));
+      expect(text.style?.color, VivaColors.labelTertiary);
     });
   }
 
