@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/network/terra_rest_client.dart';
@@ -74,11 +75,14 @@ class CameraRepository {
 
   /// 카메라 재시작(요청서 2026-09-28 §2-2) — 본문 없는 POST, 서버가 MQTT로
   /// 재시작 명령을 발행한다. 반환은 발행 여부 — false면 브로커에 못 보냈다
-  /// (잠시 뒤 다시). 판정은 [cameraRebootAccepted] — 서버 버그로 지금은 200이면
-  /// 성공으로 본다. 해제·타인 카메라는 404([TerraRestException]).
-  /// 카메라의 ack는 오지 않는다 — 완료는 `clip_stats` 변화로 판정한다.
+  /// (잠시 뒤 다시). 판정은 [cameraRebootAccepted]. 해제·타인 카메라는
+  /// 404([TerraRestException]). 카메라의 ack는 오지 않는다 — 완료는
+  /// `clip_stats` 변화로 판정한다. `msg_id`는 서버 로그 추적용으로 남긴다.
   Future<bool> reboot(String cameraUuid) async {
     final body = await _rest.post('/cameras/$cameraUuid/reboot');
+    final map = body is Map ? body : const {};
+    debugPrint('[camera-reboot] cam=$cameraUuid published=${map['published']} '
+        'msg_id=${map['msg_id']}');
     return cameraRebootAccepted(body);
   }
 }
