@@ -150,6 +150,27 @@ void main() {
     });
   });
 
+  group('카메라 재시작 응답', () {
+    test('서버 버그(published 항상 false) 동안은 200이면 발행 성공', () {
+      expect(kCameraRebootPublishedReliable, isFalse,
+          reason: '서버 배포(terra-server#17) 전 — 배포되면 true로 되돌린다');
+      expect(cameraRebootAccepted({'published': false, 'msg_id': null}), isTrue);
+      expect(cameraRebootAccepted(null), isTrue);
+    });
+
+    test('서버 수정 뒤엔 published == true만 성공', () {
+      expect(
+          cameraRebootAccepted({'published': true, 'msg_id': 'm1'},
+              publishedReliable: true),
+          isTrue);
+      expect(
+          cameraRebootAccepted({'published': false, 'msg_id': null},
+              publishedReliable: true),
+          isFalse);
+      expect(cameraRebootAccepted(null, publishedReliable: true), isFalse);
+    });
+  });
+
   group('Wi-Fi 약함 연속', () {
     test('−75 이하 서로 다른 heartbeat 4번이면 안내', () {
       final s = WeakSignalStreak(threshold: kWeakRssiStreakCamera);
