@@ -64,11 +64,18 @@ const kRebootCooldown = Duration(seconds: 60);
 /// "전원을 뽑았다 꽂아 주세요"가 잘못 뜬다([isMqttRebootReason]).
 const kMqttRebootReason = 'SW:mqtt_reboot';
 
-/// 리셋 사유가 원격(MQTT) 재시작인가 — `SW:mqtt_reboot` 또는 그 뒤에 괄호
-/// 덧붙임(`SW:mqtt_reboot(WDT)` 등).
+/// 리셋 사유의 괄호 앞부분 — `SW:mqtt_reboot(WDT)` → `SW:mqtt_reboot`.
+/// 펌웨어가 하드웨어 리셋 사유를 괄호로 덧붙일 수 있고 어느 사유에나 붙는다
+/// (2026-10-03 백엔드 회신). **사유로 분기할 때는 항상 이 값으로 비교한다.**
+String? resetReasonBase(String? reason) {
+  if (reason == null) return null;
+  final i = reason.indexOf('(');
+  return (i < 0 ? reason : reason.substring(0, i)).trim();
+}
+
+/// 리셋 사유가 원격(MQTT) 재시작인가 — 괄호 앞부분이 `SW:mqtt_reboot`.
 bool isMqttRebootReason(String? reason) =>
-    reason != null &&
-    (reason == kMqttRebootReason || reason.startsWith('$kMqttRebootReason('));
+    resetReasonBase(reason) == kMqttRebootReason;
 
 /// 카메라 재시작 응답의 `published`를 믿어도 되는가. 2026-10-03 서버가 발행에
 /// 성공해도 `{"published": false}`를 돌려주던 버그(gwanhun/terra-server#17) 동안
