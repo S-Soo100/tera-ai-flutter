@@ -35,6 +35,7 @@ import '../../features/community/presentation/compose_screen.dart';
 import '../../features/community/presentation/blocked_users_screen.dart';
 import '../../features/profile/presentation/account_screen.dart';
 import '../../features/profile/presentation/community_profile_screen.dart';
+import '../../features/profile/presentation/device_reboot_screen.dart';
 import '../../features/profile/presentation/notification_settings_screen.dart';
 import '../../features/profile/presentation/password_change_screen.dart';
 import '../../features/profile/presentation/withdraw_screen.dart';
@@ -444,6 +445,11 @@ GoRouter buildAppRouter({
           GoRoute(
             path: 'notifications',
             builder: (context, state) => const NotificationSettingsScreen(),
+          ),
+          // 사육장 기기 재시작 — 비상용 진입점(2026-10-04).
+          GoRoute(
+            path: 'device-reboot',
+            builder: (context, state) => const DeviceRebootScreen(),
           ),
           GoRoute(
             path: 'account',

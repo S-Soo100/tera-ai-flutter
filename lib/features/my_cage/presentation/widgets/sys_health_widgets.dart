@@ -83,28 +83,7 @@ class RebootRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final kind = target.$1;
     final reboot = ref.watch(rebootProvider(target));
-    ref.listen(rebootProvider(target), (previous, next) {
-      final outcome = next.outcome;
-      if (next.round == previous?.round || outcome == null) return;
-      void snack(String key) => ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(key.tr())));
-      void modal(String key) => showVivaModal(context,
-          message: key.tr(), confirmLabel: 'common_confirm'.tr());
-      switch (outcome) {
-        case RebootOutcome.done:
-          snack(kind == PairTargetKind.camera
-              ? 'camera_reboot_done'
-              : 'reboot_done');
-        case RebootOutcome.timedOut:
-          modal(_byKind(kind, 'reboot_timeout'));
-        case RebootOutcome.noAck:
-          snack('device_reboot_no_ack');
-        case RebootOutcome.unsupported:
-          modal('device_reboot_unsupported');
-        case RebootOutcome.failed:
-          snack('device_reboot_failed_result');
-      }
-    });
+    listenRebootOutcome(context, ref, target);
     if (!_capable(ref) && !reboot.rebooting) return const SizedBox.shrink();
     final busy = reboot.sending ||
         reboot.rebooting ||
@@ -137,6 +116,34 @@ class RebootRow extends ConsumerWidget {
                     color: busy ? glass.textTertiary : glass.textSecondary),
             ])));
   }
+}
+
+/// 재시작 뒤 결과(완료·무소식·거부)를 안내한다 — build 안에서 부른다. 기기
+/// 상세 "재시작" 줄과 마이페이지 기기 재시작 목록이 같이 쓴다.
+void listenRebootOutcome(
+    BuildContext context, WidgetRef ref, SysTarget target) {
+  final kind = target.$1;
+  ref.listen(rebootProvider(target), (previous, next) {
+    final outcome = next.outcome;
+    if (next.round == previous?.round || outcome == null) return;
+    void snack(String key) => ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(key.tr())));
+    void modal(String key) => showVivaModal(context,
+        message: key.tr(), confirmLabel: 'common_confirm'.tr());
+    switch (outcome) {
+      case RebootOutcome.done:
+        snack(
+            kind == PairTargetKind.camera ? 'camera_reboot_done' : 'reboot_done');
+      case RebootOutcome.timedOut:
+        modal(_byKind(kind, 'reboot_timeout'));
+      case RebootOutcome.noAck:
+        snack('device_reboot_no_ack');
+      case RebootOutcome.unsupported:
+        modal('device_reboot_unsupported');
+      case RebootOutcome.failed:
+        snack('device_reboot_failed_result');
+    }
+  });
 }
 
 /// 재시작 확인창 → 요청 → 요청 결과 안내(스낵바). 기기 상세 "재시작" 줄과

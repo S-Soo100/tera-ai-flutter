@@ -24,7 +24,8 @@ import 'widgets/my_page_widgets.dart';
 /// 내 계정(→ `/profile/account`) · 버전 정보 — 여기까지 원본 좌표(348/420/492).
 /// 그 아래는 원본에 없는 행: 받은 알림(→ `/notifications`, 알림 내역 화면이 갈
 /// 곳이 없어 남긴다, 미읽음 점 유지) · 화면 모드(사용자 결정 전까지 유지) ·
-/// 라이브 연결 진단 내보내기(지원용, 2026-09-23) · 디자인 랩(개발 빌드만).
+/// 라이브 연결 진단 내보내기(지원용, 2026-09-23) · 사육장 기기 재시작(비상용,
+/// 2026-10-04 → `/profile/device-reboot`) · 디자인 랩(개발 빌드만).
 /// 로그아웃은 내 계정 화면으로 옮겼다.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -37,6 +38,7 @@ class ProfileScreen extends ConsumerWidget {
   static const versionRowKey = Key('mypage_version_row');
   static const themeRowKey = Key('mypage_theme_row');
   static const liveDiagRowKey = Key('mypage_live_diag_row');
+  static const deviceRebootRowKey = Key('mypage_device_reboot_row');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -123,6 +125,14 @@ class ProfileScreen extends ConsumerWidget {
             subtitle: 'live_diag_export_subtitle'.tr(),
             icon: Icon(Icons.bug_report_outlined, size: 24, color: iconColor),
             onTap: () => shareLiveDiag(context, ref)),
+        const SizedBox(height: 8),
+        MyPageRow(
+            key: deviceRebootRowKey,
+            title: 'mypage_device_reboot_title'.tr(),
+            subtitle: 'mypage_device_reboot_subtitle'.tr(),
+            icon: FigmaIcon.tinted('redesign_v2/restart_alt',
+                size: 24, color: iconColor),
+            onTap: () => context.push('/profile/device-reboot')),
         if (kDebugMode) ...[
           const SizedBox(height: 8),
           MyPageRow(
