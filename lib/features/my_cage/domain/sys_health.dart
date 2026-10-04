@@ -91,9 +91,11 @@ bool cameraRebootAccepted(Object? body,
   return body is Map && body['published'] == true;
 }
 
-/// 사육장 재시작 확인창의 임시 문장("예약으로 켜져 있던 조명·팬은 다음 예약
-/// 시각까지 꺼져 있을 수 있어요") — 서버가 재부팅 뒤 예약 상태를 되살리는 기능을
-/// 배포하면 false로 바꾼다(요청서 §2-2).
+/// 사육장 재시작 확인창의 예약 안내 문장. 2026-10-04부터 서버가 재부팅 뒤
+/// 예약상 켜져 있어야 할 조명·팬·냉각팬을 다시 켜므로(가이드
+/// `docs/references/2026-10-03-device-reboot-app-guide.md` §5 — 분무·펌프·히터·
+/// 타이머 예약·직접 켠 것은 복원 안 함) "예약분은 다시 켜지고 직접 켠 것은 다시
+/// 켜 주세요"로 바꿨다. 이 안내가 필요 없어지면 false.
 const kDeviceRebootScheduleNote = true;
 
 /// 기기 heartbeat의 앱이 쓰는 값만 — 진단 필드(`heap`·`last_err`·`up_fail` 등)는
