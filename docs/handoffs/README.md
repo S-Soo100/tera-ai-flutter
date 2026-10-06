@@ -15,6 +15,7 @@
 | 알림 배포·기기 이벤트 | [배포 체크리스트](2026-09-15-fcm-deployment-checklist.md), [재개 기록](2026-09-15-fcm-session-checkpoint.md), [이벤트 요청](2026-09-15-terra-server-notification-events-request.md) | 실기기 수신·생산자 연동·미확인 후속 작업이 남아 있음. 후속 9/16 회신·결정을 우선 확인 |
 | 하이라이트 | [정책 v2 요청](2026-09-19-petcam-lab-highlight-policy-v2-request.md) | 구 승인 스냅샷 정책을 대체. 배포 확인 기록과 남은 요청 보존 |
 | 마이페이지 | [서버 요청](2026-09-16-mypage-server-requests.md) | 서버 의존 항목의 완료 근거가 확인되지 않아 보존 |
+| LCD 문구 | [서버 요청](2026-10-06-lcd-text-server-request.md) | 고객 문의 계기. 앱은 휴대폰 저장으로 임시 조치(0.153.3), 서버 저장·조회 대기 |
 | 카메라 회전 | [9/9 후속 통보](../handoff-update-camera-rotate180-2026-09-09.md) | 재부팅 후 적용 계약과 라이브 멈춤 수정의 실기기 미확인 기록 포함. 최신 토글 노출 정책은 CLAUDE.md 우선 |
 
 이 표의 서버·펌웨어 상태는 보관 문서와 이번 대화 기준이며 이번 정리에서 운영 환경을 재검증하지 않았습니다. `docs/references/`의 원문 회신과 나머지 인계 문서는 완료 근거·현행 계약 대체 여부가 확실하지 않아 유지했습니다.
