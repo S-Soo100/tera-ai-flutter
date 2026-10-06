@@ -11,6 +11,7 @@ import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivanaut/features/my_cage/data/lcd_repository.dart';
 import 'package:vivanaut/features/my_cage/data/lcd_text_store.dart';
+import 'package:vivanaut/features/my_cage/domain/lcd_text.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/lcd_setting_tile.dart';
 
 /// LCD 문구 진입점(홈 `HomeLcdRow`, 2026-09-07 이동) + 시트([showLcdSheet]).
@@ -71,7 +72,8 @@ Future<void> _pump(WidgetTester tester, _FakeLcdRepo repo,
     {String? deviceId = 'd1',
     String? hardwareId,
     LcdTextStore? store,
-    String account = 'u1'}) async {
+    String account = 'u1',
+    Stream<DeviceLinkStatus?>? link}) async {
   await tester.pumpWidget(
     ProviderScope(
       // 재시작 흉내 — 같은 위치에 새 scope를 끼우면 provider 상태가 남는다.
@@ -80,6 +82,10 @@ Future<void> _pump(WidgetTester tester, _FakeLcdRepo repo,
         lcdRepositoryProvider.overrideWithValue(repo),
         lcdTextStoreProvider.overrideWithValue(store ?? _MemoryLcdTextStore()),
         lcdTextAccountProvider.overrideWithValue(account),
+        deviceLinkStatusProvider.overrideWith((ref, id) =>
+            link ??
+            Stream.value(const DeviceLinkStatus(
+                isOnline: true, lastSeenAt: null))),
         moduleOnlineProvider.overrideWith((ref, id) => true),
         currentSetProvider.overrideWith((ref) async => deviceId == null
             ? null
@@ -229,6 +235,8 @@ void main() {
           lcdRepositoryProvider.overrideWithValue(repo),
           lcdTextStoreProvider.overrideWithValue(_MemoryLcdTextStore()),
           lcdTextAccountProvider.overrideWithValue('u1'),
+          deviceLinkStatusProvider.overrideWith((ref, id) => Stream.value(
+              const DeviceLinkStatus(isOnline: true, lastSeenAt: null))),
           moduleOnlineProvider.overrideWith((ref, id) => true),
           currentSetProvider.overrideWith((ref) async => EnclosureSet(
               enclosure: Enclosure(
@@ -401,5 +409,68 @@ void main() {
     await tester.tap(find.byKey(const Key('lcd_apply')));
     await tester.pumpAndSettle();
     expect(store.values, isEmpty);
+  });
+
+  group('서버 확정값(devices.lcd_text, 2026-10-07)', () {
+    DeviceLinkStatus status(String? text, DateTime? at) => DeviceLinkStatus(
+        isOnline: true,
+        lastSeenAt: null,
+        lcd: DeviceLcdText(text: text, updatedAt: at));
+    final t0 = DateTime.utc(2026, 10, 7, 3);
+
+    testWidgets('다른 폰에서 바꾼 문구도 서버 값으로 보인다', (tester) async {
+      final store = _MemoryLcdTextStore();
+      await store.save('u1', 'd1', '이 폰 옛 문구');
+      await _pump(tester, _FakeLcdRepo(),
+          hardwareId: 'terra-cb7d7864',
+          store: store,
+          link: Stream.value(status('다른 폰 문구', t0)));
+      expect(find.text('다른 폰 문구'), findsOneWidget);
+      expect(find.text('이 폰 옛 문구'), findsNothing);
+    });
+
+    testWidgets('보내면 즉시 새 문구, ACK가 오면 서버 값으로 이어진다', (tester) async {
+      final link = StreamController<DeviceLinkStatus?>();
+      addTearDown(link.close);
+      await _pump(tester, _FakeLcdRepo(), store: _MemoryLcdTextStore(),
+          link: link.stream);
+      link.add(status('옛 문구', t0));
+      await tester.pumpAndSettle();
+      expect(find.text('옛 문구'), findsOneWidget);
+
+      await tester.tap(find.byKey(HomeLcdRow.rowKey));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('lcd_text_field')), '새 문구');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('lcd_apply')));
+      await tester.pumpAndSettle();
+      expect(find.text('새 문구'), findsOneWidget, reason: 'ACK 전에도 새 문구');
+
+      link.add(status('새 문구', t0.add(const Duration(seconds: 2))));
+      await tester.pumpAndSettle();
+      expect(find.text('새 문구'), findsOneWidget);
+      expect(find.text('옛 문구'), findsNothing);
+    });
+
+    testWidgets('30초 안에 ACK가 없으면 기기에 뜬 옛 문구로 돌아간다', (tester) async {
+      final link = StreamController<DeviceLinkStatus?>();
+      addTearDown(link.close);
+      await _pump(tester, _FakeLcdRepo(), store: _MemoryLcdTextStore(),
+          link: link.stream);
+      link.add(status('옛 문구', t0));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(HomeLcdRow.rowKey));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('lcd_text_field')), '새 문구');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('lcd_apply')));
+      await tester.pumpAndSettle();
+      expect(find.text('새 문구'), findsOneWidget);
+
+      await tester.pump(kLcdPendingWindow);
+      await tester.pumpAndSettle();
+      expect(find.text('옛 문구'), findsOneWidget);
+    });
   });
 }

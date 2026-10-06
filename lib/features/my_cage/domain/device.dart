@@ -1,3 +1,5 @@
+import 'lcd_text.dart';
+
 /// Supabase `devices` row 매핑.
 class Device {
   final String id;
@@ -14,6 +16,10 @@ class Device {
   /// 안 채운 것 — 모르는 능력은 **없는 것으로** 본다.
   final Map<String, dynamic>? capabilities;
 
+  /// 기기가 ACK로 확정한 LCD 문구(`devices.lcd_text`·`lcd_text_updated_at`,
+  /// 2026-10-07 서버 회신).
+  final DeviceLcdText lcd;
+
   const Device({
     required this.id,
     required this.ownerId,
@@ -23,6 +29,7 @@ class Device {
     required this.lastSeenAt,
     this.hardwareId,
     this.capabilities,
+    this.lcd = DeviceLcdText.unknown,
   });
 
   /// LED 밝기(PWM) 조절이 되는 보드인가. 릴레이 보드는 `brightness`를 무시하고
@@ -49,19 +56,28 @@ class Device {
           ? DateTime.tryParse(j['last_seen_at'].toString())
           : null,
       capabilities: caps is Map ? caps.cast<String, dynamic>() : null,
+      lcd: DeviceLcdText.fromJson(j),
     );
   }
 }
 
 /// 기기 연결 상태만 — `devices` 실시간 UPDATE와 목록 스냅샷 공용(2026-09-25).
+///
+/// 같은 행 UPDATE에 실려 오는 LCD 문구([lcd])도 함께 나른다(2026-10-07) —
+/// 기기마다 채널을 하나 더 열지 않으려고. 연결 판정 소비처는 `isOnline`만
+/// select하므로 LCD 변화로 다시 그려지지 않는다.
 class DeviceLinkStatus {
-  const DeviceLinkStatus({required this.isOnline, required this.lastSeenAt});
+  const DeviceLinkStatus(
+      {required this.isOnline,
+      required this.lastSeenAt,
+      this.lcd = DeviceLcdText.unknown});
 
   final bool isOnline;
   final DateTime? lastSeenAt;
+  final DeviceLcdText lcd;
 
-  factory DeviceLinkStatus.of(Device d) =>
-      DeviceLinkStatus(isOnline: d.isOnline, lastSeenAt: d.lastSeenAt);
+  factory DeviceLinkStatus.of(Device d) => DeviceLinkStatus(
+      isOnline: d.isOnline, lastSeenAt: d.lastSeenAt, lcd: d.lcd);
 
   factory DeviceLinkStatus.fromJson(Map<String, dynamic> j) =>
       DeviceLinkStatus(
@@ -69,14 +85,16 @@ class DeviceLinkStatus {
         lastSeenAt: j['last_seen_at'] != null
             ? DateTime.tryParse(j['last_seen_at'].toString())
             : null,
+        lcd: DeviceLcdText.fromJson(j),
       );
 
   @override
   bool operator ==(Object other) =>
       other is DeviceLinkStatus &&
       other.isOnline == isOnline &&
-      other.lastSeenAt == lastSeenAt;
+      other.lastSeenAt == lastSeenAt &&
+      other.lcd == lcd;
 
   @override
-  int get hashCode => Object.hash(isOnline, lastSeenAt);
+  int get hashCode => Object.hash(isOnline, lastSeenAt, lcd);
 }
