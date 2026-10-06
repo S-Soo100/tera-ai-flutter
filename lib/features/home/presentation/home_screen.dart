@@ -246,11 +246,11 @@ class HomeLcdRow extends ConsumerWidget {
                 ),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 118),
-                  // 이 폰이 보낸 문구가 있으면 그것 — 늘 하드웨어 ID만
-                  // 보여 바꾼 문구가 적용됐는지 알 수 없었다(2026-09-25).
-                  // 앱을 다시 켜도 유지(2026-10-06, `LcdTextStore`).
+                  // 기기가 띄운 문구(서버 확정값 → 방금 보낸 문구 → 이 폰
+                  // 저장값) — 늘 하드웨어 ID만 보여 바꾼 문구가 적용됐는지
+                  // 알 수 없었다(2026-09-25, 2026-10-07 서버 값 우선).
                   child: Text(
-                      ref.watch(lastLcdTextProvider(device.id)).valueOrNull ??
+                      ref.watch(lcdDisplayTextProvider(device.id)) ??
                           device.hardwareId ??
                           '--',
                       maxLines: 1,
