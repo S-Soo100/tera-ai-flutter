@@ -85,12 +85,13 @@ Future<void> showLcdSheet(
 }) {
   // 탭 셸 밖(루트)으로 띄운다 — 원본 1081:3160은 전체 화면이고 독이 없다
   // (시뮬 확인 2026-09-16: 탭 내비게이터로 띄우면 독이 남는다).
+  // builder 안에서 호출자 [ref]를 읽지 말 것 — 라우트는 다시 그려질 때마다
+  // builder를 부르는데, 그때 홈 줄이 사라졌으면 앱 전체가 오류 화면이 된다
+  // (2026-10-07 네트워크 복귀 뒤 실측). 화면이 자기 ref로 읽는다.
   return Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute(
-          builder: (_) => _LcdScreen(
-              deviceId: deviceId,
-              defaultText: defaultText,
-              repo: ref.read(lcdRepositoryProvider))));
+          builder: (_) =>
+              _LcdScreen(deviceId: deviceId, defaultText: defaultText)));
 }
 
 /// Figma 1081:3160 — 헤더 44(뒤로 + 제목 16/700), 모듈 그림 345×171 y118,
@@ -98,11 +99,9 @@ Future<void> showLcdSheet(
 /// 완료 CTA y696(키보드 위 36). 기본값 복원은 기존 기능이라 y752 텍스트
 /// 버튼으로 두되 키보드가 있으면 숨긴다(노출 위치는 결정 목록).
 class _LcdScreen extends ConsumerStatefulWidget {
-  const _LcdScreen(
-      {required this.deviceId, required this.repo, this.defaultText});
+  const _LcdScreen({required this.deviceId, this.defaultText});
 
   final String deviceId;
-  final LcdRepository repo;
 
   /// 아직 아무것도 안 보낸 기기의 첫 기본값 — 페어링 때 감지된 기기 이름
   /// (`devices.device_id`, 예 `terra-cb7d7864`). 원본 1081:3160의 입력칸이
@@ -273,6 +272,7 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
     // Controller의 프로그램 입력은 TextField formatter를 거치지 않는다.
     // 전송 직전에도 화면 카운터와 같은 문자 단위로 상한을 적용한다.
     final text = _text.text.characters.take(_maxLcdTextLength).toString();
+    final repo = ref.read(lcdRepositoryProvider);
     final account = ref.read(lcdTextAccountProvider);
     final store = ref.read(lcdTextStoreProvider);
     final pending = ref.read(lcdPendingProvider(widget.deviceId).notifier);
@@ -284,7 +284,7 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
     final ok = await submitAndClose(
       context,
       () async {
-        await widget.repo.setText(widget.deviceId, text);
+        await repo.setText(widget.deviceId, text);
         pending.state =
             PendingLcdText(text, sentAt: clock.now(), baseline: baseline);
         // 기기에는 이미 갔다 — 저장 실패로 '전송 실패'를 띄우지 않는다.

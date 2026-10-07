@@ -473,4 +473,53 @@ void main() {
       expect(find.text('옛 문구'), findsOneWidget);
     });
   });
+
+  // 2026-10-07 시뮬: 네트워크 복귀로 홈이 다시 만들어진 뒤 LCD 화면이 다시
+  // 그려지면서 사라진 홈 줄의 ref를 읽어 앱 전체가 오류 화면이 됐다.
+  testWidgets('홈 줄이 사라진 뒤 LCD 화면이 다시 그려져도 죽지 않는다', (tester) async {
+    final showRow = ValueNotifier(true);
+    addTearDown(showRow.dispose);
+    final repo = _FakeLcdRepo();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        lcdRepositoryProvider.overrideWithValue(repo),
+        lcdTextStoreProvider.overrideWithValue(_MemoryLcdTextStore()),
+        lcdTextAccountProvider.overrideWithValue('u1'),
+        deviceLinkStatusProvider.overrideWith((ref, id) => Stream.value(
+            const DeviceLinkStatus(isOnline: true, lastSeenAt: null))),
+        moduleOnlineProvider.overrideWith((ref, id) => true),
+        currentSetProvider.overrideWith((ref) async => EnclosureSet(
+            enclosure: Enclosure(
+                id: 'e1', name: '1번', createdAt: DateTime(2026, 8, 1)),
+            device: Device(
+                id: 'd1',
+                ownerId: null,
+                enclosureId: null,
+                name: null,
+                isOnline: true,
+                lastSeenAt: null),
+            camera: null,
+            pet: null)),
+      ],
+      child: ValueListenableBuilder<bool>(
+          valueListenable: showRow,
+          builder: (context, show, _) => MaterialApp(
+              home: Scaffold(
+                  body: show ? const HomeLcdRow() : const SizedBox()))),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.pumpAndSettle();
+
+    showRow.value = false; // 홈 줄 폐기 + 앱 다시 그리기
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('lcd_text_field')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('lcd_text_field')), '밥 6시');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('lcd_apply')));
+    await tester.pumpAndSettle();
+    expect(repo.calls, ['set:d1:밥 6시']);
+  });
 }
