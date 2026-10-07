@@ -1,6 +1,6 @@
 # LCD 문구 원문을 서버에 저장·조회할 수 있게 해 주세요 (terra-server 요청)
 
-> **회신(2026-10-07):** `devices.lcd_text`·`lcd_text_updated_at` 추가, 기기 ok ACK 때 확정(terra-server `docs/BACKEND_HANDOFF_REPLY_LCD_TEXT_2026-10-07.md`). 운영 DB 마이그레이션 적용 확인, **서버 배포는 회신 시점 미완**. 앱 0.154.0에서 서버 값 우선 표시 반영 — 배포 전엔 값이 비어 휴대폰 저장값으로 동작한다.
+> **회신(2026-10-07):** `devices.lcd_text`·`lcd_text_updated_at` 추가, 기기 ok ACK 때 확정(terra-server `docs/BACKEND_HANDOFF_REPLY_LCD_TEXT_2026-10-07.md`). 운영 DB 마이그레이션 적용 확인, 서버 배포 완료(2026-10-07 사용자 확인, terra-server #18 `d84e1a7`). 앱 0.154.0에서 서버 값 우선 표시 반영. **실기기 검증 대기** — 배포 뒤 LCD 전송이 아직 없어 `lcd_text` 채워짐을 운영에서 못 봤다.
 
 > 작성 2026-10-06 · 앱 비바나트 0.153.3 (389) · 계기: 고객 문의
 
