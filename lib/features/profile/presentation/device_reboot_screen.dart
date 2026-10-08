@@ -56,7 +56,8 @@ class DeviceRebootScreen extends ConsumerWidget {
             return Column(children: [
               for (final (i, item) in devices.indexed) ...[
                 if (i > 0) const SizedBox(height: 8),
-                _DeviceRebootRow(item: item),
+                _DeviceRebootRow(
+                    item: item, groupName: inv.group(item.groupId)?.name),
               ],
             ]);
           },
@@ -78,9 +79,13 @@ class _Message extends StatelessWidget {
 }
 
 /// 기기 한 대 — 상태를 부제로, 할 수 있을 때만 누를 수 있다.
+///
+/// 제목은 "세트 이름 · 기기 이름"(2026-10-08 사용자 요청 — "사육장 1·2"만으론
+/// 어느 사육장인지 구분이 안 됐다). 세트가 없으면 기기 이름만.
 class _DeviceRebootRow extends ConsumerWidget {
-  const _DeviceRebootRow({required this.item});
+  const _DeviceRebootRow({required this.item, this.groupName});
   final ManagementItem item;
+  final String? groupName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -116,7 +121,9 @@ class _DeviceRebootRow extends ConsumerWidget {
         opacity: enabled || inProgress ? 1 : 0.6,
         child: MyPageRow(
             key: DeviceRebootScreen.rowKey(item.key.id),
-            title: item.name,
+            title: groupName == null || groupName!.isEmpty
+                ? item.name
+                : '$groupName · ${item.name}',
             subtitle: status,
             icon: FigmaIcon.tinted('redesign_v2/restart_alt',
                 size: 24, color: ManagementColors.buttonForeground(context)),
