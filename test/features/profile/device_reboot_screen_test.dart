@@ -23,8 +23,11 @@ class _DeviceRepo implements DeviceHealthRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-ManagementItem _item(String id, String name) => ManagementItem(
-    key: ManagementKey(kind: ManagementKind.device, id: id), name: name);
+ManagementItem _item(String id, String name, {String? groupId}) =>
+    ManagementItem(
+        key: ManagementKey(kind: ManagementKind.device, id: id),
+        name: name,
+        groupId: groupId);
 
 SysHealth _health({bool present = true, bool online = true}) => SysHealth(
     present: present,
@@ -35,12 +38,13 @@ SysHealth _health({bool present = true, bool online = true}) => SysHealth(
 void main() {
   Future<_DeviceRepo> pump(WidgetTester tester,
       {required List<ManagementItem> items,
+      List<ManagementGroup> groups = const [],
       Map<String, SysHealth> health = const {}}) async {
     final repo = _DeviceRepo();
     await tester.pumpWidget(ProviderScope(
         overrides: [
           managementInventoryProvider.overrideWith(
-              (ref) async => ManagementInventory(groups: [], items: items)),
+              (ref) async => ManagementInventory(groups: groups, items: items)),
           for (final e in health.entries)
             sysHealthProvider((PairTargetKind.device, e.key))
                 .overrideWith((ref) => Stream.value(e.value)),
@@ -98,5 +102,17 @@ void main() {
     expect(find.text('reboot_ok'), findsNothing);
     // 2분 타이머가 남지 않게 정리.
     await tester.pumpWidget(const SizedBox());
+  });
+
+  // 2026-10-08 사용자: "사육장 1·2만 나와 구분하기 힘들다" — 세트 이름을 함께.
+  testWidgets('세트에 든 기기는 세트 이름과 기기 이름을 같이 보인다', (tester) async {
+    await pump(tester, groups: const [
+      ManagementGroup(id: 'g1', name: '긱블보드'),
+    ], items: [
+      _item('a', '사육장 5', groupId: 'g1'),
+      _item('b', '사육장 2'),
+    ]);
+    expect(find.text('긱블보드 · 사육장 5'), findsOneWidget);
+    expect(find.text('사육장 2'), findsOneWidget, reason: '세트 없으면 기기 이름만');
   });
 }
