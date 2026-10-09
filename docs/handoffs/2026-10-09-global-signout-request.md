@@ -1,6 +1,7 @@
 # 요청: 스크립트·웹 도구의 로그아웃을 `scope: local`로 (2026-10-09)
 
 **받는 쪽:** terra-server / petcam-lab 담당(이관훈님)
+**상태:** 2026-10-09 백엔드 처리 완료 통보. 다만 같은 날 12:07 KST 일괄 실행(219.241.97.248, 테스터 30개 계정)은 여전히 global로 동작했다 — 그 뒤 테스터 5명의 이전 세션이 모두 삭제됐고 1명은 12:32에 `refresh_token_not_found`. 수정이 12:07 이후 배포였는지 **다음 실행으로 검증 대기**(아래 '검증 방법').
 **종류:** 서버 쪽 코드(스크립트·웹 도구) 수정. Supabase 프로젝트 설정 변경은 필요 없음(로그아웃 범위는 설정이 아니라 호출 코드가 정한다).
 
 ## 증상
@@ -32,3 +33,14 @@ supabase-js `auth.signOut()`과 supabase-py `auth.sign_out()`은 기본 범위�
 ## 앱 쪽 조치 (참고)
 
 0.154.3+393: 토큰 연장이 네트워크 오류·서버 5xx로 실패할 때 앱이 스스로 로그아웃하던 별도 결함을 고쳤다. 서버가 세션을 지운 경우(이번 원인)는 앱에서 막을 방법이 없다.
+
+## 검증 방법
+
+다음 일괄 실행 뒤 Supabase SQL로 확인한다. 실행 시각보다 먼저 만들어진 테스터 세션이 남아 있으면 local로 바뀐 것이다.
+
+```sql
+select count(*) from auth.sessions s join auth.users u on u.id = s.user_id
+where u.email like '010%@test.com' and s.created_at < '<실행 시각 UTC>';
+```
+
+auth 로그에서 실행 뒤 테스터 폰의 `refresh_token_not_found` → 재로그인 패턴이 사라졌는지도 같이 본다.
