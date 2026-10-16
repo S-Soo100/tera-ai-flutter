@@ -70,11 +70,8 @@ class SupabaseModuleControlRepository {
   /// 기기 1대의 연결 상태(+LCD 문구). 해제(`unlinked_at`)됐거나 안 보이면 null.
   /// 컬럼을 고르지 않는다 — LCD 컬럼이 없는 서버에서도 깨지지 않게.
   Future<DeviceLinkStatus?> fetchLinkStatus(String deviceId) async {
-    final rows = await _supabase
-        .from('devices')
-        .select()
-        .eq('id', deviceId)
-        .limit(1);
+    final rows =
+        await _supabase.from('devices').select().eq('id', deviceId).limit(1);
     final list = (rows as List).cast<Map<String, dynamic>>();
     if (list.isEmpty || list.first['unlinked_at'] != null) return null;
     return DeviceLinkStatus.fromJson(list.first);

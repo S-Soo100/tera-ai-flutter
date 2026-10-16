@@ -11,6 +11,7 @@ import '../../../../shared/widgets/glass_card.dart';
 import '../../domain/community_post.dart';
 import '../community_providers.dart';
 import 'pet_tag_row.dart';
+import '../../../../shared/widgets/keep_screen_on.dart';
 
 /// 피드 카드 — 작성자 / 썸네일(탭=재생) / 행동 칩 / 크레 행 / 캡션 / 좋아요·댓글.
 class PostCard extends StatelessWidget {
@@ -380,7 +381,9 @@ class _InlinePlayerState extends ConsumerState<_InlinePlayer> {
         width: _controller!.value.size.width,
         height: _controller!.value.size.height,
         // 탭이 전체화면 재생(onPlay)으로 가도록 포인터를 먹지 않는다.
-        child: IgnorePointer(child: VideoPlayer(_controller!)),
+        child: IgnorePointer(
+            child: KeepScreenOnWhilePlaying(
+                controller: _controller!, child: VideoPlayer(_controller!))),
       ),
     );
   }

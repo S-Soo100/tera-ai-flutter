@@ -20,6 +20,7 @@ import '../../domain/sys_health.dart';
 import '../live_limit_providers.dart';
 import '../my_cage_providers.dart';
 import '../sys_health_controllers.dart';
+import '../../../../shared/widgets/keep_screen_on.dart';
 import '../webrtc_live_controller.dart';
 import 'sys_health_widgets.dart';
 
@@ -165,6 +166,12 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
 
   @override
   Widget build(BuildContext context) {
+    final keepOn = ref.watch(webrtcLiveControllerProvider(widget.cameraUuid)
+        .select((s) => s.phase.keepsScreenOn));
+    return KeepScreenOn(active: keepOn, child: _buildLive(context));
+  }
+
+  Widget _buildLive(BuildContext context) {
     final cameraUuid = widget.cameraUuid;
     final state = ref.watch(webrtcLiveControllerProvider(cameraUuid));
     ref.listen<WebRtcLiveState>(webrtcLiveControllerProvider(cameraUuid),
@@ -192,11 +199,10 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
       WebRtcLivePhase.recovering =>
         const _ConnectingView(labelKey: 'crecam_live_recovering'),
       WebRtcLivePhase.rebooting => _ConnectingView(
-          labelKey: ref
-                  .watch(rebootProvider(cameraRebootTarget(cameraUuid)))
-                  .slow
-              ? 'crecam_live_rebooting_slow'
-              : 'crecam_live_rebooting'),
+          labelKey:
+              ref.watch(rebootProvider(cameraRebootTarget(cameraUuid))).slow
+                  ? 'crecam_live_rebooting_slow'
+                  : 'crecam_live_rebooting'),
       WebRtcLivePhase.streaming || WebRtcLivePhase.stalled => _StreamingView(
           renderer: state.renderer!,
           cover: widget.cover,
@@ -204,8 +210,7 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
           liveUntil: state.liveUntil,
         ),
       WebRtcLivePhase.limited => _LimitedView(
-          limit: state.limit ??
-              const LiveLimit(LiveLimitKind.rateLimited),
+          limit: state.limit ?? const LiveLimit(LiveLimitKind.rateLimited),
           onRetry: retry,
           onTakeover: () => ref
               .read(webrtcLiveControllerProvider(cameraUuid).notifier)

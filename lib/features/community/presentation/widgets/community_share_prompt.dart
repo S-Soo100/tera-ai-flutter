@@ -30,8 +30,8 @@ class HiveCommunitySharePromptStore implements CommunitySharePromptStore {
   Future<void> dismiss() async => _box?.put(key, true);
 }
 
-final communitySharePromptStoreProvider =
-    Provider<CommunitySharePromptStore>((ref) => HiveCommunitySharePromptStore());
+final communitySharePromptStoreProvider = Provider<CommunitySharePromptStore>(
+    (ref) => HiveCommunitySharePromptStore());
 
 /// 북마크 메타 조회 — 게시에는 로컬 mp4가 있는 [FavoriteClip]이 필요하다.
 final communityShareClipLookupProvider =
@@ -119,8 +119,8 @@ class _CommunitySharePromptState extends State<CommunitySharePrompt> {
                   const SizedBox(height: 8),
                   Text('community_share_prompt_body'.tr(),
                       textAlign: TextAlign.center,
-                      style: managementStyle(context,
-                          color: glass.bodySecondary)),
+                      style:
+                          managementStyle(context, color: glass.bodySecondary)),
                   const SizedBox(height: 20),
                   Center(
                       child: VivaCheckRow(

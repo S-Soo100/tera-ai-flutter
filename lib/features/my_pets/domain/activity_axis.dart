@@ -45,8 +45,7 @@ class ActivityAxis {
     }
     for (final step in _steps) {
       if (step * divisions >= peakSeconds) {
-        return ActivityAxis._(
-            maxSeconds: step * divisions, stepSeconds: step);
+        return ActivityAxis._(maxSeconds: step * divisions, stepSeconds: step);
       }
     }
     // 하루를 넘는 값은 나올 수 없지만(창이 24시간), 그래도 자르지 않는다.

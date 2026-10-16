@@ -48,9 +48,8 @@ class HiveLcdTextStore implements LcdTextStore {
   Future<void> clearAll() async {
     final box = _box;
     if (box == null) return;
-    await box.deleteAll(box.keys
-        .where((k) => k is String && k.startsWith(_prefix))
-        .toList());
+    await box.deleteAll(
+        box.keys.where((k) => k is String && k.startsWith(_prefix)).toList());
   }
 
   @override

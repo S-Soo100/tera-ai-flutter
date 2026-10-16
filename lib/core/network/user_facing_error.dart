@@ -16,7 +16,9 @@ String userFacingError(Object e) {
     if (code >= 500) return 'error_server'.tr();
     if (code >= 400) return 'error_request_rejected'.tr();
   }
-  if (e is TimeoutException || e is SocketException || e is http.ClientException) {
+  if (e is TimeoutException ||
+      e is SocketException ||
+      e is http.ClientException) {
     return 'error_network'.tr();
   }
   return 'error_unknown'.tr();

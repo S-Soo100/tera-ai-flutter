@@ -241,13 +241,15 @@ class RebootController
       } else {
         commandId = await ref.read(deviceHealthRepositoryProvider).reboot(id);
       }
-      state = _copy(rebooting: true, until: DateTime.now().add(kRebootCooldown));
+      state =
+          _copy(rebooting: true, until: DateTime.now().add(kRebootCooldown));
       _timeout?.cancel();
       _timeout = Timer(kRebootTimeout, () => _finish(RebootOutcome.timedOut));
       _slow?.cancel();
       _slow = Timer(kRebootSlowAfter, () {
         if (state.rebooting) {
-          state = _copy(rebooting: true, slow: true, until: state.cooldownUntil);
+          state =
+              _copy(rebooting: true, slow: true, until: state.cooldownUntil);
         }
       });
       // 쿨다운이 끝나면 버튼을 다시 그린다.

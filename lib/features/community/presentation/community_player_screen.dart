@@ -8,6 +8,7 @@ import 'package:video_player/video_player.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../../shared/widgets/video_seek_bar.dart';
 import 'community_providers.dart';
+import '../../../shared/widgets/keep_screen_on.dart';
 
 /// 커뮤니티 게시물 재생 — 전체화면 가로 전용(클립 재생 결정 §6-B와 동일).
 /// 저장·공유·즐겨찾기 없음(타인 소유 영상). 닫기만.
@@ -104,7 +105,9 @@ class _CommunityPlayerScreenState extends ConsumerState<CommunityPlayerScreen> {
                 : _initialized && _controller != null
                     ? AspectRatio(
                         aspectRatio: _controller!.value.aspectRatio,
-                        child: VideoPlayer(_controller!),
+                        child: KeepScreenOnWhilePlaying(
+                            controller: _controller!,
+                            child: VideoPlayer(_controller!)),
                       )
                     // 계획서의 Shimmer+SizedBox.expand는 칠할 것이 없어
                     // 아무것도 안 그린다 — 재생 화면 선례의 스켈레톤을 쓴다.

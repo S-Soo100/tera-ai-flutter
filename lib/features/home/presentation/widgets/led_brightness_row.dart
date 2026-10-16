@@ -99,7 +99,8 @@ class PillThumbShape extends SliderComponentShape {
       required double textScaleFactor,
       required Size sizeWithOverflow}) {
     final rect = RRect.fromRectAndRadius(
-        Rect.fromCenter(center: center, width: _size.width, height: _size.height),
+        Rect.fromCenter(
+            center: center, width: _size.width, height: _size.height),
         const Radius.circular(16));
     final canvas = context.canvas;
     canvas.drawRRect(

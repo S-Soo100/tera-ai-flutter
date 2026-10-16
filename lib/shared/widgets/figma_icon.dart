@@ -78,6 +78,7 @@ abstract final class FigmaIcons {
   static const arrowNext = 'arrow_next';
   static const download = 'download';
   static const share = 'share';
+
   /// 북마크 안했을때(외곽선) / 했을때(채움) — Figma 아이콘 시트(2026-09-21).
   ///
   /// 둘 다 36 프레임에 같은 자리로 그려져 있어 눌러도 크기가 안 변한다.

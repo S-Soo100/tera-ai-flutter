@@ -276,7 +276,8 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
             ScheduleDevice.led);
         // 구 펌웨어(상태 미보고)는 기다려도 보고가 오지 않는다 — ACK로만 확인하고
         // 목표 상태를 그리지 않는다("상태 모름" 유지, CLAUDE.md LED 규칙).
-        final known = current == ActuatorState.on || current == ActuatorState.off;
+        final known =
+            current == ActuatorState.on || current == ActuatorState.off;
         await sendCageCommand(
           context,
           ref,
@@ -585,16 +586,20 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
     // (2026-09-25 점검).
     if (!schedules.hasValue) {
       if (schedules.hasError) {
-        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text('routine_load_failed'.tr(args: [userFacingError(schedules.error!)]),
-              style: managementStyle(context,
-                  size: 14, color: Theme.of(context).colorScheme.error)),
-          const SizedBox(height: 8),
-          _SheetCta(
-              label: 'retry'.tr(),
-              color: accent,
-              onPressed: () => ref.invalidate(schedulesProvider)),
-        ]);
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                  'routine_load_failed'
+                      .tr(args: [userFacingError(schedules.error!)]),
+                  style: managementStyle(context,
+                      size: 14, color: Theme.of(context).colorScheme.error)),
+              const SizedBox(height: 8),
+              _SheetCta(
+                  label: 'retry'.tr(),
+                  color: accent,
+                  onPressed: () => ref.invalidate(schedulesProvider)),
+            ]);
       }
       return const SkeletonListLoading(itemCount: 2);
     }

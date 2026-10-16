@@ -141,8 +141,7 @@ class SysHealth {
     return SysHealth(
         present: map != null,
         uptimeSeconds: integer(map?['uptime_s']),
-        resetReason:
-            map?['reset'] is String ? map!['reset'] as String : null,
+        resetReason: map?['reset'] is String ? map!['reset'] as String : null,
         rssi: integer(map?['rssi']),
         statsAt: at == null ? null : DateTime.tryParse(at.toString()),
         isOnline: online);
