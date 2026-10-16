@@ -80,8 +80,8 @@ class _CameraLiveFullscreenScreenState
 
   Future<void> _toggleRotate(String cameraUuid, bool next) async {
     ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state = true;
-    final ok = await submitRotate180(context, ref,
-        cameraUuid: cameraUuid, next: next);
+    final ok =
+        await submitRotate180(context, ref, cameraUuid: cameraUuid, next: next);
     if (!mounted) return;
     if (!ok) {
       ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state = false;

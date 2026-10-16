@@ -101,8 +101,7 @@ const kIceCandidateTypes = {'host', 'srflx', 'prflx', 'relay'};
       .where((r) =>
           r.type == 'candidate-pair' &&
           (yes(r.values['selected']) ||
-              (yes(r.values['nominated']) &&
-                  r.values['state'] == 'succeeded')))
+              (yes(r.values['nominated']) && r.values['state'] == 'succeeded')))
       .firstOrNull;
   if (pair == null) return (null, null);
 

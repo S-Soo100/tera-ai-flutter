@@ -104,8 +104,8 @@ class ResilientChannel {
     }
   }
 
-  void _log(String event, {bool? rejoin}) => debugPrint(
-      '[realtime] $name $event${rejoin == true ? ' (rejoin)' : ''}');
+  void _log(String event, {bool? rejoin}) =>
+      debugPrint('[realtime] $name $event${rejoin == true ? ' (rejoin)' : ''}');
 }
 
 /// 주기 동안 이벤트가 한 번도 없으면 [onSilent]를 부른다(시계 대신 주기 단위 —

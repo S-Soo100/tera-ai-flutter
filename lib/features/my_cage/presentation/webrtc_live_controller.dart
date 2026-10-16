@@ -62,6 +62,11 @@ extension WebRtcLivePhaseX on WebRtcLivePhase {
 
   /// 연결 시퀀스 진행 중(config~첫 프레임 대기).
   bool get isConnecting => index <= WebRtcLivePhase.waitingVideo.index;
+
+  /// 화면 꺼짐 방지를 거는 단계 — 보는 중이거나 곧 볼 수 있을 때. 실패(버튼
+  /// 대기)·시청 제한(쉼·다른 기기)은 사용자가 손대기 전엔 바뀌지 않으니 놓는다.
+  bool get keepsScreenOn =>
+      this != WebRtcLivePhase.failed && this != WebRtcLivePhase.limited;
 }
 
 class WebRtcLiveState {
@@ -355,8 +360,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       // 세션 정리(_suspend의 close)가 안 끝나 state가 아직 옛 streaming/failed일
       // 수 있다 — 그걸 넘기면 영상 없이 first_video_ms=0이 찍힌다(리뷰
       // 2026-09-25). [fromCurrent]는 연결을 유지한 채 다시 보이게 된 경우다.
-    )..onPhase(
-        fromCurrent ? _bucketOfState(state) : LiveViewBucket.connecting);
+    )..onPhase(fromCurrent ? _bucketOfState(state) : LiveViewBucket.connecting);
   }
 
   /// dispose 중에도 부른다 — ref를 읽지 않는다.
@@ -698,9 +702,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     if (already) return;
     _diag('suspend', {'reason': reason});
     _endAttempt(_gen, null);
-    _closeView(reason == 'background'
-        ? LiveViewEnd.background
-        : LiveViewEnd.closed);
+    _closeView(
+        reason == 'background' ? LiveViewEnd.background : LiveViewEnd.closed);
     final gen = ++_gen;
     _cancelTimers();
     _recoveryDeadline?.cancel(); // 백그라운드 시간은 세지 않는다
@@ -949,8 +952,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     _diag('restart', {'reason': reason});
     _view?.onRestart(reason);
     // 실패 화면의 저빈도 자동 재시도는 화면을 "연결 중"으로 바꾸지 않는다.
-    final quiet =
-        reason == 'timer' && state.phase == WebRtcLivePhase.failed;
+    final quiet = reason == 'timer' && state.phase == WebRtcLivePhase.failed;
     final quietErrorKey = state.errorKey;
     _endAttempt(_gen, null);
     final gen = ++_gen;
@@ -1059,8 +1061,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         return;
       }
       _fail(gen,
-          outcome: 'unresponsive',
-          errorKey: 'crecam_live_error_unresponsive');
+          outcome: 'unresponsive', errorKey: 'crecam_live_error_unresponsive');
     } on LiveInUseException {
       _enterLimited(gen, const LiveLimit(LiveLimitKind.inUse),
           outcome: 'in_use');
@@ -1114,7 +1115,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
     final next = ++_gen;
     unawaited(_cleanup(closeRemote: true));
     if (!reconnect) {
-      state = WebRtcLiveState(phase: WebRtcLivePhase.failed, errorKey: errorKey);
+      state =
+          WebRtcLiveState(phase: WebRtcLivePhase.failed, errorKey: errorKey);
       return;
     }
     // 안정 재생으로 닫혔던 창이면 이 실패가 새 창을 연다.
@@ -1314,7 +1316,8 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       if (!_isCurrent(gen)) return;
       if (s == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
         final a = _attempt;
-        _diag('connected', {'config_ms': a?.msConfig, 'answer_ms': a?.msAnswer});
+        _diag(
+            'connected', {'config_ms': a?.msConfig, 'answer_ms': a?.msAnswer});
         if (a != null && a.gen == gen && a.msConnected == null) {
           a.msConnected = _timing.elapsedMilliseconds;
           a.candidates = _candidateTypes(pc);
@@ -1454,8 +1457,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
         return;
       }
       _diag('no-video', {'bytes': bytes});
-      _fail(gen,
-          outcome: 'no_video', errorKey: 'crecam_live_error_no_video');
+      _fail(gen, outcome: 'no_video', errorKey: 'crecam_live_error_no_video');
     });
   }
 
@@ -1565,8 +1567,7 @@ class WebRtcLiveController extends StateNotifier<WebRtcLiveState> {
       }
       if (still >= kWebRtcHardStallTicks) {
         _diag('stall-hard', stallInfo());
-        _fail(gen,
-            outcome: 'stalled', errorKey: 'crecam_live_error_stalled');
+        _fail(gen, outcome: 'stalled', errorKey: 'crecam_live_error_stalled');
         return;
       }
       if (still >= kWebRtcSoftStallTicks &&

@@ -32,6 +32,7 @@ import 'widgets/clip_toast.dart';
 import 'clip_memo_providers.dart';
 import 'clip_visibility_providers.dart';
 import 'widgets/clip_hide_dialog.dart';
+import '../../../shared/widgets/keep_screen_on.dart';
 
 /// 세로 재생목록 플레이어 (Figma 668:743, 카메라 탭 재설계 T1).
 ///
@@ -1023,7 +1024,8 @@ class _ClipPlaylistPlayerScreenState
     // 채 상하만 크롭. 박스 비율 = 영상 비율이면 크롭 없이 정확히 맞는다.
     final size = _controller!.value.size;
     if (size.width <= 0 || size.height <= 0) {
-      return VideoPlayer(_controller!);
+      return KeepScreenOnWhilePlaying(
+          controller: _controller!, child: VideoPlayer(_controller!));
     }
     return FittedBox(
       fit: BoxFit.contain,
@@ -1031,7 +1033,8 @@ class _ClipPlaylistPlayerScreenState
       child: SizedBox(
         width: size.width,
         height: size.height,
-        child: VideoPlayer(_controller!),
+        child: KeepScreenOnWhilePlaying(
+            controller: _controller!, child: VideoPlayer(_controller!)),
       ),
     );
   }

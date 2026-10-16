@@ -58,7 +58,9 @@ class ScheduleDeviceBadge extends StatelessWidget {
 /// 열고 편집기 결과를 그대로 돌려준다(부모는 한 번의 push로 초안을 받는다).
 class ScheduleDevicePickerScreen extends StatelessWidget {
   const ScheduleDevicePickerScreen(
-      {super.key, required this.onPick, this.devices = ScheduleDevice.pickable});
+      {super.key,
+      required this.onPick,
+      this.devices = ScheduleDevice.pickable});
 
   /// 고를 수 있는 기기. 냉각팬이 없는 보드는 뺀다 — 홈 타일은 막혀 있는데
   /// 예약은 만들 수 있으면 돌지 않는 예약이 생긴다(2026-09-25 점검).

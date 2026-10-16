@@ -29,8 +29,8 @@ final liveViewerIdProvider = FutureProvider<String>((ref) async {
 /// 그 전엔 null이고 **타이머 하나만** 걸어 둔다(15분 내내 1초마다 다시 그리지
 /// 않는다). 0이 되면 거기서 멈춘다 — 서버 만료 스윕이 15초 주기라 영상이 조금
 /// 더 나올 수 있어, 알약은 영상이 실제로 끊길 때까지 "곧"으로 남는다.
-final liveEndingSoonProvider = StreamProvider.autoDispose
-    .family<Duration?, DateTime>((ref, until) {
+final liveEndingSoonProvider =
+    StreamProvider.autoDispose.family<Duration?, DateTime>((ref, until) {
   final controller = StreamController<Duration?>();
   Timer? timer;
   void tick() {

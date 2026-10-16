@@ -132,8 +132,9 @@ void listenRebootOutcome(
         message: key.tr(), confirmLabel: 'common_confirm'.tr());
     switch (outcome) {
       case RebootOutcome.done:
-        snack(
-            kind == PairTargetKind.camera ? 'camera_reboot_done' : 'reboot_done');
+        snack(kind == PairTargetKind.camera
+            ? 'camera_reboot_done'
+            : 'reboot_done');
       case RebootOutcome.timedOut:
         modal(_byKind(kind, 'reboot_timeout'));
       case RebootOutcome.noAck:

@@ -39,9 +39,8 @@ Future<bool> showVivaModal(
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(two ? 8 : 12)),
-                      textStyle:
-                          managementStyle(ctx, weight: FontWeight.w600)
-                              .copyWith(height: 28 / 16)),
+                      textStyle: managementStyle(ctx, weight: FontWeight.w600)
+                          .copyWith(height: 28 / 16)),
                   child: Text(label)));
       return Dialog(
           backgroundColor: glass.surfaceHeader,
@@ -74,8 +73,10 @@ Future<bool> showVivaModal(
                         ],
                         const SizedBox(height: 24),
                         if (!two)
-                          button(confirmLabel ?? 'common_confirm'.tr(),
-                              confirmColor ?? glass.textPrimary, true,
+                          button(
+                              confirmLabel ?? 'common_confirm'.tr(),
+                              confirmColor ?? glass.textPrimary,
+                              true,
                               confirmKey ?? const Key('viva_modal_confirm'))
                         else
                           Row(children: [

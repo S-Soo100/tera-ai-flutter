@@ -477,9 +477,8 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
                       label: 'routine_day_$d'.tr(),
                       selected: _days.contains(d),
                       accent: accent,
-                      onTap: () => _update(() => _days.contains(d)
-                          ? _days.remove(d)
-                          : _days.add(d)))),
+                      onTap: () => _update(() =>
+                          _days.contains(d) ? _days.remove(d) : _days.add(d)))),
             ],
           ])),
     ]);

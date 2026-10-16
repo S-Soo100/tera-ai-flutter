@@ -67,8 +67,7 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
                     color: glass.surfaceHeader,
                     borderRadius: BorderRadius.circular(12)),
                 child: Text('community_blocked_empty'.tr(),
-                    style: managementStyle(context,
-                        color: glass.textTertiary)))
+                    style: managementStyle(context, color: glass.textTertiary)))
             : Column(children: [
                 for (final (i, u) in users.indexed) ...[
                   if (i > 0) const SizedBox(height: 12),

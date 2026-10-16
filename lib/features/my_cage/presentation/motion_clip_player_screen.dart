@@ -17,6 +17,7 @@ import 'my_cage_providers.dart';
 import 'widgets/video_controls.dart';
 import 'widgets/video_timestamp_overlay.dart';
 import 'widgets/video_watermark.dart';
+import '../../../shared/widgets/keep_screen_on.dart';
 
 /// motion_clips 재생. 즐겨찾기면 로컬 파일(오프라인), 아니면 terra-api presigned URL.
 ///
@@ -412,7 +413,9 @@ class _MotionClipPlayerScreenState
       aspectRatio: ar.isFinite && ar > 0 ? ar : 16 / 9,
       child: Stack(
         children: [
-          Positioned.fill(child: VideoPlayer(_controller!)),
+          Positioned.fill(
+              child: KeepScreenOnWhilePlaying(
+                  controller: _controller!, child: VideoPlayer(_controller!))),
           if (startedAt != null)
             VideoTimestampOverlay(
                 controller: _controller!, startedAt: startedAt),

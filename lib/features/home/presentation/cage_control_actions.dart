@@ -88,14 +88,9 @@ Future<bool> sendCageCommand(
   bool? expectOn,
   Map<String, dynamic>? payload,
 }) =>
-    sendCageCommandWith(
-        ProviderScope.containerOf(context, listen: false),
-        ControlFeedback.of(context),
-        deviceId,
-        action,
-        device: device,
-        expectOn: expectOn,
-        payload: payload);
+    sendCageCommandWith(ProviderScope.containerOf(context, listen: false),
+        ControlFeedback.of(context), deviceId, action,
+        device: device, expectOn: expectOn, payload: payload);
 
 /// [sendCageCommand]의 컨테이너 버전 — 확인은 시트가 닫힌 뒤에도 이어져야
 /// 해서 context 대신 컨테이너·루트 Overlay 안내를 잡는다.
@@ -475,10 +470,9 @@ Future<void> mistWithUndo(
   });
   final close = feedback.show('home_mist_pending'.tr(),
       actionLabel: 'home_mist_undo'.tr(),
-      duration: kMistUndoWindow,
-      onAction: () {
-        if (!done.isCompleted) done.complete(true);
-      });
+      duration: kMistUndoWindow, onAction: () {
+    if (!done.isCompleted) done.complete(true);
+  });
   final cancelled = await done.future;
   timer.cancel();
   _pendingMist.remove(deviceId);

@@ -13,6 +13,7 @@ import '../domain/clip_media_url.dart';
 import 'my_cage_providers.dart';
 import 'widgets/behavior_chip_section.dart';
 import 'widgets/video_controls.dart';
+import '../../../shared/widgets/keep_screen_on.dart';
 
 class ClipPlayerScreen extends ConsumerStatefulWidget {
   const ClipPlayerScreen({super.key, required this.clipId});
@@ -184,7 +185,8 @@ class _ClipPlayerScreenState extends ConsumerState<ClipPlayerScreen> {
               final ar = _controller!.value.aspectRatio;
               return AspectRatio(
                 aspectRatio: ar.isFinite && ar > 0 ? ar : 16 / 9,
-                child: VideoPlayer(_controller!),
+                child: KeepScreenOnWhilePlaying(
+                    controller: _controller!, child: VideoPlayer(_controller!)),
               );
             }(),
 

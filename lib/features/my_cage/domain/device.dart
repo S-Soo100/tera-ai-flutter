@@ -79,8 +79,7 @@ class DeviceLinkStatus {
   factory DeviceLinkStatus.of(Device d) => DeviceLinkStatus(
       isOnline: d.isOnline, lastSeenAt: d.lastSeenAt, lcd: d.lcd);
 
-  factory DeviceLinkStatus.fromJson(Map<String, dynamic> j) =>
-      DeviceLinkStatus(
+  factory DeviceLinkStatus.fromJson(Map<String, dynamic> j) => DeviceLinkStatus(
         isOnline: j['is_online'] as bool? ?? false,
         lastSeenAt: j['last_seen_at'] != null
             ? DateTime.tryParse(j['last_seen_at'].toString())

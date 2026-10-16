@@ -55,8 +55,7 @@ class AxisBounds {
     final lo = valid.reduce((a, b) => a < b ? a : b);
     final hi = valid.reduce((a, b) => a > b ? a : b);
 
-    final s =
-        _pickStep(lo: lo, hi: hi, minStep: minStep, divisions: divisions);
+    final s = _pickStep(lo: lo, hi: hi, minStep: minStep, divisions: divisions);
     var min = (lo / s).floorToDouble() * s;
     var max = (hi / s).ceilToDouble() * s;
 
