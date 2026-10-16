@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/core/config/feature_flags.dart';
 import 'package:vivanaut/features/home/data/schedule_repository.dart';
 import 'package:vivanaut/features/home/domain/schedule.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
@@ -153,10 +154,12 @@ Schedule _schedule({
 /// EasyLocalization을 세우지 않는다 — 이 레포의 다른 위젯 테스트와 같은 방식으로,
 /// `.tr()`이 키를 그대로 돌려주는 상태에서 구조만 본다. 번역 로드는 프레임을
 /// 더 먹어서 여러 테스트가 같은 프로세스에서 돌 때 트리가 비어버린다.
-Future<void> _pump(WidgetTester tester, _FakeRepo repo) async {
+Future<void> _pump(WidgetTester tester, _FakeRepo repo,
+    {bool coolFanEnabled = true}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        coolFanEnabledProvider.overrideWithValue(coolFanEnabled),
         scheduleRepositoryProvider.overrideWithValue(repo),
         currentDeviceIdProvider.overrideWith((ref) async => 'd1'),
       ],
@@ -911,5 +914,52 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('schedule_pair_p1')), findsOneWidget);
     expect(find.byKey(const Key('schedule_on')), findsNothing);
+  });
+
+  // ── 냉각팬 꺼 둠(FeatureFlags.coolFanEnabled=false, 2026-10-16) ─────────────
+  Schedule coolSchedule({required bool enabled}) => Schedule(
+        id: 'c',
+        deviceId: 'd1',
+        action: ScheduleAction.fan2On,
+        payload: const {'duration_ms': 1800000},
+        kind: ScheduleKind.daily,
+        hour: 12,
+        minute: 0,
+        daysOfWeek: const [],
+        enabled: enabled,
+        guard: null,
+        pairId: null,
+        nextRunAt: null,
+        lastRunAt: null,
+      );
+
+  testWidgets('냉각팬 꺼 둠 — 새 예약 기기 선택에 냉각팬이 없다', (tester) async {
+    await _pump(tester, _FakeRepo(), coolFanEnabled: false);
+    await tester.tap(find.byKey(RoutineSettingsScreen.addKey));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('routine_device_cool')), findsNothing);
+    expect(find.byKey(const Key('routine_device_fan')), findsOneWidget);
+  });
+
+  testWidgets('냉각팬 꺼 둠 — 꺼진 냉각팬 예약은 켜기·수정 대신 토스트', (tester) async {
+    final repo = _FakeRepo(items: [coolSchedule(enabled: false)]);
+    await _pump(tester, repo, coolFanEnabled: false);
+    await tester.tap(find.byKey(const Key('schedule_toggle_c')));
+    await tester.pump();
+    expect(find.text('feature_unavailable_toast'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('schedule_c')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('routine_after_30')), findsNothing);
+    expect(repo.calls.where((c) => c.startsWith('patch:')), isEmpty);
+    await tester.pump(const Duration(seconds: 3));
+  });
+
+  testWidgets('냉각팬 꺼 둠 — 켜져 있던 냉각팬 예약은 끌 수 있다', (tester) async {
+    final repo = _FakeRepo(items: [coolSchedule(enabled: true)]);
+    await _pump(tester, repo, coolFanEnabled: false);
+    await tester.tap(find.byKey(const Key('schedule_toggle_c')));
+    await tester.pumpAndSettle();
+    expect(repo.calls.where((c) => c.startsWith('patch:c')).single,
+        contains('enabled: false'));
   });
 }
