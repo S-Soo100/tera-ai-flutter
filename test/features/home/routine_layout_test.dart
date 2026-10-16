@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/core/config/feature_flags.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/features/home/presentation/schedule_providers.dart';
@@ -46,6 +47,9 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await tester.pumpWidget(ProviderScope(
         overrides: [
+          // 냉각팬이 살아 있던 Figma 레이아웃을 검증한다 — 꺼 둔 상태는
+          // cool_fan_disabled_test.dart.
+          coolFanEnabledProvider.overrideWithValue(true),
           scheduleRepositoryProvider.overrideWithValue(FakeScheduleRepo(items)),
           currentDeviceIdProvider.overrideWith((ref) async => 'd1'),
         ],

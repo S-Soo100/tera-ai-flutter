@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/core/config/feature_flags.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/home/domain/running_timer.dart';
@@ -75,6 +76,9 @@ Future<void> _pump(WidgetTester tester,
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        // 냉각팬이 살아 있던 Figma 레이아웃을 검증한다 — 꺼 둔 상태는
+        // cool_fan_disabled_test.dart.
+        coolFanEnabledProvider.overrideWithValue(true),
         homeDeviceSetsProvider.overrideWith((ref) async {
           // 첫 조립은 바로 끝나고, 방아쇠가 당겨진 뒤의 재조립만 gate에서 멈춘다.
           final tick = ref.watch(_reloadTick);

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/glass_palette.dart';
@@ -44,6 +45,11 @@ void showClipToastOn(OverlayState overlay,
     }
   });
 }
+
+/// 막아 둔 기능을 눌렀을 때 — Figma Home 시안의 `!` 토스트 "현재는 사용할 수
+/// 없는 기능입니다". 회색 칸이 탭에 무반응이면 고장으로 읽힌다.
+void showFeatureUnavailableToast(BuildContext context) => showClipToast(context,
+    text: 'feature_unavailable_toast'.tr(), icon: 'redesign_v2/priority_high');
 
 /// 테스트·화면 이탈용 즉시 제거.
 void dismissClipToast() {
