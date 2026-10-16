@@ -173,6 +173,7 @@ lib/
 - **디자인 시스템(구)**: `docs/design-system.md` — 토큰·공유 위젯 정의
 - **하드코딩 색상 금지**. `AppTheme` 또는 `Theme.of(context)` 사용.
 - **글자 배율(2026-10-01, UX-06 → 같은 날 사용자 결정 "싹 다 Figma 크기")**: 전역은 `AppTextScaler`(`core/theme/app_text_scaler.dart`) = **Figma 크기 그대로(1.0)** × 휴대폰 글자 설정, 최대 2.0. 구 1.15배 기준(Figma 16→18.4)은 폐지 — 다시 키우지 말 것, 고정 `TextScaler.linear(…)`로 덮지 말 것(접근성 설정 무시). 고정 높이 행은 글자 높이에 맞춰 늘리거나(`CageControlGrid` 타일) 짧은 라벨만 제한(`GlassDock` 1.5). 회귀 검사 `test/design/text_scale_overflow_test.dart`(1.0/1.3/상한) — 새 주요 화면은 여기 추가.
+- **화면 꺼짐 방지(2026-10-16, 0.154.4)**: `KeepScreenOn`(`shared/widgets/keep_screen_on.dart`, `wakelock_plus`)을 `app_router.dart`에서 홈·카메라 탭·카메라 상세·라이브 확대·영상 플레이어 4종 라우트에 감싼다. 보이는지는 TickerMode(다른 탭·덮인 화면이면 놓음), 여러 화면은 참조 수로 겹친다. 라이브·영상 화면을 새로 만들면 라우트에서 감쌀 것.
 - **오프라인 안내(2026-10-01, UX-05)**: 화면을 덮지 않는 상단 `OfflineBanner`. 전체 차단 오버레이를 되살리지 말 것 — 서버 작업 실패는 작업별로 알린다.
 - **하드코딩 문자열 금지**. `assets/l10n/ko.json`에 키 추가 후 `.tr()` 사용.
 - **Primary: `#192553`**(Figma 메인컬러, `AppTheme.brandNavy`). 구 Green 800은 2026-08-08 폐기 — 결정 로그 D2-1

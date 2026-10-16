@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import '../../shared/widgets/keep_screen_on.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/my_pets/presentation/my_pets_screen.dart';
 import '../../features/my_cage/presentation/nightly_report_view.dart';
@@ -119,7 +120,8 @@ GoRouter buildAppRouter({
             routes: [
               GoRoute(
                 path: '/home',
-                builder: (context, state) => const HomeScreen(),
+                builder: (context, state) =>
+                    const KeepScreenOn(child: HomeScreen()),
               ),
             ],
           ),
@@ -130,7 +132,8 @@ GoRouter buildAppRouter({
             routes: [
               GoRoute(
                 path: '/crecam',
-                builder: (context, state) => const CrecamScreen(),
+                builder: (context, state) =>
+                    const KeepScreenOn(child: CrecamScreen()),
               ),
             ],
           ),
@@ -209,8 +212,9 @@ GoRouter buildAppRouter({
       ),
       GoRoute(
         path: '/community-player/:postId',
-        builder: (context, state) =>
-            CommunityPlayerScreen(postId: state.pathParameters['postId']!),
+        builder: (context, state) => KeepScreenOn(
+            child:
+                CommunityPlayerScreen(postId: state.pathParameters['postId']!)),
       ),
       GoRoute(
         path: '/community-user/:userId',
@@ -229,7 +233,7 @@ GoRouter buildAppRouter({
         path: '/crecam/cameras/:cameraId',
         builder: (context, state) {
           final id = state.pathParameters['cameraId']!;
-          return CameraDetailScreen(cameraId: id);
+          return KeepScreenOn(child: CameraDetailScreen(cameraId: id));
         },
       ),
       // 라이브 전체화면(가로, 영상만) — 홈·카메라 탭 확대 버튼의 목적지.
@@ -237,14 +241,14 @@ GoRouter buildAppRouter({
         path: '/crecam/cameras/:cameraId/live',
         builder: (context, state) {
           final id = state.pathParameters['cameraId']!;
-          return CameraLiveFullscreenScreen(cameraId: id);
+          return KeepScreenOn(child: CameraLiveFullscreenScreen(cameraId: id));
         },
       ),
       GoRoute(
         path: '/crecam/clips/:clipId',
         builder: (context, state) {
           final id = state.pathParameters['clipId']!;
-          return ClipPlayerScreen(clipId: id);
+          return KeepScreenOn(child: ClipPlayerScreen(clipId: id));
         },
       ),
       GoRoute(
@@ -253,9 +257,11 @@ GoRouter buildAppRouter({
           final id = state.pathParameters['clipId']!;
           // extra = 재생 시작점(초, 하이라이트 play_from_sec). 없으면 0초부터.
           final extra = state.extra;
-          return MotionClipPlayerScreen(
-            clipId: id,
-            playFromSec: extra is num ? extra.toDouble() : null,
+          return KeepScreenOn(
+            child: MotionClipPlayerScreen(
+              clipId: id,
+              playFromSec: extra is num ? extra.toDouble() : null,
+            ),
           );
         },
       ),
@@ -268,7 +274,8 @@ GoRouter buildAppRouter({
           final id = state.pathParameters['clipId']!;
           final extra = state.extra;
           if (extra is ClipPlaylistArgs) {
-            return ClipPlaylistPlayerScreen(
+            return KeepScreenOn(
+                child: ClipPlaylistPlayerScreen(
               clipId: id,
               playlist: extra.playlist,
               playFromSec: extra.playFromSec,
@@ -279,12 +286,13 @@ GoRouter buildAppRouter({
               nextCursor: extra.nextCursor,
               hasMore: extra.hasMore,
               highlightBatchId: extra.highlightBatchId,
-            );
+            ));
           }
           // 호출부가 List<String>을 넘기지만 dynamic 리스트로 와도 안전하게 거른다.
           final playlist =
               extra is List ? extra.whereType<String>().toList() : null;
-          return ClipPlaylistPlayerScreen(clipId: id, playlist: playlist);
+          return KeepScreenOn(
+              child: ClipPlaylistPlayerScreen(clipId: id, playlist: playlist));
         },
       ),
       // 카메라 탭 엔트리 카드 목적지 (재설계 T3·T4).
