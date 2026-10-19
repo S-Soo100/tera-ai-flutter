@@ -23,9 +23,11 @@ class App extends ConsumerWidget {
       // 다크/라이트 2벌(2026-08-14 오후 — 오전의 전역 다크 고정을 철회).
       // 솔리드 문법은 같고 값만 반전한다(`GlassPalette`). 모드는 프로필의
       // "화면 모드"(시스템/라이트/다크)로 고르고 Hive에 남는다.
+      // 다크는 당분간 꺼 둔다(`kDarkModeEnabled`, 2026-10-19) — 라이트 고정.
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ref.watch(themeModeProvider),
+      themeMode:
+          kDarkModeEnabled ? ref.watch(themeModeProvider) : ThemeMode.light,
       routerConfig: router,
       builder: (context, child) {
         final mq = MediaQuery.of(context);

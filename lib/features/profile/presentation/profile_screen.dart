@@ -110,14 +110,18 @@ class ProfileScreen extends ConsumerWidget {
                         color: glass.navSelected, shape: BoxShape.circle))
                 : null,
             onTap: () => context.push('/notifications')),
-        const SizedBox(height: 8),
-        MyPageRow(
-            key: themeRowKey,
-            title: 'mypage_theme_title'.tr(),
-            subtitle: 'mypage_theme_subtitle'.tr(),
-            icon: Icon(Icons.brightness_6_outlined, size: 24, color: iconColor),
-            trailingText: _themeLabel(ref.watch(themeModeProvider)),
-            onTap: () => _pickTheme(context, ref)),
+        // 다크 모드를 꺼 둔 동안(`kDarkModeEnabled`) 화면 모드 줄은 숨긴다.
+        if (kDarkModeEnabled) ...[
+          const SizedBox(height: 8),
+          MyPageRow(
+              key: themeRowKey,
+              title: 'mypage_theme_title'.tr(),
+              subtitle: 'mypage_theme_subtitle'.tr(),
+              icon:
+                  Icon(Icons.brightness_6_outlined, size: 24, color: iconColor),
+              trailingText: _themeLabel(ref.watch(themeModeProvider)),
+              onTap: () => _pickTheme(context, ref)),
+        ],
         const SizedBox(height: 8),
         MyPageRow(
             key: liveDiagRowKey,
