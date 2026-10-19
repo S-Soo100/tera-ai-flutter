@@ -27,6 +27,17 @@ void main() {
     expect(await store.readAll(accountId: 'a'), {'one': '1', 'two': '2'});
   });
 
+  test('비밀번호 기억하기 선택은 계정별로 남는다', () async {
+    FlutterSecureStorage.setMockInitialValues({});
+    final store = WifiCredentialsStore();
+    expect(await store.readRemember(accountId: 'a'), isFalse);
+    await store.saveRemember(true, accountId: 'a');
+    expect(await store.readRemember(accountId: 'a'), isTrue);
+    expect(await store.readRemember(accountId: 'b'), isFalse);
+    await store.saveRemember(false, accountId: 'a');
+    expect(await store.readRemember(accountId: 'a'), isFalse);
+  });
+
   group('WifiCredentialsStore.decode', () {
     test('정상 JSON 맵을 SSID→비밀번호로 파싱한다', () {
       final raw = jsonEncode({'MyHomeWifi': 'pw1234', '집공유기 5G': 'abcd'});
