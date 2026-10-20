@@ -16,6 +16,7 @@ import '../../features/my_cage/presentation/pairing_pet_selection_screen.dart';
 import '../../features/my_cage/domain/device_add_flow.dart';
 import '../../features/my_cage/domain/redesign_management.dart';
 import '../../features/my_cage/presentation/crecam_screen.dart';
+import '../../features/my_cage/presentation/clip_selection_providers.dart';
 import '../../features/my_cage/presentation/smart_cage_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
 import '../../features/my_cage/presentation/camera_live_fullscreen_screen.dart';
@@ -533,18 +534,21 @@ GoRouter buildAppRouter({
 ///
 /// 네비게이션 로직(goBranch·initialLocation)은 NavigationBar 시절 그대로다 —
 /// 표면만 [GlassDock]으로 바뀌었다.
-class _ScaffoldWithBottomNav extends StatelessWidget {
+class _ScaffoldWithBottomNav extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   const _ScaffoldWithBottomNav({required this.navigationShell});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 카메라 탭 영상 선택 모드엔 탭바 자리를 선택 동작 바가 쓴다(Figma 1497:13355).
+    final selecting = ref.watch(clipSelectionProvider(ClipSelectionScope.feed)
+        .select((s) => s.active));
     return Scaffold(
       extendBody: true,
       body: navigationShell,
       // 바 자체가 SafeArea(bottom)를 안고 있다 — 여기서 또 감싸면 인셋이 두 번 든다.
-      bottomNavigationBar: GlassDock(
+      bottomNavigationBar: selecting ? null : GlassDock(
         currentIndex: navigationShell.currentIndex,
         onSelected: (index) {
           navigationShell.goBranch(

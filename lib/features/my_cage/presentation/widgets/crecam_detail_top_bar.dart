@@ -26,12 +26,20 @@ class CrecamDetailTopBar extends StatelessWidget {
     this.closeButton = false,
     this.leadingKey,
     this.trailing,
+    this.onBack,
+    this.showBack = true,
   }) : assert(title == null || titleWidget == null, 'title과 titleWidget은 하나만');
 
   final String? title;
   final bool closeButton;
   final Key? leadingKey;
   final Widget? trailing;
+
+  /// 뒤로 버튼 동작을 바꾼다(영상 선택 모드의 이탈 확인). null이면 pop.
+  final VoidCallback? onBack;
+
+  /// false면 왼쪽 뒤로 버튼을 그리지 않는다(카메라 탭 선택 모드).
+  final bool showBack;
 
   /// 중앙에 텍스트 한 줄 대신 얹을 위젯(플레이어의 날짜+시각 2줄 등).
   final Widget? titleWidget;
@@ -52,25 +60,28 @@ class CrecamDetailTopBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Stack(
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: IconButton(
-                  key: leadingKey,
-                  padding: EdgeInsets.zero,
-                  icon: FigmaIcon.tinted(
-                      closeButton ? FigmaIcons.close : FigmaIcons.arrowPrevious,
-                      size: 24,
-                      color: glass.textPrimary),
-                  tooltip: closeButton
-                      ? MaterialLocalizations.of(context).closeButtonTooltip
-                      : MaterialLocalizations.of(context).backButtonTooltip,
-                  onPressed: () => context.pop(),
+            if (showBack)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: IconButton(
+                    key: leadingKey,
+                    padding: EdgeInsets.zero,
+                    icon: FigmaIcon.tinted(
+                        closeButton
+                            ? FigmaIcons.close
+                            : FigmaIcons.arrowPrevious,
+                        size: 24,
+                        color: glass.textPrimary),
+                    tooltip: closeButton
+                        ? MaterialLocalizations.of(context).closeButtonTooltip
+                        : MaterialLocalizations.of(context).backButtonTooltip,
+                    onPressed: onBack ?? () => context.pop(),
+                  ),
                 ),
               ),
-            ),
             Center(
               child: titleWidget ??
                   Text(
@@ -87,24 +98,27 @@ class CrecamDetailTopBar extends StatelessWidget {
                     ),
                   ),
             ),
-            if (trailing != null)
-              Align(alignment: Alignment.centerRight, child: trailing!),
-            if (onCalendarTap != null)
+            // Figma 1497:11044 — 달력 왼쪽, 선택 버튼 오른쪽 한 줄.
+            if (trailing != null || onCalendarTap != null)
               Align(
                 alignment: Alignment.centerRight,
-                child: SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: IconButton(
-                    key: calendarButtonKey,
-                    padding: EdgeInsets.zero,
-                    // Figma 945:4296 calendar_month 20, #3C3C3C(Labels/Secondary).
-                    icon: FigmaIcon.tinted(FigmaIcons.calendarMonth,
-                        size: 20, color: glass.textSecondary),
-                    tooltip: 'crecam_home_period'.tr(),
-                    onPressed: onCalendarTap,
-                  ),
-                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (onCalendarTap != null)
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: IconButton(
+                        key: calendarButtonKey,
+                        padding: EdgeInsets.zero,
+                        // Figma 945:4296 calendar_month 20, #3C3C3C(Labels/Secondary).
+                        icon: FigmaIcon.tinted(FigmaIcons.calendarMonth,
+                            size: 20, color: glass.textSecondary),
+                        tooltip: 'crecam_home_period'.tr(),
+                        onPressed: onCalendarTap,
+                      ),
+                    ),
+                  if (trailing != null) trailing!,
+                ]),
               ),
           ],
         ),

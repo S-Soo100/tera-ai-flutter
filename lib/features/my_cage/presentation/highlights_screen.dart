@@ -19,6 +19,12 @@ import 'widgets/crecam_states.dart';
 import 'widgets/favorite_bookmark_badge.dart';
 import 'widgets/motion_clip_thumb.dart';
 import 'widgets/crecam_detail_top_bar.dart';
+import '../domain/clip_selection.dart';
+import 'clip_selection_providers.dart';
+import 'widgets/clip_selection_flow.dart';
+import 'widgets/clip_selection_widgets.dart';
+
+const _scope = ClipSelectionScope.highlights;
 
 /// 하이라이트 날짜 필터(startedAt 기준, 자정 경계). null = 전체(묶음 보기).
 /// autoDispose — 화면 이탈 시 리셋.
@@ -58,17 +64,43 @@ class HighlightsScreen extends ConsumerWidget {
     final groupsAsync = ref.watch(highlightGroupsProvider);
     final day = ref.watch(highlightsDayFilterProvider);
     final dismissedKey = ref.watch(highlightBannerDismissedProvider);
+    final selection = ref.watch(clipSelectionProvider(_scope));
+    final batch = ref.watch(clipBatchProvider(_scope));
+    final flow = ClipSelectionFlow(ref, _scope);
+    Future<void> leave() async {
+      if (await flow.confirmLeave(context) && context.mounted) context.pop();
+    }
 
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: glass.wallpaper,
+      // Figma 1497:11036 — 선택 모드엔 아래에 선택 동작 바.
+      bottomNavigationBar: selection.active
+          ? flow.actionBar(context,
+              all: () => _visibleIds(
+                  ref.read(highlightGroupsProvider).valueOrNull ?? const [],
+                  ref.read(highlightsDayFilterProvider)))
+          : null,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Figma Rectangle 113 — status bar까지 surfaceHeader + 헤어라인.
           CrecamDetailHeaderArea(
             child: CrecamDetailTopBar(
-              title: 'crecam_highlights_title'.tr(),
+              title: selection.active
+                  ? 'clip_select_count'
+                      .tr(namedArgs: {'count': '${selection.count}'})
+                  : 'crecam_highlights_title'.tr(),
               onCalendarTap: () => _pickDay(context, ref, day),
+              onBack: selection.active ? leave : null,
+              trailing: selection.active
+                  ? ClipSelectHeaderButton.exit(
+                      onPressed: () => ref
+                          .read(clipSelectionProvider(_scope).notifier)
+                          .exit())
+                  : ClipSelectHeaderButton.enter(
+                      onPressed: () => ref
+                          .read(clipSelectionProvider(_scope).notifier)
+                          .enter()),
             ),
           ),
           Expanded(
@@ -113,7 +145,38 @@ class HighlightsScreen extends ConsumerWidget {
         ],
       ),
     );
+    return PopScope(
+      canPop: !selection.active,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && batch == null) leave();
+      },
+      child: Stack(children: [
+        scaffold,
+        if (batch != null)
+          ClipBatchOverlay(
+              job: batch,
+              onCancel: ref.read(clipBatchProvider(_scope).notifier).cancel),
+      ]),
+    );
   }
+
+  /// 지금 화면에 보이는 순서의 영상 — 더보기 "전체 선택" 대상.
+  static List<String> _visibleIds(
+          List<DayHighlightGroup> groups, DateTime? day) =>
+      day != null
+          ? [for (final h in _dayItems(groups, day)) h.clipId]
+          : [
+              for (final g in groups)
+                for (final h in g.featured) h.clipId
+            ];
+
+  static List<NightlyHighlight> _dayItems(
+          List<DayHighlightGroup> groups, DateTime day) =>
+      [
+        for (final g in groups)
+          for (final h in g.featured)
+            if (_isSameDay(h.startedAt.toLocal(), day)) h,
+      ]..sort((a, b) => b.startedAt.compareTo(a.startedAt));
 
   Future<void> _pickDay(
       BuildContext context, WidgetRef ref, DateTime? current) async {
@@ -125,11 +188,7 @@ class HighlightsScreen extends ConsumerWidget {
   /// 날짜 필터 뷰 — 그 날짜(startedAt 자정 경계)의 대표 평면 그리드 1섹션.
   Widget _dayView(
       BuildContext context, List<DayHighlightGroup> groups, DateTime day) {
-    final items = [
-      for (final g in groups)
-        for (final h in g.featured)
-          if (_isSameDay(h.startedAt.toLocal(), day)) h,
-    ]..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    final items = _dayItems(groups, day);
 
     if (items.isEmpty) {
       return CrecamEmptyMessage(message: 'crecam_home_empty_day'.tr());
@@ -137,7 +196,9 @@ class HighlightsScreen extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(_margin, 24, _margin, 24),
       children: [
-        _sectionHeader(context, DateFormat('yyyy. M. d').format(day)),
+        _SelectableHeader(
+            text: DateFormat('yyyy. M. d').format(day),
+            ids: [for (final h in items) h.clipId]),
         const SizedBox(height: 8),
         ClipGrid<NightlyHighlight>(
           items: items,
@@ -424,8 +485,9 @@ class _Section extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        HighlightsScreen._sectionHeader(
-            context, HighlightsScreen.periodLabel(group, now)),
+        _SelectableHeader(
+            text: HighlightsScreen.periodLabel(group, now),
+            ids: [for (final h in group.featured) h.clipId]),
         const SizedBox(height: 8),
         ClipGrid<NightlyHighlight>(
           items: group.featured,
@@ -441,7 +503,7 @@ class _Section extends StatelessWidget {
 
 /// 그리드 썸네일 셀(묶음·날짜 필터 공용) — 탭 → 세로 플레이어(재생목록 =
 /// 그 묶음 대표 rank 순 / 그 날짜의 대표 시간 내림차순).
-class _Cell extends StatelessWidget {
+class _Cell extends ConsumerWidget {
   const _Cell(
       {required this.highlight,
       required this.playlist,
@@ -452,11 +514,18 @@ class _Cell extends StatelessWidget {
   final String keyPrefix;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selection = ref.watch(clipSelectionProvider(_scope));
+    final flow = ClipSelectionFlow(ref, _scope);
+    void open() => _openPlayer(context, highlight.clipId, playlist);
     return GestureDetector(
       key: ValueKey('$keyPrefix${highlight.clipId}'),
       behavior: HitTestBehavior.opaque,
-      onTap: () => _openPlayer(context, highlight.clipId, playlist),
+      // 선택 모드에선 탭 = 고르기, 영상 보기는 확대 버튼(Figma 1497:11036).
+      onTap: selection.active
+          ? () => flow.toggle(context, highlight.clipId)
+          : open,
+      onLongPress: () => flow.longPress(context, highlight.clipId),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -468,9 +537,35 @@ class _Cell extends StatelessWidget {
             bottom: 0,
             child: FavoriteBookmarkBadge(clipId: highlight.clipId),
           ),
+          if (selection.active)
+            ClipSelectThumbOverlay(
+                clipId: highlight.clipId,
+                checked: selection.contains(highlight.clipId),
+                onExpand: open),
         ],
       ),
     );
+  }
+}
+
+/// 묶음 머리 — 선택 모드엔 오른쪽에 묶음 전체 선택(Figma 1497:11068).
+class _SelectableHeader extends ConsumerWidget {
+  const _SelectableHeader({required this.text, required this.ids});
+  final String text;
+  final List<String> ids;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selection = ref.watch(clipSelectionProvider(_scope));
+    final header = HighlightsScreen._sectionHeader(context, text);
+    if (!selection.active) return header;
+    return Row(children: [
+      Expanded(child: header),
+      ClipSelectGroupCheck(
+          checked: groupFullySelected(selection, ids),
+          onTap: () =>
+              ClipSelectionFlow(ref, _scope).toggleGroup(context, ids)),
+    ]);
   }
 }
 
