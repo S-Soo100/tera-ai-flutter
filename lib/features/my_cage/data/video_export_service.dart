@@ -87,8 +87,11 @@ class VideoExportService {
     cancel?.throwIfCancelled();
     final client = _clientFactory();
     cancel?._clients.add(client);
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/select_$clipId.mp4');
+    // 사진앱 앨범에 이 이름 그대로 들어간다 — 단건 저장과 같은 `<id>.mp4`.
+    final dir =
+        Directory('${(await getTemporaryDirectory()).path}/clip_select');
+    await dir.create(recursive: true);
+    final file = File('${dir.path}/$clipId.mp4');
     IOSink? sink;
     try {
       final resp = await client.send(http.Request('GET', Uri.parse(url)));
