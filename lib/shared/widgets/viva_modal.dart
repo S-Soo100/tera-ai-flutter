@@ -6,7 +6,8 @@ import '../../features/my_cage/presentation/widgets/management_widgets.dart';
 
 /// Figma 확인 모달(1142:8956 Modal / 1107:9697) — 345×144 흰색 r12, 안쪽 24,
 /// 문구 18/500/28 가운데, 24 아래 버튼 44 r12. 버튼 하나(297 폭 `#1E1E1E`)
-/// 또는 둘(취소 검정 + 확인 [confirmColor], 사이 13, r8).
+/// 또는 둘(취소 검정 + 확인 [confirmColor], 사이 13). 버튼 모서리는 12 — Figma의
+/// 두 버튼 모달 28곳 중 27곳이 12다(2026-10-20 대조, 옛 시안 987:4507만 8).
 ///
 /// [detail]은 문구 아래 보조 설명(Figma 밖, 2026-09-30 시청 기기 전환에서 추가 —
 /// 제목만으론 결과를 알 수 없을 때).
@@ -38,7 +39,7 @@ Future<bool> showVivaModal(
                       foregroundColor: ManagementColors.buttonForeground(ctx),
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(two ? 8 : 12)),
+                          borderRadius: BorderRadius.circular(12)),
                       textStyle: managementStyle(ctx, weight: FontWeight.w600)
                           .copyWith(height: 28 / 16)),
                   child: Text(label)));

@@ -440,7 +440,8 @@ class ClipBatchOverlay extends StatelessWidget {
                         ]),
                   )
                 : Column(mainAxisSize: MainAxisSize.min, children: [
-                    ArcSpinner(size: 62, color: glass.textSecondary),
+                    // Figma 1497:11376 원호 색 #B4AEAE(픽셀 실측, 2026-10-20).
+                    ArcSpinner(size: 62, color: glass.progressTrack),
                     const SizedBox(height: 12),
                     Text(label, style: labelStyle),
                   ]),
