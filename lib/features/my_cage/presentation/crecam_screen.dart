@@ -12,6 +12,10 @@ import '../../../shared/widgets/skeleton_loading.dart';
 import 'my_cage_providers.dart';
 import 'clip_feed_controller.dart';
 import 'clip_visibility_providers.dart';
+import 'clip_selection_providers.dart';
+import 'widgets/clip_selection_flow.dart';
+import 'widgets/clip_selection_widgets.dart';
+import 'widgets/crecam_detail_top_bar.dart';
 import '../domain/update_day_label.dart';
 import 'widgets/clip_feed_slivers.dart';
 import 'widgets/camera_live_area.dart';
@@ -39,6 +43,7 @@ class CrecamScreen extends ConsumerStatefulWidget {
   static const highlightCardKey = Key('crecam_entry_highlights');
   static const bookmarkCardKey = Key('crecam_entry_bookmarks');
   static const periodButtonKey = Key('crecam_period_button');
+  static const selectButtonKey = Key('crecam_select_button');
 
   /// Figma 좌우 마진(홈 리듬 동일).
   static const double _margin = 12;
@@ -56,6 +61,14 @@ class CrecamScreen extends ConsumerStatefulWidget {
 
 class _CrecamScreenState extends ConsumerState<CrecamScreen>
     with WidgetsBindingObserver {
+  static const _scope = ClipSelectionScope.feed;
+  final _scroll = ScrollController();
+  final _headerKey = GlobalKey();
+
+  /// 선택 모드에서 접은 라이브·카드 영역 높이 — 접고 펼 때 스크롤을 그만큼
+  /// 옮겨 보던 영상이 제자리에 남게 한다(꾹 누른 영상이 화면 밖으로 튀지 않게).
+  double _collapsedHeader = 0;
+
   @override
   void initState() {
     super.initState();
@@ -65,7 +78,23 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _scroll.dispose();
     super.dispose();
+  }
+
+  void _onSelectionToggled(bool selecting) {
+    final height = selecting
+        ? _headerKey.currentContext?.size?.height ?? 0
+        : _collapsedHeader;
+    if (selecting) _collapsedHeader = height;
+    if (height == 0) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      final position = _scroll.position;
+      final target =
+          selecting ? position.pixels - height : position.pixels + height;
+      _scroll.jumpTo(target.clamp(0, position.maxScrollExtent).toDouble());
+    });
   }
 
   // 백그라운드에서 Realtime 소켓이 죽으면 이벤트가 다시 오지 않으므로,
@@ -128,34 +157,62 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
     final cameras = ref.watch(camerasProvider);
     final groups = ref.watch(enclosuresProvider).valueOrNull ?? const [];
     final selectedCamera = ref.watch(selectedCrecamCameraProvider);
+    final selection = ref.watch(clipSelectionProvider(_scope));
+    final batch = ref.watch(clipBatchProvider(_scope));
+    final flow = ClipSelectionFlow(ref, _scope);
+    ref.listen(clipSelectionProvider(_scope).select((s) => s.active),
+        (before, now) {
+      if (before != now) _onSelectionToggled(now);
+    });
     _maybeAskHighlightPush(cameras.valueOrNull?.isNotEmpty ?? false);
-    return GlassTabShell(
+    final shell = GlassTabShell(
       child: Column(
         children: [
-          Padding(
-            // top 0 — Figma 668:427은 헤더가 status bar 바로 아래 선다(홈 동일).
-            padding: EdgeInsets.fromLTRB(CrecamScreen._margin, 0,
-                CrecamScreen._margin, CrecamScreen._gap),
-            child: RedesignTabHeader(
-              choices: [
-                for (final camera in cameras.valueOrNull ?? const [])
-                  (
-                    id: camera.id,
-                    label: groupDisplayLabel(
-                        groupId: camera.enclosureId,
-                        individualName: camera.name,
-                        groups: groups)
-                  )
-              ],
-              selectedId: selectedCamera,
-              emptyLabel: 'device_camera_label'.tr(),
-              onSelected: (id) {
-                ref.read(selectedCrecamCameraProvider.notifier).state = id;
-                // 홈도 같은 카메라로 — 스와이프와 같은 동기화(2026-09-25).
-                syncHomeSetToCamera(ref, id);
-              },
+          if (selection.active)
+            // Figma 1497:13355 — 제목 "N개 선택됨", 오른쪽 달력·선택 종료. 아래 선.
+            DecoratedBox(
+              decoration: BoxDecoration(
+                  border:
+                      Border(bottom: BorderSide(color: context.glass.outline))),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: CrecamScreen._gap),
+                child: CrecamDetailTopBar(
+                  showBack: false,
+                  title: 'clip_select_count'
+                      .tr(namedArgs: {'count': '${selection.count}'}),
+                  onCalendarTap: () => pickFeedRange(context, ref),
+                  trailing: ClipSelectHeaderButton.exit(
+                      onPressed: () => ref
+                          .read(clipSelectionProvider(_scope).notifier)
+                          .exit()),
+                ),
+              ),
+            )
+          else
+            Padding(
+              // top 0 — Figma 668:427은 헤더가 status bar 바로 아래 선다(홈 동일).
+              padding: EdgeInsets.fromLTRB(CrecamScreen._margin, 0,
+                  CrecamScreen._margin, CrecamScreen._gap),
+              child: RedesignTabHeader(
+                choices: [
+                  for (final camera in cameras.valueOrNull ?? const [])
+                    (
+                      id: camera.id,
+                      label: groupDisplayLabel(
+                          groupId: camera.enclosureId,
+                          individualName: camera.name,
+                          groups: groups)
+                    )
+                ],
+                selectedId: selectedCamera,
+                emptyLabel: 'device_camera_label'.tr(),
+                onSelected: (id) {
+                  ref.read(selectedCrecamCameraProvider.notifier).state = id;
+                  // 홈도 같은 카메라로 — 스와이프와 같은 동기화(2026-09-25).
+                  syncHomeSetToCamera(ref, id);
+                },
+              ),
             ),
-          ),
           Expanded(
             child: cameras.hasValue && cameras.value!.isEmpty
                 ? RedesignEmptyState(
@@ -178,36 +235,52 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
                     child: RefreshIndicator(
                       onRefresh: _refresh,
                       notificationPredicate: (notification) =>
+                          !selection.active &&
                           notification.depth == 0 &&
                           notification.metrics.axis == Axis.vertical,
                       child: CustomScrollView(
                         key: PageStorageKey(ref.watch(clipFeedQueryProvider)),
+                        controller: _scroll,
                         physics: const AlwaysScrollableScrollPhysics(),
                         slivers: [
                           SliverList(
                               delegate: SliverChildListDelegate([
                             KeepAliveCameraHeader(
-                                child: Column(children: const [
-                              Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: CrecamScreen._margin),
-                                  child: CameraLiveArea()),
-                              SizedBox(height: CrecamScreen._sectionGap),
-                              Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: CrecamScreen._margin),
-                                  child: _EntryCards()),
-                              // 2px of the 16px visual gap belongs to the
-                              // period button's expanded 44px touch target.
-                              SizedBox(height: CrecamScreen._sectionGap - 2),
-                              Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: CrecamScreen._margin),
-                                  child: Align(
-                                      alignment: Alignment.centerRight,
-                                      child: _PeriodButton())),
-                              SizedBox(height: CrecamScreen._gap - 2),
-                            ])),
+                                // 선택 모드엔 목록만(Figma 1497:13355) — 접어도
+                                // 라이브 상태는 살려 둔다(Offstage).
+                                child: Offstage(
+                                    offstage: selection.active,
+                                    child: Column(
+                                        key: _headerKey,
+                                        children: const [
+                                          Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      CrecamScreen._margin),
+                                              child: CameraLiveArea()),
+                                          SizedBox(
+                                              height: CrecamScreen._sectionGap),
+                                          Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      CrecamScreen._margin),
+                                              child: _EntryCards()),
+                                          // 2px of the 16px visual gap belongs to the
+                                          // period button's expanded 44px touch target.
+                                          SizedBox(
+                                              height:
+                                                  CrecamScreen._sectionGap - 2),
+                                          Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      CrecamScreen._margin),
+                                              child: Align(
+                                                  alignment:
+                                                      Alignment.centerRight,
+                                                  child: _PeriodButton())),
+                                          SizedBox(
+                                              height: CrecamScreen._gap - 2),
+                                        ]))),
                           ])),
                           SliverPadding(
                             padding: const EdgeInsets.symmetric(
@@ -217,15 +290,42 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
                           ),
                           SliverToBoxAdapter(
                               child: SizedBox(
-                                  height:
-                                      glassDockListPadding(context).bottom)),
+                                  height: selection.active
+                                      ? 16
+                                      : glassDockListPadding(context).bottom)),
                         ],
                       ),
                     ),
                   ),
           ),
+          // 탭바 자리(셸이 선택 모드엔 탭바를 숨긴다 — app_router).
+          if (selection.active)
+            flow.actionBar(context, all: () {
+              final query = ref.read(clipFeedQueryProvider);
+              return query == null
+                  ? const <String>[]
+                  : [
+                      for (final clip
+                          in ref.read(clipFeedProvider(query)).items)
+                        clip.id
+                    ];
+            }),
         ],
       ),
+    );
+    return PopScope(
+      canPop: !selection.active,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || batch != null) return;
+        flow.confirmLeave(context);
+      },
+      child: Stack(children: [
+        shell,
+        if (batch != null)
+          ClipBatchOverlay(
+              job: batch,
+              onCancel: ref.read(clipBatchProvider(_scope).notifier).cancel),
+      ]),
     );
   }
 }
@@ -449,24 +549,6 @@ class _PeriodButton extends ConsumerWidget {
         : format.format(range.start) == format.format(end!)
             ? format.format(range.start)
             : '${format.format(range.start)} – ${format.format(end)}';
-    Future<void> pickRange() async {
-      final now = DateTime.now();
-      final picked = await showDateRangePicker(
-          context: context,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(now.year, now.month, now.day),
-          initialDateRange: range == null
-              ? null
-              : DateTimeRange(start: range.start, end: end!));
-      if (picked == null || !context.mounted) return;
-      ref.read(clipFeedRangeProvider.notifier).state = (
-        start:
-            DateTime(picked.start.year, picked.start.month, picked.start.day),
-        endExclusive:
-            DateTime(picked.end.year, picked.end.month, picked.end.day + 1)
-      );
-    }
-
     return Wrap(
         alignment: WrapAlignment.end,
         spacing: 8,
@@ -482,50 +564,98 @@ class _PeriodButton extends ConsumerWidget {
                   ref.read(clipFeedRangeProvider.notifier).state = null,
               child: Text('crecam_all_period'.tr()),
             ),
-          // Figma 765:4514 visual 95x40. The 2px vertical halo consumes
-          // surrounding spacing, preserving both a 44px hit area and grid y572.
-          Semantics(
-            button: true,
-            label: label,
-            child: Material(
-                key: CrecamScreen.periodButtonKey,
-                color: Colors.transparent,
-                child: InkWell(
-                    onTap: pickRange,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: DecoratedBox(
-                            key: const Key('crecam_period_visual'),
-                            decoration: BoxDecoration(
-                                border: Border.all(color: glass.outline),
-                                borderRadius: BorderRadius.circular(8)),
-                            child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                    minWidth: 95, minHeight: 40),
-                                child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 11.5),
-                                    child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          FigmaIcon.tinted(FigmaIcons.calendar,
-                                              color: glass.textSecondary,
-                                              size: 16),
-                                          const SizedBox(width: 4),
-                                          Flexible(
-                                              child: Text(label,
-                                                  style: TextStyle(
-                                                      fontFamily: 'Pretendard',
-                                                      color:
-                                                          glass.textSecondary,
-                                                      fontSize: 14,
-                                                      height: 17 / 14,
-                                                      letterSpacing: -.28,
-                                                      fontWeight:
-                                                          FontWeight.w600))),
-                                        ]))))))),
-          ),
+          _PillButton(
+              key: CrecamScreen.periodButtonKey,
+              visualKey: const Key('crecam_period_visual'),
+              label: label,
+              icon: FigmaIcon.tinted(FigmaIcons.calendar,
+                  color: glass.textSecondary, size: 16),
+              onTap: () => pickFeedRange(context, ref)),
+          // Figma 1497:12190 — 기간 설정 오른쪽 [영상 선택](1497:14219 95×40).
+          _PillButton(
+              key: CrecamScreen.selectButtonKey,
+              label: 'clip_select_button'.tr(),
+              icon: FigmaIcon.tinted('redesign_v2/priority_s',
+                  color: glass.textSecondary, size: 16),
+              onTap: () => ref
+                  .read(clipSelectionProvider(ClipSelectionScope.feed).notifier)
+                  .enter()),
         ]);
+  }
+}
+
+/// 카메라 탭 기간 고르기 — 기간 설정 버튼·선택 모드 헤더 달력 공용.
+Future<void> pickFeedRange(BuildContext context, WidgetRef ref) async {
+  final range = ref.read(clipFeedRangeProvider);
+  final end = range?.endExclusive.subtract(const Duration(microseconds: 1));
+  final now = DateTime.now();
+  final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(now.year, now.month, now.day),
+      initialDateRange:
+          range == null ? null : DateTimeRange(start: range.start, end: end!));
+  if (picked == null || !context.mounted) return;
+  ref.read(clipFeedRangeProvider.notifier).state = (
+    start: DateTime(picked.start.year, picked.start.month, picked.start.day),
+    endExclusive:
+        DateTime(picked.end.year, picked.end.month, picked.end.day + 1)
+  );
+}
+
+/// 테두리 알약 버튼(Figma 765:4514 visual 95×40). The 2px vertical halo
+/// consumes surrounding spacing, preserving both a 44px hit area and grid y572.
+class _PillButton extends StatelessWidget {
+  const _PillButton(
+      {super.key,
+      this.visualKey,
+      required this.label,
+      required this.icon,
+      required this.onTap});
+  final Key? visualKey;
+  final String label;
+  final Widget icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: DecoratedBox(
+                      key: visualKey,
+                      decoration: BoxDecoration(
+                          border: Border.all(color: glass.outline),
+                          borderRadius: BorderRadius.circular(8)),
+                      child: ConstrainedBox(
+                          constraints:
+                              const BoxConstraints(minWidth: 95, minHeight: 40),
+                          child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 11.5),
+                              child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    icon,
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                        child: Text(label,
+                                            style: TextStyle(
+                                                fontFamily: 'Pretendard',
+                                                color: glass.textSecondary,
+                                                fontSize: 14,
+                                                height: 17 / 14,
+                                                letterSpacing: -.28,
+                                                fontWeight: FontWeight.w600))),
+                                  ]))))))),
+    );
   }
 }

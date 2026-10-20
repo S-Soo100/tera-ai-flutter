@@ -14,6 +14,12 @@ import 'widgets/clip_memo_card.dart';
 import 'widgets/crecam_detail_top_bar.dart';
 import 'widgets/crecam_states.dart';
 import 'widgets/motion_clip_thumb.dart';
+import '../../../shared/widgets/figma_icon.dart';
+import 'clip_selection_providers.dart';
+import 'widgets/clip_selection_flow.dart';
+import 'widgets/clip_selection_widgets.dart';
+
+const _scope = ClipSelectionScope.bookmarks;
 
 /// 북마크 날짜 필터(클립 startedAt 기준, 자정 경계). null = 전체.
 /// autoDispose — 화면 이탈 시 리셋.
@@ -38,17 +44,47 @@ class BookmarksScreen extends ConsumerWidget {
     final glass = context.glass;
     final favoritesAsync = ref.watch(allFavoriteClipsProvider);
     final day = ref.watch(bookmarksDayFilterProvider);
+    final selection = ref.watch(clipSelectionProvider(_scope));
+    final batch = ref.watch(clipBatchProvider(_scope));
+    final flow = ClipSelectionFlow(ref, _scope);
+    Future<void> leave() async {
+      if (await flow.confirmLeave(context) && context.mounted) context.pop();
+    }
 
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: glass.wallpaper,
+      // Figma 1493:9274 — 선택 모드엔 아래에 선택 동작 바.
+      bottomNavigationBar: selection.active
+          ? flow.actionBar(context,
+              all: () => [
+                    for (final f in _visible(
+                        ref.read(allFavoriteClipsProvider).valueOrNull ??
+                            const [],
+                        ref.read(bookmarksDayFilterProvider)))
+                      f.clipId
+                  ])
+          : null,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Figma Rectangle 113 — status bar까지 surfaceHeader + 헤어라인.
           CrecamDetailHeaderArea(
             child: CrecamDetailTopBar(
-              title: 'crecam_bookmarks_title'.tr(),
+              title: selection.active
+                  ? 'clip_select_count'
+                      .tr(namedArgs: {'count': '${selection.count}'})
+                  : 'crecam_bookmarks_title'.tr(),
               onCalendarTap: () => _pickDay(context, ref, day),
+              onBack: selection.active ? leave : null,
+              trailing: selection.active
+                  ? ClipSelectHeaderButton.exit(
+                      onPressed: () => ref
+                          .read(clipSelectionProvider(_scope).notifier)
+                          .exit())
+                  : ClipSelectHeaderButton.enter(
+                      onPressed: () => ref
+                          .read(clipSelectionProvider(_scope).notifier)
+                          .enter()),
             ),
           ),
           Expanded(
@@ -91,6 +127,34 @@ class BookmarksScreen extends ConsumerWidget {
         ],
       ),
     );
+    return PopScope(
+      canPop: !selection.active,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && batch == null) leave();
+      },
+      child: Stack(children: [
+        scaffold,
+        if (batch != null)
+          ClipBatchOverlay(
+              job: batch,
+              onCancel: ref.read(clipBatchProvider(_scope).notifier).cancel),
+      ]),
+    );
+  }
+
+  /// 화면에 보이는 순서(북마크한 최신순 + 날짜 필터).
+  static List<FavoriteClip> _visible(
+      List<FavoriteClip> favorites, DateTime? day) {
+    final sorted = [...favorites]
+      ..sort((a, b) => b.favoritedAt.compareTo(a.favoritedAt));
+    return day == null
+        ? sorted
+        : sorted.where((f) {
+            final t = f.startedAt.toLocal();
+            return t.year == day.year &&
+                t.month == day.month &&
+                t.day == day.day;
+          }).toList();
   }
 
   Future<void> _pickDay(
@@ -102,16 +166,7 @@ class BookmarksScreen extends ConsumerWidget {
 
   Widget _list(
       BuildContext context, List<FavoriteClip> favorites, DateTime? day) {
-    final sorted = [...favorites]
-      ..sort((a, b) => b.favoritedAt.compareTo(a.favoritedAt));
-    final filtered = day == null
-        ? sorted
-        : sorted.where((f) {
-            final t = f.startedAt.toLocal();
-            return t.year == day.year &&
-                t.month == day.month &&
-                t.day == day.day;
-          }).toList();
+    final filtered = _visible(favorites, day);
 
     if (filtered.isEmpty) {
       // 북마크 자체가 없으면 기존 즐겨찾기 빈 문구, 필터 결과만 없으면 날짜 문구.
@@ -151,30 +206,44 @@ class _BookmarkCard extends ConsumerWidget {
     final memo = owner == clip.ownerId
         ? ref.watch(clipMemoProvider(memoKey)).valueOrNull
         : null;
+    final selection = ref.watch(clipSelectionProvider(_scope));
+    final flow = ClipSelectionFlow(ref, _scope);
+    void open() =>
+        context.push('/crecam/player/${clip.clipId}', extra: playlist);
     final thumb = MotionClipThumb(
         clipId: clip.clipId, cameraId: clip.cameraId, fallbackIconSize: 28);
+    final header = Text(
+      _headerLabel(clip.startedAt.toLocal()),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontFamily: 'Pretendard',
+        fontSize: 16,
+        height: 19.09375 / 16, // Figma 945:4351 Date h19 → 카드 y+27
+        fontWeight: FontWeight.w600,
+        letterSpacing: 16 * -0.02,
+        color: glass.textSecondary,
+      ),
+    );
 
     return GestureDetector(
       key: ValueKey('bookmark_card_${clip.clipId}'),
       behavior: HitTestBehavior.opaque,
-      onTap: () =>
-          context.push('/crecam/player/${clip.clipId}', extra: playlist),
+      // 선택 모드에선 카드 탭 = 고르기, 영상 보기는 확대 버튼(Figma 1493:9274).
+      onTap: selection.active ? () => flow.toggle(context, clip.clipId) : open,
+      onLongPress: () => flow.longPress(context, clip.clipId),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            _headerLabel(clip.startedAt.toLocal()),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 16,
-              height: 19.09375 / 16, // Figma 945:4351 Date h19 → 카드 y+27
-              fontWeight: FontWeight.w600,
-              letterSpacing: 16 * -0.02,
-              color: glass.textSecondary,
-            ),
-          ),
+          selection.active
+              ? Row(children: [
+                  Expanded(child: header),
+                  ClipSelectGroupCheck(
+                      key: ValueKey('clip_select_check_${clip.clipId}'),
+                      checked: selection.contains(clip.clipId),
+                      onTap: () => flow.toggle(context, clip.clipId)),
+                ])
+              : header,
           const SizedBox(height: 8),
           SizedBox(
               height: 180,
@@ -182,7 +251,23 @@ class _BookmarkCard extends ConsumerWidget {
                 Expanded(
                     child: ClipRRect(
                   borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  child: SizedBox.expand(child: thumb),
+                  child: Stack(fit: StackFit.expand, children: [
+                    thumb,
+                    if (selection.active)
+                      Positioned(
+                          right: 4,
+                          bottom: 4,
+                          child: GestureDetector(
+                              key:
+                                  ValueKey('clip_select_expand_${clip.clipId}'),
+                              onTap: open,
+                              child: Semantics(
+                                  button: true,
+                                  label: 'clip_select_expand'.tr(),
+                                  child: const FigmaIcon.metric(
+                                      'redesign_v2/clip_expand_button',
+                                      size: 32)))),
+                  ]),
                 )),
                 if (memo != null) ...[
                   const SizedBox(width: 8),
