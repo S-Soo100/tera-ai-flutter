@@ -407,83 +407,89 @@ class ClipBatchOverlay extends StatelessWidget {
       key: overlayKey,
       child: PopScope(
         canPop: false,
-        child: Stack(children: [
-          // 뒤 화면 입력 차단.
-          Positioned.fill(
-              child: AbsorbPointer(
-                  child: ColoredBox(
-                      color: glass.wallpaper.withValues(alpha: 0.8)))),
-          Center(
-            child: progress != null
-                ? SizedBox(
-                    width: 267.6,
-                    child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(label,
-                              textAlign: TextAlign.center, style: labelStyle),
-                          const SizedBox(height: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: SizedBox(
-                              height: 12,
-                              child: Stack(children: [
-                                Positioned.fill(
-                                    child:
-                                        ColoredBox(color: glass.progressTrack)),
-                                FractionallySizedBox(
-                                    key: const Key('clip_batch_progress'),
-                                    widthFactor: progress,
-                                    heightFactor: 1,
-                                    child:
-                                        ColoredBox(color: glass.progressFill)),
-                              ]),
+        // 하이라이트·북마크에선 이 오버레이가 Scaffold 밖(Stack 형제)에 놓여
+        // Material 조상이 없다 — 없으면 글자가 노란 이중 밑줄(디버그 기본
+        // 스타일)로 그려졌다(2026-10-20 시뮬레이터).
+        child: Material(
+          type: MaterialType.transparency,
+          child: Stack(children: [
+            // 뒤 화면 입력 차단.
+            Positioned.fill(
+                child: AbsorbPointer(
+                    child: ColoredBox(
+                        color: glass.wallpaper.withValues(alpha: 0.8)))),
+            Center(
+              child: progress != null
+                  ? SizedBox(
+                      width: 267.6,
+                      child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(label,
+                                textAlign: TextAlign.center, style: labelStyle),
+                            const SizedBox(height: 12),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: SizedBox(
+                                height: 12,
+                                child: Stack(children: [
+                                  Positioned.fill(
+                                      child: ColoredBox(
+                                          color: glass.progressTrack)),
+                                  FractionallySizedBox(
+                                      key: const Key('clip_batch_progress'),
+                                      widthFactor: progress,
+                                      heightFactor: 1,
+                                      child: ColoredBox(
+                                          color: glass.progressFill)),
+                                ]),
+                              ),
                             ),
-                          ),
-                        ]),
-                  )
-                : Column(mainAxisSize: MainAxisSize.min, children: [
-                    // Figma 1497:11376 원호 색 #B4AEAE(픽셀 실측, 2026-10-20).
-                    ArcSpinner(size: 62, color: glass.progressTrack),
-                    const SizedBox(height: 12),
-                    Text(label, style: labelStyle),
-                  ]),
-          ),
-          if (job.cancellable)
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: MediaQuery.paddingOf(context).bottom + 66,
-              child: SizedBox(
-                height: 56,
-                child: FilledButton(
-                  key: const Key('clip_batch_cancel'),
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    onCancel();
-                  },
-                  style: FilledButton.styleFrom(
-                      backgroundColor: glass.textPrimary,
-                      foregroundColor: glass.buttonForeground,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      textStyle: const TextStyle(
-                          fontFamily: 'Pretendard',
-                          fontSize: 18,
-                          height: 28 / 18,
-                          letterSpacing: -0.36,
-                          fontWeight: FontWeight.w600)),
-                  child: Text(switch (job.kind) {
-                    ClipBatchKind.save => 'clip_select_download_cancel',
-                    ClipBatchKind.share => 'clip_select_share_cancel',
-                    _ => 'clip_select_job_cancel',
-                  }
-                      .tr()),
+                          ]),
+                    )
+                  : Column(mainAxisSize: MainAxisSize.min, children: [
+                      // Figma 1497:11376 원호 색 #B4AEAE(픽셀 실측, 2026-10-20).
+                      ArcSpinner(size: 62, color: glass.progressTrack),
+                      const SizedBox(height: 12),
+                      Text(label, style: labelStyle),
+                    ]),
+            ),
+            if (job.cancellable)
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: MediaQuery.paddingOf(context).bottom + 66,
+                child: SizedBox(
+                  height: 56,
+                  child: FilledButton(
+                    key: const Key('clip_batch_cancel'),
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      onCancel();
+                    },
+                    style: FilledButton.styleFrom(
+                        backgroundColor: glass.textPrimary,
+                        foregroundColor: glass.buttonForeground,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        textStyle: const TextStyle(
+                            fontFamily: 'Pretendard',
+                            fontSize: 18,
+                            height: 28 / 18,
+                            letterSpacing: -0.36,
+                            fontWeight: FontWeight.w600)),
+                    child: Text(switch (job.kind) {
+                      ClipBatchKind.save => 'clip_select_download_cancel',
+                      ClipBatchKind.share => 'clip_select_share_cancel',
+                      _ => 'clip_select_job_cancel',
+                    }
+                        .tr()),
+                  ),
                 ),
               ),
-            ),
-        ]),
+          ]),
+        ),
       ),
     );
   }
