@@ -58,6 +58,9 @@ class ClipSelectionController extends StateNotifier<ClipSelection> {
   }
 
   void keepOnly(Iterable<String> ids) => state = state.keepOnly(ids);
+
+  /// 드래그 선택 중 계산한 결과를 그대로 반영한다([dragSelection]).
+  void replace(ClipSelection next) => state = next;
 }
 
 enum ClipBatchKind {
