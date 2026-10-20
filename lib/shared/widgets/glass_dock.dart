@@ -72,6 +72,33 @@ class GlassDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
+    return GlassDockFrame(children: [
+      for (var i = 0; i < items.length; i++)
+        Expanded(
+          child: _DockButton(
+            item: items[i],
+            selected: i == currentIndex,
+            selectedColor: glass.navSelected,
+            unselectedColor: glass.navUnselected,
+            onTap: () => onSelected(i),
+          ),
+        ),
+    ]);
+  }
+}
+
+/// 하단 바 틀 — 탭바([GlassDock])와 영상 선택 동작 바가 같이 쓴다(Figma
+/// 765:4288/1497:12437 같은 80 틀). 흰 바닥 + 위 선, 좌우 28.5·위 12, 홈
+/// 인디케이터 아래 26, 칸 높이 = 아이콘 24 + 4 + 라벨 줄높이. [children]은 보통
+/// `Expanded` 칸들이다.
+class GlassDockFrame extends StatelessWidget {
+  const GlassDockFrame({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
     // 탭 라벨은 짧고 아이콘 크기가 고정이라 1.5배에서 멈춘다(UX-06 — 휴대폰
     // 글자 2배에서도 탭바가 화면을 먹지 않게).
     return MediaQuery.withClampedTextScaling(
@@ -97,20 +124,7 @@ class GlassDock extends StatelessWidget {
                               MediaQuery.textScalerOf(context)
                                   .scale(14.3203125)
                                   .ceilToDouble(),
-                          child: Row(
-                            children: [
-                              for (var i = 0; i < items.length; i++)
-                                Expanded(
-                                  child: _DockButton(
-                                    item: items[i],
-                                    selected: i == currentIndex,
-                                    selectedColor: glass.navSelected,
-                                    unselectedColor: glass.navUnselected,
-                                    onTap: () => onSelected(i),
-                                  ),
-                                ),
-                            ],
-                          ),
+                          child: Row(children: children),
                         ),
                       ),
                     ),

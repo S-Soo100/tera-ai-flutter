@@ -542,30 +542,37 @@ class _ScaffoldWithBottomNav extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 카메라 탭 영상 선택 모드엔 탭바 자리를 선택 동작 바가 쓴다(Figma 1497:13355).
-    final selecting = ref.watch(clipSelectionProvider(ClipSelectionScope.feed)
-        .select((s) => s.active));
+    // 카메라 탭을 보고 있을 때만 — 알림·딥링크로 다른 탭에 가면 탭바가 돌아와야
+    // 한다(선택은 카메라 탭에 남는다).
+    final onCameraTab =
+        navigationShell.currentIndex == kHomeTabPaths.indexOf('/crecam');
+    final selecting = onCameraTab &&
+        ref.watch(clipSelectionProvider(ClipSelectionScope.feed)
+            .select((s) => s.active));
     return Scaffold(
       extendBody: true,
       body: navigationShell,
       // 바 자체가 SafeArea(bottom)를 안고 있다 — 여기서 또 감싸면 인셋이 두 번 든다.
-      bottomNavigationBar: selecting ? null : GlassDock(
-        currentIndex: navigationShell.currentIndex,
-        onSelected: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
-        },
-        // 독 항목은 탭 테이블(tab_branches.dart)에서 파생한다 —
-        // 여기 인라인으로 나열하면 경로·라벨과 3중 병렬이 된다.
-        items: [
-          for (var i = 0; i < kHomeTabPaths.length; i++)
-            GlassDockItem(
-              iconAsset: kHomeTabIconAssets[i],
-              label: kHomeTabLabelKeys[i].tr(),
+      bottomNavigationBar: selecting
+          ? null
+          : GlassDock(
+              currentIndex: navigationShell.currentIndex,
+              onSelected: (index) {
+                navigationShell.goBranch(
+                  index,
+                  initialLocation: index == navigationShell.currentIndex,
+                );
+              },
+              // 독 항목은 탭 테이블(tab_branches.dart)에서 파생한다 —
+              // 여기 인라인으로 나열하면 경로·라벨과 3중 병렬이 된다.
+              items: [
+                for (var i = 0; i < kHomeTabPaths.length; i++)
+                  GlassDockItem(
+                    iconAsset: kHomeTabIconAssets[i],
+                    label: kHomeTabLabelKeys[i].tr(),
+                  ),
+              ],
             ),
-        ],
-      ),
     );
   }
 }

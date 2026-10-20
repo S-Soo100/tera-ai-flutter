@@ -10,8 +10,6 @@ import '../../domain/clip_playlist_args.dart';
 import '../../domain/motion_clip_page.dart';
 import '../clip_feed_controller.dart';
 import '../clip_selection_providers.dart';
-import '../../domain/clip_selection.dart';
-import 'clip_selection_flow.dart';
 import 'clip_selection_widgets.dart';
 import 'clip_grid.dart';
 import 'crecam_states.dart';
@@ -30,8 +28,6 @@ class ClipFeedSlivers extends ConsumerWidget {
     if (key == null) return const SliverToBoxAdapter(child: SizedBox.shrink());
     final state = ref.watch(clipFeedProvider(key));
     final controller = ref.read(clipFeedProvider(key).notifier);
-    final selection = ref.watch(clipSelectionProvider(ClipSelectionScope.feed));
-    final flow = ClipSelectionFlow(ref, ClipSelectionScope.feed);
     if (state.items.isEmpty) {
       return SliverToBoxAdapter(
           child: Padding(
@@ -90,12 +86,11 @@ class ClipFeedSlivers extends ConsumerWidget {
                         fontWeight: FontWeight.w600,
                         color: context.glass.textTertiary)),
               // Figma 1497:13355 — 선택 모드엔 날짜 오른쪽에 시간 묶음 전체 선택.
-              if (selection.active)
-                ClipSelectGroupCheck(
-                    key: ValueKey(
-                        'clip_group_check_${group.key.toIso8601String()}'),
-                    checked: groupFullySelected(selection, groupIds),
-                    onTap: () => flow.toggleGroup(context, groupIds)),
+              ClipSelectGroupCheck(
+                  key: ValueKey(
+                      'clip_group_check_${group.key.toIso8601String()}'),
+                  scope: ClipSelectionScope.feed,
+                  ids: groupIds),
             ]),
           ));
       for (var start = 0; start < group.value.length; start += 3) {
@@ -120,14 +115,12 @@ class ClipFeedSlivers extends ConsumerWidget {
                             rangeEndExclusive: key.range?.endExclusive,
                             nextCursor: state.nextCursor,
                             hasMore: state.hasMore));
-                    return GestureDetector(
+                    // 선택 모드에선 탭 = 고르기, 영상 보기는 확대 버튼.
+                    return ClipSelectableThumb(
                         key: ValueKey('crecam_clip_${clip.id}'),
-                        behavior: HitTestBehavior.opaque,
-                        // 선택 모드에선 탭 = 고르기, 영상 보기는 확대 버튼.
-                        onTap: selection.active
-                            ? () => flow.toggle(context, clip.id)
-                            : open,
-                        onLongPress: () => flow.longPress(context, clip.id),
+                        scope: ClipSelectionScope.feed,
+                        clipId: clip.id,
+                        onOpen: open,
                         child: Stack(fit: StackFit.expand, children: [
                           MotionClipThumb(
                               clipId: clip.id,
@@ -139,11 +132,6 @@ class ClipFeedSlivers extends ConsumerWidget {
                               left: 0,
                               bottom: 0,
                               child: FavoriteBookmarkBadge(clipId: clip.id)),
-                          if (selection.active)
-                            ClipSelectThumbOverlay(
-                                clipId: clip.id,
-                                checked: selection.contains(clip.id),
-                                onExpand: open),
                         ]));
                   }),
             ));

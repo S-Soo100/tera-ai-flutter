@@ -87,6 +87,10 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     required this.segmentTrack,
     required this.surfaceHeader,
     required this.appBar,
+    required this.selectionOn,
+    required this.selectionOff,
+    required this.progressTrack,
+    required this.progressFill,
     required this.menuShadow,
     required this.envTempValue,
     required this.envHumidValue,
@@ -232,6 +236,15 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   /// (하이라이트·북마크·영상 상세·온습도 상세·영상 선택, 2026-10-20 디자이너
   /// 코멘트 "앱바가 흰색으로 개발돼 있다"). 본문 바닥([wallpaper])과 다르다.
   final Color appBar;
+
+  /// 영상 선택 체크박스 켬(Main_Dark #C00306)·끔(Fill/Icon #B4AEAE) — 썸네일·흰
+  /// 바닥 어디에 얹혀도 같은 색(Figma 1497:11080/11112).
+  final Color selectionOn;
+  final Color selectionOff;
+
+  /// 일괄 다운로드 진행 막대 남은 칸(#B4AEAE)·채움(#D61619) — Figma 1497:12094.
+  final Color progressTrack;
+  final Color progressFill;
   final Color
       menuShadow; // 헤더 드롭다운 그림자 — Figma 1107:10552 X0 Y0 blur20 #919497 30%
 
@@ -337,6 +350,11 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     segmentTrack: Color(0xFF1E2438),
     surfaceHeader: Color(0xFF0E1322),
     appBar: Color(0xFF0E1322), // 다크는 Figma 미정의 — 기존 상단바 값 유지
+    // 다크는 Figma 미정의 — 썸네일 위 표시라 라이트와 같은 값.
+    selectionOn: VivaColors.mainDark,
+    selectionOff: VivaColors.fillIcon,
+    progressTrack: VivaColors.fillIcon,
+    progressFill: VivaColors.mainLight,
     menuShadow: Color(0x66000000), // 다크는 Figma 미정의 — 검정 40% 도출값
     envTempValue: Color(0xFFF85478),
     envHumidValue: Color(0xFF768AD6),
@@ -411,6 +429,10 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     segmentTrack: VivaColors.fillButton,
     surfaceHeader: Colors.white,
     appBar: VivaColors.fillBack, // #FAFAFA
+    selectionOn: VivaColors.mainDark,
+    selectionOff: VivaColors.fillIcon,
+    progressTrack: VivaColors.fillIcon,
+    progressFill: VivaColors.mainLight,
     menuShadow: Color(0x4D919497), // 2026-09-16 디자이너 effect 값(30%)
     envTempValue: Color(0xFFF85478),
     envHumidValue: Color(0xFF00B2F3),
@@ -483,6 +505,10 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     Color? segmentTrack,
     Color? surfaceHeader,
     Color? appBar,
+    Color? selectionOn,
+    Color? selectionOff,
+    Color? progressTrack,
+    Color? progressFill,
     Color? menuShadow,
     Color? envTempValue,
     Color? envHumidValue,
@@ -554,6 +580,10 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       segmentTrack: segmentTrack ?? this.segmentTrack,
       surfaceHeader: surfaceHeader ?? this.surfaceHeader,
       appBar: appBar ?? this.appBar,
+      selectionOn: selectionOn ?? this.selectionOn,
+      selectionOff: selectionOff ?? this.selectionOff,
+      progressTrack: progressTrack ?? this.progressTrack,
+      progressFill: progressFill ?? this.progressFill,
       menuShadow: menuShadow ?? this.menuShadow,
       envTempValue: envTempValue ?? this.envTempValue,
       envHumidValue: envHumidValue ?? this.envHumidValue,
@@ -633,6 +663,10 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       segmentTrack: c(segmentTrack, other.segmentTrack),
       surfaceHeader: c(surfaceHeader, other.surfaceHeader),
       appBar: c(appBar, other.appBar),
+      selectionOn: c(selectionOn, other.selectionOn),
+      selectionOff: c(selectionOff, other.selectionOff),
+      progressTrack: c(progressTrack, other.progressTrack),
+      progressFill: c(progressFill, other.progressFill),
       menuShadow: c(menuShadow, other.menuShadow),
       envTempValue: c(envTempValue, other.envTempValue),
       envHumidValue: c(envHumidValue, other.envHumidValue),

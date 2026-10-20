@@ -122,6 +122,14 @@ class VideoExportService {
     }
   }
 
+  /// 여러 영상 작업이 남긴 임시 파일(`clip_select/`)을 비운다 — 공유한 파일은
+  /// 받는 앱이 읽는 중일 수 있어 다음 작업 시작 때 부른다.
+  Future<void> clearTemp() async {
+    final dir =
+        Directory('${(await getTemporaryDirectory()).path}/clip_select');
+    if (await dir.exists()) await dir.delete(recursive: true);
+  }
+
   /// 여러 영상을 한 번에 OS 공유 시트로.
   Future<void> shareFiles(List<File> files) => SharePlus.instance
       .share(ShareParams(files: [for (final f in files) XFile(f.path)]));

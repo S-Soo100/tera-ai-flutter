@@ -30,6 +30,12 @@ class ClipSelectionController extends StateNotifier<ClipSelection> {
   void enter([String? first]) => state = state.enter(first);
   void exit() => state = const ClipSelection();
 
+  /// 목록이 바뀌면(기간·날짜 필터) 선택만 비운다 — 안 보이는 영상이 골라진 채
+  /// 남아 삭제·저장에 끼지 않게. 선택 모드는 유지.
+  void clearIds() {
+    if (state.ids.isNotEmpty) state = ClipSelection(active: state.active);
+  }
+
   /// false면 상한이라 넣지 못했다.
   bool toggle(String id) {
     final next = state.toggle(id);
@@ -63,27 +69,37 @@ enum ClipBatchKind {
   memoDelete
 }
 
-/// 진행 중인 일괄 작업. [progress]는 저장·공유만(0~1).
+/// 진행 중인 일괄 작업. [progress]는 저장·공유·북마크(0~1) — 오래 걸릴 수 있는
+/// 작업이라 진행률과 [취소]를 보여 준다. 삭제·메모 삭제는 짧아 스피너만.
 class ClipBatchState {
   const ClipBatchState(this.kind, {this.progress});
   final ClipBatchKind kind;
   final double? progress;
 
   /// 사용자가 멈출 수 있는 작업(Figma [다운로드 취소]).
-  bool get cancellable =>
-      kind == ClipBatchKind.save || kind == ClipBatchKind.share;
+  bool get cancellable => progress != null;
 }
 
 class ClipBatchResult {
   const ClipBatchResult(
       {this.succeeded = 0,
       this.failed = const [],
+      this.remaining = const [],
       this.cancelled = false,
-      this.permissionDenied = false});
+      this.permissionDenied = false,
+      this.ignored = false});
+
+  /// 다른 작업이 돌고 있어 시작하지 않았다(연타). 성공으로 읽으면 안 된다.
+  const ClipBatchResult.ignored() : this(ignored: true);
+
   final int succeeded;
   final List<String> failed;
+
+  /// 취소로 손대지 못한 영상.
+  final List<String> remaining;
   final bool cancelled;
   final bool permissionDenied;
+  final bool ignored;
 }
 
 /// 고른 영상에 한 번에 하는 작업. 한 번에 하나만 돈다(null = 쉬는 중).
@@ -102,6 +118,14 @@ class ClipBatchController extends StateNotifier<ClipBatchState?> {
 
   void _progress(ClipBatchKind kind, double value) {
     if (mounted) state = ClipBatchState(kind, progress: value.clamp(0, 1));
+  }
+
+  /// 시작 — 이미 돌고 있으면 null(연타 무시). 상태를 **동기로** 세워 같은
+  /// 프레임의 두 번째 탭도 막는다.
+  ExportCancelToken? _start(ClipBatchKind kind, {bool progress = true}) {
+    if (busy) return null;
+    state = progress ? ClipBatchState(kind, progress: 0) : ClipBatchState(kind);
+    return _token = ExportCancelToken();
   }
 
   void _finish() {
@@ -125,38 +149,48 @@ class ClipBatchController extends StateNotifier<ClipBatchState?> {
   }
 
   /// 사진앱 저장 — 고른 순서대로 하나씩. 취소하면 그때까지 저장한 건 남는다.
+  /// 내려받은 임시 파일은 성공·실패·취소 모두 지운다.
   Future<ClipBatchResult> save(List<String> ids) async {
-    if (busy || ids.isEmpty) return const ClipBatchResult();
-    final service = _ref.read(videoExportServiceProvider);
+    if (ids.isEmpty) return const ClipBatchResult();
     const kind = ClipBatchKind.save;
-    _progress(kind, 0);
-    final token = _token = ExportCancelToken();
+    final token = _start(kind);
+    if (token == null) return const ClipBatchResult.ignored();
+    final service = _ref.read(videoExportServiceProvider);
     try {
+      // 지난 공유가 남긴 임시 파일 — 공유 앱이 읽는 중일 수 있어 다음 작업 때 지운다.
+      await service.clearTemp();
       if (!await service.ensureGalleryAccess()) {
         return const ClipBatchResult(permissionDenied: true);
       }
       var succeeded = 0;
       final failed = <String>[];
-      for (var i = 0; i < ids.length; i++) {
+      var i = 0;
+      for (; i < ids.length; i++) {
         if (token.isCancelled) break;
+        File? temp;
         try {
           final src = await _fileFor(
               ids[i], token, (f) => _progress(kind, (i + f) / ids.length));
+          if (src.temporary) temp = src.file;
           token.throwIfCancelled();
           await service.putVideo(src.file);
-          if (src.temporary) {
-            await src.file.delete().catchError((_) => src.file);
-          }
           succeeded++;
         } on ExportCancelled {
           break;
         } catch (_) {
           failed.add(ids[i]);
+        } finally {
+          if (temp != null) {
+            await temp.delete().catchError((_) => temp!);
+          }
         }
         _progress(kind, (i + 1) / ids.length);
       }
       return ClipBatchResult(
-          succeeded: succeeded, failed: failed, cancelled: token.isCancelled);
+          succeeded: succeeded,
+          failed: failed,
+          remaining: token.isCancelled ? ids.sublist(i) : const [],
+          cancelled: token.isCancelled);
     } finally {
       _finish();
     }
@@ -164,13 +198,15 @@ class ClipBatchController extends StateNotifier<ClipBatchState?> {
 
   /// 모두 받은 뒤 OS 공유 시트 하나로. 일부가 실패하면 받은 것만 공유한다.
   Future<ClipBatchResult> share(List<String> ids) async {
-    if (busy || ids.isEmpty) return const ClipBatchResult();
+    if (ids.isEmpty) return const ClipBatchResult();
     const kind = ClipBatchKind.share;
-    _progress(kind, 0);
-    final token = _token = ExportCancelToken();
+    final token = _start(kind);
+    if (token == null) return const ClipBatchResult.ignored();
+    final service = _ref.read(videoExportServiceProvider);
     final files = <File>[];
     final failed = <String>[];
     try {
+      await service.clearTemp();
       for (var i = 0; i < ids.length; i++) {
         if (token.isCancelled) break;
         try {
@@ -187,11 +223,15 @@ class ClipBatchController extends StateNotifier<ClipBatchState?> {
     } finally {
       _finish();
     }
-    if (token.isCancelled) return const ClipBatchResult(cancelled: true);
+    if (token.isCancelled) {
+      await service.clearTemp();
+      return const ClipBatchResult(cancelled: true);
+    }
     if (files.isNotEmpty) {
-      // 시트를 닫는 것은 사용자 선택이라 실패로 치지 않는다.
+      // 시트를 닫는 것은 사용자 선택이라 실패로 치지 않는다. 임시 파일은 받는
+      // 앱이 아직 읽을 수 있어 여기서 지우지 않고 다음 작업 시작 때 지운다.
       try {
-        await _ref.read(videoExportServiceProvider).shareFiles(files);
+        await service.shareFiles(files);
       } catch (_) {
         return ClipBatchResult(failed: ids);
       }
@@ -201,12 +241,14 @@ class ClipBatchController extends StateNotifier<ClipBatchState?> {
 
   /// 삭제 = 이 계정 목록에서 숨김(서버 원본은 남는다, 단건 삭제와 같은 뜻).
   Future<ClipBatchResult> delete(List<String> ids) =>
-      _each(ClipBatchKind.delete, ids, (id) async {
+      _each(ClipBatchKind.delete, ids, progress: false, (id) async {
         final owner = _ref.read(clipVisibilityAccountProvider);
         if (owner == null) return false;
         return _ref.read(clipVisibilityProvider(owner).notifier).hide(id);
       });
 
+  /// 북마크 하기는 영상마다 기기에 내려받는다(오프라인 재생) — 오래 걸릴 수
+  /// 있어 진행률·취소를 준다. 취소는 지금 영상을 끝낸 뒤 멈춘다.
   Future<ClipBatchResult> setBookmarked(List<String> ids, bool bookmarked) =>
       _each(
           bookmarked ? ClipBatchKind.bookmarkAdd : ClipBatchKind.bookmarkRemove,
@@ -230,7 +272,7 @@ class ClipBatchController extends StateNotifier<ClipBatchState?> {
       });
 
   Future<ClipBatchResult> deleteMemos(List<String> ids) =>
-      _each(ClipBatchKind.memoDelete, ids, (id) async {
+      _each(ClipBatchKind.memoDelete, ids, progress: false, (id) async {
         final owner = _ref.read(clipMemoAccountProvider);
         if (owner == null) return false;
         final key = (ownerId: owner, clipId: id);
@@ -245,22 +287,31 @@ class ClipBatchController extends StateNotifier<ClipBatchState?> {
       });
 
   Future<ClipBatchResult> _each(ClipBatchKind kind, List<String> ids,
-      Future<bool> Function(String id) run) async {
-    if (busy || ids.isEmpty) return const ClipBatchResult();
-    state = ClipBatchState(kind);
+      Future<bool> Function(String id) run,
+      {bool progress = true}) async {
+    if (ids.isEmpty) return const ClipBatchResult();
+    final token = _start(kind, progress: progress);
+    if (token == null) return const ClipBatchResult.ignored();
     var succeeded = 0;
     final failed = <String>[];
+    var i = 0;
     try {
-      for (final id in ids) {
+      for (; i < ids.length; i++) {
+        if (token.isCancelled) break;
         bool ok;
         try {
-          ok = await run(id);
+          ok = await run(ids[i]);
         } catch (_) {
           ok = false;
         }
-        ok ? succeeded++ : failed.add(id);
+        ok ? succeeded++ : failed.add(ids[i]);
+        if (progress) _progress(kind, (i + 1) / ids.length);
       }
-      return ClipBatchResult(succeeded: succeeded, failed: failed);
+      return ClipBatchResult(
+          succeeded: succeeded,
+          failed: failed,
+          remaining: token.isCancelled ? ids.sublist(i) : const [],
+          cancelled: token.isCancelled);
     } finally {
       _finish();
     }

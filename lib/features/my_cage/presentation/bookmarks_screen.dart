@@ -14,7 +14,6 @@ import 'widgets/clip_memo_card.dart';
 import 'widgets/crecam_detail_top_bar.dart';
 import 'widgets/crecam_states.dart';
 import 'widgets/motion_clip_thumb.dart';
-import '../../../shared/widgets/figma_icon.dart';
 import 'clip_selection_providers.dart';
 import 'widgets/clip_selection_flow.dart';
 import 'widgets/clip_selection_widgets.dart';
@@ -47,6 +46,10 @@ class BookmarksScreen extends ConsumerWidget {
     final selection = ref.watch(clipSelectionProvider(_scope));
     final batch = ref.watch(clipBatchProvider(_scope));
     final flow = ClipSelectionFlow(ref, _scope);
+    // 날짜 필터가 바뀌면 안 보이게 된 영상이 골라진 채 남지 않게 비운다.
+    ref.listen(bookmarksDayFilterProvider, (_, __) {
+      ref.read(clipSelectionProvider(_scope).notifier).clearIds();
+    });
     Future<void> leave() async {
       if (await flow.confirmLeave(context) && context.mounted) context.pop();
     }
@@ -127,11 +130,9 @@ class BookmarksScreen extends ConsumerWidget {
         ],
       ),
     );
-    return PopScope(
-      canPop: !selection.active,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && batch == null) leave();
-      },
+    return ClipSelectionBackGuard(
+      scope: _scope,
+      onLeave: leave,
       child: Stack(children: [
         scaffold,
         if (batch != null)
@@ -206,7 +207,9 @@ class _BookmarkCard extends ConsumerWidget {
     final memo = owner == clip.ownerId
         ? ref.watch(clipMemoProvider(memoKey)).valueOrNull
         : null;
-    final selection = ref.watch(clipSelectionProvider(_scope));
+    // 이 카드 몫만 구독 — 하나를 고를 때 모든 카드가 다시 그려지지 않게.
+    final active =
+        ref.watch(clipSelectionProvider(_scope).select((s) => s.active));
     final flow = ClipSelectionFlow(ref, _scope);
     void open() =>
         context.push('/crecam/player/${clip.clipId}', extra: playlist);
@@ -230,20 +233,15 @@ class _BookmarkCard extends ConsumerWidget {
       key: ValueKey('bookmark_card_${clip.clipId}'),
       behavior: HitTestBehavior.opaque,
       // 선택 모드에선 카드 탭 = 고르기, 영상 보기는 확대 버튼(Figma 1493:9274).
-      onTap: selection.active ? () => flow.toggle(context, clip.clipId) : open,
+      onTap: active ? () => flow.toggle(context, clip.clipId) : open,
       onLongPress: () => flow.longPress(context, clip.clipId),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          selection.active
-              ? Row(children: [
-                  Expanded(child: header),
-                  ClipSelectGroupCheck(
-                      key: ValueKey('clip_select_check_${clip.clipId}'),
-                      checked: selection.contains(clip.clipId),
-                      onTap: () => flow.toggle(context, clip.clipId)),
-                ])
-              : header,
+          Row(children: [
+            Expanded(child: header),
+            ClipSelectItemCheck(scope: _scope, clipId: clip.clipId),
+          ]),
           const SizedBox(height: 8),
           SizedBox(
               height: 180,
@@ -253,20 +251,12 @@ class _BookmarkCard extends ConsumerWidget {
                   borderRadius: const BorderRadius.all(Radius.circular(12)),
                   child: Stack(fit: StackFit.expand, children: [
                     thumb,
-                    if (selection.active)
+                    if (active)
                       Positioned(
                           right: 4,
                           bottom: 4,
-                          child: GestureDetector(
-                              key:
-                                  ValueKey('clip_select_expand_${clip.clipId}'),
-                              onTap: open,
-                              child: Semantics(
-                                  button: true,
-                                  label: 'clip_select_expand'.tr(),
-                                  child: const FigmaIcon.metric(
-                                      'redesign_v2/clip_expand_button',
-                                      size: 32)))),
+                          child: ClipSelectExpandButton(
+                              clipId: clip.clipId, onTap: open)),
                   ]),
                 )),
                 if (memo != null) ...[

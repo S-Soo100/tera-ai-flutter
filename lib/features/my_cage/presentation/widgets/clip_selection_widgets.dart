@@ -1,21 +1,20 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/glass_palette.dart';
-import '../../../../core/theme/viva_colors.dart';
 import '../../../../shared/widgets/arc_spinner.dart';
 import '../../../../shared/widgets/figma_icon.dart';
+import '../../../../shared/widgets/glass_dock.dart';
+import '../../domain/clip_selection.dart';
 import '../clip_selection_providers.dart';
+import 'clip_selection_flow.dart';
 
 /// 영상 선택 모드 공용 조각 — Figma '영상 선택'(1497:14225).
 ///
-/// 체크박스 색은 썸네일·흰 바닥 어디에 얹혀도 같아야 해서 테마 역할색이 아니라
-/// VIVA 원색이다(켬 Main_Dark #C00306, 끔 Fill/Icon #B4AEAE — 1497:11080/11112).
-abstract final class ClipSelectionColors {
-  static const checked = VivaColors.mainDark;
-  static const unchecked = VivaColors.fillIcon;
-}
+/// 선택 상태는 칸마다 자기 몫만 구독한다(`select`) — 하나를 누를 때 화면의
+/// 모든 썸네일이 다시 그려지지 않게.
 
 /// 헤더 선택 진입(priority)·종료(redo) 아이콘 44 — Figma 신규에셋 1497:11825/
 /// 11823(44 프레임 export).
@@ -59,68 +58,141 @@ class ClipSelectCheckbox extends StatelessWidget {
           ? 'redesign_v2/check_box_400'
           : 'redesign_v2/check_box_outline_blank_400',
       size: size,
-      color: checked
-          ? ClipSelectionColors.checked
-          : ClipSelectionColors.unchecked);
+      color: checked ? context.glass.selectionOn : context.glass.selectionOff);
 }
 
-/// 썸네일 위 선택 표시 — 우상단 체크박스(32 프레임), 우하단 확대 버튼
-/// (32 원, 검정 30%, 안쪽 4 — 1497:11082). 확대 = 선택 중에 영상 확인.
-/// 소비처 Stack(fit: expand) 위에 얹는다.
-class ClipSelectThumbOverlay extends StatelessWidget {
-  const ClipSelectThumbOverlay(
-      {super.key,
-      required this.clipId,
-      required this.checked,
-      required this.onExpand});
+/// 선택 중 영상 보기 버튼 — 32 원(검정 30% + zoom_out_map, 디자이너 export
+/// 1497:11090). 썸네일 우하단 안쪽 4에 얹는다.
+class ClipSelectExpandButton extends StatelessWidget {
+  const ClipSelectExpandButton(
+      {super.key, required this.clipId, required this.onTap});
   final String clipId;
-  final bool checked;
-  final VoidCallback onExpand;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return Stack(fit: StackFit.expand, children: [
-      Positioned(
-          top: 0,
-          right: 0,
-          child: SizedBox.square(
-              dimension: 32,
-              child: Center(
-                  child: ClipSelectCheckbox(
-                      key: ValueKey('clip_select_check_$clipId'),
-                      checked: checked)))),
-      Positioned(
-          right: 4,
-          bottom: 4,
-          child: Semantics(
-            button: true,
-            label: 'clip_select_expand'.tr(),
-            excludeSemantics: true,
-            child: GestureDetector(
-              key: ValueKey('clip_select_expand_$clipId'),
-              behavior: HitTestBehavior.opaque,
-              onTap: onExpand,
-              // 디자이너 export 그대로(원 검정 30% + zoom_out_map, 1497:11090).
-              child: const FigmaIcon.metric('redesign_v2/clip_expand_button',
-                  size: 32),
-            ),
-          )),
-    ]);
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        label: 'clip_select_expand'.tr(),
+        excludeSemantics: true,
+        child: GestureDetector(
+          key: ValueKey('clip_select_expand_$clipId'),
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: const FigmaIcon.metric('redesign_v2/clip_expand_button',
+              size: 32),
+        ),
+      );
+}
+
+typedef _ItemState = ({bool active, bool checked});
+
+_ItemState _itemState(ClipSelection s, String id) =>
+    (active: s.active, checked: s.contains(id));
+
+/// 그리드 썸네일 칸 — 평소엔 탭 = [onOpen], 선택 모드엔 탭 = 고르기(영상 보기는
+/// 확대 버튼), 꾹 누르기 = 선택 시작. 선택 중엔 우상단 체크박스(32 프레임)와
+/// 우하단 확대 버튼(Figma 1497:11036)을 [child] 위에 얹는다.
+class ClipSelectableThumb extends ConsumerWidget {
+  const ClipSelectableThumb({
+    super.key,
+    required this.scope,
+    required this.clipId,
+    required this.onOpen,
+    required this.child,
+  });
+
+  final ClipSelectionScope scope;
+  final String clipId;
+  final VoidCallback onOpen;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final item = ref.watch(
+        clipSelectionProvider(scope).select((s) => _itemState(s, clipId)));
+    final flow = ClipSelectionFlow(ref, scope);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: item.active ? () => flow.toggle(context, clipId) : onOpen,
+      onLongPress: () => flow.longPress(context, clipId),
+      child: Stack(fit: StackFit.expand, children: [
+        child,
+        if (item.active) ...[
+          Positioned(
+              top: 0,
+              right: 0,
+              child: SizedBox.square(
+                  dimension: 32,
+                  child: Center(
+                      child: ClipSelectCheckbox(
+                          key: ValueKey('clip_select_check_$clipId'),
+                          checked: item.checked)))),
+          Positioned(
+              right: 4,
+              bottom: 4,
+              child: ClipSelectExpandButton(clipId: clipId, onTap: onOpen)),
+        ],
+      ]),
+    );
   }
 }
 
-/// 날짜·시간 묶음 머리 체크박스(24). 왼쪽으로 터치 영역을 넓힌다.
-class ClipSelectGroupCheck extends StatelessWidget {
+/// 날짜·시간 묶음 머리 체크박스(24) — 묶음 전체 고르기/빼기. 선택 모드가
+/// 아니면 아무것도 그리지 않는다. 왼쪽으로 터치 영역을 넓힌다.
+class ClipSelectGroupCheck extends ConsumerWidget {
   const ClipSelectGroupCheck(
-      {super.key, required this.checked, required this.onTap});
+      {super.key, required this.scope, required this.ids});
+  final ClipSelectionScope scope;
+  final List<String> ids;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(clipSelectionProvider(scope)
+        .select((s) => (active: s.active, all: groupFullySelected(s, ids))));
+    if (!state.active) return const SizedBox.shrink();
+    return _CheckTap(
+        checked: state.all,
+        label: 'clip_select_group'.tr(),
+        onTap: () => ClipSelectionFlow(ref, scope).toggleGroup(context, ids));
+  }
+}
+
+/// 영상 한 개 체크박스(24) — 북마크 카드 머리(Figma 1493:9274). 선택 모드가
+/// 아니면 아무것도 그리지 않는다.
+class ClipSelectItemCheck extends ConsumerWidget {
+  const ClipSelectItemCheck(
+      {super.key, required this.scope, required this.clipId});
+  final ClipSelectionScope scope;
+  final String clipId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final item = ref.watch(
+        clipSelectionProvider(scope).select((s) => _itemState(s, clipId)));
+    if (!item.active) return const SizedBox.shrink();
+    return _CheckTap(
+        key: ValueKey('clip_select_check_$clipId'),
+        checked: item.checked,
+        label: 'clip_select_item'.tr(),
+        onTap: () => ClipSelectionFlow(ref, scope).toggle(context, clipId));
+  }
+}
+
+class _CheckTap extends StatelessWidget {
+  const _CheckTap(
+      {super.key,
+      required this.checked,
+      required this.label,
+      required this.onTap});
   final bool checked;
+  final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => Semantics(
         button: true,
         checked: checked,
-        label: 'clip_select_group'.tr(),
+        label: label,
         excludeSemantics: true,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -150,47 +222,17 @@ class ClipSelectionActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final glass = context.glass;
-    return MediaQuery.withClampedTextScaling(
-      maxScaleFactor: 1.5,
-      child: Builder(
-        builder: (context) => DecoratedBox(
-          key: barKey,
-          decoration: BoxDecoration(
-              color: glass.tabBar,
-              border: Border(top: BorderSide(color: glass.border))),
-          child: Material(
-            type: MaterialType.transparency,
-            child: SafeArea(
-              top: false,
-              minimum: const EdgeInsets.only(bottom: 26),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(28.5, 12, 28.5, 0),
-                child: SizedBox(
-                  height: 28 +
-                      MediaQuery.textScalerOf(context)
-                          .scale(14.3203125)
-                          .ceilToDouble(),
-                  child: Row(children: [
-                    // 다운로드는 24 프레임 export, 공유는 36 프레임 export라
-                    // 24 자리에 넘치게 그려 글리프를 Figma 크기로 맞춘다.
-                    _item(context, 'redesign_v2/download_24',
-                        'clip_select_download', 24, (_) => onDownload()),
-                    _item(context, 'share', 'clip_select_share', 36,
-                        (_) => onShare()),
-                    // 44 프레임 export(글리프 20) → Figma 24 프레임 글리프 18.
-                    _item(context, 'redesign_v2/delete', 'clip_select_delete',
-                        39.6, (_) => onDelete()),
-                    _item(context, 'redesign_v2/more_vert', 'clip_select_more',
-                        24, onMore),
-                  ]),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    return GlassDockFrame(key: barKey, children: [
+      // 다운로드는 24 프레임 export, 공유는 36 프레임 export라 24 자리에
+      // 넘치게 그려 글리프를 Figma 크기로 맞춘다.
+      _item(context, 'redesign_v2/download_24', 'clip_select_download', 24,
+          (_) => onDownload()),
+      _item(context, 'share', 'clip_select_share', 36, (_) => onShare()),
+      // 44 프레임 export(글리프 20) → Figma 24 프레임 글리프 18.
+      _item(context, 'redesign_v2/delete', 'clip_select_delete', 39.6,
+          (_) => onDelete()),
+      _item(context, 'redesign_v2/more_vert', 'clip_select_more', 24, onMore),
+    ]);
   }
 
   Widget _item(BuildContext context, String asset, String label, double frame,
@@ -322,8 +364,9 @@ Future<T?> showClipSelectMenu<T>(BuildContext context,
 }
 
 /// 일괄 작업 중 화면 — 흰 dim(80%)이 입력을 막는다(Figma 1497:11207·1497:11926).
-/// 저장·공유는 진행 막대(267.6×12, 남은 칸 #B4AEAE·채움 #D61619) + 하단
-/// [취소](369×56 r12 #1E1E1E, SafeArea 위 66), 나머지는 원호 스피너 62 + 문구.
+/// 진행률이 있는 작업(저장·공유·북마크)은 진행 막대(267.6×12, 남은 칸 #B4AEAE·
+/// 채움 #D61619) + 하단 [취소](369×56 r12 #1E1E1E, SafeArea 위 66), 나머지(삭제·
+/// 메모 삭제 — 짧다)는 원호 스피너 62 + 문구.
 class ClipBatchOverlay extends StatelessWidget {
   const ClipBatchOverlay(
       {super.key, required this.job, required this.onCancel});
@@ -350,8 +393,10 @@ class ClipBatchOverlay extends StatelessWidget {
       ClipBatchKind.share =>
         'clip_select_share_preparing'.tr(namedArgs: {'percent': percent}),
       ClipBatchKind.delete => 'clip_select_deleting'.tr(),
-      ClipBatchKind.bookmarkAdd => 'clip_select_bookmarking'.tr(),
-      ClipBatchKind.bookmarkRemove => 'clip_select_unbookmarking'.tr(),
+      ClipBatchKind.bookmarkAdd =>
+        'clip_select_bookmarking'.tr(namedArgs: {'percent': percent}),
+      ClipBatchKind.bookmarkRemove =>
+        'clip_select_unbookmarking'.tr(namedArgs: {'percent': percent}),
       ClipBatchKind.memoDelete => 'clip_select_memo_deleting'.tr(),
     };
     return Positioned.fill(
@@ -365,7 +410,7 @@ class ClipBatchOverlay extends StatelessWidget {
                   child: ColoredBox(
                       color: glass.wallpaper.withValues(alpha: 0.8)))),
           Center(
-            child: job.cancellable
+            child: progress != null
                 ? SizedBox(
                     width: 267.6,
                     child: Column(
@@ -380,15 +425,15 @@ class ClipBatchOverlay extends StatelessWidget {
                             child: SizedBox(
                               height: 12,
                               child: Stack(children: [
-                                const Positioned.fill(
+                                Positioned.fill(
                                     child:
-                                        ColoredBox(color: VivaColors.fillIcon)),
+                                        ColoredBox(color: glass.progressTrack)),
                                 FractionallySizedBox(
                                     key: const Key('clip_batch_progress'),
-                                    widthFactor: progress ?? 0,
+                                    widthFactor: progress,
                                     heightFactor: 1,
-                                    child: const ColoredBox(
-                                        color: VivaColors.mainLight)),
+                                    child:
+                                        ColoredBox(color: glass.progressFill)),
                               ]),
                             ),
                           ),
@@ -415,7 +460,7 @@ class ClipBatchOverlay extends StatelessWidget {
                   },
                   style: FilledButton.styleFrom(
                       backgroundColor: glass.textPrimary,
-                      foregroundColor: VivaColors.fillBack,
+                      foregroundColor: glass.buttonForeground,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       textStyle: const TextStyle(
@@ -424,9 +469,11 @@ class ClipBatchOverlay extends StatelessWidget {
                           height: 28 / 18,
                           letterSpacing: -0.36,
                           fontWeight: FontWeight.w600)),
-                  child: Text((job.kind == ClipBatchKind.share
-                          ? 'clip_select_share_cancel'
-                          : 'clip_select_download_cancel')
+                  child: Text(switch (job.kind) {
+                    ClipBatchKind.save => 'clip_select_download_cancel',
+                    ClipBatchKind.share => 'clip_select_share_cancel',
+                    _ => 'clip_select_job_cancel',
+                  }
                       .tr()),
                 ),
               ),

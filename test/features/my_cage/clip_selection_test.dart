@@ -15,6 +15,7 @@ import 'package:vivanaut/features/my_cage/presentation/clip_selection_providers.
 import 'package:vivanaut/features/my_cage/presentation/clip_visibility_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/clip_selection_flow.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/clip_selection_widgets.dart';
 
 List<String> _ids(int n) => [for (var i = 0; i < n; i++) 'c$i'];
@@ -26,6 +27,10 @@ class _Export extends Fake implements VideoExportService {
   final downloaded = <String>[];
   List<File>? shared;
   void Function()? onDownload;
+  int clears = 0;
+
+  @override
+  Future<void> clearTemp() async => clears++;
 
   @override
   Future<bool> ensureGalleryAccess() async => access;
@@ -108,6 +113,13 @@ void main() {
       expect(full.setGroup(['a', 'b']).selection.ids, isEmpty);
     });
 
+    test('목록이 바뀌면 선택만 비우고 모드는 유지', () {
+      final c = ClipSelectionController()..enter('a');
+      c.clearIds();
+      expect(c.debugState.active, isTrue);
+      expect(c.debugState.ids, isEmpty);
+    });
+
     test('실패한 것만 남긴다(고른 순서 유지)', () {
       final s = const ClipSelection(active: true, ids: ['a', 'b', 'c']);
       expect(s.keepOnly({'c', 'a'}).ids, ['a', 'c']);
@@ -163,6 +175,30 @@ void main() {
       expect(result.cancelled, isTrue);
       expect(export.saved, ['a']);
       expect(result.failed, isEmpty);
+      // 손대지 못한 영상은 골라진 채 남길 수 있게 돌려준다.
+      expect(result.remaining, ['b', 'c']);
+    });
+
+    test('작업 중 다시 부르면 무시(성공으로 읽히지 않는다)', () async {
+      final first = batch().save(['a', 'b']);
+      final second = await batch().save(['c']);
+      expect(second.ignored, isTrue);
+      expect(second.succeeded, 0);
+      await first;
+      expect(export.saved, ['a', 'b']);
+    });
+
+    test('새 작업 시작 때 지난 임시 파일을 비운다', () async {
+      await batch().share(['a']);
+      await batch().save(['b']);
+      expect(export.clears, 2);
+    });
+
+    test('저장 뒤 내려받은 임시 파일을 지운다', () async {
+      await batch().save(['a']);
+      expect(
+          File('${Directory.systemTemp.path}/sel_test_a.mp4').existsSync(),
+          isFalse);
     });
 
     test('진행 중 상태는 저장 비율을 보여 준다', () async {
@@ -274,6 +310,52 @@ void main() {
       await tester.tap(find.byKey(const Key('clip_select_leave_ok')));
       await tester.pumpAndSettle();
       expect(find.text('open'), findsOneWidget);
+    });
+  });
+
+  group('뒤로가기 가드 — 셸 탭 첫 화면', () {
+    testWidgets('안드로이드 뒤로는 선택 모드에서 이탈 확인으로 간다', (tester) async {
+      var leaves = 0;
+      late WidgetRef captured;
+      final router = GoRouter(initialLocation: '/a', routes: [
+        StatefulShellRoute.indexedStack(
+          builder: (_, __, shell) => Scaffold(body: shell),
+          branches: [
+            StatefulShellBranch(routes: [
+              GoRoute(
+                  path: '/a',
+                  builder: (_, __) => Consumer(builder: (context, ref, _) {
+                        captured = ref;
+                        return ClipSelectionBackGuard(
+                            scope: ClipSelectionScope.feed,
+                            onLeave: () async => leaves++,
+                            child: const Text('tab-root'));
+                      })),
+            ]),
+          ],
+        ),
+        GoRoute(path: '/player', builder: (_, __) => const Text('player')),
+      ]);
+      await tester.pumpWidget(ProviderScope(
+          child: MaterialApp.router(routerConfig: router)));
+      await tester.pumpAndSettle();
+
+      captured
+          .read(clipSelectionProvider(ClipSelectionScope.feed).notifier)
+          .enter('x');
+      await tester.pump();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(leaves, 1);
+      expect(find.text('tab-root'), findsOneWidget);
+
+      // 위에 플레이어가 덮이면 뒤로는 플레이어를 닫는다(가드는 가로채지 않는다).
+      router.push('/player');
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(leaves, 1);
+      expect(find.text('tab-root'), findsOneWidget);
     });
   });
 }
