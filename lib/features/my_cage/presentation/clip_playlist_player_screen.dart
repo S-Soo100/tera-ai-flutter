@@ -1345,7 +1345,8 @@ class _DownloadOverlay extends StatelessWidget {
               ArcSpinner(
                   key: const Key('player_download_spinner'),
                   size: 62,
-                  color: glass.textSecondary),
+                  // Figma 1106:3659 원호 색 #B4AEAE(픽셀 실측, 2026-10-20).
+                  color: glass.progressTrack),
               const SizedBox(height: 12),
               Text('clip_download_progress'.tr(),
                   style: TextStyle(
