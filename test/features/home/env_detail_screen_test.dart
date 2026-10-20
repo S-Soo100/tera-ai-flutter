@@ -120,6 +120,21 @@ void main() {
     expect(find.byKey(EnvDetailScreen.dayPrevKey), findsOneWidget);
   });
 
+  testWidgets('날짜는 → 가 숨어도 가운데에 있다', (tester) async {
+    await _pump(tester);
+    final width = tester.getSize(find.byType(EnvDetailScreen)).width;
+    final today = find.text(_dateLabel(DateTime.now()));
+    // 전엔 숨긴 → 자리가 40, ← 가 48이라 4pt 오른쪽으로 밀렸다.
+    expect(tester.getCenter(today).dx, moreOrLessEquals(width / 2, epsilon: .5));
+    await tester.tap(find.byKey(EnvDetailScreen.dayPrevKey));
+    await tester.pumpAndSettle();
+    final now = DateTime.now();
+    final yesterday = find.text(
+        _dateLabel(DateTime(now.year, now.month, now.day - 1)));
+    expect(tester.getCenter(yesterday).dx,
+        moreOrLessEquals(width / 2, epsilon: .5));
+  });
+
   testWidgets('날짜 페이저 — ← 어제로, → 다시 오늘로(도착하면 → 숨김)', (tester) async {
     await _pump(tester);
     final now = DateTime.now();
