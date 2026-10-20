@@ -114,3 +114,8 @@ flutter_native_splash:
   android_12:
     color: "#FFFFFF"
     image: assets/splash/splash_vivanaut_android12.png
+
+# 녹화 비트레이트 패치 사본 — packages/README.md
+dependency_overrides:
+  flutter_webrtc:
+    path: packages/flutter_webrtc
