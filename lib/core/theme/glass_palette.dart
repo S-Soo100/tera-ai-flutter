@@ -86,6 +86,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     required this.surfaceTint,
     required this.segmentTrack,
     required this.surfaceHeader,
+    required this.appBar,
     required this.menuShadow,
     required this.envTempValue,
     required this.envHumidValue,
@@ -225,7 +226,12 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   final Color envBarMinimum;
   final Color navSelected;
   final Color navUnselected;
-  final Color surfaceHeader; // 상세 상단바·제어기록 섹션 배경
+  final Color surfaceHeader; // 제어기록 섹션·모달·메뉴 바탕
+
+  /// 상세 화면 상단바(상태바까지 106pt) 면 — Figma Rectangle 113 #FAFAFA
+  /// (하이라이트·북마크·영상 상세·온습도 상세·영상 선택, 2026-10-20 디자이너
+  /// 코멘트 "앱바가 흰색으로 개발돼 있다"). 본문 바닥([wallpaper])과 다르다.
+  final Color appBar;
   final Color
       menuShadow; // 헤더 드롭다운 그림자 — Figma 1107:10552 X0 Y0 blur20 #919497 30%
 
@@ -330,6 +336,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     surfaceTint: Color(0xFF1A2032),
     segmentTrack: Color(0xFF1E2438),
     surfaceHeader: Color(0xFF0E1322),
+    appBar: Color(0xFF0E1322), // 다크는 Figma 미정의 — 기존 상단바 값 유지
     menuShadow: Color(0x66000000), // 다크는 Figma 미정의 — 검정 40% 도출값
     envTempValue: Color(0xFFF85478),
     envHumidValue: Color(0xFF768AD6),
@@ -403,6 +410,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     surfaceTint: VivaColors.fillButton,
     segmentTrack: VivaColors.fillButton,
     surfaceHeader: Colors.white,
+    appBar: VivaColors.fillBack, // #FAFAFA
     menuShadow: Color(0x4D919497), // 2026-09-16 디자이너 effect 값(30%)
     envTempValue: Color(0xFFF85478),
     envHumidValue: Color(0xFF00B2F3),
@@ -474,6 +482,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     Color? surfaceTint,
     Color? segmentTrack,
     Color? surfaceHeader,
+    Color? appBar,
     Color? menuShadow,
     Color? envTempValue,
     Color? envHumidValue,
@@ -544,6 +553,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       surfaceTint: surfaceTint ?? this.surfaceTint,
       segmentTrack: segmentTrack ?? this.segmentTrack,
       surfaceHeader: surfaceHeader ?? this.surfaceHeader,
+      appBar: appBar ?? this.appBar,
       menuShadow: menuShadow ?? this.menuShadow,
       envTempValue: envTempValue ?? this.envTempValue,
       envHumidValue: envHumidValue ?? this.envHumidValue,
@@ -622,6 +632,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       surfaceTint: c(surfaceTint, other.surfaceTint),
       segmentTrack: c(segmentTrack, other.segmentTrack),
       surfaceHeader: c(surfaceHeader, other.surfaceHeader),
+      appBar: c(appBar, other.appBar),
       menuShadow: c(menuShadow, other.menuShadow),
       envTempValue: c(envTempValue, other.envTempValue),
       envHumidValue: c(envHumidValue, other.envHumidValue),
