@@ -223,13 +223,12 @@ class ClipSelectionActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassDockFrame(key: barKey, children: [
-      // 다운로드는 24 프레임 export, 공유는 36 프레임 export라 24 자리에
-      // 넘치게 그려 글리프를 Figma 크기로 맞춘다.
+      // 하단 바 아이콘은 모두 Figma 24 프레임 export(1497:12439·12443·12447).
       _item(context, 'redesign_v2/download_24', 'clip_select_download', 24,
           (_) => onDownload()),
-      _item(context, 'share', 'clip_select_share', 36, (_) => onShare()),
-      // 44 프레임 export(글리프 20) → Figma 24 프레임 글리프 18.
-      _item(context, 'redesign_v2/delete', 'clip_select_delete', 39.6,
+      _item(context, 'redesign_v2/share_24', 'clip_select_share', 24,
+          (_) => onShare()),
+      _item(context, 'redesign_v2/delete_24', 'clip_select_delete', 24,
           (_) => onDelete()),
       _item(context, 'redesign_v2/more_vert', 'clip_select_more', 24, onMore),
     ]);
@@ -262,8 +261,9 @@ class ClipSelectionActionBar extends StatelessWidget {
                     child: OverflowBox(
                         maxWidth: frame,
                         maxHeight: frame,
+                        // Figma 1497:12437 — 아이콘 #1E1E1E, 라벨 #3C3C3C(픽셀 실측).
                         child: FigmaIcon.tinted(asset,
-                            size: frame, color: glass.textSecondary))),
+                            size: frame, color: glass.textPrimary))),
                 const SizedBox(height: 4),
                 Text(label.tr(),
                     maxLines: 1,
