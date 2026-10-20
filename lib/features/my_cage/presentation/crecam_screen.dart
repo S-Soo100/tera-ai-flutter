@@ -166,28 +166,27 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
     });
     _maybeAskHighlightPush(cameras.valueOrNull?.isNotEmpty ?? false);
     final shell = GlassTabShell(
+      // Figma 1497:13355 — 선택 모드 상단바는 상태바까지 #FAFAFA 면 + 아래 선
+      // (하이라이트·북마크와 같은 CrecamDetailHeaderArea). 제목 "N개 선택됨",
+      // 오른쪽 달력·선택 종료.
+      header: selection.active
+          ? CrecamDetailHeaderArea(
+              child: CrecamDetailTopBar(
+                showBack: false,
+                title: 'clip_select_count'
+                    .tr(namedArgs: {'count': '${selection.count}'}),
+                onCalendarTap: () => pickFeedRange(context, ref),
+                trailing: ClipSelectHeaderButton.exit(
+                    onPressed: () => ref
+                        .read(clipSelectionProvider(_scope).notifier)
+                        .exit()),
+              ),
+            )
+          : null,
       child: Column(
         children: [
           if (selection.active)
-            // Figma 1497:13355 — 제목 "N개 선택됨", 오른쪽 달력·선택 종료. 아래 선.
-            DecoratedBox(
-              decoration: BoxDecoration(
-                  border:
-                      Border(bottom: BorderSide(color: context.glass.outline))),
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: CrecamScreen._gap),
-                child: CrecamDetailTopBar(
-                  showBack: false,
-                  title: 'clip_select_count'
-                      .tr(namedArgs: {'count': '${selection.count}'}),
-                  onCalendarTap: () => pickFeedRange(context, ref),
-                  trailing: ClipSelectHeaderButton.exit(
-                      onPressed: () => ref
-                          .read(clipSelectionProvider(_scope).notifier)
-                          .exit()),
-                ),
-              ),
-            )
+            const SizedBox(height: CrecamScreen._gap)
           else
             Padding(
               // top 0 — Figma 668:427은 헤더가 status bar 바로 아래 선다(홈 동일).

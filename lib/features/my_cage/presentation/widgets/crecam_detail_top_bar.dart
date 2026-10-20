@@ -16,7 +16,7 @@ import '../../../../shared/widgets/figma_icon.dart';
 ///
 /// 상단부 배경은 [CrecamDetailHeaderArea]가 감싼다 — Figma Rectangle 113:
 /// status bar까지 `surfaceHeader`(#FAFBFD)로 덮고 하단에 outline 헤어라인
-/// (2026-09-07 Figma 정밀 대조에서 누락 발견).
+/// (2026-09-07 Figma 정밀 대조에서 누락 발견, 색은 2026-10-20 #FAFAFA로 정정).
 class CrecamDetailTopBar extends StatelessWidget {
   const CrecamDetailTopBar({
     super.key,
@@ -128,7 +128,7 @@ class CrecamDetailTopBar extends StatelessWidget {
 }
 
 /// 상세 상단부 래퍼 — Figma Rectangle 113(668:656/718/744): status bar까지
-/// `surfaceHeader` 배경 + 하단 outline 헤어라인. [child]는 보통
+/// [GlassPalette.appBar](#FAFAFA) 배경 + 하단 outline 헤어라인. [child]는 보통
 /// [CrecamDetailTopBar]. 화면 쪽은 이걸 SafeArea **밖**에 두고 본문만
 /// SafeArea(top: false)로 감싼다 — 안 그러면 status bar 영역이 흰 바닥으로
 /// 남아 Figma의 106pt 헤더 면이 44pt로 쪼그라든다.
@@ -145,7 +145,7 @@ class CrecamDetailHeaderArea extends StatelessWidget {
           ? SystemUiOverlayStyle.light
           : SystemUiOverlayStyle.dark,
       child: Container(
-        decoration: BoxDecoration(color: glass.surfaceHeader),
+        decoration: BoxDecoration(color: glass.appBar),
 
         // Figma 668:717 — 헤더 106(62+44) 안에 하단선을 그린다(높이 미추가,
 

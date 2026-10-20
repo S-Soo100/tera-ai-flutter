@@ -63,11 +63,11 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     );
   }
 
-  // ── 상단바 (§A.5 — bg surfaceHeader + 하단 1px, 타이틀 중앙, ✕ 우측) ──
+  // ── 상단바 (§A.5 — bg appBar #FAFAFA + 하단 1px, 타이틀 중앙, ✕ 우측) ──
 
   Widget _topBar(GlassPalette glass) {
     return Container(
-      decoration: BoxDecoration(color: glass.surfaceHeader),
+      decoration: BoxDecoration(color: glass.appBar),
       // Figma 1081:4873 — 헤더 106(62+44) 안에서 하단선을 그린다(높이 미추가).
       foregroundDecoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: glass.border)),
