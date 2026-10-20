@@ -1,10 +1,16 @@
+import 'dart:async';
+
+import 'package:clock/clock.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 
 import '../../../../core/theme/glass_palette.dart';
+import '../../../auth/presentation/auth_providers.dart';
 import '../../data/lcd_repository.dart';
+import '../../data/lcd_text_store.dart';
+import '../../domain/lcd_text.dart';
 import '../management_colors.dart';
 import '../supabase_module_providers.dart';
 import 'device_setting_sheet.dart';
@@ -16,11 +22,54 @@ const _maxLcdTextLength = 20;
 final _lcdSendingProvider =
     StateProvider.autoDispose.family<bool, Object>((ref, sheet) => false);
 
-/// 마지막으로 **성공 전송한** 문구(기기별, 세션 메모리). 서버/펌웨어에 현재
-/// LCD 문구를 읽는 계약이 없어 기기 이름 등으로 채우지 않는다 — 같은 세션에서
-/// 다시 열면 이 값을 미리 채우고 '수정 없음'이면 완료를 비활성화한다.
+final lcdTextStoreProvider =
+    Provider<LcdTextStore>((ref) => const HiveLcdTextStore());
+
+/// 문구를 기억하는 계정 — 계정 id만 감시한다(인증 provider stale 방지 규칙).
+final lcdTextAccountProvider = Provider<String?>(
+    (ref) => ref.watch(currentUserProvider.select((u) => u?.id)));
+
+/// 이 폰이 마지막으로 **성공 전송한** 문구(기기별, 이 폰에 저장 — [LcdTextStore],
+/// 2026-10-06). 서버 확정값(`devices.lcd_text`, 2026-10-07)을 모를 때만 쓰는
+/// 대체값이다 — 화면은 [lcdDisplayTextProvider]를 본다.
 final lastLcdTextProvider =
-    StateProvider.family<String?, String>((ref, deviceId) => null);
+    StreamProvider.autoDispose.family<String?, String>((ref, deviceId) {
+  final account = ref.watch(lcdTextAccountProvider);
+  if (account == null) return Stream.value(null);
+  return ref.watch(lcdTextStoreProvider).watch(account, deviceId);
+});
+
+/// 방금 보낸 문구(세션 메모리) — 기기 ACK가 서버 값으로 돌아오기 전 1~2초를
+/// 메운다.
+final lcdPendingProvider =
+    StateProvider.family<PendingLcdText?, String>((ref, deviceId) => null);
+
+/// 홈 "LCD 표시" 줄·LCD 입력칸에 보일 문구. null이면 아는 문구가 없다(호출측이
+/// 기기 ID로 채운다). 우선순위는 [resolveLcdText].
+final lcdDisplayTextProvider =
+    Provider.autoDispose.family<String?, String>((ref, deviceId) {
+  final server = ref.watch(deviceLinkStatusProvider(deviceId)
+          .select((s) => s.valueOrNull?.lcd)) ??
+      DeviceLcdText.unknown;
+  final pending = ref.watch(lcdPendingProvider(deviceId));
+  final account = ref.watch(lcdTextAccountProvider);
+  // 스트림 첫 값 전에도 입력칸 처음 값이 맞도록 동기 조회로 메운다.
+  final phone = ref.watch(lastLcdTextProvider(deviceId)).valueOrNull ??
+      (account == null
+          ? null
+          : ref.watch(lcdTextStoreProvider).load(account, deviceId));
+  final now = clock.now();
+  if (pending != null) {
+    // 30초 안에 ACK가 안 오면 서버 값으로 돌아가도록 다시 계산한다.
+    final left = kLcdPendingWindow - now.difference(pending.sentAt);
+    if (left > Duration.zero) {
+      final timer = Timer(left, ref.invalidateSelf);
+      ref.onDispose(timer.cancel);
+    }
+  }
+  return resolveLcdText(
+      server: server, pending: pending, phone: phone, now: now);
+});
 
 /// LCD 문구 입력 화면 열기 (2026-08-14 핸드오프 §3 → 2026-09-16 P08 전체 화면).
 ///
@@ -36,12 +85,13 @@ Future<void> showLcdSheet(
 }) {
   // 탭 셸 밖(루트)으로 띄운다 — 원본 1081:3160은 전체 화면이고 독이 없다
   // (시뮬 확인 2026-09-16: 탭 내비게이터로 띄우면 독이 남는다).
+  // builder 안에서 호출자 [ref]를 읽지 말 것 — 라우트는 다시 그려질 때마다
+  // builder를 부르는데, 그때 홈 줄이 사라졌으면 앱 전체가 오류 화면이 된다
+  // (2026-10-07 네트워크 복귀 뒤 실측). 화면이 자기 ref로 읽는다.
   return Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute(
-          builder: (_) => _LcdScreen(
-              deviceId: deviceId,
-              defaultText: defaultText,
-              repo: ref.read(lcdRepositoryProvider))));
+          builder: (_) =>
+              _LcdScreen(deviceId: deviceId, defaultText: defaultText)));
 }
 
 /// Figma 1081:3160 — 헤더 44(뒤로 + 제목 16/700), 모듈 그림 345×171 y118,
@@ -49,11 +99,9 @@ Future<void> showLcdSheet(
 /// 완료 CTA y696(키보드 위 36). 기본값 복원은 기존 기능이라 y752 텍스트
 /// 버튼으로 두되 키보드가 있으면 숨긴다(노출 위치는 결정 목록).
 class _LcdScreen extends ConsumerStatefulWidget {
-  const _LcdScreen(
-      {required this.deviceId, required this.repo, this.defaultText});
+  const _LcdScreen({required this.deviceId, this.defaultText});
 
   final String deviceId;
-  final LcdRepository repo;
 
   /// 아직 아무것도 안 보낸 기기의 첫 기본값 — 페어링 때 감지된 기기 이름
   /// (`devices.device_id`, 예 `terra-cb7d7864`). 원본 1081:3160의 입력칸이
@@ -67,7 +115,7 @@ class _LcdScreen extends ConsumerStatefulWidget {
 
 class _LcdScreenState extends ConsumerState<_LcdScreen> {
   late final TextEditingController _text = TextEditingController(
-      text: ref.read(lastLcdTextProvider(widget.deviceId)) ??
+      text: ref.read(lcdDisplayTextProvider(widget.deviceId)) ??
           widget.defaultText ??
           '');
   final _identity = Object();
@@ -94,7 +142,7 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
   Widget build(BuildContext context) {
     final glass = context.glass;
     final sending = ref.watch(_lcdSendingProvider(_identity));
-    final last = ref.watch(lastLcdTextProvider(widget.deviceId));
+    final last = ref.watch(lcdDisplayTextProvider(widget.deviceId));
     // 기기가 꺼져 있어도 서버는 받아 주고 "전송했어요"가 떴다 — 실제로는
     // 기기에 안 가 같은 문구를 다시 보낼 수도 없게 됐다(2026-09-25 점검).
     final online = ref.watch(moduleOnlineProvider(widget.deviceId));
@@ -224,12 +272,27 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
     // Controller의 프로그램 입력은 TextField formatter를 거치지 않는다.
     // 전송 직전에도 화면 카운터와 같은 문자 단위로 상한을 적용한다.
     final text = _text.text.characters.take(_maxLcdTextLength).toString();
-    final last = ref.read(lastLcdTextProvider(widget.deviceId).notifier);
+    final repo = ref.read(lcdRepositoryProvider);
+    final account = ref.read(lcdTextAccountProvider);
+    final store = ref.read(lcdTextStoreProvider);
+    final pending = ref.read(lcdPendingProvider(widget.deviceId).notifier);
+    final baseline = ref
+        .read(deviceLinkStatusProvider(widget.deviceId))
+        .valueOrNull
+        ?.lcd
+        .updatedAt;
     final ok = await submitAndClose(
       context,
       () async {
-        await widget.repo.setText(widget.deviceId, text);
-        last.state = text;
+        await repo.setText(widget.deviceId, text);
+        pending.state =
+            PendingLcdText(text, sentAt: clock.now(), baseline: baseline);
+        // 기기에는 이미 갔다 — 저장 실패로 '전송 실패'를 띄우지 않는다.
+        if (account != null) {
+          try {
+            await store.save(account, widget.deviceId, text);
+          } catch (_) {}
+        }
       },
       successKey: 'lcd_sent',
       failureKey: 'lcd_failed',

@@ -744,4 +744,45 @@ void main() {
           isFalse);
     });
   });
+
+  group('비밀번호 기억하기 선택 유지', () {
+    DeviceAddFlowController build(
+            {required Future<bool> Function() read,
+            required List<bool> writes}) =>
+        DeviceAddFlowController(
+            gateway: Gateway(),
+            accountId: 'owner',
+            isCurrent: () => true,
+            token: () => 'jwt',
+            namePrefix: (_) => '사육장',
+            names: () async => [],
+            confirm: (kind, id) async => null,
+            saveCredentials: (_, __) async {},
+            readCredentials: () async => {},
+            autoGroup: (_, __) async => 'group',
+            readRemember: read,
+            saveRemember: (v) async => writes.add(v));
+
+    test('지난번 체크를 다음 화면에서 그대로 연다', () async {
+      final writes = <bool>[];
+      final c = build(read: () async => true, writes: writes);
+      await Future<void>.delayed(Duration.zero);
+      expect(c.state.remember, isTrue);
+      c.remember(false);
+      expect(writes, [false]);
+      c.dispose();
+    });
+
+    test('사용자가 먼저 바꾸면 늦게 온 저장값으로 덮지 않는다', () async {
+      final gate = Completer<bool>();
+      final writes = <bool>[];
+      final c = build(read: () => gate.future, writes: writes);
+      c.remember(true);
+      gate.complete(false);
+      await Future<void>.delayed(Duration.zero);
+      expect(c.state.remember, isTrue);
+      expect(writes, [true]);
+      c.dispose();
+    });
+  });
 }

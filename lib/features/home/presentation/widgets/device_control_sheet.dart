@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/config/feature_flags.dart';
 import '../../../../core/network/user_facing_error.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/skeleton_loading.dart';
@@ -11,6 +12,7 @@ import '../../../my_cage/domain/device_command.dart';
 import '../../../my_cage/domain/telemetry_reading.dart';
 import '../../../my_cage/presentation/management_colors.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
+import '../../../my_cage/presentation/widgets/clip_toast.dart';
 import '../../../my_cage/presentation/widgets/management_widgets.dart';
 import '../../domain/fan_timer_duration.dart';
 import '../../domain/mist_duration.dart';
@@ -212,6 +214,10 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   String? _currentDeviceId;
   bool _online = false;
 
+  /// 냉각팬을 꺼 둔 동안(FeatureFlags.coolFanEnabled) — 켜진 팬을 끄는 것만
+  /// 허용한다. 예약 탭·종료 칩·켜기는 막는다.
+  bool _coolOffOnly = false;
+
   bool _targetStillValid() {
     if (_currentDeviceId != widget.deviceId || !_online) {
       ControlFeedback.of(context).show('home_fan_target_changed'.tr());
@@ -276,7 +282,8 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
             ScheduleDevice.led);
         // 구 펌웨어(상태 미보고)는 기다려도 보고가 오지 않는다 — ACK로만 확인하고
         // 목표 상태를 그리지 않는다("상태 모름" 유지, CLAUDE.md LED 규칙).
-        final known = current == ActuatorState.on || current == ActuatorState.off;
+        final known =
+            current == ActuatorState.on || current == ActuatorState.off;
         await sendCageCommand(
           context,
           ref,
@@ -328,6 +335,8 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
     final accent = _accent(context);
     _currentDeviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
     _online = ref.watch(moduleOnlineProvider(widget.deviceId));
+    _coolOffOnly = widget.device == ScheduleDevice.cool &&
+        !ref.watch(coolFanEnabledProvider);
     _dimmable = ref
             .watch(deviceListProvider)
             .valueOrNull
@@ -360,15 +369,17 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _Segment(
-                        tab: _tab,
-                        onChanged: (t) => setState(() {
-                              _tab = t;
-                              _editing = null;
-                              _draft = null;
-                            })),
-                    const SizedBox(height: 24),
-                    if (_tab == DeviceControlTab.immediate)
+                    if (!_coolOffOnly) ...[
+                      _Segment(
+                          tab: _tab,
+                          onChanged: (t) => setState(() {
+                                _tab = t;
+                                _editing = null;
+                                _draft = null;
+                              })),
+                      const SizedBox(height: 24),
+                    ],
+                    if (_tab == DeviceControlTab.immediate || _coolOffOnly)
                       _immediate(context, accent)
                     else
                       _scheduled(context, accent),
@@ -420,11 +431,14 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
           label: 'home_sheet_power_fmt'.tr(args: [stateLabel]),
           on: on,
           accent: accent,
-          enabled: !busy,
+          // 꺼 둔 냉각팬은 켜져 있을 때(끌 때)만 스위치가 살아 있다.
+          enabled: !busy && (!_coolOffOnly || on),
           loading: loading,
           unknown: unknown,
           onChanged: (v) => switch (widget.device) {
                 ScheduleDevice.led => _ledPower(v),
+                _ when _coolOffOnly && v =>
+                  showFeatureUnavailableToast(context),
                 _ => _fanPower(v),
               }),
       const SizedBox(height: 24),
@@ -457,6 +471,14 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                       enabled: !busy,
                       onTap: () => _fanChip(null, on))),
             ])));
+      // 꺼 둔 냉각팬은 종료 칩(=다시 켜기) 대신 끄기만 된다는 안내 한 줄.
+      case ScheduleDevice.cool when _coolOffOnly:
+        children.add(Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Text('home_cool_fan_off_only_hint'.tr(),
+                key: const Key('cool_fan_off_only_hint'),
+                style: managementStyle(context,
+                    size: 14, color: context.glass.textTertiary))));
       case ScheduleDevice.cool:
         children.add(ScheduleSection(
             label: 'home_cooling_end_label'.tr(),
@@ -585,16 +607,20 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
     // (2026-09-25 점검).
     if (!schedules.hasValue) {
       if (schedules.hasError) {
-        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text('routine_load_failed'.tr(args: [userFacingError(schedules.error!)]),
-              style: managementStyle(context,
-                  size: 14, color: Theme.of(context).colorScheme.error)),
-          const SizedBox(height: 8),
-          _SheetCta(
-              label: 'retry'.tr(),
-              color: accent,
-              onPressed: () => ref.invalidate(schedulesProvider)),
-        ]);
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                  'routine_load_failed'
+                      .tr(args: [userFacingError(schedules.error!)]),
+                  style: managementStyle(context,
+                      size: 14, color: Theme.of(context).colorScheme.error)),
+              const SizedBox(height: 8),
+              _SheetCta(
+                  label: 'retry'.tr(),
+                  color: accent,
+                  onPressed: () => ref.invalidate(schedulesProvider)),
+            ]);
       }
       return const SkeletonListLoading(itemCount: 2);
     }

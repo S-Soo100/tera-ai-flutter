@@ -13,8 +13,8 @@ import '../home_control_providers.dart';
 
 // 1초 tick은 라이브 쉼 카운트다운도 써서 shared로 옮겼다(2026-09-30). 기존
 // import 경로를 그대로 두려고 다시 내보낸다.
-export '../../../../shared/providers/clock_providers.dart' show secondTickProvider;
-
+export '../../../../shared/providers/clock_providers.dart'
+    show secondTickProvider;
 
 /// 타이머가 떠 있는 동안의 재검증 주기 ([runningTimersProvider]).
 const _kTimerRevalidateEvery = Duration(seconds: 30);

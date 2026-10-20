@@ -172,8 +172,7 @@ List<ControlLogEntry> buildControlLog({
   int? head; // 묶는 중인 분무의 merged 인덱스
   DateTime? chainLast; // 그 묶음의 마지막 회차 시각
   for (final p in parsed) {
-    final isMist =
-        p.kind == MarkerKind.mist && p.state == ControlLogState.ran;
+    final isMist = p.kind == MarkerKind.mist && p.state == ControlLogState.ran;
     if (isMist &&
         head != null &&
         chainLast != null &&

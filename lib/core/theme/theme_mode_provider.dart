@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 
+/// 다크 모드 사용 여부(2026-10-19 사용자 결정 — 당분간 라이트만). false면 앱은
+/// 저장값·휴대폰 설정과 무관하게 라이트로 그리고, 마이페이지 "화면 모드" 줄을
+/// 숨긴다. 저장값은 지우지 않으니 true로 되돌리면 예전 선택이 살아난다.
+const kDarkModeEnabled = false;
+
 /// 화면 모드(시스템/라이트/다크) 저장소. Widget → Provider → Repository 체인을
 /// 지킨다 — 프로필 화면이 Hive를 직접 만지지 않는다.
 abstract class ThemeModeRepository {

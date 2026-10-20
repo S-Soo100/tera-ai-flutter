@@ -73,9 +73,7 @@ class RebootRow extends ConsumerWidget {
           .valueOrNull
           ?.where((c) => c.id == id)
           .firstOrNull;
-      return camera != null &&
-          camera.isOnline &&
-          isRebootCapableFirmware(camera.firmwareVer);
+      return cameraRebootCapable(camera);
     }
     final health = ref.watch(sysHealthProvider(target)).valueOrNull;
     return health != null && health.present && health.isOnline == true;
@@ -85,57 +83,14 @@ class RebootRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final kind = target.$1;
     final reboot = ref.watch(rebootProvider(target));
-    ref.listen(rebootProvider(target), (previous, next) {
-      final outcome = next.outcome;
-      if (next.round == previous?.round || outcome == null) return;
-      void snack(String key) => ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(key.tr())));
-      void modal(String key) => showVivaModal(context,
-          message: key.tr(), confirmLabel: 'common_confirm'.tr());
-      switch (outcome) {
-        case RebootOutcome.done:
-          snack('reboot_done');
-        case RebootOutcome.timedOut:
-          modal(_byKind(kind, 'reboot_timeout'));
-        case RebootOutcome.noAck:
-          snack('device_reboot_no_ack');
-        case RebootOutcome.unsupported:
-          modal('device_reboot_unsupported');
-        case RebootOutcome.failed:
-          snack('device_reboot_failed_result');
-      }
-    });
+    listenRebootOutcome(context, ref, target);
     if (!_capable(ref) && !reboot.rebooting) return const SizedBox.shrink();
     final busy = reboot.sending ||
         reboot.rebooting ||
         reboot.coolingDown(DateTime.now());
     final glass = context.glass;
 
-    Future<void> tap() async {
-      final confirm = [
-        _byKind(kind, 'reboot_confirm').tr(),
-        if (kind == PairTargetKind.device && kDeviceRebootScheduleNote)
-          'device_reboot_schedule_note'.tr(),
-      ].join('\n');
-      final ok = await showVivaModal(context,
-          message: confirm,
-          cancelLabel: 'common_cancel'.tr(),
-          confirmLabel: 'reboot_ok'.tr(),
-          confirmKey: const Key('reboot_ok'));
-      if (!ok || !context.mounted) return;
-      final result = await ref.read(rebootProvider(target).notifier).request();
-      if (!context.mounted) return;
-      final message = switch (result) {
-        RebootRequest.published => null,
-        RebootRequest.notPublished => 'reboot_retry_later',
-        RebootRequest.notFound => _byKind(kind, 'reboot_not_found'),
-        RebootRequest.failed => 'reboot_failed',
-      };
-      if (message != null) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(message.tr())));
-      }
-    }
+    Future<void> tap() => confirmAndRequestReboot(context, ref, target);
 
     return Padding(
         padding: const EdgeInsets.only(top: 24),
@@ -160,5 +115,65 @@ class RebootRow extends ConsumerWidget {
                     size: 18,
                     color: busy ? glass.textTertiary : glass.textSecondary),
             ])));
+  }
+}
+
+/// 재시작 뒤 결과(완료·무소식·거부)를 안내한다 — build 안에서 부른다. 기기
+/// 상세 "재시작" 줄과 마이페이지 기기 재시작 목록이 같이 쓴다.
+void listenRebootOutcome(
+    BuildContext context, WidgetRef ref, SysTarget target) {
+  final kind = target.$1;
+  ref.listen(rebootProvider(target), (previous, next) {
+    final outcome = next.outcome;
+    if (next.round == previous?.round || outcome == null) return;
+    void snack(String key) => ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(key.tr())));
+    void modal(String key) => showVivaModal(context,
+        message: key.tr(), confirmLabel: 'common_confirm'.tr());
+    switch (outcome) {
+      case RebootOutcome.done:
+        snack(kind == PairTargetKind.camera
+            ? 'camera_reboot_done'
+            : 'reboot_done');
+      case RebootOutcome.timedOut:
+        modal(_byKind(kind, 'reboot_timeout'));
+      case RebootOutcome.noAck:
+        snack('device_reboot_no_ack');
+      case RebootOutcome.unsupported:
+        modal('device_reboot_unsupported');
+      case RebootOutcome.failed:
+        snack('device_reboot_failed_result');
+    }
+  });
+}
+
+/// 재시작 확인창 → 요청 → 요청 결과 안내(스낵바). 기기 상세 "재시작" 줄과
+/// 라이브 실패 화면의 [카메라 재시작]이 같이 쓴다. 재시작 뒤 결과(완료·무소식)는
+/// 여기서 안내하지 않는다 — 상세는 줄이, 라이브는 면이 알린다.
+Future<void> confirmAndRequestReboot(
+    BuildContext context, WidgetRef ref, SysTarget target) async {
+  final kind = target.$1;
+  final confirm = [
+    _byKind(kind, 'reboot_confirm').tr(),
+    if (kind == PairTargetKind.device && kDeviceRebootScheduleNote)
+      'device_reboot_schedule_note'.tr(),
+  ].join('\n');
+  final ok = await showVivaModal(context,
+      message: confirm,
+      cancelLabel: 'common_cancel'.tr(),
+      confirmLabel: 'reboot_ok'.tr(),
+      confirmKey: const Key('reboot_ok'));
+  if (!ok || !context.mounted) return;
+  final result = await ref.read(rebootProvider(target).notifier).request();
+  if (!context.mounted) return;
+  final message = switch (result) {
+    RebootRequest.published => null,
+    RebootRequest.notPublished => 'reboot_retry_later',
+    RebootRequest.notFound => _byKind(kind, 'reboot_not_found'),
+    RebootRequest.failed => 'reboot_failed',
+  };
+  if (message != null) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message.tr())));
   }
 }

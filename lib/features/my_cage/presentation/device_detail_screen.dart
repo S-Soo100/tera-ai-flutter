@@ -300,8 +300,7 @@ class _DeviceDetailBody extends ConsumerWidget {
                                                   weight: FontWeight.w600)),
                                           const SizedBox(width: 12),
                                           Expanded(
-                                              child: Text(
-                                                  wifiName ?? '--',
+                                              child: Text(wifiName ?? '--',
                                                   key: const Key(
                                                       'device_wifi_name'),
                                                   textAlign: TextAlign.right,
@@ -348,7 +347,8 @@ class _DeviceDetailBody extends ConsumerWidget {
                               onPressed: draft.saving
                                   ? null
                                   : () async {
-                                      if (await managementConfirm(context,
+                                      if (await managementConfirm(
+                                              context,
                                               (wifiKind == null
                                                       ? 'management_delete_confirm'
                                                       : 'management_delete_confirm_wifi')

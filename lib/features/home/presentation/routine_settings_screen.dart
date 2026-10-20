@@ -2,12 +2,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/feature_flags.dart';
 import '../../../core/network/user_facing_error.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/num_format.dart';
 import '../../../shared/widgets/figma_icon.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../my_cage/presentation/management_colors.dart';
+import '../../my_cage/presentation/widgets/clip_toast.dart';
 import '../../my_cage/presentation/widgets/management_widgets.dart';
 import '../../my_cage/domain/actuator_state.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
@@ -167,6 +169,15 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
     void toggleSelect() => setState(() {
           if (!_selected.remove(id)) _selected.add(id);
         });
+    // 냉각팬을 꺼 둔 동안 기존 냉각팬 예약은 켜기·수정을 막는다(토스트).
+    // 끄기와 삭제(삭제 모드)는 그대로 — 남은 예약을 정리할 수 있어야 한다.
+    final coolLocked = !ref.watch(coolFanEnabledProvider) &&
+        ScheduleDevice.of(switch (row) {
+              SchedulePair p => p.on.action,
+              _ => (row as Schedule).action,
+            }) ==
+            ScheduleDevice.cool;
+    void unavailable() => showFeatureUnavailableToast(context);
     if (row case final SchedulePair p) {
       final on = p.on;
       return ScheduleRow(
@@ -186,9 +197,15 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
         checkKey: Key('schedule_pair_check_${p.pairId}'),
         deleteMode: _deleteMode,
         selected: selected,
-        onToggle: (v) => _guard(
-            () => ref.read(schedulesProvider.notifier).setPairEnabled(p, v)),
-        onTap: _deleteMode ? toggleSelect : () => _editPair(p),
+        onToggle: (v) => coolLocked && v
+            ? unavailable()
+            : _guard(() =>
+                ref.read(schedulesProvider.notifier).setPairEnabled(p, v)),
+        onTap: _deleteMode
+            ? toggleSelect
+            : coolLocked
+                ? unavailable
+                : () => _editPair(p),
       );
     }
     final s = row as Schedule;
@@ -208,9 +225,15 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
       checkKey: Key('schedule_check_${s.id}'),
       deleteMode: _deleteMode,
       selected: selected,
-      onToggle: (v) =>
-          _guard(() => ref.read(schedulesProvider.notifier).setEnabled(s, v)),
-      onTap: _deleteMode ? toggleSelect : () => _edit(s, all),
+      onToggle: (v) => coolLocked && v
+          ? unavailable()
+          : _guard(
+              () => ref.read(schedulesProvider.notifier).setEnabled(s, v)),
+      onTap: _deleteMode
+          ? toggleSelect
+          : coolLocked
+              ? unavailable
+              : () => _edit(s, all),
     );
   }
 
@@ -218,14 +241,16 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
 
   Future<void> _add() async {
     // 냉각팬 없는 보드(fan2 unavailable)는 냉각팬 예약을 고를 수 없다 — 홈
-    // 타일과 같은 기준.
+    // 타일과 같은 기준. 냉각팬을 꺼 둔 동안(FeatureFlags)에도 뺀다.
     final deviceId = ref.read(currentDeviceIdProvider).valueOrNull;
     final t = deviceId == null
         ? null
         : ref.read(telemetryStreamProvider(deviceId)).valueOrNull;
+    final coolPickable = ref.read(coolFanEnabledProvider) &&
+        t?.fan2 != ActuatorState.unavailable;
     final devices = [
       for (final d in ScheduleDevice.pickable)
-        if (d != ScheduleDevice.cool || t?.fan2 != ActuatorState.unavailable) d
+        if (d != ScheduleDevice.cool || coolPickable) d
     ];
     final result = await Navigator.of(context).push<Object>(MaterialPageRoute(
         builder: (_) => ScheduleDevicePickerScreen(

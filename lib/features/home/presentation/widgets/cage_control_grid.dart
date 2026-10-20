@@ -4,7 +4,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/config/feature_flags.dart';
 import '../../../../core/theme/glass_palette.dart';
+import '../../../my_cage/presentation/widgets/clip_toast.dart';
 import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/domain/telemetry_reading.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
@@ -35,6 +37,8 @@ import 'running_timer_chip.dart';
 /// ([openDeviceControlSheet], Figma 1107:7995 — 즉시/예약 segment)를 연다.
 /// 명령 송신은 전부 [cage_control_actions] 경유(히터 2단 안전확인·분무 5초
 /// 잠금이 거기 있다). 냉각팬은 fan2 계약을 사용하며 미보고이면 비활성화한다.
+/// [FeatureFlags.coolFanEnabled]가 꺼져 있으면 냉각팬 칸은 "비활성화" + 탭 시
+/// 토스트(Figma Home 시안), 켜져 있을 때만 시트를 열어 끄게 한다.
 ///
 /// 타이머 카운트다운은 타일 부제에 쓴다 — "켜짐 · 30m 56s 뒤 꺼짐"(2026-09-16
 /// 디자이너 메모 "타이머·예약 사용 시 종료 카운트다운 표시"). 홈 상단 칩은
@@ -89,6 +93,9 @@ class CageControlGrid extends ConsumerWidget {
     final fanOn = shown(ScheduleDevice.fan) == ActuatorState.on;
     final coolOn = shown(ScheduleDevice.cool) == ActuatorState.on;
     final coolAvailable = t != null && t.fan2 != ActuatorState.unavailable;
+    // 냉각팬을 꺼 둔 동안(FeatureFlags.coolFanEnabled)엔 "비활성화" + 토스트.
+    // 단 켜져 있으면 평소처럼 시트를 열어 끌 수 있게 둔다(시트는 끄기만).
+    final coolDisabled = !ref.watch(coolFanEnabledProvider) && !coolOn;
     final ledOn = shown(ScheduleDevice.led) == ActuatorState.on;
     // 히터 타일 노출 조건 — 켜짐 또는 안전잠금(둘 다 "꺼야/풀어야 할 상태").
     final heaterVisible =
@@ -159,9 +166,11 @@ class CageControlGrid extends ConsumerWidget {
       _DeviceTile(
         key: coolFanKey,
         name: 'device_cool_fan'.tr(),
-        status: coolAvailable
-            ? fanStatus(shown(ScheduleDevice.cool), FanActuator.cooling)
-            : 'home_value_none'.tr(),
+        status: coolDisabled
+            ? 'device_state_disabled'.tr()
+            : coolAvailable
+                ? fanStatus(shown(ScheduleDevice.cool), FanActuator.cooling)
+                : 'home_value_none'.tr(),
         glyph: FigmaIcon.metric(coolOn ? FigmaIcons.coolOn : FigmaIcons.coolOff,
             size: 40),
         active: coolOn,
@@ -169,7 +178,13 @@ class CageControlGrid extends ConsumerWidget {
         dimmed: controlLocked && !loading(ScheduleDevice.cool),
         tileColor: coolOn ? glass.deviceCoolBg : glass.surfaceTint,
         iconCircleColor: coolOn ? glass.deviceCool : glass.deviceOff,
-        onTap: online && coolAvailable ? () => open(ScheduleDevice.cool) : null,
+        onTap: !online
+            ? null
+            : coolDisabled
+                ? () => showFeatureUnavailableToast(context)
+                : coolAvailable
+                    ? () => open(ScheduleDevice.cool)
+                    : null,
       ),
       // ④ LED — `telemetry.led`/`led_brightness`만 믿는다(2026-08-18 회신 §4).
       // 구 펌웨어(unavailable)는 "상태 모름"으로 말하고 켜기/끄기 시트를 연다.

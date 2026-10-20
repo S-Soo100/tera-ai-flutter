@@ -6,6 +6,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import '../../../shared/services/local_notifications.dart';
 import '../../my_cage/data/device_wifi_name_store.dart';
+import '../../my_cage/data/lcd_text_store.dart';
 import '../../profile/presentation/profile_providers.dart';
 import '../data/push_device_repository.dart';
 import '../data/push_messaging_service.dart';
@@ -54,10 +55,12 @@ final pushLifecycleControllerProvider =
       }),
     ),
     // 로그아웃 뒤 로컬 정리 — 예약 알림과 기기별 Wi-Fi 이름(집·사무실
-    // 네트워크 이름이라 계정 데이터로 본다, CLAUDE.md 3층 계정 격리 ③).
+    // 네트워크 이름이라 계정 데이터로 본다, CLAUDE.md 3층 계정 격리 ③),
+    // 기기별 LCD 문구.
     clearLocalNotifications: () async {
       await core.cancelAll();
       await const HiveDeviceWifiNameStore().clearAll();
+      await const HiveLcdTextStore().clearAll();
     },
     navigate: (route) {
       final router = ref.read(routerProvider);

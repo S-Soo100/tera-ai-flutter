@@ -12,7 +12,13 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/live_recording.dart';
 import 'live_recording_controller.dart';
+import '../domain/sys_health.dart';
+import '../domain/terra_camera.dart';
 import 'my_cage_providers.dart';
+import 'sys_health_controllers.dart';
+import 'webrtc_live_controller.dart';
+import 'widgets/management_widgets.dart';
+import 'widgets/sys_health_widgets.dart';
 import 'player_view_providers.dart';
 import '../../../shared/widgets/figma_icon.dart';
 import 'widgets/camera_rotate_tile.dart';
@@ -38,6 +44,8 @@ class CameraLiveFullscreenScreen extends ConsumerStatefulWidget {
 
   static const closeButtonKey = Key('live_fullscreen_close');
   static const rotateButtonKey = Key('live_fullscreen_rotate');
+  static const rebootButtonKey = Key('live_fullscreen_reboot');
+  static const rebootReasonKey = Key('live_fullscreen_reboot_reason');
 
   @override
   ConsumerState<CameraLiveFullscreenScreen> createState() =>
@@ -75,8 +83,8 @@ class _CameraLiveFullscreenScreenState
 
   Future<void> _toggleRotate(String cameraUuid, bool next) async {
     ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state = true;
-    final ok = await submitRotate180(context, ref,
-        cameraUuid: cameraUuid, next: next);
+    final ok =
+        await submitRotate180(context, ref, cameraUuid: cameraUuid, next: next);
     if (!mounted) return;
     if (!ok) {
       ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state = false;
@@ -142,11 +150,15 @@ class _CameraLiveFullscreenScreenState
                       builder: (context, size) => Column(children: [
                             SizedBox(
                                 height: math.min(84, size.maxHeight * 0.13)),
-                            AspectRatio(
-                                aspectRatio: 16 / 9,
+                            // 좌우 끝까지(2026-10-03 사용자 지시) — 틀을 영상
+                            // 비율에 맞춰 contain이어도 옆이 비지 않는다.
+                            _LiveAspectBox(
+                                cameraUuid: widget.cameraId,
                                 child: WebRtcLiveView(
                                     key: _liveKey,
-                                    cameraUuid: widget.cameraId)),
+                                    cameraUuid: widget.cameraId,
+                                    // 재시작은 맨 아래 버튼 하나로(중복 방지).
+                                    showReboot: false)),
                             Align(
                                 alignment: Alignment.centerRight,
                                 child: Padding(
@@ -164,6 +176,7 @@ class _CameraLiveFullscreenScreenState
                                           color: glass.textPrimary, size: 36),
                                     ))),
                             const Spacer(),
+                            _LiveRebootFooter(camera: camera),
                           ])))),
         ]),
       );
@@ -296,3 +309,82 @@ class _ScrimCircleButton extends StatelessWidget {
 
 final _liveRotateBusyProvider =
     StateProvider.autoDispose.family<bool, String>((ref, id) => false);
+
+/// 영상 실제 비율의 틀(세로 확대 화면) — 화면 너비를 다 쓰고 높이는 영상에
+/// 맞춘다. 영상이 오기 전·크기를 모르면 카메라 기본 4:3(펌웨어 스트림).
+class _LiveAspectBox extends ConsumerWidget {
+  const _LiveAspectBox({required this.cameraUuid, required this.child});
+  final String cameraUuid;
+  final Widget child;
+
+  static const double _fallback = 4 / 3;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final renderer = ref.watch(webrtcLiveControllerProvider(cameraUuid)
+        .select((s) => s.phase.hasVideo ? s.renderer : null));
+    if (renderer == null) {
+      return AspectRatio(aspectRatio: _fallback, child: child);
+    }
+    return ValueListenableBuilder(
+        valueListenable: renderer,
+        child: child,
+        builder: (context, value, child) {
+          final ratio = value.width > 0 && value.height > 0
+              ? value.aspectRatio
+              : _fallback;
+          return AspectRatio(aspectRatio: ratio, child: child);
+        });
+  }
+}
+
+/// 세로 확대 화면 맨 아래 [카메라 재시작](2026-10-03 사용자 지시, Figma 밖 —
+/// 버튼은 Figma 971:1837 '다시 스캔' 컴포넌트 그대로). 재시작할 수 없으면
+/// 숨기지 않고 비활성 + 이유를 위에 둔다(사용자 결정). 위치는 Figma 공통 하단
+/// CTA와 같게 좌우 12·SafeArea 위 66.
+class _LiveRebootFooter extends ConsumerWidget {
+  const _LiveRebootFooter({required this.camera});
+  final TerraCamera? camera;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cam = camera;
+    final reboot = cam == null
+        ? const RebootState()
+        : ref.watch(rebootProvider(cameraRebootTarget(cam.id)));
+    final inProgress = reboot.sending || reboot.rebooting;
+    final String? reason = inProgress || cam == null
+        ? null
+        : !cam.isOnline
+            ? 'live_reboot_offline'
+            : !isRebootCapableFirmware(cam.firmwareVer)
+                ? 'live_reboot_old_firmware'
+                : reboot.coolingDown(DateTime.now())
+                    ? 'live_reboot_wait'
+                    : null;
+    final enabled = cam != null && !inProgress && reason == null;
+    return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 66),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (reason != null)
+            Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(reason.tr(),
+                    key: CameraLiveFullscreenScreen.rebootReasonKey,
+                    textAlign: TextAlign.center,
+                    style: managementStyle(context,
+                        size: 14, color: context.glass.bodySecondary))),
+          ManagementButton(
+              key: CameraLiveFullscreenScreen.rebootButtonKey,
+              label: (inProgress ? 'reboot_progress' : 'camera_reboot').tr(),
+              icon: 'redesign_v2/restart_alt',
+              // Figma 원본 비활성(#E3E3E3 위 #FAFAFA)은 글자가 안 보인다 —
+              // "재시작 중…"을 읽어야 해서 진한 회색(2026-10-03 사용자 지시).
+              disabledForeground: context.glass.bodySecondary,
+              onPressed: enabled
+                  ? () => confirmAndRequestReboot(
+                      context, ref, cameraRebootTarget(cam.id))
+                  : null),
+        ]));
+  }
+}

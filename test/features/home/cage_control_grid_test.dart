@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/core/config/feature_flags.dart';
 import 'package:vivanaut/features/home/presentation/cage_control_actions.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivanaut/features/home/presentation/widgets/cage_control_grid.dart';
@@ -45,10 +46,12 @@ Future<void> _pump(
   bool online = true,
   bool dimmable = false,
   List<RunningTimer> timers = const [],
+  bool coolFanEnabled = true,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        coolFanEnabledProvider.overrideWithValue(coolFanEnabled),
         runningTimersProvider.overrideWith((ref) async => timers),
         currentDeviceIdProvider.overrideWith((ref) async => _deviceId),
         telemetryStreamProvider

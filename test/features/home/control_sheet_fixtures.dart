@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:vivanaut/core/config/feature_flags.dart';
 import 'package:vivanaut/core/supabase/supabase_provider.dart';
 import 'package:vivanaut/features/home/presentation/control_pending.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
@@ -84,8 +85,11 @@ List<Override> controlOverrides({
   required List<(CommandAction, Map<String, dynamic>?)> sent,
   Stream<TelemetryReading?>? telemetryStream,
   CommandStatusFetcher? statusFetcher,
+  // 기존 테스트는 냉각팬이 살아 있던 동작을 검증한다 — 꺼 둔 상태는 false로.
+  bool coolFanEnabled = true,
 }) =>
     [
+      coolFanEnabledProvider.overrideWithValue(coolFanEnabled),
       currentDeviceIdProvider.overrideWith((ref) async => kTestDeviceId),
       telemetryStreamProvider.overrideWith(
           (ref, id) => telemetryStream ?? Stream.value(telemetry ?? reading())),

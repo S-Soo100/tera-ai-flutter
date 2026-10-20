@@ -43,6 +43,7 @@ class LiveViewSession {
   String? firmwareVer;
   String? network;
   bool? cameraOnline;
+
   /// 시작 벽시계 시각 — DB `started_at` 표기용. 경과 계산에는 쓰지 않는다.
   final DateTime startedAt;
   final Stopwatch _watch;

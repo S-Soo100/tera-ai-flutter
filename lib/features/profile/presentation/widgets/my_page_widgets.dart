@@ -43,7 +43,7 @@ class MyPageSectionTitle extends StatelessWidget {
           style: managementStyle(context, color: context.glass.textTertiary)));
 }
 
-/// 목록 행. [icon]은 36 원 안에 그릴 24 위젯. [subtitle]이 없으면 제목만
+/// 목록 행(흰색 r12, 선 없음). [icon]은 36 원 안에 그릴 24 위젯. [subtitle]이 없으면 제목만
 /// 세로 가운데(내 계정 행 문법 1134:7760).
 class MyPageRow extends StatelessWidget {
   const MyPageRow(
@@ -70,9 +70,8 @@ class MyPageRow extends StatelessWidget {
     final glass = context.glass;
     return Material(
         color: glass.surfaceHeader,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: glass.border)),
+        // Figma 원본 행엔 선이 없다(2026-10-04 사용자 지적) — 흰 면만.
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: onTap,

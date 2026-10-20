@@ -92,6 +92,9 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
       saveCredentials: (ssid, password) =>
           credentials.save(ssid, password, accountId: account!),
       readCredentials: () => credentials.readAll(accountId: account!),
+      readRemember: () => credentials.readRemember(accountId: account!),
+      saveRemember: (value) =>
+          credentials.saveRemember(value, accountId: account!),
       autoGroup: group,
       completed: completed,
       target: target,
@@ -153,6 +156,8 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       Future<OwnedDeviceRow?> Function(PairTargetKind, String)? owned,
       Future<void> Function(PairTargetKind, String)? unlink,
       Future<void> Function(PairTargetKind, String, String)? rememberWifi,
+      Future<bool> Function()? readRemember,
+      Future<void> Function(bool)? saveRemember,
       this.reconnectPoll = const Duration(seconds: 5),
       this.reconnectTimeout = const Duration(seconds: 90)})
       : _target = target,
@@ -163,6 +168,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         _owned = owned,
         _unlink = unlink,
         _rememberWifi = rememberWifi,
+        _saveRemember = saveRemember,
         _gateway = gateway,
         _account = accountId,
         _isCurrent = isCurrent,
@@ -175,6 +181,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         _group = autoGroup,
         _completed = completed,
         super(const DeviceAddState()) {
+    if (readRemember != null) unawaited(_loadRemember(readRemember));
     _scan = gateway.scanResults.listen((all) {
       if (!_active) return;
       // Wi-Fi 바꾸기는 대상과 같은 종류만 보인다.
@@ -375,8 +382,24 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     }
   }
 
+  /// '비밀번호 기억하기' 마지막 선택 — 사용자가 직접 바꿨으면 늦게 온 값으로 덮지 않는다.
+  final Future<void> Function(bool)? _saveRemember;
+  bool _rememberTouched = false;
+
+  Future<void> _loadRemember(Future<bool> Function() read) async {
+    try {
+      final value = await read();
+      if (_active && !_rememberTouched) {
+        state = state.copyWith(remember: value);
+      }
+    } catch (_) {/* 기본값(꺼짐) 유지 */}
+  }
+
   void remember(bool value) {
-    if (_active) state = state.copyWith(remember: value);
+    if (!_active) return;
+    _rememberTouched = true;
+    state = state.copyWith(remember: value);
+    if (_saveRemember case final save?) unawaited(save(value));
   }
 
   void togglePassword() {

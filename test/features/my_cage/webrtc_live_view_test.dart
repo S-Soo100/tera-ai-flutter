@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:vivanaut/features/my_cage/data/camera_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
 import 'package:vivanaut/features/my_cage/domain/live_limit.dart';
 import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
+import 'package:vivanaut/features/my_cage/domain/sys_health.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/sys_health_controllers.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
 
@@ -286,4 +289,169 @@ void main() {
     expect(formatCountdown(const Duration(milliseconds: 8200)), '0:09');
     expect(formatCountdown(Duration.zero), '0:00');
   });
+
+  // ── 카메라 재시작 (2026-10-03) ─────────────────────────────────────────────
+
+  group('카메라 재시작', () {
+    const newFw = 'fb2-p4 0.2.0-20260928';
+    late _RebootRepo repo;
+    setUp(() => repo = _RebootRepo());
+
+    Future<void> pumpFailed(WidgetTester tester, String errorKey,
+        {String? fw = newFw,
+        bool online = true,
+        bool showWifiChange = true}) async {
+      await tester.pumpWidget(ProviderScope(
+        key: UniqueKey(),
+        overrides: [
+          webrtcLiveControllerProvider(_cam).overrideWith((ref) => _Fixed(
+              ref,
+              _cam,
+              WebRtcLiveState(
+                  phase: WebRtcLivePhase.failed, errorKey: errorKey))),
+          camerasProvider.overrideWith((ref) => Stream.value([
+                TerraCamera(
+                    id: _cam,
+                    cameraId: 'p4cam',
+                    name: '카메라 2',
+                    firmwareVer: fw,
+                    isOnline: online,
+                    createdAt: DateTime(2026, 9, 8)),
+              ])),
+          cameraRepositoryProvider.overrideWithValue(repo),
+          sysHealthProvider(cameraRebootTarget(_cam))
+              .overrideWith((ref) => const Stream.empty()),
+        ],
+        child: MaterialApp(
+            home: Scaffold(
+                body: SizedBox(
+                    width: 360,
+                    height: 220,
+                    child: WebRtcLiveView(
+                        cameraUuid: _cam, showWifiChange: showWifiChange)))),
+      ));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('카메라 쪽이 멈춘 실패 3종 — 재시작할 수 있으면 버튼', (tester) async {
+      for (final key in WebRtcLiveView.rebootErrorKeys) {
+        await pumpFailed(tester, key);
+        expect(find.byKey(WebRtcLiveView.rebootButtonKey), findsOneWidget,
+            reason: key);
+        expect(find.byKey(WebRtcLiveView.retryButtonKey), findsOneWidget);
+      }
+    });
+
+    testWidgets('무응답·영상 없음은 재시작 권유, 멈춤은 공유기 안내를 그대로 둔다',
+        (tester) async {
+      for (final key in [
+        'crecam_live_error_unresponsive',
+        'crecam_live_error_no_video',
+      ]) {
+        await pumpFailed(tester, key);
+        expect(find.textContaining('crecam_live_hint_reboot'), findsOneWidget,
+            reason: key);
+      }
+      await pumpFailed(tester, 'crecam_live_error_stalled');
+      expect(find.textContaining('crecam_live_hint_stalled'), findsOneWidget);
+      expect(find.textContaining('crecam_live_hint_reboot'), findsNothing);
+    });
+
+    testWidgets('재시작을 막 보냈거나 60초 재입력 금지 중이면 버튼을 숨긴다', (tester) async {
+      await pumpFailed(tester, 'crecam_live_error_unresponsive');
+      await tester.tap(find.byKey(WebRtcLiveView.rebootButtonKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('reboot_ok')));
+      await tester.pump();
+      await tester.pump();
+      // 고정 컨트롤러라 면은 실패 그대로 — 버튼만 사라져야 한다.
+      expect(find.byKey(WebRtcLiveView.rebootButtonKey), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(kRebootTimeout);
+    });
+
+    testWidgets('가로 전체화면(Wi-Fi 버튼 끔)에서도 재시작 버튼은 있다', (tester) async {
+      await pumpFailed(tester, 'crecam_live_error_unresponsive',
+          showWifiChange: false);
+      expect(find.byKey(WebRtcLiveView.rebootButtonKey), findsOneWidget);
+    });
+
+    testWidgets('구 펌웨어·버전 모름·오프라인 판정·망 실패엔 재시작 버튼이 없다', (tester) async {
+      for (final (fw, online, key) in [
+        ('fb2-p4 0.1.0', true, 'crecam_live_error_unresponsive'),
+        (null, true, 'crecam_live_error_no_video'),
+        (newFw, false, 'crecam_live_error_stalled'),
+        (newFw, true, 'crecam_live_error_ice'),
+        (newFw, false, 'crecam_live_error_camera_offline'),
+      ]) {
+        await pumpFailed(tester, key, fw: fw, online: online);
+        expect(find.byKey(WebRtcLiveView.rebootButtonKey), findsNothing,
+            reason: '$fw $online $key');
+        expect(find.textContaining('crecam_live_hint_reboot'), findsNothing);
+      }
+    });
+
+    testWidgets('누르면 먼저 확인하고, 확인하면 재시작을 한 번 보낸다', (tester) async {
+      await pumpFailed(tester, 'crecam_live_error_unresponsive');
+      await tester.tap(find.byKey(WebRtcLiveView.rebootButtonKey));
+      await tester.pumpAndSettle();
+      expect(repo.reboots, 0, reason: '확인 전엔 보내지 않는다');
+      await tester.tap(find.byKey(const Key('reboot_ok')));
+      await tester.pump();
+      await tester.pump();
+      expect(repo.reboots, 1);
+      // 완료 대기 타이머(2분)를 흘려 정리한다.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(kRebootTimeout);
+    });
+
+    testWidgets('재시작 중엔 버튼 없이 안내만, 60초가 넘으면 "늦어지고 있어요"',
+        (tester) async {
+      for (final (slow, label) in [
+        (false, 'crecam_live_rebooting'),
+        (true, 'crecam_live_rebooting_slow'),
+      ]) {
+        await tester.pumpWidget(ProviderScope(
+          key: UniqueKey(),
+          overrides: [
+            webrtcLiveControllerProvider(_cam).overrideWith((ref) => _Fixed(
+                ref,
+                _cam,
+                const WebRtcLiveState(phase: WebRtcLivePhase.rebooting))),
+            rebootProvider.overrideWith(() => _Rebooting(slow)),
+          ],
+          child: const MaterialApp(
+              home: SizedBox(
+                  width: 320,
+                  height: 180,
+                  child: WebRtcLiveView(cameraUuid: _cam))),
+        ));
+        await tester.pump();
+        expect(find.text(label), findsOneWidget);
+        expect(find.byKey(WebRtcLiveView.retryButtonKey), findsNothing);
+        expect(find.byKey(WebRtcLiveView.rebootButtonKey), findsNothing);
+      }
+    });
+  });
+}
+
+class _RebootRepo extends Fake implements CameraRepository {
+  int reboots = 0;
+  @override
+  Future<bool> reboot(String cameraUuid) async {
+    reboots++;
+    return true;
+  }
+
+  @override
+  Future<SysHealth> fetchHealth(String cameraUuid) async => SysHealth.empty;
+}
+
+class _Rebooting extends RebootController {
+  _Rebooting(this.slow);
+  final bool slow;
+  @override
+  RebootState build(SysTarget target) =>
+      RebootState(rebooting: true, slow: slow);
 }

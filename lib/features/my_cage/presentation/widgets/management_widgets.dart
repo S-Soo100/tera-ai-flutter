@@ -99,7 +99,8 @@ class ManagementButton extends StatelessWidget {
       required this.onPressed,
       this.red = false,
       this.compact = false,
-      this.icon});
+      this.icon,
+      this.disabledForeground});
   final String label;
   final VoidCallback? onPressed;
   final bool red;
@@ -107,36 +108,46 @@ class ManagementButton extends StatelessWidget {
 
   /// 글자 앞 24 그림(Figma restart_alt 등) — 간격 4.
   final String? icon;
+
+  /// 비활성일 때 글자·그림 색. 기본(null)은 Figma 원본(회색 바탕에 흰 글자)
+  /// 그대로다 — 글자를 읽어야 하는 버튼만 넘긴다(2026-10-03 라이브 재시작).
+  final Color? disabledForeground;
+
   @override
-  Widget build(BuildContext context) => ConstrainedBox(
-      constraints: BoxConstraints(
-          minWidth: double.infinity, minHeight: compact ? 44 : 56),
-      child: FilledButton(
-          onPressed: onPressed,
-          style: FilledButton.styleFrom(
-              padding: EdgeInsets.symmetric(
-                  horizontal: 24, vertical: compact ? 8 : 14),
-              backgroundColor:
-                  red ? context.glass.navSelected : context.glass.textPrimary,
-              disabledBackgroundColor: context.glass.border,
-              foregroundColor: ManagementColors.buttonForeground(context),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12))),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (icon case final asset?) ...[
-              FigmaIcon.tinted(asset,
-                  size: 24, color: ManagementColors.buttonForeground(context)),
-              const SizedBox(width: 4),
-            ],
-            Flexible(
-                child: Text(label,
-                    textAlign: TextAlign.center,
-                    style: managementStyle(context,
-                            size: compact ? 16 : 18,
-                            weight: FontWeight.w600,
-                            color: ManagementColors.buttonForeground(context))
-                        .copyWith(height: 28 / (compact ? 16 : 18)))),
-          ])));
+  Widget build(BuildContext context) {
+    final foreground = onPressed == null && disabledForeground != null
+        ? disabledForeground!
+        : ManagementColors.buttonForeground(context);
+    return ConstrainedBox(
+        constraints: BoxConstraints(
+            minWidth: double.infinity, minHeight: compact ? 44 : 56),
+        child: FilledButton(
+            onPressed: onPressed,
+            style: FilledButton.styleFrom(
+                padding: EdgeInsets.symmetric(
+                    horizontal: 24, vertical: compact ? 8 : 14),
+                backgroundColor:
+                    red ? context.glass.navSelected : context.glass.textPrimary,
+                disabledBackgroundColor: context.glass.border,
+                foregroundColor: ManagementColors.buttonForeground(context),
+                disabledForegroundColor: foreground,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12))),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (icon case final asset?) ...[
+                FigmaIcon.tinted(asset, size: 24, color: foreground),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                  child: Text(label,
+                      textAlign: TextAlign.center,
+                      style: managementStyle(context,
+                              size: compact ? 16 : 18,
+                              weight: FontWeight.w600,
+                              color: foreground)
+                          .copyWith(height: 28 / (compact ? 16 : 18)))),
+            ])));
+  }
 }
 
 class ManagementNameField extends StatelessWidget {

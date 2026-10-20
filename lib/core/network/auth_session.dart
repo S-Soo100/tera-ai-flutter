@@ -58,6 +58,11 @@ class SupabaseAuthSession implements AuthSession {
     if (_auth.currentSession == null) return false;
     try {
       return (await _refresh(rethrowAuthError: true)) != null;
+    } on AuthRetryableFetchException {
+      // 망 끊김·타임아웃·서버 5xx도 AuthException의 하위 타입이다. 갱신을
+      // 못 했을 뿐 세션은 살아 있으니 지우지 않는다 — gotrue도 이 경우엔
+      // 세션을 남긴다(2026-10-09).
+      return false;
     } on AuthException {
       // refresh token까지 거부당했다 = 세션이 정말 끝났다.
       await _auth.signOut();

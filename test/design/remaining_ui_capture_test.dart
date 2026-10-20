@@ -52,6 +52,7 @@ import '../features/my_cage/highlight_fixtures.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/link_confirm_screen.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/my_cage/data/lcd_repository.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/lcd_setting_tile.dart';
 import 'package:vivanaut/features/my_cage/domain/actuator_state.dart';
 import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:vivanaut/features/my_cage/domain/device_command.dart';
@@ -768,6 +769,7 @@ void main() {
     await tester.pumpWidget(
         shell(boundary, const Scaffold(body: HomeLcdRow()), overrides: [
       lcdRepositoryProvider.overrideWithValue(_Lcd()),
+      lcdTextAccountProvider.overrideWithValue(null),
       currentSetProvider.overrideWith((ref) async => EnclosureSet(
           enclosure:
               Enclosure(id: 'e1', name: '1번', createdAt: DateTime(2026, 8, 1)),

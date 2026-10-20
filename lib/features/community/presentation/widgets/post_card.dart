@@ -380,6 +380,8 @@ class _InlinePlayerState extends ConsumerState<_InlinePlayer> {
         width: _controller!.value.size.width,
         height: _controller!.value.size.height,
         // 탭이 전체화면 재생(onPlay)으로 가도록 포인터를 먹지 않는다.
+        // 피드 자동 재생은 화면 꺼짐 방지를 걸지 않는다(2026-10-16 사용자 결정 —
+        // 전체화면 재생만).
         child: IgnorePointer(child: VideoPlayer(_controller!)),
       ),
     );
