@@ -30,7 +30,8 @@ class ClipSelectionFlow {
       showClipToast(context,
           text: text,
           icon: 'redesign_v2/priority_high',
-          duration: const Duration(seconds: 3));
+          duration: const Duration(seconds: 3),
+          bottom: kScreenToastBottom);
 
   static void showLimit(BuildContext context) => _error(context,
       'clip_select_limit'.tr(namedArgs: {'max': '${ClipSelection.maxCount}'}));
@@ -62,12 +63,13 @@ class ClipSelectionFlow {
     if (result.cancelled) {
       // 멈춘 뒤 남은 것(실패 + 손대지 못한 것)만 골라진 채 둔다.
       _selection.keepOnly({...result.failed, ...result.remaining});
-      showClipToast(context, text: 'clip_select_job_cancelled'.tr());
+      showClipToast(context,
+          text: 'clip_select_job_cancelled'.tr(), bottom: kScreenToastBottom);
       return;
     }
     if (result.failed.isEmpty) {
       _selection.exit();
-      showClipToast(context, text: done);
+      showClipToast(context, text: done, bottom: kScreenToastBottom);
     } else {
       _selection.keepOnly(result.failed);
       _error(context, partial(result.failed.length));
@@ -92,7 +94,9 @@ class ClipSelectionFlow {
       _error(context, 'clip_select_gallery_denied'.tr());
     } else if (result.cancelled) {
       _selection.exit();
-      showClipToast(context, text: 'clip_select_download_cancelled'.tr());
+      showClipToast(context,
+          text: 'clip_select_download_cancelled'.tr(),
+          bottom: kScreenToastBottom);
     } else {
       _settle(context, result,
           done: 'clip_download_done'.tr(),
@@ -107,7 +111,8 @@ class ClipSelectionFlow {
     final result = await _batch.share(ids);
     if (!context.mounted || result.ignored) return;
     if (result.cancelled) {
-      showClipToast(context, text: 'clip_select_share_cancelled'.tr());
+      showClipToast(context,
+          text: 'clip_select_share_cancelled'.tr(), bottom: kScreenToastBottom);
       return;
     }
     if (result.failed.isEmpty) {

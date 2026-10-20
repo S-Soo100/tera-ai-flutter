@@ -38,7 +38,8 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
       ref.invalidate(blockedProfilesProvider);
       // 피드·댓글에 복귀시킨다.
       ref.invalidate(communityFeedProvider);
-      showClipToast(context, text: 'blocked_unblock_done'.tr());
+      showClipToast(context,
+          text: 'blocked_unblock_done'.tr(), bottom: kScreenToastBottom);
     } catch (_) {
       messenger.showSnackBar(
           SnackBar(content: Text('community_unblock_failed'.tr())));
