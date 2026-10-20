@@ -201,33 +201,12 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       _home();
       return;
     }
-    final yes = await showDialog<bool>(
-        context: context,
-        builder: (context) => Dialog(
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 345),
-                child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      Text('device_add_cancel_title'.tr(),
-                          textAlign: TextAlign.center,
-                          style: managementStyle(context, size: 18)),
-                      const SizedBox(height: 20),
-                      Row(children: [
-                        Expanded(
-                            child: TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child:
-                                    Text('device_add_keep_connecting'.tr()))),
-                        Expanded(
-                            child: TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: Text('device_add_stop'.tr())))
-                      ])
-                    ])))));
+    // Figma 987:4507 — 공용 확인창(문구 500/18/28 #1E1E1E, [계속 연결] 검정 ·
+    // [중단] 빨강). 전엔 글자 버튼 두 개짜리 자체 대화상자였다.
+    final yes = await showVivaModal(context,
+        message: 'device_add_cancel_title'.tr(),
+        cancelLabel: 'device_add_keep_connecting'.tr(),
+        confirmLabel: 'device_add_stop'.tr());
     if (yes == true && mounted) _home();
   }
 
@@ -819,7 +798,9 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                 controller: _ssid,
                 enabled: !busy,
                 autocorrect: false,
-                style: managementStyle(context),
+                // Figma 982:3500 — 입력 글자 500/16 #1E1E1E.
+                style:
+                    managementStyle(context, color: context.glass.textPrimary),
                 decoration: InputDecoration(
                     hintText: 'device_add_ssid'.tr(),
                     border: InputBorder.none,
@@ -840,7 +821,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                     obscureText: !state.showPassword,
                     autocorrect: false,
                     enableSuggestions: false,
-                    style: managementStyle(context),
+                    style: managementStyle(context,
+                        color: context.glass.textPrimary),
                     onChanged: (_) {
                       ++_fillGeneration;
                       setState(() {});
@@ -955,7 +937,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                       ? 'redesign_v2/progress_activity'
                       : 'redesign_v2/cancel',
               size: 64,
-              color: context.glass.textPrimary)),
+              // Figma — 대기 원호는 #B4AEAE(990:11291 실측), 완료·실패 아이콘은 검정.
+              color: pending
+                  ? context.glass.progressTrack
+                  : context.glass.textPrimary)),
       const SizedBox(height: 24),
       Text(titleKey.tr(),
           textAlign: TextAlign.center,
@@ -1130,7 +1115,9 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                 _ => 'redesign_v2/check_circle',
               },
               size: 64,
-              color: context.glass.textPrimary)),
+              color: reconnect == CameraReconnect.waiting
+                  ? context.glass.progressTrack
+                  : context.glass.textPrimary)),
       const SizedBox(height: 24),
       Text(
           unverified
@@ -1293,9 +1280,8 @@ class _PairingProgressState extends State<_PairingProgress>
       turns: _rotation,
       child: FigmaIcon.tinted('redesign_v2/progress_activity',
           size: widget.size,
-          color: widget.size >= 48
-              ? context.glass.textSecondary
-              : context.glass.textTertiary));
+          // Figma 982:3561(20)·982:3602(62) 원호 색 #B4AEAE(export 실측).
+          color: context.glass.progressTrack));
 }
 
 /// Figma secondary CTA: 56 high, 18/600, same label role as primary text.

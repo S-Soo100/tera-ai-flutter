@@ -180,6 +180,10 @@ class AppTheme {
       disabledColor: neutralDisabled,
       scaffoldBackgroundColor: palette.wallpaper,
       textTheme: textTheme,
+      // Figma 입력칸 커서는 #D61619(필드 컴포넌트 1134:6053) — 전엔 VivaTextField만
+      // 맞고 나머지 입력칸은 colorScheme.primary(남색) 커서였다(2026-10-20 대조).
+      textSelectionTheme:
+          const TextSelectionThemeData(cursorColor: VivaColors.mainLight),
       appBarTheme: AppBarTheme(
         backgroundColor: palette.wallpaper,
         surfaceTintColor: Colors.transparent,

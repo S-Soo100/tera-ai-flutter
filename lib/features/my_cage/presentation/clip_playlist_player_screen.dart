@@ -933,11 +933,12 @@ class _ClipPlaylistPlayerScreenState
                     style: TextStyle(
                       fontFamily: 'Pretendard',
                       fontSize: 14,
-                      // Figma 668:765 — SemiBold + #545454(배너 날짜와 동일).
+                      // Figma Final Design 세로 플레이어(941:1834 외 5곳) — SemiBold
+                      // #626262. 옛 시안 668:765의 #545454에서 바뀌었다(2026-10-20 대조).
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.28, // 14 × -2%
                       height: 17 / 14,
-                      color: glass.mediaMeta,
+                      color: glass.bodySecondary,
                     ),
                   ),
                 ],
