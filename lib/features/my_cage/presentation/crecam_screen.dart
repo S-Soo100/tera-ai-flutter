@@ -164,6 +164,12 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
         (before, now) {
       if (before != now) _onSelectionToggled(now);
     });
+    // 기간이 바뀌면 안 보이게 된 영상이 골라진 채 남지 않게 비운다.
+    ref.listen(clipFeedQueryProvider, (before, now) {
+      if (before != now) {
+        ref.read(clipSelectionProvider(_scope).notifier).clearIds();
+      }
+    });
     _maybeAskHighlightPush(cameras.valueOrNull?.isNotEmpty ?? false);
     final shell = GlassTabShell(
       // Figma 1497:13355 — 선택 모드 상단바는 상태바까지 #FAFAFA 면 + 아래 선
@@ -312,12 +318,9 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
         ],
       ),
     );
-    return PopScope(
-      canPop: !selection.active,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop || batch != null) return;
-        flow.confirmLeave(context);
-      },
+    return ClipSelectionBackGuard(
+      scope: _scope,
+      onLeave: () => flow.confirmLeave(context),
       child: Stack(children: [
         shell,
         if (batch != null)

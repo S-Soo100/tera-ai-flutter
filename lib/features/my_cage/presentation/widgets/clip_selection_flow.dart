@@ -58,7 +58,13 @@ class ClipSelectionFlow {
 
   void _settle(BuildContext context, ClipBatchResult result,
       {required String done, required String Function(int) partial}) {
-    if (!context.mounted) return;
+    if (!context.mounted || result.ignored) return;
+    if (result.cancelled) {
+      // 멈춘 뒤 남은 것(실패 + 손대지 못한 것)만 골라진 채 둔다.
+      _selection.keepOnly({...result.failed, ...result.remaining});
+      showClipToast(context, text: 'clip_select_job_cancelled'.tr());
+      return;
+    }
     if (result.failed.isEmpty) {
       _selection.exit();
       showClipToast(context, text: done);
@@ -70,6 +76,8 @@ class ClipSelectionFlow {
 
   /// 0개에서 누른 동작 — 무반응이면 고장으로 읽힌다.
   bool _needsSelection(BuildContext context, List<String> ids) {
+    // 작업 중 연타는 조용히 무시(진행 화면이 뜨기 전 같은 프레임의 두 번째 탭).
+    if (_batch.busy) return true;
     if (ids.isNotEmpty) return false;
     _error(context, 'clip_select_none'.tr());
     return true;
@@ -79,7 +87,7 @@ class ClipSelectionFlow {
     final ids = _ids;
     if (_needsSelection(context, ids)) return;
     final result = await _batch.save(ids);
-    if (!context.mounted) return;
+    if (!context.mounted || result.ignored) return;
     if (result.permissionDenied) {
       _error(context, 'clip_select_gallery_denied'.tr());
     } else if (result.cancelled) {
@@ -97,7 +105,7 @@ class ClipSelectionFlow {
     final ids = _ids;
     if (_needsSelection(context, ids)) return;
     final result = await _batch.share(ids);
-    if (!context.mounted) return;
+    if (!context.mounted || result.ignored) return;
     if (result.cancelled) {
       showClipToast(context, text: 'clip_select_share_cancelled'.tr());
       return;
@@ -134,6 +142,7 @@ class ClipSelectionFlow {
   /// "북마크 해제". "전체 선택"은 늘, "메모 삭제"는 북마크 목록에서만.
   Future<void> more(BuildContext context, Rect anchor,
       {required List<String> all}) async {
+    if (_batch.busy) return;
     final ids = _ids;
     final favorites = ref.read(favoriteClipRepositoryProvider);
     final allBookmarked = ids.every(favorites.isFavorite);
@@ -203,4 +212,50 @@ class ClipSelectionFlow {
         onDelete: () => delete(context),
         onMore: (anchor) => more(context, anchor, all: all()),
       );
+}
+
+/// 선택 모드 뒤로가기 — 고른 영상이 있으면 이탈 확인([onLeave]).
+///
+/// 안드로이드 시스템 뒤로는 [BackButtonListener]로 받는다 — 카메라 탭처럼 셸
+/// 탭의 첫 화면이면 `PopScope`만으로는 GoRouter가 뒤로를 그 화면에 넘기지 않을
+/// 수 있다. iOS 스와이프·`maybePop`은 `PopScope`가 막는다. 화면이 실제로 보일
+/// 때만(TickerMode — 다른 탭이거나 위에 플레이어 등이 덮였으면 꺼진다)
+/// 가로챈다. 일괄 작업 중엔 뒤로를 삼킨다.
+class ClipSelectionBackGuard extends ConsumerWidget {
+  const ClipSelectionBackGuard({
+    super.key,
+    required this.scope,
+    required this.onLeave,
+    required this.child,
+  });
+
+  final ClipSelectionScope scope;
+  final Future<void> Function() onLeave;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final active =
+        ref.watch(clipSelectionProvider(scope).select((s) => s.active));
+    final busy = ref.watch(clipBatchProvider(scope)) != null;
+    final visible = TickerMode.of(context);
+    final guarding = active || busy;
+    final popScope = PopScope(
+      canPop: !guarding,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !busy) onLeave();
+      },
+      child: child,
+    );
+    // BackButtonListener는 Router 아래에서만 쓸 수 있다(앱은 늘 GoRouter).
+    if (Router.maybeOf(context) == null) return popScope;
+    return BackButtonListener(
+      onBackButtonPressed: () async {
+        if (!guarding || !visible) return false;
+        if (!busy) await onLeave();
+        return true;
+      },
+      child: popScope,
+    );
+  }
 }

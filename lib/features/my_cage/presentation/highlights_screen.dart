@@ -19,7 +19,6 @@ import 'widgets/crecam_states.dart';
 import 'widgets/favorite_bookmark_badge.dart';
 import 'widgets/motion_clip_thumb.dart';
 import 'widgets/crecam_detail_top_bar.dart';
-import '../domain/clip_selection.dart';
 import 'clip_selection_providers.dart';
 import 'widgets/clip_selection_flow.dart';
 import 'widgets/clip_selection_widgets.dart';
@@ -67,6 +66,10 @@ class HighlightsScreen extends ConsumerWidget {
     final selection = ref.watch(clipSelectionProvider(_scope));
     final batch = ref.watch(clipBatchProvider(_scope));
     final flow = ClipSelectionFlow(ref, _scope);
+    // 날짜 필터가 바뀌면 안 보이게 된 영상이 골라진 채 남지 않게 비운다.
+    ref.listen(highlightsDayFilterProvider, (_, __) {
+      ref.read(clipSelectionProvider(_scope).notifier).clearIds();
+    });
     Future<void> leave() async {
       if (await flow.confirmLeave(context) && context.mounted) context.pop();
     }
@@ -145,11 +148,9 @@ class HighlightsScreen extends ConsumerWidget {
         ],
       ),
     );
-    return PopScope(
-      canPop: !selection.active,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && batch == null) leave();
-      },
+    return ClipSelectionBackGuard(
+      scope: _scope,
+      onLeave: leave,
       child: Stack(children: [
         scaffold,
         if (batch != null)
@@ -503,7 +504,7 @@ class _Section extends StatelessWidget {
 
 /// 그리드 썸네일 셀(묶음·날짜 필터 공용) — 탭 → 세로 플레이어(재생목록 =
 /// 그 묶음 대표 rank 순 / 그 날짜의 대표 시간 내림차순).
-class _Cell extends ConsumerWidget {
+class _Cell extends StatelessWidget {
   const _Cell(
       {required this.highlight,
       required this.playlist,
@@ -514,18 +515,13 @@ class _Cell extends ConsumerWidget {
   final String keyPrefix;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selection = ref.watch(clipSelectionProvider(_scope));
-    final flow = ClipSelectionFlow(ref, _scope);
-    void open() => _openPlayer(context, highlight.clipId, playlist);
-    return GestureDetector(
+  Widget build(BuildContext context) {
+    // 선택 모드에선 탭 = 고르기, 영상 보기는 확대 버튼(Figma 1497:11036).
+    return ClipSelectableThumb(
       key: ValueKey('$keyPrefix${highlight.clipId}'),
-      behavior: HitTestBehavior.opaque,
-      // 선택 모드에선 탭 = 고르기, 영상 보기는 확대 버튼(Figma 1497:11036).
-      onTap: selection.active
-          ? () => flow.toggle(context, highlight.clipId)
-          : open,
-      onLongPress: () => flow.longPress(context, highlight.clipId),
+      scope: _scope,
+      clipId: highlight.clipId,
+      onOpen: () => _openPlayer(context, highlight.clipId, playlist),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -537,11 +533,6 @@ class _Cell extends ConsumerWidget {
             bottom: 0,
             child: FavoriteBookmarkBadge(clipId: highlight.clipId),
           ),
-          if (selection.active)
-            ClipSelectThumbOverlay(
-                clipId: highlight.clipId,
-                checked: selection.contains(highlight.clipId),
-                onExpand: open),
         ],
       ),
     );
@@ -549,24 +540,16 @@ class _Cell extends ConsumerWidget {
 }
 
 /// 묶음 머리 — 선택 모드엔 오른쪽에 묶음 전체 선택(Figma 1497:11068).
-class _SelectableHeader extends ConsumerWidget {
+class _SelectableHeader extends StatelessWidget {
   const _SelectableHeader({required this.text, required this.ids});
   final String text;
   final List<String> ids;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selection = ref.watch(clipSelectionProvider(_scope));
-    final header = HighlightsScreen._sectionHeader(context, text);
-    if (!selection.active) return header;
-    return Row(children: [
-      Expanded(child: header),
-      ClipSelectGroupCheck(
-          checked: groupFullySelected(selection, ids),
-          onTap: () =>
-              ClipSelectionFlow(ref, _scope).toggleGroup(context, ids)),
-    ]);
-  }
+  Widget build(BuildContext context) => Row(children: [
+        Expanded(child: HighlightsScreen._sectionHeader(context, text)),
+        ClipSelectGroupCheck(scope: _scope, ids: ids),
+      ]);
 }
 
 void _openPlayer(
