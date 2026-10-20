@@ -271,9 +271,9 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                 ),
               ),
             ),
-            // 오늘이면 → 비표시 — 미래는 데이터가 있을 수 없다.
+            // 오늘이면 → 비표시 — 미래는 데이터가 있을 수 없다. 자리는 남긴다.
             if (day.isToday)
-              const SizedBox(width: 40, height: 40)
+              _pagerSpacer(glass)
             else
               _pagerButton(
                 key: EnvDetailScreen.dayNextKey,
@@ -318,6 +318,20 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
           size: 24),
     );
   }
+
+  /// 숨긴 [>] 자리 — 왼쪽 [<]와 같은 버튼을 안 보이게 둬 폭을 맞춘다. 전엔
+  /// 40 빈칸이라 실제 48(최소 터치 영역)인 [<]보다 좁아 날짜가 4pt 오른쪽으로
+  /// 밀렸다(2026-10-20 시뮬레이터 대조).
+  Widget _pagerSpacer(GlassPalette glass) => Visibility(
+      visible: false,
+      maintainSize: true,
+      maintainAnimation: true,
+      maintainState: true,
+      child: _pagerButton(
+          key: const Key('env_detail_pager_spacer'),
+          icon: Icons.chevron_right,
+          glass: glass,
+          onTap: () {}));
 
   Widget _averageStatus(GlassPalette glass) {
     final average = ref.watch(envDailyAverageProvider);
@@ -557,7 +571,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
               ),
             ),
             if (isCurrentWeek)
-              const SizedBox(width: 40, height: 40)
+              _pagerSpacer(glass)
             else
               _pagerButton(
                 key: EnvDetailScreen.weekNextKey,
