@@ -305,17 +305,21 @@ Future<T?> showClipSelectMenu<T>(BuildContext context,
           right: 12,
           // 하단 바 윗변(더보기 칸 위 12) 위로 4.
           bottom: screen.height - (anchor.top - 12) + 4,
-          child: Material(
+          // 흰 면이 그림자 위에 와야 한다 — 그림자를 흰 Material 안쪽
+          // DecoratedBox에 두면 면 전체가 그림자색(#DEDFE0)으로 덮였다
+          // (2026-10-20 시뮬레이터 대조).
+          child: DecoratedBox(
             key: const Key('clip_select_menu'),
-            color: glass.surfaceHeader,
-            borderRadius: BorderRadius.circular(12),
-            elevation: 0,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(color: glass.menuShadow, blurRadius: 10)
-                  ]),
+            decoration: BoxDecoration(
+                color: glass.surfaceHeader,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(color: glass.menuShadow, blurRadius: 10)
+                ]),
+            child: Material(
+              type: MaterialType.transparency,
+              borderRadius: BorderRadius.circular(12),
+              clipBehavior: Clip.antiAlias,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: IntrinsicWidth(

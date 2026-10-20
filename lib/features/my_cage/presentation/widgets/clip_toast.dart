@@ -15,13 +15,19 @@ import '../../../../shared/widgets/figma_icon.dart';
 OverlayEntry? _current;
 Timer? _timer;
 
+/// 플레이어 밖 목록 화면의 토스트 높이 — Figma 영상 선택(1497:11720 외)·
+/// 차단한 사용자(1142:9422) 모두 하단 96(y696). 플레이어는 조작 줄 위 212.
+const double kScreenToastBottom = 96;
+
 void showClipToast(BuildContext context,
     {required String text,
     String icon = 'redesign_v2/check',
-    Duration duration = const Duration(seconds: 2)}) {
+    Duration duration = const Duration(seconds: 2),
+    double? bottom}) {
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return;
-  showClipToastOn(overlay, text: text, icon: icon, duration: duration);
+  showClipToastOn(overlay,
+      text: text, icon: icon, duration: duration, bottom: bottom);
 }
 
 /// [OverlayState]를 직접 받는 버전 — 루트 Navigator 자신의 context처럼 위로
@@ -30,12 +36,13 @@ void showClipToast(BuildContext context,
 void showClipToastOn(OverlayState overlay,
     {required String text,
     String icon = 'redesign_v2/check',
-    Duration duration = const Duration(seconds: 2)}) {
+    Duration duration = const Duration(seconds: 2),
+    double? bottom}) {
   if (!overlay.mounted) return;
   _timer?.cancel();
   _current?.remove();
-  final entry =
-      OverlayEntry(builder: (context) => _ClipToast(text: text, icon: icon));
+  final entry = OverlayEntry(
+      builder: (context) => _ClipToast(text: text, icon: icon, bottom: bottom));
   _current = entry;
   overlay.insert(entry);
   _timer = Timer(duration, () {
@@ -60,9 +67,12 @@ void dismissClipToast() {
 }
 
 class _ClipToast extends StatelessWidget {
-  const _ClipToast({required this.text, required this.icon});
+  const _ClipToast({required this.text, required this.icon, this.bottom});
   final String text;
   final String icon;
+
+  /// 세로 화면 하단 거리. null이면 플레이어 기준 212.
+  final double? bottom;
 
   static const toastKey = Key('clip_toast');
 
@@ -74,7 +84,7 @@ class _ClipToast extends StatelessWidget {
     return Positioned(
       left: 0,
       right: 0,
-      bottom: landscape ? 84 : 212,
+      bottom: landscape ? 84 : bottom ?? 212,
       child: IgnorePointer(
         child: Center(
           child: Material(

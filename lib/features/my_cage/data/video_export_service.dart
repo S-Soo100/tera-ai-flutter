@@ -58,7 +58,7 @@ class VideoExportService {
     if (!await Gal.hasAccess()) {
       await Gal.requestAccess();
     }
-    await Gal.putVideo(file.path, album: '비바나트');
+    await _put(file);
   }
 
   /// OS 공유 시트로 영상 공유.
@@ -77,7 +77,20 @@ class VideoExportService {
     return Gal.requestAccess();
   }
 
-  Future<void> putVideo(File file) => Gal.putVideo(file.path, album: '비바나트');
+  Future<void> putVideo(File file) => _put(file);
+
+  /// iOS는 앨범을 만들거나 앨범에 넣으려면 사진 보관함 **전체 접근**을 요구한다.
+  /// 사용자가 "추가만 허용"을 고르면 앨범 저장이 전부 실패했고, 저장 도중
+  /// 전체 접근 요청 창(개체 사진 문구)까지 떴다(2026-10-20 시뮬레이터 확인).
+  /// 전체 접근이 이미 있으면 앨범에, 아니면 앨범 없이 사진 앱에 바로 넣는다.
+  /// 안드로이드는 추가 권한으로 앨범 폴더에 넣을 수 있어 그대로 둔다.
+  Future<void> _put(File file) async {
+    if (Platform.isIOS && !await Gal.hasAccess(toAlbum: true)) {
+      await Gal.putVideo(file.path);
+      return;
+    }
+    await Gal.putVideo(file.path, album: '비바나트');
+  }
 
   /// 임시 폴더로 내려받는다. [onProgress]는 이 영상의 0~1(길이를 모르면
   /// 부르지 않는다). [cancel]되면 연결을 끊고 [ExportCancelled]를 던진다.
