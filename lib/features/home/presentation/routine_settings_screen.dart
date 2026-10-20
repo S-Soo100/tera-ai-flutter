@@ -606,7 +606,7 @@ class ScheduleSwitch extends StatelessWidget {
 ///
 /// 예약은 기기(사육장)별이라, 전엔 홈에서 사육장을 바꿔 하나씩 들어가야
 /// 어디에 잡혔는지 알 수 있었다. 선택은 홈과 같은 상태를 쓴다(홈도 따라 바뀜).
-class _CageSelector extends ConsumerWidget {
+class _CageSelector extends ConsumerStatefulWidget {
   const _CageSelector({this.onChanged});
 
   /// 선택이 바뀔 때 먼저 부를 콜백(삭제 모드 해제 — 다른 사육장 줄 선택 방지).
@@ -615,7 +615,34 @@ class _CageSelector extends ConsumerWidget {
   static const chipKeyPrefix = 'routine_cage_chip_';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CageSelector> createState() => _CageSelectorState();
+}
+
+class _CageSelectorState extends ConsumerState<_CageSelector> {
+  final _selectedKey = GlobalKey();
+  String? _shownId;
+
+  /// 선택된 칩을 칩 줄 가운데로 데려온다 — 화면에 처음 들어올 때는 바로,
+  /// 칩을 바꾸면 부드럽게. 전엔 선택 칩이 줄 끝(화면 밖)에 있으면 어느 사육장
+  /// 예약인지 바로 보이지 않았다(2026-10-20 시뮬레이터 대조).
+  void _keepSelectedVisible(String? id) {
+    if (id == null || id == _shownId) return;
+    final first = _shownId == null;
+    _shownId = id;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _selectedKey.currentContext;
+      if (!mounted || ctx == null) return;
+      Scrollable.ensureVisible(ctx,
+          alignment: 0.5,
+          duration: first ? Duration.zero : const Duration(milliseconds: 250),
+          curve: Curves.easeOut);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final onChanged = widget.onChanged;
+    final chipKeyPrefix = _CageSelector.chipKeyPrefix;
     final sets = ref.watch(homeDeviceSetsProvider).valueOrNull ?? const [];
     final devices = [
       for (final s in sets)
@@ -623,49 +650,54 @@ class _CageSelector extends ConsumerWidget {
     ];
     if (devices.length < 2) return const SizedBox.shrink();
     final currentId = ref.watch(currentDeviceIdProvider).valueOrNull;
+    _keepSelectedVisible(currentId);
     final glass = context.glass;
     // Figma 1334:6951 — 상단바 아래 16, 칩 44·r16·좌우 16·사이 8, 테두리 없음.
     // 선택 #1E1E1E 바탕 + #FAFAFA 16 Bold, 나머지 #FFFFFF + #3C3C3C 16 SemiBold.
+    // 사육장 수는 적다 — 칩을 모두 그려야 화면 밖의 선택 칩으로 스크롤할 수
+    // 있다(지연 생성 목록이면 그 칩이 아직 없다).
+    Widget chip(int i) {
+      final set = devices[i];
+      final id = set.device!.id;
+      final selected = id == currentId;
+      final body = Material(
+          key: Key('$chipKeyPrefix$id'),
+          color: selected ? glass.textPrimary : glass.surfaceHeader,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: selected
+                  ? null
+                  : () {
+                      onChanged?.call();
+                      ref.read(selectedHomeDeviceIdProvider.notifier).state =
+                          id;
+                    },
+              child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  alignment: Alignment.center,
+                  child: Text(set.homeLabel,
+                      maxLines: 1,
+                      style: managementStyle(context,
+                          weight: selected ? FontWeight.w700 : FontWeight.w600,
+                          color: selected
+                              ? ManagementColors.buttonForeground(context)
+                              : glass.textSecondary)))));
+      return selected ? KeyedSubtree(key: _selectedKey, child: body) : body;
+    }
+
     return SizedBox(
         height: 16 + 44,
-        child: ListView.separated(
+        child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
-            itemCount: devices.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (context, i) {
-              final set = devices[i];
-              final id = set.device!.id;
-              final selected = id == currentId;
-              return Material(
-                  key: Key('$chipKeyPrefix$id'),
-                  color: selected ? glass.textPrimary : glass.surfaceHeader,
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: selected
-                          ? null
-                          : () {
-                              onChanged?.call();
-                              ref
-                                  .read(selectedHomeDeviceIdProvider.notifier)
-                                  .state = id;
-                            },
-                      child: Container(
-                          height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          alignment: Alignment.center,
-                          child: Text(set.homeLabel,
-                              maxLines: 1,
-                              style: managementStyle(context,
-                                  weight: selected
-                                      ? FontWeight.w700
-                                      : FontWeight.w600,
-                                  color: selected
-                                      ? ManagementColors.buttonForeground(
-                                          context)
-                                      : glass.textSecondary)))));
-            }));
+            child: Row(children: [
+              for (var i = 0; i < devices.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                chip(i),
+              ],
+            ])));
   }
 }
 
