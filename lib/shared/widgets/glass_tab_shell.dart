@@ -39,14 +39,16 @@ class GlassTabShell extends StatelessWidget {
         body: Stack(
           children: [
             const Positioned.fill(child: WallpaperBackground()),
-            if (header == null)
-              SafeArea(bottom: false, child: child)
-            else
-              Column(children: [
-                header!,
-                Expanded(
-                    child: SafeArea(top: false, bottom: false, child: child)),
-              ]),
+            // 상단바가 생기고 없어져도 본문은 같은 자리(같은 Element)에 남는다
+            // — 트리 모양이 바뀌면 본문 State가 새로 만들어져 진행 중인 꾹
+            // 눌러 끌기(영상 선택)가 끊겼다(2026-10-21).
+            Column(children: [
+              if (header != null) header!,
+              Expanded(
+                  key: const ValueKey('glass_tab_shell_body'),
+                  child: SafeArea(
+                      top: header == null, bottom: false, child: child)),
+            ]),
           ],
         ),
       ),

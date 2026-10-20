@@ -82,6 +82,14 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
     super.dispose();
   }
 
+  /// 지금 피드 순서의 영상 id — 전체 선택·드래그 선택 범위.
+  List<String> _feedIds() {
+    final query = ref.read(clipFeedQueryProvider);
+    return query == null
+        ? const <String>[]
+        : [for (final clip in ref.read(clipFeedProvider(query)).items) clip.id];
+  }
+
   void _onSelectionToggled(bool selecting) {
     final height = selecting
         ? _headerKey.currentContext?.size?.height ?? 0
@@ -218,103 +226,105 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
                 },
               ),
             ),
+          // 키 — 선택 모드에서 위(헤더)·아래(동작 바)가 함께 바뀌어도 목록이
+          // 같은 Element로 남아야 진행 중인 꾹 눌러 끌기가 끊기지 않는다.
           Expanded(
-            child: cameras.hasValue && cameras.value!.isEmpty
-                ? RedesignEmptyState(
-                    image: FigmaImages.emptyCamera,
-                    message: 'redesign_empty_camera'.tr(),
-                    buttonText: 'redesign_device_add'.tr(),
-                    onPressed: () => context.push('/devices/add'),
-                    // 카메라를 모두 지워도 북마크는 남아 재생된다 — 가는 길을
-                    // 남긴다(전엔 진입 카드와 함께 사라졌다, 2026-09-25).
-                    secondaryText: (ref
-                                .watch(allFavoriteClipsProvider)
-                                .valueOrNull
-                                ?.isNotEmpty ??
-                            false)
-                        ? 'crecam_empty_bookmarks'.tr()
-                        : null,
-                    onSecondary: () => context.push('/crecam/bookmarks'))
-                : NotificationListener<ScrollNotification>(
-                    onNotification: _onScroll,
-                    child: RefreshIndicator(
-                      onRefresh: _refresh,
-                      notificationPredicate: (notification) =>
-                          !selection.active &&
-                          notification.depth == 0 &&
-                          notification.metrics.axis == Axis.vertical,
-                      child: CustomScrollView(
-                        key: PageStorageKey(ref.watch(clipFeedQueryProvider)),
-                        controller: _scroll,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        slivers: [
-                          SliverList(
-                              delegate: SliverChildListDelegate([
-                            KeepAliveCameraHeader(
-                                // 선택 모드엔 목록만(Figma 1497:13355) — 접어도
-                                // 라이브 상태는 살려 둔다(Offstage).
-                                child: Offstage(
-                                    offstage: selection.active,
-                                    child: Column(
-                                        key: _headerKey,
-                                        children: const [
-                                          Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                  horizontal:
-                                                      CrecamScreen._margin),
-                                              child: CameraLiveArea()),
-                                          SizedBox(
-                                              height: CrecamScreen._sectionGap),
-                                          Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                  horizontal:
-                                                      CrecamScreen._margin),
-                                              child: _EntryCards()),
-                                          // 2px of the 16px visual gap belongs to the
-                                          // period button's expanded 44px touch target.
-                                          SizedBox(
-                                              height:
-                                                  CrecamScreen._sectionGap - 2),
-                                          Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                  horizontal:
-                                                      CrecamScreen._margin),
-                                              child: Align(
-                                                  alignment:
-                                                      Alignment.centerRight,
-                                                  child: _PeriodButton())),
-                                          SizedBox(
-                                              height: CrecamScreen._gap - 2),
-                                        ]))),
-                          ])),
-                          SliverPadding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: CrecamScreen._margin),
-                            sliver: ClipFeedSlivers(
-                                query: ref.watch(clipFeedQueryProvider)),
+              key: const ValueKey('crecam_body'),
+              child: cameras.hasValue && cameras.value!.isEmpty
+                  ? RedesignEmptyState(
+                      image: FigmaImages.emptyCamera,
+                      message: 'redesign_empty_camera'.tr(),
+                      buttonText: 'redesign_device_add'.tr(),
+                      onPressed: () => context.push('/devices/add'),
+                      // 카메라를 모두 지워도 북마크는 남아 재생된다 — 가는 길을
+                      // 남긴다(전엔 진입 카드와 함께 사라졌다, 2026-09-25).
+                      secondaryText: (ref
+                                  .watch(allFavoriteClipsProvider)
+                                  .valueOrNull
+                                  ?.isNotEmpty ??
+                              false)
+                          ? 'crecam_empty_bookmarks'.tr()
+                          : null,
+                      onSecondary: () => context.push('/crecam/bookmarks'))
+                  : ClipDragSelectRegion(
+                      scope: _scope,
+                      scrollController: _scroll,
+                      orderedIds: _feedIds,
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: _onScroll,
+                        child: RefreshIndicator(
+                          onRefresh: _refresh,
+                          notificationPredicate: (notification) =>
+                              !selection.active &&
+                              notification.depth == 0 &&
+                              notification.metrics.axis == Axis.vertical,
+                          child: CustomScrollView(
+                            key: PageStorageKey(
+                                ref.watch(clipFeedQueryProvider)),
+                            controller: _scroll,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            slivers: [
+                              SliverList(
+                                  delegate: SliverChildListDelegate([
+                                KeepAliveCameraHeader(
+                                    // 선택 모드엔 목록만(Figma 1497:13355) — 접어도
+                                    // 라이브 상태는 살려 둔다(Offstage).
+                                    child: Offstage(
+                                        offstage: selection.active,
+                                        child: Column(
+                                            key: _headerKey,
+                                            children: const [
+                                              Padding(
+                                                  padding: EdgeInsets.symmetric(
+                                                      horizontal:
+                                                          CrecamScreen._margin),
+                                                  child: CameraLiveArea()),
+                                              SizedBox(
+                                                  height:
+                                                      CrecamScreen._sectionGap),
+                                              Padding(
+                                                  padding: EdgeInsets.symmetric(
+                                                      horizontal:
+                                                          CrecamScreen._margin),
+                                                  child: _EntryCards()),
+                                              // 2px of the 16px visual gap belongs to the
+                                              // period button's expanded 44px touch target.
+                                              SizedBox(
+                                                  height:
+                                                      CrecamScreen._sectionGap -
+                                                          2),
+                                              Padding(
+                                                  padding: EdgeInsets.symmetric(
+                                                      horizontal:
+                                                          CrecamScreen._margin),
+                                                  child: Align(
+                                                      alignment:
+                                                          Alignment.centerRight,
+                                                      child: _PeriodButton())),
+                                              SizedBox(
+                                                  height:
+                                                      CrecamScreen._gap - 2),
+                                            ]))),
+                              ])),
+                              SliverPadding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: CrecamScreen._margin),
+                                sliver: ClipFeedSlivers(
+                                    query: ref.watch(clipFeedQueryProvider)),
+                              ),
+                              SliverToBoxAdapter(
+                                  child: SizedBox(
+                                      height: selection.active
+                                          ? 16
+                                          : glassDockListPadding(context)
+                                              .bottom)),
+                            ],
                           ),
-                          SliverToBoxAdapter(
-                              child: SizedBox(
-                                  height: selection.active
-                                      ? 16
-                                      : glassDockListPadding(context).bottom)),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-          ),
+                    )),
           // 탭바 자리(셸이 선택 모드엔 탭바를 숨긴다 — app_router).
-          if (selection.active)
-            flow.actionBar(context, all: () {
-              final query = ref.read(clipFeedQueryProvider);
-              return query == null
-                  ? const <String>[]
-                  : [
-                      for (final clip
-                          in ref.read(clipFeedProvider(query)).items)
-                        clip.id
-                    ];
-            }),
+          if (selection.active) flow.actionBar(context, all: _feedIds),
         ],
       ),
     );

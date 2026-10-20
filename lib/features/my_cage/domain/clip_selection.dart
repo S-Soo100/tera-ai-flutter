@@ -90,3 +90,47 @@ class ClipSelectionChange {
 /// 묶음 머리 체크박스 상태 — 전부 골라졌을 때만 켬.
 bool groupFullySelected(ClipSelection s, List<String> group) =>
     group.isNotEmpty && group.every(s.contains);
+
+/// 꾹 눌러 끌기(드래그 선택) 한 번의 결과 — iPhone 사진 앱처럼 처음 누른
+/// 영상([anchor])부터 지금 손가락 아래 영상([current])까지 목록 순서의 범위를
+/// 한꺼번에 고르거나(select) 뺀다. 되돌아오면 범위가 줄어 지나쳤던 영상은
+/// 끌기 시작 전 상태([base])로 돌아간다. 고르기는 [ClipSelection.maxCount]에서
+/// 멈추고 [ClipSelectionChange.limited]로 알린다.
+ClipSelectionChange dragSelection({
+  required ClipSelection base,
+  required List<String> ordered,
+  required String anchor,
+  required String current,
+  required bool select,
+}) {
+  final a = ordered.indexOf(anchor);
+  final c = ordered.indexOf(current);
+  if (a < 0 || c < 0) return ClipSelectionChange(base, limited: false);
+  final lo = a < c ? a : c;
+  final hi = a < c ? c : a;
+  // 처음 누른 영상부터 손가락 쪽으로 — 상한에 걸리면 손가락에서 먼 쪽이 남는다.
+  final range = a <= c
+      ? ordered.sublist(lo, hi + 1)
+      : ordered.sublist(lo, hi + 1).reversed.toList();
+  if (!select) {
+    final drop = range.toSet();
+    return ClipSelectionChange(
+        ClipSelection(active: true, ids: [
+          for (final id in base.ids)
+            if (!drop.contains(id)) id
+        ]),
+        limited: false);
+  }
+  final next = [...base.ids];
+  var limited = false;
+  for (final id in range) {
+    if (next.contains(id)) continue;
+    if (next.length >= ClipSelection.maxCount) {
+      limited = true;
+      break;
+    }
+    next.add(id);
+  }
+  return ClipSelectionChange(ClipSelection(active: true, ids: next),
+      limited: limited);
+}

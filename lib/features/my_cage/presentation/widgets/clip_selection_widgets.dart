@@ -1,5 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -111,28 +115,237 @@ class ClipSelectableThumb extends ConsumerWidget {
     final item = ref.watch(
         clipSelectionProvider(scope).select((s) => _itemState(s, clipId)));
     final flow = ClipSelectionFlow(ref, scope);
-    return GestureDetector(
+    // 꾹 누르기·끌기는 바깥 [ClipDragSelectRegion]이 맡는다 — 칸은 자기 id만
+    // 알린다(히트 테스트로 손가락 아래 칸을 찾는다).
+    return MetaData(
+      metaData: ClipDragCell(clipId),
       behavior: HitTestBehavior.opaque,
-      onTap: item.active ? () => flow.toggle(context, clipId) : onOpen,
-      onLongPress: () => flow.longPress(context, clipId),
-      child: Stack(fit: StackFit.expand, children: [
-        child,
-        if (item.active) ...[
-          Positioned(
-              top: 0,
-              right: 0,
-              child: SizedBox.square(
-                  dimension: 32,
-                  child: Center(
-                      child: ClipSelectCheckbox(
-                          key: ValueKey('clip_select_check_$clipId'),
-                          checked: item.checked)))),
-          Positioned(
-              right: 4,
-              bottom: 4,
-              child: ClipSelectExpandButton(clipId: clipId, onTap: onOpen)),
-        ],
-      ]),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: item.active ? () => flow.toggle(context, clipId) : onOpen,
+        child: Stack(fit: StackFit.expand, children: [
+          child,
+          if (item.active) ...[
+            Positioned(
+                top: 0,
+                right: 0,
+                child: SizedBox.square(
+                    dimension: 32,
+                    child: Center(
+                        child: ClipSelectCheckbox(
+                            key: ValueKey('clip_select_check_$clipId'),
+                            checked: item.checked)))),
+            Positioned(
+                right: 4,
+                bottom: 4,
+                child: ClipSelectExpandButton(clipId: clipId, onTap: onOpen)),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+/// 드래그 선택 히트 테스트 표지 — [ClipSelectableThumb]가 자기 칸에 단다.
+class ClipDragCell {
+  const ClipDragCell(this.clipId);
+  final String clipId;
+}
+
+/// 꾹 눌러 끌기로 여러 영상 고르기(iPhone 사진 앱 방식) — 3열 그리드 목록을
+/// 감싼다.
+///
+/// - 영상을 꾹 누르면 그 영상이 골라지며 선택 모드가 시작되고(이미 선택
+///   모드면 그 영상의 반대 상태로), 손을 떼지 않고 끌면 처음 누른 영상부터
+///   손가락 아래 영상까지 [orderedIds] 순서의 범위가 함께 바뀐다.
+/// - 선택 모드에선 꾹 누르지 않고 **가로로** 끌어도 시작한다. 세로로 쓸면
+///   지금처럼 스크롤이다.
+/// - 손가락이 위·아래 가장자리 [edge] 안에 있으면 [scrollController]를 그
+///   방향으로 흘려 계속 고른다.
+/// - 20개에 닿으면 끌기 한 번에 한 번만 안내한다.
+class ClipDragSelectRegion extends ConsumerStatefulWidget {
+  const ClipDragSelectRegion({
+    super.key,
+    required this.scope,
+    required this.orderedIds,
+    this.scrollController,
+    required this.child,
+  });
+
+  final ClipSelectionScope scope;
+  final List<String> Function() orderedIds;
+
+  /// 가장자리 자동 스크롤 대상. null이면 라우트의 [PrimaryScrollController]
+  /// (컨트롤러 없이 쓴 세로 ListView가 붙는 것).
+  final ScrollController? scrollController;
+  final Widget child;
+
+  static const double edge = 72;
+  static const double maxAutoScroll = 16; // 한 프레임(16ms)에 움직일 최대 pt
+
+  @override
+  ConsumerState<ClipDragSelectRegion> createState() =>
+      _ClipDragSelectRegionState();
+}
+
+class _ClipDragSelectRegionState extends ConsumerState<ClipDragSelectRegion> {
+  String? _anchor;
+  String? _last;
+  bool _select = true;
+  bool _limitShown = false;
+  ClipSelection _base = const ClipSelection();
+  Offset? _pointer; // 전역 좌표
+  Timer? _autoScroll;
+
+  ClipSelectionController get _ctl =>
+      ref.read(clipSelectionProvider(widget.scope).notifier);
+
+  String? _cellAt(Offset global) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached) return null;
+    final result = BoxHitTestResult();
+    box.hitTest(result, position: box.globalToLocal(global));
+    for (final entry in result.path) {
+      final target = entry.target;
+      if (target is RenderMetaData && target.metaData is ClipDragCell) {
+        return (target.metaData as ClipDragCell).clipId;
+      }
+    }
+    return null;
+  }
+
+  /// [startMode] null이면 꾹 누르기(모드 밖에서도 시작), 아니면 가로 끌기.
+  bool _begin(Offset global, {required bool fromLongPress}) {
+    final id = _cellAt(global);
+    if (id == null) return false;
+    final current = ref.read(clipSelectionProvider(widget.scope));
+    if (!current.active && !fromLongPress) return false;
+    HapticFeedback.mediumImpact();
+    _base = current.active ? current : const ClipSelection(active: true);
+    _select = !_base.contains(id);
+    _anchor = id;
+    _last = null;
+    _limitShown = false;
+    _pointer = global;
+    _apply(id);
+    return true;
+  }
+
+  void _apply(String id) {
+    if (id == _last || _anchor == null) return;
+    _last = id;
+    final change = dragSelection(
+        base: _base,
+        ordered: widget.orderedIds(),
+        anchor: _anchor!,
+        current: id,
+        select: _select);
+    _ctl.replace(change.selection);
+    if (change.limited && !_limitShown) {
+      _limitShown = true;
+      ClipSelectionFlow.showLimit(context);
+    }
+  }
+
+  void _move(Offset global) {
+    if (_anchor == null) return;
+    _pointer = global;
+    final id = _cellAt(global);
+    if (id != null) _apply(id);
+    _updateAutoScroll();
+  }
+
+  void _updateAutoScroll() {
+    final box = context.findRenderObject() as RenderBox?;
+    final p = _pointer;
+    if (box == null || p == null) return;
+    final y = box.globalToLocal(p).dy;
+    final h = box.size.height;
+    final e = ClipDragSelectRegion.edge;
+    double speed = 0;
+    if (y < e) speed = -(e - y) / e;
+    if (y > h - e) speed = (y - (h - e)) / e;
+    if (speed == 0) {
+      _autoScroll?.cancel();
+      _autoScroll = null;
+      return;
+    }
+    _autoScroll ??=
+        Timer.periodic(const Duration(milliseconds: 16), (_) => _tick());
+    _speed = speed.clamp(-1.0, 1.0);
+  }
+
+  double _speed = 0;
+
+  void _tick() {
+    final c =
+        widget.scrollController ?? PrimaryScrollController.maybeOf(context);
+    if (!mounted || _anchor == null || c == null || !c.hasClients) {
+      _autoScroll?.cancel();
+      _autoScroll = null;
+      return;
+    }
+    final pos = c.position;
+    final next = (pos.pixels + _speed * ClipDragSelectRegion.maxAutoScroll)
+        .clamp(pos.minScrollExtent, pos.maxScrollExtent)
+        .toDouble();
+    if (next == pos.pixels) return;
+    c.jumpTo(next);
+    // 목록이 흘러 손가락 아래 칸이 바뀐다 — 다음 프레임에 다시 찾는다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final p = _pointer;
+      if (!mounted || p == null || _anchor == null) return;
+      final id = _cellAt(p);
+      if (id != null) _apply(id);
+    });
+  }
+
+  void _end() {
+    _anchor = null;
+    _pointer = null;
+    _autoScroll?.cancel();
+    _autoScroll = null;
+  }
+
+  @override
+  void dispose() {
+    _autoScroll?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active =
+        ref.watch(clipSelectionProvider(widget.scope).select((s) => s.active));
+    return RawGestureDetector(
+      behavior: HitTestBehavior.translucent,
+      gestures: {
+        LongPressGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
+                () => LongPressGestureRecognizer(debugOwner: this), (r) {
+          r.onLongPressStart = (d) {
+            if (!_begin(d.globalPosition, fromLongPress: true)) _end();
+          };
+          r.onLongPressMoveUpdate = (d) => _move(d.globalPosition);
+          r.onLongPressEnd = (_) => _end();
+          r.onLongPressCancel = _end;
+        }),
+        // 선택 모드에선 가로로 끌어도 시작(세로는 스크롤) — 모드 밖에선 라이브
+        // PageView 등 가로 쓸기를 가로채지 않게 등록하지 않는다.
+        if (active)
+          HorizontalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<
+                  HorizontalDragGestureRecognizer>(
+              () => HorizontalDragGestureRecognizer(debugOwner: this), (r) {
+            r.dragStartBehavior = DragStartBehavior.down;
+            r.onStart = (d) {
+              if (!_begin(d.globalPosition, fromLongPress: false)) _end();
+            };
+            r.onUpdate = (d) => _move(d.globalPosition);
+            r.onEnd = (_) => _end();
+            r.onCancel = _end;
+          }),
+      },
+      child: widget.child,
     );
   }
 }
