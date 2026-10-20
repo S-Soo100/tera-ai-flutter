@@ -160,13 +160,15 @@ class ActivityBars extends StatelessWidget {
                                         child: Text(
                                             activityDuration(
                                                 buckets[i].seconds),
+                                            // Figma 1223:12039 — 최고 값 글자는 #C00306
+                                            // (막대는 #D61619, 총 활동 시간 숫자와 같은 색).
                                             style: labelStyle.copyWith(
                                                 fontSize: 14,
                                                 letterSpacing: -.7,
                                                 color: buckets[i].seconds ==
                                                             peak &&
                                                         peak > 0
-                                                    ? ActivityColors.peak
+                                                    ? glass.navSelected
                                                     : glass.bodySecondary))),
                                 ],
                               ])))),

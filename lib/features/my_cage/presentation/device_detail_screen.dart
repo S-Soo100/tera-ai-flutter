@@ -176,12 +176,14 @@ class _DeviceDetailBody extends ConsumerWidget {
                                             weight: FontWeight.w600)),
                                     const SizedBox(width: 12),
                                     Expanded(
+                                        // Figma 990:6405 — 값은 #1E1E1E.
                                         child: Text(item.hardwareId ?? '--',
                                             textAlign: TextAlign.right,
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                             style: managementStyle(context,
-                                                weight: FontWeight.w600)))
+                                                weight: FontWeight.w600,
+                                                color: glass.textPrimary)))
                                   ]),
                                   const SizedBox(height: 24),
                                   Row(children: [
@@ -194,7 +196,8 @@ class _DeviceDetailBody extends ConsumerWidget {
                                         children: [
                                           Text('management_power'.tr(),
                                               style: managementStyle(context,
-                                                  weight: FontWeight.w600)),
+                                                  weight: FontWeight.w600,
+                                                  color: glass.textPrimary)),
                                           const SizedBox(height: 4),
                                           Text('management_power_on_label'.tr(),
                                               style: managementStyle(context,
@@ -265,7 +268,9 @@ class _DeviceDetailBody extends ConsumerWidget {
                                                       .tr(),
                                                   style: managementStyle(
                                                       context,
-                                                      weight: FontWeight.w600)),
+                                                      weight: FontWeight.w600,
+                                                      color:
+                                                          glass.textPrimary)),
                                               const SizedBox(width: 4),
                                               FigmaIcon.tinted(
                                                   FigmaIcons.arrowNext,

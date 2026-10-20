@@ -227,8 +227,7 @@ class _RoutineSettingsScreenState extends ConsumerState<RoutineSettingsScreen> {
       selected: selected,
       onToggle: (v) => coolLocked && v
           ? unavailable()
-          : _guard(
-              () => ref.read(schedulesProvider.notifier).setEnabled(s, v)),
+          : _guard(() => ref.read(schedulesProvider.notifier).setEnabled(s, v)),
       onTap: _deleteMode
           ? toggleSelect
           : coolLocked

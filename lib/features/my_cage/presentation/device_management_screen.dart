@@ -83,11 +83,13 @@ class DeviceManagementScreen extends ConsumerWidget {
                                               color: context.glass.overlay,
                                               borderRadius:
                                                   BorderRadius.circular(12)),
+                                          // Figma 990:11607 — 500/16 줄높이 28.
                                           child: Text(
                                               'management_no_items'.tr(),
                                               style: managementStyle(context,
-                                                  color: context
-                                                      .glass.textTertiary)))
+                                                      color: context
+                                                          .glass.textTertiary)
+                                                  .copyWith(height: 28 / 16)))
                                     else
                                       Material(
                                         color: context.glass.overlay,
