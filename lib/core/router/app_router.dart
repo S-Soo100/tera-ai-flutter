@@ -281,6 +281,7 @@ GoRouter buildAppRouter({
               nextCursor: extra.nextCursor,
               hasMore: extra.hasMore,
               highlightBatchId: extra.highlightBatchId,
+              feedFloor: extra.feedFloor,
             );
           }
           // 호출부가 List<String>을 넘기지만 dynamic 리스트로 와도 안전하게 거른다.

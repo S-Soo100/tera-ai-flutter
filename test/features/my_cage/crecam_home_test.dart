@@ -33,6 +33,11 @@ import '../../helpers/inert_live_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
 import 'package:vivanaut/features/my_cage/domain/live_recording.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_recording_controller.dart';
+import 'package:vivanaut/features/my_cage/domain/recording_item.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_selection_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/recording_library_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/live_recording_upload_queue.dart';
+import 'package:vivanaut/features/my_cage/data/live_recording_repository.dart';
 
 /// Camera Home(카메라 탭 재설계 T2) 위젯 테스트.
 ///
@@ -167,6 +172,7 @@ Future<void> _pump(
   VoidCallback? onLiveCreate,
   bool liveOffline = false,
   List<LiveRecording> recordings = const [],
+  List<ServerLiveRecording> serverRecordings = const [],
 }) async {
   tester.view.physicalSize = const Size(393, 1000);
   tester.view.devicePixelRatio = 1;
@@ -225,6 +231,15 @@ Future<void> _pump(
         highlightReadStoreProvider
             .overrideWithValue(_FakeReadStore(readBatches)),
         liveRecordingsProvider.overrideWith((ref) async => recordings),
+        // 실제 업로드 대기열(Hive·HTTP)은 돌리지 않는다.
+        liveRecordingUploadQueueProvider.overrideWith((ref) =>
+            LiveRecordingUploadQueue(
+                ownerId: null,
+                local: LiveRecordingRepository(),
+                api: () => throw UnimplementedError(),
+                currentOwner: () => null)),
+        serverLiveRecordingsProvider.overrideWith(
+            (ref) async => (ownerId: 'owner-a', items: serverRecordings)),
         allFavoriteClipsProvider.overrideWith((ref) async {
           final tick = ref.watch(_highlightReloadTick);
           if (tick > 0 && favoritesReloadGate != null) {
@@ -572,6 +587,101 @@ void main() {
     gate.complete();
     await tester.pumpAndSettle();
     expect(find.text('crecam_updated_today'), findsOneWidget);
+  });
+
+  LiveRecording rec(String id, DateTime at,
+          {String camera = _cameraId,
+          LiveRecordingUploadState state = LiveRecordingUploadState.ready}) =>
+      LiveRecording(
+          id: id,
+          ownerId: 'owner-a',
+          cameraId: camera,
+          startedAt: at,
+          durationMs: 42000,
+          filePath: 'mem/$id.mp4',
+          uploadState: state);
+
+  testWidgets('시간대별 목록에 그 카메라 직접 녹화(폰·서버)가 시각순으로 — 열면 재생목록에 섞인다',
+      (tester) async {
+    await _pump(tester, recordings: [
+      rec('r1', DateTime(2026, 8, 31, 10, 10)),
+      rec('other', DateTime(2026, 8, 31, 10, 12), camera: 'cam-2'),
+      rec('out', DateTime(2026, 9, 1, 9)),
+    ], serverRecordings: [
+      ServerLiveRecording(
+          id: 's1',
+          cameraId: _cameraId,
+          startedAt: DateTime(2026, 8, 31, 9),
+          durationMs: 61000,
+          hasThumbnail: false),
+    ]);
+    expect(find.byKey(const ValueKey('crecam_rec_rec:r1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('crecam_rec_rec:srv:s1')), findsOneWidget);
+    // 다른 카메라·기간 밖 녹화는 없다.
+    expect(find.byKey(const ValueKey('crecam_rec_rec:other')), findsNothing);
+    expect(find.byKey(const ValueKey('crecam_rec_rec:out')), findsNothing);
+    expect(find.text('live_recording_badge'), findsNWidgets(2));
+
+    final cell = find.byKey(const ValueKey('crecam_rec_rec:srv:s1'));
+    await tester.ensureVisible(cell);
+    await tester.pumpAndSettle();
+    await tester.tap(cell);
+    await tester.pumpAndSettle();
+    expect(pushedClipId, 'rec:srv:s1');
+    expect(pushedPlaylist, ['c1', 'rec:r1', 'c2', 'rec:srv:s1', 'c3']);
+    expect(pushedArgs!.source, ClipPlaybackSource.feed);
+    expect(pushedArgs!.feedFloor, DateTime(2026, 8, 31, 8, 30));
+  });
+
+  testWidgets('올리는 중인 녹화 칸은 흐리게·누를 수 없음 — 재생목록·전체 선택에서도 빠진다',
+      (tester) async {
+    await _pump(tester, recordings: [
+      rec('up', DateTime(2026, 8, 31, 10, 10),
+          state: LiveRecordingUploadState.uploading),
+      rec('wait', DateTime(2026, 8, 31, 10, 11),
+          state: LiveRecordingUploadState.pending),
+    ]);
+    final up = find.byKey(const ValueKey('crecam_rec_rec:up'));
+    await tester.ensureVisible(up);
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .widget<Opacity>(
+                find.descendant(of: up, matching: find.byType(Opacity)))
+            .opacity,
+        lessThan(1));
+    // 대기는 흐리게 하지 않고 상태만.
+    final wait = find.byKey(const ValueKey('crecam_rec_rec:wait'));
+    expect(find.descendant(of: wait, matching: find.byType(Opacity)),
+        findsNothing);
+    expect(find.byKey(const ValueKey('crecam_rec_upload_rec:wait')),
+        findsOneWidget);
+    await tester.tap(up, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(pushedClipId, isNull);
+    await tester.longPress(up, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(CrecamScreen)));
+    expect(container.read(clipSelectionProvider(ClipSelectionScope.feed)).active,
+        isFalse);
+
+    await tester.tap(wait);
+    await tester.pumpAndSettle();
+    expect(pushedPlaylist, ['c1', 'rec:wait', 'c2', 'c3']);
+    Navigator.of(tester.element(find.text('player-screen'))).pop();
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(CrecamScreen.selectButtonKey));
+    await tester.tap(find.byKey(CrecamScreen.selectButtonKey));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.byKey(const Key('clip_select_action_clip_select_more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('clip_select_menu_all')));
+    await tester.pumpAndSettle();
+    expect(container.read(clipSelectionProvider(ClipSelectionScope.feed)).ids,
+        ['c1', 'rec:wait', 'c2', 'c3']);
   });
 
   testWidgets('북마크 없이 직접 녹화만 있어도 북마크 카드 부제는 "업데이트 …"', (tester) async {

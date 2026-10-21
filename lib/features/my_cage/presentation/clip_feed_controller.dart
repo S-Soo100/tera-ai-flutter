@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../domain/motion_clip.dart';
 import '../domain/motion_clip_page.dart';
+import '../domain/recording_item.dart';
 import 'my_cage_providers.dart';
+import 'recording_library_providers.dart';
 import '../domain/clip_visibility.dart';
 import 'clip_visibility_providers.dart';
 
@@ -53,6 +55,24 @@ final clipFeedProvider = StateNotifierProvider.autoDispose
   unawaited(controller.refresh());
   return controller;
 });
+
+/// 카메라 탭 시간대별 목록 — 일반 영상 페이지에 그 카메라의 직접 녹화(이 폰 +
+/// 서버)를 시각순으로 끼운 것(2026-10-21 사용자 결정). 하이라이트에는 섞지
+/// 않는다. 페이지 경계 규칙은 [mergeFeedWithRecordings].
+final clipFeedEntriesProvider = Provider.autoDispose
+    .family<List<FeedEntry>, ClipFeedQuery>((ref, query) {
+  final state = ref.watch(clipFeedProvider(query));
+  final recordings = recordingsForFeed(
+      ref.watch(recordingLibraryProvider).valueOrNull ?? const [],
+      query.cameraId,
+      query.range);
+  return mergeFeedWithRecordings(
+      clips: state.items, hasMore: state.hasMore, recordings: recordings);
+});
+
+/// 목록 칸 중 누를 수 있는 것(재생목록·선택 범위) — 올리는 중인 녹화는 뺀다.
+bool feedEntrySelectable(FeedEntry e) =>
+    e is! RecordingFeedEntry || e.enabled;
 
 class ClipFeedState {
   const ClipFeedState(

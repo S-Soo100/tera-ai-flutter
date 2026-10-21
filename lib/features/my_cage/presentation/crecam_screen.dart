@@ -11,7 +11,7 @@ import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import 'my_cage_providers.dart';
-import 'live_recording_controller.dart';
+import 'recording_library_providers.dart';
 import 'clip_feed_controller.dart';
 import 'clip_visibility_providers.dart';
 import 'clip_selection_providers.dart';
@@ -97,12 +97,16 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
     super.dispose();
   }
 
-  /// 지금 피드 순서의 영상 id — 전체 선택·드래그 선택 범위.
+  /// 지금 피드 순서의 항목 키(직접 녹화 포함, 올리는 중인 녹화 제외) — 전체
+  /// 선택·드래그 선택 범위.
   List<String> _feedIds() {
     final query = ref.read(clipFeedQueryProvider);
     return query == null
         ? const <String>[]
-        : [for (final clip in ref.read(clipFeedProvider(query)).items) clip.id];
+        : [
+            for (final e in ref.read(clipFeedEntriesProvider(query)))
+              if (feedEntrySelectable(e)) e.key
+          ];
   }
 
   void _onSelectionToggled(bool selecting) {
@@ -217,6 +221,7 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
     if (!mounted) return;
     ref.invalidate(highlightGroupsProvider);
     ref.invalidate(allFavoriteClipsProvider);
+    ref.invalidate(serverLiveRecordingsProvider);
   }
 
   bool _onScroll(ScrollNotification notification) {
@@ -486,7 +491,7 @@ class _EntryCards extends ConsumerWidget {
     // 직접 녹화도 북마크 목록에 들어간다 — 부제는 둘 중 최신으로 센다(전엔
     // 녹화만 있으면 "아직 없어요"). 목록은 최신순.
     final recordingAt = ref.watch(
-      liveRecordingsProvider.select((v) {
+      recordingLibraryProvider.select((v) {
         if (v.hasValue) {
           final list = v.requireValue;
           return AsyncData<DateTime?>(
