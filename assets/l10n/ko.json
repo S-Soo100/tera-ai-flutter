@@ -1370,6 +1370,9 @@
   "live_rotate_off": "회전 꺼짐",
   "live_reboot_recording": "녹화 중에는 재시작할 수 없어요",
   "live_recording_badge": "직접 녹화 · {len}",
+  "live_recording_upload_uploading": "업로드 중",
+  "live_recording_upload_waiting": "업로드 대기",
+  "live_recording_upload_failed": "업로드 실패",
   "live_recording_delete_title": "이 녹화를 삭제할까요?",
   "live_recording_delete_confirm": "삭제",
   "live_recording_load_failed": "녹화 파일을 열 수 없어요"

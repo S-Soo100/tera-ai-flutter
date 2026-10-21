@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -12,6 +13,7 @@ import '../../../shared/widgets/viva_modal.dart';
 import '../data/live_recording_repository.dart';
 import '../domain/live_recording.dart';
 import 'live_recording_controller.dart';
+import 'live_recording_upload_queue.dart';
 
 /// 직접 녹화 재생(기기 안 파일). 탭 = 재생/일시정지, 우상단 = 삭제.
 class LiveRecordingPlayerScreen extends ConsumerStatefulWidget {
@@ -84,8 +86,10 @@ class _LiveRecordingPlayerScreenState
     );
     if (!ok || !mounted) return;
     await _controller?.pause();
-    await ref.read(liveRecordingRepositoryProvider).delete(rec);
-    ref.invalidate(liveRecordingsProvider);
+    // 서버 등록분은 DELETE까지 대기열이 맡는다 — 목록에서는 바로 빠지고
+    // (deleting), 실패하면 다음 기회에 다시 지운다. 기다리지 않는다.
+    unawaited(
+        ref.read(liveRecordingUploadQueueProvider.notifier).delete(rec));
     if (mounted) context.pop();
   }
 

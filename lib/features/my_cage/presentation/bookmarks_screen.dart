@@ -13,6 +13,7 @@ import 'dart:io';
 import '../data/live_recording_repository.dart';
 import '../domain/live_recording.dart';
 import 'live_recording_controller.dart';
+import 'live_recording_upload_queue.dart';
 import 'my_cage_providers.dart';
 import 'clip_visibility_providers.dart';
 import 'clip_memo_providers.dart';
@@ -52,6 +53,8 @@ class BookmarksScreen extends ConsumerWidget {
     // 직접 녹화(2026-10-01) — 기기 안 보관, 북마크와 같은 목록에 시각순으로.
     final recordings =
         ref.watch(liveRecordingsProvider).valueOrNull ?? const [];
+    // 보관함 진입 = 업로드 대기열 깨우기(한도로 멈춘 녹화 재평가 포함).
+    ref.watch(liveRecordingBookmarksEntryProvider);
     final selection = ref.watch(clipSelectionProvider(_scope));
     final batch = ref.watch(clipBatchProvider(_scope));
     final flow = ClipSelectionFlow(ref, _scope);
@@ -355,31 +358,59 @@ class _RecordingCard extends ConsumerWidget {
                 Positioned(
                   left: 8,
                   bottom: 8,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.liveScrim,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'live_recording_badge'.tr(namedArgs: {
-                        'len':
-                            '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}'
-                      }),
-                      style: const TextStyle(
-                        fontFamily: 'Pretendard',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.liveOnDark,
-                      ),
-                    ),
+                  child: _RecordingChip(
+                    'live_recording_badge'.tr(namedArgs: {
+                      'len':
+                          '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}'
+                    }),
                   ),
                 ),
+                // 업로드 상태(2026-10-21) — 올라간 녹화는 표시 없음.
+                if (_uploadLabelKey(rec.uploadBadge) case final key?)
+                  Positioned(
+                    right: 8,
+                    bottom: 8,
+                    child: _RecordingChip(key.tr(),
+                        key: ValueKey('live_recording_upload_${rec.id}')),
+                  ),
               ]),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+String? _uploadLabelKey(LiveRecordingUploadBadge badge) => switch (badge) {
+      LiveRecordingUploadBadge.uploading => 'live_recording_upload_uploading',
+      LiveRecordingUploadBadge.waiting => 'live_recording_upload_waiting',
+      LiveRecordingUploadBadge.failed => 'live_recording_upload_failed',
+      LiveRecordingUploadBadge.none => null,
+    };
+
+/// 녹화 카드 썸네일 위 작은 글자 칩(길이 배지·업로드 상태 공용).
+class _RecordingChip extends StatelessWidget {
+  const _RecordingChip(this.label, {super.key});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.liveScrim,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontFamily: 'Pretendard',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.liveOnDark,
+        ),
       ),
     );
   }
