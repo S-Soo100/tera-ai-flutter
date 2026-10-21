@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -37,6 +38,20 @@ class _FakeRecorder implements LiveVideoRecorder {
 
 const _streaming = WebRtcLiveState(phase: WebRtcLivePhase.streaming);
 const _failed = WebRtcLiveState(phase: WebRtcLivePhase.failed);
+
+/// 끊김·이탈 저장은 화면 흐름을 막지 않게 뒤에서 돈다(`unawaited(stop)`). 고정
+/// 시간만 기다리면 전체 테스트를 병렬로 돌릴 때 저장이 끝나기 전에 검사해 결과가
+/// null로 보이고, tearDown이 쓰는 중인 폴더를 지우다 실패했다(2026-10-21).
+/// 그래서 조건이 맞을 때까지(최대 5초) 기다린다.
+Future<void> _until(FutureOr<bool> Function() done) async {
+  final sw = Stopwatch()..start();
+  while (!await done()) {
+    if (sw.elapsed > const Duration(seconds: 5)) {
+      fail('5초 안에 저장이 끝나지 않았다');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
+}
 
 void main() {
   group('canStartLiveRecording', () {
@@ -165,7 +180,7 @@ void main() {
       await c.start(_streaming);
       await Future<void>.delayed(const Duration(milliseconds: 3100));
       c.onLiveState(_failed);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await _until(() => c.state.result != null);
       expect(c.state.result, LiveRecordingResult.savedPartial);
       expect(c.state.resultSeconds, 3);
       expect(await repo.list('u1'), hasLength(1));
@@ -180,7 +195,7 @@ void main() {
       c.onLiveState(const WebRtcLiveState(
           phase: WebRtcLivePhase.limited,
           limit: LiveLimit(LiveLimitKind.cooldown)));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await _until(() => c.state.result != null);
       expect(c.state.result, LiveRecordingResult.saved);
       expect(await repo.list('u1'), hasLength(1));
       expect(c.recordedSoFar, Duration.zero);
@@ -194,7 +209,7 @@ void main() {
       c.onLiveState(const WebRtcLiveState(
           phase: WebRtcLivePhase.limited,
           limit: LiveLimit(LiveLimitKind.takenOver)));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await _until(() => c.state.result != null);
       expect(c.state.result, LiveRecordingResult.savedPartial);
       c.dispose();
     }, timeout: const Timeout(Duration(seconds: 10)));
@@ -244,7 +259,7 @@ void main() {
       await c.start(_streaming);
       await Future<void>.delayed(const Duration(milliseconds: 3100));
       c.dispose();
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await _until(() async => (await repo.list('u1')).isNotEmpty);
       expect(recorder.stopped, isTrue);
       expect(await repo.list('u1'), hasLength(1));
     });
