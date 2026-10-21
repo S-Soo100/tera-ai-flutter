@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:hive/hive.dart';
 import 'package:vivanaut/features/my_cage/data/live_recording_repository.dart';
+import 'package:vivanaut/features/my_cage/data/mp4_info.dart';
 import 'package:vivanaut/features/my_cage/domain/live_limit.dart';
 import 'package:vivanaut/features/my_cage/domain/live_recording.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_recording_controller.dart';
@@ -133,6 +134,29 @@ void main() {
       expect(list.single.cameraId, 'cam');
       expect(list.single.thumbPath, isNotNull);
       expect(await repo.list('other'), isEmpty);
+      c.dispose();
+    });
+
+    test('저장 길이는 파일 실제 길이·크기, 저장 직후 대기열을 깨운다', () async {
+      var kicked = 0;
+      final c = LiveRecordingController(
+        cameraId: 'cam',
+        repository: repo,
+        recorderFactory: () => recorder,
+        ownerId: () => owner,
+        trackOf: (live) => live.phase.hasVideo ? _FakeTrack() : null,
+        probe: (_) async =>
+            const Mp4Info(durationMs: 2400, width: 1280, height: 960),
+        onSaved: () => kicked++,
+      );
+      await c.start(_streaming);
+      await Future<void>.delayed(const Duration(milliseconds: 3100));
+      await c.stop(LiveRecordingEnd.userStopped);
+      final r = (await repo.list('u1')).single;
+      expect(r.durationMs, 2400);
+      expect(r.width, 1280);
+      expect(r.uploadState, LiveRecordingUploadState.pending);
+      expect(kicked, 1);
       c.dispose();
     });
 

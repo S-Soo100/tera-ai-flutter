@@ -32,18 +32,46 @@ class LiveRecordingRepository {
 
   Future<String> resolve(String rel) async => '${(await _baseDir()).path}/$rel';
 
-  Future<List<LiveRecording>> list(String ownerId) async {
+  /// 보관함에 보일 녹화(최신순). 서버 삭제 대기(`deleting`)는 사용자가
+  /// 이미 지운 것이라 뺀다.
+  Future<List<LiveRecording>> list(String ownerId) async => [
+        for (final r in await listAll(ownerId))
+          if (r.uploadState != LiveRecordingUploadState.deleting) r
+      ];
+
+  /// 이 계정의 녹화 전부(최신순, 삭제 대기 포함) — 업로드 대기열용.
+  Future<List<LiveRecording>> listAll(String ownerId) async {
     final box = await _box();
     final out = <LiveRecording>[];
     for (final raw in box.values) {
-      try {
-        final r = LiveRecording.tryFromJson(
-            jsonDecode(raw) as Map<String, dynamic>);
-        if (r != null && r.ownerId == ownerId) out.add(r);
-      } catch (_) {}
+      final r = _decode(raw);
+      if (r != null && r.ownerId == ownerId) out.add(r);
     }
     out.sort((a, b) => b.startedAt.compareTo(a.startedAt));
     return out;
+  }
+
+  Future<LiveRecording?> get(String id) async {
+    final raw = (await _box()).get(id);
+    return raw == null ? null : _decode(raw);
+  }
+
+  /// 있는 행만 고친다 — 업로드하는 사이 지워진 녹화를 되살리지 않게.
+  Future<LiveRecording?> update(
+      String id, LiveRecording Function(LiveRecording r) change) async {
+    final current = await get(id);
+    if (current == null) return null;
+    final next = change(current);
+    await save(next);
+    return next;
+  }
+
+  static LiveRecording? _decode(String raw) {
+    try {
+      return LiveRecording.tryFromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> save(LiveRecording r) async =>

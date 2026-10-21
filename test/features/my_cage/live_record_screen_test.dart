@@ -135,6 +135,7 @@ void main() {
             .overrideWith((ref, id) => live = _Live(ref, id, start)),
         liveRecordingRepositoryProvider.overrideWithValue(repo),
         liveVideoRecorderFactoryProvider.overrideWithValue(() => recorder),
+        liveRecordingProbeProvider.overrideWithValue((_) async => null),
         liveRecordingTrackOfProvider.overrideWithValue(
             (s) => s.phase.hasVideo ? _FakeTrack() : null),
       ],

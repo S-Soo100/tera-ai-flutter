@@ -9,6 +9,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../auth/presentation/auth_providers.dart';
 import '../data/live_recording_repository.dart';
+import '../data/live_recording_thumb.dart';
+import '../data/mp4_info.dart';
 import '../domain/live_limit.dart';
 import '../domain/live_recording.dart';
 import 'webrtc_live_controller.dart';
@@ -38,6 +40,11 @@ final liveVideoRecorderFactoryProvider =
 final liveRecordingTrackOfProvider =
     Provider<MediaStreamTrack? Function(WebRtcLiveState live)>(
         (ref) => LiveRecordingController.rendererVideoTrack);
+
+/// 녹화 파일의 실제 길이·크기 읽기 — 위젯 테스트(가짜 시계)는 실제 파일
+/// I/O가 끝나지 않아 교체한다.
+final liveRecordingProbeProvider =
+    Provider<Future<Mp4Info?> Function(String absPath)>((ref) => readMp4Info);
 
 /// 결과 안내 표시 시간.
 const kLiveRecordingResultShown = Duration(seconds: 4);
@@ -82,7 +89,11 @@ class LiveRecordingController extends StateNotifier<LiveRecordingState> {
     required String? Function() ownerId,
     DateTime Function()? now,
     MediaStreamTrack? Function(WebRtcLiveState live)? trackOf,
+    Future<Mp4Info?> Function(String absPath)? probe,
+    void Function()? onSaved,
   })  : _repo = repository,
+        _probe = probe ?? readMp4Info,
+        _onSaved = onSaved,
         _trackOf = trackOf ?? rendererVideoTrack,
         _recorderFactory = recorderFactory,
         _ownerId = ownerId,
@@ -95,6 +106,10 @@ class LiveRecordingController extends StateNotifier<LiveRecordingState> {
   final String? Function() _ownerId;
   final DateTime Function() _now;
   final MediaStreamTrack? Function(WebRtcLiveState live) _trackOf;
+  final Future<Mp4Info?> Function(String absPath) _probe;
+
+  /// 저장 직후 — 업로드 대기열을 깨운다.
+  final void Function()? _onSaved;
 
   static MediaStreamTrack? rendererVideoTrack(WebRtcLiveState live) =>
       live.renderer?.srcObject?.getVideoTracks().firstOrNull;
@@ -194,9 +209,13 @@ class LiveRecordingController extends StateNotifier<LiveRecordingState> {
   Future<String?> _captureThumb(
       MediaStreamTrack track, String owner, String id) async {
     try {
-      final bytes = await track.captureFrame();
-      final p = await _repo.newPath(owner, id, 'png');
-      await File(p.abs).writeAsBytes(bytes.asUint8List());
+      final raw = (await track.captureFrame()).asUint8List();
+      // 서버 썸네일 PUT이 image/jpeg라 처음부터 jpg로 둔다(Android는 이미
+      // JPEG, iOS PNG는 변환). 변환이 안 되면 png로라도 남겨 보관함엔 보인다
+      // — 업로드 때 다시 변환을 시도하고, 안 되면 썸네일 없이 등록한다.
+      final jpeg = await toJpegBytes(raw);
+      final p = await _repo.newPath(owner, id, jpeg != null ? 'jpg' : 'png');
+      await File(p.abs).writeAsBytes(jpeg ?? raw);
       return p.rel;
     } catch (_) {
       return null;
@@ -247,15 +266,24 @@ class LiveRecordingController extends StateNotifier<LiveRecordingState> {
     } else if (!shouldKeepLiveRecording(recorded)) {
       result = LiveRecordingResult.tooShort;
     } else {
+      // 서버 등록 길이는 파일 실제 길이 — 타이머는 파일보다 몇 초 길다
+      // (2026-10-21 실측 120초 → 113.2초). 못 읽으면 타이머 값.
+      final info = await _probe(file!.abs);
+      final fileMs = info?.durationMs ?? 0;
       await _repo.save(LiveRecording(
         id: id!,
         ownerId: owner!,
         cameraId: cameraId,
         startedAt: startedAt!,
-        durationMs: recorded.inMilliseconds,
-        filePath: file!.rel,
+        durationMs: fileMs > 0 ? fileMs : recorded.inMilliseconds,
+        filePath: file.rel,
         thumbPath: thumb,
+        width: info?.width,
+        height: info?.height,
       ));
+      debugPrint('[rec-upload] saved id=$id file_ms=$fileMs '
+          'timer_ms=${recorded.inMilliseconds}');
+      _onSaved?.call();
       result = end == LiveRecordingEnd.completed ||
               end == LiveRecordingEnd.userStopped ||
               end == LiveRecordingEnd.limit
@@ -345,6 +373,7 @@ final liveRecordingControllerProvider = StateNotifierProvider.autoDispose
     recorderFactory: ref.watch(liveVideoRecorderFactoryProvider),
     ownerId: () => ref.read(currentUserProvider)?.id,
     trackOf: ref.watch(liveRecordingTrackOfProvider),
+    probe: ref.watch(liveRecordingProbeProvider),
   );
   ref.listen<WebRtcLiveState>(webrtcLiveControllerProvider(cameraId),
       (_, next) => controller.onLiveState(next));
