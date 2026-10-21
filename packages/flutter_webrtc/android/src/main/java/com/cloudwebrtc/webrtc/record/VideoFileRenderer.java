@@ -47,7 +47,9 @@ class VideoFileRenderer implements VideoSink, SamplesReadyCallback {
 
     // TODO: these ought to be configurable as well
     private static final String MIME_TYPE = "video/avc";    // H.264 Advanced Video Coding
-    private static final int FRAME_RATE = 30;               // 30fps
+    // vivanaut patch: 30 → 10. 카메라 영상이 약 6fps라 고정 비트레이트(CBR)의
+    // 프레임당 예산을 실제에 가깝게 둔다(2026-10-21).
+    private static final int FRAME_RATE = 10;
     private static final int IFRAME_INTERVAL = 5;           // 5 seconds between I-frames
 
     private final MediaMuxer mediaMuxer;
@@ -99,6 +101,23 @@ class VideoFileRenderer implements VideoSink, SamplesReadyCallback {
 
             encoder = MediaCodec.createEncoderByType(MIME_TYPE);
             String codecName = encoder.getName();
+            // vivanaut patch: 고정 비트레이트(CBR). Android 12+ VQApply가 VBR에서는
+            // 요청값 대신 화질 하한(1280×960에 3.98Mbps)을 강제한다 — CBR엔 적용되지
+            // 않는다(2026-10-21 G996 로그 "VQApply raise bitrate"). 지원 안 하면 VBR 그대로.
+            try {
+                MediaCodecInfo.EncoderCapabilities encCaps = encoder.getCodecInfo()
+                        .getCapabilitiesForType(MIME_TYPE).getEncoderCapabilities();
+                if (encCaps.isBitrateModeSupported(
+                        MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR)) {
+                    format.setInteger(MediaFormat.KEY_BITRATE_MODE,
+                            MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR);
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "bitrate mode check failed: " + e.getMessage());
+            }
+            // 참고: Exynos(G996)는 CBR 지원을 보고하지 않아 VBR로 돌고, VQApply가
+            // 1280×960에 3.98Mbps를 강제한다. 앱이 끌 수 있는 키는 없다
+            // (`android._encoding-quality-level`은 시스템 전용, 2026-10-21 실측 무효).
             Log.d(TAG, "Codec name: " + codecName);
             if ("OMX.hisi.video.encoder.avc".equals(codecName)) {
                 Log.w(TAG, "hisi h264 encoder does not set 'MediaFormat.KEY_PROFILE'.");
