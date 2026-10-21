@@ -112,6 +112,20 @@ void main() {
     expect(
         tester.getBottomLeft(button).dy, greaterThan(852 / 2),
         reason: '맨 아래');
+    // 켜져 있을 때는 Figma처럼 회색 바탕(#E3E3E3) + 진한 글자.
+    expect(tester.widget<ManagementButton>(button).grey, isTrue);
+    final style = tester
+        .widget<FilledButton>(
+            find.descendant(of: button, matching: find.byType(FilledButton)))
+        .style!;
+    expect(style.backgroundColor!.resolve({}), VivaColors.fillLine);
+    expect(
+        tester
+            .widget<Text>(find.descendant(
+                of: button, matching: find.text('camera_reboot')))
+            .style
+            ?.color,
+        VivaColors.labelPrimary);
     await tester.tap(button);
     await tester.pumpAndSettle();
     expect(repo.reboots, 0, reason: '확인 전엔 보내지 않는다');

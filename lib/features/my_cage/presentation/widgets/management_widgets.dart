@@ -98,12 +98,17 @@ class ManagementButton extends StatelessWidget {
       required this.label,
       required this.onPressed,
       this.red = false,
+      this.grey = false,
       this.compact = false,
       this.icon,
       this.disabledForeground});
   final String label;
   final VoidCallback? onPressed;
   final bool red;
+
+  /// 누를 수 있는 회색 버튼 — Figma 바탕 #E3E3E3. 글자는 Figma의 흰색이
+  /// 회색 위에서 안 읽혀 진한 글자(2026-10-21 라이브 재시작, 사용자 결정).
+  final bool grey;
   final bool compact;
 
   /// 글자 앞 24 그림(Figma restart_alt 등) — 간격 4.
@@ -115,9 +120,12 @@ class ManagementButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enabledForeground = grey
+        ? context.glass.textPrimary
+        : ManagementColors.buttonForeground(context);
     final foreground = onPressed == null && disabledForeground != null
         ? disabledForeground!
-        : ManagementColors.buttonForeground(context);
+        : enabledForeground;
     return ConstrainedBox(
         constraints: BoxConstraints(
             minWidth: double.infinity, minHeight: compact ? 44 : 56),
@@ -126,10 +134,13 @@ class ManagementButton extends StatelessWidget {
             style: FilledButton.styleFrom(
                 padding: EdgeInsets.symmetric(
                     horizontal: 24, vertical: compact ? 8 : 14),
-                backgroundColor:
-                    red ? context.glass.navSelected : context.glass.textPrimary,
+                backgroundColor: red
+                    ? context.glass.navSelected
+                    : grey
+                        ? context.glass.border
+                        : context.glass.textPrimary,
                 disabledBackgroundColor: context.glass.border,
-                foregroundColor: ManagementColors.buttonForeground(context),
+                foregroundColor: enabledForeground,
                 disabledForegroundColor: foreground,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12))),
