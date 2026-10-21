@@ -35,6 +35,8 @@
         // vivanaut patch: 6Mbps→1.5Mbps + 키프레임 최대 5초(Android IFRAME_INTERVAL과 같게).
         // AVVideoExpectedSourceFrameRateKey·AllowFrameReordering을 넣으면 시뮬레이터에서
         // 기록이 -11800/-12419로 실패해 뺐다(2026-10-21). packages/README.md
+        // ⚠️ 미검증: 시뮬레이터는 1.5Mbps를 무시하고 약 2.9Mbps로 기록한다. 실제
+        // iPhone 측정 전 iOS 배포 금지(사용자 결정 2026-10-21, live_recording.dart).
         AVVideoCompressionPropertiesKey: @{
             AVVideoAverageBitRateKey: @(1500000),
             AVVideoMaxKeyFrameIntervalDurationKey: @(5),

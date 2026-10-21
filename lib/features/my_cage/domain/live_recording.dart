@@ -7,6 +7,17 @@
 library;
 
 /// 기능 스위치 — 실험 기능이라 별로면 이것 하나로 버튼·보관함 노출을 끈다.
+///
+/// ⚠️ **iPhone 미검증 이슈(2026-10-21, iOS는 당장 배포하지 않음 — 사용자 결정).**
+/// iOS 녹화는 `packages/flutter_webrtc`의 `FlutterRTCMediaRecorder.m`
+/// (AVAssetWriter)가 맡는데, 1.5Mbps를 지정해도 시뮬레이터에서는 **약 2.9Mbps**
+/// (67초 24MB → 2분 약 43MB, 서버 크기 한도 30MB 초과)가 나왔다. 실제 iPhone
+/// (하드웨어 VideoToolbox)에서는 아직 재지 못했다. iOS를 배포하기 전에 실기기로
+/// 1분 녹화 크기를 재고, 분당 15MB를 넘으면 VTCompressionSession으로 직접
+/// 인코딩해 DataRateLimits를 거는 방식으로 바꾼다. 그 전까지 30MB를 넘는 녹화는
+/// 업로드하지 않고 "업로드 실패"로 남는다(`LiveRecordingUploadQueue`).
+/// 상세: 계획서 `docs/superpowers/plans/2026-10-21-live-recording-figma.md` §12,
+/// `packages/README.md` "2026-10-21 iOS".
 const bool kLiveRecordingEnabled = true;
 
 /// 한 번 녹화 최대 길이 — Figma "실시간 녹화"(1525:11231) "Max 2분 녹화 /

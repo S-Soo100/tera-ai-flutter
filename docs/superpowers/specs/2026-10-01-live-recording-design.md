@@ -1,5 +1,7 @@
 # 라이브 직접 녹화 기획 (초안, 2026-10-01)
 
+> **2026-10-21 갱신:** Figma "실시간 녹화"(1525:10834) 반영·최대 2분·R2 업로드 구현 완료. 현행 기준은 계획서 `docs/superpowers/plans/2026-10-21-live-recording-figma.md`. **iPhone은 녹화 용량 미검증으로 당장 배포하지 않는다**(계획서 §12). 아래 본문은 2026-10-01 초안 기록이다.
+
 > 상태: **1단계(기기 안 녹화·보관) 구현 — 브랜치 `feat/live-recording`, 0.151.0.** 실험 기능이라 `kLiveRecordingEnabled`(`my_cage/domain/live_recording.dart`)로 끈다. Figma 밖 기능(사용자 결정). 2단계(R2 업로드)는 서버 계약 대기.
 
 ## 1. 확정된 결정 (2026-10-01 사용자)

@@ -136,3 +136,13 @@
 - 삭제: 재생 화면 삭제 → `DELETE 204` → DB 행 없음 확인.
 - 남은 것: 실제 iPhone 녹화, 서버 120초 반영 후 상수 상향, F(다른 폰 목록) 다음 릴리스.
 - **서버 120초 반영 확인(2026-10-21, terra-server #23):** G996 85초 녹화 → `POST 201 → PUT 200×2 → complete 200 → ready`, DB `duration_ms=85172`·`size_bytes=5444573`(5.4MB)·1280×960·썸네일 있음. 앱 `kServerRecordingMaxMs=120000`(0.156.0+425). 120초 반영 전 400으로 실패 표시된 테스트 녹화 3건은 그대로 둔다(실사용자 없음).
+
+## 12. iPhone 미검증 이슈 (2026-10-21) — iOS는 당장 배포하지 않음(사용자 결정)
+
+- **현상:** iOS 녹화(`FlutterRTCMediaRecorder.m`, AVAssetWriter)에 1.5Mbps·키프레임 5초를 지정해도 iPhone 13 mini 시뮬레이터에서 **2.7~2.9Mbps**(42.9초 14.4MB, 67.2초 24.1MB)가 나온다 → 2분 약 43MB로 서버 크기 한도 30MB를 넘는다.
+- **시도:** `AVVideoExpectedSourceFrameRateKey`·`AVVideoAllowFrameReorderingKey`를 넣으면 녹화 도중 `-11800`(내부 `-12419`)로 매번 실패해 뺐다. 지금은 평균 비트레이트 + `AVVideoMaxKeyFrameIntervalDurationKey: 5`.
+- **확인된 것:** 시뮬레이터에서 녹화·저장·R2 업로드(502 뒤 재시도 성공)까지 동작. Figma 화면 수치 일치.
+- **미확인:** 실제 iPhone(하드웨어 인코더)의 비트레이트, 원격 트랙 녹화 안정성.
+- **iOS 배포 전 할 일:** 실제 iPhone으로 1분 녹화 → 분당 15MB 이하면 그대로. 넘으면 VTCompressionSession으로 직접 인코딩하고 `kVTCompressionPropertyKey_DataRateLimits`를 건다(패키지 사본 수정).
+- **안전장치:** 30MB 넘는 녹화는 앱이 업로드하지 않고 보관함에 "업로드 실패"로 남긴다(서버 400 방지). 로컬 재생은 된다.
+- 코드 표기: `lib/features/my_cage/domain/live_recording.dart` `kLiveRecordingEnabled` 주석, `FlutterRTCMediaRecorder.m` 주석.
