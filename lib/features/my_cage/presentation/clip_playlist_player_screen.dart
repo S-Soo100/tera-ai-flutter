@@ -778,9 +778,11 @@ class _ClipPlaylistPlayerScreenState
                               gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
+                                  // 조작부를 읽히게 까는 바닥 흐림(Figma
+                                  // Rectangle 113) — 바탕과 같은 회색.
                                   colors: [
-                        glass.wallpaper.withValues(alpha: 0),
-                        glass.wallpaper.withValues(alpha: 0.9),
+                        AppTheme.landscapeBackdrop.withValues(alpha: 0),
+                        AppTheme.landscapeBackdrop.withValues(alpha: 0.9),
                       ]))))),
               SafeArea(
                   minimum: const EdgeInsets.fromLTRB(48, 24, 48, 20),
@@ -990,6 +992,9 @@ class _ClipPlaylistPlayerScreenState
           onPreviewChanged: _previewFilmstrip,
           onSettled: (index) => unawaited(_settleFilmstrip(index)),
           onSelected: _selectClip,
+          fadeColor: ref.watch(playerOrientationProvider(_orientationKey))
+              ? AppTheme.landscapeBackdrop
+              : null,
         ),
       );
 
@@ -1161,6 +1166,11 @@ class _ClipPlaylistPlayerScreenState
     final speed = ref.watch(playerSpeedProvider(_orientationKey));
     final landscape = ref.watch(playerOrientationProvider(_orientationKey));
     final controller = _controller;
+    // 가로는 회색 바탕 위라 밝은 글자·아이콘(대비).
+    final fg = landscape ? AppTheme.landscapeForeground : glass.textPrimary;
+    final fg2 = landscape
+        ? AppTheme.landscapeForegroundSecondary
+        : glass.textSecondary;
     String time(Duration value) =>
         '${value.inMinutes}:${(value.inSeconds % 60).toString().padLeft(2, '0')}';
     return Padding(
@@ -1174,7 +1184,7 @@ class _ClipPlaylistPlayerScreenState
                   child: FigmaIcon.tinted(
                       _isPlaying ? FigmaIcons.pause : FigmaIcons.play,
                       size: 36,
-                      color: glass.textPrimary)),
+                      color: fg)),
               const SizedBox(width: 8),
               if (controller != null)
                 ValueListenableBuilder(
@@ -1187,7 +1197,7 @@ class _ClipPlaylistPlayerScreenState
                             height: 16.70703125 / 14,
                             fontWeight: FontWeight.w500,
                             letterSpacing: -0.28,
-                            color: glass.textSecondary))),
+                            color: fg2))),
               if (_startedMidway)
                 Flexible(
                     child: TextButton(
@@ -1207,7 +1217,7 @@ class _ClipPlaylistPlayerScreenState
                     _controller?.setPlaybackSpeed(next);
                   },
                   child: FigmaIcon.tinted(FigmaIcons.speed(speed),
-                      color: glass.textPrimary, size: 36)),
+                      color: fg, size: 36)),
               const SizedBox(width: 12),
               _iconButton36(
                   key: const Key('player_orientation'),
@@ -1220,7 +1230,7 @@ class _ClipPlaylistPlayerScreenState
                   // 둘 다 Figma 36 export(941:1834/1928).
                   child: FigmaIcon.tinted(
                       landscape ? FigmaIcons.zoomInMap : FigmaIcons.expand,
-                      color: glass.textPrimary,
+                      color: fg,
                       size: 36)),
             ])));
   }

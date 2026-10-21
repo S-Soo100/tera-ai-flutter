@@ -28,7 +28,12 @@ class ClipFilmstrip extends StatelessWidget {
     required this.onPreviewChanged,
     required this.onSettled,
     required this.onSelected,
+    this.fadeColor,
   });
+
+  /// 양 끝 흐림 색 — 기본은 화면 바탕(wallpaper). 회색 가로 플레이어는
+  /// 그 회색을 넘긴다(2026-10-21).
+  final Color? fadeColor;
 
   static const double itemExtent = 44;
   static const double height = 48;
@@ -180,8 +185,9 @@ class ClipFilmstrip extends StatelessWidget {
                                 ? Alignment.centerRight
                                 : Alignment.centerLeft,
                             colors: [
-                              glass.wallpaper,
-                              glass.wallpaper.withValues(alpha: 0),
+                              fadeColor ?? glass.wallpaper,
+                              (fadeColor ?? glass.wallpaper)
+                                  .withValues(alpha: 0),
                             ],
                           ),
                         ),
