@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/glass_palette.dart';
 import 'figma_icon.dart';
+import 'viva_shadow.dart';
 
 typedef TabHeaderChoice = ({String id, String label});
 
@@ -50,16 +51,17 @@ class RedesignTabHeader extends StatelessWidget {
                               choices.firstWhere((c) => c.id == selected).label,
                           offset: const Offset(0, 44),
                           // Figma 1107:10552 Drop shadow X0 Y0 blur20 spread0
-                          // #919497 30%. Material 그림자는 방향성이 있어 근사.
-                          elevation: 8,
-                          shadowColor: glass.menuShadow,
+                          // #919497 30% — Material elevation(아래로 치우친
+                          // 그림자) 대신 테두리가 직접 그린다.
+                          elevation: 0,
                           constraints:
                               const BoxConstraints.tightFor(width: 200),
                           menuPadding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           color: glass.surfaceHeader,
                           surfaceTintColor: glass.surfaceHeader,
-                          shape: RoundedRectangleBorder(
+                          shape: VivaShadowRoundedBorder(
+                              shadow: vivaFloatingShadow(glass),
                               borderRadius: BorderRadius.circular(12)),
                           onSelected: onSelected,
                           itemBuilder: (_) => [
@@ -158,11 +160,11 @@ class RedesignTabHeader extends StatelessWidget {
                   // 면·줄은 Figma 1063:7422 SelectList(흰 r12, 안쪽 8·4, 줄 44,
                   // 500/18/28 #3C3C3C, 줄 사이 선) — 전엔 기본 Material 메뉴였다
                   // (2026-10-20 시뮬레이터 대조).
-                  elevation: 8,
-                  shadowColor: glass.menuShadow,
+                  elevation: 0,
                   color: glass.surfaceHeader,
                   surfaceTintColor: glass.surfaceHeader,
-                  shape: RoundedRectangleBorder(
+                  shape: VivaShadowRoundedBorder(
+                      shadow: vivaFloatingShadow(glass),
                       borderRadius: BorderRadius.circular(12)),
                   menuPadding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
