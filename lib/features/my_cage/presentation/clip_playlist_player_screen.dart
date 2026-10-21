@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/figma_icon.dart';
 import 'player_view_providers.dart';
@@ -759,7 +760,9 @@ class _ClipPlaylistPlayerScreenState
       // Figma 941:1928 / 1081:6895 — 영상 위 overlay chrome. 여백 좌우 48·
       // 상 24·하 20은 SafeArea 최소값(노치 기기는 더 큰 쪽을 쓴다).
       return Scaffold(
-          backgroundColor: glass.wallpaper,
+          // 영상 좌우 바탕은 라이브 가로와 같은 회색(2026-10-21 사용자 결정 —
+          // Figma 941:1928은 흰 바탕이지만 모든 가로 화면을 회색으로 통일).
+          backgroundColor: AppTheme.landscapeBackdrop,
           body: Stack(fit: StackFit.expand, children: [
             _videoArea(glass, BoxConstraints.tight(MediaQuery.sizeOf(context)),
                 fill: true),
