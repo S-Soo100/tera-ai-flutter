@@ -99,7 +99,19 @@ class VideoFileRenderer implements VideoSink, SamplesReadyCallback {
 
             Log.d(TAG, "Trying encoder config: " + config);
 
+            // vivanaut patch: 하드웨어 인코더가 CBR을 못 하면(Exynos — VBR에서 VQApply가
+            // 3.98Mbps를 강제) Android 기본 소프트웨어 인코더를 쓴다. 영상이 약 6fps라
+            // 소프트웨어로도 부담이 작다(2026-10-21).
             encoder = MediaCodec.createEncoderByType(MIME_TYPE);
+            if (!supportsCbr(encoder)) {
+                try {
+                    MediaCodec sw = MediaCodec.createByCodecName("c2.android.avc.encoder");
+                    encoder.release();
+                    encoder = sw;
+                } catch (Exception e) {
+                    Log.w(TAG, "software encoder unavailable: " + e.getMessage());
+                }
+            }
             String codecName = encoder.getName();
             // vivanaut patch: 고정 비트레이트(CBR). Android 12+ VQApply가 VBR에서는
             // 요청값 대신 화질 하한(1280×960에 3.98Mbps)을 강제한다 — CBR엔 적용되지
@@ -167,6 +179,16 @@ class VideoFileRenderer implements VideoSink, SamplesReadyCallback {
                 }
                 encoder = null;
             }
+            return false;
+        }
+    }
+
+    private static boolean supportsCbr(MediaCodec codec) {
+        try {
+            return codec.getCodecInfo().getCapabilitiesForType(MIME_TYPE)
+                    .getEncoderCapabilities()
+                    .isBitrateModeSupported(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR);
+        } catch (Exception e) {
             return false;
         }
     }
