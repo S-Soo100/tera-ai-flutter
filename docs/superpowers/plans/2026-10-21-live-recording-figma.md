@@ -135,3 +135,4 @@
 - 앱 시작 대기열: 60초 이하 3건 `POST /recordings 201 → PUT 영상 200 → PUT 썸네일 200 → complete 200 → ready`, DB `live_recordings` status=ready 확인. 60초 초과 4건은 `blocked(length)` → 보관함 "업로드 대기".
 - 삭제: 재생 화면 삭제 → `DELETE 204` → DB 행 없음 확인.
 - 남은 것: 실제 iPhone 녹화, 서버 120초 반영 후 상수 상향, F(다른 폰 목록) 다음 릴리스.
+- **서버 120초 반영 확인(2026-10-21, terra-server #23):** G996 85초 녹화 → `POST 201 → PUT 200×2 → complete 200 → ready`, DB `duration_ms=85172`·`size_bytes=5444573`(5.4MB)·1280×960·썸네일 있음. 앱 `kServerRecordingMaxMs=120000`(0.156.0+425). 120초 반영 전 400으로 실패 표시된 테스트 녹화 3건은 그대로 둔다(실사용자 없음).
