@@ -28,7 +28,8 @@ class _Session implements AuthSession {
 /// 경로별로 응답을 차례로 꺼내 주는 가짜 서버. 응답이 떨어지면 마지막 것을 반복.
 class _Server {
   final calls = <http.Request>[];
-  final routes = <String, List<FutureOr<http.Response> Function(http.Request)>>{};
+  final routes =
+      <String, List<FutureOr<http.Response> Function(http.Request)>>{};
 
   void on(String key, FutureOr<http.Response> Function(http.Request) r) =>
       (routes[key] ??= []).add(r);
@@ -44,7 +45,8 @@ class _Server {
   static String _key(http.Request r) {
     if (r.url.host == 'r2.test') return 'PUT ${r.url.path}';
     final path = r.url.path
-        .replaceAll(RegExp(r'/recordings/[^/]+/complete'), '/recordings/:id/complete')
+        .replaceAll(
+            RegExp(r'/recordings/[^/]+/complete'), '/recordings/:id/complete')
         .replaceAll(RegExp(r'/recordings/[^/]+$'), '/recordings/:id');
     return '${r.method} $path';
   }
@@ -123,7 +125,8 @@ void main() {
       int bytes = 1000,
       bool thumb = true,
       String? recordingId,
-      LiveRecordingUploadState state = LiveRecordingUploadState.pending}) async {
+      LiveRecordingUploadState state =
+          LiveRecordingUploadState.pending}) async {
     final video = await local.newPath(who, id, 'mp4');
     await File(video.abs).writeAsBytes(List.filled(bytes, 1));
     String? thumbRel;
@@ -214,8 +217,7 @@ void main() {
     expect((await row('a'))!.uploadState, LiveRecordingUploadState.ready);
   });
 
-  test('complete 409 upload_missing → 같은 client_id로 다시 등록해 처음부터',
-      () async {
+  test('complete 409 upload_missing → 같은 client_id로 다시 등록해 처음부터', () async {
     await add('a');
     server
       ..json('POST /recordings', 201, _reg('srv-a'))
@@ -341,8 +343,7 @@ void main() {
     expect((await row('b'))!.uploadError, 'http_404');
   });
 
-  test('5xx → 백오프 예약(30초부터 2배), 기다리는 동안 다시 보내지 않는다',
-      () async {
+  test('5xx → 백오프 예약(30초부터 2배), 기다리는 동안 다시 보내지 않는다', () async {
     await add('a');
     server.json('POST /recordings', 502);
     final q = queue();
@@ -367,8 +368,7 @@ void main() {
 
   test('망 끊김(예외) → 백오프', () async {
     await add('a');
-    server.on('POST /recordings',
-        (_) => throw const SocketException('down'));
+    server.on('POST /recordings', (_) => throw const SocketException('down'));
     await queue().kick(LiveRecordingUploadTrigger.saved);
     final r = (await row('a'))!;
     expect(r.uploadError, 'network');
@@ -381,9 +381,11 @@ void main() {
     expect(liveRecordingUploadBackoff(20), const Duration(minutes: 30));
   });
 
-  test('서버 길이 한도(60초) 초과 → POST 없이 blocked, 다음 녹화는 올린다',
-      () async {
-    await add('long', durationMs: kServerRecordingMaxMs + 1, startMin: 0);
+  test('서버 길이 한도(60초) 초과 → POST 없이 blocked, 다음 녹화는 올린다', () async {
+    await add('long',
+        durationMs:
+            kServerRecordingMaxMs + kServerRecordingLengthToleranceMs + 1,
+        startMin: 0);
     await add('short', startMin: 1);
     happy('srv-short');
     await queue().kick(LiveRecordingUploadTrigger.saved);
@@ -395,10 +397,35 @@ void main() {
     expect(jsonDecode(server.calls.first.body)['client_id'], 'short');
   });
 
+  test('2분 자동 종료로 상한을 1초 안에서 넘은 녹화는 상한 길이로 등록한다', () async {
+    await add('edge', durationMs: kServerRecordingMaxMs + 33, startMin: 0);
+    happy('srv-edge');
+    await queue().kick(LiveRecordingUploadTrigger.saved);
+    expect(server.count('POST /recordings'), 1);
+    expect(jsonDecode(server.calls.first.body)['duration_ms'],
+        kServerRecordingMaxMs);
+    expect((await row('edge'))!.uploadState, LiveRecordingUploadState.ready);
+  });
+
+  test('serverRecordingDurationMs — 상한 이하 그대로, 1초 안 초과는 상한, 그 이상 null', () {
+    expect(serverRecordingDurationMs(85172), 85172);
+    expect(serverRecordingDurationMs(kServerRecordingMaxMs),
+        kServerRecordingMaxMs);
+    expect(serverRecordingDurationMs(120033), kServerRecordingMaxMs);
+    expect(
+        serverRecordingDurationMs(
+            kServerRecordingMaxMs + kServerRecordingLengthToleranceMs),
+        kServerRecordingMaxMs);
+    expect(
+        serverRecordingDurationMs(
+            kServerRecordingMaxMs + kServerRecordingLengthToleranceMs + 1),
+        isNull);
+  });
+
   test('30MB 초과 → POST 없이 failed(too_large)', () async {
     final r = await add('big');
-    final raf = await File(await local.resolve(r.filePath))
-        .open(mode: FileMode.write);
+    final raf =
+        await File(await local.resolve(r.filePath)).open(mode: FileMode.write);
     await raf.setPosition(kServerRecordingMaxBytes);
     await raf.writeByte(0);
     await raf.close();
@@ -416,12 +443,11 @@ void main() {
     await queue().kick(LiveRecordingUploadTrigger.saved);
     expect(server.count('POST /recordings'), 1);
     expect(jsonDecode(server.calls.first.body)['client_id'], 'mine');
-    expect((await row('theirs'))!.uploadState,
-        LiveRecordingUploadState.pending);
+    expect(
+        (await row('theirs'))!.uploadState, LiveRecordingUploadState.pending);
   });
 
-  test('업로드 중 계정이 바뀌면 거기서 멈춘다(다른 계정 토큰으로 안 올림)',
-      () async {
+  test('업로드 중 계정이 바뀌면 거기서 멈춘다(다른 계정 토큰으로 안 올림)', () async {
     await add('a');
     server
       ..json('POST /recordings', 201, _reg('srv-a'))
@@ -474,8 +500,7 @@ void main() {
       expect(await row('a'), isNull);
     });
 
-    test('DELETE 실패 → deleting으로 남기고 목록에선 숨김, 다음 계기에 재시도',
-        () async {
+    test('DELETE 실패 → deleting으로 남기고 목록에선 숨김, 다음 계기에 재시도', () async {
       final r = await add('a',
           recordingId: 'srv-a', state: LiveRecordingUploadState.ready);
       server

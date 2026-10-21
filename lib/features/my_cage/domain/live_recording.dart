@@ -71,6 +71,21 @@ bool shouldKeepLiveRecording(Duration recorded) =>
 /// 버리지 않게). 녹화 최대 길이([kLiveRecordingLength])와 같다.
 const int kServerRecordingMaxMs = 120000;
 
+/// 파일 길이가 서버 상한을 이만큼 안에서 넘은 것은 인코더 오차로 본다 —
+/// 2분 자동 종료 녹화가 120,033ms로 나와 "업로드 대기"에 걸렸다(2026-10-21
+/// iPhone 13 mini 시뮬레이터).
+const int kServerRecordingLengthToleranceMs = 1000;
+
+/// 서버에 등록할 `duration_ms`. 상한을 [kServerRecordingLengthToleranceMs] 안에서
+/// 넘으면 상한으로 맞추고, 더 넘으면 null(등록하지 않고 "업로드 대기").
+int? serverRecordingDurationMs(int fileMs) {
+  if (fileMs <= kServerRecordingMaxMs) return fileMs;
+  if (fileMs <= kServerRecordingMaxMs + kServerRecordingLengthToleranceMs) {
+    return kServerRecordingMaxMs;
+  }
+  return null;
+}
+
 /// 서버 파일 크기 상한(30MB). 단위가 MiB인지 확인 전이라 작은 쪽(10진 MB)으로
 /// 거른다 — 넘으면 등록하지 않고 "업로드 실패"(로컬 보관은 유지).
 const int kServerRecordingMaxBytes = 30 * 1000 * 1000;
@@ -143,9 +158,11 @@ class LiveRecording {
   final String ownerId;
   final String cameraId;
   final DateTime startedAt;
+
   /// 파일 실제 길이(mp4 `mvhd`) — 못 읽었으면 녹화 타이머 값. 서버 등록
   /// `duration_ms`도 이 값이다(타이머는 파일보다 몇 초 길다).
   final int durationMs;
+
   /// 앱 문서 디렉토리 기준 **상대** 경로 — iOS는 앱 업데이트마다 컨테이너
   /// 절대 경로가 바뀌어 절대 경로를 저장하면 파일을 잃는다.
   final String filePath;
@@ -176,7 +193,8 @@ class LiveRecording {
 
   /// 보관함 카드 표시.
   LiveRecordingUploadBadge get uploadBadge => switch (uploadState) {
-        LiveRecordingUploadState.uploading => LiveRecordingUploadBadge.uploading,
+        LiveRecordingUploadState.uploading =>
+          LiveRecordingUploadBadge.uploading,
         LiveRecordingUploadState.pending ||
         LiveRecordingUploadState.blocked =>
           LiveRecordingUploadBadge.waiting,

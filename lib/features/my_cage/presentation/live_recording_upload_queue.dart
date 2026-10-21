@@ -209,7 +209,7 @@ class LiveRecordingUploadQueue
         LiveRecordingUploadState.blocked =>
           r.uploadError == LiveRecordingUploadError.quota
               ? retryQuota
-              : r.durationMs <= kServerRecordingMaxMs,
+              : serverRecordingDurationMs(r.durationMs) != null,
         _ => false,
       };
       if (!eligible) continue;
@@ -224,9 +224,11 @@ class LiveRecordingUploadQueue
 
   Future<_Outcome> _upload(LiveRecording rec) async {
     // 서버 길이 한도 — 등록하지 않고 "업로드 대기"로 둔다(400에 의존하지 않음).
-    if (rec.durationMs > kServerRecordingMaxMs) {
+    if (serverRecordingDurationMs(rec.durationMs) == null) {
       if (rec.uploadState != LiveRecordingUploadState.blocked) {
-        await _patch(rec.id, 'blocked(length)',
+        await _patch(
+            rec.id,
+            'blocked(length)',
             (r) => r.copyWith(
                 uploadState: LiveRecordingUploadState.blocked,
                 uploadError: LiveRecordingUploadError.lengthLimit));
@@ -263,7 +265,8 @@ class LiveRecordingUploadQueue
           cameraId: current!.cameraId,
           clientId: current.id,
           startedAt: current.startedAt,
-          durationMs: current.durationMs,
+          // 상한을 1초 안에서 넘은 파일은 상한으로(위에서 null은 걸렀다).
+          durationMs: serverRecordingDurationMs(current.durationMs)!,
           sizeBytes: size,
           hasThumbnail: thumb != null,
           width: current.width,
@@ -351,7 +354,9 @@ class LiveRecordingUploadQueue
 
   Future<_Outcome> _classify(String id, RecordingApiException e) async {
     if (e.isQuota) {
-      await _patch(id, 'blocked(quota)',
+      await _patch(
+          id,
+          'blocked(quota)',
           (r) => r.copyWith(
               uploadState: LiveRecordingUploadState.blocked,
               uploadError: LiveRecordingUploadError.quota,
@@ -585,8 +590,7 @@ final liveRecordingSavedHookProvider = Provider<void Function()>((ref) => () {
     });
 
 /// 보관함 진입 — 화면이 watch하면 한 번 깨운다(autoDispose라 들어올 때마다).
-final liveRecordingBookmarksEntryProvider =
-    Provider.autoDispose<void>((ref) {
+final liveRecordingBookmarksEntryProvider = Provider.autoDispose<void>((ref) {
   unawaited(ref
       .read(liveRecordingUploadQueueProvider.notifier)
       .kick(LiveRecordingUploadTrigger.bookmarks));
