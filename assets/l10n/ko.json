@@ -1379,5 +1379,7 @@
   "live_recording_delete_title": "이 녹화를 삭제할까요?",
   "live_recording_delete_confirm": "삭제",
   "live_recording_load_failed": "녹화 파일을 열 수 없어요",
-  "live_recording_bookmarked": "보관함에 저장된 녹화예요"
+  "live_recording_bookmarked": "보관함에 저장된 녹화예요",
+  "live_recording_delete_failed": "녹화를 삭제하지 못했어요",
+  "clip_select_delete_confirm_recordings": "선택한 영상을 삭제하시겠습니까?\n직접 녹화는 이 폰과 서버에서 모두 지워지며 복구할 수 없습니다"
 }

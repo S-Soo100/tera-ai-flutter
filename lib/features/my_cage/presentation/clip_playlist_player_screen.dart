@@ -34,10 +34,10 @@ import 'clip_visibility_providers.dart';
 import 'widgets/clip_hide_dialog.dart';
 import '../../../shared/widgets/arc_spinner.dart';
 import '../../../shared/widgets/keep_screen_on.dart';
-import '../data/live_recording_repository.dart';
-import '../domain/live_recording.dart';
 import '../domain/player_entry.dart';
+import '../domain/recording_item.dart';
 import 'live_recording_actions.dart';
+import 'recording_library_providers.dart';
 
 /// 세로 재생목록 플레이어 (Figma 668:743, 카메라 탭 재설계 T1).
 ///
@@ -50,11 +50,12 @@ import 'live_recording_actions.dart';
 /// 양쪽 더블탭은 ±10초.
 /// 하이라이트만 끝에서 자동으로 다음 클립(마지막이면 정지 상태 유지).
 ///
-/// 재생목록 항목은 [PlayerEntry.key] 문자열이다. 보관함(북마크 화면)에서
-/// 열면 직접 녹화(`rec:<id>`, 폰 파일)가 섞여 같은 화면에서 넘긴다
-/// (2026-10-21 사용자 결정 — `/crecam/recordings/:id`도 이 화면). 녹화는
-/// 폰 파일로 재생·저장·공유하고, 휴지통은 숨기기 대신 녹화 삭제, 북마크는
-/// 늘 켜진 모양(보관함에만 있어 해제 대상이 아님), 메모는 `rec:<id>` 키.
+/// 재생목록 항목은 [PlayerEntry.key] 문자열이다. 보관함(북마크 화면)·카메라
+/// 탭 목록에서 열면 직접 녹화(이 폰 `rec:<id>` / 서버에만 있는
+/// `rec:srv:<id>`)가 섞여 같은 화면에서 넘긴다(2026-10-21 사용자 결정 —
+/// `/crecam/recordings/:id`도 이 화면). 녹화는 폰 파일이 있으면 그것으로,
+/// 없으면 서버 URL로 재생·저장·공유하고, 휴지통은 숨기기 대신 녹화 삭제,
+/// 북마크는 늘 켜진 모양(보관함에만 있어 해제 대상이 아님), 메모는 항목 키.
 /// 더블탭 ±10초 피드백(초 단위 부호 값). 화면 인스턴스별.
 final _seekFeedbackProvider =
     StateProvider.autoDispose.family<int?, Object>((ref, key) => null);
@@ -72,9 +73,14 @@ class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
     this.nextCursor,
     this.hasMore = false,
     this.highlightBatchId,
+    this.feedFloor,
   });
 
   final String clipId;
+
+  /// 카메라 탭 목록이 불러온 가장 오래된 일반 영상 시각 — 다음 페이지를 붙일
+  /// 때 녹화를 어디까지 끼울지의 경계([appendFeedPage]).
+  final DateTime? feedFloor;
   final ClipPlaybackSource source;
   final String? cameraId, highlightBatchId;
   final DateTime? rangeStart, rangeEndExclusive;
@@ -132,6 +138,7 @@ class _ClipPlaylistPlayerScreenState
   bool _autoAdvanced = false; // 클립당 자동 다음 1회 가드
   MotionClipCursor? _nextCursor;
   late bool _hasMore;
+  DateTime? _feedFloor;
 
   static const _prefetchThreshold = 12;
 
@@ -172,22 +179,6 @@ class _ClipPlaylistPlayerScreenState
   /// 현재 항목 — 움직임 영상 또는 직접 녹화.
   PlayerEntry get _currentEntry => PlayerEntry.parse(_currentClipId);
 
-  /// 이 계정 보관함의 직접 녹화 한 건. 없으면(삭제·다른 계정) null.
-  Future<LiveRecording?> _findRecording(String recordingId) async {
-    final uid = ref.read(currentUserProvider)?.id;
-    if (uid == null) return null;
-    final repo = ref.read(liveRecordingRepositoryProvider);
-    return (await repo.list(uid)).where((r) => r.id == recordingId).firstOrNull;
-  }
-
-  /// 직접 녹화의 폰 파일. 없으면 예외.
-  Future<File> _recordingFile(String recordingId) async {
-    final rec = await _findRecording(recordingId);
-    if (rec == null) throw StateError('recording not found');
-    return File(
-        await ref.read(liveRecordingRepositoryProvider).resolve(rec.filePath));
-  }
-
   @override
   void initState() {
     super.initState();
@@ -201,6 +192,7 @@ class _ClipPlaylistPlayerScreenState
     final initialIndex = ids.indexOf(widget.clipId);
     _nextCursor = widget.nextCursor;
     _hasMore = widget.hasMore;
+    _feedFloor = widget.feedFloor;
     _filmstripSeed = (route: _orientationKey, initialIndex: initialIndex);
     _filmstripController = ScrollController(
       initialScrollOffset: ClipFilmstrip.offsetForIndex(initialIndex),
@@ -260,10 +252,21 @@ class _ClipPlaylistPlayerScreenState
       if (!mounted || ref.read(currentUserProvider)?.id != owner) return;
       final current = _playlist.isEmpty ? null : _currentClipId;
       final hidden = ref.read(currentClipVisibilityProvider).hiddenIds;
-      final expanded = {
-        ..._playlist,
-        ...page.items.map((clip) => clip.id),
-      }.where((id) => !hidden.contains(id)).toList(growable: false);
+      // 카메라 탭 목록과 같은 경계로 그 카메라의 직접 녹화를 시각순으로 끼운다.
+      final recordings = recordingsForFeed(
+          ref.read(recordingLibraryProvider).valueOrNull ?? const [],
+          cameraId,
+          query.range);
+      final appended = appendFeedPage(
+          existing: _playlist,
+          pageClips: page.items,
+          hasMore: page.hasMore,
+          floor: _feedFloor,
+          recordings: recordings);
+      _feedFloor = appended.floor;
+      final expanded = appended.keys
+          .where((id) => !hidden.contains(id))
+          .toList(growable: false);
       _playlist = expanded;
       _index = current == null ? 0 : math.max(0, expanded.indexOf(current));
       _nextCursor = page.nextCursor;
@@ -285,7 +288,10 @@ class _ClipPlaylistPlayerScreenState
     }
   }
 
-  Future<String> _presignedUrl(String clipId, {bool refresh = false}) async {
+  /// [serverRecordingId]가 있으면 서버 녹화 재생 URL(`/recordings/{id}/url`),
+  /// 없으면 움직임 영상 URL. 캐시 키는 항목 키([clipId]).
+  Future<String> _presignedUrl(String clipId,
+      {bool refresh = false, String? serverRecordingId}) async {
     final cached = _urlCache[clipId];
     final stale =
         cached == null || DateTime.now().difference(cached.issuedAt) > _urlTtl;
@@ -293,8 +299,14 @@ class _ClipPlaylistPlayerScreenState
       _urlCache.remove(clipId);
       // provider도 무효화해야 한다 — non-refresh stale 경로에서도 provider
       // 캐시(autoDispose지만 이 화면이 살아 있는 동안 유지)가 옛 URL을 준다.
-      ref.invalidate(motionClipUrlProvider(clipId));
-      final url = await ref.read(motionClipUrlProvider(clipId).future);
+      final String url;
+      if (serverRecordingId case final id?) {
+        ref.invalidate(serverRecordingUrlProvider(id));
+        url = await ref.read(serverRecordingUrlProvider(id).future);
+      } else {
+        ref.invalidate(motionClipUrlProvider(clipId));
+        url = await ref.read(motionClipUrlProvider(clipId).future);
+      }
       _urlCache[clipId] = (url: url, issuedAt: DateTime.now());
       return url;
     }
@@ -332,19 +344,14 @@ class _ClipPlaylistPlayerScreenState
           return;
         }
       }
-      final entry = PlayerEntry.parse(clipId);
-      // 직접 녹화는 폰 파일. 즐겨찾기(로컬 파일) 우선 — 오프라인 재생 가능
-      final localFile = switch (entry) {
-        RecordingEntry(:final recordingId) => await _recordingFile(recordingId),
-        ClipEntry() =>
-          ref.read(favoriteClipRepositoryProvider).getLocalFile(clipId),
-      };
+      // 직접 녹화는 폰 파일(없으면 서버 URL), 움직임 영상은 즐겨찾기(로컬
+      // 파일) 우선 — 오프라인 재생 가능.
+      final src = await _source(clipId, refresh: isRetry);
       if (!mounted || seq != _loadSeq) return;
-      if (localFile != null) {
-        controller = VideoPlayerController.file(localFile);
+      if (src.file case final file?) {
+        controller = VideoPlayerController.file(file);
       } else {
-        final url = await _presignedUrl(clipId, refresh: isRetry);
-        controller = VideoPlayerController.networkUrl(Uri.parse(url));
+        controller = VideoPlayerController.networkUrl(Uri.parse(src.url!));
       }
       await controller.initialize();
       if (!mounted || seq != _loadSeq) {
@@ -531,14 +538,20 @@ class _ClipPlaylistPlayerScreenState
     controller.play();
   }
 
-  /// 로컬 파일 있으면 그걸, 없으면 presigned URL을 확보해 저장/공유에 넘긴다.
-  Future<({File? file, String? url})> _source(String clipId) async {
-    if (PlayerEntry.parse(clipId) case RecordingEntry(:final recordingId)) {
-      return (file: await _recordingFile(recordingId), url: null);
+  /// 로컬 파일 있으면 그걸, 없으면 presigned URL을 확보해 재생·저장·공유에
+  /// 넘긴다. 직접 녹화는 폰 파일 → 서버 녹화 URL 순.
+  Future<({File? file, String? url})> _source(String clipId,
+      {bool refresh = false}) async {
+    if (PlayerEntry.parse(clipId).isRecording) {
+      final src = await ref.read(recordingSourceResolverProvider)(clipId);
+      if (src.file case final file?) return (file: file, url: null);
+      final url = await _presignedUrl(clipId,
+          refresh: refresh, serverRecordingId: src.serverId);
+      return (file: null, url: url);
     }
     final f = ref.read(favoriteClipRepositoryProvider).getLocalFile(clipId);
     if (f != null) return (file: f, url: null);
-    final url = await _presignedUrl(clipId);
+    final url = await _presignedUrl(clipId, refresh: refresh);
     return (file: null, url: url);
   }
 
@@ -553,7 +566,7 @@ class _ClipPlaylistPlayerScreenState
     try {
       final src = await _source(clipId);
       await ref.read(videoExportServiceProvider).saveToGallery(
-            clipId,
+            exportFileName(clipId),
             localFile: src.file,
             presignedUrl: src.url,
           );
@@ -580,7 +593,7 @@ class _ClipPlaylistPlayerScreenState
     try {
       final src = await _source(clipId);
       await ref.read(videoExportServiceProvider).share(
-            clipId,
+            exportFileName(clipId),
             localFile: src.file,
             presignedUrl: src.url,
           );
@@ -603,8 +616,8 @@ class _ClipPlaylistPlayerScreenState
 
   void _hideCurrentClip() {
     if (_playlist.isEmpty) return;
-    if (_currentEntry case RecordingEntry(:final recordingId)) {
-      unawaited(_deleteRecording(recordingId));
+    if (_currentEntry.isRecording) {
+      unawaited(_deleteRecording(_currentClipId));
       return;
     }
     final owner = ref.read(clipVisibilityAccountProvider);
@@ -614,13 +627,19 @@ class _ClipPlaylistPlayerScreenState
 
   /// 직접 녹화 삭제 — 확인 뒤 대기열에 맡기고(메모도 함께 지운다) 재생목록에서
   /// 뺀다. 마지막 항목이었으면 화면을 닫는다.
-  Future<void> _deleteRecording(String recordingId) async {
-    final key = RecordingEntry(recordingId).key;
+  Future<void> _deleteRecording(String key) async {
     if (!await confirmLiveRecordingDelete(context) || !mounted) return;
-    final rec = await _findRecording(recordingId);
-    if (!mounted) return;
-    if (rec != null) {
-      unawaited(ref.read(liveRecordingDeleterProvider)(rec));
+    final item = ref.read(recordingItemByKeyProvider(key));
+    if (item != null) {
+      // 서버에만 있는 녹화는 서버 DELETE 결과를 기다린다(다시 지울 자리가
+      // 폰에 없다). 실패하면 재생목록에 남긴다.
+      final ok = await ref.read(recordingItemDeleterProvider)(item);
+      if (!mounted) return;
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('live_recording_delete_failed'.tr())));
+        return;
+      }
     }
     if (!_playlist.contains(key)) return;
     if (_playlist.length == 1) {
@@ -667,6 +686,10 @@ class _ClipPlaylistPlayerScreenState
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
+    // 카메라 탭에서 열었으면 다음 페이지에 끼울 직접 녹화 목록을 살려 둔다.
+    if (widget.source == ClipPlaybackSource.feed) {
+      ref.watch(recordingLibraryProvider);
+    }
     ref.watch(playerPlaylistProvider(_playlistSeed));
     ref.watch(playerIndexProvider(_playlistSeed));
     final visibility = ref.watch(currentClipVisibilityProvider);
@@ -711,12 +734,11 @@ class _ClipPlaylistPlayerScreenState
     final bool isFav;
     final DateTime? startedAt;
     switch (_currentEntry) {
-      case RecordingEntry(:final recordingId):
+      case RecordingEntry() || ServerRecordingEntry():
         // 직접 녹화는 보관함에만 있다 — 북마크는 늘 켜진 모양.
         clip = null;
         isFav = true;
-        startedAt =
-            ref.watch(liveRecordingByIdProvider(recordingId))?.startedAt;
+        startedAt = ref.watch(recordingItemByKeyProvider(currentId))?.startedAt;
       case ClipEntry():
         clip = ref.watch(motionClipProvider(currentId)).valueOrNull;
         final owner = ref.watch(currentUserProvider)?.id;
@@ -1027,7 +1049,7 @@ class _ClipPlaylistPlayerScreenState
   }
 
   /// 휴지통 뜻 — 움직임 영상은 숨기기, 직접 녹화는 삭제.
-  String get _trashTooltip => (_currentEntry is RecordingEntry
+  String get _trashTooltip => (_currentEntry.isRecording
           ? 'live_recording_delete_confirm'
           : 'clip_hide_action')
       .tr();
@@ -1094,7 +1116,7 @@ class _ClipPlaylistPlayerScreenState
               size: 40, color: Theme.of(context).colorScheme.error),
           const SizedBox(height: 8),
           Text(
-              (_currentEntry is RecordingEntry
+              (_currentEntry.isRecording
                       ? 'live_recording_load_failed'
                       : 'error_generic')
                   .tr(),
@@ -1334,7 +1356,7 @@ class _ClipPlaylistPlayerScreenState
       const SizedBox(width: 8),
       // 북마크도 메모처럼 외곽선/채움으로 가른다(2026-09-21 사용자 지시).
       // 두 에셋이 같은 36 프레임이라 frame·tint를 따로 줄 필요가 없다.
-      if (_currentEntry is RecordingEntry)
+      if (_currentEntry.isRecording)
         // 직접 녹화는 보관함에만 있어 해제 대상이 아니다(삭제는 휴지통) —
         // 켜진 모양만, 누름 효과 없이 둔다(2026-10-21 사용자 결정).
         Tooltip(

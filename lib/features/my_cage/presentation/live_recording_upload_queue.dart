@@ -54,13 +54,43 @@ Duration liveRecordingUploadBackoff(int attempts) {
 const int _kMaxRounds = 3;
 
 class LiveRecordingUploadQueueState {
-  const LiveRecordingUploadQueueState({this.revision = 0, this.activeId});
+  const LiveRecordingUploadQueueState({
+    this.revision = 0,
+    this.activeId,
+    this.serverRevision = 0,
+    this.removedServerIds = const {},
+  });
 
   /// 녹화 행이 바뀔 때마다 +1 — 보관함 목록이 다시 읽는다.
   final int revision;
 
   /// 지금 올리는 녹화 id(로컬).
   final String? activeId;
+
+  /// 서버 목록이 바뀌었을 수 있을 때 +1(업로드 완료·서버 삭제 완료) — 서버
+  /// 녹화 목록(`serverLiveRecordingsProvider`)이 다시 읽는다. 업로드 중간
+  /// 상태마다 서버를 다시 읽지 않게 [revision]과 나눴다.
+  final int serverRevision;
+
+  /// 이 실행에서 지운(지우는 중인) 서버 전용 녹화 id — 서버 목록을 다시 받기
+  /// 전에도 화면에서 바로 빠지게 한다.
+  final Set<String> removedServerIds;
+
+  LiveRecordingUploadQueueState copyWith({
+    int? revision,
+    Object? activeId = _keep,
+    int? serverRevision,
+    Set<String>? removedServerIds,
+  }) =>
+      LiveRecordingUploadQueueState(
+        revision: revision ?? this.revision,
+        activeId:
+            identical(activeId, _keep) ? this.activeId : activeId as String?,
+        serverRevision: serverRevision ?? this.serverRevision,
+        removedServerIds: removedServerIds ?? this.removedServerIds,
+      );
+
+  static const _keep = Object();
 }
 
 class _Cancelled implements Exception {
@@ -177,6 +207,17 @@ class LiveRecordingUploadQueue
     final owner = ownerId!;
     // 오래된 것부터.
     final rows = (await _local.listAll(owner)).reversed.toList();
+
+    // 지우다 만 녹화(지난 실행 포함)는 서버 목록에서 미리 뺀다 — DELETE가
+    // 끝나기 전에 "서버에만 있는 녹화"로 되살아나 보이지 않게.
+    final pendingDeletes = {
+      for (final r in rows)
+        if (r.uploadState == LiveRecordingUploadState.deleting)
+          if (r.recordingId case final id?) id
+    };
+    if (!state.removedServerIds.containsAll(pendingDeletes)) {
+      _setRemoved({...state.removedServerIds, ...pendingDeletes});
+    }
 
     // 1) 서버 삭제가 밀린 것부터 — 계정 한도를 비운다.
     for (final r in rows) {
@@ -393,16 +434,19 @@ class LiveRecordingUploadQueue
           uploadError: error,
           nextAttemptAt: null));
 
-  Future<void> _ready(String id) => _patch(
-      id,
-      'ready',
-      (r) => r.copyWith(
-            uploadState: LiveRecordingUploadState.ready,
-            uploadedAt: _now(),
-            uploadError: null,
-            uploadAttempts: 0,
-            nextAttemptAt: null,
-          ));
+  Future<void> _ready(String id) async {
+    await _patch(
+        id,
+        'ready',
+        (r) => r.copyWith(
+              uploadState: LiveRecordingUploadState.ready,
+              uploadedAt: _now(),
+              uploadError: null,
+              uploadAttempts: 0,
+              nextAttemptAt: null,
+            ));
+    _bumpServer();
+  }
 
   /// 업로드 상태를 고친다. 사용자가 그새 지웠으면(행 없음·deleting) 손대지
   /// 않는다 — 삭제 흐름이 우선이다.
@@ -450,6 +494,9 @@ class LiveRecordingUploadQueue
         nextAttemptAt: null));
     debugPrint('[rec-upload] ${_short(rec.id)} ${cur.uploadState.name} → '
         'deleting');
+    if (cur.recordingId case final rid?) {
+      _setRemoved({...state.removedServerIds, rid});
+    }
     _bump();
     final job = _job;
     if (job != null && job.id == rec.id) {
@@ -495,6 +542,27 @@ class LiveRecordingUploadQueue
     await _local.delete(r);
     debugPrint('[rec-upload] ${_short(r.id)} deleting → 삭제 완료');
     _bump();
+    _bumpServer();
+  }
+
+  /// 서버에만 있는 녹화(다른 폰·재설치 전 녹화)를 지운다 — 로컬 행이 없어
+  /// 다음 실행에 다시 지울 자리가 없으므로 결과를 돌려준다(false면 화면이
+  /// 실패로 안내하고 목록에 다시 보인다). 404는 이미 없음 = 성공.
+  Future<bool> deleteServer(String serverId) async {
+    if (!_alive) return false;
+    _setRemoved({...state.removedServerIds, serverId});
+    try {
+      await _api().delete(serverId);
+    } catch (e) {
+      debugPrint('[rec-upload] srv ${_short(serverId)} DELETE 실패 '
+          '${e is RecordingApiException ? e.statusCode : e.runtimeType}');
+      _setRemoved({...state.removedServerIds}..remove(serverId));
+      return false;
+    }
+    debugPrint('[rec-upload] srv ${_short(serverId)} 삭제 완료');
+    _bumpServer();
+    unawaited(kick(LiveRecordingUploadTrigger.deleted));
+    return true;
   }
 
   Future<void> _deleteLater(LiveRecording r, String error) async {
@@ -537,14 +605,22 @@ class LiveRecordingUploadQueue
 
   void _setActive(String? id) {
     if (!mounted) return;
-    state = LiveRecordingUploadQueueState(
-        revision: state.revision + 1, activeId: id);
+    state = state.copyWith(revision: state.revision + 1, activeId: id);
   }
 
   void _bump() {
     if (!mounted) return;
-    state = LiveRecordingUploadQueueState(
-        revision: state.revision + 1, activeId: state.activeId);
+    state = state.copyWith(revision: state.revision + 1);
+  }
+
+  void _bumpServer() {
+    if (!mounted) return;
+    state = state.copyWith(serverRevision: state.serverRevision + 1);
+  }
+
+  void _setRemoved(Set<String> ids) {
+    if (!mounted) return;
+    state = state.copyWith(removedServerIds: Set.unmodifiable(ids));
   }
 
   static String _short(String id) => id.length > 8 ? id.substring(0, 8) : id;

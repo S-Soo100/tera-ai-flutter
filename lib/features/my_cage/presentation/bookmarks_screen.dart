@@ -1,21 +1,19 @@
-import 'dart:async';
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/favorite_clip.dart';
-import '../domain/live_recording.dart';
 import '../domain/player_entry.dart';
+import '../domain/recording_item.dart';
 import 'live_recording_actions.dart';
-import 'live_recording_controller.dart';
 import 'live_recording_upload_queue.dart';
+import 'recording_library_providers.dart';
 import 'widgets/player_entry_thumb.dart';
+import 'widgets/recording_badges.dart';
 import 'my_cage_providers.dart';
 import 'clip_visibility_providers.dart';
 import 'clip_memo_providers.dart';
@@ -52,9 +50,10 @@ class BookmarksScreen extends ConsumerWidget {
     final glass = context.glass;
     final favoritesAsync = ref.watch(allFavoriteClipsProvider);
     final day = ref.watch(bookmarksDayFilterProvider);
-    // 직접 녹화(2026-10-01) — 기기 안 보관, 북마크와 같은 목록에 시각순으로.
+    // 직접 녹화(2026-10-01) — 이 폰 녹화 + 서버 녹화(다른 폰·재설치 전,
+    // 2026-10-21 F단계)를 북마크와 같은 목록에 시각순으로.
     final recordings =
-        ref.watch(liveRecordingsProvider).valueOrNull ?? const [];
+        ref.watch(recordingLibraryProvider).valueOrNull ?? const [];
     // 보관함 진입 = 업로드 대기열 깨우기(한도로 멈춘 녹화 재평가 포함).
     ref.watch(liveRecordingBookmarksEntryProvider);
     final selection = ref.watch(clipSelectionProvider(_scope));
@@ -74,11 +73,13 @@ class BookmarksScreen extends ConsumerWidget {
       bottomNavigationBar: selection.active
           ? flow.actionBar(context,
               all: () => [
-                    for (final f in _visible(
+                    for (final o in _order(
                         ref.read(allFavoriteClipsProvider).valueOrNull ??
                             const [],
+                        ref.read(recordingLibraryProvider).valueOrNull ??
+                            const [],
                         ref.read(bookmarksDayFilterProvider)))
-                      f.clipId
+                      if (o.selectable) o.key
                   ])
           : null,
       body: Column(
@@ -134,9 +135,8 @@ class BookmarksScreen extends ConsumerWidget {
                           ref.invalidate(allFavoriteClipsProvider);
                         },
                       ),
-                      data: (favorites) => _list(
-                          context, favorites, recordings, day,
-                          selecting: selection.active),
+                      data: (favorites) =>
+                          _list(context, favorites, recordings, day),
                     ),
                   ),
                 ],
@@ -181,24 +181,37 @@ class BookmarksScreen extends ConsumerWidget {
     ref.read(bookmarksDayFilterProvider.notifier).state = picked;
   }
 
-  Widget _list(BuildContext context, List<FavoriteClip> favorites,
-      List<LiveRecording> recordings, DateTime? day,
-      {bool selecting = false}) {
-    final filtered = _visible(favorites, day);
-
+  /// 화면 순서 — 북마크(북마크한 시각)와 직접 녹화(찍은 시각)를 최신순으로
+  /// 섞는다. 날짜 필터는 둘 다 찍은 날 기준.
+  static List<({DateTime at, Object item, String key, bool selectable})>
+      _order(List<FavoriteClip> favorites, List<RecordingItem> recordings,
+          DateTime? day) {
     bool sameDay(DateTime t) {
       final l = t.toLocal();
       return day == null ||
           (l.year == day.year && l.month == day.month && l.day == day.day);
     }
 
-    // 선택 모드의 동작(다운로드·삭제·북마크)은 움직임 영상 전용이라, 고르는
-    // 동안 직접 녹화 카드는 감춘다.
-    final recs = selecting
-        ? const <LiveRecording>[]
-        : recordings.where((r) => sameDay(r.startedAt)).toList();
+    return [
+      for (final f in _visible(favorites, day))
+        (
+          at: f.favoritedAt,
+          item: f,
+          key: ClipEntry(f.clipId).key,
+          selectable: true
+        ),
+      for (final r in recordings)
+        if (sameDay(r.startedAt))
+          // 올리는 중인 녹화는 고를 수 없다(2026-10-21 사용자 결정).
+          (at: r.startedAt, item: r, key: r.key, selectable: !r.uploading),
+    ]..sort((a, b) => b.at.compareTo(a.at));
+  }
 
-    if (filtered.isEmpty && recs.isEmpty) {
+  Widget _list(BuildContext context, List<FavoriteClip> favorites,
+      List<RecordingItem> recordings, DateTime? day) {
+    final order = _order(favorites, recordings, day);
+
+    if (order.isEmpty) {
       // 북마크 자체가 없으면 기존 즐겨찾기 빈 문구, 필터 결과만 없으면 날짜 문구.
       return CrecamEmptyMessage(
         message: favorites.isEmpty && recordings.isEmpty
@@ -207,27 +220,18 @@ class BookmarksScreen extends ConsumerWidget {
       );
     }
 
-    // 북마크(북마크한 시각)와 직접 녹화(찍은 시각)를 최신순으로 섞는다.
-    final order = <({DateTime at, Object item})>[
-      for (final f in filtered) (at: f.favoritedAt, item: f),
-      for (final r in recs) (at: r.startedAt, item: r),
-    ]..sort((a, b) => b.at.compareTo(a.at));
-
-    // 재생목록 = 화면과 같은 순서의 항목 키 전체 — 플레이어의 이전/다음·
-    // 필름스트립이 북마크 영상과 직접 녹화(`rec:<id>`)를 섞어 넘긴다.
+    // 재생목록 = 화면과 같은 순서의 항목 키 — 플레이어의 이전/다음·필름스트립이
+    // 북마크 영상과 직접 녹화(`rec:<id>`·`rec:srv:<id>`)를 섞어 넘긴다. 올리는
+    // 중인 녹화는 열 수 없어 뺀다.
     final playlist = [
       for (final o in order)
-        switch (o.item) {
-          final FavoriteClip f => ClipEntry(f.clipId).key,
-          final LiveRecording r => RecordingEntry(r.id).key,
-          _ => throw StateError('unknown bookmark item'),
-        }
+        if (o.selectable) o.key
     ];
     final items = [
       for (final o in order)
         switch (o.item) {
           final FavoriteClip f => _BookmarkCard(clip: f, playlist: playlist),
-          final LiveRecording r => _RecordingCard(rec: r, playlist: playlist),
+          final RecordingItem r => _RecordingCard(item: r, playlist: playlist),
           _ => throw StateError('unknown bookmark item'),
         }
     ];
@@ -325,129 +329,109 @@ class _BookmarkCard extends ConsumerWidget {
 }
 
 /// 직접 녹화 카드 — 북마크 카드와 같은 틀 + "직접 녹화 · 0:42" 배지. 메모가
-/// 있으면 북마크 카드처럼 오른쪽에 메모 카드(키 `rec:<id>`).
+/// 있으면 북마크 카드처럼 오른쪽에 메모 카드(키 = 항목 키).
 ///
-/// "업로드 실패" 카드만 길게 눌러 지운다(계획서 §9 — 다시 올리지 않는 녹화를
-/// 치울 길). 다른 상태엔 길게 누르기를 걸지 않는다 — 녹화 카드는 선택 모드에서
-/// 감춰지므로 북마크 카드의 꾹 눌러 고르기와 겹치지 않는다.
+/// 이 폰 녹화와 서버에만 있는 녹화(다른 폰·재설치 전, 2026-10-21 F단계)가
+/// 같은 카드다. 선택 모드에서도 북마크 카드처럼 고를 수 있다(탭 = 고르기,
+/// 꾹 누르기 = 선택 시작, 2026-10-21 사용자 결정 — 전엔 선택 중 감췄고 "업로드
+/// 실패" 카드만 꾹 눌러 지웠다. 이제 지우기는 선택 모드 [삭제]). **올리는 중인
+/// 녹화는 흐리게, 누를 수 없음**(업로드가 끝나면 원래대로).
 class _RecordingCard extends ConsumerWidget {
-  const _RecordingCard({required this.rec, required this.playlist});
+  const _RecordingCard({required this.item, required this.playlist});
 
-  final LiveRecording rec;
+  final RecordingItem item;
   final List<String> playlist;
-
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    if (!await confirmLiveRecordingDelete(context) || !context.mounted) return;
-    // 목록에서는 바로 빠지고(deleting) 서버 정리는 대기열이 맡는다. 메모도 지운다.
-    unawaited(ref.read(liveRecordingDeleterProvider)(rec));
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
     final owner = ref.watch(clipMemoAccountProvider);
-    final memoKey = (ownerId: rec.ownerId, clipId: RecordingEntry(rec.id).key);
-    final memo = owner == rec.ownerId
-        ? ref.watch(clipMemoProvider(memoKey)).valueOrNull
-        : null;
-    final secs = rec.duration.inSeconds;
-    final failed = rec.uploadBadge == LiveRecordingUploadBadge.failed;
-    return GestureDetector(
-      key: ValueKey('live_recording_card_${rec.id}'),
-      behavior: HitTestBehavior.opaque,
-      onTap: () =>
-          context.push('/crecam/recordings/${rec.id}', extra: playlist),
-      onLongPress: failed ? () => _confirmDelete(context, ref) : null,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            _BookmarkCard._headerLabel(rec.startedAt.toLocal()),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 16,
-              height: 19.09375 / 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 16 * -0.02,
-              color: glass.textSecondary,
+    final key = item.key;
+    // 위젯 키는 이 폰 녹화면 로컬 id, 서버 녹화면 항목 키(`rec:srv:<id>`).
+    final tag = item.local?.id ?? key;
+    final memoKey = (ownerId: owner ?? '', clipId: key);
+    final memo =
+        owner == null ? null : ref.watch(clipMemoProvider(memoKey)).valueOrNull;
+    final active =
+        ref.watch(clipSelectionProvider(_scope).select((s) => s.active));
+    final flow = ClipSelectionFlow(ref, _scope);
+    final enabled = !item.uploading;
+    void open() => context.push(recordingOpenPath(item), extra: playlist);
+    final uploadLabel = recordingUploadLabelKey(item.uploadBadge);
+    final card = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(children: [
+          Expanded(
+            child: Text(
+              _BookmarkCard._headerLabel(item.startedAt.toLocal()),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 16,
+                height: 19.09375 / 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 16 * -0.02,
+                color: glass.textSecondary,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 180,
-            child: Row(children: [
-              Expanded(
-                  child: ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(12)),
-                child: Stack(fit: StackFit.expand, children: [
-                  ColoredBox(color: glass.surfaceTint),
-                  LiveRecordingThumb(
-                      thumbPath: rec.thumbPath,
-                      fallback: const SizedBox.shrink()),
+          if (enabled) ClipSelectItemCheck(scope: _scope, clipId: key),
+        ]),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 180,
+          child: Row(children: [
+            Expanded(
+                child: ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(12)),
+              child: Stack(fit: StackFit.expand, children: [
+                ColoredBox(color: glass.surfaceTint),
+                RecordingItemThumb(
+                    item: item, fallback: const SizedBox.shrink()),
+                Positioned(
+                  left: 8,
+                  bottom: 8,
+                  child: RecordingChip(recordingLengthLabel(item.duration)),
+                ),
+                // 업로드 상태(2026-10-21) — 올라간 녹화는 표시 없음. 선택 모드엔
+                // 오른쪽 아래가 확대 버튼 자리라 오른쪽 위로 올린다.
+                if (uploadLabel != null)
                   Positioned(
-                    left: 8,
-                    bottom: 8,
-                    child: _RecordingChip(
-                      'live_recording_badge'.tr(namedArgs: {
-                        'len':
-                            '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}'
-                      }),
-                    ),
+                    right: 8,
+                    top: active ? 8 : null,
+                    bottom: active ? null : 8,
+                    child: RecordingChip(uploadLabel.tr(),
+                        key: ValueKey('live_recording_upload_$tag')),
                   ),
-                  // 업로드 상태(2026-10-21) — 올라간 녹화는 표시 없음.
-                  if (_uploadLabelKey(rec.uploadBadge) case final key?)
-                    Positioned(
-                      right: 8,
-                      bottom: 8,
-                      child: _RecordingChip(key.tr(),
-                          key: ValueKey('live_recording_upload_${rec.id}')),
-                    ),
-                ]),
-              )),
-              if (memo != null) ...[
-                const SizedBox(width: 8),
-                ClipMemoCard(memo: memo, memoKey: memoKey),
-              ],
-            ]),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-String? _uploadLabelKey(LiveRecordingUploadBadge badge) => switch (badge) {
-      LiveRecordingUploadBadge.uploading => 'live_recording_upload_uploading',
-      LiveRecordingUploadBadge.waiting => 'live_recording_upload_waiting',
-      LiveRecordingUploadBadge.failed => 'live_recording_upload_failed',
-      LiveRecordingUploadBadge.none => null,
-    };
-
-/// 녹화 카드 썸네일 위 작은 글자 칩(길이 배지·업로드 상태 공용).
-class _RecordingChip extends StatelessWidget {
-  const _RecordingChip(this.label, {super.key});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppTheme.liveScrim,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontFamily: 'Pretendard',
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: AppTheme.liveOnDark,
+                if (active && enabled)
+                  Positioned(
+                      right: 4,
+                      bottom: 4,
+                      child: ClipSelectExpandButton(clipId: key, onTap: open)),
+              ]),
+            )),
+            if (memo != null) ...[
+              const SizedBox(width: 8),
+              ClipMemoCard(memo: memo, memoKey: memoKey),
+            ],
+          ]),
         ),
-      ),
+      ],
+    );
+    if (!enabled) {
+      return IgnorePointer(
+        key: ValueKey('live_recording_card_$tag'),
+        child: Opacity(opacity: kRecordingUploadingOpacity, child: card),
+      );
+    }
+    return GestureDetector(
+      key: ValueKey('live_recording_card_$tag'),
+      behavior: HitTestBehavior.opaque,
+      onTap: active ? () => flow.toggle(context, key) : open,
+      onLongPress: () => flow.longPress(context, key),
+      child: card,
     );
   }
 }
