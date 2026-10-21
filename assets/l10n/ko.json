@@ -1378,5 +1378,6 @@
   "live_recording_upload_failed": "업로드 실패",
   "live_recording_delete_title": "이 녹화를 삭제할까요?",
   "live_recording_delete_confirm": "삭제",
-  "live_recording_load_failed": "녹화 파일을 열 수 없어요"
+  "live_recording_load_failed": "녹화 파일을 열 수 없어요",
+  "live_recording_bookmarked": "보관함에 저장된 녹화예요"
 }

@@ -24,7 +24,7 @@ import '../../features/my_cage/presentation/clip_player_screen.dart';
 import '../../features/my_cage/presentation/motion_clip_player_screen.dart';
 import '../../features/my_cage/presentation/clip_playlist_player_screen.dart';
 import '../../features/my_cage/presentation/bookmarks_screen.dart';
-import '../../features/my_cage/presentation/live_recording_player_screen.dart';
+import '../../features/my_cage/domain/player_entry.dart';
 import '../../features/my_cage/presentation/highlights_screen.dart';
 import '../../features/my_cage/presentation/device_pairing_screen.dart';
 import '../../features/my_cage/presentation/camera_pairing_screen.dart';
@@ -298,11 +298,18 @@ GoRouter buildAppRouter({
         path: '/crecam/bookmarks',
         builder: (context, state) => const BookmarksScreen(),
       ),
-      // 라이브 직접 녹화 재생(2026-10-01, 기기 안 파일).
+      // 라이브 직접 녹화 재생(2026-10-01, 기기 안 파일). 일반 영상과 같은 세로
+      // 플레이어(2026-10-21) — extra = 보관함 순서의 재생목록 항목 키
+      // (`PlayerEntry.key`, 녹화는 `rec:<id>`). 없으면 녹화 한 건만.
       GoRoute(
         path: '/crecam/recordings/:id',
-        builder: (context, state) => LiveRecordingPlayerScreen(
-            recordingId: state.pathParameters['id']!),
+        builder: (context, state) {
+          final extra = state.extra;
+          return ClipPlaylistPlayerScreen(
+            clipId: RecordingEntry(state.pathParameters['id']!).key,
+            playlist: extra is List ? extra.whereType<String>().toList() : null,
+          );
+        },
       ),
       // 사육장 (탭에서 제거 — 홈 탭이 흡수. 화면·딥링크는 보존)
       GoRoute(
