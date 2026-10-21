@@ -5,8 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../../../shared/widgets/viva_modal.dart';
-import '../../../notification/presentation/push_pre_popup.dart'
-    show keepAllWords;
+import '../../../../shared/domain/keep_all_words.dart';
 import '../../domain/pair_target_kind.dart';
 import '../../domain/sys_health.dart';
 import '../my_cage_providers.dart';

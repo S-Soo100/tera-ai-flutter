@@ -10,8 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/figma_icon.dart';
 import '../../../shared/widgets/viva_modal.dart';
-import '../../notification/presentation/push_pre_popup.dart'
-    show keepAllWords;
+import '../../../shared/domain/keep_all_words.dart';
 import '../domain/live_recording.dart';
 import '../domain/sys_health.dart';
 import '../domain/terra_camera.dart';

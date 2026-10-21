@@ -11,6 +11,9 @@ import '../../my_cage/presentation/widgets/management_widgets.dart';
 import '../../profile/data/notification_preferences_repository.dart';
 import '../domain/push_consent_flow.dart';
 import 'push_providers.dart';
+import '../../../shared/domain/keep_all_words.dart';
+
+export '../../../shared/domain/keep_all_words.dart';
 
 /// 맥락 알림 프리팝업 흐름. 주제 on/off는 마이페이지 > 알림 토글과 같은 값이다.
 final pushConsentFlowProvider = Provider<PushConsentFlow>((ref) {
@@ -207,8 +210,3 @@ void schedulePushConsent(BuildContext context, WidgetRef ref, PushTopic topic) {
     if (context.mounted) unawaited(askPushConsent(context, ref, topic));
   });
 }
-
-/// 한글 어절 안에서 줄이 바뀌지 않게(CSS `word-break: keep-all`) 글자 사이에
-/// WORD JOINER(U+2060)를 넣는다. 공백·명시 줄바꿈에서만 접힌다.
-String keepAllWords(String text) => text.splitMapJoin(RegExp(r'\s+'),
-    onMatch: (m) => m[0]!, onNonMatch: (word) => word.split('').join('\u2060'));
