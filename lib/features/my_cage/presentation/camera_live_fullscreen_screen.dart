@@ -194,12 +194,15 @@ class _CameraLiveFullscreenScreenState
           liveRecordingControllerProvider(cameraId).select((s) => s.resultSeq),
           (_, __) {
         final s = ref.read(liveRecordingControllerProvider(cameraId));
+        final inLandscape =
+            ref.read(playerOrientationProvider(_orientationKey));
+        // 녹화가 끝나면 숨어 있던 가로 조작 버튼을 다시 보인다(Figma 9 저장
+        // 완료 — X·녹화 시작이 보인다, 2026-10-21 사용자 결정). 5초 뒤 다시 숨는다.
+        if (inLandscape) _showControls();
         final result = s.result;
         if (result == null) return;
         // 세로 토스트는 맨 아래 [카메라 재시작] 버튼 자리(Figma 저장 완료),
         // 가로는 화면 한가운데(Figma 1525:11177).
-        final inLandscape =
-            ref.read(playerOrientationProvider(_orientationKey));
         showLiveRecordingResult(context, result, s.resultSeconds,
             bottom: MediaQuery.paddingOf(context).bottom + 66,
             centered: inLandscape);

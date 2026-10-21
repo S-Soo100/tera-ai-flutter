@@ -422,6 +422,16 @@ void main() {
     final rect = tester.getRect(find.byKey(const Key('clip_toast')));
     expect(rect.top, 166.5);
     expect(rect.center.dx, 426);
+    // 2분 동안 안 만져 숨었던 조작 버튼이 끝나는 순간 다시 보인다(Figma 9).
+    double opacity() => tester
+        .widget<FadeTransition>(
+            find.byKey(CameraLiveFullscreenScreen.landscapeControlsKey))
+        .opacity
+        .value;
+    expect(opacity(), 1);
+    await tester.pump(kLiveLandscapeControlsHide);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(opacity(), 0, reason: '5초 뒤 다시 숨는다');
     dismissClipToast();
     await finish(tester);
   });
