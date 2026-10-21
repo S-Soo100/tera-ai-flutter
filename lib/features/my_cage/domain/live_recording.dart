@@ -54,11 +54,11 @@ bool shouldKeepLiveRecording(Duration recorded) =>
     recorded >= kLiveRecordingMinLength;
 
 /// 서버가 받아 주는 녹화 길이 상한(`POST /recordings` `duration_ms`).
-/// 지금 서버는 60초 — 120초 변경 요청 중
-/// (`docs/handoffs/2026-10-21-live-recording-max-120s-request.md`). 서버가
-/// 올리면 **이 값만** 120000으로 올린다. 넘는 녹화는 등록하지 않고 "업로드
-/// 대기"로 둔다(400을 받아 영구 실패로 버리지 않게).
-const int kServerRecordingMaxMs = 60000;
+/// 2026-10-21 서버 60초 → 120초 배포(terra-server `feat/recording-max-120s`,
+/// 요청 `docs/handoffs/2026-10-21-live-recording-max-120s-request.md`).
+/// 넘는 녹화는 등록하지 않고 "업로드 대기"로 둔다(400을 받아 영구 실패로
+/// 버리지 않게). 녹화 최대 길이([kLiveRecordingLength])와 같다.
+const int kServerRecordingMaxMs = 120000;
 
 /// 서버 파일 크기 상한(30MB). 단위가 MiB인지 확인 전이라 작은 쪽(10진 MB)으로
 /// 거른다 — 넘으면 등록하지 않고 "업로드 실패"(로컬 보관은 유지).
