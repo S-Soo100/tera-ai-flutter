@@ -13,6 +13,7 @@ import '../data/live_recording_thumb.dart';
 import '../data/mp4_info.dart';
 import '../domain/live_limit.dart';
 import '../domain/live_recording.dart';
+import 'live_recording_upload_queue.dart';
 import 'webrtc_live_controller.dart';
 
 /// 원격 영상 트랙을 파일로 남기는 녹화기 — 테스트에서 교체한다.
@@ -374,17 +375,20 @@ final liveRecordingControllerProvider = StateNotifierProvider.autoDispose
     ownerId: () => ref.read(currentUserProvider)?.id,
     trackOf: ref.watch(liveRecordingTrackOfProvider),
     probe: ref.watch(liveRecordingProbeProvider),
+    onSaved: ref.watch(liveRecordingSavedHookProvider),
   );
   ref.listen<WebRtcLiveState>(webrtcLiveControllerProvider(cameraId),
       (_, next) => controller.onLiveState(next));
   return controller;
 });
 
-/// 이 계정의 직접 녹화 목록(최신순). autoDispose — 보관함에 들어올 때마다
-/// 다시 읽어 방금 찍은 녹화가 바로 보인다.
+/// 이 계정의 직접 녹화 목록(최신순, 서버 삭제 대기는 뺀다). autoDispose —
+/// 보관함에 들어올 때마다 다시 읽어 방금 찍은 녹화가 바로 보인다. 업로드
+/// 대기열이 행을 고칠 때마다(revision) 다시 읽어 카드의 업로드 표시가 바뀐다.
 final liveRecordingsProvider =
     FutureProvider.autoDispose<List<LiveRecording>>((ref) async {
   final uid = ref.watch(currentUserProvider.select((u) => u?.id));
   if (uid == null || !kLiveRecordingEnabled) return const [];
+  ref.watch(liveRecordingUploadQueueProvider.select((s) => s.revision));
   return ref.watch(liveRecordingRepositoryProvider).list(uid);
 });

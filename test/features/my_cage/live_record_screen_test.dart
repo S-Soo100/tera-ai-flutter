@@ -15,6 +15,7 @@ import 'package:vivanaut/features/my_cage/domain/sys_health.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_screen.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_recording_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/live_recording_upload_queue.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/sys_health_controllers.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
@@ -136,6 +137,7 @@ void main() {
         liveRecordingRepositoryProvider.overrideWithValue(repo),
         liveVideoRecorderFactoryProvider.overrideWithValue(() => recorder),
         liveRecordingProbeProvider.overrideWithValue((_) async => null),
+        liveRecordingSavedHookProvider.overrideWithValue(() {}),
         liveRecordingTrackOfProvider.overrideWithValue(
             (s) => s.phase.hasVideo ? _FakeTrack() : null),
       ],
