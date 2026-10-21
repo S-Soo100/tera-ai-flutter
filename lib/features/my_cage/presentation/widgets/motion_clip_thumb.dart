@@ -34,16 +34,13 @@ class MotionClipThumb extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final glass = context.glass;
     final thumbAsync = ref.watch(motionThumbnailFileProvider(
         (clipId: clipId, cameraId: cameraId, version: thumbnailVersion)));
 
-    final fallback = ColoredBox(
-      color: fallbackColor ?? glass.surfaceTint,
-      child: Center(
-        child: Icon(fallbackIcon,
-            size: fallbackIconSize, color: glass.textTertiary),
-      ),
+    final fallback = ClipThumbFallback(
+      icon: fallbackIcon,
+      iconSize: fallbackIconSize,
+      color: fallbackColor,
     );
     const skeleton = SkeletonLoading(
       width: double.infinity,
@@ -58,6 +55,34 @@ class MotionClipThumb extends ConsumerWidget {
           : fallback,
       loading: () => skeleton,
       error: (_, __) => fallback,
+    );
+  }
+}
+
+/// 썸네일 없음·실패 폴백 — 면 + 가운데 아이콘. 움직임 영상과 직접 녹화
+/// 썸네일이 같은 모양을 쓴다.
+class ClipThumbFallback extends StatelessWidget {
+  const ClipThumbFallback({
+    super.key,
+    this.icon = Icons.movie_outlined,
+    this.iconSize = 20,
+    this.color,
+  });
+
+  final IconData icon;
+  final double iconSize;
+
+  /// null이면 [GlassPalette.surfaceTint].
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return ColoredBox(
+      color: color ?? glass.surfaceTint,
+      child: Center(
+        child: Icon(icon, size: iconSize, color: glass.textTertiary),
+      ),
     );
   }
 }

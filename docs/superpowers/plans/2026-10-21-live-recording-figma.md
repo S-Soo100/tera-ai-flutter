@@ -50,7 +50,7 @@
 | C | 녹화 알약(세로 회색/검정, 가로 흰/검정) · 중단 확인창(`showVivaModal`) · 이탈 가로채기(PopScope+BackButtonListener, 영상 선택의 `ClipSelectionBackGuard` 문법) · 저장 토스트 | `widgets/live_record_controls.dart` 교체 |
 | D | 가로 조작 5초 자동 숨김 + 탭으로 다시 표시(AnimationController, setState 금지) | `camera_live_fullscreen_screen.dart` |
 | E | R2 업로드: `LiveRecordingUploadRepository`(POST /recordings → PUT 2개 → complete, DELETE) + 대기열(앱 시작·녹화 직후·망 복귀 시 처리, 지수 백오프, 401 1회, 400/403/404 중단, 409 quota 보류, 23.5시간 재등록 id 교체) + Hive에 업로드 상태 | `data/live_recording_upload_repository.dart`, `presentation/live_recording_upload_queue.dart` |
-| F | 클라우드 보관함: `live_recordings` 직결 SELECT(ready, keyset) → 다른 폰·재설치 후 목록, 재생은 `GET /recordings/{id}/url`, 썸네일 URL. 로컬 파일이 있으면 로컬 우선 | `data/…`, `bookmarks_screen.dart`, `live_recording_player_screen.dart` |
+| F | 클라우드 보관함: `live_recordings` 직결 SELECT(ready, keyset) → 다른 폰·재설치 후 목록, 재생은 `GET /recordings/{id}/url`, 썸네일 URL. 로컬 파일이 있으면 로컬 우선 | `data/…`, `bookmarks_screen.dart`, `clip_playlist_player_screen.dart`(2026-10-21 0.157.0부터 녹화도 같은 플레이어) |
 | G | 서버 요청서 추가(길이 120초) + CHANGELOG + 기획서 갱신 | `docs/handoffs/…` |
 
 ~~순서: A → B → C → D → E → F → G~~ → **검수 반영 순서(§9): 0(서버 요청) → P(프로토타입) → A → B → C → D → E. F는 다음 릴리스.** 단계마다 커밋.

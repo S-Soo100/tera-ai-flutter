@@ -11,6 +11,9 @@ import 'package:vivanaut/features/my_cage/presentation/live_recording_upload_que
 import 'package:vivanaut/features/my_cage/presentation/bookmarks_screen.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/crecam_detail_top_bar.dart';
+import 'package:vivanaut/features/my_cage/domain/clip_memo.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_memo_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/clip_memo_card.dart';
 
 /// 북마크 상세(카메라 탭 재설계 T3) 위젯 테스트.
 ///
@@ -48,6 +51,15 @@ GoRouter _router() => GoRouter(
             return const Scaffold(body: Center(child: Text('player-screen')));
           },
         ),
+        GoRoute(
+          path: '/crecam/recordings/:id',
+          builder: (_, state) {
+            pushedClipId = 'rec-route:${state.pathParameters['id']}';
+            pushedPlaylist =
+                (state.extra as List?)?.whereType<String>().toList();
+            return const Scaffold(body: Center(child: Text('player-screen')));
+          },
+        ),
       ],
     );
 
@@ -57,6 +69,7 @@ Future<void> _pump(
   DateTime? dayFilter,
   List<LiveRecording>? recordings,
   LiveRecordingUploadQueue? queue,
+  Map<String, String>? memos,
 }) async {
   pushedClipId = null;
   pushedPlaylist = null;
@@ -74,6 +87,18 @@ Future<void> _pump(
         ],
         if (queue != null)
           liveRecordingUploadQueueProvider.overrideWith((ref) => queue),
+        if (memos != null) ...[
+          clipMemoAccountProvider.overrideWithValue('u1'),
+          clipMemoProvider
+              .overrideWith((ref, key) async => switch (memos[key.clipId]) {
+                    final text? => ClipMemo(
+                        clipId: key.clipId,
+                        text: text,
+                        colorIndex: 1,
+                        updatedAt: DateTime.utc(2026)),
+                    null => null,
+                  }),
+        ],
       ],
       child: MaterialApp.router(routerConfig: _router()),
     ),
@@ -215,5 +240,43 @@ void main() {
     await _pump(tester, dayFilter: DateTime(2026, 1, 1));
     expect(find.text('crecam_home_empty_day'), findsOneWidget);
     expect(find.text('clip_favorites_empty'), findsNothing);
+  });
+
+  testWidgets('직접 녹화 카드에도 메모가 있으면 메모 카드(키 rec:<id>)', (tester) async {
+    await _pump(tester, favorites: const [], recordings: [
+      _rec('r1', 23, LiveRecordingUploadState.ready),
+      _rec('r2', 22, LiveRecordingUploadState.ready),
+    ], memos: {
+      'rec:r1': '탈피 직전'
+    });
+    expect(find.byType(ClipMemoCard), findsOneWidget);
+    expect(find.text('탈피 직전'), findsOneWidget);
+    final card = tester.widget<ClipMemoCard>(find.byType(ClipMemoCard));
+    expect(card.memoKey, (ownerId: 'u1', clipId: 'rec:r1'));
+    // 메모 카드는 그 녹화 카드 안에 있다.
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('live_recording_card_r1')),
+            matching: find.byType(ClipMemoCard)),
+        findsOneWidget);
+  });
+
+  testWidgets('재생목록은 화면 순서대로 북마크 영상과 직접 녹화를 섞는다', (tester) async {
+    // c1 북마크 9/2, c2 북마크 9/1, 녹화 9/3 23시·8/31.
+    await _pump(tester, recordings: [
+      _rec('r1', 23, LiveRecordingUploadState.ready),
+      LiveRecording(
+          id: 'r0',
+          ownerId: 'u1',
+          cameraId: 'cam-1',
+          startedAt: DateTime(2026, 8, 31, 9),
+          durationMs: 42000,
+          filePath: 'live_recordings/u1/r0.mp4'),
+    ]);
+    const mixed = ['rec:r1', 'c1', 'c2', 'rec:r0'];
+    await tester.tap(find.byKey(const ValueKey('live_recording_card_r1')));
+    await tester.pumpAndSettle();
+    expect(pushedClipId, 'rec-route:r1');
+    expect(pushedPlaylist, mixed);
   });
 }

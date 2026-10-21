@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/glass_palette.dart';
-import 'motion_clip_thumb.dart';
+import 'player_entry_thumb.dart';
 
 /// Apple Photos처럼 화면 중앙을 현재 항목으로 사용하는 영상 필름스트립.
 ///
@@ -14,6 +14,9 @@ import 'motion_clip_thumb.dart';
 /// 치수(Figma 941:1834 / 1928 실측): 썸네일 40×40 r4, 간격 4(항목 44),
 /// 현재 항목 54×40 r3, 현재 양옆 간격 12(이웃을 15씩 바깥으로 밀어 만든다),
 /// 양 끝 80pt 배경색 그라데이션.
+///
+/// [clipIds]는 재생목록 항목 키(`PlayerEntry.key`) — 보관함에서 열면 직접
+/// 녹화(`rec:<id>`)가 섞여 있고, 그 썸네일은 폰 JPEG를 쓴다.
 class ClipFilmstrip extends StatelessWidget {
   const ClipFilmstrip({
     super.key,
@@ -128,8 +131,8 @@ class ClipFilmstrip extends StatelessWidget {
                                     child: SizedBox(
                                       width: normalWidth,
                                       height: normalHeight,
-                                      child: MotionClipThumb(
-                                        clipId: clipIds[index],
+                                      child: PlayerEntryThumb(
+                                        entryKey: clipIds[index],
                                         cameraId: cameraId,
                                       ),
                                     ),
@@ -150,9 +153,9 @@ class ClipFilmstrip extends StatelessWidget {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(3),
                         ),
-                        child: MotionClipThumb(
+                        child: PlayerEntryThumb(
                           key: ValueKey(clipIds[selected]),
-                          clipId: clipIds[selected],
+                          entryKey: clipIds[selected],
                           cameraId: cameraId,
                         ),
                       ),

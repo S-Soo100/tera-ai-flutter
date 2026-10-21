@@ -34,6 +34,10 @@ import 'clip_visibility_providers.dart';
 import 'widgets/clip_hide_dialog.dart';
 import '../../../shared/widgets/arc_spinner.dart';
 import '../../../shared/widgets/keep_screen_on.dart';
+import '../data/live_recording_repository.dart';
+import '../domain/live_recording.dart';
+import '../domain/player_entry.dart';
+import 'live_recording_actions.dart';
 
 /// 세로 재생목록 플레이어 (Figma 668:743, 카메라 탭 재설계 T1).
 ///
@@ -45,6 +49,12 @@ import '../../../shared/widgets/keep_screen_on.dart';
 /// 이전/다음은 스와이프·화살표·중앙 필름스트립, 단일 탭은 조작계 표시,
 /// 양쪽 더블탭은 ±10초.
 /// 하이라이트만 끝에서 자동으로 다음 클립(마지막이면 정지 상태 유지).
+///
+/// 재생목록 항목은 [PlayerEntry.key] 문자열이다. 보관함(북마크 화면)에서
+/// 열면 직접 녹화(`rec:<id>`, 폰 파일)가 섞여 같은 화면에서 넘긴다
+/// (2026-10-21 사용자 결정 — `/crecam/recordings/:id`도 이 화면). 녹화는
+/// 폰 파일로 재생·저장·공유하고, 휴지통은 숨기기 대신 녹화 삭제, 북마크는
+/// 늘 켜진 모양(보관함에만 있어 해제 대상이 아님), 메모는 `rec:<id>` 키.
 /// 더블탭 ±10초 피드백(초 단위 부호 값). 화면 인스턴스별.
 final _seekFeedbackProvider =
     StateProvider.autoDispose.family<int?, Object>((ref, key) => null);
@@ -84,6 +94,9 @@ class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
   static const navigationActionsKey = Key('crecam_player_navigation_actions');
   static const actionPillKey = Key('crecam_player_action_pill');
   static const counterKey = Key('crecam_player_counter');
+
+  /// 테스트용 — 알약의 북마크 버튼.
+  static const bookmarkKey = Key('crecam_player_bookmark');
 
   /// 테스트용 — "처음부터" 컨트롤(중간 시작 클립에서만 노출).
   static const fromStartKey = Key('crecam_player_from_start');
@@ -155,6 +168,25 @@ class _ClipPlaylistPlayerScreenState
   static const _urlTtl = Duration(minutes: 50);
 
   String get _currentClipId => _playlist[_index];
+
+  /// 현재 항목 — 움직임 영상 또는 직접 녹화.
+  PlayerEntry get _currentEntry => PlayerEntry.parse(_currentClipId);
+
+  /// 이 계정 보관함의 직접 녹화 한 건. 없으면(삭제·다른 계정) null.
+  Future<LiveRecording?> _findRecording(String recordingId) async {
+    final uid = ref.read(currentUserProvider)?.id;
+    if (uid == null) return null;
+    final repo = ref.read(liveRecordingRepositoryProvider);
+    return (await repo.list(uid)).where((r) => r.id == recordingId).firstOrNull;
+  }
+
+  /// 직접 녹화의 폰 파일. 없으면 예외.
+  Future<File> _recordingFile(String recordingId) async {
+    final rec = await _findRecording(recordingId);
+    if (rec == null) throw StateError('recording not found');
+    return File(
+        await ref.read(liveRecordingRepositoryProvider).resolve(rec.filePath));
+  }
 
   @override
   void initState() {
@@ -300,9 +332,14 @@ class _ClipPlaylistPlayerScreenState
           return;
         }
       }
-      // 즐겨찾기(로컬 파일) 우선 — 오프라인 재생 가능
-      final localFile =
-          ref.read(favoriteClipRepositoryProvider).getLocalFile(clipId);
+      final entry = PlayerEntry.parse(clipId);
+      // 직접 녹화는 폰 파일. 즐겨찾기(로컬 파일) 우선 — 오프라인 재생 가능
+      final localFile = switch (entry) {
+        RecordingEntry(:final recordingId) => await _recordingFile(recordingId),
+        ClipEntry() =>
+          ref.read(favoriteClipRepositoryProvider).getLocalFile(clipId),
+      };
+      if (!mounted || seq != _loadSeq) return;
       if (localFile != null) {
         controller = VideoPlayerController.file(localFile);
       } else {
@@ -339,7 +376,8 @@ class _ClipPlaylistPlayerScreenState
       // 다음 클립 메타 선읽기 — 전환 직후 상단바 날짜가 비고 북마크 버튼이
       // 잠시 무력화되는 공백을 줄인다(리뷰 2026-09-04). keepAliveFor 유예
       // 캐시가 받아두고, 실패는 무시(전환 시 어차피 다시 읽는다).
-      if (_index + 1 < _playlist.length) {
+      if (_index + 1 < _playlist.length &&
+          PlayerEntry.parse(_playlist[_index + 1]) is ClipEntry) {
         unawaited(ref
             .read(motionClipProvider(_playlist[_index + 1]).future)
             .then<MotionClip?>((c) => c, onError: (_) => null));
@@ -495,6 +533,9 @@ class _ClipPlaylistPlayerScreenState
 
   /// 로컬 파일 있으면 그걸, 없으면 presigned URL을 확보해 저장/공유에 넘긴다.
   Future<({File? file, String? url})> _source(String clipId) async {
+    if (PlayerEntry.parse(clipId) case RecordingEntry(:final recordingId)) {
+      return (file: await _recordingFile(recordingId), url: null);
+    }
     final f = ref.read(favoriteClipRepositoryProvider).getLocalFile(clipId);
     if (f != null) return (file: f, url: null);
     final url = await _presignedUrl(clipId);
@@ -561,9 +602,33 @@ class _ClipPlaylistPlayerScreenState
   }
 
   void _hideCurrentClip() {
+    if (_playlist.isEmpty) return;
+    if (_currentEntry case RecordingEntry(:final recordingId)) {
+      unawaited(_deleteRecording(recordingId));
+      return;
+    }
     final owner = ref.read(clipVisibilityAccountProvider);
-    if (owner == null || _playlist.isEmpty) return;
+    if (owner == null) return;
     showClipHideDialog(context, ownerId: owner, clipId: _currentClipId);
+  }
+
+  /// 직접 녹화 삭제 — 확인 뒤 대기열에 맡기고(메모도 함께 지운다) 재생목록에서
+  /// 뺀다. 마지막 항목이었으면 화면을 닫는다.
+  Future<void> _deleteRecording(String recordingId) async {
+    final key = RecordingEntry(recordingId).key;
+    if (!await confirmLiveRecordingDelete(context) || !mounted) return;
+    final rec = await _findRecording(recordingId);
+    if (!mounted) return;
+    if (rec != null) {
+      unawaited(ref.read(liveRecordingDeleterProvider)(rec));
+    }
+    if (!_playlist.contains(key)) return;
+    if (_playlist.length == 1) {
+      await _controller?.pause();
+      if (mounted) context.pop();
+      return;
+    }
+    _applyHiddenClips({key});
   }
 
   void _applyHiddenClips(Set<String> hiddenIds) {
@@ -642,17 +707,30 @@ class _ClipPlaylistPlayerScreenState
     final controlsVisible =
         ref.watch(playerControlsVisibleProvider(_orientationKey));
     final currentId = _currentClipId;
-    final clip = ref.watch(motionClipProvider(currentId)).valueOrNull;
-    final owner = ref.watch(currentUserProvider)?.id;
-    final bookmark = owner == null
-        ? null
-        : ref.watch(
-            bookmarkControllerProvider((ownerId: owner, clipId: currentId)));
-    final isFav =
-        bookmark?.desired ?? ref.watch(isFavoriteProvider(currentId)) ?? false;
-    // 온라인은 clip 메타, 오프라인 즐겨찾기는 로컬 메타에서 시각을 얻는다.
-    final startedAt = clip?.startedAt ??
-        ref.watch(favoriteClipMetaProvider(currentId))?.startedAt;
+    final MotionClip? clip;
+    final bool isFav;
+    final DateTime? startedAt;
+    switch (_currentEntry) {
+      case RecordingEntry(:final recordingId):
+        // 직접 녹화는 보관함에만 있다 — 북마크는 늘 켜진 모양.
+        clip = null;
+        isFav = true;
+        startedAt =
+            ref.watch(liveRecordingByIdProvider(recordingId))?.startedAt;
+      case ClipEntry():
+        clip = ref.watch(motionClipProvider(currentId)).valueOrNull;
+        final owner = ref.watch(currentUserProvider)?.id;
+        final bookmark = owner == null
+            ? null
+            : ref.watch(bookmarkControllerProvider(
+                (ownerId: owner, clipId: currentId)));
+        isFav = bookmark?.desired ??
+            ref.watch(isFavoriteProvider(currentId)) ??
+            false;
+        // 온라인은 clip 메타, 오프라인 즐겨찾기는 로컬 메타에서 시각을 얻는다.
+        startedAt = clip?.startedAt ??
+            ref.watch(favoriteClipMetaProvider(currentId))?.startedAt;
+    }
 
     final landscape = ref.watch(playerOrientationProvider(_orientationKey));
     if (landscape) {
@@ -809,11 +887,12 @@ class _ClipPlaylistPlayerScreenState
               Column(mainAxisSize: MainAxisSize.min, children: [
                 _actionPill(glass, clip, isFav),
                 if (ref.watch(currentUserProvider)?.id case final owner?)
-                  if (ref
-                          .watch(bookmarkControllerProvider(
-                              (ownerId: owner, clipId: _currentClipId)))
-                          .error !=
-                      null)
+                  if (_currentEntry is ClipEntry &&
+                      ref
+                              .watch(bookmarkControllerProvider(
+                                  (ownerId: owner, clipId: _currentClipId)))
+                              .error !=
+                          null)
                     TextButton(
                         onPressed: () => ref
                             .read(bookmarkControllerProvider(
@@ -903,7 +982,7 @@ class _ClipPlaylistPlayerScreenState
           child: IconButton(
               key: const Key('clip_hide_button'),
               padding: EdgeInsets.zero,
-              tooltip: 'clip_hide_action'.tr(),
+              tooltip: _trashTooltip,
               onPressed: _hideCurrentClip,
               // 44 프레임 export(글리프 17×19 가운데) — 예약 목록과 같은 파일이라
               // 같은 44로 그린다. 24로 그리면 글리프가 11pt로 쪼그라든다.
@@ -946,6 +1025,12 @@ class _ClipPlaylistPlayerScreenState
             ),
     );
   }
+
+  /// 휴지통 뜻 — 움직임 영상은 숨기기, 직접 녹화는 삭제.
+  String get _trashTooltip => (_currentEntry is RecordingEntry
+          ? 'live_recording_delete_confirm'
+          : 'clip_hide_action')
+      .tr();
 
   Widget _videoArea(GlassPalette glass, BoxConstraints outer,
       {bool fill = false}) {
@@ -1008,7 +1093,11 @@ class _ClipPlaylistPlayerScreenState
           Icon(Icons.error_outline,
               size: 40, color: Theme.of(context).colorScheme.error),
           const SizedBox(height: 8),
-          Text('error_generic'.tr(),
+          Text(
+              (_currentEntry is RecordingEntry
+                      ? 'live_recording_load_failed'
+                      : 'error_generic')
+                  .tr(),
               style: TextStyle(fontSize: 14, color: glass.textSecondary)),
           const SizedBox(height: 8),
           TextButton(
@@ -1201,7 +1290,7 @@ class _ClipPlaylistPlayerScreenState
               child: IconButton(
                   key: const Key('clip_hide_button'),
                   padding: EdgeInsets.zero,
-                  tooltip: 'clip_hide_action'.tr(),
+                  tooltip: _trashTooltip,
                   onPressed: _hideCurrentClip,
                   icon: FigmaIcon.tinted(FigmaIcons.trash,
                       size: 44, color: glass.textPrimary))),
@@ -1217,8 +1306,10 @@ class _ClipPlaylistPlayerScreenState
     // 이 줄의 아이콘은 전부 36 프레임 export다. 프레임에 디자인이 정한 여백이
     // 들어 있어서 다른 크기로 그리면 글리프만 확대·축소된다 — 다른 프레임의
     // 에셋을 여기 넣으려면 그 크기로 그려야 한다(`player_icon_frame_test`).
-    Widget action(String asset, String tooltip, VoidCallback? onTap) {
+    Widget action(String asset, String tooltip, VoidCallback? onTap,
+        {Key? key}) {
       return SizedBox(
+        key: key,
         width: 44,
         height: 44,
         child: IconButton(
@@ -1243,10 +1334,23 @@ class _ClipPlaylistPlayerScreenState
       const SizedBox(width: 8),
       // 북마크도 메모처럼 외곽선/채움으로 가른다(2026-09-21 사용자 지시).
       // 두 에셋이 같은 36 프레임이라 frame·tint를 따로 줄 필요가 없다.
-      action(
-          isFav ? FigmaIcons.bookmarkFilled : FigmaIcons.bookmark,
-          (isFav ? 'clip_favorite_remove' : 'clip_favorite_add').tr(),
-          () => _toggleFavorite(clip)),
+      if (_currentEntry is RecordingEntry)
+        // 직접 녹화는 보관함에만 있어 해제 대상이 아니다(삭제는 휴지통) —
+        // 켜진 모양만, 누름 효과 없이 둔다(2026-10-21 사용자 결정).
+        Tooltip(
+            message: 'live_recording_bookmarked'.tr(),
+            child: SizedBox.square(
+                key: ClipPlaylistPlayerScreen.bookmarkKey,
+                dimension: 44,
+                child: Center(
+                    child: FigmaIcon.tinted(FigmaIcons.bookmarkFilled,
+                        color: color, size: 36))))
+      else
+        action(
+            isFav ? FigmaIcons.bookmarkFilled : FigmaIcons.bookmark,
+            (isFav ? 'clip_favorite_remove' : 'clip_favorite_add').tr(),
+            () => _toggleFavorite(clip),
+            key: ClipPlaylistPlayerScreen.bookmarkKey),
     ];
   }
 
