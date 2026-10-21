@@ -146,3 +146,4 @@
 - **iOS 배포 전 할 일:** 실제 iPhone으로 1분 녹화 → 분당 15MB 이하면 그대로. 넘으면 VTCompressionSession으로 직접 인코딩하고 `kVTCompressionPropertyKey_DataRateLimits`를 건다(패키지 사본 수정).
 - **안전장치:** 30MB 넘는 녹화는 앱이 업로드하지 않고 보관함에 "업로드 실패"로 남긴다(서버 400 방지). 로컬 재생은 된다.
 - 코드 표기: `lib/features/my_cage/domain/live_recording.dart` `kLiveRecordingEnabled` 주석, `FlutterRTCMediaRecorder.m` 주석.
+- **추가(같은 날):** iOS 녹화 간헐 실패(-11800/-12419)의 원인은 프레임이 두 스레드에서 동시에 기록된 것이었다 → `FlutterRTCMediaRecorder.m` `renderFrame` 직렬화로 수정, 시뮬레이터 연속 성공. **용량(비트레이트) 실기기 확인은 여전히 남음** — iOS 배포 보류 유지.

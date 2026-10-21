@@ -99,11 +99,24 @@
 }
 
 - (void)renderFrame:(nullable RTCVideoFrame *)frame {
+    // vivanaut patch: WebRTC가 프레임을 여러 스레드에서 넘겨 appendSampleBuffer·
+    // initialize가 동시에 돌았다 → AVAssetWriter -11800/-12419로 녹화 실패
+    // (2026-10-21 시뮬레이터 로그, 실패 프레임 스레드가 둘). 한 번에 하나씩.
+    @synchronized (self) {
+        [self renderFrameLocked:frame];
+    }
+}
+
+- (void)renderFrameLocked:(nullable RTCVideoFrame *)frame {
     if (frame == nil) {
         return;
     }
     if (!isInitialized) {
         [self initialize:CGSizeMake((CGFloat) frame.width, (CGFloat) frame.height)];
+    }
+    // 멈춘 뒤(markAsFinished)·실패 뒤 들어온 프레임은 버린다(vivanaut patch).
+    if (self.assetWriter.status != AVAssetWriterStatusWriting) {
+        return;
     }
     if (!self.writerInput.readyForMoreMediaData) {
         NSLog(@"Drop frame, not ready");
@@ -170,6 +183,10 @@
 }
 
 - (void)stop:(FlutterResult _Nonnull) result {
+    // 녹화 중인 프레임 처리가 끝난 뒤 멈춘다(위 renderFrame 잠금과 같은 객체).
+    @synchronized (self) {
+        [self.videoTrack removeRenderer:self];
+    }
     if (_audioSink != nil) {
         _audioSink.bufferCallback = nil;
         [_audioSink close];

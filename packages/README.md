@@ -24,3 +24,5 @@ SM-G996N(Android, `c2.exynos.h264.encoder`)에서 1.5Mbps를 요청해도 Androi
 ### 2026-10-21 iOS
 
 `FlutterRTCMediaRecorder.m`(두 벌)에 `AVVideoMaxKeyFrameIntervalDurationKey: 5`를 더했다. `AVVideoExpectedSourceFrameRateKey`·`AVVideoAllowFrameReorderingKey`는 iPhone 13 mini 시뮬레이터에서 녹화 도중 `-11800`(내부 `-12419`)로 매번 실패해 넣지 않는다. 시뮬레이터의 소프트웨어 인코더는 평균 비트레이트를 따르지 않아 1.5Mbps를 줘도 **2.7~2.9Mbps**가 나온다(67초 24MB). 실제 iPhone(하드웨어 VideoToolbox)에서 다시 재야 한다 — 실기기도 높으면 VTCompressionSession으로 직접 인코딩해 DataRateLimits를 거는 방법을 검토한다. 앱은 업로드 전 30MB 초과를 막는다.
+
+**iOS 간헐 실패 원인(같은 날):** WebRTC가 프레임을 서로 다른 두 스레드에서 넘겨 `appendSampleBuffer`·`initialize`가 동시에 돌았다(실패 로그의 스레드가 둘). `renderFrame`을 `@synchronized(self)`로 감싸고, 멈춘 뒤·실패 뒤 프레임은 버린다(`assetWriter.status != Writing`). 수정 뒤 시뮬레이터 10·20초 녹화 연속 성공, 녹화 중 오류 0건. 10월 1일의 "2.5초 뒤 -11800/-12419" 실패도 같은 원인으로 본다.
