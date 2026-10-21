@@ -399,4 +399,44 @@ void main() {
     expect(recorder.stops, 0);
     await finish(tester);
   });
+
+  testWidgets('가로 조작 버튼은 5초 뒤 사라지고(탭 안 받음) 화면을 누르면 다시 보인다',
+      (tester) async {
+    await pump(tester);
+    await tester.tap(find.byKey(CameraLiveFullscreenScreen.orientationButtonKey));
+    await tester.binding.setSurfaceSize(const Size(852, 393));
+    await tester.pump();
+    await startRecording(tester, run: Duration.zero);
+    double opacity() => tester
+        .widget<FadeTransition>(
+            find.byKey(CameraLiveFullscreenScreen.landscapeControlsKey))
+        .opacity
+        .value;
+    expect(opacity(), 1);
+    // 녹화 시작 탭도 터치 — 거기서 5초.
+    await tester.pump(const Duration(seconds: 4));
+    expect(opacity(), 1);
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(opacity(), 0);
+    expect(recPhase(tester), LiveRecordingPhase.recording, reason: '녹화는 계속');
+    // 숨은 닫기를 눌러도 아무 일 없다(확인창 없음) — 대신 버튼이 다시 나온다.
+    await tester.tap(find.byKey(CameraLiveFullscreenScreen.closeButtonKey),
+        warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(modal(), findsNothing);
+    expect(opacity(), 1);
+    // 다시 5초 뒤 숨고, 빈 곳을 누르면 보인다.
+    await tester.pump(kLiveLandscapeControlsHide);
+    await tester.pumpAndSettle();
+    expect(opacity(), 0);
+    await tester.tapAt(const Offset(426, 196));
+    await tester.pumpAndSettle();
+    expect(opacity(), 1);
+    // 보이는 동안 누른 닫기는 확인창을 띄운다.
+    await tester.tap(find.byKey(CameraLiveFullscreenScreen.closeButtonKey));
+    await tester.pumpAndSettle();
+    expect(modal(), findsOneWidget);
+    await finish(tester);
+  });
 }

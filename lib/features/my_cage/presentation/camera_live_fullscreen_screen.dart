@@ -50,13 +50,20 @@ class CameraLiveFullscreenScreen extends ConsumerStatefulWidget {
   static const rebootButtonKey = Key('live_fullscreen_reboot');
   static const rebootReasonKey = Key('live_fullscreen_reboot_reason');
 
+  /// 가로 조작 버튼(닫기·녹화·축소) 묶음의 페이드.
+  static const landscapeControlsKey = Key('live_fullscreen_landscape_controls');
+
   @override
   ConsumerState<CameraLiveFullscreenScreen> createState() =>
       _CameraLiveFullscreenScreenState();
 }
 
+/// 가로 조작 버튼이 마지막 터치 뒤 사라지기까지(Figma 1525:5830 메모).
+const kLiveLandscapeControlsHide = Duration(seconds: 5);
+
 class _CameraLiveFullscreenScreenState
-    extends ConsumerState<CameraLiveFullscreenScreen> {
+    extends ConsumerState<CameraLiveFullscreenScreen>
+    with SingleTickerProviderStateMixin {
   final _orientationKey = Object();
   final _liveKey = GlobalKey();
 
@@ -70,6 +77,26 @@ class _CameraLiveFullscreenScreenState
   /// 이탈 확인 중복 방지(X 연타·뒤로+X).
   bool _leaving = false;
 
+  /// 가로 조작 버튼 페이드(1 = 보임). 마지막 터치 [kLiveLandscapeControlsHide]
+  /// 뒤 사라지고, 화면을 누르면 다시 나타난다 — 녹화 중에도 같다.
+  late final AnimationController _controlsFade;
+  Timer? _controlsHide;
+
+  void _showControls() {
+    _controlsHide?.cancel();
+    _controlsFade.forward();
+    _controlsHide = Timer(kLiveLandscapeControlsHide, () {
+      if (mounted) _controlsFade.reverse();
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controlsFade = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 200), value: 1);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -81,6 +108,8 @@ class _CameraLiveFullscreenScreenState
   @override
   void dispose() {
     _rotateHold?.cancel();
+    _controlsHide?.cancel();
+    _controlsFade.dispose();
     if (_restoreOverlayStyle != null) {
       SystemChrome.setSystemUIOverlayStyle(_restoreOverlayStyle!);
     }
@@ -135,6 +164,15 @@ class _CameraLiveFullscreenScreenState
         ?.where((c) => c.id == cameraId)
         .firstOrNull;
     final landscape = ref.watch(playerOrientationProvider(_orientationKey));
+    ref.listen<bool>(playerOrientationProvider(_orientationKey), (_, next) {
+      if (next) {
+        _showControls();
+      } else {
+        // 세로엔 자동 숨김이 없다 — 다음 가로 진입은 보이는 채로 시작.
+        _controlsHide?.cancel();
+        _controlsFade.value = 1;
+      }
+    });
     final hasVideo = ref.watch(
         webrtcLiveControllerProvider(cameraId).select((s) => s.phase.hasVideo));
     // 녹화·회전·전원·가로 전환은 카메라가 온라인이고 영상이 나올 때만
@@ -284,51 +322,71 @@ class _CameraLiveFullscreenScreenState
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: Colors.black,
-        // expand 필수 — 비-positioned 자식만 있으면 Stack이 그 크기로 수축해
-        // 영상이 좌상단에 조그맣게 갇힌다(2026-09-07 실제 발생 버그).
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            // contain(기본) — 확대해서 보는 화면이라 프레임 전체를 보여준다.
-            // 가로에선 [Wi-Fi 바꾸기]를 두지 않는다 — 가로·immersive가 그대로
-            // 이어져 기기 목록·비밀번호 입력이 가로로 열린다(2026-09-28).
-            WebRtcLiveView(
-                key: _liveKey,
-                cameraUuid: widget.cameraId,
-                showWifiChange: false),
-            // 회전 버튼은 가로에서 뺐다(Figma 메모 — 세로 목록 토글로).
-            Positioned(
-                left: left,
-                top: top,
-                child: _CircleIconButton(
-                    key: CameraLiveFullscreenScreen.closeButtonKey,
-                    size: 44,
-                    color: glass.overlay,
-                    icon: FigmaIcon.tinted(FigmaIcons.close,
-                        size: 24, color: glass.textSecondary),
-                    tooltip:
-                        MaterialLocalizations.of(context).closeButtonTooltip,
-                    onTap: _confirmLeaveIfRecording)),
-            if (kLiveRecordingEnabled)
-              Positioned(
-                  right: right,
-                  top: top,
-                  child: LiveRecordPill(
-                      cameraId: widget.cameraId,
-                      available: available,
-                      landscape: true)),
-            Positioned(
-                right: right,
-                bottom: bottom,
-                child: _CircleIconButton(
-                    key: CameraLiveFullscreenScreen.orientationButtonKey,
-                    size: 40,
-                    color: AppTheme.liveScrim,
-                    icon: FigmaIcon.tinted(FigmaIcons.zoomInMap,
-                        size: 24, color: AppTheme.liveOnDark),
-                    tooltip: 'player_portrait'.tr(),
-                    onTap: _toggleOrientation)),
-          ],
+        // 어디를 누르든 조작 버튼을 다시 보이고 5초를 새로 잰다.
+        body: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) => _showControls(),
+          child: Stack(
+            // expand 필수 — 비-positioned 자식만 있으면 Stack이 그 크기로 수축해
+            // 영상이 좌상단에 조그맣게 갇힌다(2026-09-07 실제 발생 버그).
+            fit: StackFit.expand,
+            children: [
+              // contain(기본) — 확대해서 보는 화면이라 프레임 전체를 보여준다.
+              // 가로에선 [Wi-Fi 바꾸기]를 두지 않는다 — 가로·immersive가 그대로
+              // 이어져 기기 목록·비밀번호 입력이 가로로 열린다(2026-09-28).
+              WebRtcLiveView(
+                  key: _liveKey,
+                  cameraUuid: widget.cameraId,
+                  showWifiChange: false),
+              // 회전 버튼은 가로에서 뺐다(Figma 메모 — 세로 목록 토글로).
+              // 숨겨진 동안(사라지는 중 포함)은 탭을 받지 않는다.
+              AnimatedBuilder(
+                animation: _controlsFade,
+                builder: (context, child) => IgnorePointer(
+                    ignoring: _controlsFade.value == 0 ||
+                        _controlsFade.status == AnimationStatus.reverse,
+                    child: child),
+                child: FadeTransition(
+                  key: CameraLiveFullscreenScreen.landscapeControlsKey,
+                  opacity: _controlsFade,
+                  child: Stack(fit: StackFit.expand, children: [
+                    Positioned(
+                        left: left,
+                        top: top,
+                        child: _CircleIconButton(
+                            key: CameraLiveFullscreenScreen.closeButtonKey,
+                            size: 44,
+                            color: glass.overlay,
+                            icon: FigmaIcon.tinted(FigmaIcons.close,
+                                size: 24, color: glass.textSecondary),
+                            tooltip: MaterialLocalizations.of(context)
+                                .closeButtonTooltip,
+                            onTap: _confirmLeaveIfRecording)),
+                    if (kLiveRecordingEnabled)
+                      Positioned(
+                          right: right,
+                          top: top,
+                          child: LiveRecordPill(
+                              cameraId: widget.cameraId,
+                              available: available,
+                              landscape: true)),
+                    Positioned(
+                        right: right,
+                        bottom: bottom,
+                        child: _CircleIconButton(
+                            key:
+                                CameraLiveFullscreenScreen.orientationButtonKey,
+                            size: 40,
+                            color: AppTheme.liveScrim,
+                            icon: FigmaIcon.tinted(FigmaIcons.zoomInMap,
+                                size: 24, color: AppTheme.liveOnDark),
+                            tooltip: 'player_portrait'.tr(),
+                            onTap: _toggleOrientation)),
+                  ]),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
