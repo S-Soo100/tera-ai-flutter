@@ -5,7 +5,7 @@ import 'package:vivanaut/features/my_cage/presentation/widgets/clip_toast.dart';
 
 /// Figma 1081:6803(세로 y580~640) / 6895(가로 y249~309): 256×60, 가운데.
 void main() {
-  Future<void> pump(WidgetTester tester, Size size) async {
+  Future<void> pump(WidgetTester tester, Size size, {double? bottom}) async {
     // MediaQuery는 view 크기를 읽는다(surface만 바꾸면 800×600 가로로 남는다).
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -17,7 +17,8 @@ void main() {
             body: Builder(
                 builder: (context) => TextButton(
                     onPressed: () =>
-                        showClipToast(context, text: '북마크에 저장되었습니다'),
+                        showClipToast(context,
+                            text: '북마크에 저장되었습니다', bottom: bottom),
                     child: const Text('show'))))));
     await tester.tap(find.text('show'));
     await tester.pump();
@@ -46,6 +47,16 @@ void main() {
     dismissClipToast();
     await tester.pump();
     expect(find.byKey(const Key('clip_toast')), findsNothing);
+    await tester.binding.setSurfaceSize(null);
+  });
+  testWidgets('목록 화면 토스트는 바닥에서 96 (Figma 1497:11720 y696)',
+      (tester) async {
+    await pump(tester, const Size(393, 852), bottom: kScreenToastBottom);
+    final rect = tester.getRect(find.byKey(const Key('clip_toast')));
+    expect(rect.top, 696);
+    expect(rect.bottom, 756);
+    dismissClipToast();
+    await tester.pump();
     await tester.binding.setSurfaceSize(null);
   });
 }

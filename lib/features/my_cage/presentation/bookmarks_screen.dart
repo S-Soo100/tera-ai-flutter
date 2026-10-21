@@ -20,6 +20,11 @@ import 'widgets/clip_memo_card.dart';
 import 'widgets/crecam_detail_top_bar.dart';
 import 'widgets/crecam_states.dart';
 import 'widgets/motion_clip_thumb.dart';
+import 'clip_selection_providers.dart';
+import 'widgets/clip_selection_flow.dart';
+import 'widgets/clip_selection_widgets.dart';
+
+const _scope = ClipSelectionScope.bookmarks;
 
 /// 북마크 날짜 필터(클립 startedAt 기준, 자정 경계). null = 전체.
 /// autoDispose — 화면 이탈 시 리셋.
@@ -47,17 +52,51 @@ class BookmarksScreen extends ConsumerWidget {
     // 직접 녹화(2026-10-01) — 기기 안 보관, 북마크와 같은 목록에 시각순으로.
     final recordings =
         ref.watch(liveRecordingsProvider).valueOrNull ?? const [];
+    final selection = ref.watch(clipSelectionProvider(_scope));
+    final batch = ref.watch(clipBatchProvider(_scope));
+    final flow = ClipSelectionFlow(ref, _scope);
+    // 날짜 필터가 바뀌면 안 보이게 된 영상이 골라진 채 남지 않게 비운다.
+    ref.listen(bookmarksDayFilterProvider, (_, __) {
+      ref.read(clipSelectionProvider(_scope).notifier).clearIds();
+    });
+    Future<void> leave() async {
+      if (await flow.confirmLeave(context) && context.mounted) context.pop();
+    }
 
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: glass.wallpaper,
+      // Figma 1493:9274 — 선택 모드엔 아래에 선택 동작 바.
+      bottomNavigationBar: selection.active
+          ? flow.actionBar(context,
+              all: () => [
+                    for (final f in _visible(
+                        ref.read(allFavoriteClipsProvider).valueOrNull ??
+                            const [],
+                        ref.read(bookmarksDayFilterProvider)))
+                      f.clipId
+                  ])
+          : null,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Figma Rectangle 113 — status bar까지 surfaceHeader + 헤어라인.
           CrecamDetailHeaderArea(
             child: CrecamDetailTopBar(
-              title: 'crecam_bookmarks_title'.tr(),
+              title: selection.active
+                  ? 'clip_select_count'
+                      .tr(namedArgs: {'count': '${selection.count}'})
+                  : 'crecam_bookmarks_title'.tr(),
               onCalendarTap: () => _pickDay(context, ref, day),
+              onBack: selection.active ? leave : null,
+              trailing: selection.active
+                  ? ClipSelectHeaderButton.exit(
+                      onPressed: () => ref
+                          .read(clipSelectionProvider(_scope).notifier)
+                          .exit())
+                  : ClipSelectHeaderButton.enter(
+                      onPressed: () => ref
+                          .read(clipSelectionProvider(_scope).notifier)
+                          .enter()),
             ),
           ),
           Expanded(
@@ -90,8 +129,9 @@ class BookmarksScreen extends ConsumerWidget {
                           ref.invalidate(allFavoriteClipsProvider);
                         },
                       ),
-                      data: (favorites) =>
-                          _list(context, favorites, recordings, day),
+                      data: (favorites) => _list(
+                          context, favorites, recordings, day,
+                          selecting: selection.active),
                     ),
                   ),
                 ],
@@ -101,6 +141,32 @@ class BookmarksScreen extends ConsumerWidget {
         ],
       ),
     );
+    return ClipSelectionBackGuard(
+      scope: _scope,
+      onLeave: leave,
+      child: Stack(children: [
+        scaffold,
+        if (batch != null)
+          ClipBatchOverlay(
+              job: batch,
+              onCancel: ref.read(clipBatchProvider(_scope).notifier).cancel),
+      ]),
+    );
+  }
+
+  /// 화면에 보이는 순서(북마크한 최신순 + 날짜 필터).
+  static List<FavoriteClip> _visible(
+      List<FavoriteClip> favorites, DateTime? day) {
+    final sorted = [...favorites]
+      ..sort((a, b) => b.favoritedAt.compareTo(a.favoritedAt));
+    return day == null
+        ? sorted
+        : sorted.where((f) {
+            final t = f.startedAt.toLocal();
+            return t.year == day.year &&
+                t.month == day.month &&
+                t.day == day.day;
+          }).toList();
   }
 
   Future<void> _pickDay(
@@ -111,17 +177,9 @@ class BookmarksScreen extends ConsumerWidget {
   }
 
   Widget _list(BuildContext context, List<FavoriteClip> favorites,
-      List<LiveRecording> recordings, DateTime? day) {
-    final sorted = [...favorites]
-      ..sort((a, b) => b.favoritedAt.compareTo(a.favoritedAt));
-    final filtered = day == null
-        ? sorted
-        : sorted.where((f) {
-            final t = f.startedAt.toLocal();
-            return t.year == day.year &&
-                t.month == day.month &&
-                t.day == day.day;
-          }).toList();
+      List<LiveRecording> recordings, DateTime? day,
+      {bool selecting = false}) {
+    final filtered = _visible(favorites, day);
 
     bool sameDay(DateTime t) {
       final l = t.toLocal();
@@ -129,7 +187,11 @@ class BookmarksScreen extends ConsumerWidget {
           (l.year == day.year && l.month == day.month && l.day == day.day);
     }
 
-    final recs = recordings.where((r) => sameDay(r.startedAt)).toList();
+    // 선택 모드의 동작(다운로드·삭제·북마크)은 움직임 영상 전용이라, 고르는
+    // 동안 직접 녹화 카드는 감춘다.
+    final recs = selecting
+        ? const <LiveRecording>[]
+        : recordings.where((r) => sameDay(r.startedAt)).toList();
 
     if (filtered.isEmpty && recs.isEmpty) {
       // 북마크 자체가 없으면 기존 즐겨찾기 빈 문구, 필터 결과만 없으면 날짜 문구.
@@ -175,30 +237,41 @@ class _BookmarkCard extends ConsumerWidget {
     final memo = owner == clip.ownerId
         ? ref.watch(clipMemoProvider(memoKey)).valueOrNull
         : null;
+    // 이 카드 몫만 구독 — 하나를 고를 때 모든 카드가 다시 그려지지 않게.
+    final active =
+        ref.watch(clipSelectionProvider(_scope).select((s) => s.active));
+    final flow = ClipSelectionFlow(ref, _scope);
+    void open() =>
+        context.push('/crecam/player/${clip.clipId}', extra: playlist);
     final thumb = MotionClipThumb(
         clipId: clip.clipId, cameraId: clip.cameraId, fallbackIconSize: 28);
+    final header = Text(
+      _headerLabel(clip.startedAt.toLocal()),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontFamily: 'Pretendard',
+        fontSize: 16,
+        height: 19.09375 / 16, // Figma 945:4351 Date h19 → 카드 y+27
+        fontWeight: FontWeight.w600,
+        letterSpacing: 16 * -0.02,
+        color: glass.textSecondary,
+      ),
+    );
 
     return GestureDetector(
       key: ValueKey('bookmark_card_${clip.clipId}'),
       behavior: HitTestBehavior.opaque,
-      onTap: () =>
-          context.push('/crecam/player/${clip.clipId}', extra: playlist),
+      // 선택 모드에선 카드 탭 = 고르기, 영상 보기는 확대 버튼(Figma 1493:9274).
+      onTap: active ? () => flow.toggle(context, clip.clipId) : open,
+      onLongPress: () => flow.longPress(context, clip.clipId),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            _headerLabel(clip.startedAt.toLocal()),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 16,
-              height: 19.09375 / 16, // Figma 945:4351 Date h19 → 카드 y+27
-              fontWeight: FontWeight.w600,
-              letterSpacing: 16 * -0.02,
-              color: glass.textSecondary,
-            ),
-          ),
+          Row(children: [
+            Expanded(child: header),
+            ClipSelectItemCheck(scope: _scope, clipId: clip.clipId),
+          ]),
           const SizedBox(height: 8),
           SizedBox(
               height: 180,
@@ -206,7 +279,15 @@ class _BookmarkCard extends ConsumerWidget {
                 Expanded(
                     child: ClipRRect(
                   borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  child: SizedBox.expand(child: thumb),
+                  child: Stack(fit: StackFit.expand, children: [
+                    thumb,
+                    if (active)
+                      Positioned(
+                          right: 4,
+                          bottom: 4,
+                          child: ClipSelectExpandButton(
+                              clipId: clip.clipId, onTap: open)),
+                  ]),
                 )),
                 if (memo != null) ...[
                   const SizedBox(width: 8),

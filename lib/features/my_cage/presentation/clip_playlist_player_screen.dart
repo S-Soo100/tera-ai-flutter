@@ -32,6 +32,7 @@ import 'widgets/clip_toast.dart';
 import 'clip_memo_providers.dart';
 import 'clip_visibility_providers.dart';
 import 'widgets/clip_hide_dialog.dart';
+import '../../../shared/widgets/arc_spinner.dart';
 import '../../../shared/widgets/keep_screen_on.dart';
 
 /// 세로 재생목록 플레이어 (Figma 668:743, 카메라 탭 재설계 T1).
@@ -932,11 +933,12 @@ class _ClipPlaylistPlayerScreenState
                     style: TextStyle(
                       fontFamily: 'Pretendard',
                       fontSize: 14,
-                      // Figma 668:765 — SemiBold + #545454(배너 날짜와 동일).
+                      // Figma Final Design 세로 플레이어(941:1834 외 5곳) — SemiBold
+                      // #626262. 옛 시안 668:765의 #545454에서 바뀌었다(2026-10-20 대조).
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.28, // 14 × -2%
                       height: 17 / 14,
-                      color: glass.mediaMeta,
+                      color: glass.bodySecondary,
                     ),
                   ),
                 ],
@@ -1341,7 +1343,11 @@ class _DownloadOverlay extends StatelessWidget {
           color: glass.wallpaper.withValues(alpha: 0.8),
           child: Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              _SpinnerArc(size: 62, color: glass.textSecondary),
+              ArcSpinner(
+                  key: const Key('player_download_spinner'),
+                  size: 62,
+                  // Figma 1106:3659 원호 색 #B4AEAE(픽셀 실측, 2026-10-20).
+                  color: glass.progressTrack),
               const SizedBox(height: 12),
               Text('clip_download_progress'.tr(),
                   style: TextStyle(
@@ -1357,64 +1363,4 @@ class _DownloadOverlay extends StatelessWidget {
       ),
     );
   }
-}
-
-/// 원본 progress_activity 글리프(3/4 원호)를 도는 커스텀 스피너. Material
-/// CircularProgressIndicator를 쓰지 않는다(프로젝트 금지) — 디자인이 지정한
-/// 그림을 그대로 그린다.
-class _SpinnerArc extends StatefulWidget {
-  const _SpinnerArc({required this.size, required this.color});
-  final double size;
-  final Color color;
-
-  @override
-  State<_SpinnerArc> createState() => _SpinnerArcState();
-}
-
-class _SpinnerArcState extends State<_SpinnerArc>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _turn = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1000))
-    ..repeat();
-
-  @override
-  void dispose() {
-    _turn.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => RotationTransition(
-        turns: _turn,
-        child: CustomPaint(
-          key: const Key('player_download_spinner'),
-          size: Size.square(widget.size),
-          painter: _ArcPainter(color: widget.color),
-        ),
-      );
-}
-
-class _ArcPainter extends CustomPainter {
-  const _ArcPainter({required this.color});
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final stroke = size.width / 10;
-    final rect = Rect.fromLTWH(
-        stroke / 2, stroke / 2, size.width - stroke, size.height - stroke);
-    canvas.drawArc(
-        rect,
-        -math.pi / 2,
-        math.pi * 1.5,
-        false,
-        Paint()
-          ..color = color
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round
-          ..strokeWidth = stroke);
-  }
-
-  @override
-  bool shouldRepaint(_ArcPainter old) => old.color != color;
 }

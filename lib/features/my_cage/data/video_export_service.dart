@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:gal/gal.dart';
@@ -5,9 +6,38 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+/// 여러 영상 저장·공유를 사용자가 멈췄을 때.
+class ExportCancelled implements Exception {
+  const ExportCancelled();
+}
+
+/// 여러 영상 내려받기 취소 신호. [cancel]이 진행 중인 연결을 끊는다.
+class ExportCancelToken {
+  bool _cancelled = false;
+  final Set<http.Client> _clients = {};
+  bool get isCancelled => _cancelled;
+
+  void cancel() {
+    _cancelled = true;
+    for (final client in _clients) {
+      client.close();
+    }
+    _clients.clear();
+  }
+
+  void throwIfCancelled() {
+    if (_cancelled) throw const ExportCancelled();
+  }
+}
+
 /// 영상 기기 저장(사진앱) + 공유. 로컬 파일이 있으면 재다운로드 없이 사용,
 /// 없으면 presigned URL을 임시파일로 내려받아 처리.
 class VideoExportService {
+  VideoExportService({http.Client Function()? clientFactory})
+      : _clientFactory = clientFactory ?? http.Client.new;
+
+  final http.Client Function() _clientFactory;
+
   Future<File> _resolveFile(
       String clipId, File? localFile, String? presignedUrl) async {
     if (localFile != null) return localFile;
@@ -28,7 +58,7 @@ class VideoExportService {
     if (!await Gal.hasAccess()) {
       await Gal.requestAccess();
     }
-    await Gal.putVideo(file.path, album: '비바나트');
+    await _put(file);
   }
 
   /// OS 공유 시트로 영상 공유.
@@ -38,4 +68,82 @@ class VideoExportService {
     // share_plus 13.x: 구 Share.shareXFiles는 @Deprecated → SharePlus.instance.share 사용.
     await SharePlus.instance.share(ShareParams(files: [XFile(file.path)]));
   }
+
+  // ── 여러 영상 (영상 선택 모드) ──
+
+  /// 사진앱 권한 — 없으면 한 번 묻는다. 거절이면 false.
+  Future<bool> ensureGalleryAccess() async {
+    if (await Gal.hasAccess()) return true;
+    return Gal.requestAccess();
+  }
+
+  Future<void> putVideo(File file) => _put(file);
+
+  /// iOS는 앨범을 만들거나 앨범에 넣으려면 사진 보관함 **전체 접근**을 요구한다.
+  /// 사용자가 "추가만 허용"을 고르면 앨범 저장이 전부 실패했고, 저장 도중
+  /// 전체 접근 요청 창(개체 사진 문구)까지 떴다(2026-10-20 시뮬레이터 확인).
+  /// 전체 접근이 이미 있으면 앨범에, 아니면 앨범 없이 사진 앱에 바로 넣는다.
+  /// 안드로이드는 추가 권한으로 앨범 폴더에 넣을 수 있어 그대로 둔다.
+  Future<void> _put(File file) async {
+    if (Platform.isIOS && !await Gal.hasAccess(toAlbum: true)) {
+      await Gal.putVideo(file.path);
+      return;
+    }
+    await Gal.putVideo(file.path, album: '비바나트');
+  }
+
+  /// 임시 폴더로 내려받는다. [onProgress]는 이 영상의 0~1(길이를 모르면
+  /// 부르지 않는다). [cancel]되면 연결을 끊고 [ExportCancelled]를 던진다.
+  Future<File> downloadToTemp(String clipId, String url,
+      {void Function(double fraction)? onProgress,
+      ExportCancelToken? cancel}) async {
+    cancel?.throwIfCancelled();
+    final client = _clientFactory();
+    cancel?._clients.add(client);
+    // 사진앱 앨범에 이 이름 그대로 들어간다 — 단건 저장과 같은 `<id>.mp4`.
+    final dir =
+        Directory('${(await getTemporaryDirectory()).path}/clip_select');
+    await dir.create(recursive: true);
+    final file = File('${dir.path}/$clipId.mp4');
+    IOSink? sink;
+    try {
+      final resp = await client.send(http.Request('GET', Uri.parse(url)));
+      if (resp.statusCode != 200) {
+        throw HttpException('download failed: ${resp.statusCode}');
+      }
+      final total = resp.contentLength;
+      var received = 0;
+      sink = file.openWrite();
+      await for (final chunk in resp.stream) {
+        cancel?.throwIfCancelled();
+        sink.add(chunk);
+        received += chunk.length;
+        if (total != null && total > 0) onProgress?.call(received / total);
+      }
+      await sink.close();
+      sink = null;
+      cancel?.throwIfCancelled();
+      return file;
+    } catch (error) {
+      await sink?.close();
+      if (await file.exists()) await file.delete();
+      if (cancel?.isCancelled ?? false) throw const ExportCancelled();
+      rethrow;
+    } finally {
+      cancel?._clients.remove(client);
+      client.close();
+    }
+  }
+
+  /// 여러 영상 작업이 남긴 임시 파일(`clip_select/`)을 비운다 — 공유한 파일은
+  /// 받는 앱이 읽는 중일 수 있어 다음 작업 시작 때 부른다.
+  Future<void> clearTemp() async {
+    final dir =
+        Directory('${(await getTemporaryDirectory()).path}/clip_select');
+    if (await dir.exists()) await dir.delete(recursive: true);
+  }
+
+  /// 여러 영상을 한 번에 OS 공유 시트로.
+  Future<void> shareFiles(List<File> files) => SharePlus.instance
+      .share(ShareParams(files: [for (final f in files) XFile(f.path)]));
 }

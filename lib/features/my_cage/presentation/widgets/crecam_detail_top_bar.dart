@@ -16,7 +16,7 @@ import '../../../../shared/widgets/figma_icon.dart';
 ///
 /// 상단부 배경은 [CrecamDetailHeaderArea]가 감싼다 — Figma Rectangle 113:
 /// status bar까지 `surfaceHeader`(#FAFBFD)로 덮고 하단에 outline 헤어라인
-/// (2026-09-07 Figma 정밀 대조에서 누락 발견).
+/// (2026-09-07 Figma 정밀 대조에서 누락 발견, 색은 2026-10-20 #FAFAFA로 정정).
 class CrecamDetailTopBar extends StatelessWidget {
   const CrecamDetailTopBar({
     super.key,
@@ -26,12 +26,20 @@ class CrecamDetailTopBar extends StatelessWidget {
     this.closeButton = false,
     this.leadingKey,
     this.trailing,
+    this.onBack,
+    this.showBack = true,
   }) : assert(title == null || titleWidget == null, 'title과 titleWidget은 하나만');
 
   final String? title;
   final bool closeButton;
   final Key? leadingKey;
   final Widget? trailing;
+
+  /// 뒤로 버튼 동작을 바꾼다(영상 선택 모드의 이탈 확인). null이면 pop.
+  final VoidCallback? onBack;
+
+  /// false면 왼쪽 뒤로 버튼을 그리지 않는다(카메라 탭 선택 모드).
+  final bool showBack;
 
   /// 중앙에 텍스트 한 줄 대신 얹을 위젯(플레이어의 날짜+시각 2줄 등).
   final Widget? titleWidget;
@@ -52,25 +60,28 @@ class CrecamDetailTopBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Stack(
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: IconButton(
-                  key: leadingKey,
-                  padding: EdgeInsets.zero,
-                  icon: FigmaIcon.tinted(
-                      closeButton ? FigmaIcons.close : FigmaIcons.arrowPrevious,
-                      size: 24,
-                      color: glass.textPrimary),
-                  tooltip: closeButton
-                      ? MaterialLocalizations.of(context).closeButtonTooltip
-                      : MaterialLocalizations.of(context).backButtonTooltip,
-                  onPressed: () => context.pop(),
+            if (showBack)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: IconButton(
+                    key: leadingKey,
+                    padding: EdgeInsets.zero,
+                    icon: FigmaIcon.tinted(
+                        closeButton
+                            ? FigmaIcons.close
+                            : FigmaIcons.arrowPrevious,
+                        size: 24,
+                        color: glass.textPrimary),
+                    tooltip: closeButton
+                        ? MaterialLocalizations.of(context).closeButtonTooltip
+                        : MaterialLocalizations.of(context).backButtonTooltip,
+                    onPressed: onBack ?? () => context.pop(),
+                  ),
                 ),
               ),
-            ),
             Center(
               child: titleWidget ??
                   Text(
@@ -87,24 +98,27 @@ class CrecamDetailTopBar extends StatelessWidget {
                     ),
                   ),
             ),
-            if (trailing != null)
-              Align(alignment: Alignment.centerRight, child: trailing!),
-            if (onCalendarTap != null)
+            // Figma 1497:11044 — 달력 왼쪽, 선택 버튼 오른쪽 한 줄.
+            if (trailing != null || onCalendarTap != null)
               Align(
                 alignment: Alignment.centerRight,
-                child: SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: IconButton(
-                    key: calendarButtonKey,
-                    padding: EdgeInsets.zero,
-                    // Figma 945:4296 calendar_month 20, #3C3C3C(Labels/Secondary).
-                    icon: FigmaIcon.tinted(FigmaIcons.calendarMonth,
-                        size: 20, color: glass.textSecondary),
-                    tooltip: 'crecam_home_period'.tr(),
-                    onPressed: onCalendarTap,
-                  ),
-                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (onCalendarTap != null)
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: IconButton(
+                        key: calendarButtonKey,
+                        padding: EdgeInsets.zero,
+                        // Figma 945:4296 calendar_month 20, #3C3C3C(Labels/Secondary).
+                        icon: FigmaIcon.tinted(FigmaIcons.calendarMonth,
+                            size: 20, color: glass.textSecondary),
+                        tooltip: 'crecam_home_period'.tr(),
+                        onPressed: onCalendarTap,
+                      ),
+                    ),
+                  if (trailing != null) trailing!,
+                ]),
               ),
           ],
         ),
@@ -114,7 +128,7 @@ class CrecamDetailTopBar extends StatelessWidget {
 }
 
 /// 상세 상단부 래퍼 — Figma Rectangle 113(668:656/718/744): status bar까지
-/// `surfaceHeader` 배경 + 하단 outline 헤어라인. [child]는 보통
+/// [GlassPalette.appBar](#FAFAFA) 배경 + 하단 outline 헤어라인. [child]는 보통
 /// [CrecamDetailTopBar]. 화면 쪽은 이걸 SafeArea **밖**에 두고 본문만
 /// SafeArea(top: false)로 감싼다 — 안 그러면 status bar 영역이 흰 바닥으로
 /// 남아 Figma의 106pt 헤더 면이 44pt로 쪼그라든다.
@@ -131,7 +145,7 @@ class CrecamDetailHeaderArea extends StatelessWidget {
           ? SystemUiOverlayStyle.light
           : SystemUiOverlayStyle.dark,
       child: Container(
-        decoration: BoxDecoration(color: glass.surfaceHeader),
+        decoration: BoxDecoration(color: glass.appBar),
 
         // Figma 668:717 — 헤더 106(62+44) 안에 하단선을 그린다(높이 미추가,
 

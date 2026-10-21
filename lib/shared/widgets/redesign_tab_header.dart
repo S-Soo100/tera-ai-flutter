@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/glass_palette.dart';
 import 'figma_icon.dart';
+import 'viva_shadow.dart';
 
 typedef TabHeaderChoice = ({String id, String label});
 
@@ -50,16 +51,17 @@ class RedesignTabHeader extends StatelessWidget {
                               choices.firstWhere((c) => c.id == selected).label,
                           offset: const Offset(0, 44),
                           // Figma 1107:10552 Drop shadow X0 Y0 blur20 spread0
-                          // #919497 30%. Material 그림자는 방향성이 있어 근사.
-                          elevation: 8,
-                          shadowColor: glass.menuShadow,
+                          // #919497 30% — Material elevation(아래로 치우친
+                          // 그림자) 대신 테두리가 직접 그린다.
+                          elevation: 0,
                           constraints:
                               const BoxConstraints.tightFor(width: 200),
                           menuPadding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           color: glass.surfaceHeader,
                           surfaceTintColor: glass.surfaceHeader,
-                          shape: RoundedRectangleBorder(
+                          shape: VivaShadowRoundedBorder(
+                              shadow: vivaFloatingShadow(glass),
                               borderRadius: BorderRadius.circular(12)),
                           onSelected: onSelected,
                           itemBuilder: (_) => [
@@ -155,19 +157,50 @@ class RedesignTabHeader extends StatelessWidget {
                   offset: const Offset(0, 44),
                   padding: EdgeInsets.zero,
                   // 1056:3009 SelectList — 세트 드롭다운과 같은 그림자로 본다.
-                  elevation: 8,
-                  shadowColor: glass.menuShadow,
+                  // 면·줄은 Figma 1063:7422 SelectList(흰 r12, 안쪽 8·4, 줄 44,
+                  // 500/18/28 #3C3C3C, 줄 사이 선) — 전엔 기본 Material 메뉴였다
+                  // (2026-10-20 시뮬레이터 대조).
+                  elevation: 0,
+                  color: glass.surfaceHeader,
+                  surfaceTintColor: glass.surfaceHeader,
+                  shape: VivaShadowRoundedBorder(
+                      shadow: vivaFloatingShadow(glass),
+                      borderRadius: BorderRadius.circular(12)),
+                  menuPadding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  constraints: const BoxConstraints(minWidth: 149),
                   onSelected: (route) => context.push(route),
                   itemBuilder: (_) => [
-                        PopupMenuItem(
-                            value: '/devices/add',
-                            child: Text('redesign_device_add'.tr())),
-                        PopupMenuItem(
-                            value: '/devices/manage',
-                            child: Text('redesign_device_manage'.tr())),
-                        PopupMenuItem(
-                            value: '/my-pets/manage',
-                            child: Text('redesign_pet_manage'.tr())),
+                        for (final (i, (route, key)) in const [
+                          ('/devices/add', 'redesign_device_add'),
+                          ('/devices/manage', 'redesign_device_manage'),
+                          ('/my-pets/manage', 'redesign_pet_manage'),
+                        ].indexed)
+                          PopupMenuItem(
+                              value: route,
+                              height: 44,
+                              padding: EdgeInsets.zero,
+                              child: Container(
+                                  constraints:
+                                      const BoxConstraints(minHeight: 44),
+                                  alignment: Alignment.centerLeft,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  decoration: i == 2
+                                      ? null
+                                      : BoxDecoration(
+                                          border: Border(
+                                              bottom: BorderSide(
+                                                  color: glass.border))),
+                                  child: Text(key.tr(),
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      style: style.copyWith(
+                                          fontSize: 18,
+                                          letterSpacing: -.36,
+                                          height: 28 / 18,
+                                          fontWeight: FontWeight.w500,
+                                          color: glass.textSecondary)))),
                       ],
                   icon: FigmaIcon.tinted(FigmaIcons.management,
                       color: glass.textSecondary, size: 44))),

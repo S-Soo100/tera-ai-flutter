@@ -2,7 +2,7 @@
 
 받는 분: 백엔드 (클립 R2 저장·presigned URL을 맡는 쪽)
 보내는 쪽: 비바나트 앱
-상태: **초안 — 앱 내부 확정 전.** "정할 것" 항목을 정한 뒤 보낸다.
+상태: **앱 쪽 결정 확정(2026-10-20, 아래 표 제안값 그대로 사용자 승인). 발송은 보류** — 사용자가 개발 요청 시점을 정한다.
 
 ## 배경
 
@@ -121,9 +121,9 @@ create index on public.live_recordings (user_id, started_at desc);
 
 ---
 
-## 정할 것 (보내기 전 앱 내부 결정)
+## 앱 쪽 결정 (2026-10-20 확정)
 
-| # | 질문 | 제안 |
+| # | 질문 | 결정 |
 |---|---|---|
 | 1 | 계정당 한도 | 개수 **50개**(≈1GB). 넘으면 새 녹화 업로드를 막고 "오래된 녹화를 지워 주세요" 안내. 자동 삭제는 하지 않음 |
 | 2 | 보관 기간 | 사용자가 지울 때까지(한도로 비용 통제) |
@@ -138,3 +138,20 @@ create index on public.live_recordings (user_id, started_at desc);
 - 실제 iPhone 녹화 확인 전. iOS가 안 되면 Android만 먼저 엽니다.
 - 업로드 대기열·재시도·보관함 표시는 앱이 맡습니다.
 - 앱 기획서: 브랜치 `feat/live-recording`의 `docs/superpowers/specs/2026-10-01-live-recording-design.md`.
+
+---
+
+## 합의 결과 (2026-10-20, 서버 회신 3차까지) — 앱 업로드 구현의 기준
+
+서버 원문: `terra-server/docs/BACKEND_HANDOFF_REPLY_LIVE_RECORDING_2026-10-20.md`. 위 요청 본문과 다르면 **이 절이 우선**한다.
+
+- **목록은 REST가 아니라 Supabase 직결 SELECT.** `live_recordings` `id, camera_id, started_at, duration_ms, size_bytes, width, height, has_thumbnail, created_at`, `status='ready'`, `(started_at, id)` 내림차순 keyset. `has_thumbnail`은 생성 컬럼. `camera_id` null = "삭제된 카메라".
+- **`POST /recordings`** 201(새 등록)/200(같은 `client_id`). 응답 `status`가 `ready`면 URL·`expires_at`이 null → 업로드 건너뛰고 완료. 다시 부르면 바디는 무시(처음 값 사용). **23시간 30분 넘은 `pending`을 다시 부르면 201 + 새 `recording_id`**(서버가 옛 행·파일 삭제) → 로컬 id 교체 후 처음부터 다시 업로드.
+- 업로드 URL 30분. PUT `Content-Type` 영상 `video/mp4`, 썸네일 `image/jpeg`(안 맞으면 서명 실패). 카메라 unlink 뒤에도 등록 가능(owner만 확인).
+- **`complete`** 200 `ready` / 409 `{"detail":{"code":"upload_missing"[,"reason":"size_mismatch"]}}` → URL 다시 받아 처음부터. 썸네일이 없거나 5MB 넘으면 썸네일만 버리고 `ready`(`has_thumbnail=false`).
+- 재생·썸네일 URL은 `{url, expires_in: 3600}`(클립과 같음).
+- **`DELETE`** 204, 404=이미 없음. 업로드 중이면 **업로드 취소 확인 후** DELETE, 중간에 꺼지면 다음 실행 때 다시 DELETE. 남은 파일은 서버가 6시간마다 정리(1시간 넘은 고아 파일).
+- **재시도:** 400·403·404는 안 함(필드 누락·타입 오류도 400). 401은 토큰 갱신 후 1회. 409 `recording_quota_exceeded`(`used`/`limit`)는 사용자가 지울 때까지 보류. 502·5xx·네트워크는 간격을 늘려 재시도.
+- 한도 50개 = `ready` + 24시간 안 된 `pending`. 보관 무기한. 회원 탈퇴 시 R2 삭제는 탈퇴 함수 작업 때 서버가 넣는다(보류).
+- R2 lifecycle: 녹화 경로는 자동 삭제 대상 아님(서버 확인 완료).
+- **배포 대기:** 서버 PR 리뷰 → DB 마이그레이션 → 스모크 테스트 → 배포. 서버가 회신서 "배포 상태"에 체크하면 앱 업로드 구현을 시작한다.

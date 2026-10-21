@@ -19,10 +19,14 @@ import 'wallpaper_background.dart';
 ///   화면 안의 스크롤 뷰가 `MediaQuery.padding.bottom`(독 높이)을 소비한다
 ///   (`glassDockListPadding` 참조).
 class GlassTabShell extends StatelessWidget {
-  const GlassTabShell({super.key, required this.child});
+  const GlassTabShell({super.key, required this.child, this.header});
 
   /// SafeArea 안에 앉는 화면 본문(Column·ListView 등).
   final Widget child;
+
+  /// 상태바까지 덮는 상단바(SafeArea 밖, 예: 영상 선택 모드의
+  /// `CrecamDetailHeaderArea`). 있으면 [child]는 그 아래에 놓인다.
+  final Widget? header;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +39,16 @@ class GlassTabShell extends StatelessWidget {
         body: Stack(
           children: [
             const Positioned.fill(child: WallpaperBackground()),
-            SafeArea(bottom: false, child: child),
+            // 상단바가 생기고 없어져도 본문은 같은 자리(같은 Element)에 남는다
+            // — 트리 모양이 바뀌면 본문 State가 새로 만들어져 진행 중인 꾹
+            // 눌러 끌기(영상 선택)가 끊겼다(2026-10-21).
+            Column(children: [
+              if (header != null) header!,
+              Expanded(
+                  key: const ValueKey('glass_tab_shell_body'),
+                  child: SafeArea(
+                      top: header == null, bottom: false, child: child)),
+            ]),
           ],
         ),
       ),
