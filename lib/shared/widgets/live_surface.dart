@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/app_theme.dart';
+import '../domain/keep_all_words.dart';
 
 /// 영상이 놓이는 **어두운 관측 면**. 디자인 시스템 `Components / LiveSurface`.
 ///
@@ -150,7 +151,8 @@ class LiveSurfaceNotice extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              title,
+              // 어절 가운데서 줄이 바뀌지 않게("들어갑니\n다" 방지, 2026-10-21).
+              keepAllWords(title),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontFamily: 'Pretendard',
@@ -162,7 +164,7 @@ class LiveSurfaceNotice extends StatelessWidget {
             if (detail != null) ...[
               const SizedBox(height: AppStyles.spacing4),
               Text(
-                detail!,
+                keepAllWords(detail!),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Pretendard',

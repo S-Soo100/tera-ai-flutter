@@ -9,8 +9,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../notification/presentation/push_pre_popup.dart'
-    show keepAllWords;
+import '../../../../shared/domain/keep_all_words.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../../shared/providers/clock_providers.dart';
 import '../../../../shared/widgets/viva_modal.dart';
