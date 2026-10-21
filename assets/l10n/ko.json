@@ -713,7 +713,7 @@
   "camera_rotate_title": "화면 뒤집기 (180°)",
   "camera_rotate_subtitle": "{} — 잠시 후 적용돼요. 카메라가 꺼져 있으면 다시 켜질 때 적용돼요.",
   "camera_reboot": "카메라 재시작",
-  "camera_reboot_confirm": "카메라를 재시작할까요?\n약 30초 동안 꺼졌다 켜집니다. 라이브 보기와 녹화가 잠시 중단됩니다.",
+  "camera_reboot_confirm": "카메라를 재시작할까요?\n약 30초 동안 꺼졌다 켜집니다. 라이브 보기가 잠시 중단됩니다.",
   "reboot_ok": "재시작",
   "reboot_progress": "재시작 중…",
   "reboot_done": "재시작 완료",
