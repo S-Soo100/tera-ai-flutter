@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/viva_modal.dart';
 import '../../domain/clip_selection.dart';
+import '../../domain/player_entry.dart';
 import '../clip_selection_providers.dart';
 import '../my_cage_providers.dart';
 import 'clip_selection_widgets.dart';
@@ -150,8 +151,14 @@ class ClipSelectionFlow {
   Future<void> delete(BuildContext context) async {
     final ids = _ids;
     if (_needsSelection(context, ids)) return;
+    // 직접 녹화가 섞였으면 폰·서버에서 모두 지워진다는 것을 밝힌다(일반 영상
+    // 삭제는 이 계정 목록에서 숨김).
+    final withRecordings = ids.any((id) => PlayerEntry.parse(id).isRecording);
     final ok = await showVivaModal(context,
-        message: 'clip_select_delete_confirm'.tr(),
+        message: (withRecordings
+                ? 'clip_select_delete_confirm_recordings'
+                : 'clip_select_delete_confirm')
+            .tr(),
         cancelLabel: 'clip_hide_cancel'.tr(),
         confirmLabel: 'clip_hide_action'.tr(),
         confirmKey: const Key('clip_select_delete_ok'));
@@ -166,14 +173,21 @@ class ClipSelectionFlow {
 
   /// 더보기 — 고른 것 중 북마크 안 된 게 있으면 "북마크 하기", 모두 북마크면
   /// "북마크 해제". "전체 선택"은 늘, "메모 삭제"는 북마크 목록에서만.
+  ///
+  /// 북마크는 일반 영상에만 — 직접 녹화만 골랐으면 북마크 항목을 숨기고, 섞여
+  /// 있으면 일반 영상에만 적용한다(2026-10-21 사용자 결정).
   Future<void> more(BuildContext context, Rect anchor,
       {required List<String> all}) async {
     if (_batch.busy) return;
     final ids = _ids;
-    final favorites = ref.read(favoriteClipRepositoryProvider);
-    final allBookmarked = ids.every(favorites.isFavorite);
+    final clipIds = [
+      for (final id in ids)
+        if (!PlayerEntry.parse(id).isRecording) id
+    ];
+    final allBookmarked = clipIds.isNotEmpty &&
+        clipIds.every(ref.read(favoriteClipRepositoryProvider).isFavorite);
     final items = <ClipSelectMenuItem<String>>[
-      if (ids.isNotEmpty)
+      if (clipIds.isNotEmpty)
         allBookmarked
             ? ClipSelectMenuItem('unbookmark', 'clip_select_unbookmark'.tr())
             : ClipSelectMenuItem('bookmark', 'clip_select_bookmark'.tr()),
@@ -189,7 +203,7 @@ class ClipSelectionFlow {
         if (_selection.selectAll(all)) showLimit(context);
       case 'bookmark' || 'unbookmark':
         final add = choice == 'bookmark';
-        final result = await _batch.setBookmarked(ids, add);
+        final result = await _batch.setBookmarked(clipIds, add);
         if (!context.mounted) return;
         _settle(context, result,
             done:
@@ -199,7 +213,7 @@ class ClipSelectionFlow {
                 'clip_select_bookmark_partial'.tr(namedArgs: {'count': '$n'}),
             kind:
                 add ? ClipBatchKind.bookmarkAdd : ClipBatchKind.bookmarkRemove,
-            total: ids.length);
+            total: clipIds.length);
       case 'memo':
         final ok = await showVivaModal(context,
             message: 'clip_memo_delete_confirm'.tr(),

@@ -50,7 +50,7 @@
 | C | 녹화 알약(세로 회색/검정, 가로 흰/검정) · 중단 확인창(`showVivaModal`) · 이탈 가로채기(PopScope+BackButtonListener, 영상 선택의 `ClipSelectionBackGuard` 문법) · 저장 토스트 | `widgets/live_record_controls.dart` 교체 |
 | D | 가로 조작 5초 자동 숨김 + 탭으로 다시 표시(AnimationController, setState 금지) | `camera_live_fullscreen_screen.dart` |
 | E | R2 업로드: `LiveRecordingUploadRepository`(POST /recordings → PUT 2개 → complete, DELETE) + 대기열(앱 시작·녹화 직후·망 복귀 시 처리, 지수 백오프, 401 1회, 400/403/404 중단, 409 quota 보류, 23.5시간 재등록 id 교체) + Hive에 업로드 상태 | `data/live_recording_upload_repository.dart`, `presentation/live_recording_upload_queue.dart` |
-| F | 클라우드 보관함: `live_recordings` 직결 SELECT(ready, keyset) → 다른 폰·재설치 후 목록, 재생은 `GET /recordings/{id}/url`, 썸네일 URL. 로컬 파일이 있으면 로컬 우선 | `data/…`, `bookmarks_screen.dart`, `clip_playlist_player_screen.dart`(2026-10-21 0.157.0부터 녹화도 같은 플레이어) |
+| F | ✅ **완료(0.158.0+433~434, §13)** 클라우드 보관함: `live_recordings` 직결 SELECT(ready, keyset) → 다른 폰·재설치 후 목록, 재생은 `GET /recordings/{id}/url`, 썸네일 URL. 로컬 파일이 있으면 로컬 우선. + 카메라 탭 시간대별 목록 섞기·선택 모드 녹화 | `data/live_recording_server_repository.dart`, `domain/recording_item.dart`, `presentation/recording_library_providers.dart`, `bookmarks_screen.dart`, `clip_feed_slivers.dart`, `clip_playlist_player_screen.dart` |
 | G | 서버 요청서 추가(길이 120초) + CHANGELOG + 기획서 갱신 | `docs/handoffs/…` |
 
 ~~순서: A → B → C → D → E → F → G~~ → **검수 반영 순서(§9): 0(서버 요청) → P(프로토타입) → A → B → C → D → E. F는 다음 릴리스.** 단계마다 커밋.
@@ -147,3 +147,22 @@
 - **안전장치:** 30MB 넘는 녹화는 앱이 업로드하지 않고 보관함에 "업로드 실패"로 남긴다(서버 400 방지). 로컬 재생은 된다.
 - 코드 표기: `lib/features/my_cage/domain/live_recording.dart` `kLiveRecordingEnabled` 주석, `FlutterRTCMediaRecorder.m` 주석.
 - **추가(같은 날):** iOS 녹화 간헐 실패(-11800/-12419)의 원인은 프레임이 두 스레드에서 동시에 기록된 것이었다 → `FlutterRTCMediaRecorder.m` `renderFrame` 직렬화로 수정, 시뮬레이터 연속 성공. **용량(비트레이트) 실기기 확인은 여전히 남음** — iOS 배포 보류 유지.
+
+## 13. F단계 구현 (2026-10-21, 0.158.0+433~434)
+
+**사용자 결정(2026-10-21)**
+1. 카메라 탭 시간대별 목록에 그 카메라의 녹화를 `started_at` 기준 시간대 칸·날짜에 일반 영상과 시각순으로 섞는다. 하이라이트에는 섞지 않는다. 기간(날짜) 필터도 같은 기준. 칸에 "직접 녹화 · 0:42"(보관함 배지의 작은 판).
+2. 이 폰 녹화 + 서버 녹화를 합친다. 같은 녹화(로컬 `recordingId` == 서버 `id`)는 로컬 우선(폰 파일 재생). 서버에만 있는 녹화는 서버 URL로 재생·썸네일. 보관함도 같은 합친 목록. `camera_id` null = 삭제된 카메라(보관함에서만 보임).
+3. 올리는 중인 녹화는 흐리게 + 누를 수 없음(재생·꾹 누르기·선택). 업로드 대기·실패는 흐리게 하지 않고 상태 표시만.
+4. 영상 선택 모드에서 녹화도 고른다 — 다운로드(폰 파일 → 없으면 서버 URL)·공유·삭제(녹화 삭제, 대기열 경유, 확인 문구 구분). 북마크 하기/해제는 일반 영상에만(녹화만 고르면 메뉴 숨김). 보관함 선택 모드에서도 녹화 카드를 숨기지 않는다.
+5. 플레이어: 카메라 탭에서 열면 재생목록에 녹화가 섞여 이전/다음·필름스트립으로 넘어간다.
+
+**설계 선택**
+- **서버 녹화 키** `rec:srv:<서버 id>`(`ServerRecordingEntry`) — 폰 녹화 `rec:<로컬 id>`와 구분해 재생 URL을 서버에서 받는다. sealed 타입이라 분기 누락은 컴파일 오류로 잡힌다.
+- **메모 키 = 항목 키**, 키 이전(마이그레이션) 없음 — 메모는 폰에만 저장돼 다른 폰으로 넘어가지 않고, 한 폰 안에서는 같은 녹화가 늘 로컬 쪽(`rec:<로컬 id>`)으로 합쳐 열리므로 같은 메모를 본다. 서버 전용 녹화의 메모는 `rec:srv:<id>`.
+- **페이지 끼워넣기** — 녹화는 계정당 최대 50개라 전체를 한 번에 받고, 일반 영상(60개 커서 페이지) 중 **불러온 가장 오래된 영상보다 오래되지 않은 녹화만** 넣는다. 목록 끝(`hasMore` false)이면 남은 녹화를 모두 붙인다. 플레이어는 목록이 넘긴 경계(`feedFloor`)로 다음 페이지에 같은 규칙을 적용한다(`appendFeedPage`). 테스트 `recording_item_test.dart`.
+- **서버 목록 갱신** — 계정 id만 감시, 대기열의 `serverRevision`(업로드 완료·서버 삭제 완료)에만 다시 읽는다. 지우는 중인 녹화는 대기열 `removedServerIds`로 서버 목록에서 바로 뺀다(지난 실행에서 남은 `deleting` 행 포함). 계정이 바뀌면 이전 계정 서버 목록은 쓰지 않는다. 서버 목록이 실패해도 폰 녹화는 보인다.
+- 서버에만 있는 녹화의 삭제는 다시 지울 폰 행이 없어 DELETE 결과를 기다린다(실패하면 "녹화를 삭제하지 못했어요"·목록 유지).
+- "업로드 실패" 카드 길게 눌러 삭제(§9)는 선택 모드로 대체 — 꾹 누르기가 선택 시작과 겹치기 때문.
+
+**확인 못 한 것** — 실서버 직결 SELECT·`/recordings/{id}/url`·`/thumbnail/url` 실호출(G996 확인 예정), 다른 폰에서 서버 녹화 재생.

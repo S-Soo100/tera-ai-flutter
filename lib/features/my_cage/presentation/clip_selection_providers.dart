@@ -3,12 +3,16 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/presentation/auth_providers.dart';
+import '../data/live_recording_server_repository.dart';
 import '../data/video_export_service.dart';
 import '../domain/clip_selection.dart';
+import '../domain/player_entry.dart';
 import 'bookmark_controller.dart';
 import 'clip_memo_providers.dart';
 import 'clip_visibility_providers.dart';
+import 'live_recording_actions.dart';
 import 'my_cage_providers.dart';
+import 'recording_library_providers.dart';
 
 /// 선택 모드가 있는 영상 목록. 화면마다 선택이 따로다.
 enum ClipSelectionScope { feed, highlights, bookmarks }
@@ -137,8 +141,22 @@ class ClipBatchController extends StateNotifier<ClipBatchState?> {
   }
 
   /// 북마크로 이미 받아 둔 파일이 있으면 그걸, 없으면 재생 주소로 내려받는다.
+  /// 직접 녹화(`rec:`·`rec:srv:`)는 폰 파일이 있으면 그것, 없으면 서버 녹화
+  /// URL로 내려받는다(2026-10-21).
   Future<({File file, bool temporary})> _fileFor(String clipId,
       ExportCancelToken token, void Function(double) onProgress) async {
+    if (PlayerEntry.parse(clipId).isRecording) {
+      final src = await _ref.read(recordingSourceResolverProvider)(clipId);
+      if (src.file case final file?) return (file: file, temporary: false);
+      final url = await _ref
+          .read(liveRecordingServerRepositoryProvider)
+          .playbackUrl(src.serverId!);
+      token.throwIfCancelled();
+      final file = await _ref.read(videoExportServiceProvider).downloadToTemp(
+          exportFileName(clipId), url,
+          onProgress: onProgress, cancel: token);
+      return (file: file, temporary: true);
+    }
     final local =
         _ref.read(favoriteClipRepositoryProvider).getLocalFile(clipId);
     if (local != null) return (file: local, temporary: false);
@@ -243,8 +261,17 @@ class ClipBatchController extends StateNotifier<ClipBatchState?> {
   }
 
   /// 삭제 = 이 계정 목록에서 숨김(서버 원본은 남는다, 단건 삭제와 같은 뜻).
+  /// 직접 녹화는 녹화 삭제(대기열 경유 — 이 폰 파일 + 서버 DELETE, 메모 포함).
   Future<ClipBatchResult> delete(List<String> ids) =>
       _each(ClipBatchKind.delete, ids, progress: false, (id) async {
+        if (PlayerEntry.parse(id).isRecording) {
+          final item = (_ref.read(recordingLibraryProvider).valueOrNull ??
+                  const [])
+              .where((r) => r.key == id)
+              .firstOrNull;
+          if (item == null) return false;
+          return _ref.read(recordingItemDeleterProvider)(item);
+        }
         final owner = _ref.read(clipVisibilityAccountProvider);
         if (owner == null) return false;
         return _ref.read(clipVisibilityProvider(owner).notifier).hide(id);

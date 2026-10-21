@@ -3,9 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:io';
+
+import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
 import 'package:vivanaut/features/my_cage/data/live_recording_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/live_recording.dart';
+import 'package:vivanaut/features/my_cage/domain/recording_item.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_selection_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/recording_library_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_recording_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_recording_upload_queue.dart';
 import 'package:vivanaut/features/my_cage/presentation/bookmarks_screen.dart';
@@ -68,6 +74,7 @@ Future<void> _pump(
   List<FavoriteClip>? favorites,
   DateTime? dayFilter,
   List<LiveRecording>? recordings,
+  List<ServerLiveRecording>? server,
   LiveRecordingUploadQueue? queue,
   Map<String, String>? memos,
 }) async {
@@ -85,6 +92,11 @@ Future<void> _pump(
           liveRecordingsProvider.overrideWith((ref) async => recordings),
           liveRecordingBookmarksEntryProvider.overrideWith((ref) {}),
         ],
+        // 서버 녹화(다른 폰·재설치 전) — 합친 목록을 그대로 준다(합치기 규칙은
+        // recording_item_test·recording_library_test가 고정).
+        if (server != null)
+          recordingLibraryProvider.overrideWith((ref) => AsyncData(
+              mergeRecordings(local: recordings ?? const [], server: server))),
         if (queue != null)
           liveRecordingUploadQueueProvider.overrideWith((ref) => queue),
         if (memos != null) ...[
@@ -129,8 +141,26 @@ class _Queue extends LiveRecordingUploadQueue {
   Future<void> delete(LiveRecording rec) async => deleted.add(rec.id);
 }
 
+class _NoFavorites extends Fake implements FavoriteClipRepository {
+  @override
+  bool isFavorite(String clipId) => false;
+  @override
+  File? getLocalFile(String clipId) => null;
+}
+
+class _Batch extends ClipBatchController {
+  _Batch(super.ref);
+  List<String>? bookmarked;
+  @override
+  Future<ClipBatchResult> setBookmarked(List<String> ids, bool bookmarked) async {
+    this.bookmarked = ids;
+    return ClipBatchResult(succeeded: ids.length);
+  }
+}
+
 void main() {
-  testWidgets('업로드 실패 카드만 길게 눌러 삭제 — 확인창 → 대기열 delete', (tester) async {
+  testWidgets('녹화 카드도 꾹 눌러 선택 — 선택 모드 삭제는 녹화 삭제(대기열 delete)',
+      (tester) async {
     final queue = _Queue();
     await _pump(tester,
         favorites: const [],
@@ -139,27 +169,130 @@ void main() {
           _rec('fail', 23, LiveRecordingUploadState.failed),
           _rec('wait', 22, LiveRecordingUploadState.pending),
         ]);
-    Finder modal() => find.byKey(const Key('viva_modal_surface'));
-    // 다른 상태엔 길게 누르기를 걸지 않는다(기존 동작 그대로).
-    GestureDetector card(String id) => tester.widget<GestureDetector>(
-        find.byKey(ValueKey('live_recording_card_$id')));
-    expect(card('wait').onLongPress, isNull);
-    expect(card('fail').onLongPress, isNotNull);
-
     await tester
         .longPress(find.byKey(const ValueKey('live_recording_card_fail')));
     await tester.pumpAndSettle();
-    expect(modal(), findsOneWidget);
-    await tester.tap(find.byKey(const Key('viva_modal_cancel')));
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(BookmarksScreen)));
+    expect(container.read(clipSelectionProvider(ClipSelectionScope.bookmarks)).ids,
+        ['rec:fail']);
+    // 선택 중에도 녹화 카드가 보이고 탭으로 고른다.
+    await tester.tap(find.byKey(const ValueKey('live_recording_card_wait')));
     await tester.pumpAndSettle();
-    expect(queue.deleted, isEmpty);
-
+    expect(container.read(clipSelectionProvider(ClipSelectionScope.bookmarks)).ids,
+        ['rec:fail', 'rec:wait']);
     await tester
-        .longPress(find.byKey(const ValueKey('live_recording_card_fail')));
+        .tap(find.byKey(const Key('clip_select_action_clip_select_delete')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('viva_modal_confirm')));
+    // 녹화가 섞이면 폰·서버에서 지워진다는 확인 문구.
+    expect(find.text('clip_select_delete_confirm_recordings'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('clip_select_delete_ok')));
     await tester.pumpAndSettle();
-    expect(queue.deleted, ['fail']);
+    expect(queue.deleted, ['fail', 'wait']);
+    // 완료 토스트 타이머.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('올리는 중인 녹화 카드는 흐리게 — 탭·꾹 누르기 무반응, 전체 선택에서도 빠진다',
+      (tester) async {
+    await _pump(tester, favorites: const [], recordings: [
+      _rec('up', 23, LiveRecordingUploadState.uploading),
+      _rec('done', 22, LiveRecordingUploadState.ready),
+    ]);
+    final card = find.byKey(const ValueKey('live_recording_card_up'));
+    expect(
+        tester
+            .widget<Opacity>(
+                find.descendant(of: card, matching: find.byType(Opacity)))
+            .opacity,
+        lessThan(1));
+    await tester.tap(card, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(pushedClipId, isNull);
+    await tester.longPress(card, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(BookmarksScreen)));
+    expect(
+        container
+            .read(clipSelectionProvider(ClipSelectionScope.bookmarks))
+            .active,
+        isFalse);
+    // 다른 카드로 선택 모드 → 더보기 전체 선택: 올리는 중인 것은 빠진다.
+    await tester
+        .longPress(find.byKey(const ValueKey('live_recording_card_done')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('clip_select_action_clip_select_more')));
+    await tester.pumpAndSettle();
+    // 녹화만 골랐으면 북마크 항목이 없다.
+    expect(find.byKey(const Key('clip_select_menu_bookmark')), findsNothing);
+    expect(find.byKey(const Key('clip_select_menu_unbookmark')), findsNothing);
+    await tester.tap(find.byKey(const Key('clip_select_menu_all')));
+    await tester.pumpAndSettle();
+    expect(
+        container.read(clipSelectionProvider(ClipSelectionScope.bookmarks)).ids,
+        ['rec:done']);
+  });
+
+  testWidgets('일반 영상과 녹화를 섞어 고르면 북마크 하기는 일반 영상에만', (tester) async {
+    late _Batch fake;
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        allFavoriteClipsProvider.overrideWith((ref) async => _favorites),
+        motionThumbnailFileProvider.overrideWith((ref, clipId) async => null),
+        liveRecordingsProvider.overrideWith((ref) async =>
+            [_rec('r', 23, LiveRecordingUploadState.ready)]),
+        liveRecordingBookmarksEntryProvider.overrideWith((ref) {}),
+        favoriteClipRepositoryProvider.overrideWithValue(_NoFavorites()),
+        clipBatchProvider.overrideWith((ref, scope) => fake = _Batch(ref)),
+      ],
+      child: MaterialApp.router(routerConfig: _router()),
+    ));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.byKey(const ValueKey('live_recording_card_r')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2026. 08. 12 · time_am_fmt'));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.byKey(const Key('clip_select_action_clip_select_more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('clip_select_menu_bookmark')));
+    await tester.pumpAndSettle();
+    expect(fake.bookmarked, ['c1']);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('서버에만 있는 녹화도 보관함에 — 열면 플레이어에 rec:srv: 키', (tester) async {
+    await _pump(tester, favorites: const [], recordings: [
+      _rec('mine', 22, LiveRecordingUploadState.ready)
+          .copyWith(recordingId: 'srv-mine'),
+    ], server: [
+      ServerLiveRecording(
+          id: 'srv-mine',
+          cameraId: 'cam-1',
+          startedAt: DateTime(2026, 9, 3, 22),
+          durationMs: 42000,
+          hasThumbnail: false),
+      ServerLiveRecording(
+          id: 'srv-other',
+          cameraId: null,
+          startedAt: DateTime(2026, 9, 3, 23),
+          durationMs: 61000,
+          hasThumbnail: false),
+    ]);
+    // 이 폰에도 있는 녹화(srv-mine)는 한 장만(로컬), 서버 전용은 따로.
+    expect(find.byKey(const ValueKey('live_recording_card_mine')), findsOneWidget);
+    expect(find.byKey(const ValueKey('live_recording_card_rec:srv:srv-mine')),
+        findsNothing);
+    final other = find.byKey(const ValueKey('live_recording_card_rec:srv:srv-other'));
+    expect(other, findsOneWidget);
+    expect(find.text('live_recording_badge'), findsNWidgets(2));
+    await tester.tap(other);
+    await tester.pumpAndSettle();
+    expect(pushedClipId, 'rec:srv:srv-other');
+    expect(pushedPlaylist, ['rec:srv:srv-other', 'rec:mine']);
   });
 
   testWidgets('직접 녹화 카드 업로드 표시 — 중/대기/실패, 올라간 건 없음', (tester) async {
