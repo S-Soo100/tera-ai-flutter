@@ -9,6 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/sys_health_controllers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vivanaut/core/theme/app_text_scaler.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
@@ -292,6 +295,53 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('나가기'), findsOneWidget);
       });
+
+      // 실시간 녹화 세로 목록(Figma 1523:5049) — 줄 높이 40은 최소, 알약은
+      // 200까지 늘어난 뒤 말줄임.
+      for (final online in [true, false]) {
+        testWidgets('라이브 확대 — 녹화·회전·전원 목록 (온라인 $online)',
+            (tester) async {
+          await _pump(tester, system,
+              const CameraLiveFullscreenScreen(cameraId: 'c'),
+              overrides: [
+                currentUserProvider.overrideWithValue(null),
+                camerasProvider.overrideWith((ref) => Stream.value([
+                      TerraCamera(
+                          id: 'c',
+                          cameraId: 'p4cam',
+                          name: '카메라 10',
+                          firmwareVer: 'fb2-p4 0.2.0-20260928',
+                          isOnline: online,
+                          createdAt: DateTime.utc(2026))
+                    ])),
+                sysHealthProvider(cameraRebootTarget('c'))
+                    .overrideWith((ref) => const Stream.empty()),
+                webrtcLiveControllerProvider.overrideWith((ref, id) => online
+                    ? _StreamingLive(ref, id)
+                    : InertLiveController(ref, id)),
+              ]);
+          expect(find.text('실시간 녹화'), findsOneWidget);
+          expect(find.text('카메라 180° 회전'), findsOneWidget);
+          expect(find.text('녹화 시작'), findsOneWidget);
+        });
+      }
     });
+  }
+}
+
+class _StreamingRenderer extends RTCVideoRenderer {
+  @override
+  Future<void> initialize() async {}
+  @override
+  set srcObject(MediaStream? stream) {}
+  @override
+  // ignore: must_call_super
+  Future<void> dispose() async {}
+}
+
+class _StreamingLive extends WebRtcLiveController {
+  _StreamingLive(super.ref, super.cameraUuid) {
+    state = WebRtcLiveState(
+        phase: WebRtcLivePhase.streaming, renderer: _StreamingRenderer());
   }
 }

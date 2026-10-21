@@ -14,7 +14,10 @@ import 'viva_shadow.dart';
 /// [detail]은 문구 아래 보조 설명(Figma 밖, 2026-09-30 시청 기기 전환에서 추가 —
 /// 제목만으론 결과를 알 수 없을 때).
 ///
-/// 돌려주는 값: 확인 true, 취소·바깥 탭 false.
+/// [dismissOn]이 끝나면 창이 아직 떠 있을 때 스스로 닫힌다(false) — 창을 띄운
+/// 이유가 사라졌을 때(예: 녹화 중단 확인 중 녹화가 2분에 끝남, 2026-10-21).
+///
+/// 돌려주는 값: 확인 true, 취소·바깥 탭·자동 닫힘 false.
 Future<bool> showVivaModal(
   BuildContext context, {
   required String message,
@@ -23,6 +26,7 @@ Future<bool> showVivaModal(
   String? cancelLabel,
   Color? confirmColor,
   Key? confirmKey,
+  Future<void>? dismissOn,
 }) async {
   final ok = await showDialog<bool>(
     context: context,
@@ -47,7 +51,7 @@ Future<bool> showVivaModal(
                   child: Text(label)));
       // 그림자는 Figma 떠 있는 면 공통(X0 Y0 Blur20 #919497 30%) — Dialog
       // 기본 elevation(아래로 치우친 검은 그림자) 대신 면에 직접 단다.
-      return Dialog(
+      final dialog = Dialog(
           backgroundColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
           elevation: 0,
@@ -108,7 +112,40 @@ Future<bool> showVivaModal(
                                             const Key('viva_modal_confirm'))),
                               ]),
                           ])))));
+      return dismissOn == null
+          ? dialog
+          : _DismissOn(signal: dismissOn, child: dialog);
     },
   );
   return ok == true;
+}
+
+/// [signal]이 끝나면 자기 라우트를 걷는다(이미 닫혔으면 아무것도 안 함).
+class _DismissOn extends StatefulWidget {
+  const _DismissOn({required this.signal, required this.child});
+  final Future<void> signal;
+  final Widget child;
+
+  @override
+  State<_DismissOn> createState() => _DismissOnState();
+}
+
+class _DismissOnState extends State<_DismissOn> {
+  @override
+  void initState() {
+    super.initState();
+    widget.signal.then((_) {
+      if (!mounted) return;
+      final route = ModalRoute.of(context);
+      if (route == null || !route.isActive) return;
+      if (route.isCurrent) {
+        Navigator.of(context).pop(false);
+      } else {
+        Navigator.of(context).removeRoute(route);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

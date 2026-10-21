@@ -82,22 +82,23 @@ void main() {
 
   Size liveBox(WidgetTester tester) => tester.getSize(find.byType(WebRtcLiveView));
 
-  testWidgets('영상 오기 전엔 4:3 틀로 화면 좌우 끝까지', (tester) async {
+  // Figma 1523:5049 — 좌우 12 안쪽(369) r12. 높이는 영상 비율.
+  testWidgets('영상 오기 전엔 4:3 틀로 좌우 12 안쪽 너비', (tester) async {
     await pump(tester);
     final size = liveBox(tester);
-    expect(size.width, 393);
-    expect(size.height, closeTo(393 * 3 / 4, 0.5));
+    expect(size.width, 369);
+    expect(size.height, closeTo(369 * 3 / 4, 0.5));
   });
 
-  testWidgets('영상이 오면 실제 비율로 좌우 끝까지', (tester) async {
+  testWidgets('영상이 오면 실제 비율로 좌우 12 안쪽 너비', (tester) async {
     final renderer = _FakeRenderer()
       ..value = const RTCVideoValue(width: 640, height: 360);
     await pump(tester,
         live: WebRtcLiveState(
             phase: WebRtcLivePhase.streaming, renderer: renderer));
     final size = liveBox(tester);
-    expect(size.width, 393);
-    expect(size.height, closeTo(393 * 9 / 16, 0.5));
+    expect(size.width, 369);
+    expect(size.height, closeTo(369 * 9 / 16, 0.5));
   });
 
   testWidgets('재시작할 수 있으면 맨 아래 버튼 — 확인 뒤 한 번 보내고 "재시작 중…"',
@@ -159,7 +160,10 @@ void main() {
   });
 
   testWidgets('가로 모드엔 맨 아래 재시작 버튼이 없다', (tester) async {
-    await pump(tester);
+    // 가로 전환 버튼은 영상이 나올 때만 보인다(Figma 메모).
+    await pump(tester,
+        live: WebRtcLiveState(
+            phase: WebRtcLivePhase.streaming, renderer: _FakeRenderer()));
     await tester.tap(find.byKey(const Key('live_fullscreen_orientation')));
     await tester.pump();
     await tester.pump();

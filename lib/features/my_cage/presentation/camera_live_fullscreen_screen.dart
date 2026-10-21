@@ -1,42 +1,43 @@
 import 'dart:async';
-
 import 'dart:math' as math;
-import '../../../core/theme/glass_palette.dart';
-import 'widgets/crecam_detail_top_bar.dart';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/glass_palette.dart';
+import '../../../shared/widgets/figma_icon.dart';
 import '../domain/live_recording.dart';
-import 'live_recording_controller.dart';
 import '../domain/sys_health.dart';
 import '../domain/terra_camera.dart';
+import 'live_recording_controller.dart';
 import 'my_cage_providers.dart';
+import 'player_view_providers.dart';
 import 'sys_health_controllers.dart';
 import 'webrtc_live_controller.dart';
+import 'widgets/camera_rotate_tile.dart';
+import 'widgets/crecam_detail_top_bar.dart';
+import 'widgets/live_control_rows.dart';
+import 'widgets/live_record_controls.dart';
 import 'widgets/management_widgets.dart';
 import 'widgets/sys_health_widgets.dart';
-import 'player_view_providers.dart';
-import '../../../shared/widgets/figma_icon.dart';
-import 'widgets/camera_rotate_tile.dart';
-import 'widgets/live_record_controls.dart';
 import 'widgets/webrtc_live_view.dart';
 
-/// 라이브 전체화면 — 세로 기본, 화면 방향은 전용 버튼으로만 전환한다.
+/// 라이브 확대 화면 — 세로 기본, 화면 방향은 전용 버튼으로만 전환한다.
 ///
-/// 홈·카메라 탭 라이브 면의 확대 버튼이 여기로 온다. 구 목적지였던
-/// [CameraDetailScreen]은 활동량·클립 목록까지 딸린 상세 화면이라 "확대"의
-/// 기대와 어긋났다. 이 화면은 [WebRtcLiveView] 하나와 닫기 버튼만 둔다.
+/// 세로(Figma 1523:5049): 닫기 + 카메라 이름, 영상(오른쪽 아래 가로 전환),
+/// 제어 목록(실시간 녹화·카메라 180° 회전·전원), 맨 아래 [카메라 재시작].
+/// 가로(Figma 1525:5698): 닫기·녹화 알약·축소 셋만 영상 위에 둔다.
 ///
 /// WebRTC 피어는 [webrtcLiveControllerProvider] family로 아래 탭의 라이브
 /// 면과 공유된다 — 탭 화면이 이 라우트 밑에 살아 있는 동안 재연결 없이
-/// 즉시 이어 본다.
+/// 즉시 이어 본다. 세로↔가로는 같은 [WebRtcLiveView](GlobalKey)·같은 녹화
+/// provider라 녹화도 이어진다.
 ///
-/// 오리엔테이션·상태바 복원 문법은 [MotionClipPlayerScreen]과 같다:
-/// 들어올 때 가로+immersive, 나갈 때 세로+상태바 복원.
+/// 녹화 중 이탈(세로 X·가로 X·안드로이드 뒤로·iOS 스와이프)은 모두
+/// [_confirmLeaveIfRecording] 하나로 중단 확인을 거친다.
 class CameraLiveFullscreenScreen extends ConsumerStatefulWidget {
   const CameraLiveFullscreenScreen({super.key, required this.cameraId});
 
@@ -44,6 +45,8 @@ class CameraLiveFullscreenScreen extends ConsumerStatefulWidget {
 
   static const closeButtonKey = Key('live_fullscreen_close');
   static const rotateButtonKey = Key('live_fullscreen_rotate');
+  static const rotateSubtitleKey = Key('live_fullscreen_rotate_subtitle');
+  static const orientationButtonKey = Key('live_fullscreen_orientation');
   static const rebootButtonKey = Key('live_fullscreen_reboot');
   static const rebootReasonKey = Key('live_fullscreen_reboot_reason');
 
@@ -60,6 +63,12 @@ class _CameraLiveFullscreenScreenState
   /// 나갈 때 되돌릴 상태바 스타일 — 어두운 화면이 상태바를 흰 아이콘으로
   /// 바꾼 채 남기는 문제의 복원(MotionClipPlayerScreen 주석 참조).
   SystemUiOverlayStyle? _restoreOverlayStyle;
+
+  /// 성공한 회전 뒤 토글을 잠가 두는 타이머.
+  Timer? _rotateHold;
+
+  /// 이탈 확인 중복 방지(X 연타·뒤로+X).
+  bool _leaving = false;
 
   @override
   void didChangeDependencies() {
@@ -78,186 +87,247 @@ class _CameraLiveFullscreenScreenState
     super.dispose();
   }
 
-  /// 성공한 회전 뒤 버튼을 잠가 두는 타이머.
-  Timer? _rotateHold;
-
   Future<void> _toggleRotate(String cameraUuid, bool next) async {
-    ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state = true;
+    final pending = _liveRotatePendingProvider(widget.cameraId);
+    ref.read(pending.notifier).state = next;
     final ok =
         await submitRotate180(context, ref, cameraUuid: cameraUuid, next: next);
     if (!mounted) return;
     if (!ok) {
-      ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state = false;
+      ref.read(pending.notifier).state = null;
       return;
     }
     // 회전은 카메라 재부팅(약 20초) 뒤에 적용된다. 그동안 화면이 멈춰 실패로
     // 보고 다시 누르면 반대 값이 가서 되돌아가고 재부팅이 한 번 더 난다
-    // (2026-09-25 점검) — 적용될 때까지 버튼을 잠근다. 반영은 cameras
-    // Realtime → 라이브 재연결로 돌아온다.
+    // (2026-09-25 점검) — 적용될 때까지 토글을 잠근다(누른 값으로 보여 준다).
+    // 반영은 cameras Realtime → 라이브 재연결로 돌아온다.
     _rotateHold?.cancel();
     _rotateHold = Timer(kRotateRebootHold, () {
-      if (mounted) {
-        ref.read(_liveRotateBusyProvider(widget.cameraId).notifier).state =
-            false;
-      }
+      if (mounted) ref.read(pending.notifier).state = null;
     });
   }
 
+  /// 녹화 중이면 중단 확인 → [중단하기]면 저장 후 나간다. 네 이탈 경로 공용.
+  Future<void> _confirmLeaveIfRecording() async {
+    if (_leaving) return;
+    _leaving = true;
+    try {
+      final ok =
+          await stopLiveRecordingWithConfirm(context, ref, widget.cameraId);
+      if (!ok || !mounted) return;
+      // pop()은 PopScope를 거치지 않는다 — 방금 멈췄어도 canPop이 아직
+      // 이전 빌드 값(false)이라 maybePop이면 다시 막힌다.
+      Navigator.of(context).pop();
+    } finally {
+      _leaving = false;
+    }
+  }
+
+  void _toggleOrientation() =>
+      ref.read(playerOrientationProvider(_orientationKey).notifier).toggle();
+
   @override
   Widget build(BuildContext context) {
-    // 회전 버튼은 세로·가로 어느 쪽이든 **항상 표시**한다(2026-09-23 사용자
-    // 지시 — capabilities 미보고 구 펌웨어·카메라 목록 로딩 중에도 숨기지
-    // 않는다). 환경설정 타일의 capabilities 게이팅과는 의도적으로 다르다.
-    // 카메라 행을 아직 못 읽었으면 현재값을 몰라 비활성으로만 둔다.
-    // camerasProvider는 Realtime이라 rotate_180 현재값도 따라온다.
+    final cameraId = widget.cameraId;
     final camera = ref
         .watch(camerasProvider)
         .valueOrNull
-        ?.where((c) => c.id == widget.cameraId)
+        ?.where((c) => c.id == cameraId)
         .firstOrNull;
     final landscape = ref.watch(playerOrientationProvider(_orientationKey));
-    final rotateBusy = ref.watch(_liveRotateBusyProvider(widget.cameraId));
-    // 녹화는 세로로 돌려도 이어진다 — 화면 전체에서 구독해 두고(autoDispose
-    // 유지), 버튼만 가로에 둔다(2026-10-01 사용자 결정).
+    final hasVideo = ref.watch(
+        webrtcLiveControllerProvider(cameraId).select((s) => s.phase.hasVideo));
+    // 녹화·회전·전원·가로 전환은 카메라가 온라인이고 영상이 나올 때만
+    // (Figma 오프라인 상태 — 흐리고 누를 수 없음, 가로 전환 버튼 숨김).
+    final available = camera != null && camera.isOnline && hasVideo;
+    // 녹화는 세로↔가로를 바꿔도 이어진다 — 화면 전체에서 구독해 둔다
+    // (autoDispose 유지). 경과 시간은 녹화 줄·알약만 다시 그린다.
+    final recPhase = kLiveRecordingEnabled
+        ? ref.watch(
+            liveRecordingControllerProvider(cameraId).select((s) => s.phase))
+        : LiveRecordingPhase.idle;
+    final recording = recPhase == LiveRecordingPhase.recording ||
+        recPhase == LiveRecordingPhase.starting;
     if (kLiveRecordingEnabled) {
-      ref.watch(liveRecordingControllerProvider(widget.cameraId));
+      ref.listen<int>(
+          liveRecordingControllerProvider(cameraId).select((s) => s.resultSeq),
+          (_, __) {
+        final s = ref.read(liveRecordingControllerProvider(cameraId));
+        final result = s.result;
+        if (result == null) return;
+        // 세로 토스트는 맨 아래 [카메라 재시작] 버튼 자리(Figma 저장 완료).
+        showLiveRecordingResult(context, result, s.resultSeconds,
+            bottom: MediaQuery.paddingOf(context).bottom + 66);
+      });
     }
 
-    if (!landscape) {
-      final glass = context.glass;
-      return Scaffold(
-        backgroundColor: glass.wallpaper,
-        body: Column(children: [
-          CrecamDetailHeaderArea(
-              child: CrecamDetailTopBar(
-            closeButton: true,
-            leadingKey: CameraLiveFullscreenScreen.closeButtonKey,
-            title: camera?.name ?? 'camera_live'.tr(),
-            trailing: IconButton(
-              key: CameraLiveFullscreenScreen.rotateButtonKey,
-              tooltip: 'camera_rotate_title'.tr(),
-              onPressed: rotateBusy || camera == null
-                  ? null
-                  : () => _toggleRotate(camera.id, !camera.rotate180),
-              icon: Icon(Icons.flip_camera_android_outlined,
-                  color: glass.textPrimary),
-            ),
-          )),
-          Expanded(
-              child: SafeArea(
-                  top: false,
-                  child: LayoutBuilder(
-                      builder: (context, size) => Column(children: [
-                            SizedBox(
-                                height: math.min(84, size.maxHeight * 0.13)),
-                            // 좌우 끝까지(2026-10-03 사용자 지시) — 틀을 영상
-                            // 비율에 맞춰 contain이어도 옆이 비지 않는다.
-                            _LiveAspectBox(
-                                cameraUuid: widget.cameraId,
-                                child: WebRtcLiveView(
-                                    key: _liveKey,
-                                    cameraUuid: widget.cameraId,
-                                    // 재시작은 맨 아래 버튼 하나로(중복 방지).
-                                    showReboot: false)),
-                            Align(
-                                alignment: Alignment.centerRight,
-                                child: Padding(
-                                    padding: const EdgeInsets.only(right: 12),
-                                    child: IconButton(
-                                      key: const Key(
-                                          'live_fullscreen_orientation'),
-                                      tooltip: 'player_landscape'.tr(),
-                                      onPressed: () => ref
-                                          .read(playerOrientationProvider(
-                                                  _orientationKey)
-                                              .notifier)
-                                          .toggle(),
-                                      icon: FigmaIcon.tinted(FigmaIcons.expand,
-                                          color: glass.textPrimary, size: 36),
-                                    ))),
-                            const Spacer(),
-                            _LiveRebootFooter(camera: camera),
-                          ])))),
-        ]),
-      );
-    }
+    final body = landscape
+        ? _buildLandscape(context, available: available)
+        : _buildPortrait(context,
+            camera: camera,
+            available: available,
+            recording: recPhase != LiveRecordingPhase.idle);
+    return _RecordingLeaveGuard(
+        recording: recording, onLeave: _confirmLeaveIfRecording, child: body);
+  }
 
+  Widget _buildPortrait(BuildContext context,
+      {required TerraCamera? camera,
+      required bool available,
+      required bool recording}) {
+    final glass = context.glass;
+    final cameraId = widget.cameraId;
+    final pending = ref.watch(_liveRotatePendingProvider(cameraId));
+    final rotateValue = pending ?? camera?.rotate180 ?? false;
+    // 녹화 중엔 회전 금지 — 카메라가 재부팅하며 녹화가 끊긴다.
+    final canRotate = available && !recording && pending == null;
+    return Scaffold(
+      backgroundColor: glass.wallpaper,
+      body: Column(children: [
+        CrecamDetailHeaderArea(
+            child: CrecamDetailTopBar(
+          closeButton: true,
+          leadingKey: CameraLiveFullscreenScreen.closeButtonKey,
+          title: camera?.name ?? 'camera_live'.tr(),
+          onBack: _confirmLeaveIfRecording,
+        )),
+        Expanded(
+            child: SafeArea(
+                top: false,
+                child: Column(children: [
+                  Expanded(
+                      child: SingleChildScrollView(
+                          child: Column(children: [
+                    Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                        child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: _LiveAspectBox(
+                                cameraUuid: cameraId,
+                                child: Stack(fit: StackFit.expand, children: [
+                                  WebRtcLiveView(
+                                      key: _liveKey,
+                                      cameraUuid: cameraId,
+                                      // 재시작은 맨 아래 버튼 하나로(중복 방지).
+                                      showReboot: false),
+                                  // 가로 전환 — 영상 오른쪽 아래(안쪽 12) 32 원.
+                                  // 영상이 없거나 오프라인이면 숨김(Figma 메모).
+                                  if (available)
+                                    Positioned(
+                                        right: 12,
+                                        bottom: 12,
+                                        child: _CircleIconButton(
+                                            key: CameraLiveFullscreenScreen
+                                                .orientationButtonKey,
+                                            size: 32,
+                                            color: AppTheme.liveScrim,
+                                            icon: FigmaIcon.tinted(
+                                                'redesign_v2/zoom_out_map',
+                                                size: 20,
+                                                color: AppTheme.liveOnDark),
+                                            tooltip: 'player_landscape'.tr(),
+                                            onTap: _toggleOrientation)),
+                                ])))),
+                    const SizedBox(height: 20),
+                    Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(children: [
+                          if (kLiveRecordingEnabled) ...[
+                            LiveRecordRow(
+                                cameraId: cameraId, available: available),
+                            const SizedBox(height: 24),
+                          ],
+                          LiveControlRow(
+                            dimmed: !available,
+                            icon: (c) =>
+                                LiveRasterIcon('cameraswitch', color: c),
+                            title: 'live_rotate_title'.tr(),
+                            subtitleKey:
+                                CameraLiveFullscreenScreen.rotateSubtitleKey,
+                            subtitle: (rotateValue
+                                    ? 'live_rotate_on'
+                                    : 'live_rotate_off')
+                                .tr(),
+                            trailing: LiveRotateSwitch(
+                                key: CameraLiveFullscreenScreen.rotateButtonKey,
+                                value: rotateValue,
+                                onChanged: canRotate && camera != null
+                                    ? (v) => _toggleRotate(camera.id, v)
+                                    : null),
+                          ),
+                          const SizedBox(height: 24),
+                          LiveControlRow(
+                            dimmed: !available,
+                            icon: livePowerGlyph,
+                            title: 'management_power'.tr(),
+                            subtitle: 'management_power_on_label'.tr(),
+                            trailing: LivePowerSegment(dimmed: !available),
+                          ),
+                        ])),
+                    const SizedBox(height: 24),
+                  ]))),
+                  _LiveRebootFooter(camera: camera, recording: recording),
+                ]))),
+      ]),
+    );
+  }
+
+  Widget _buildLandscape(BuildContext context, {required bool available}) {
+    final glass = context.glass;
+    final pad = MediaQuery.paddingOf(context);
+    // Figma 852×393: 좌우 48·위아래 24. 노치·홈 표시줄이 더 크면 그만큼.
+    final left = math.max(48.0, pad.left);
+    final right = math.max(48.0, pad.right);
+    final top = math.max(24.0, pad.top);
+    final bottom = math.max(24.0, pad.bottom);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: Colors.black,
-        // expand 필수 — 비-positioned 자식(닫기 버튼)만 있으면 Stack이 그
-        // 크기로 수축해 Positioned.fill 영상이 좌상단에 조그맣게 갇힌다
-        // (2026-09-07 실제 발생 버그).
+        // expand 필수 — 비-positioned 자식만 있으면 Stack이 그 크기로 수축해
+        // 영상이 좌상단에 조그맣게 갇힌다(2026-09-07 실제 발생 버그).
         body: Stack(
           fit: StackFit.expand,
           children: [
             // contain(기본) — 확대해서 보는 화면이라 프레임 전체를 보여준다.
-            // cover면 가로 화면에서 상하가 크롭된다.
-            // 가로 전체화면에선 [Wi-Fi 바꾸기]를 두지 않는다 — 가로·immersive가
-            // 그대로 이어져 기기 목록·비밀번호 입력이 가로로 열린다(2026-09-28).
+            // 가로에선 [Wi-Fi 바꾸기]를 두지 않는다 — 가로·immersive가 그대로
+            // 이어져 기기 목록·비밀번호 입력이 가로로 열린다(2026-09-28).
             WebRtcLiveView(
                 key: _liveKey,
                 cameraUuid: widget.cameraId,
                 showWifiChange: false),
-            // 좌상단 닫기 — 노치/펀치홀을 피해 SafeArea 안쪽. expand된
-            // Stack에서 버튼이 늘어나지 않게 Align으로 좌상단 고정.
-            SafeArea(
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: _ScrimCircleButton(
+            // 회전 버튼은 가로에서 뺐다(Figma 메모 — 세로 목록 토글로).
+            Positioned(
+                left: left,
+                top: top,
+                child: _CircleIconButton(
                     key: CameraLiveFullscreenScreen.closeButtonKey,
-                    icon: Icons.close,
-                    asset: FigmaIcons.close,
+                    size: 44,
+                    color: glass.overlay,
+                    icon: FigmaIcon.tinted(FigmaIcons.close,
+                        size: 24, color: glass.textSecondary),
                     tooltip:
                         MaterialLocalizations.of(context).closeButtonTooltip,
-                    onTap: () => context.pop(),
-                  ),
-                ),
-              ),
-            ),
-            SafeArea(
-                child: Align(
-              alignment: Alignment.bottomRight,
-              child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: _ScrimCircleButton(
-                    key: const Key('live_fullscreen_orientation'),
-                    icon: Icons.fullscreen,
-                    asset: FigmaIcons.expand,
-                    tooltip:
-                        (landscape ? 'player_portrait' : 'player_landscape')
-                            .tr(),
-                    onTap: () => ref
-                        .read(
-                            playerOrientationProvider(_orientationKey).notifier)
-                        .toggle(),
-                  )),
-            )),
+                    onTap: _confirmLeaveIfRecording)),
             if (kLiveRecordingEnabled)
-              LiveRecordControls(cameraId: widget.cameraId),
-            // 우상단 화면 뒤집기(180°) — 닫기의 반대편(2026-09-09 사용자
-            // 지시: 거꾸로 보이는 걸 알아채는 곳이 바로 이 화면이다).
-            // 항상 표시(2026-09-23 사용자 지시 — 위 build 주석 참조).
-            // 탭 → PATCH + 재부팅 예고 스낵바, 라이브는 끊겼다 자동 재연결.
-            SafeArea(
-              child: Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: _ScrimCircleButton(
-                    key: CameraLiveFullscreenScreen.rotateButtonKey,
-                    icon: Icons.flip_camera_android_outlined,
-                    tooltip: 'camera_rotate_title'.tr(),
-                    onTap: rotateBusy || camera == null
-                        ? null
-                        : () => _toggleRotate(camera.id, !camera.rotate180),
-                  ),
-                ),
-              ),
-            ),
+              Positioned(
+                  right: right,
+                  top: top,
+                  child: LiveRecordPill(
+                      cameraId: widget.cameraId,
+                      available: available,
+                      landscape: true)),
+            Positioned(
+                right: right,
+                bottom: bottom,
+                child: _CircleIconButton(
+                    key: CameraLiveFullscreenScreen.orientationButtonKey,
+                    size: 40,
+                    color: AppTheme.liveScrim,
+                    icon: FigmaIcon.tinted(FigmaIcons.zoomInMap,
+                        size: 24, color: AppTheme.liveOnDark),
+                    tooltip: 'player_portrait'.tr(),
+                    onTap: _toggleOrientation)),
           ],
         ),
       ),
@@ -265,18 +335,56 @@ class _CameraLiveFullscreenScreenState
   }
 }
 
-/// 검은 영상 위 원형 반투명 버튼 — 닫기·화면 뒤집기 공용(36pt, liveScrim).
-class _ScrimCircleButton extends StatelessWidget {
-  const _ScrimCircleButton({
+/// 녹화 중 이탈 가로채기 — 안드로이드 뒤로·iOS 스와이프를 막고 [onLeave]로
+/// 중단 확인을 띄운다(영상 선택 `ClipSelectionBackGuard`와 같은 문법:
+/// PopScope + Router 아래면 BackButtonListener).
+class _RecordingLeaveGuard extends StatelessWidget {
+  const _RecordingLeaveGuard({
+    required this.recording,
+    required this.onLeave,
+    required this.child,
+  });
+
+  final bool recording;
+  final Future<void> Function() onLeave;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = TickerMode.of(context);
+    final popScope = PopScope(
+      canPop: !recording,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) onLeave();
+      },
+      child: child,
+    );
+    if (Router.maybeOf(context) == null) return popScope;
+    return BackButtonListener(
+      onBackButtonPressed: () async {
+        if (!recording || !visible) return false;
+        await onLeave();
+        return true;
+      },
+      child: popScope,
+    );
+  }
+}
+
+/// 원형 아이콘 버튼 — 세로 가로 전환(32)·가로 닫기(44)·축소(40).
+class _CircleIconButton extends StatelessWidget {
+  const _CircleIconButton({
     super.key,
+    required this.size,
+    required this.color,
     required this.icon,
-    this.asset,
     required this.tooltip,
     required this.onTap,
   });
 
-  final IconData icon;
-  final String? asset;
+  final double size;
+  final Color color;
+  final Widget icon;
   final String tooltip;
   final VoidCallback? onTap;
 
@@ -285,33 +393,25 @@ class _ScrimCircleButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: AppTheme.liveScrim,
+        color: color,
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: SizedBox(
-            width: 44,
-            height: 44,
-            child: asset != null
-                ? FigmaIcon.tinted(asset!, color: Colors.white, size: 24)
-                : Icon(icon,
-                    size: 20,
-                    color: onTap == null
-                        ? AppTheme.liveOnDark.withValues(alpha: 0.4)
-                        : AppTheme.liveOnDark),
-          ),
+          child:
+              SizedBox(width: size, height: size, child: Center(child: icon)),
         ),
       ),
     );
   }
 }
 
-final _liveRotateBusyProvider =
-    StateProvider.autoDispose.family<bool, String>((ref, id) => false);
+/// 회전 PATCH를 보낸 뒤 적용될 때까지의 목표값(null = 대기 없음).
+final _liveRotatePendingProvider =
+    StateProvider.autoDispose.family<bool?, String>((ref, id) => null);
 
-/// 영상 실제 비율의 틀(세로 확대 화면) — 화면 너비를 다 쓰고 높이는 영상에
-/// 맞춘다. 영상이 오기 전·크기를 모르면 카메라 기본 4:3(펌웨어 스트림).
+/// 영상 실제 비율의 틀(세로 확대 화면) — 좌우 12 안쪽 너비를 다 쓰고 높이는
+/// 영상에 맞춘다. 영상이 오기 전·크기를 모르면 카메라 기본 4:3(펌웨어 스트림).
 class _LiveAspectBox extends ConsumerWidget {
   const _LiveAspectBox({required this.cameraUuid, required this.child});
   final String cameraUuid;
@@ -341,10 +441,12 @@ class _LiveAspectBox extends ConsumerWidget {
 /// 세로 확대 화면 맨 아래 [카메라 재시작](2026-10-03 사용자 지시, Figma 밖 —
 /// 버튼은 Figma 971:1837 '다시 스캔' 컴포넌트 그대로). 재시작할 수 없으면
 /// 숨기지 않고 비활성 + 이유를 위에 둔다(사용자 결정). 위치는 Figma 공통 하단
-/// CTA와 같게 좌우 12·SafeArea 위 66.
+/// CTA와 같게 좌우 12·SafeArea 위 66. 녹화 중엔 막는다(재부팅으로 녹화가
+/// 끊긴다).
 class _LiveRebootFooter extends ConsumerWidget {
-  const _LiveRebootFooter({required this.camera});
+  const _LiveRebootFooter({required this.camera, required this.recording});
   final TerraCamera? camera;
+  final bool recording;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -355,13 +457,15 @@ class _LiveRebootFooter extends ConsumerWidget {
     final inProgress = reboot.sending || reboot.rebooting;
     final String? reason = inProgress || cam == null
         ? null
-        : !cam.isOnline
-            ? 'live_reboot_offline'
-            : !isRebootCapableFirmware(cam.firmwareVer)
-                ? 'live_reboot_old_firmware'
-                : reboot.coolingDown(DateTime.now())
-                    ? 'live_reboot_wait'
-                    : null;
+        : recording
+            ? 'live_reboot_recording'
+            : !cam.isOnline
+                ? 'live_reboot_offline'
+                : !isRebootCapableFirmware(cam.firmwareVer)
+                    ? 'live_reboot_old_firmware'
+                    : reboot.coolingDown(DateTime.now())
+                        ? 'live_reboot_wait'
+                        : null;
     final enabled = cam != null && !inProgress && reason == null;
     return Padding(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 66),
