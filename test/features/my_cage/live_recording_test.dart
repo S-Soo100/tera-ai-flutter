@@ -46,17 +46,17 @@ void main() {
       expect(canStartLiveRecording(streaming: true, liveUntil: null, now: now),
           isTrue);
     });
-    test('시청 제한까지 60초 미만이면 막는다', () {
+    test('시청 제한까지 3초 이하면 막고, 2분이 안 남아도 시작은 한다', () {
       expect(
           canStartLiveRecording(
               streaming: true,
-              liveUntil: now.add(const Duration(seconds: 59)),
+              liveUntil: now.add(const Duration(seconds: 3)),
               now: now),
           isFalse);
       expect(
           canStartLiveRecording(
               streaming: true,
-              liveUntil: now.add(const Duration(seconds: 60)),
+              liveUntil: now.add(const Duration(seconds: 4)),
               now: now),
           isTrue);
     });

@@ -9,15 +9,17 @@ library;
 /// 기능 스위치 — 실험 기능이라 별로면 이것 하나로 버튼·보관함 노출을 끈다.
 const bool kLiveRecordingEnabled = true;
 
-/// 한 번 녹화 길이(사용자 결정 — 누른 순간부터 60초).
-const Duration kLiveRecordingLength = Duration(seconds: 60);
+/// 한 번 녹화 최대 길이 — Figma "실시간 녹화"(1525:11231) "Max 2분 녹화 /
+/// 2분 초과 시 자동 녹화 종료"(2026-10-21, 구 60초 고정 대체).
+const Duration kLiveRecordingLength = Duration(minutes: 2);
 
 /// 이보다 짧게 끊긴 녹화는 저장하지 않는다.
 const Duration kLiveRecordingMinLength = Duration(seconds: 3);
 
 /// 녹화를 시작할 수 있는지 — 영상이 실제로 나오는 중이어야 하고, 서버 시청
-/// 제한(15분) 종료까지 녹화 길이만큼 남아 있어야 한다(중간에 잘리는 걸 미리
-/// 막는다). [liveUntil]이 없으면(구 서버) 제한 없음으로 본다.
+/// 제한(15분) 종료까지 최소 길이만큼은 남아 있어야 한다. 2분이 다 안 남아도
+/// 시작하고 제한 시각에 거기까지 저장한다(2026-10-21 — 2분을 요구하면 시청
+/// 13분 뒤엔 늘 막힌다). [liveUntil]이 없으면(구 서버) 제한 없음으로 본다.
 bool canStartLiveRecording({
   required bool streaming,
   required DateTime? liveUntil,
@@ -25,7 +27,7 @@ bool canStartLiveRecording({
 }) {
   if (!streaming) return false;
   if (liveUntil == null) return true;
-  return liveUntil.difference(now) >= kLiveRecordingLength;
+  return liveUntil.difference(now) > kLiveRecordingMinLength;
 }
 
 /// 녹화가 끝난 이유.

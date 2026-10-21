@@ -154,9 +154,10 @@ class VideoFileRenderer implements VideoSink, SamplesReadyCallback {
 
     private List<EncoderConfig> getSupportedConfigurations(int frameWidth, int frameHeight) {
         
-        // vivanaut patch: 6Mbps 고정은 6fps 라이브 녹화에 과해 1분 33MB가 나왔다 → 2.5Mbps(1분 약 19MB).
+        // vivanaut patch: 6Mbps 고정은 6fps 라이브 녹화에 과해 1분 33MB가 나왔다 → 1.5Mbps(2분 약 23MB, 서버 한도 30MB).
+        // 높은 값부터 시도하므로 1.5보다 큰 후보를 두면 그 값이 잡힌다.
         // 상세: 앱 루트 packages/README.md
-        int[] bitrates = {2500000, 2000000, 1000000};
+        int[] bitrates = {1500000, 1000000};
         int[] profiles = {
                 MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline,
                 MediaCodecInfo.CodecProfileLevel.AVCProfileMain,

@@ -32,7 +32,7 @@
 - (void)initialize:(CGSize)size {
     _renderSize = size;
     NSDictionary *videoSettings = @{
-        AVVideoCompressionPropertiesKey: @{AVVideoAverageBitRateKey: @(2500000) /* vivanaut patch: 6Mbps→2.5Mbps, packages/README.md */},
+        AVVideoCompressionPropertiesKey: @{AVVideoAverageBitRateKey: @(1500000) /* vivanaut patch: 6Mbps→1.5Mbps, packages/README.md */},
         AVVideoCodecKey: AVVideoCodecTypeH264,
         AVVideoHeightKey: @(size.height),
         AVVideoWidthKey: @(size.width),
