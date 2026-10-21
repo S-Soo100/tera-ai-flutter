@@ -32,7 +32,13 @@
 - (void)initialize:(CGSize)size {
     _renderSize = size;
     NSDictionary *videoSettings = @{
-        AVVideoCompressionPropertiesKey: @{AVVideoAverageBitRateKey: @(1500000) /* vivanaut patch: 6Mbps→1.5Mbps, packages/README.md */},
+        // vivanaut patch: 6Mbps→1.5Mbps + 키프레임 최대 5초(Android IFRAME_INTERVAL과 같게).
+        // AVVideoExpectedSourceFrameRateKey·AllowFrameReordering을 넣으면 시뮬레이터에서
+        // 기록이 -11800/-12419로 실패해 뺐다(2026-10-21). packages/README.md
+        AVVideoCompressionPropertiesKey: @{
+            AVVideoAverageBitRateKey: @(1500000),
+            AVVideoMaxKeyFrameIntervalDurationKey: @(5),
+        },
         AVVideoCodecKey: AVVideoCodecTypeH264,
         AVVideoHeightKey: @(size.height),
         AVVideoWidthKey: @(size.width),

@@ -20,3 +20,7 @@ pub.dev 1.4.1 원본을 그대로 복사하고(`example/` 제외) **녹화 비�
 SM-G996N(Android, `c2.exynos.h264.encoder`)에서 1.5Mbps를 요청해도 Android VQApply("minquality")가 VBR 모드에서 1280×960 하한 3.32Mbps + 0.66Mbps를 강제해 **3.98Mbps**로 녹화된다(2분 = 54MB). 이 인코더는 CBR 지원을 보고하지 않고, 하한을 끄는 `android._encoding-quality-level` 키는 앱이 설정해도 무시된다. 즉 2026-10-20의 2.5Mbps 패치도 삼성에서는 효과가 없었다(그 전 33MB/분도 같은 3.98Mbps 상한 근처). CBR을 지원하는 인코더에서는 이 패치가 1.5Mbps로 동작한다.
 
 **해결(같은 날):** 하드웨어 인코더가 CBR을 지원하지 않으면 Android 기본 소프트웨어 인코더 `c2.android.avc.encoder`로 바꾼다(`VideoFileRenderer.tryConfigureEncoder`, `supportsCbr`). G996 실측: CBR 1.5Mbps 설정 → 실제 0.97Mbps(영상 6.3fps), 40.9초 4.9MB → **2분 약 15MB**. 같은 장면 비교에서 화질 차이는 작다(약간 부드러움). VQApply는 CBR에 적용되지 않는다.
+
+### 2026-10-21 iOS
+
+`FlutterRTCMediaRecorder.m`(두 벌)에 `AVVideoMaxKeyFrameIntervalDurationKey: 5`를 더했다. `AVVideoExpectedSourceFrameRateKey`·`AVVideoAllowFrameReorderingKey`는 iPhone 13 mini 시뮬레이터에서 녹화 도중 `-11800`(내부 `-12419`)로 매번 실패해 넣지 않는다. 시뮬레이터의 소프트웨어 인코더는 평균 비트레이트를 따르지 않아 1.5Mbps를 줘도 **2.7~2.9Mbps**가 나온다(67초 24MB). 실제 iPhone(하드웨어 VideoToolbox)에서 다시 재야 한다 — 실기기도 높으면 VTCompressionSession으로 직접 인코딩해 DataRateLimits를 거는 방법을 검토한다. 앱은 업로드 전 30MB 초과를 막는다.
