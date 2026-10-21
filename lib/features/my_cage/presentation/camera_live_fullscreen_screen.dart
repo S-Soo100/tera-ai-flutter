@@ -328,7 +328,7 @@ class _CameraLiveFullscreenScreenState
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: AppTheme.landscapeBackdrop,
         // 어디를 누르든 조작 버튼을 다시 보이고 5초를 새로 잰다.
         body: Listener(
           behavior: HitTestBehavior.translucent,

@@ -9,6 +9,7 @@ import '../../../shared/widgets/skeleton_loading.dart';
 import '../../../shared/widgets/video_seek_bar.dart';
 import 'community_providers.dart';
 import '../../../shared/widgets/keep_screen_on.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// 커뮤니티 게시물 재생 — 전체화면 가로 전용(클립 재생 결정 §6-B와 동일).
 /// 저장·공유·즐겨찾기 없음(타인 소유 영상). 닫기만.
@@ -96,7 +97,11 @@ class _CommunityPlayerScreenState extends ConsumerState<CommunityPlayerScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        // 가로는 Figma 가로 바탕(#626262), 세로는 기존 검정.
+        backgroundColor:
+            MediaQuery.orientationOf(context) == Orientation.landscape
+                ? AppTheme.landscapeBackdrop
+                : Colors.black,
         body: Stack(children: [
           Center(
             child: _error != null

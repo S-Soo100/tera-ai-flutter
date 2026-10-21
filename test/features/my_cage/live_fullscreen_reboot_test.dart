@@ -1,6 +1,7 @@
 // 라이브 세로 확대 화면 — 영상 좌우 꽉 채움·맨 아래 [카메라 재시작]
 // (2026-10-03 사용자 지시). `.tr()`은 키를 그대로 돌려준다.
 import 'package:flutter/material.dart';
+import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -191,5 +192,12 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.byKey(CameraLiveFullscreenScreen.rebootButtonKey), findsNothing);
+    // 영상 좌우 바탕은 Figma 가로 프레임 #626262(2026-10-21) — 검정 아님.
+    final bg = tester
+        .widgetList<Scaffold>(find.byType(Scaffold))
+        .map((s) => s.backgroundColor)
+        .toList();
+    expect(bg, contains(AppTheme.landscapeBackdrop));
+    expect(AppTheme.landscapeBackdrop, const Color(0xFF626262));
   });
 }

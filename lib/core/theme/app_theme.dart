@@ -92,6 +92,12 @@ class AppTheme {
   /// 야간 관측소라는 이 앱의 정체성과도 어긋난다. 메인컬러 계열의 남색 블랙.
   static const liveSurface = Color(0xFF0E1424);
 
+  /// **가로 영상 바탕** — 가로 화면에서 영상 좌우(비율이 남는 곳)에 깔리는 색.
+  /// Figma '실시간 녹화' 가로 프레임(1525:10665 등) 바탕 #626262(=VIVA
+  /// Labels/Tertiary). 검정으로 두지 말 것(2026-10-21 사용자 지시 — 모든
+  /// 가로 화면). 클립 재생목록 플레이어 가로는 Figma가 흰 바탕이라 제외.
+  static const landscapeBackdrop = VivaColors.labelTertiary;
+
   // ══════════════════════════════════════════════════════════════════════════
   // 솔리드 디자인 시스템 (B안 전광판, 2026-08-14 저녁 — A안 2차 값 교체)
   // 색 토큰은 전부 [GlassPalette](다크/라이트 2벌, ThemeExtension)에 있다 —

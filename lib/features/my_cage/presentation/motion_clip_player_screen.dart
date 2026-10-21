@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/theme/app_styles.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../community/presentation/widgets/community_share_prompt.dart';
 import '../domain/clip_playback.dart';
@@ -347,7 +348,11 @@ class _MotionClipPlayerScreenState
             ),
           ),
         ),
-        backgroundColor: Colors.black,
+        // 가로는 Figma 가로 바탕(#626262), 세로는 기존 검정.
+        backgroundColor:
+            MediaQuery.orientationOf(context) == Orientation.landscape
+                ? AppTheme.landscapeBackdrop
+                : Colors.black,
         body: Stack(
           children: [
             // 남는 공간에 비율을 유지한 채 가장 크게 — 가로에서는 좌우가,
