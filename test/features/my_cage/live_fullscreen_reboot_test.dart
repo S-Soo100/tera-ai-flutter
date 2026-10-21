@@ -12,6 +12,7 @@ import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_sc
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/sys_health_controllers.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/management_widgets.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
 
 const _id = 'cam-uuid-1';
@@ -126,7 +127,6 @@ void main() {
   });
 
   for (final (label, camera, reason) in [
-    ('오프라인', _camera(online: false), 'live_reboot_offline'),
     ('구 펌웨어', _camera(fw: 'fb2-p4 0.1.0'), 'live_reboot_old_firmware'),
     ('버전 모름', _camera(fw: null), 'live_reboot_old_firmware'),
   ]) {
@@ -147,6 +147,29 @@ void main() {
       expect(text.style?.color, VivaColors.labelTertiary);
     });
   }
+
+  testWidgets('오프라인이면 Figma처럼 빨간 버튼 — 누르면 명령 없이 전원 안내',
+      (tester) async {
+    await pump(tester, camera: _camera(online: false));
+    final button = find.byKey(CameraLiveFullscreenScreen.rebootButtonKey);
+    expect(find.byKey(CameraLiveFullscreenScreen.rebootReasonKey), findsNothing);
+    expect(
+        tester
+            .widget<FilledButton>(
+                find.descendant(of: button, matching: find.byType(FilledButton)))
+            .onPressed,
+        isNotNull);
+    expect(
+        tester.widget<ManagementButton>(button).red, isTrue,
+        reason: 'Figma: 꺼졌을 때 빨강');
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.text('live_reboot_offline_title'), findsOneWidget);
+    expect(find.byKey(const Key('viva_modal_detail')), findsOneWidget);
+    expect(find.byKey(const Key('reboot_ok')), findsNothing,
+        reason: '재시작 확인창이 아니다');
+    expect(repo.reboots, 0, reason: '꺼진 카메라엔 명령을 보내지 않는다');
+  });
 
   testWidgets('라이브가 실패해도 재시작 버튼은 맨 아래 하나 — 안내는 재시작 권유',
       (tester) async {
