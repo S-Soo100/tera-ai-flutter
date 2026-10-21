@@ -99,6 +99,11 @@ class AppTheme {
   /// 결정으로 같은 회색을 쓴다.
   static const landscapeBackdrop = VivaColors.labelTertiary;
 
+  /// 회색 가로 바탕([landscapeBackdrop]) 위 조작부 글자·아이콘 — #3C3C3C는
+  /// #626262 위에서 대비 약 2:1이라 밝은 색을 쓴다(약 5.9:1, 2026-10-21).
+  static const landscapeForeground = VivaColors.fillBack;
+  static const landscapeForegroundSecondary = VivaColors.fillLine;
+
   // ══════════════════════════════════════════════════════════════════════════
   // 솔리드 디자인 시스템 (B안 전광판, 2026-08-14 저녁 — A안 2차 값 교체)
   // 색 토큰은 전부 [GlassPalette](다크/라이트 2벌, ThemeExtension)에 있다 —

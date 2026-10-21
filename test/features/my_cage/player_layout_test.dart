@@ -188,6 +188,21 @@ void main() {
             .widgetList<Scaffold>(find.byType(Scaffold))
             .map((s) => s.backgroundColor),
         contains(AppTheme.landscapeBackdrop));
+    // 회색 위 조작부 아이콘은 밝게(대비), 바닥 흐림도 같은 회색.
+    final play = tester.widget<FigmaIcon>(find.descendant(
+        of: find.byKey(const Key('player_play_pause')),
+        matching: find.byType(FigmaIcon)));
+    expect(play.color, AppTheme.landscapeForeground);
+    final fades = tester
+        .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+        .map((d) => d.decoration)
+        .whereType<BoxDecoration>()
+        .map((d) => d.gradient)
+        .whereType<LinearGradient>()
+        .expand((g) => g.colors)
+        .map((c) => c.withValues(alpha: 1))
+        .toSet();
+    expect(fades, {AppTheme.landscapeBackdrop});
 
     // 탭 → 컨트롤 숨김(941:2062): 영상만 남고 동일 컨트롤러 유지.
     await tester.tapAt(const Offset(426, 150));
