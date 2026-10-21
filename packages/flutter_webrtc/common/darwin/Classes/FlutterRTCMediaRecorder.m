@@ -115,6 +115,9 @@
         [self initialize:CGSizeMake((CGFloat) frame.width, (CGFloat) frame.height)];
     }
     // 멈춘 뒤(markAsFinished)·실패 뒤 들어온 프레임은 버린다(vivanaut patch).
+    // ⚠️ 미해결(2026-10-21): 직렬화 뒤에도 시뮬레이터에서 녹화 도중 -11800/-12419가
+    // 간헐적으로 한 번 나면 writer가 실패 상태가 되어 그 녹화 전체를 잃는다.
+    // iOS 배포 전 실기기 확인 필요 — 계획서 2026-10-21-live-recording-figma.md §12.
     if (self.assetWriter.status != AVAssetWriterStatusWriting) {
         return;
     }
