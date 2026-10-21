@@ -182,6 +182,12 @@ void main() {
     expect(strip, const Rect.fromLTWH(48, 325, 510, 48));
     // 세로 화살표는 가로에 없다.
     expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsNothing);
+    // 영상 좌우 바탕은 라이브 가로와 같은 회색 #626262(2026-10-21 사용자 결정).
+    expect(
+        tester
+            .widgetList<Scaffold>(find.byType(Scaffold))
+            .map((s) => s.backgroundColor),
+        contains(AppTheme.landscapeBackdrop));
 
     // 탭 → 컨트롤 숨김(941:2062): 영상만 남고 동일 컨트롤러 유지.
     await tester.tapAt(const Offset(426, 150));
