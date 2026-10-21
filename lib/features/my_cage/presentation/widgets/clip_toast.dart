@@ -9,7 +9,8 @@ import '../../../../shared/widgets/viva_shadow.dart';
 
 /// Figma 1081:6803 / 6895 / 1106:3584 토스트 — 흰 60 r8(폭은 내용: 24 +
 /// 28 원형 체크(#3C3C3C) + 8 + 18/500 #1E1E1E + 24 → 북마크 256, 다운로드
-/// 215). 세로는 하단 212(y580), 가로는 하단 84(y249)에 가운데.
+/// 215). 세로는 하단 212(y580), 가로는 하단 84(y249)에 가운데. `centered`면
+/// 화면 한가운데(라이브 가로 녹화 결과, Figma 1525:11177).
 ///
 /// Overlay에 직접 얹어 플레이어의 Scaffold/스낵바 위치와 무관하게 원본
 /// 좌표를 지킨다. 같은 화면에서 연달아 부르면 이전 토스트를 먼저 걷는다.
@@ -24,11 +25,16 @@ void showClipToast(BuildContext context,
     {required String text,
     String icon = 'redesign_v2/check',
     Duration duration = const Duration(seconds: 2),
-    double? bottom}) {
+    double? bottom,
+    bool centered = false}) {
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return;
   showClipToastOn(overlay,
-      text: text, icon: icon, duration: duration, bottom: bottom);
+      text: text,
+      icon: icon,
+      duration: duration,
+      bottom: bottom,
+      centered: centered);
 }
 
 /// [OverlayState]를 직접 받는 버전 — 루트 Navigator 자신의 context처럼 위로
@@ -38,12 +44,14 @@ void showClipToastOn(OverlayState overlay,
     {required String text,
     String icon = 'redesign_v2/check',
     Duration duration = const Duration(seconds: 2),
-    double? bottom}) {
+    double? bottom,
+    bool centered = false}) {
   if (!overlay.mounted) return;
   _timer?.cancel();
   _current?.remove();
   final entry = OverlayEntry(
-      builder: (context) => _ClipToast(text: text, icon: icon, bottom: bottom));
+      builder: (context) => _ClipToast(
+          text: text, icon: icon, bottom: bottom, centered: centered));
   _current = entry;
   overlay.insert(entry);
   _timer = Timer(duration, () {
@@ -68,9 +76,17 @@ void dismissClipToast() {
 }
 
 class _ClipToast extends StatelessWidget {
-  const _ClipToast({required this.text, required this.icon, this.bottom});
+  const _ClipToast(
+      {required this.text,
+      required this.icon,
+      this.bottom,
+      this.centered = false});
   final String text;
   final String icon;
+
+  /// true면 화면 세로·가로 가운데 — 라이브 가로 화면의 녹화 결과(Figma
+  /// 1525:11177, 393 높이에서 top 166.5 = (393−60)/2). [bottom]보다 우선.
+  final bool centered;
 
   /// 세로 화면 하단 거리. null이면 플레이어 기준 212.
   final double? bottom;
@@ -85,7 +101,8 @@ class _ClipToast extends StatelessWidget {
     return Positioned(
       left: 0,
       right: 0,
-      bottom: landscape ? 84 : bottom ?? 212,
+      top: centered ? (size.height - 60) / 2 : null,
+      bottom: centered ? null : (landscape ? 84 : bottom ?? 212),
       child: IgnorePointer(
         child: Center(
           child: DecoratedBox(

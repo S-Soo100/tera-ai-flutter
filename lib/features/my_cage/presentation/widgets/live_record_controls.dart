@@ -86,10 +86,11 @@ Future<bool> stopLiveRecordingWithConfirm(
 
 /// 끝난 녹화 결과 토스트 — 저장(2분·중단·시청 제한 시각)은 "녹화 영상 저장 완료",
 /// 끊김은 "연결이 끊겨 N초까지 저장했어요", 3초 미만·실패는 `!` 아이콘.
-/// [bottom]은 세로 화면 하단 거리(가로는 토스트가 정한다).
+/// [bottom]은 세로 화면 하단 거리, [centered]는 가로 라이브 화면의 화면 한가운데
+/// (Figma 1525:11177).
 void showLiveRecordingResult(
     BuildContext context, LiveRecordingResult result, int seconds,
-    {double? bottom}) {
+    {double? bottom, bool centered = false}) {
   final (text, ok) = switch (result) {
     LiveRecordingResult.saved => ('live_record_saved'.tr(), true),
     LiveRecordingResult.savedPartial => (
@@ -103,7 +104,8 @@ void showLiveRecordingResult(
       text: text,
       icon: ok ? 'redesign_v2/check' : 'redesign_v2/priority_high',
       duration: Duration(seconds: ok ? 2 : 3),
-      bottom: bottom);
+      bottom: bottom,
+      centered: centered);
 }
 
 /// 세로 제어 목록 첫 줄 "실시간 녹화". 경과 시간 때문에 250ms마다 다시

@@ -138,12 +138,11 @@ void main() {
         liveVideoRecorderFactoryProvider.overrideWithValue(() => recorder),
         liveRecordingProbeProvider.overrideWithValue((_) async => null),
         liveRecordingSavedHookProvider.overrideWithValue(() {}),
-        liveRecordingTrackOfProvider.overrideWithValue(
-            (s) => s.phase.hasVideo ? _FakeTrack() : null),
+        liveRecordingTrackOfProvider
+            .overrideWithValue((s) => s.phase.hasVideo ? _FakeTrack() : null),
       ],
       child: MaterialApp(
-          navigatorKey: nav,
-          home: const Scaffold(body: Text('root'))),
+          navigatorKey: nav, home: const Scaffold(body: Text('root'))),
     ));
     nav.currentState!.push(MaterialPageRoute<void>(
         builder: (_) => const CameraLiveFullscreenScreen(cameraId: _id)));
@@ -163,7 +162,8 @@ void main() {
       .read(liveRecordingControllerProvider(_id))
       .phase;
   Finder modal() => find.byKey(const Key('viva_modal_surface'));
-  bool rebootEnabled(WidgetTester tester) => tester
+  bool rebootEnabled(WidgetTester tester) =>
+      tester
           .widget<FilledButton>(find.descendant(
               of: find.byKey(CameraLiveFullscreenScreen.rebootButtonKey),
               matching: find.byType(FilledButton)))
@@ -180,7 +180,8 @@ void main() {
   }
 
   test('경과 시간 표기 00:01', () {
-    expect(formatLiveRecordElapsed(const Duration(milliseconds: 1999)), '00:01');
+    expect(
+        formatLiveRecordElapsed(const Duration(milliseconds: 1999)), '00:01');
     expect(formatLiveRecordElapsed(const Duration(minutes: 2)), '02:00');
   });
 
@@ -196,7 +197,8 @@ void main() {
     expect(tester.getSize(pill()).height, 40);
     expect(tester.getSize(pill()).width, inInclusiveRange(112, 200));
     expect(pillTap(tester), isNotNull);
-    expect(find.descendant(of: pill(), matching: find.text('live_record_start')),
+    expect(
+        find.descendant(of: pill(), matching: find.text('live_record_start')),
         findsOneWidget);
     // 영상은 좌우 12 안쪽(369), 가로 전환은 영상 안 오른쪽 아래.
     final video = tester.getRect(find.byType(ClipRRect).first);
@@ -236,8 +238,8 @@ void main() {
                 find.byKey(CameraLiveFullscreenScreen.rotateButtonKey))
             .onChanged,
         isNull);
-    for (final row in tester.widgetList<LiveControlRow>(
-        find.byType(LiveControlRow))) {
+    for (final row
+        in tester.widgetList<LiveControlRow>(find.byType(LiveControlRow))) {
       expect(row.dimmed, isTrue);
     }
     await finish(tester);
@@ -274,8 +276,7 @@ void main() {
     await finish(tester);
   });
 
-  testWidgets('3초 이상 [녹화 중단] → 확인창: [아니요]=계속, [중단하기]=저장 토스트',
-      (tester) async {
+  testWidgets('3초 이상 [녹화 중단] → 확인창: [아니요]=계속, [중단하기]=저장 토스트', (tester) async {
     await pump(tester);
     await startRecording(tester);
     await tester.tap(pill());
@@ -295,13 +296,13 @@ void main() {
     expect(recPhase(tester), LiveRecordingPhase.idle);
     expect(repo.saved, hasLength(1));
     expect(find.text('live_record_saved'), findsOneWidget);
-    expect(find.descendant(of: pill(), matching: find.text('live_record_start')),
+    expect(
+        find.descendant(of: pill(), matching: find.text('live_record_start')),
         findsOneWidget);
     await finish(tester);
   });
 
-  testWidgets('확인창이 떠 있는 사이 끊기면 창이 저절로 닫히고 부분 저장 안내',
-      (tester) async {
+  testWidgets('확인창이 떠 있는 사이 끊기면 창이 저절로 닫히고 부분 저장 안내', (tester) async {
     await pump(tester);
     await startRecording(tester);
     await tester.tap(pill());
@@ -334,8 +335,7 @@ void main() {
     await finish(tester);
   });
 
-  testWidgets('녹화 중 X → 확인창: [아니요]면 남고, [중단하기]면 저장 후 나감',
-      (tester) async {
+  testWidgets('녹화 중 X → 확인창: [아니요]면 남고, [중단하기]면 저장 후 나감', (tester) async {
     await pump(tester);
     await startRecording(tester);
     await tester.tap(find.byKey(CameraLiveFullscreenScreen.closeButtonKey));
@@ -383,7 +383,8 @@ void main() {
   testWidgets('세로↔가로 전환해도 녹화가 이어진다(같은 녹화기)', (tester) async {
     await pump(tester);
     await startRecording(tester, run: const Duration(seconds: 2));
-    await tester.tap(find.byKey(CameraLiveFullscreenScreen.orientationButtonKey));
+    await tester
+        .tap(find.byKey(CameraLiveFullscreenScreen.orientationButtonKey));
     await tester.binding.setSurfaceSize(const Size(852, 393));
     await tester.pump();
     await tester.pump(const Duration(seconds: 3));
@@ -392,8 +393,10 @@ void main() {
     expect(tester.getSize(pill()).height, 48);
     expect(find.descendant(of: pill(), matching: find.text('00:05')),
         findsOneWidget);
-    expect(find.byKey(CameraLiveFullscreenScreen.rotateButtonKey), findsNothing);
-    await tester.tap(find.byKey(CameraLiveFullscreenScreen.orientationButtonKey));
+    expect(
+        find.byKey(CameraLiveFullscreenScreen.rotateButtonKey), findsNothing);
+    await tester
+        .tap(find.byKey(CameraLiveFullscreenScreen.orientationButtonKey));
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
@@ -403,10 +406,30 @@ void main() {
     await finish(tester);
   });
 
-  testWidgets('가로 조작 버튼은 5초 뒤 사라지고(탭 안 받음) 화면을 누르면 다시 보인다',
-      (tester) async {
+  testWidgets('가로에서 끝난 녹화 결과 토스트는 화면 한가운데(Figma 1525:11177)', (tester) async {
     await pump(tester);
-    await tester.tap(find.byKey(CameraLiveFullscreenScreen.orientationButtonKey));
+    await tester
+        .tap(find.byKey(CameraLiveFullscreenScreen.orientationButtonKey));
+    tester.view.physicalSize = const Size(852, 393);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.binding.setSurfaceSize(const Size(852, 393));
+    await tester.pump();
+    await startRecording(tester, run: Duration.zero);
+    await tester.pump(kLiveRecordingLength);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('live_record_saved'), findsOneWidget);
+    final rect = tester.getRect(find.byKey(const Key('clip_toast')));
+    expect(rect.top, 166.5);
+    expect(rect.center.dx, 426);
+    dismissClipToast();
+    await finish(tester);
+  });
+
+  testWidgets('가로 조작 버튼은 5초 뒤 사라지고(탭 안 받음) 화면을 누르면 다시 보인다', (tester) async {
+    await pump(tester);
+    await tester
+        .tap(find.byKey(CameraLiveFullscreenScreen.orientationButtonKey));
     await tester.binding.setSurfaceSize(const Size(852, 393));
     await tester.pump();
     await startRecording(tester, run: Duration.zero);

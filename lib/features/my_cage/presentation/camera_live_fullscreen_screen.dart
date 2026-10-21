@@ -193,9 +193,13 @@ class _CameraLiveFullscreenScreenState
         final s = ref.read(liveRecordingControllerProvider(cameraId));
         final result = s.result;
         if (result == null) return;
-        // 세로 토스트는 맨 아래 [카메라 재시작] 버튼 자리(Figma 저장 완료).
+        // 세로 토스트는 맨 아래 [카메라 재시작] 버튼 자리(Figma 저장 완료),
+        // 가로는 화면 한가운데(Figma 1525:11177).
+        final inLandscape =
+            ref.read(playerOrientationProvider(_orientationKey));
         showLiveRecordingResult(context, result, s.resultSeconds,
-            bottom: MediaQuery.paddingOf(context).bottom + 66);
+            bottom: MediaQuery.paddingOf(context).bottom + 66,
+            centered: inLandscape);
       });
     }
 
