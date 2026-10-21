@@ -7,6 +7,7 @@ import 'core/theme/app_text_scaler.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
 import 'features/home/presentation/fan_timer_resync_observer.dart';
+import 'features/my_cage/presentation/live_recording_upload_queue.dart';
 import 'features/notification/presentation/push_lifecycle_observer.dart';
 import 'shared/widgets/offline_banner.dart';
 
@@ -16,6 +17,10 @@ class App extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    // 직접 녹화 업로드 대기열을 앱 시작부터 살려 둔다 — 로그인 상태면 남은
+    // 녹화를 올리고, 계정이 바뀌면 새로 만들어진다. listen이라 App은 다시
+    // 그리지 않는다.
+    ref.listen(liveRecordingUploadQueueProvider, (_, __) {});
 
     return MaterialApp.router(
       title: 'app_name'.tr(),

@@ -9,6 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/sys_health_controllers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vivanaut/core/theme/app_text_scaler.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
@@ -45,6 +48,7 @@ import 'package:vivanaut/features/my_cage/domain/telemetry_reading.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
 import 'package:vivanaut/shared/domain/env_extremes.dart';
 import 'package:vivanaut/shared/widgets/glass_dock.dart';
 
@@ -100,8 +104,7 @@ Future<void> _pump(WidgetTester tester, double system, Widget home,
                   builder: (context, child) => MediaQuery(
                       data: MediaQuery.of(context).copyWith(
                           padding: const EdgeInsets.only(top: 62, bottom: 34),
-                          textScaler:
-                              AppTextScaler(TextScaler.linear(system))),
+                          textScaler: AppTextScaler(TextScaler.linear(system))),
                       child: child!),
                   home: home)))));
   await tester.pumpAndSettle();
@@ -119,8 +122,8 @@ void main() {
   });
 
   test('배율 = 1.0(Figma) × 시스템, 최대 2.0', () {
-    expect(const AppTextScaler(TextScaler.noScaling).scale(10),
-        closeTo(10, 1e-9));
+    expect(
+        const AppTextScaler(TextScaler.noScaling).scale(10), closeTo(10, 1e-9));
     expect(const AppTextScaler(TextScaler.linear(1.3)).scale(10),
         closeTo(13, 1e-9));
     expect(const AppTextScaler(TextScaler.linear(3)).scale(10), 20);
@@ -220,8 +223,8 @@ void main() {
       });
 
       testWidgets('비밀번호 재설정', (tester) async {
-        await _pump(tester, system,
-            const PasswordResetScreen(initialEmail: 'a@b.co'));
+        await _pump(
+            tester, system, const PasswordResetScreen(initialEmail: 'a@b.co'));
       });
 
       testWidgets('비밀번호 변경', (tester) async {
@@ -292,6 +295,81 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('나가기'), findsOneWidget);
       });
+
+      // 카메라 오프라인 안내(Figma 1525:10689) — 홈·카메라 탭 면(369:271)과
+      // 확대 세로 면(4:3). 낮은 면은 안에서 스크롤, 버튼 라벨은 한 줄 축소.
+      for (final size in [const Size(369, 271), const Size(369, 276.75)]) {
+        testWidgets('라이브 면 — 카메라 오프라인 안내 ${size.height}', (tester) async {
+          await _pump(
+              tester,
+              system,
+              Scaffold(
+                  body: Center(
+                      child: SizedBox.fromSize(
+                          size: size,
+                          child: const WebRtcLiveView(cameraUuid: 'c')))),
+              overrides: [
+                camerasProvider.overrideWith((ref) => Stream.value([
+                      TerraCamera(
+                          id: 'c',
+                          cameraId: 'p4cam',
+                          name: '카메라 10',
+                          isOnline: false,
+                          createdAt: DateTime.utc(2026))
+                    ])),
+                webrtcLiveControllerProvider
+                    .overrideWith((ref, id) => OfflineLiveController(ref, id)),
+              ]);
+          expect(find.text('카메라 재연결'), findsOneWidget);
+          expect(find.text('네트워크 변경'), findsOneWidget);
+        });
+      }
+
+      // 실시간 녹화 세로 목록(Figma 1523:5049) — 줄 높이 40은 최소, 알약은
+      // 200까지 늘어난 뒤 말줄임.
+      for (final online in [true, false]) {
+        testWidgets('라이브 확대 — 녹화·회전·전원 목록 (온라인 $online)', (tester) async {
+          await _pump(
+              tester, system, const CameraLiveFullscreenScreen(cameraId: 'c'),
+              overrides: [
+                currentUserProvider.overrideWithValue(null),
+                camerasProvider.overrideWith((ref) => Stream.value([
+                      TerraCamera(
+                          id: 'c',
+                          cameraId: 'p4cam',
+                          name: '카메라 10',
+                          firmwareVer: 'fb2-p4 0.2.0-20260928',
+                          isOnline: online,
+                          createdAt: DateTime.utc(2026))
+                    ])),
+                sysHealthProvider(cameraRebootTarget('c'))
+                    .overrideWith((ref) => const Stream.empty()),
+                webrtcLiveControllerProvider.overrideWith((ref, id) => online
+                    ? _StreamingLive(ref, id)
+                    : InertLiveController(ref, id)),
+              ]);
+          expect(find.text('실시간 녹화'), findsOneWidget);
+          expect(find.text('카메라 180° 회전'), findsOneWidget);
+          expect(find.text('녹화 시작'), findsOneWidget);
+        });
+      }
     });
+  }
+}
+
+class _StreamingRenderer extends RTCVideoRenderer {
+  @override
+  Future<void> initialize() async {}
+  @override
+  set srcObject(MediaStream? stream) {}
+  @override
+  // ignore: must_call_super
+  Future<void> dispose() async {}
+}
+
+class _StreamingLive extends WebRtcLiveController {
+  _StreamingLive(super.ref, super.cameraUuid) {
+    state = WebRtcLiveState(
+        phase: WebRtcLivePhase.streaming, renderer: _StreamingRenderer());
   }
 }

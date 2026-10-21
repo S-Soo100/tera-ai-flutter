@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/my_cage/data/camera_repository.dart';
@@ -12,7 +13,6 @@ import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_sc
 import 'package:vivanaut/features/my_cage/presentation/widgets/camera_rotate_tile.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
 
-import '../../helpers/inert_live_controller.dart';
 
 /// 회전 계약(회신 2026-09-08) — 모델 파싱 + 토글 노출/호출.
 
@@ -157,7 +157,7 @@ void main() {
     });
   });
 
-  group('CameraLiveFullscreenScreen 화면 뒤집기 버튼', () {
+  group('CameraLiveFullscreenScreen 카메라 180° 회전 토글', () {
     // 2026-09-23 사용자 지시 — 라이브 확대 화면에서는 capabilities와
     // 무관하게 항상 보인다(환경설정 타일 게이팅과 의도적으로 다름).
     Future<void> pumpLive(WidgetTester tester, TerraCamera camera,
@@ -168,8 +168,9 @@ void main() {
         overrides: [
           camerasProvider.overrideWith((ref) => Stream.value([camera])),
           cameraRepositoryProvider.overrideWithValue(repo),
+          // 회전 토글은 영상이 나올 때만 누를 수 있다(Figma 1523:5049).
           webrtcLiveControllerProvider
-              .overrideWith((ref, id) => InertLiveController(ref, id)),
+              .overrideWith((ref, id) => _StreamingLive(ref, id)),
         ],
         child: MaterialApp(
             home: CameraLiveFullscreenScreen(cameraId: camera.id)),
@@ -191,4 +192,21 @@ void main() {
       });
     }
   });
+}
+
+class _StreamingRenderer extends RTCVideoRenderer {
+  @override
+  Future<void> initialize() async {}
+  @override
+  set srcObject(MediaStream? stream) {}
+  @override
+  // ignore: must_call_super
+  Future<void> dispose() async {}
+}
+
+class _StreamingLive extends WebRtcLiveController {
+  _StreamingLive(super.ref, super.cameraUuid) {
+    state = WebRtcLiveState(
+        phase: WebRtcLivePhase.streaming, renderer: _StreamingRenderer());
+  }
 }

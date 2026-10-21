@@ -31,6 +31,8 @@ import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.da
 
 import '../../helpers/inert_live_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
+import 'package:vivanaut/features/my_cage/domain/live_recording.dart';
+import 'package:vivanaut/features/my_cage/presentation/live_recording_controller.dart';
 
 /// Camera Home(카메라 탭 재설계 T2) 위젯 테스트.
 ///
@@ -163,6 +165,8 @@ Future<void> _pump(
   Stream<List<TerraCamera>>? cameraEvents,
   VoidCallback? onFeedLoad,
   VoidCallback? onLiveCreate,
+  bool liveOffline = false,
+  List<LiveRecording> recordings = const [],
 }) async {
   tester.view.physicalSize = const Size(393, 1000);
   tester.view.devicePixelRatio = 1;
@@ -201,7 +205,9 @@ Future<void> _pump(
         // 실피어 차단 — startConnection()을 부르지 않은 inert 컨트롤러.
         webrtcLiveControllerProvider.overrideWith((ref, uuid) {
           onLiveCreate?.call();
-          return InertLiveController(ref, uuid);
+          return liveOffline
+              ? OfflineLiveController(ref, uuid)
+              : InertLiveController(ref, uuid);
         }),
         crecamDayProvider.overrideWith((ref) => pickedDay ? _day : null),
         latestMotionClipAtProvider
@@ -218,6 +224,7 @@ Future<void> _pump(
         latestHighlightBatchProvider.overrideWith((ref) async => latestBatch),
         highlightReadStoreProvider
             .overrideWithValue(_FakeReadStore(readBatches)),
+        liveRecordingsProvider.overrideWith((ref) async => recordings),
         allFavoriteClipsProvider.overrideWith((ref) async {
           final tick = ref.watch(_highlightReloadTick);
           if (tick > 0 && favoritesReloadGate != null) {
@@ -326,6 +333,12 @@ void main() {
     // 어느 카메라인지 이름 배지로 밝힌다(리뷰 2026-09-04 — 구 그리드가 주던
     // 식별 정보의 복원).
     expect(find.text('테스트캠'), findsOneWidget);
+  });
+
+  testWidgets('카메라 오프라인 안내 중엔 확장 버튼을 숨긴다(Figma 1525:10689)', (tester) async {
+    await _pump(tester, liveOffline: true);
+    expect(find.byKey(WebRtcLiveView.offlineKey), findsOneWidget);
+    expect(find.byKey(CameraLiveArea.expandButtonKey), findsNothing);
   });
 
   testWidgets('확장 버튼 탭 → 라이브 전체화면(가로, 영상만) 라우트', (tester) async {
@@ -561,6 +574,28 @@ void main() {
     expect(find.text('crecam_updated_today'), findsOneWidget);
   });
 
+  testWidgets('북마크 없이 직접 녹화만 있어도 북마크 카드 부제는 "업데이트 …"', (tester) async {
+    await _pump(tester, recordings: [
+      LiveRecording(
+          id: 'r1',
+          ownerId: 'u1',
+          cameraId: _cameraId,
+          startedAt: DateTime.now(),
+          durationMs: 30000,
+          filePath: 'mem/r1.mp4'),
+    ]);
+    expect(
+        find.descendant(
+            of: find.byKey(CrecamScreen.bookmarkCardKey),
+            matching: find.text('crecam_updated_today')),
+        findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(CrecamScreen.bookmarkCardKey),
+            matching: find.text('crecam_home_no_updates')),
+        findsNothing);
+  });
+
   testWidgets('북마크 재조회 중에도 카드 문구를 스켈레톤으로 바꾸지 않는다', (tester) async {
     // 회귀(2026-09-19 실기기 앱 복귀): whenData는 로딩 중 이전 값을 버려
     // skipLoadingOnReload만으로는 북마크 부제목이 3프레임 스켈레톤이 됐다.
@@ -623,8 +658,8 @@ void main() {
   // 누른 영상이 위로 튀어(약 390pt) 손가락 아래 다른 영상이 끌기에 걸렸다.
   testWidgets('맨 위에서 꾹 눌러 선택을 시작해도 누른 영상은 손가락 아래 그대로', (tester) async {
     await _pump(tester);
-    final thumb = find.byWidgetPredicate(
-        (w) => w is ClipSelectableThumb && w.clipId == 'c3');
+    final thumb = find
+        .byWidgetPredicate((w) => w is ClipSelectableThumb && w.clipId == 'c3');
     final before = tester.getCenter(thumb);
     final gesture = await tester.startGesture(before);
     await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
@@ -661,10 +696,11 @@ void main() {
         reason: '스크롤로 메웠으니 손을 떼도 그대로');
 
     // 선택 종료 — 라이브·카드가 다시 펼쳐져도 보던 영상은 그 자리 근처.
-    await tester.tap(find.byWidgetPredicate((w) => w is ClipSelectHeaderButton));
+    await tester
+        .tap(find.byWidgetPredicate((w) => w is ClipSelectHeaderButton));
     await tester.pumpAndSettle();
     expect(find.text('clip_select_count'), findsNothing);
-    expect(tester.getCenter(thumb).dy, moreOrLessEquals(before.dy, epsilon: 24));
+    expect(
+        tester.getCenter(thumb).dy, moreOrLessEquals(before.dy, epsilon: 24));
   });
 }
-

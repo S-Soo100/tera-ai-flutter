@@ -5,7 +5,8 @@ import 'package:vivanaut/features/my_cage/presentation/widgets/clip_toast.dart';
 
 /// Figma 1081:6803(세로 y580~640) / 6895(가로 y249~309): 256×60, 가운데.
 void main() {
-  Future<void> pump(WidgetTester tester, Size size, {double? bottom}) async {
+  Future<void> pump(WidgetTester tester, Size size,
+      {double? bottom, bool centered = false}) async {
     // MediaQuery는 view 크기를 읽는다(surface만 바꾸면 800×600 가로로 남는다).
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -16,9 +17,10 @@ void main() {
         home: Scaffold(
             body: Builder(
                 builder: (context) => TextButton(
-                    onPressed: () =>
-                        showClipToast(context,
-                            text: '북마크에 저장되었습니다', bottom: bottom),
+                    onPressed: () => showClipToast(context,
+                        text: '북마크에 저장되었습니다',
+                        bottom: bottom,
+                        centered: centered),
                     child: const Text('show'))))));
     await tester.tap(find.text('show'));
     await tester.pump();
@@ -39,6 +41,17 @@ void main() {
     expect(toast, findsNothing);
     await tester.binding.setSurfaceSize(null);
   });
+  testWidgets('centered — 가로 라이브 녹화 결과는 화면 한가운데(Figma 1525:11177)',
+      (tester) async {
+    await pump(tester, const Size(852, 393), centered: true, bottom: 100);
+    final rect = tester.getRect(find.byKey(const Key('clip_toast')));
+    expect(rect.top, 166.5);
+    expect(rect.height, 60);
+    expect(rect.center.dx, 426);
+    dismissClipToast();
+    await tester.pump();
+    await tester.binding.setSurfaceSize(null);
+  });
   testWidgets('landscape toast sits 84 above the bottom', (tester) async {
     await pump(tester, const Size(852, 393));
     final rect = tester.getRect(find.byKey(const Key('clip_toast')));
@@ -49,8 +62,7 @@ void main() {
     expect(find.byKey(const Key('clip_toast')), findsNothing);
     await tester.binding.setSurfaceSize(null);
   });
-  testWidgets('목록 화면 토스트는 바닥에서 96 (Figma 1497:11720 y696)',
-      (tester) async {
+  testWidgets('목록 화면 토스트는 바닥에서 96 (Figma 1497:11720 y696)', (tester) async {
     await pump(tester, const Size(393, 852), bottom: kScreenToastBottom);
     final rect = tester.getRect(find.byKey(const Key('clip_toast')));
     expect(rect.top, 696);

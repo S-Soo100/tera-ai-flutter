@@ -10,13 +10,13 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_screen.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
-import '../helpers/inert_live_controller.dart';
 import 'package:vivanaut/core/theme/glass_palette.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
@@ -253,18 +253,18 @@ void main() {
                 id: 'cam',
                 cameraId: 'p4',
                 name: '라이브',
-                isOnline: false,
+                isOnline: true,
                 createdAt: DateTime(2026))
           ])),
+      // 가로 전환 버튼은 영상이 나올 때만 보인다(Figma 1523:5049 메모).
       webrtcLiveControllerProvider.overrideWith((ref, id) {
         creates++;
-        return InertLiveController(ref, id);
+        return _StreamingLive(ref, id);
       }),
     ]);
     await tester.pumpAndSettle();
     expect(creates, 1);
-    // 화면 뒤집기 버튼은 capabilities 미보고 카메라여도 항상 보인다
-    // (2026-09-23 사용자 지시) — 세로·가로 둘 다.
+    // 회전 토글은 세로 목록에만 있다(Figma 2026-10-21 — 가로에선 뺐다).
     expect(find.byKey(CameraLiveFullscreenScreen.rotateButtonKey),
         findsOneWidget);
     await tester.tap(find.byKey(const Key('live_fullscreen_orientation')));
@@ -273,7 +273,7 @@ void main() {
     expect(creates, 1);
     expect(tester.takeException(), isNull);
     expect(find.byKey(CameraLiveFullscreenScreen.rotateButtonKey),
-        findsOneWidget);
+        findsNothing);
     await tester.tap(find.byKey(const Key('live_fullscreen_orientation')));
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await tester.pumpAndSettle();
@@ -281,4 +281,21 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
+}
+
+class _StreamingRenderer extends RTCVideoRenderer {
+  @override
+  Future<void> initialize() async {}
+  @override
+  set srcObject(MediaStream? stream) {}
+  @override
+  // ignore: must_call_super
+  Future<void> dispose() async {}
+}
+
+class _StreamingLive extends WebRtcLiveController {
+  _StreamingLive(super.ref, super.cameraUuid) {
+    state = WebRtcLiveState(
+        phase: WebRtcLivePhase.streaming, renderer: _StreamingRenderer());
+  }
 }

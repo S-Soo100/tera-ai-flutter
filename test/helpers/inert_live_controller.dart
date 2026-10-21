@@ -16,3 +16,13 @@ class InertLiveController extends WebRtcLiveController {
     );
   }
 }
+
+/// 카메라 오프라인 안내(Figma 1525:10689) 상태로 고정한 컨트롤러 — 시그널링 없음.
+class OfflineLiveController extends WebRtcLiveController {
+  OfflineLiveController(super.ref, super.cameraUuid) {
+    state = const WebRtcLiveState(
+      phase: WebRtcLivePhase.failed,
+      errorKey: 'crecam_live_error_camera_offline',
+    );
+  }
+}

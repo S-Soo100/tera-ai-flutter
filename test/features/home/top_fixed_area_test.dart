@@ -38,14 +38,15 @@ EnclosureSet _set(String id, {bool cam = false, bool dev = false}) =>
       pet: null,
     );
 
-Future<ProviderContainer> _pump(
-    WidgetTester tester, List<EnclosureSet> sets) async {
+Future<ProviderContainer> _pump(WidgetTester tester, List<EnclosureSet> sets,
+    {bool offline = false}) async {
   final c = ProviderContainer(overrides: [
     currentUserProvider.overrideWithValue(null),
     homeDeviceSetsProvider.overrideWith((ref) async => sets),
     // 실피어 차단 — startConnection()을 부르지 않은 inert 컨트롤러(A2).
-    webrtcLiveControllerProvider
-        .overrideWith((ref, uuid) => InertLiveController(ref, uuid)),
+    webrtcLiveControllerProvider.overrideWith((ref, uuid) => offline
+        ? OfflineLiveController(ref, uuid)
+        : InertLiveController(ref, uuid)),
     nowTickProvider
         .overrideWith((ref) => Stream.value(DateTime(2026, 9, 14, 12))),
   ]);
@@ -61,6 +62,15 @@ Future<ProviderContainer> _pump(
 }
 
 void main() {
+  testWidgets('확대 버튼 — 평소엔 보이고 카메라 오프라인 안내 중엔 숨긴다', (tester) async {
+    await _pump(tester, [_set('e1', dev: true, cam: true)]);
+    expect(find.byKey(TopFixedArea.expandButtonKey), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pump(tester, [_set('e1', dev: true, cam: true)], offline: true);
+    expect(find.byKey(TopFixedArea.expandButtonKey), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
   testWidgets('선택한 사육장에 카메라가 없으면 라이브와 안내 여백 모두 없다', (tester) async {
     await _pump(tester, [_set('e1', dev: true), _set('e2', cam: true)]);
     expect(find.byKey(TopFixedArea.liveKey), findsNothing);
