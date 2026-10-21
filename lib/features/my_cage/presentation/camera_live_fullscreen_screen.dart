@@ -9,6 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/figma_icon.dart';
+import '../../../shared/widgets/viva_modal.dart';
+import '../../notification/presentation/push_pre_popup.dart'
+    show keepAllWords;
 import '../domain/live_recording.dart';
 import '../domain/sys_health.dart';
 import '../domain/terra_camera.dart';
@@ -505,6 +508,11 @@ class _LiveAspectBox extends ConsumerWidget {
 /// 숨기지 않고 비활성 + 이유를 위에 둔다(사용자 결정). 위치는 Figma 공통 하단
 /// CTA와 같게 좌우 12·SafeArea 위 66. 녹화 중엔 막는다(재부팅으로 녹화가
 /// 끊긴다).
+///
+/// **오프라인은 Figma처럼 빨간 버튼으로 둔다**(2026-10-21 사용자 결정 A). 꺼진
+/// 카메라는 명령을 못 받고 서버도 보관하지 않아, 보내면 2분 기다린 뒤 전원
+/// 안내만 뜬다 — 그래서 누르면 명령 대신 전원 안내창을 띄운다(Wi-Fi는 위
+/// 오프라인 카드의 [네트워크 변경]을 가리킨다).
 class _LiveRebootFooter extends ConsumerWidget {
   const _LiveRebootFooter({required this.camera, required this.recording});
   final TerraCamera? camera;
@@ -517,13 +525,13 @@ class _LiveRebootFooter extends ConsumerWidget {
         ? const RebootState()
         : ref.watch(rebootProvider(cameraRebootTarget(cam.id)));
     final inProgress = reboot.sending || reboot.rebooting;
-    final String? reason = inProgress || cam == null
+    // 재시작 중엔 카메라가 잠깐 꺼져 보인다 — 그땐 "재시작 중…"이 우선이다.
+    final offline = !inProgress && cam != null && !recording && !cam.isOnline;
+    final String? reason = inProgress || cam == null || offline
         ? null
         : recording
             ? 'live_reboot_recording'
-            : !cam.isOnline
-                ? 'live_reboot_offline'
-                : !isRebootCapableFirmware(cam.firmwareVer)
+            : !isRebootCapableFirmware(cam.firmwareVer)
                     ? 'live_reboot_old_firmware'
                     : reboot.coolingDown(DateTime.now())
                         ? 'live_reboot_wait'
@@ -544,13 +552,19 @@ class _LiveRebootFooter extends ConsumerWidget {
               key: CameraLiveFullscreenScreen.rebootButtonKey,
               label: (inProgress ? 'reboot_progress' : 'camera_reboot').tr(),
               icon: 'redesign_v2/restart_alt',
+              // Figma: 꺼졌을 때만 빨강(복구 안내 버튼). 켜져 있으면 검정.
+              red: offline,
               // Figma 원본 비활성(#E3E3E3 위 #FAFAFA)은 글자가 안 보인다 —
               // "재시작 중…"을 읽어야 해서 진한 회색(2026-10-03 사용자 지시).
               disabledForeground: context.glass.bodySecondary,
-              onPressed: enabled
-                  ? () => confirmAndRequestReboot(
-                      context, ref, cameraRebootTarget(cam.id))
-                  : null),
+              onPressed: !enabled
+                  ? null
+                  : offline
+                      ? () => showVivaModal(context,
+                          message: 'live_reboot_offline_title'.tr(),
+                          detail: keepAllWords('live_reboot_offline_body'.tr()))
+                      : () => confirmAndRequestReboot(
+                          context, ref, cameraRebootTarget(cam.id))),
         ]));
   }
 }
