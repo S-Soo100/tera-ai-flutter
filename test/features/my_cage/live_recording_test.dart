@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:hive/hive.dart';
 import 'package:vivanaut/features/my_cage/data/live_recording_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/live_limit.dart';
 import 'package:vivanaut/features/my_cage/domain/live_recording.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_recording_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
@@ -143,6 +144,45 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(c.state.result, LiveRecordingResult.savedPartial);
       expect(c.state.resultSeconds, 3);
+      expect(await repo.list('u1'), hasLength(1));
+      c.dispose();
+    }, timeout: const Timeout(Duration(seconds: 10)));
+
+    test('시청 제한 시각 도달(cooldown) → 저장 완료로 안내', () async {
+      final c = make();
+      await c.start(_streaming);
+      await Future<void>.delayed(const Duration(milliseconds: 3100));
+      expect(c.recordedSoFar, greaterThanOrEqualTo(const Duration(seconds: 3)));
+      c.onLiveState(const WebRtcLiveState(
+          phase: WebRtcLivePhase.limited,
+          limit: LiveLimit(LiveLimitKind.cooldown)));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(c.state.result, LiveRecordingResult.saved);
+      expect(await repo.list('u1'), hasLength(1));
+      expect(c.recordedSoFar, Duration.zero);
+      c.dispose();
+    }, timeout: const Timeout(Duration(seconds: 10)));
+
+    test('다른 기기가 가져가면(takenOver) 끊김으로 부분 저장', () async {
+      final c = make();
+      await c.start(_streaming);
+      await Future<void>.delayed(const Duration(milliseconds: 3100));
+      c.onLiveState(const WebRtcLiveState(
+          phase: WebRtcLivePhase.limited,
+          limit: LiveLimit(LiveLimitKind.takenOver)));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(c.state.result, LiveRecordingResult.savedPartial);
+      c.dispose();
+    }, timeout: const Timeout(Duration(seconds: 10)));
+
+    test('이미 끝난 녹화에 또 stop → 무시(멱등)', () async {
+      final c = make();
+      await c.start(_streaming);
+      await Future<void>.delayed(const Duration(milliseconds: 3100));
+      await c.stop(LiveRecordingEnd.userStopped);
+      final seq = c.state.resultSeq;
+      await c.stop(LiveRecordingEnd.userStopped);
+      expect(c.state.resultSeq, seq);
       expect(await repo.list('u1'), hasLength(1));
       c.dispose();
     }, timeout: const Timeout(Duration(seconds: 10)));

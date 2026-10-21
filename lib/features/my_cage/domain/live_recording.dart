@@ -1,7 +1,7 @@
 /// 라이브 직접 녹화(2026-10-01 기획 `docs/superpowers/specs/2026-10-01-live-recording-design.md`).
 ///
-/// 가로 전체화면 라이브에서 버튼을 누르면 받고 있는 WebRTC 영상을
-/// [kLiveRecordingLength] 동안 그대로 파일로 남긴다. 끊기면 거기까지 저장,
+/// 라이브 확대 화면(세로 목록 [녹화 시작]·가로 알약)에서 받고 있는 WebRTC
+/// 영상을 최대 [kLiveRecordingLength] 동안 그대로 파일로 남긴다. 끊기면 거기까지 저장,
 /// [kLiveRecordingMinLength] 미만이면 버린다. 1단계는 기기 안 보관만 —
 /// R2 업로드는 서버 계약 확정 뒤(`uploadedAt`이 그때 채워진다).
 library;
@@ -32,13 +32,17 @@ bool canStartLiveRecording({
 
 /// 녹화가 끝난 이유.
 enum LiveRecordingEnd {
-  /// 60초 다 찍음.
+  /// [kLiveRecordingLength]를 다 찍음.
   completed,
 
-  /// 사용자가 정지 버튼.
+  /// 사용자가 [녹화 중단]·이탈 확인창 [중단하기].
   userStopped,
 
-  /// 연결 끊김·시청 제한·다른 기기 전환·재연결.
+  /// 서버 시청 제한(15분) 시각 도달 — 정해진 끝이라 끊김과 달리 "저장 완료"로
+  /// 안내한다(2026-10-21 계획 §9).
+  limit,
+
+  /// 연결 끊김·다른 기기 전환·재연결.
   interrupted,
 
   /// 화면 이탈·앱 백그라운드.

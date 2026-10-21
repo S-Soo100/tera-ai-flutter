@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -8,6 +9,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../auth/presentation/auth_providers.dart';
 import '../data/live_recording_repository.dart';
+import '../domain/live_limit.dart';
 import '../domain/live_recording.dart';
 import 'webrtc_live_controller.dart';
 
@@ -30,6 +32,12 @@ class _WebRtcVideoRecorder implements LiveVideoRecorder {
 
 final liveVideoRecorderFactoryProvider =
     Provider<LiveVideoRecorder Function()>((ref) => _WebRtcVideoRecorder.new);
+
+/// 녹화할 영상 트랙을 시청 상태에서 꺼내는 함수 — 위젯 테스트가 가짜 트랙을
+/// 넣는다(실제는 renderer의 원격 영상 트랙).
+final liveRecordingTrackOfProvider =
+    Provider<MediaStreamTrack? Function(WebRtcLiveState live)>(
+        (ref) => LiveRecordingController.rendererVideoTrack);
 
 /// 결과 안내 표시 시간.
 const kLiveRecordingResultShown = Duration(seconds: 4);
@@ -57,15 +65,11 @@ class LiveRecordingState {
   final int resultSeq;
 
   bool get busy => phase != LiveRecordingPhase.idle;
-
-  Duration get remaining {
-    final r = kLiveRecordingLength - elapsed;
-    return r.isNegative ? Duration.zero : r;
-  }
 }
 
-/// 라이브 직접 녹화 한 카메라분. 가로 전체화면이 쓰고, 화면을 떠나면
-/// (autoDispose) 그때까지 찍은 걸 저장한다.
+/// 라이브 직접 녹화 한 카메라분. 라이브 확대 화면(세로·가로 공용 — 방향을
+/// 바꿔도 같은 provider라 녹화가 이어진다)이 쓰고, 화면을 떠나면(autoDispose)
+/// 그때까지 찍은 걸 저장한다. 표시 시간은 올라가는 경과 시간([LiveRecordingState.elapsed]).
 ///
 /// 시청([WebRtcLiveController])과 분리돼 있다 — 시청 상태를 구독만 하고,
 /// 영상이 끊기거나(`hasVideo` 아님) renderer가 바뀌면(재연결 = 새 세대)
@@ -79,7 +83,7 @@ class LiveRecordingController extends StateNotifier<LiveRecordingState> {
     DateTime Function()? now,
     MediaStreamTrack? Function(WebRtcLiveState live)? trackOf,
   })  : _repo = repository,
-        _trackOf = trackOf ?? _rendererVideoTrack,
+        _trackOf = trackOf ?? rendererVideoTrack,
         _recorderFactory = recorderFactory,
         _ownerId = ownerId,
         _now = now ?? DateTime.now,
@@ -92,14 +96,17 @@ class LiveRecordingController extends StateNotifier<LiveRecordingState> {
   final DateTime Function() _now;
   final MediaStreamTrack? Function(WebRtcLiveState live) _trackOf;
 
-  static MediaStreamTrack? _rendererVideoTrack(WebRtcLiveState live) =>
+  static MediaStreamTrack? rendererVideoTrack(WebRtcLiveState live) =>
       live.renderer?.srcObject?.getVideoTracks().firstOrNull;
 
   LiveVideoRecorder? _recorder;
   RTCVideoRenderer? _renderer;
   Timer? _ticker;
   Timer? _resultHide;
-  final _watch = Stopwatch();
+  /// 경과 시간 — package:clock 스톱워치라 위젯 테스트의 가짜 시계를 따른다
+  /// (네이티브 Stopwatch는 안 흐른다, `LiveViewSession`과 같은 문법).
+  final Stopwatch _watch =
+      identical(clock, const Clock()) ? Stopwatch() : clock.stopwatch();
   ({String rel, String abs})? _file;
   String? _thumbRel;
   String? _owner;
@@ -110,6 +117,12 @@ class LiveRecordingController extends StateNotifier<LiveRecordingState> {
   void onLiveState(WebRtcLiveState live) {
     if (state.phase != LiveRecordingPhase.recording &&
         state.phase != LiveRecordingPhase.starting) {
+      return;
+    }
+    // 서버 시청 제한(15분) 시각 도달 — 정해진 끝이라 "저장 완료"로 안내한다.
+    if (live.phase == WebRtcLivePhase.limited &&
+        live.limit?.kind == LiveLimitKind.cooldown) {
+      unawaited(stop(LiveRecordingEnd.limit));
       return;
     }
     if (!live.phase.hasVideo ||
@@ -190,7 +203,13 @@ class LiveRecordingController extends StateNotifier<LiveRecordingState> {
     }
   }
 
-  /// 녹화를 끝내고 남길지 정한다. 이미 끝났으면 무시.
+  /// 지금까지 찍은 길이 — [녹화 중단]이 3초 미만이면 확인창 없이 멈추는 판단용
+  /// (state.elapsed는 250ms마다만 갱신된다). 녹화 중이 아니면 0.
+  Duration get recordedSoFar => state.phase == LiveRecordingPhase.recording
+      ? _watch.elapsed
+      : Duration.zero;
+
+  /// 녹화를 끝내고 남길지 정한다. 이미 끝났으면 무시(멱등).
   Future<void> stop(LiveRecordingEnd end) async {
     if (state.phase == LiveRecordingPhase.starting) {
       // 녹화기가 아직 안 붙었다 — 시작을 취소한다.
@@ -238,7 +257,8 @@ class LiveRecordingController extends StateNotifier<LiveRecordingState> {
         thumbPath: thumb,
       ));
       result = end == LiveRecordingEnd.completed ||
-              end == LiveRecordingEnd.userStopped
+              end == LiveRecordingEnd.userStopped ||
+              end == LiveRecordingEnd.limit
           ? LiveRecordingResult.saved
           : LiveRecordingResult.savedPartial;
     }
@@ -324,6 +344,7 @@ final liveRecordingControllerProvider = StateNotifierProvider.autoDispose
     repository: ref.watch(liveRecordingRepositoryProvider),
     recorderFactory: ref.watch(liveVideoRecorderFactoryProvider),
     ownerId: () => ref.read(currentUserProvider)?.id,
+    trackOf: ref.watch(liveRecordingTrackOfProvider),
   );
   ref.listen<WebRtcLiveState>(webrtcLiveControllerProvider(cameraId),
       (_, next) => controller.onLiveState(next));

@@ -70,7 +70,7 @@ class LiveRecordControls extends ConsumerWidget {
                       key: LiveRecordControls.indicatorKey,
                       dot: true,
                       text: 'live_record_rec'.tr(
-                          namedArgs: {'left': _mmss(rec.remaining)}),
+                          namedArgs: {'left': _mmss(rec.elapsed)}),
                     )
                   : rec.phase == LiveRecordingPhase.saving
                       ? _Pill(text: 'live_record_saving'.tr())
