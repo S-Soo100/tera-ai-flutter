@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/glass_palette.dart';
+import '../../../../shared/widgets/viva_shadow.dart';
 import '../../../../shared/widgets/arc_spinner.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../../../shared/widgets/glass_dock.dart';
@@ -526,9 +527,7 @@ Future<T?> showClipSelectMenu<T>(BuildContext context,
             decoration: BoxDecoration(
                 color: glass.surfaceHeader,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(color: glass.menuShadow, blurRadius: 10)
-                ]),
+                boxShadow: [vivaFloatingShadow(glass)]),
             child: Material(
               type: MaterialType.transparency,
               borderRadius: BorderRadius.circular(12),

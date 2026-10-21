@@ -1,8 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
 import '../../core/theme/glass_palette.dart';
 import '../../features/my_cage/presentation/management_colors.dart';
 import '../../features/my_cage/presentation/widgets/management_widgets.dart';
+import 'viva_shadow.dart';
 
 /// Figma 확인 모달(1142:8956 Modal / 1107:9697) — 345×144 흰색 r12, 안쪽 24,
 /// 문구 18/500/28 가운데, 24 아래 버튼 44 r12. 버튼 하나(297 폭 `#1E1E1E`)
@@ -43,57 +45,69 @@ Future<bool> showVivaModal(
                       textStyle: managementStyle(ctx, weight: FontWeight.w600)
                           .copyWith(height: 28 / 16)),
                   child: Text(label)));
+      // 그림자는 Figma 떠 있는 면 공통(X0 Y0 Blur20 #919497 30%) — Dialog
+      // 기본 elevation(아래로 치우친 검은 그림자) 대신 면에 직접 단다.
       return Dialog(
-          backgroundColor: glass.surfaceHeader,
-          surfaceTintColor: glass.surfaceHeader,
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
           insetPadding: const EdgeInsets.symmetric(horizontal: 24),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 345),
-              child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(message,
-                            key: const Key('viva_modal_message'),
-                            textAlign: TextAlign.center,
-                            style: managementStyle(ctx,
-                                    size: 18, color: glass.textPrimary)
-                                .copyWith(height: 28 / 18)),
-                        if (detail != null) ...[
-                          const SizedBox(height: 8),
-                          Text(detail,
-                              key: const Key('viva_modal_detail'),
-                              textAlign: TextAlign.center,
-                              style: managementStyle(ctx,
-                                      size: 14, color: glass.bodySecondary)
-                                  .copyWith(height: 20 / 14)),
-                        ],
-                        const SizedBox(height: 24),
-                        if (!two)
-                          button(
-                              confirmLabel ?? 'common_confirm'.tr(),
-                              confirmColor ?? glass.textPrimary,
-                              true,
-                              confirmKey ?? const Key('viva_modal_confirm'))
-                        else
-                          Row(children: [
-                            Expanded(
-                                child: button(cancelLabel, glass.textPrimary,
-                                    false, const Key('viva_modal_cancel'))),
-                            const SizedBox(width: 13),
-                            Expanded(
-                                child: button(
-                                    confirmLabel ?? 'common_confirm'.tr(),
-                                    confirmColor ?? glass.navSelected,
-                                    true,
-                                    confirmKey ??
-                                        const Key('viva_modal_confirm'))),
-                          ]),
-                      ]))));
+          child: DecoratedBox(
+              key: const Key('viva_modal_surface'),
+              decoration: BoxDecoration(
+                  color: glass.surfaceHeader,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [vivaFloatingShadow(glass)]),
+              child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 345),
+                  child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(message,
+                                key: const Key('viva_modal_message'),
+                                textAlign: TextAlign.center,
+                                style: managementStyle(ctx,
+                                        size: 18, color: glass.textPrimary)
+                                    .copyWith(height: 28 / 18)),
+                            if (detail != null) ...[
+                              const SizedBox(height: 8),
+                              Text(detail,
+                                  key: const Key('viva_modal_detail'),
+                                  textAlign: TextAlign.center,
+                                  style: managementStyle(ctx,
+                                          size: 14, color: glass.bodySecondary)
+                                      .copyWith(height: 20 / 14)),
+                            ],
+                            const SizedBox(height: 24),
+                            if (!two)
+                              button(
+                                  confirmLabel ?? 'common_confirm'.tr(),
+                                  confirmColor ?? glass.textPrimary,
+                                  true,
+                                  confirmKey ?? const Key('viva_modal_confirm'))
+                            else
+                              Row(children: [
+                                Expanded(
+                                    child: button(
+                                        cancelLabel,
+                                        glass.textPrimary,
+                                        false,
+                                        const Key('viva_modal_cancel'))),
+                                const SizedBox(width: 13),
+                                Expanded(
+                                    child: button(
+                                        confirmLabel ?? 'common_confirm'.tr(),
+                                        confirmColor ?? glass.navSelected,
+                                        true,
+                                        confirmKey ??
+                                            const Key('viva_modal_confirm'))),
+                              ]),
+                          ])))));
     },
   );
   return ok == true;

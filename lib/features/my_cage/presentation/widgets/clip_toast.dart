@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/figma_icon.dart';
+import '../../../../shared/widgets/viva_shadow.dart';
 
 /// Figma 1081:6803 / 6895 / 1106:3584 토스트 — 흰 60 r8(폭은 내용: 24 +
 /// 28 원형 체크(#3C3C3C) + 8 + 18/500 #1E1E1E + 24 → 북마크 256, 다운로드
@@ -87,40 +88,50 @@ class _ClipToast extends StatelessWidget {
       bottom: landscape ? 84 : bottom ?? 212,
       child: IgnorePointer(
         child: Center(
-          child: Material(
+          child: DecoratedBox(
             key: toastKey,
-            color: glass.surfaceHeader,
-            elevation: 6,
-            shadowColor: Colors.black26,
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              height: 60,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                        color: glass.textSecondary, shape: BoxShape.circle),
-                    alignment: Alignment.center,
-                    child: FigmaIcon.tinted(icon,
-                        size: 16, color: glass.surfaceHeader),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(text,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontFamily: 'Pretendard',
-                            fontSize: 18,
-                            height: 28 / 18,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: -0.36,
-                            color: glass.textPrimary)),
-                  ),
-                ]),
+            decoration: BoxDecoration(
+                color: glass.surfaceHeader,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [vivaFloatingShadow(glass)]),
+            // 글자 기본 스타일(노란 밑줄 방지)만 받는 투명 Material.
+            child: Material(
+              type: MaterialType.transparency,
+              child: SizedBox(
+                height: 60,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                          color: glass.textSecondary, shape: BoxShape.circle),
+                      alignment: Alignment.center,
+                      // 체크는 Figma Group 12(28 원 안 2pt 선 체크 14×11)를 그대로
+                      // 그린다 — 채워진 16 체크 글리프는 굵고 커 보였다(2026-10-21
+                      // 디자이너 피드백).
+                      child: icon == 'redesign_v2/check'
+                          ? FigmaIcon.tinted('redesign_v2/toast_check',
+                              size: 28, color: glass.surfaceHeader)
+                          : FigmaIcon.tinted(icon,
+                              size: 16, color: glass.surfaceHeader),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(text,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontFamily: 'Pretendard',
+                              fontSize: 18,
+                              height: 28 / 18,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: -0.36,
+                              color: glass.textPrimary)),
+                    ),
+                  ]),
+                ),
               ),
             ),
           ),
