@@ -11,6 +11,7 @@ import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import 'my_cage_providers.dart';
+import 'live_recording_controller.dart';
 import 'clip_feed_controller.dart';
 import 'clip_visibility_providers.dart';
 import 'clip_selection_providers.dart';
@@ -468,7 +469,7 @@ class _EntryCards extends ConsumerWidget {
         )));
     // whenData는 쓰지 않는다 — 로딩 중 이전 값을 버려(riverpod 2.6 common.dart
     // `loading: (l) => AsyncLoading<R>()`) 재조회마다 부제목이 스켈레톤으로 깜빡였다.
-    final bookmarkAt = ref.watch(
+    final favoriteAt = ref.watch(
       allFavoriteClipsProvider.select((v) {
         if (v.hasValue) {
           final list = v.requireValue;
@@ -482,6 +483,23 @@ class _EntryCards extends ConsumerWidget {
         return const AsyncLoading<DateTime?>();
       }),
     );
+    // 직접 녹화도 북마크 목록에 들어간다 — 부제는 둘 중 최신으로 센다(전엔
+    // 녹화만 있으면 "아직 없어요"). 목록은 최신순.
+    final recordingAt = ref.watch(
+      liveRecordingsProvider.select((v) {
+        if (v.hasValue) {
+          final list = v.requireValue;
+          return AsyncData<DateTime?>(
+              list.isEmpty ? null : list.first.startedAt);
+        }
+        if (v.hasError) {
+          return AsyncError<DateTime?>(
+              v.error!, v.stackTrace ?? StackTrace.empty);
+        }
+        return const AsyncLoading<DateTime?>();
+      }),
+    );
+    final bookmarkAt = latestEntryAt(favoriteAt, recordingAt);
     return Row(
       children: [
         Expanded(
@@ -508,6 +526,25 @@ class _EntryCards extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// 엔트리 카드 부제의 최신 시각 — 두 출처(북마크·직접 녹화) 중 늦은 쪽.
+/// 한쪽이 아직 처음 불러오는 중이면 로딩(부분 값으로 날짜가 바뀌어 보이지
+/// 않게), 한쪽만 실패하면 남은 쪽 값으로 그린다(둘 다 실패면 오류).
+AsyncValue<DateTime?> latestEntryAt(
+    AsyncValue<DateTime?> a, AsyncValue<DateTime?> b) {
+  if (a.hasValue && b.hasValue) {
+    final x = a.requireValue, y = b.requireValue;
+    if (x == null) return AsyncData(y);
+    if (y == null) return AsyncData(x);
+    return AsyncData(x.isAfter(y) ? x : y);
+  }
+  if (a.isLoading && !a.hasValue || b.isLoading && !b.hasValue) {
+    return const AsyncLoading<DateTime?>();
+  }
+  if (a.hasValue) return a;
+  if (b.hasValue) return b;
+  return a;
 }
 
 /// Figma 945:4171/4179: 최소 높이 72, 40px 진회색 아이콘 배경.

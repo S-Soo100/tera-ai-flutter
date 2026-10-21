@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
+import '../../../shared/widgets/viva_modal.dart';
 import '../domain/favorite_clip.dart';
 import 'dart:io';
 
@@ -308,20 +311,39 @@ class _BookmarkCard extends ConsumerWidget {
 }
 
 /// 직접 녹화 카드 — 북마크 카드와 같은 틀 + "직접 녹화 · 0:42" 배지.
+///
+/// "업로드 실패" 카드만 길게 눌러 지운다(계획서 §9 — 다시 올리지 않는 녹화를
+/// 치울 길). 다른 상태엔 길게 누르기를 걸지 않는다 — 녹화 카드는 선택 모드에서
+/// 감춰지므로 북마크 카드의 꾹 눌러 고르기와 겹치지 않는다.
 class _RecordingCard extends ConsumerWidget {
   const _RecordingCard({required this.rec});
 
   final LiveRecording rec;
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final ok = await showVivaModal(
+      context,
+      message: 'live_recording_delete_title'.tr(),
+      cancelLabel: 'common_cancel'.tr(),
+      confirmLabel: 'live_recording_delete_confirm'.tr(),
+      confirmColor: AppTheme.danger,
+    );
+    if (!ok || !context.mounted) return;
+    // 목록에서는 바로 빠지고(deleting) 서버 정리는 대기열이 맡는다.
+    unawaited(ref.read(liveRecordingUploadQueueProvider.notifier).delete(rec));
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
     final repo = ref.watch(liveRecordingRepositoryProvider);
     final secs = rec.duration.inSeconds;
+    final failed = rec.uploadBadge == LiveRecordingUploadBadge.failed;
     return GestureDetector(
       key: ValueKey('live_recording_card_${rec.id}'),
       behavior: HitTestBehavior.opaque,
       onTap: () => context.push('/crecam/recordings/${rec.id}'),
+      onLongPress: failed ? () => _confirmDelete(context, ref) : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

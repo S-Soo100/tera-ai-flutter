@@ -31,6 +31,8 @@ import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.da
 
 import '../../helpers/inert_live_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
+import 'package:vivanaut/features/my_cage/domain/live_recording.dart';
+import 'package:vivanaut/features/my_cage/presentation/live_recording_controller.dart';
 
 /// Camera Home(카메라 탭 재설계 T2) 위젯 테스트.
 ///
@@ -164,6 +166,7 @@ Future<void> _pump(
   VoidCallback? onFeedLoad,
   VoidCallback? onLiveCreate,
   bool liveOffline = false,
+  List<LiveRecording> recordings = const [],
 }) async {
   tester.view.physicalSize = const Size(393, 1000);
   tester.view.devicePixelRatio = 1;
@@ -221,6 +224,7 @@ Future<void> _pump(
         latestHighlightBatchProvider.overrideWith((ref) async => latestBatch),
         highlightReadStoreProvider
             .overrideWithValue(_FakeReadStore(readBatches)),
+        liveRecordingsProvider.overrideWith((ref) async => recordings),
         allFavoriteClipsProvider.overrideWith((ref) async {
           final tick = ref.watch(_highlightReloadTick);
           if (tick > 0 && favoritesReloadGate != null) {
@@ -568,6 +572,28 @@ void main() {
     gate.complete();
     await tester.pumpAndSettle();
     expect(find.text('crecam_updated_today'), findsOneWidget);
+  });
+
+  testWidgets('북마크 없이 직접 녹화만 있어도 북마크 카드 부제는 "업데이트 …"', (tester) async {
+    await _pump(tester, recordings: [
+      LiveRecording(
+          id: 'r1',
+          ownerId: 'u1',
+          cameraId: _cameraId,
+          startedAt: DateTime.now(),
+          durationMs: 30000,
+          filePath: 'mem/r1.mp4'),
+    ]);
+    expect(
+        find.descendant(
+            of: find.byKey(CrecamScreen.bookmarkCardKey),
+            matching: find.text('crecam_updated_today')),
+        findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(CrecamScreen.bookmarkCardKey),
+            matching: find.text('crecam_home_no_updates')),
+        findsNothing);
   });
 
   testWidgets('북마크 재조회 중에도 카드 문구를 스켈레톤으로 바꾸지 않는다', (tester) async {

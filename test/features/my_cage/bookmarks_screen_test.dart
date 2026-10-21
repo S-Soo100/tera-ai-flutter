@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
+import 'package:vivanaut/features/my_cage/data/live_recording_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/live_recording.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_recording_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_recording_upload_queue.dart';
@@ -55,6 +56,7 @@ Future<void> _pump(
   List<FavoriteClip>? favorites,
   DateTime? dayFilter,
   List<LiveRecording>? recordings,
+  LiveRecordingUploadQueue? queue,
 }) async {
   pushedClipId = null;
   pushedPlaylist = null;
@@ -70,6 +72,8 @@ Future<void> _pump(
           liveRecordingsProvider.overrideWith((ref) async => recordings),
           liveRecordingBookmarksEntryProvider.overrideWith((ref) {}),
         ],
+        if (queue != null)
+          liveRecordingUploadQueueProvider.overrideWith((ref) => queue),
       ],
       child: MaterialApp.router(routerConfig: _router()),
     ),
@@ -88,7 +92,51 @@ LiveRecording _rec(String id, int hour, LiveRecordingUploadState state) =>
       uploadState: state,
     );
 
+class _Queue extends LiveRecordingUploadQueue {
+  _Queue()
+      : super(
+            ownerId: 'u1',
+            local: LiveRecordingRepository(),
+            api: () => throw UnimplementedError(),
+            currentOwner: () => 'u1');
+  final deleted = <String>[];
+  @override
+  Future<void> delete(LiveRecording rec) async => deleted.add(rec.id);
+}
+
 void main() {
+  testWidgets('업로드 실패 카드만 길게 눌러 삭제 — 확인창 → 대기열 delete', (tester) async {
+    final queue = _Queue();
+    await _pump(tester,
+        favorites: const [],
+        queue: queue,
+        recordings: [
+          _rec('fail', 23, LiveRecordingUploadState.failed),
+          _rec('wait', 22, LiveRecordingUploadState.pending),
+        ]);
+    Finder modal() => find.byKey(const Key('viva_modal_surface'));
+    // 다른 상태엔 길게 누르기를 걸지 않는다(기존 동작 그대로).
+    GestureDetector card(String id) => tester.widget<GestureDetector>(
+        find.byKey(ValueKey('live_recording_card_$id')));
+    expect(card('wait').onLongPress, isNull);
+    expect(card('fail').onLongPress, isNotNull);
+
+    await tester
+        .longPress(find.byKey(const ValueKey('live_recording_card_fail')));
+    await tester.pumpAndSettle();
+    expect(modal(), findsOneWidget);
+    await tester.tap(find.byKey(const Key('viva_modal_cancel')));
+    await tester.pumpAndSettle();
+    expect(queue.deleted, isEmpty);
+
+    await tester
+        .longPress(find.byKey(const ValueKey('live_recording_card_fail')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('viva_modal_confirm')));
+    await tester.pumpAndSettle();
+    expect(queue.deleted, ['fail']);
+  });
+
   testWidgets('직접 녹화 카드 업로드 표시 — 중/대기/실패, 올라간 건 없음', (tester) async {
     await _pump(tester, favorites: const [], recordings: [
       _rec('up', 23, LiveRecordingUploadState.uploading),
@@ -100,7 +148,8 @@ void main() {
     Finder label(String id) =>
         find.byKey(ValueKey('live_recording_upload_$id'));
     String text(String id) => tester
-        .widget<Text>(find.descendant(of: label(id), matching: find.byType(Text)))
+        .widget<Text>(
+            find.descendant(of: label(id), matching: find.byType(Text)))
         .data!;
     for (final id in ['up', 'wait', 'block', 'fail', 'done']) {
       await tester.scrollUntilVisible(
