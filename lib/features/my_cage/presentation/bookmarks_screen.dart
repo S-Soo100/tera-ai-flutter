@@ -9,14 +9,13 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/am_pm_time.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
-import '../../../shared/widgets/viva_modal.dart';
 import '../domain/favorite_clip.dart';
-import 'dart:io';
-
-import '../data/live_recording_repository.dart';
 import '../domain/live_recording.dart';
+import '../domain/player_entry.dart';
+import 'live_recording_actions.dart';
 import 'live_recording_controller.dart';
 import 'live_recording_upload_queue.dart';
+import 'widgets/player_entry_thumb.dart';
 import 'my_cage_providers.dart';
 import 'clip_visibility_providers.dart';
 import 'clip_memo_providers.dart';
@@ -208,22 +207,37 @@ class BookmarksScreen extends ConsumerWidget {
       );
     }
 
-    // 재생목록 = 현재 필터·정렬 순서의 북마크 clip id 전체.
-    final playlist = [for (final f in filtered) f.clipId];
-
     // 북마크(북마크한 시각)와 직접 녹화(찍은 시각)를 최신순으로 섞는다.
-    final items = <({DateTime at, Widget card})>[
-      for (final f in filtered)
-        (at: f.favoritedAt, card: _BookmarkCard(clip: f, playlist: playlist)),
-      for (final r in recs) (at: r.startedAt, card: _RecordingCard(rec: r)),
+    final order = <({DateTime at, Object item})>[
+      for (final f in filtered) (at: f.favoritedAt, item: f),
+      for (final r in recs) (at: r.startedAt, item: r),
     ]..sort((a, b) => b.at.compareTo(a.at));
+
+    // 재생목록 = 화면과 같은 순서의 항목 키 전체 — 플레이어의 이전/다음·
+    // 필름스트립이 북마크 영상과 직접 녹화(`rec:<id>`)를 섞어 넘긴다.
+    final playlist = [
+      for (final o in order)
+        switch (o.item) {
+          final FavoriteClip f => ClipEntry(f.clipId).key,
+          final LiveRecording r => RecordingEntry(r.id).key,
+          _ => throw StateError('unknown bookmark item'),
+        }
+    ];
+    final items = [
+      for (final o in order)
+        switch (o.item) {
+          final FavoriteClip f => _BookmarkCard(clip: f, playlist: playlist),
+          final LiveRecording r => _RecordingCard(rec: r, playlist: playlist),
+          _ => throw StateError('unknown bookmark item'),
+        }
+    ];
 
     return ListView.separated(
       // top 24 — Figma 668:717 상단바(4238)→첫 카드(4261) 실측 23≈24.
       padding: const EdgeInsets.fromLTRB(_margin, 24, _margin, 24),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 20),
-      itemBuilder: (context, i) => items[i].card,
+      itemBuilder: (context, i) => items[i],
     );
   }
 }
@@ -310,39 +324,39 @@ class _BookmarkCard extends ConsumerWidget {
       '${DateFormat('yyyy. MM. dd').format(t)} · ${formatAmPmTime(t)}';
 }
 
-/// 직접 녹화 카드 — 북마크 카드와 같은 틀 + "직접 녹화 · 0:42" 배지.
+/// 직접 녹화 카드 — 북마크 카드와 같은 틀 + "직접 녹화 · 0:42" 배지. 메모가
+/// 있으면 북마크 카드처럼 오른쪽에 메모 카드(키 `rec:<id>`).
 ///
 /// "업로드 실패" 카드만 길게 눌러 지운다(계획서 §9 — 다시 올리지 않는 녹화를
 /// 치울 길). 다른 상태엔 길게 누르기를 걸지 않는다 — 녹화 카드는 선택 모드에서
 /// 감춰지므로 북마크 카드의 꾹 눌러 고르기와 겹치지 않는다.
 class _RecordingCard extends ConsumerWidget {
-  const _RecordingCard({required this.rec});
+  const _RecordingCard({required this.rec, required this.playlist});
 
   final LiveRecording rec;
+  final List<String> playlist;
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    final ok = await showVivaModal(
-      context,
-      message: 'live_recording_delete_title'.tr(),
-      cancelLabel: 'common_cancel'.tr(),
-      confirmLabel: 'live_recording_delete_confirm'.tr(),
-      confirmColor: AppTheme.danger,
-    );
-    if (!ok || !context.mounted) return;
-    // 목록에서는 바로 빠지고(deleting) 서버 정리는 대기열이 맡는다.
-    unawaited(ref.read(liveRecordingUploadQueueProvider.notifier).delete(rec));
+    if (!await confirmLiveRecordingDelete(context) || !context.mounted) return;
+    // 목록에서는 바로 빠지고(deleting) 서버 정리는 대기열이 맡는다. 메모도 지운다.
+    unawaited(ref.read(liveRecordingDeleterProvider)(rec));
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = context.glass;
-    final repo = ref.watch(liveRecordingRepositoryProvider);
+    final owner = ref.watch(clipMemoAccountProvider);
+    final memoKey = (ownerId: rec.ownerId, clipId: RecordingEntry(rec.id).key);
+    final memo = owner == rec.ownerId
+        ? ref.watch(clipMemoProvider(memoKey)).valueOrNull
+        : null;
     final secs = rec.duration.inSeconds;
     final failed = rec.uploadBadge == LiveRecordingUploadBadge.failed;
     return GestureDetector(
       key: ValueKey('live_recording_card_${rec.id}'),
       behavior: HitTestBehavior.opaque,
-      onTap: () => context.push('/crecam/recordings/${rec.id}'),
+      onTap: () =>
+          context.push('/crecam/recordings/${rec.id}', extra: playlist),
       onLongPress: failed ? () => _confirmDelete(context, ref) : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -363,40 +377,40 @@ class _RecordingCard extends ConsumerWidget {
           const SizedBox(height: 8),
           SizedBox(
             height: 180,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.all(Radius.circular(12)),
-              child: Stack(fit: StackFit.expand, children: [
-                ColoredBox(color: glass.surfaceTint),
-                if (rec.thumbPath != null)
-                  FutureBuilder<String>(
-                    future: repo.resolve(rec.thumbPath!),
-                    builder: (_, snap) => snap.hasData
-                        ? Image.file(File(snap.data!),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const SizedBox.shrink())
-                        : const SizedBox.shrink(),
-                  ),
-                Positioned(
-                  left: 8,
-                  bottom: 8,
-                  child: _RecordingChip(
-                    'live_recording_badge'.tr(namedArgs: {
-                      'len':
-                          '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}'
-                    }),
-                  ),
-                ),
-                // 업로드 상태(2026-10-21) — 올라간 녹화는 표시 없음.
-                if (_uploadLabelKey(rec.uploadBadge) case final key?)
+            child: Row(children: [
+              Expanded(
+                  child: ClipRRect(
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+                child: Stack(fit: StackFit.expand, children: [
+                  ColoredBox(color: glass.surfaceTint),
+                  LiveRecordingThumb(
+                      thumbPath: rec.thumbPath,
+                      fallback: const SizedBox.shrink()),
                   Positioned(
-                    right: 8,
+                    left: 8,
                     bottom: 8,
-                    child: _RecordingChip(key.tr(),
-                        key: ValueKey('live_recording_upload_${rec.id}')),
+                    child: _RecordingChip(
+                      'live_recording_badge'.tr(namedArgs: {
+                        'len':
+                            '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}'
+                      }),
+                    ),
                   ),
-              ]),
-            ),
+                  // 업로드 상태(2026-10-21) — 올라간 녹화는 표시 없음.
+                  if (_uploadLabelKey(rec.uploadBadge) case final key?)
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: _RecordingChip(key.tr(),
+                          key: ValueKey('live_recording_upload_${rec.id}')),
+                    ),
+                ]),
+              )),
+              if (memo != null) ...[
+                const SizedBox(width: 8),
+                ClipMemoCard(memo: memo, memoKey: memoKey),
+              ],
+            ]),
           ),
         ],
       ),
