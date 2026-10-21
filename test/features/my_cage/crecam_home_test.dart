@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_feed_controller.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +24,7 @@ import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivanaut/features/my_cage/domain/nightly_report.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/presentation/crecam_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/clip_selection_widgets.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/camera_live_area.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
@@ -616,4 +618,53 @@ void main() {
     expect(find.text('crecam_highlights_new'), findsNothing);
     expect(find.text('crecam_updated_days'), findsOneWidget);
   });
+
+  // 2026-10-21 사용자 보고: 목록 맨 위 근처에서 꾹 누르면 라이브·카드가 접히며
+  // 누른 영상이 위로 튀어(약 390pt) 손가락 아래 다른 영상이 끌기에 걸렸다.
+  testWidgets('맨 위에서 꾹 눌러 선택을 시작해도 누른 영상은 손가락 아래 그대로', (tester) async {
+    await _pump(tester);
+    final thumb = find.byWidgetPredicate(
+        (w) => w is ClipSelectableThumb && w.clipId == 'c3');
+    final before = tester.getCenter(thumb);
+    final gesture = await tester.startGesture(before);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('clip_select_count'), findsOneWidget, reason: '선택 모드');
+    expect(tester.getCenter(thumb).dy, moreOrLessEquals(before.dy, epsilon: 4),
+        reason: '손가락을 누르고 있는 동안 영상이 움직이지 않는다');
+
+    // 손을 떼면 남은 빈자리가 걷히며 목록이 위로 붙는다.
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(tester.getCenter(thumb).dy, lessThan(before.dy - 100));
+  });
+
+  testWidgets('내려 둔 목록에서 꾹 눌러도, 선택을 끝내도 보던 영상이 제자리', (tester) async {
+    final many = [
+      for (var i = 0; i < 40; i++) _clip('m$i', 10 - i ~/ 12, 59 - i),
+    ];
+    await _pump(tester, clips: many);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+    await tester.pumpAndSettle();
+    final thumb = find.byWidgetPredicate(
+        (w) => w is ClipSelectableThumb && w.clipId == 'm16');
+    final before = tester.getCenter(thumb);
+    final gesture = await tester.startGesture(before);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    await tester.pump();
+    await tester.pump();
+    expect(tester.getCenter(thumb).dy, moreOrLessEquals(before.dy, epsilon: 4));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(tester.getCenter(thumb).dy, moreOrLessEquals(before.dy, epsilon: 4),
+        reason: '스크롤로 메웠으니 손을 떼도 그대로');
+
+    // 선택 종료 — 라이브·카드가 다시 펼쳐져도 보던 영상은 그 자리 근처.
+    await tester.tap(find.byWidgetPredicate((w) => w is ClipSelectHeaderButton));
+    await tester.pumpAndSettle();
+    expect(find.text('clip_select_count'), findsNothing);
+    expect(tester.getCenter(thumb).dy, moreOrLessEquals(before.dy, epsilon: 24));
+  });
 }
+

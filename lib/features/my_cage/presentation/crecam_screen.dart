@@ -2,6 +2,7 @@ import 'highlight_read_providers.dart';
 import '../../auth/presentation/auth_providers.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -60,14 +61,26 @@ class CrecamScreen extends ConsumerStatefulWidget {
 }
 
 class _CrecamScreenState extends ConsumerState<CrecamScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   static const _scope = ClipSelectionScope.feed;
   final _scroll = ScrollController();
   final _headerKey = GlobalKey();
+  final _bodyKey = GlobalKey();
 
   /// 선택 모드에서 접은 라이브·카드 영역 높이 — 접고 펼 때 스크롤을 그만큼
   /// 옮겨 보던 영상이 제자리에 남게 한다(꾹 누른 영상이 화면 밖으로 튀지 않게).
   double _collapsedHeader = 0;
+
+  /// 꾹 눌러 선택을 시작했는데 스크롤이 맨 위 근처라 접힌 높이를 스크롤로
+  /// 다 메우지 못할 때, 그 모자란 만큼 목록 위에 두는 빈자리. 누른 영상이
+  /// 손가락 아래 그대로 남아야 이어서 끄는 범위가 맞는다(2026-10-21 — 전엔
+  /// 영상이 위로 튀어 손가락 아래 다른 영상부터 골라졌다). 손을 떼면 걷힌다.
+  late final _anchor =
+      AnimationController(vsync: this, upperBound: double.maxFinite);
+
+  /// 화면에 닿아 있는 손가락 수 — 선택 모드가 꾹 누르기로 켜졌는지(손가락이
+  /// 아직 닿아 있음) [영상 선택] 버튼으로 켜졌는지(이미 뗌) 가린다.
+  int _pointers = 0;
 
   @override
   void initState() {
@@ -79,6 +92,7 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _scroll.dispose();
+    _anchor.dispose();
     super.dispose();
   }
 
@@ -96,13 +110,87 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
         : _collapsedHeader;
     if (selecting) _collapsedHeader = height;
     if (height == 0) return;
+    // 꾹 눌러 시작했으면 손가락 아래 영상 칸을 붙잡아 두고, 바뀐 화면에서 그
+    // 칸이 움직인 만큼을 되돌린다 — 라이브·카드가 접히는 것 말고도 위 막대
+    // (카메라 고르기 ↔ "N개 선택됨")와 시간 머리(체크 칸)가 함께 바뀐다.
+    final cell = selecting && _pointers > 0 ? _cellAt(_downAt) : null;
+    final cellTop = cell == null ? null : _topOf(cell);
+    // 접히는(펼쳐지는) 높이 중 빈자리가 대신 맡는 만큼은 스크롤을 옮기지 않는다.
+    var pad = 0.0;
+    if (selecting) {
+      final pixels = _scroll.hasClients ? _scroll.position.pixels : 0.0;
+      if (cell != null && pixels < height) pad = height - pixels;
+      _anchor.value = pad;
+    } else {
+      pad = _anchor.value;
+      _anchor
+        ..stop()
+        ..value = 0;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scroll.hasClients) return;
       final position = _scroll.position;
-      final target =
-          selecting ? position.pixels - height : position.pixels + height;
+      final moved = cell == null || cellTop == null || !cell.attached
+          ? null
+          : _topOf(cell) - cellTop;
+      double target;
+      if (moved == null) {
+        target = selecting
+            ? position.pixels - height + pad
+            : position.pixels + height - pad;
+      } else if (pad > 0) {
+        // 칸이 내려간 만큼 빈자리를 줄이고, 모자라면 스크롤로.
+        final next = pad - moved;
+        _anchor.value = next < 0 ? 0 : next;
+        target = next < 0 ? position.pixels - next : position.pixels;
+      } else {
+        target = position.pixels + moved;
+      }
       _scroll.jumpTo(target.clamp(0, position.maxScrollExtent).toDouble());
     });
+  }
+
+  /// [global] 아래 영상 칸(드래그 선택 표지 [ClipDragCell]).
+  RenderMetaData? _cellAt(Offset? global) {
+    final box = _bodyKey.currentContext?.findRenderObject();
+    if (global == null || box is! RenderBox || !box.hasSize) return null;
+    final result = BoxHitTestResult();
+    box.hitTest(result, position: box.globalToLocal(global));
+    for (final entry in result.path) {
+      final target = entry.target;
+      if (target is RenderMetaData && target.metaData is ClipDragCell) {
+        return target;
+      }
+    }
+    return null;
+  }
+
+  static double _topOf(RenderBox box) => box.localToGlobal(Offset.zero).dy;
+
+  Offset? _downAt;
+
+  void _onPointerDown(PointerDownEvent event) {
+    _pointers++;
+    _downAt = event.position;
+  }
+
+  /// 손을 다 떼면 빈자리를 걷는다 — 스크롤로 흡수할 수 있는 만큼은 같은
+  /// 프레임에 맞바꿔(화면 변화 없음) 지우고, 남은 만큼만 부드럽게 올린다.
+  void _onPointerEnd(PointerEvent _) {
+    if (_pointers > 0) _pointers--;
+    if (_pointers > 0 || _anchor.value == 0 || _anchor.isAnimating) return;
+    final pad = _anchor.value;
+    if (_scroll.hasClients) {
+      final pixels = _scroll.position.pixels;
+      final absorbed = pixels < pad ? pixels : pad;
+      if (absorbed > 0) {
+        _anchor.value = pad - absorbed;
+        _scroll.jumpTo(pixels - absorbed);
+      }
+    }
+    _anchor.animateTo(0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic);
   }
 
   // 백그라운드에서 Realtime 소켓이 죽으면 이벤트가 다시 오지 않으므로,
@@ -246,79 +334,97 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
                           ? 'crecam_empty_bookmarks'.tr()
                           : null,
                       onSecondary: () => context.push('/crecam/bookmarks'))
-                  : ClipDragSelectRegion(
-                      scope: _scope,
-                      scrollController: _scroll,
-                      orderedIds: _feedIds,
-                      child: NotificationListener<ScrollNotification>(
-                        onNotification: _onScroll,
-                        child: RefreshIndicator(
-                          onRefresh: _refresh,
-                          notificationPredicate: (notification) =>
-                              !selection.active &&
-                              notification.depth == 0 &&
-                              notification.metrics.axis == Axis.vertical,
-                          child: CustomScrollView(
-                            key: PageStorageKey(
-                                ref.watch(clipFeedQueryProvider)),
-                            controller: _scroll,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            slivers: [
-                              SliverList(
-                                  delegate: SliverChildListDelegate([
-                                KeepAliveCameraHeader(
-                                    // 선택 모드엔 목록만(Figma 1497:13355) — 접어도
-                                    // 라이브 상태는 살려 둔다(Offstage).
-                                    child: Offstage(
-                                        offstage: selection.active,
-                                        child: Column(
-                                            key: _headerKey,
-                                            children: const [
-                                              Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal:
-                                                          CrecamScreen._margin),
-                                                  child: CameraLiveArea()),
-                                              SizedBox(
-                                                  height:
-                                                      CrecamScreen._sectionGap),
-                                              Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal:
-                                                          CrecamScreen._margin),
-                                                  child: _EntryCards()),
-                                              // 2px of the 16px visual gap belongs to the
-                                              // period button's expanded 44px touch target.
-                                              SizedBox(
-                                                  height:
-                                                      CrecamScreen._sectionGap -
-                                                          2),
-                                              Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal:
-                                                          CrecamScreen._margin),
-                                                  child: Align(
-                                                      alignment:
-                                                          Alignment.centerRight,
-                                                      child: _PeriodButton())),
-                                              SizedBox(
-                                                  height:
-                                                      CrecamScreen._gap - 2),
-                                            ]))),
-                              ])),
-                              SliverPadding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: CrecamScreen._margin),
-                                sliver: ClipFeedSlivers(
-                                    query: ref.watch(clipFeedQueryProvider)),
-                              ),
-                              SliverToBoxAdapter(
-                                  child: SizedBox(
-                                      height: selection.active
-                                          ? 16
-                                          : glassDockListPadding(context)
-                                              .bottom)),
-                            ],
+                  : Listener(
+                      key: _bodyKey,
+                      onPointerDown: _onPointerDown,
+                      onPointerUp: _onPointerEnd,
+                      onPointerCancel: _onPointerEnd,
+                      child: ClipDragSelectRegion(
+                        scope: _scope,
+                        scrollController: _scroll,
+                        orderedIds: _feedIds,
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: _onScroll,
+                          child: RefreshIndicator(
+                            onRefresh: _refresh,
+                            notificationPredicate: (notification) =>
+                                !selection.active &&
+                                notification.depth == 0 &&
+                                notification.metrics.axis == Axis.vertical,
+                            child: CustomScrollView(
+                              key: PageStorageKey(
+                                  ref.watch(clipFeedQueryProvider)),
+                              controller: _scroll,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              slivers: [
+                                SliverToBoxAdapter(
+                                    child: AnimatedBuilder(
+                                        animation: _anchor,
+                                        builder: (_, __) =>
+                                            SizedBox(height: _anchor.value))),
+                                SliverList(
+                                    delegate: SliverChildListDelegate([
+                                  KeepAliveCameraHeader(
+                                      // 선택 모드엔 목록만(Figma 1497:13355) — 접어도
+                                      // 라이브 상태는 살려 둔다(Offstage).
+                                      child: Offstage(
+                                          offstage: selection.active,
+                                          child: Column(
+                                              key: _headerKey,
+                                              children: const [
+                                                Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal:
+                                                                CrecamScreen
+                                                                    ._margin),
+                                                    child: CameraLiveArea()),
+                                                SizedBox(
+                                                    height: CrecamScreen
+                                                        ._sectionGap),
+                                                Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal:
+                                                                CrecamScreen
+                                                                    ._margin),
+                                                    child: _EntryCards()),
+                                                // 2px of the 16px visual gap belongs to the
+                                                // period button's expanded 44px touch target.
+                                                SizedBox(
+                                                    height: CrecamScreen
+                                                            ._sectionGap -
+                                                        2),
+                                                Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            horizontal:
+                                                                CrecamScreen
+                                                                    ._margin),
+                                                    child: Align(
+                                                        alignment: Alignment
+                                                            .centerRight,
+                                                        child:
+                                                            _PeriodButton())),
+                                                SizedBox(
+                                                    height:
+                                                        CrecamScreen._gap - 2),
+                                              ]))),
+                                ])),
+                                SliverPadding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: CrecamScreen._margin),
+                                  sliver: ClipFeedSlivers(
+                                      query: ref.watch(clipFeedQueryProvider)),
+                                ),
+                                SliverToBoxAdapter(
+                                    child: SizedBox(
+                                        height: selection.active
+                                            ? 16
+                                            : glassDockListPadding(context)
+                                                .bottom)),
+                              ],
+                            ),
                           ),
                         ),
                       ),
