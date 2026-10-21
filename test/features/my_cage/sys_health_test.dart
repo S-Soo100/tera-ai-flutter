@@ -80,6 +80,10 @@ SysHealth _h({int? uptime, String? reset, int? rssi, int at = 0}) => SysHealth(
     rssi: rssi,
     statsAt: DateTime.utc(2026, 9, 28, 12).add(Duration(seconds: 15 * at)));
 
+/// 확인창 문구는 어절 줄바꿈 방지 문자(U+2060)가 끼어 있다 — 빼고 비교한다.
+Finder _plainText(String part) => find.byWidgetPredicate((w) =>
+    w is Text && (w.data ?? '').replaceAll('\u2060', '').contains(part));
+
 void main() {
   group('펌웨어 판정', () {
     test('0.2.0 이상만 재시작을 안다 — 숫자로 비교', () {
@@ -727,8 +731,8 @@ void main() {
       await tester.ensureVisible(row);
       await tester.tap(row);
       await tester.pumpAndSettle();
-      expect(find.textContaining('device_reboot_confirm'), findsOneWidget);
-      expect(find.textContaining('device_reboot_schedule_note'),
+      expect(_plainText('device_reboot_confirm'), findsOneWidget);
+      expect(_plainText('device_reboot_schedule_note'),
           kDeviceRebootScheduleNote ? findsOneWidget : findsNothing);
     });
   });
