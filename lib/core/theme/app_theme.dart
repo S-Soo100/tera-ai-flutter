@@ -35,6 +35,14 @@ class AppTheme {
   static const liveOnDark = Color(0xFFFFFFFF); // 어두운 면 위 글리프·활성 점
   static const liveOnDarkFaint = Color(0x59FFFFFF); // 비활성 점(white 35%)
   static const liveScrim = Color(0x4D000000); // 확장 버튼 원판(black 30%)
+
+  // 카메라 오프라인 안내 면(Figma 1525:10689·1523:5213) — 라이브 면처럼 테마와
+  // 무관하게 고정. 면 Labels/Primary, 아이콘·문구 Labels/Quaternary, 버튼
+  // Fill/Button 위 Labels/Secondary.
+  static const liveOfflineSurface = VivaColors.labelPrimary;
+  static const liveOfflineText = VivaColors.labelQuaternary;
+  static const liveOfflineButton = VivaColors.fillButton;
+  static const liveOfflineButtonText = VivaColors.labelSecondary;
   static const surfaceMuted = VivaColors.fillButton; // Chip Disabled 배경·Tabs 보더
 
   // ── 서브컬러 (Figma: "여기는 위에있는 컬러 아니고 서브컬러들") ──

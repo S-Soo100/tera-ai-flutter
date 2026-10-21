@@ -85,9 +85,8 @@ void main() {
     final c = await _pump(
         tester,
         const WebRtcLiveState(
-            phase: WebRtcLivePhase.failed,
-            errorKey: 'crecam_live_error_camera_offline'));
-    expect(find.text('crecam_live_error_camera_offline'), findsOneWidget);
+            phase: WebRtcLivePhase.failed, errorKey: 'crecam_live_error_ice'));
+    expect(find.text('crecam_live_error_ice'), findsOneWidget);
     await tester.tap(find.descendant(
         of: find.byKey(WebRtcLiveView.retryButtonKey),
         matching: find.byType(OutlinedButton)));
@@ -118,8 +117,8 @@ void main() {
           path: '/',
           builder: (_, __) => const Scaffold(
               body: SizedBox(
-                  width: 320,
-                  height: 180,
+                  width: 369,
+                  height: 271,
                   child: WebRtcLiveView(cameraUuid: _cam)))),
       GoRoute(
           path: '/devices/wifi',
@@ -198,6 +197,127 @@ void main() {
     expect(find.byKey(WebRtcLiveView.wifiButtonKey), findsNothing);
   });
 
+  // ── 카메라 오프라인 안내 (Figma 1525:10689 · 1523:5213, 2026-10-21) ────────
+
+  Future<_Fixed> pumpOffline(WidgetTester tester,
+      {double width = 369,
+      double height = 271,
+      bool showWifiChange = true,
+      bool quietRetry = false}) async {
+    late _Fixed c;
+    await tester.pumpWidget(ProviderScope(
+      key: UniqueKey(),
+      overrides: [
+        webrtcLiveControllerProvider(_cam).overrideWith((ref) => c = _Fixed(
+            ref,
+            _cam,
+            WebRtcLiveState(
+                phase: quietRetry
+                    ? WebRtcLivePhase.connectingConfig
+                    : WebRtcLivePhase.failed,
+                quietRetry: quietRetry,
+                errorKey: WebRtcLiveView.offlineErrorKey))),
+        camerasProvider.overrideWith((ref) => Stream.value([
+              TerraCamera(
+                  id: _cam,
+                  cameraId: 'p4cam',
+                  name: '카메라 2',
+                  isOnline: false,
+                  createdAt: DateTime(2026, 9, 8)),
+            ])),
+      ],
+      child: MaterialApp(
+          home: Center(
+              child: SizedBox(
+                  width: width,
+                  height: height,
+                  child: WebRtcLiveView(
+                      cameraUuid: _cam, showWifiChange: showWifiChange)))),
+    ));
+    await tester.pump();
+    await tester.pump();
+    return c;
+  }
+
+  testWidgets('오프라인 — #1E1E1E 면에 아이콘·문구·[카메라 재연결]·[네트워크 변경]', (tester) async {
+    await pumpOffline(tester);
+    final surface =
+        tester.widget<ColoredBox>(find.byKey(WebRtcLiveView.offlineKey));
+    expect(surface.color, const Color(0xFF1E1E1E));
+    final icon = tester.widget<Image>(find.byType(Image));
+    expect((icon.image as AssetImage).assetName,
+        'assets/icons/redesign_v2/png/videocam_alert.png');
+    expect(icon.color, const Color(0xFF949090));
+    expect(tester.getSize(find.byType(Image)), const Size(62, 62));
+    // 단어 단위 줄바꿈 — 글자 사이에 WORD JOINER가 들어간다.
+    final text = tester.widget<Text>(find.byWidgetPredicate((w) =>
+        w is Text &&
+        (w.data ?? '').replaceAll('\u2060', '') ==
+            'crecam_live_offline_title'));
+    expect(text.style!.fontSize, 14);
+    expect(text.style!.color, const Color(0xFF949090));
+    expect(find.text('crecam_live_reconnect'), findsOneWidget);
+    expect(find.text('crecam_live_network_change'), findsOneWidget);
+    // 옛 안내(사유·전원 확인 문구)는 이 레이아웃에 없다.
+    expect(find.text('crecam_live_error_camera_offline'), findsNothing);
+    // 369 폭: 좌우 24 → 321, 간격 12 → 154.5×44 두 개.
+    expect(tester.getSize(find.byKey(WebRtcLiveView.retryButtonKey)),
+        const Size(154.5, 44));
+    expect(tester.getSize(find.byKey(WebRtcLiveView.wifiButtonKey)),
+        const Size(154.5, 44));
+    final gap = tester.getTopLeft(find.byKey(WebRtcLiveView.wifiButtonKey)).dx -
+        tester.getTopRight(find.byKey(WebRtcLiveView.retryButtonKey)).dx;
+    expect(gap, 12);
+  });
+
+  testWidgets('오프라인 — 넓은 면에서도 버튼은 각 175를 넘지 않는다', (tester) async {
+    await pumpOffline(tester, width: 600, height: 300);
+    expect(
+        tester.getSize(find.byKey(WebRtcLiveView.retryButtonKey)).width, 175);
+    expect(tester.getSize(find.byKey(WebRtcLiveView.wifiButtonKey)).width, 175);
+  });
+
+  testWidgets('오프라인 [카메라 재연결]은 수동 재시도', (tester) async {
+    final c = await pumpOffline(tester);
+    await tester.tap(find.byKey(WebRtcLiveView.retryButtonKey));
+    await tester.pump();
+    expect(c.retries, 1);
+  });
+
+  testWidgets('오프라인 + showWifiChange=false(가로)면 [카메라 재연결] 하나만', (tester) async {
+    await pumpOffline(tester, width: 600, height: 300, showWifiChange: false);
+    expect(find.byKey(WebRtcLiveView.retryButtonKey), findsOneWidget);
+    expect(find.byKey(WebRtcLiveView.wifiButtonKey), findsNothing);
+    expect(
+        tester.getSize(find.byKey(WebRtcLiveView.retryButtonKey)).width, 175);
+  });
+
+  testWidgets('뒤에서 다시 확인하는 중에도 오프라인 안내를 유지한다', (tester) async {
+    await pumpOffline(tester, quietRetry: true);
+    expect(find.byKey(WebRtcLiveView.offlineKey), findsOneWidget);
+  });
+
+  test('isOfflineNotice — 오프라인 실패·그 재확인만', () {
+    const off = WebRtcLiveView.offlineErrorKey;
+    expect(
+        WebRtcLiveView.isOfflineNotice(const WebRtcLiveState(
+            phase: WebRtcLivePhase.failed, errorKey: off)),
+        isTrue);
+    expect(
+        WebRtcLiveView.isOfflineNotice(const WebRtcLiveState(
+            phase: WebRtcLivePhase.offering, quietRetry: true, errorKey: off)),
+        isTrue);
+    expect(
+        WebRtcLiveView.isOfflineNotice(const WebRtcLiveState(
+            phase: WebRtcLivePhase.failed,
+            errorKey: 'crecam_live_error_no_video')),
+        isFalse);
+    expect(
+        WebRtcLiveView.isOfflineNotice(const WebRtcLiveState(
+            phase: WebRtcLivePhase.offering, errorKey: off)),
+        isFalse);
+  });
+
   // ── 시청 제한 (2026-09-30) ─────────────────────────────────────────────────
 
   Finder limitButton() => find.descendant(
@@ -222,8 +342,7 @@ void main() {
     final c = await _pump(
         tester, const WebRtcLiveState(phase: WebRtcLivePhase.offering));
     c.set(const WebRtcLiveState(
-        phase: WebRtcLivePhase.limited,
-        limit: LiveLimit(LiveLimitKind.inUse)));
+        phase: WebRtcLivePhase.limited, limit: LiveLimit(LiveLimitKind.inUse)));
     await tester.pump();
     await tester.pump();
     expect(find.text('crecam_live_in_use_title'), findsOneWidget);
@@ -237,8 +356,7 @@ void main() {
     final c = await _pump(
         tester, const WebRtcLiveState(phase: WebRtcLivePhase.offering));
     c.set(const WebRtcLiveState(
-        phase: WebRtcLivePhase.limited,
-        limit: LiveLimit(LiveLimitKind.inUse)));
+        phase: WebRtcLivePhase.limited, limit: LiveLimit(LiveLimitKind.inUse)));
     await tester.pump();
     await tester.pump();
     await tester.tap(find.byKey(const Key('viva_modal_cancel')));
@@ -343,8 +461,7 @@ void main() {
       }
     });
 
-    testWidgets('무응답·영상 없음은 재시작 권유, 멈춤은 공유기 안내를 그대로 둔다',
-        (tester) async {
+    testWidgets('무응답·영상 없음은 재시작 권유, 멈춤은 공유기 안내를 그대로 둔다', (tester) async {
       for (final key in [
         'crecam_live_error_unresponsive',
         'crecam_live_error_no_video',
@@ -406,8 +523,7 @@ void main() {
       await tester.pump(kRebootTimeout);
     });
 
-    testWidgets('재시작 중엔 버튼 없이 안내만, 60초가 넘으면 "늦어지고 있어요"',
-        (tester) async {
+    testWidgets('재시작 중엔 버튼 없이 안내만, 60초가 넘으면 "늦어지고 있어요"', (tester) async {
       for (final (slow, label) in [
         (false, 'crecam_live_rebooting'),
         (true, 'crecam_live_rebooting_slow'),
@@ -415,10 +531,8 @@ void main() {
         await tester.pumpWidget(ProviderScope(
           key: UniqueKey(),
           overrides: [
-            webrtcLiveControllerProvider(_cam).overrideWith((ref) => _Fixed(
-                ref,
-                _cam,
-                const WebRtcLiveState(phase: WebRtcLivePhase.rebooting))),
+            webrtcLiveControllerProvider(_cam).overrideWith((ref) => _Fixed(ref,
+                _cam, const WebRtcLiveState(phase: WebRtcLivePhase.rebooting))),
             rebootProvider.overrideWith(() => _Rebooting(slow)),
           ],
           child: const MaterialApp(

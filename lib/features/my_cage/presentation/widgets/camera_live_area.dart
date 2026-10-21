@@ -12,6 +12,7 @@ import '../../../home/domain/enclosure_set.dart';
 import '../../../home/presentation/home_set_providers.dart';
 import '../../domain/terra_camera.dart';
 import '../my_cage_providers.dart';
+import '../webrtc_live_controller.dart';
 import 'webrtc_live_view.dart';
 
 /// 카메라 탭 라이브 영역 — Figma Camera Home (668:427), 369×271 radius 12.
@@ -219,6 +220,8 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
       });
     }
     final current = cameras[selected];
+    final offline = ref.watch(webrtcLiveControllerProvider(current.id)
+        .select(WebRtcLiveView.isOfflineNotice));
 
     final surface = LiveSurface(
       aspectRatio: CameraLiveArea.aspectRatio,
@@ -259,16 +262,19 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
       child: Stack(
         children: [
           surface,
-          Positioned(
-            // Figma 668:446 실측 — 우 20(1021−1001)·하 12. 좌 이름 배지의
-            // 12와 다르다(2026-09-07 재대조).
-            right: 20,
-            bottom: 12,
-            child: _ExpandButton(
-              key: CameraLiveArea.expandButtonKey,
-              cameraId: current.id,
+          // 카메라 오프라인 안내 중엔 숨긴다(Figma 1525:10689 메모 "이때는 가로
+          // 크게보기 버튼 사라짐").
+          if (!offline)
+            Positioned(
+              // Figma 668:446 실측 — 우 20(1021−1001)·하 12. 좌 이름 배지의
+              // 12와 다르다(2026-09-07 재대조).
+              right: 20,
+              bottom: 12,
+              child: _ExpandButton(
+                key: CameraLiveArea.expandButtonKey,
+                cameraId: current.id,
+              ),
             ),
-          ),
         ],
       ),
     );

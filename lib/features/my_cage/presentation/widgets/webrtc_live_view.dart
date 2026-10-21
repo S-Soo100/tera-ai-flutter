@@ -9,8 +9,9 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../notification/presentation/push_pre_popup.dart'
+    show keepAllWords;
 import '../../../../shared/widgets/live_surface.dart';
-import '../../../../shared/domain/time_ago.dart';
 import '../../../../shared/providers/clock_providers.dart';
 import '../../../../shared/widgets/viva_modal.dart';
 import '../../domain/live_limit.dart';
@@ -22,6 +23,7 @@ import '../my_cage_providers.dart';
 import '../sys_health_controllers.dart';
 import '../../../../shared/widgets/keep_screen_on.dart';
 import '../webrtc_live_controller.dart';
+import 'live_control_rows.dart' show LiveRasterIcon;
 import 'sys_health_widgets.dart';
 
 /// WebRTC 라이브 뷰.
@@ -70,6 +72,16 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
     'crecam_live_error_stalled',
   };
   static const limitActionKey = Key('webrtc_live_limit_action');
+  static const offlineKey = Key('webrtc_live_offline');
+
+  static const offlineErrorKey = 'crecam_live_error_camera_offline';
+
+  /// 카메라 오프라인 안내(Figma 1525:10689) 중인지 — 실패 화면이거나 실패 화면을
+  /// 유지한 채 뒤에서 다시 확인하는 중. 이때는 확대 버튼도 숨긴다(Figma 메모).
+  static bool isOfflineNotice(WebRtcLiveState s) =>
+      s.errorKey == offlineErrorKey &&
+      (s.phase == WebRtcLivePhase.failed ||
+          (s.quietRetry && s.phase.isConnecting));
 
   /// 영상 위에 얹을 알약 문구 키. 정지가 관측 불가보다 우선한다.
   static String? pillKeyFor(WebRtcLiveState s) {
@@ -436,18 +448,26 @@ class _FailedView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hintKey = WebRtcLiveView.hintKeyFor(errorKey);
     String? hint = hintKey?.tr();
-    final offline = errorKey == 'crecam_live_error_camera_offline';
+    final offline = errorKey == WebRtcLiveView.offlineErrorKey;
     final camera = ref
         .watch(camerasProvider)
         .valueOrNull
         ?.where((c) => c.id == cameraUuid)
         .firstOrNull;
     if (offline) {
-      // 언제부터 꺼져 있었는지 — 방금인지 며칠째인지에 따라 할 일이 다르다.
-      final seen = camera?.lastSeenAt;
-      if (seen != null) {
-        hint = 'crecam_live_hint_offline_seen'.tr(args: [timeAgo(seen)]);
-      }
+      // Figma 오프라인 안내(1525:10689) — 아이콘·문구·[카메라 재연결]·[네트워크
+      // 변경]. 공유기를 바꿨다면 지우지 말고 Wi-Fi만 바꾼다(2026-09-28 A1).
+      final wifiCamera = showWifiChange ? camera : null;
+      return _OfflineView(
+        onRetry: onRetry,
+        onWifiChange: wifiCamera == null
+            ? null
+            : () => context.push('/devices/wifi',
+                extra: WifiChangeTarget(
+                    kind: PairTargetKind.camera,
+                    id: wifiCamera.id,
+                    name: wifiCamera.name)),
+      );
     }
     // 카메라 쪽이 멈췄고 재시작할 수 있는 카메라면 재시작을 준다. 방금 보냈거나
     // 60초 재입력 금지 중이면 숨긴다 — 눌러도 "잠시 후 다시"만 나온다.
@@ -468,9 +488,6 @@ class _FailedView extends ConsumerWidget {
       if (hint != null) hint,
       if (retrying) 'crecam_live_quiet_retry'.tr(),
     ].join('\n');
-    // 재시작은 오프라인이 아닐 때만, Wi-Fi 바꾸기는 오프라인일 때만 — 둘이
-    // 같은 자리(두 번째 버튼)를 겹치지 않는다.
-    final wifiCamera = offline && showWifiChange ? camera : null;
     // 영상 면은 실패해도 어둡다. 여기서 테마 surface를 쓰면 밝은 회색이 되어
     // 위아래 어두운 덩어리가 깨진다(실기기에서 제어 바만 검게 떠 있었다).
     return ColoredBox(
@@ -481,26 +498,118 @@ class _FailedView extends ConsumerWidget {
         detail: detail.isEmpty ? null : detail,
         actionLabel: 'crecam_live_retry'.tr(),
         onAction: onRetry,
-        // 공유기를 바꿨다면 지우지 말고 Wi-Fi만 바꾼다(2026-09-28, 흐름 점검 A1).
-        secondaryLabel: rebootable
-            ? 'crecam_live_reboot_action'.tr()
-            : wifiCamera != null
-                ? 'device_wifi_action'.tr()
-                : null,
-        secondaryKey: rebootable
-            ? WebRtcLiveView.rebootButtonKey
-            : WebRtcLiveView.wifiButtonKey,
+        // 오프라인([Wi-Fi 바꾸기])은 위 [_OfflineView]가 맡는다.
+        secondaryLabel: rebootable ? 'crecam_live_reboot_action'.tr() : null,
+        secondaryKey: WebRtcLiveView.rebootButtonKey,
         onSecondary: rebootable
             ? () => confirmAndRequestReboot(
                 context, ref, cameraRebootTarget(cameraUuid))
-            : wifiCamera != null
-                ? () => context.push('/devices/wifi',
-                    extra: WifiChangeTarget(
-                        kind: PairTargetKind.camera,
-                        id: wifiCamera.id,
-                        name: wifiCamera.name))
-                : null,
+            : null,
       ),
     );
   }
+}
+
+// ── 카메라 오프라인 (Figma 1525:10689 카메라 탭 · 1523:5213 확대 세로) ─────────
+
+/// 면 #1E1E1E(라이브 면 크기 그대로, 모서리는 감싸는 면이 r12로 자른다) 위에
+/// 세로 가운데: 꺼짐 아이콘 62 → 8 → 문구 14/500 → 24 → 버튼 154.5×44 둘(간격
+/// 12, 각 최대 175 — Figma 메모). [onWifiChange]가 null이면(가로 전체화면)
+/// [카메라 재연결] 하나만.
+class _OfflineView extends StatelessWidget {
+  const _OfflineView({required this.onRetry, this.onWifiChange});
+
+  final VoidCallback onRetry;
+  final VoidCallback? onWifiChange;
+
+  static const double _buttonMaxWidth = 175;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const LiveRasterIcon('videocam_alert',
+            size: 62, color: AppTheme.liveOfflineText),
+        const SizedBox(height: 8),
+        Text(keepAllWords('crecam_live_offline_title'.tr()),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 14,
+                height: 19.6 / 14,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.28,
+                color: AppTheme.liveOfflineText)),
+        const SizedBox(height: 24),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _button(
+              WebRtcLiveView.retryButtonKey, 'crecam_live_reconnect', onRetry),
+          if (onWifiChange != null) ...[
+            const SizedBox(width: 12),
+            _button(WebRtcLiveView.wifiButtonKey, 'crecam_live_network_change',
+                onWifiChange!),
+          ],
+        ]),
+      ]),
+    );
+    // 면이 낮거나(홈 369:271) 글자가 크면 안에서 스크롤 — 버튼을 줄이지 않는다
+    // ([LiveSurfaceNotice]와 같은 문법). 넉넉하면 minHeight로 세로 가운데.
+    return ColoredBox(
+      key: WebRtcLiveView.offlineKey,
+      color: AppTheme.liveOfflineSurface,
+      child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                      minWidth: constraints.maxWidth,
+                      minHeight: constraints.hasBoundedHeight
+                          ? constraints.maxHeight
+                          : 0),
+                  child: Center(child: content)))),
+    );
+  }
+
+  static Widget _button(Key key, String labelKey, VoidCallback onTap) =>
+      Flexible(
+        child: ConstrainedBox(
+          constraints:
+              const BoxConstraints(maxWidth: _buttonMaxWidth, minHeight: 44),
+          child: SizedBox(
+            width: double.infinity,
+            child: Material(
+              key: key,
+              color: AppTheme.liveOfflineButton,
+              borderRadius: BorderRadius.circular(12),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onTap,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 44),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    // 큰 글자에서 154.5 폭을 넘으면 한 줄 안에서 줄인다(잘림 방지
+                    // 축소 — 글자 크기 자체는 Figma 값).
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(labelKey.tr(),
+                          maxLines: 1,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              fontFamily: 'Pretendard',
+                              fontSize: 16,
+                              height: 28 / 16,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.32,
+                              color: AppTheme.liveOfflineButtonText)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 }

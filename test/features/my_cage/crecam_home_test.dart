@@ -163,6 +163,7 @@ Future<void> _pump(
   Stream<List<TerraCamera>>? cameraEvents,
   VoidCallback? onFeedLoad,
   VoidCallback? onLiveCreate,
+  bool liveOffline = false,
 }) async {
   tester.view.physicalSize = const Size(393, 1000);
   tester.view.devicePixelRatio = 1;
@@ -201,7 +202,9 @@ Future<void> _pump(
         // 실피어 차단 — startConnection()을 부르지 않은 inert 컨트롤러.
         webrtcLiveControllerProvider.overrideWith((ref, uuid) {
           onLiveCreate?.call();
-          return InertLiveController(ref, uuid);
+          return liveOffline
+              ? OfflineLiveController(ref, uuid)
+              : InertLiveController(ref, uuid);
         }),
         crecamDayProvider.overrideWith((ref) => pickedDay ? _day : null),
         latestMotionClipAtProvider
@@ -326,6 +329,12 @@ void main() {
     // 어느 카메라인지 이름 배지로 밝힌다(리뷰 2026-09-04 — 구 그리드가 주던
     // 식별 정보의 복원).
     expect(find.text('테스트캠'), findsOneWidget);
+  });
+
+  testWidgets('카메라 오프라인 안내 중엔 확장 버튼을 숨긴다(Figma 1525:10689)', (tester) async {
+    await _pump(tester, liveOffline: true);
+    expect(find.byKey(WebRtcLiveView.offlineKey), findsOneWidget);
+    expect(find.byKey(CameraLiveArea.expandButtonKey), findsNothing);
   });
 
   testWidgets('확장 버튼 탭 → 라이브 전체화면(가로, 영상만) 라우트', (tester) async {
@@ -623,8 +632,8 @@ void main() {
   // 누른 영상이 위로 튀어(약 390pt) 손가락 아래 다른 영상이 끌기에 걸렸다.
   testWidgets('맨 위에서 꾹 눌러 선택을 시작해도 누른 영상은 손가락 아래 그대로', (tester) async {
     await _pump(tester);
-    final thumb = find.byWidgetPredicate(
-        (w) => w is ClipSelectableThumb && w.clipId == 'c3');
+    final thumb = find
+        .byWidgetPredicate((w) => w is ClipSelectableThumb && w.clipId == 'c3');
     final before = tester.getCenter(thumb);
     final gesture = await tester.startGesture(before);
     await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
@@ -661,10 +670,11 @@ void main() {
         reason: '스크롤로 메웠으니 손을 떼도 그대로');
 
     // 선택 종료 — 라이브·카드가 다시 펼쳐져도 보던 영상은 그 자리 근처.
-    await tester.tap(find.byWidgetPredicate((w) => w is ClipSelectHeaderButton));
+    await tester
+        .tap(find.byWidgetPredicate((w) => w is ClipSelectHeaderButton));
     await tester.pumpAndSettle();
     expect(find.text('clip_select_count'), findsNothing);
-    expect(tester.getCenter(thumb).dy, moreOrLessEquals(before.dy, epsilon: 24));
+    expect(
+        tester.getCenter(thumb).dy, moreOrLessEquals(before.dy, epsilon: 24));
   });
 }
-
