@@ -554,8 +554,10 @@ class _LiveRebootFooter extends ConsumerWidget {
               key: CameraLiveFullscreenScreen.rebootButtonKey,
               label: (inProgress ? 'reboot_progress' : 'camera_reboot').tr(),
               icon: 'redesign_v2/restart_alt',
-              // Figma: 꺼졌을 때만 빨강(복구 안내 버튼). 켜져 있으면 검정.
+              // Figma: 꺼졌을 때 빨강(복구 안내 버튼), 켜져 있으면 회색
+              // #E3E3E3(2026-10-21 사용자 결정 — 검정에서 Figma로 되돌림).
               red: offline,
+              grey: !offline,
               // Figma 원본 비활성(#E3E3E3 위 #FAFAFA)은 글자가 안 보인다 —
               // "재시작 중…"을 읽어야 해서 진한 회색(2026-10-03 사용자 지시).
               disabledForeground: context.glass.bodySecondary,
