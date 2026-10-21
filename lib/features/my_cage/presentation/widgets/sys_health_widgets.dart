@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../../../shared/widgets/viva_modal.dart';
+import '../../../notification/presentation/push_pre_popup.dart'
+    show keepAllWords;
 import '../../domain/pair_target_kind.dart';
 import '../../domain/sys_health.dart';
 import '../my_cage_providers.dart';
@@ -159,7 +161,8 @@ Future<void> confirmAndRequestReboot(
       'device_reboot_schedule_note'.tr(),
   ].join('\n');
   final ok = await showVivaModal(context,
-      message: confirm,
+      // 어절 안에서 줄이 바뀌지 않게("보기\n가" 방지, 2026-10-21).
+      message: keepAllWords(confirm),
       cancelLabel: 'common_cancel'.tr(),
       confirmLabel: 'reboot_ok'.tr(),
       confirmKey: const Key('reboot_ok'));

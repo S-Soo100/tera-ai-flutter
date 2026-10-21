@@ -35,6 +35,10 @@ SysHealth _health({bool present = true, bool online = true}) => SysHealth(
     isOnline: online,
     statsAt: DateTime.utc(2026, 10, 4));
 
+/// 확인창 문구는 어절 줄바꿈 방지 문자(U+2060)가 끼어 있다 — 빼고 비교한다.
+Finder _plainText(String part) => find.byWidgetPredicate((w) =>
+    w is Text && (w.data ?? '').replaceAll('\u2060', '').contains(part));
+
 void main() {
   Future<_DeviceRepo> pump(WidgetTester tester,
       {required List<ManagementItem> items,
@@ -91,7 +95,7 @@ void main() {
     expect(find.text('device_reboot_status_ready'), findsOneWidget);
     await tester.tap(find.byKey(DeviceRebootScreen.rowKey('dev-1')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('device_reboot_confirm'), findsOneWidget);
+    expect(_plainText('device_reboot_confirm'), findsOneWidget);
     await tester.tap(find.byKey(const Key('reboot_ok')));
     await tester.pumpAndSettle();
     expect(repo.reboots, 1);
