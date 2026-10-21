@@ -57,14 +57,38 @@ class ClipSelectionFlow {
     if (_selection.setGroup(group)) showLimit(context);
   }
 
+  /// 작업 취소 안내 문구 키 — 디자이너 피드백(2026-10-21): 취소 전까지 한 것이
+  /// 있으면 "영상 N/전체개 … 완료", 없으면 "작업을 취소했습니다". 공유는 다
+  /// 받은 뒤에야 공유 창을 여니 취소하면 공유된 것이 없다.
+  static String cancelledMessageKey(ClipBatchKind kind, int done) {
+    if (done <= 0) return 'clip_select_job_cancelled';
+    return switch (kind) {
+      ClipBatchKind.save => 'clip_select_download_partial_done',
+      ClipBatchKind.bookmarkAdd => 'clip_select_bookmark_partial_done',
+      ClipBatchKind.bookmarkRemove => 'clip_select_unbookmark_partial_done',
+      _ => 'clip_select_job_cancelled',
+    };
+  }
+
+  static void _showCancelled(BuildContext context, ClipBatchKind kind,
+          ClipBatchResult result, int total) =>
+      showClipToast(context,
+          text: cancelledMessageKey(kind, result.succeeded).tr(namedArgs: {
+            'done': '${result.succeeded}',
+            'total': '$total',
+          }),
+          bottom: kScreenToastBottom);
+
   void _settle(BuildContext context, ClipBatchResult result,
-      {required String done, required String Function(int) partial}) {
+      {required String done,
+      required String Function(int) partial,
+      ClipBatchKind? kind,
+      int total = 0}) {
     if (!context.mounted || result.ignored) return;
     if (result.cancelled) {
       // 멈춘 뒤 남은 것(실패 + 손대지 못한 것)만 골라진 채 둔다.
       _selection.keepOnly({...result.failed, ...result.remaining});
-      showClipToast(context,
-          text: 'clip_select_job_cancelled'.tr(), bottom: kScreenToastBottom);
+      _showCancelled(context, kind ?? ClipBatchKind.delete, result, total);
       return;
     }
     if (result.failed.isEmpty) {
@@ -94,9 +118,7 @@ class ClipSelectionFlow {
       _error(context, 'clip_select_gallery_denied'.tr());
     } else if (result.cancelled) {
       _selection.exit();
-      showClipToast(context,
-          text: 'clip_select_download_cancelled'.tr(),
-          bottom: kScreenToastBottom);
+      _showCancelled(context, ClipBatchKind.save, result, ids.length);
     } else {
       _settle(context, result,
           done: 'clip_download_done'.tr(),
@@ -111,8 +133,7 @@ class ClipSelectionFlow {
     final result = await _batch.share(ids);
     if (!context.mounted || result.ignored) return;
     if (result.cancelled) {
-      showClipToast(context,
-          text: 'clip_select_share_cancelled'.tr(), bottom: kScreenToastBottom);
+      _showCancelled(context, ClipBatchKind.share, result, ids.length);
       return;
     }
     if (result.failed.isEmpty) {
@@ -175,7 +196,10 @@ class ClipSelectionFlow {
                 (add ? 'clip_bookmark_saved_toast' : 'clip_select_unbookmarked')
                     .tr(),
             partial: (n) =>
-                'clip_select_bookmark_partial'.tr(namedArgs: {'count': '$n'}));
+                'clip_select_bookmark_partial'.tr(namedArgs: {'count': '$n'}),
+            kind:
+                add ? ClipBatchKind.bookmarkAdd : ClipBatchKind.bookmarkRemove,
+            total: ids.length);
       case 'memo':
         final ok = await showVivaModal(context,
             message: 'clip_memo_delete_confirm'.tr(),
