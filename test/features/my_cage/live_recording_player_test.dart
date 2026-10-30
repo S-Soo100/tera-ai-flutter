@@ -15,6 +15,7 @@ import 'package:vivanaut/features/my_cage/data/clip_memo_repository.dart';
 import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
 import 'package:vivanaut/features/my_cage/data/live_recording_repository.dart';
 import 'package:vivanaut/features/my_cage/data/motion_clip_repository.dart';
+import 'package:vivanaut/features/my_cage/data/player_speed_store.dart';
 import 'package:vivanaut/features/my_cage/data/video_export_service.dart';
 import 'package:vivanaut/features/my_cage/domain/clip_memo.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
@@ -28,6 +29,7 @@ import 'package:vivanaut/features/my_cage/presentation/clip_visibility_providers
 import 'package:vivanaut/features/my_cage/presentation/live_recording_actions.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_recording_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_recording_upload_queue.dart';
+import 'package:vivanaut/features/my_cage/presentation/player_view_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/clip_memo_editor.dart';
@@ -161,6 +163,15 @@ class _NoFavorites implements FavoriteClipRepository {
   Future<void> syncFromCloud(MotionClipRepository motionRepo) async {}
 }
 
+class _MemSpeedStore implements PlayerSpeedStore {
+  _MemSpeedStore(this.value);
+  double value;
+  @override
+  double load() => value;
+  @override
+  Future<void> save(double speed) async => value = speed;
+}
+
 void main() {
   late _Video video;
   late _Queue queue;
@@ -170,7 +181,9 @@ void main() {
 
   /// [playlist]는 보관함 순서의 항목 키. 첫 화면은 녹화 [open].
   Future<void> pump(WidgetTester tester,
-      {String open = 'r1', List<String>? playlist}) async {
+      {String open = 'r1',
+      List<String>? playlist,
+      PlayerSpeedStore? speedStore}) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     video = _Video();
@@ -203,6 +216,8 @@ void main() {
             aud: 'authenticated',
             createdAt: '2026-01-01')),
         clipVisibilityAccountProvider.overrideWithValue(null),
+        playerSpeedStoreProvider
+            .overrideWithValue(speedStore ?? _MemSpeedStore(1.0)),
         liveRecordingRepositoryProvider.overrideWithValue(repo),
         liveRecordingUploadQueueProvider.overrideWith((ref) => queue),
         liveRecordingsProvider.overrideWith((ref) async => items),
@@ -266,6 +281,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('player_landscape_close')), findsOneWidget);
     expect(find.byKey(ClipPlaylistPlayerScreen.bookmarkKey), findsOneWidget);
+  });
+
+  testWidgets('저장된 배속으로 재생을 시작하고, 바꾼 배속은 저장한다', (tester) async {
+    final store = _MemSpeedStore(1.5);
+    await pump(tester, speedStore: store);
+    expect(video.speeds.last, 1.5);
+    await tester.tap(find.byKey(const Key('player_speed')));
+    await tester.pump();
+    expect(video.speeds.last, 2.0);
+    expect(store.value, 2.0);
   });
 
   testWidgets('다운로드·공유는 폰 녹화 파일을 그대로 넘긴다', (tester) async {

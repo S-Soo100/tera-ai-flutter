@@ -378,8 +378,7 @@ class _ClipPlaylistPlayerScreenState
         _initialized = true;
         _startedMidway = startAt != null;
       });
-      await controller
-          .setPlaybackSpeed(ref.read(playerSpeedProvider(_orientationKey)));
+      await controller.setPlaybackSpeed(ref.read(playerSpeedProvider));
       controller.play();
       // 다음 클립 메타 선읽기 — 전환 직후 상단바 날짜가 비고 북마크 버튼이
       // 잠시 무력화되는 공백을 줄인다(리뷰 2026-09-04). keepAliveFor 유예
@@ -1163,7 +1162,7 @@ class _ClipPlaylistPlayerScreenState
   /// Figma 941:1834 Frame 144 — 높이 36, 재생 36 + 8 + 시각 14/500,
   /// 우측 2X 36 + 12 + 확대 36. 세로는 좌우 12 안쪽, 가로는 SafeArea 여백 그대로.
   Widget _controlRow(GlassPalette glass, {bool padded = true}) {
-    final speed = ref.watch(playerSpeedProvider(_orientationKey));
+    final speed = ref.watch(playerSpeedProvider);
     final landscape = ref.watch(playerOrientationProvider(_orientationKey));
     final controller = _controller;
     // 가로는 회색 바탕 위라 밝은 글자·아이콘(대비).
@@ -1211,9 +1210,7 @@ class _ClipPlaylistPlayerScreenState
                   // 1X → 1.2X → 1.5X → 2X → 1X (Figma 아이콘 시트, 2026-09-21).
                   onTap: () {
                     final next = nextPlayerSpeed(speed);
-                    ref
-                        .read(playerSpeedProvider(_orientationKey).notifier)
-                        .state = next;
+                    ref.read(playerSpeedProvider.notifier).set(next);
                     _controller?.setPlaybackSpeed(next);
                   },
                   child: FigmaIcon.tinted(FigmaIcons.speed(speed),

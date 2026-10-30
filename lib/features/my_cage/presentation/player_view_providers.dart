@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/player_speed_store.dart';
 import '../domain/motion_clip_page.dart';
 import 'my_cage_providers.dart';
 import '../domain/clip_visibility.dart';
@@ -30,8 +31,26 @@ final playerOrientationProvider = StateNotifierProvider.autoDispose
         (ref, key) => PlayerOrientationController());
 final playerControlsVisibleProvider =
     StateProvider.autoDispose.family<bool, Object>((ref, key) => true);
+final playerSpeedStoreProvider =
+    Provider<PlayerSpeedStore>((_) => const HivePlayerSpeedStore());
+
+/// 재생 배속 — 앱 전체에 하나. 바꾸면 기기에 저장돼 다른 영상을 열거나 앱을
+/// 다시 켜도 그 배속으로 재생한다(2026-10-30 사용자 결정, 전엔 화면마다 1배).
 final playerSpeedProvider =
-    StateProvider.autoDispose.family<double, Object>((ref, key) => 1);
+    StateNotifierProvider<PlayerSpeedController, double>(
+        (ref) => PlayerSpeedController(ref.watch(playerSpeedStoreProvider)));
+
+class PlayerSpeedController extends StateNotifier<double> {
+  PlayerSpeedController(this._store) : super(_store.load());
+
+  final PlayerSpeedStore _store;
+
+  void set(double speed) {
+    if (state == speed) return;
+    state = speed;
+    unawaited(_store.save(speed));
+  }
+}
 
 /// Serialize platform requests across routes. A late landscape response cannot
 /// become the final orientation after the route has already been closed.
