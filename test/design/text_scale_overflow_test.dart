@@ -52,7 +52,17 @@ import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.
 import 'package:vivanaut/shared/domain/env_extremes.dart';
 import 'package:vivanaut/shared/widgets/glass_dock.dart';
 
+import 'package:vivanaut/features/home/presentation/env_detail_screen.dart';
+import 'package:vivanaut/features/home/presentation/env_range_setting_screen.dart';
+import 'package:vivanaut/features/home/presentation/temp_humid_setting_screen.dart';
+import 'package:vivanaut/features/home/presentation/widgets/env_alert_card.dart';
+import 'package:vivanaut/features/home/presentation/widgets/env_range_bar.dart';
+import 'package:vivanaut/features/profile/data/notification_preferences_repository.dart';
+import 'package:vivanaut/features/profile/presentation/notification_settings_screen.dart';
+import 'package:vivanaut/shared/widgets/viva_stepper.dart';
+
 import '../features/home/control_sheet_fixtures.dart';
+import '../features/home/env_v4_screen_fixtures.dart';
 import '../helpers/inert_live_controller.dart';
 
 class _Strings extends AssetLoader {
@@ -296,6 +306,57 @@ void main() {
         expect(find.text('나가기'), findsOneWidget);
       });
 
+      // v4 온습도 설정 묶음(Figma 1635:6166) — 온습도 설정(보정 켜짐 −1.5).
+      testWidgets('온습도 설정', (tester) async {
+        await _pump(tester, system,
+            const TempHumidSettingScreen(deviceId: kEnvV4DeviceId),
+            overrides: envV4SettingOverrides());
+        expect(
+            find.byKey(TempHumidSettingScreen.offsetValueKey), findsOneWidget);
+        await tester.drag(
+            find.byType(SingleChildScrollView).first, const Offset(0, -600));
+        await tester.pumpAndSettle();
+      });
+
+      // 적정 온도·습도 — 바꾼 뒤(S10: 저장 + 변경 사항 취소)까지.
+      for (final kind in EnvRangeKind.values) {
+        testWidgets('적정 범위 설정 ${kind.name}', (tester) async {
+          await _pump(tester, system,
+              EnvRangeSettingScreen(deviceId: kEnvV4DeviceId, kind: kind),
+              overrides: envV4SettingOverrides());
+          await tester.tap(find.descendant(
+              of: find.byKey(EnvRangeSettingScreen.minStepperKey),
+              matching: find.byKey(VivaStepper.decreaseKey)));
+          await tester.pumpAndSettle();
+          expect(find.byKey(EnvRangeSettingScreen.discardKey), findsOneWidget);
+          await tester.drag(
+              find.byType(SingleChildScrollView).first, const Offset(0, -600));
+          await tester.pumpAndSettle();
+        });
+      }
+
+      // 온습도 상세 — 범위 바 2줄 + 실시간 이탈 카드 2줄(A10).
+      testWidgets('온습도 상세 — 범위 바·이탈 카드', (tester) async {
+        await _pump(tester, system, const EnvDetailScreen(),
+            overrides: envV4DetailOverrides());
+        expect(find.byKey(EnvRangeBar.trackKey), findsNWidgets(2));
+        await tester.scrollUntilVisible(find.byKey(EnvAlertCard.cardKey), 200,
+            scrollable: find.byType(Scrollable).first);
+        await tester.pumpAndSettle();
+      });
+
+      // 알림 설정 — 온습도 이탈 알림 이동 행(S39).
+      testWidgets('알림 설정', (tester) async {
+        await _pump(tester, system, const NotificationSettingsScreen(),
+            overrides: [
+              currentDeviceIdProvider.overrideWith((ref) async => 'd1'),
+              notificationPreferencesRepositoryProvider
+                  .overrideWithValue(_MemNotifPrefs()),
+            ]);
+        expect(
+            find.byKey(NotificationSettingsScreen.envAlertKey), findsOneWidget);
+      });
+
       // 카메라 오프라인 안내(Figma 1525:10689) — 홈·카메라 탭 면(369:271)과
       // 확대 세로 면(4:3). 낮은 면은 안에서 스크롤, 버튼 라벨은 한 줄 축소.
       for (final size in [const Size(369, 271), const Size(369, 276.75)]) {
@@ -372,4 +433,12 @@ class _StreamingLive extends WebRtcLiveController {
     state = WebRtcLiveState(
         phase: WebRtcLivePhase.streaming, renderer: _StreamingRenderer());
   }
+}
+
+class _MemNotifPrefs implements NotificationPreferencesRepository {
+  NotificationPrefs prefs = const NotificationPrefs();
+  @override
+  NotificationPrefs load() => prefs;
+  @override
+  Future<void> save(NotificationPrefs p) async => prefs = p;
 }

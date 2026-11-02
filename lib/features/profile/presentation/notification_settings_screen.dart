@@ -1,10 +1,15 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/glass_palette.dart';
+import '../../../shared/widgets/skeleton_loading.dart';
+import '../../home/presentation/home_control_providers.dart';
 import '../../home/presentation/routine_settings_screen.dart'
     show ScheduleSwitch;
+import '../../home/presentation/widgets/env_setting_widgets.dart';
 import '../../my_cage/presentation/management_colors.dart';
 import '../../my_cage/presentation/widgets/management_widgets.dart';
 import '../../notification/data/push_messaging_service.dart';
@@ -12,9 +17,14 @@ import '../../notification/presentation/push_providers.dart';
 import '../data/notification_preferences_repository.dart';
 import 'widgets/my_page_widgets.dart';
 
-/// 알림 설정(Figma PushAlarm 1142:9613). 기능 설정 3종 + 수신 동의 2종.
+/// 알림 설정(Figma PushAlarm 1142:9613 → v4 1657:5547). 기능 설정 3종 + 온습도
+/// 이탈 알림 이동 행 + 수신 동의 2종.
 /// 행 369×72 흰색 r12(선 없음, 간격 8): 제목 16/600 + 부제 14/500 왼쪽 16,
 /// 스위치 80×32 `#C00306` 오른쪽 16. 마케팅 행은 87h(동의 일자 12/500 두 줄).
+///
+/// 온습도 이탈 알림(S39)은 토글이 아니라 "설정하기 >" 이동 행이다 — 홈 세트의
+/// 기기(`currentDeviceIdProvider`)의 온습도 설정 화면을 연다. 기기가 없으면
+/// 부제 자리에 이유를 쓰고 행을 막는다.
 ///
 /// 값은 아직 기기 로컬에만 저장된다([NotificationPreferencesRepository] 주석).
 class NotificationSettingsScreen extends ConsumerWidget {
@@ -27,6 +37,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
   static const marketingKey = Key('notif_toggle_marketing');
   static const systemOffKey = Key('notif_system_off');
   static const featureSectionKey = Key('notif_feature_section');
+  static const envAlertKey = Key('notif_env_alert_entry');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,37 +60,46 @@ class NotificationSettingsScreen extends ConsumerWidget {
         MyPageSectionTitle('notif_settings_section_features'.tr()),
         // 기기 알림이 꺼져 있으면 기능 알림 토글은 동작하지 않으므로 흐리게·조작
         // 불가로 보인다. 저장된 선택은 그대로라 허용하고 돌아오면 바로 살아난다.
+        // 온습도 이탈 알림 이동 행은 같이 흐리지만 이동은 막지 않는다 — 적정
+        // 범위 설정은 알림 권한과 무관하게 쓰인다(실시간 카드·판정 기준).
         // 수신 동의(아래)는 동의 기록이라 기기 알림과 무관하게 조작할 수 있다.
         Opacity(
           key: featureSectionKey,
           opacity: systemOff ? 0.4 : 1,
-          child: IgnorePointer(
-            ignoring: systemOff,
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _ToggleRow(
-                      key: highlightKey,
-                      title: 'notif_settings_highlight'.tr(),
-                      subtitle: 'notif_settings_highlight_desc'.tr(),
-                      value: prefs.highlight,
-                      onChanged: (v) => n.update(prefs.copyWith(highlight: v))),
-                  const SizedBox(height: 8),
-                  _ToggleRow(
-                      key: commentKey,
-                      title: 'notif_settings_comment'.tr(),
-                      subtitle: 'notif_settings_comment_desc'.tr(),
-                      value: prefs.comment,
-                      onChanged: (v) => n.update(prefs.copyWith(comment: v))),
-                  const SizedBox(height: 8),
-                  _ToggleRow(
-                      key: likeKey,
-                      title: 'notif_settings_like'.tr(),
-                      subtitle: 'notif_settings_like_desc'.tr(),
-                      value: prefs.like,
-                      onChanged: (v) => n.update(prefs.copyWith(like: v))),
-                ]),
-          ),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            IgnorePointer(
+              ignoring: systemOff,
+              child: _ToggleRow(
+                  key: highlightKey,
+                  title: 'notif_settings_highlight'.tr(),
+                  subtitle: 'notif_settings_highlight_desc'.tr(),
+                  value: prefs.highlight,
+                  onChanged: (v) => n.update(prefs.copyWith(highlight: v))),
+            ),
+            const SizedBox(height: 8),
+            const _EnvAlertEntryRow(key: envAlertKey),
+            const SizedBox(height: 8),
+            IgnorePointer(
+              ignoring: systemOff,
+              child: _ToggleRow(
+                  key: commentKey,
+                  title: 'notif_settings_comment'.tr(),
+                  subtitle: 'notif_settings_comment_desc'.tr(),
+                  value: prefs.comment,
+                  onChanged: (v) => n.update(prefs.copyWith(comment: v))),
+            ),
+            const SizedBox(height: 8),
+            IgnorePointer(
+              ignoring: systemOff,
+              child: _ToggleRow(
+                  key: likeKey,
+                  title: 'notif_settings_like'.tr(),
+                  subtitle: 'notif_settings_like_desc'.tr(),
+                  value: prefs.like,
+                  onChanged: (v) => n.update(prefs.copyWith(like: v))),
+            ),
+          ]),
         ),
         const SizedBox(height: 24),
         MyPageSectionTitle('notif_settings_section_consent'.tr()),
@@ -110,6 +130,48 @@ class NotificationSettingsScreen extends ConsumerWidget {
   static String _date(DateTime d) => '${d.year}. ${d.month}. ${d.day}';
 }
 
+/// 온습도 이탈 알림 이동 행(Figma S39 1657:5547 — "설정하기 >", 토글 아님).
+///
+/// 대상 = 홈 세트의 기기. 화면을 연 뒤 홈 세트가 바뀌어도 누르는 순간의 기기
+/// id로 경로를 만든다(온습도 설정은 라우트 인자로 기기를 고정한다).
+class _EnvAlertEntryRow extends ConsumerWidget {
+  const _EnvAlertEntryRow({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final device = ref.watch(currentDeviceIdProvider);
+    final deviceId = device.isLoading ? null : device.valueOrNull;
+    final String subtitle;
+    final Widget value;
+    if (deviceId != null) {
+      subtitle = 'notif_settings_env_alert_desc'.tr();
+      value = Text('notif_settings_env_alert_action'.tr());
+    } else if (device.isLoading) {
+      subtitle = 'notif_settings_env_alert_desc'.tr();
+      value = const SkeletonLoading(width: 55, height: 19);
+    } else {
+      // 기기 없음·조회 실패 — 갈 곳이 없으니 막고 이유를 부제 자리에 쓴다.
+      subtitle = (device.hasError
+              ? 'notif_settings_env_alert_load_failed'
+              : 'notif_settings_env_alert_no_device')
+          .tr();
+      value = Text('notif_settings_env_alert_action'.tr());
+    }
+    return _SettingRow(
+      title: 'notif_settings_env_alert'.tr(),
+      subtitle: subtitle,
+      onTap: deviceId == null
+          ? null
+          : () => context.push(tempHumidSettingPath(deviceId)),
+      // Figma Right(77×19) — 설정하기 16/500 `#949090` + 화살표 18 `#3C3C3C`.
+      trailing: Opacity(
+        opacity: deviceId == null && !device.isLoading ? 0.4 : 1,
+        child: EnvSettingLinkTrailing(value: value),
+      ),
+    );
+  }
+}
+
 class _ToggleRow extends StatelessWidget {
   const _ToggleRow(
       {super.key,
@@ -127,13 +189,39 @@ class _ToggleRow extends StatelessWidget {
   final bool small;
 
   @override
+  Widget build(BuildContext context) => _SettingRow(
+      title: title,
+      subtitle: subtitle,
+      small: small,
+      trailing: ScheduleSwitch(
+          value: value,
+          color: context.glass.navSelected,
+          onChanged: onChanged));
+}
+
+/// 알림 설정 한 행 — 제목·부제 + 오른쪽 [trailing]. [onTap]이 있으면 행 전체가
+/// 눌린다(이동 행).
+class _SettingRow extends StatelessWidget {
+  const _SettingRow(
+      {required this.title,
+      required this.subtitle,
+      required this.trailing,
+      this.onTap,
+      this.small = false});
+  final String title;
+  final String subtitle;
+  final Widget trailing;
+  final VoidCallback? onTap;
+
+  /// 부제 12/500 행간 16 두 줄(마케팅 동의 일자).
+  final bool small;
+
+  @override
   Widget build(BuildContext context) {
     final glass = context.glass;
-    return Container(
+    final radius = BorderRadius.circular(12);
+    final content = Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        decoration: BoxDecoration(
-            color: glass.surfaceHeader,
-            borderRadius: BorderRadius.circular(12)),
         child: Row(children: [
           Expanded(
               child: Column(
@@ -166,9 +254,16 @@ class _ToggleRow extends StatelessWidget {
               ])),
           // 원본 글줄 폭 251.5는 369 안에서 간격 4여야 한 줄로 들어간다.
           const SizedBox(width: 4),
-          ScheduleSwitch(
-              value: value, color: glass.navSelected, onChanged: onChanged),
+          trailing,
         ]));
+    return Material(
+      color: glass.surfaceHeader,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
+      child: onTap == null
+          ? content
+          : InkWell(onTap: onTap, borderRadius: radius, child: content),
+    );
   }
 }
 

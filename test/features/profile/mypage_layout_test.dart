@@ -23,6 +23,7 @@ import 'package:vivanaut/features/profile/presentation/password_change_screen.da
 import 'package:vivanaut/features/profile/presentation/profile_providers.dart';
 import 'package:vivanaut/features/profile/presentation/profile_screen.dart';
 import 'package:vivanaut/features/profile/presentation/withdraw_screen.dart';
+import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart'
     show ScheduleSwitch;
 
@@ -59,6 +60,8 @@ List<Override> overrides({UserProfile? profile, int blocked = 0}) => [
           ]),
       unreadNotificationCountProvider.overrideWithValue(0),
       notificationPreferencesRepositoryProvider.overrideWithValue(_MemPrefs()),
+      // 알림 설정의 온습도 이탈 알림 이동 행(S39)이 홈 세트 기기를 읽는다.
+      currentDeviceIdProvider.overrideWith((ref) async => 'd1'),
     ];
 
 Widget app(Widget home, List<Override> ov) => ProviderScope(
