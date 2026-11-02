@@ -2,8 +2,8 @@
 
 > **대상**: terra-server 백엔드·펌웨어 담당
 > **작성**: 앱 담당, 2026-11-02
-> **관련**: 서버 `feat/env-alerts-v4` `docs/APP_ENV_ALERT_PUSH_2026-11-02.md`, 앱 계획 [`docs/superpowers/plans/2026-11-02-env-alerts-v4-app.md`](../superpowers/plans/2026-11-02-env-alerts-v4-app.md)
-> **상태**: 회신 대기. 서버가 별도로 보낼 앱 요청 문서를 받으면 이 문서와 함께 맞춘다.
+> **관련**: 서버 `feat/env-alerts-v4` `docs/APP_ENV_ALERT_PUSH_2026-11-02.md`, 서버 `feat/weekly-analysis-v4` `docs/APP_V4_HANDOFF_2026-11-02.md`(요약)·`APP_DAILY_ANALYSIS_2026-11-02.md`·`APP_WEEKLY_ANALYSIS_2026-11-02.md`, 앱 계획 [`docs/superpowers/plans/2026-11-02-env-alerts-v4-app.md`](../superpowers/plans/2026-11-02-env-alerts-v4-app.md)
+> **상태**: Q1~Q3 회신 대기. 서버 요약 문서 §4 질문에 대한 앱 회신은 §3.
 
 ## 1. 회신이 필요한 질문
 
@@ -39,3 +39,12 @@ Figma 환기팬·분무 시트에 "자동 환기"·"자동 분무" 토글이 있
 | §4 1단계 (`ALERTS_V4_ENABLED`) | 앱 실시간 카드가 배포되면 "켜도 됨"으로 따로 알린다. |
 | §4 2단계 (`PUSH_ENV_ALERTS_ENABLED`) | 앱 Supabase 수신부(계약·문구·수신 끔)가 운영에 반영되면 "켜도 됨"으로 따로 알린다. |
 | Stage N2 | 앱은 온도 15~29℃(0.5 단위)·습도 35~85%(5 단위)·MIN < MAX 밖의 값을 보내지 않는다. 앱 적정 범위 화면이 배포되면 N2 배포 가능으로 알린다. |
+
+## 3. 서버 요약 문서(`APP_V4_HANDOFF_2026-11-02.md`) §4 회신
+
+| # | 서버 질문 | 앱 회신 |
+|---|---|---|
+| 1 | ①~④ 준비 시점 | ① 실시간 카드: 앱 구현 완료(브랜치 `feat/env-alerts-v4`, 0.164.0). 앱 배포 후 "1단계 켜도 됨"을 따로 알림. ② 푸시 수신부: 앱 Supabase 마이그레이션·계약 구현 완료(0.165.0), 로컬 Postgres 검증 통과. 운영 마이그레이션 적용 + `notification-ingest`·`dispatch-push` 재배포 후 "2단계 켜도 됨"을 따로 알림. ③④ 일일·주간 카드: 앱 미착수 — 계획 작성 후 일정 회신. |
+| 2 | 푸시 문구 | `payload.title` **그대로** 쓴다. 알림 본문은 사육장 이름(`device_name`, 없으면 "사육장"). |
+| 3 | 푸시 수신 OFF | 앱 Supabase에서 거른다(트리거가 계정별 `notification_preferences.env_temp`/`env_humid`를 보고 끔이면 알림함 기록만 남기고 푸시 대기열을 건너뜀). 서버는 지금처럼 항상 적재하면 된다. |
+| 4 | 0.1℃ 단위·MIN = MAX를 보내는 화면 | **없다.** 새 적정 범위 화면은 온도 0.5·습도 5 단위 스테퍼만 있고 MIN < MAX가 아니면 저장 버튼이 막힌다. 옛 목표값 시트는 `target_temp_c`·`target_humidity_pct`(단일값)만 보내고 MIN/MAX는 보내지 않는다. → Stage N2(설정 범위 검증) 배포해도 된다. |
