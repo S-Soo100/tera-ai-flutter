@@ -3,18 +3,22 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/domain/axis_bounds.dart';
+import '../../../../shared/domain/env_thresholds.dart';
 import '../../../../shared/domain/num_format.dart';
 import '../../../../shared/domain/week_range.dart';
 import '../../../../shared/domain/week_bar_role.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 
-/// 온습도 상세 **주간 범위 바 차트** 섹션 (Figma 1081:5052) — 온도·습도가 같은
-/// 위젯을 두 번 쓴다(강조색·아이콘·표기만 다르다).
+/// 온습도 상세 **주간 범위 바 차트** 섹션 (Figma 1081:5052 → v4 A19 1610:7454)
+/// — 온도·습도가 같은 위젯을 두 번 쓴다(강조색·아이콘·표기만 다르다).
 ///
-/// 헤더는 **주간 전체** 최고/최저. 강조 바([accent])는 Figma 원안대로
-/// **주간 최고값이 나온 요일**에 상시 표시하고, 그 막대의 위·아래 수치는
-/// [valueColor]로 같이 강조한다(2026-09-16 원본 재확인). 요일 라벨은 강조하지
-/// 않는다. 데이터 없는 요일은 바를 그리지 않는다 — 요일 라벨만 남긴다.
+/// 헤더는 **주간 전체** 최고/최저(최고는 [valueColor]). 강조 바([accent])는
+/// **주간 최고값·최저값이 나온 요일** 둘 다에 표시하고 그 막대의 위·아래 수치도
+/// [accent]로 칠한다(v4 A19 — 1081:5052는 최고 요일만, 최저는 회색이었다).
+/// 요일 라벨은 강조하지 않는다. 데이터 없는 요일은 바를 그리지 않는다.
+///
+/// [range]가 있으면 막대 뒤 전체 폭에 적정 범위 띠(`bodySecondary` 5%)를 깔고,
+/// 띠가 잘리지 않게 축에 그 경계를 포함한다(A19 Rectangle 201/202).
 ///
 /// 치수(원본 369×256 실측): 가로 격자 8줄(32 간격, 맨 위는 최고값 라벨 여유선)
 /// + 열 경계 세로선, Y 라벨은 눈금선에 아래 정렬(x+2), 요일은 열 왼쪽 +4,
@@ -28,16 +32,24 @@ class WeekRangeChart extends StatelessWidget {
     required this.iconAsset,
     required this.headerFormat,
     required this.axisFormat,
+    this.range,
+    this.ceiling,
   });
 
   /// 월~일 7칸 고정 ([weekTempRanges]/[weekHumidRanges] 반환 그대로).
   final List<DayMinMax> rows;
 
-  /// 최고값 막대 색 (온도 `tempAccent`, 습도 `humidAccent`).
+  /// 최고·최저 막대와 그 수치 색 (온도 `tempAccent`, 습도 `humidAccent`).
   final Color accent;
 
-  /// 헤더 최고값·최고 막대 수치 색. null이면 [accent].
+  /// 헤더 최고값 색. null이면 [accent].
   final Color? valueColor;
+
+  /// 사용자 적정 범위 — 띠로 그린다. null(조회 중·실패)이면 띠 없이 그린다.
+  final EnvRange? range;
+
+  /// 축 위 끝 상한(습도 100) — [AxisBounds.forValues]의 `ceiling`.
+  final double? ceiling;
 
   /// 헤더 28pt 아이콘 — 원본 복합색 SVG를 그대로 그린다([FigmaIcon.metric]).
   final String iconAsset;
@@ -91,8 +103,16 @@ class WeekRangeChart extends StatelessWidget {
           if (r.min case final v?) v,
           if (r.max case final v?) v,
         ],
+        // 데이터가 하나라도 있을 때만 띠를 축에 넣는다 — 띠만으로 축을 만들면
+        // 빈 주에 가짜 축이 생긴다.
+        if (range case final r?
+            when rows.any((d) => d.min != null || d.max != null)) ...[
+          r.min,
+          r.max,
+        ],
       ],
       divisions: divisions,
+      ceiling: ceiling,
     );
     final roles = classifyWeekBars(rows);
 
@@ -179,42 +199,61 @@ class WeekRangeChart extends StatelessWidget {
       gridTop + (1 - axis.normalize(v)) * gridSpan;
 
   Widget _chart(GlassPalette glass, AxisBounds axis, List<WeekBarRole> roles) {
+    final band = range;
     return SizedBox(
       height: chartHeight,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Stack(
         children: [
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, c) => Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: _WeekGridPainter(color: glass.chartGridLine),
-                    ),
-                  ),
-                  for (var i = 0; i < 7; i++)
-                    _bar(glass, axis, i, c.maxWidth, roles),
-                  for (var i = 0; i < 7; i++)
-                    Positioned(
-                      left: i * (c.maxWidth / 7) + 4,
-                      top: weekdayTop,
-                      child: Text(
-                        // DayMinMax.day는 자정 정규화 로컬 날짜 — weekday 1=월.
-                        'home_weekday_${rows[i].day.weekday}'.tr(),
-                        style: _axisStyle(glass),
-                      ),
-                    ),
-                ],
+          // 격자선 아래 — 원본도 띠 위로 격자선이 지나간다.
+          if (band != null)
+            Positioned(
+              key: bandKey,
+              left: 0,
+              right: 0,
+              top: _y(axis, band.max),
+              height: _y(axis, band.min) - _y(axis, band.max),
+              child: ColoredBox(
+                color: glass.bodySecondary.withValues(alpha: 0.05),
               ),
             ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, c) => Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: _WeekGridPainter(color: glass.chartGridLine),
+                        ),
+                      ),
+                      for (var i = 0; i < 7; i++)
+                        _bar(glass, axis, i, c.maxWidth, roles),
+                      for (var i = 0; i < 7; i++)
+                        Positioned(
+                          left: i * (c.maxWidth / 7) + 4,
+                          top: weekdayTop,
+                          child: Text(
+                            // DayMinMax.day는 자정 정규화 로컬 날짜 — weekday 1=월.
+                            'home_weekday_${rows[i].day.weekday}'.tr(),
+                            style: _axisStyle(glass),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              _axisLabels(glass, axis),
+            ],
           ),
-          _axisLabels(glass, axis),
         ],
       ),
     );
   }
+
+  static const bandKey = Key('week_range_band');
 
   Widget _bar(
     GlassPalette glass,
@@ -233,19 +272,16 @@ class WeekRangeChart extends StatelessWidget {
     final bottom = _y(axis, lo);
     // min == max인 날도 캡슐 하나는 보이게 최소 높이를 준다.
     final h = (bottom - top).clamp(barWidth, double.infinity);
-    final isMax = roles[i] == WeekBarRole.maximum;
-    final color = switch (roles[i]) {
-      WeekBarRole.maximum => accent,
-      WeekBarRole.minimum => glass.envBarMinimum,
-      _ => glass.envBarNeutral,
-    };
+    final emphasized =
+        roles[i] == WeekBarRole.maximum || roles[i] == WeekBarRole.minimum;
+    final color = emphasized ? accent : glass.envBarNeutral;
     final valueStyle = TextStyle(
       fontFamily: 'Pretendard',
       fontSize: 14,
       height: valueLabelHeight / 14,
       fontWeight: FontWeight.w500,
       letterSpacing: -0.28,
-      color: isMax ? (valueColor ?? accent) : glass.bodySecondary,
+      color: emphasized ? accent : glass.bodySecondary,
     );
 
     return Positioned(
