@@ -15,6 +15,7 @@ import '../../my_cage/presentation/supabase_module_providers.dart';
 import 'env_alert_prefs_providers.dart';
 import 'env_range_setting_screen.dart';
 import 'routine_settings_screen.dart' show ScheduleSwitch;
+import 'temp_offset_providers.dart';
 import 'widgets/device_offline_notice.dart';
 import 'widgets/env_setting_widgets.dart';
 
@@ -24,10 +25,13 @@ import 'widgets/env_setting_widgets.dart';
 /// 계정 단위 값(이탈 알림 토글, D2)이 한 화면에 있어서, 어느 사육장인지 첫 섹션
 /// 위에 사육장 이름을 보여 준다(Figma 밖 추가 — 2026-11-02 결정).
 ///
-/// **온도 보정은 아직 표시만 한다**(Task 4에서 토글·행 동작을 붙인다):
-/// `devices.temp_offset_c`가 0이면 꺼짐, null(구 펌웨어)이면 비활성 + 안내,
-/// 그 외는 켜짐 + "측정값 −1.5℃". D1 임시 규칙 — 꺼짐 판정은
-/// [TempOffset.fromDevice]·[TempOffset.isOff]를 거친다.
+/// **온도 보정**(S04·S32·S35·S06, 메모 S45~S47): 기기 값이 공장 보정(−1.5)이면
+/// 꺼짐, null(구 펌웨어)이면 비활성 + 안내, 그 외는 켜짐 + "측정값 +1℃"(기기 값
+/// −0.5). 판정은 [TempOffset.fromDevice]를 거친다(서버 회신 2026-11-02 §1.2).
+/// - 켜기는 화면 상태만 바꾼다 — "보정 값 · 설정하기" 행이 나타나고, 보정값
+///   설정에서 저장해야 기기로 간다(S45). 첫 진입 취소면 다시 꺼진다(S46).
+/// - 끄기(저장된 보정이 있을 때)는 바로 공장 보정으로 되돌리는 명령을 보내고 기기
+///   확인까지 꺼진 모양으로 잠근다. 실패하면 켜짐으로 돌아오고 안내한다.
 class TempHumidSettingScreen extends ConsumerWidget {
   const TempHumidSettingScreen({super.key, required this.deviceId});
 
@@ -37,6 +41,7 @@ class TempHumidSettingScreen extends ConsumerWidget {
   static const missingKey = Key('temp_humid_device_missing');
   static const offsetToggleKey = Key('temp_humid_offset_toggle');
   static const offsetValueKey = Key('temp_humid_offset_value');
+  static const offsetRowKey = Key('temp_humid_offset_row');
   static const offsetUnsupportedKey = Key('temp_humid_offset_unsupported');
   static const tempAlertToggleKey = Key('temp_humid_temp_alert_toggle');
   static const humidAlertToggleKey = Key('temp_humid_humid_alert_toggle');
@@ -75,7 +80,7 @@ class TempHumidSettingScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       ..._name(context, ref, devices, device),
-                      ..._offsetSection(context, devices, device),
+                      ..._offsetSection(context, ref, devices, device),
                       const SizedBox(height: 24),
                       ..._rangeSection(context, ref, EnvRangeKind.temp),
                       const SizedBox(height: 24),
@@ -118,28 +123,38 @@ class TempHumidSettingScreen extends ConsumerWidget {
     ];
   }
 
-  /// 온도 보정 — 표시만(Task 4 전).
-  List<Widget> _offsetSection(
-      BuildContext context, AsyncValue<List<Device>> devices, Device? device) {
+  /// 온도 보정 — 토글 + (켜짐이면) 보정 값 행.
+  List<Widget> _offsetSection(BuildContext context, WidgetRef ref,
+      AsyncValue<List<Device>> devices, Device? device) {
     final glass = context.glass;
-    final raw = device?.tempOffsetC;
-    final offset = raw == null ? null : TempOffset.fromDevice(raw);
-    final unsupported = device != null && raw == null;
-    final on = offset != null && !offset.isOff;
+    final live = ref.watch(deviceOffsetProvider(deviceId));
+    final loaded = device != null && (live.hasValue || live.hasError);
+    // 실시간 조회가 실패하면 목록 값으로 그린다.
+    final deviceValue = live.hasValue ? live.value : device?.tempOffsetC;
+    final saved =
+        deviceValue == null ? null : TempOffset.fromDevice(deviceValue);
+    final unsupported = loaded && deviceValue == null;
+    final pending = ref.watch(tempOffsetSaveProvider(deviceId));
+    final draft = ref.watch(tempOffsetToggleDraftProvider(deviceId));
+    final on = pending != null
+        ? !pending.isOff
+        : saved != null && (!saved.isOff || draft);
 
     final Widget? toggle;
-    if (device != null) {
+    if (loaded) {
+      final locked = unsupported || pending != null;
       toggle = Opacity(
         opacity: unsupported ? 0.4 : 1,
         child: IgnorePointer(
+          ignoring: locked,
           child: ScheduleSwitch(
               key: offsetToggleKey,
               value: on,
               color: glass.navSelected,
-              onChanged: (_) {}),
+              onChanged: (v) => _setOffsetEnabled(context, ref, v, saved)),
         ),
       );
-    } else if (devices.isLoading) {
+    } else if (devices.isLoading || device != null) {
       toggle = const SkeletonLoading(width: 80, height: 32, borderRadius: 16);
     } else {
       toggle = null;
@@ -152,15 +167,20 @@ class TempHumidSettingScreen extends ConsumerWidget {
             title: 'temp_humid_offset_toggle'.tr(),
             rightPadding: 8,
             trailing: toggle),
-        if (on)
+        if (on && saved != null)
           EnvSettingRow(
+            key: offsetRowKey,
             title: 'temp_humid_offset_row'.tr(),
             trailing: EnvSettingLinkTrailing(
               value: Text(
-                  'temp_humid_offset_value'
-                      .tr(args: [formatCompact(offset.value)]),
+                  saved.isOff
+                      ? 'temp_humid_offset_unset'.tr()
+                      : 'temp_humid_offset_value'.tr(args: [saved.signedLabel]),
                   key: offsetValueKey),
             ),
+            onTap: pending != null
+                ? null
+                : () => context.push(tempHumidOffsetPath(deviceId)),
           ),
       ]),
       if (unsupported)
@@ -168,6 +188,40 @@ class TempHumidSettingScreen extends ConsumerWidget {
             key: offsetUnsupportedKey),
       EnvSettingFootnote('temp_humid_offset_note'.tr()),
     ];
+  }
+
+  /// 켜기 = 화면 상태만(S45). 끄기 = 저장된 보정이 있으면 공장 보정으로 되돌리는
+  /// 명령 — 기기가 확인할 때까지 기다리고, 실패하면 안내한다(토글은 기기 값으로
+  /// 그리므로 저절로 켜짐으로 돌아온다).
+  Future<void> _setOffsetEnabled(
+      BuildContext context, WidgetRef ref, bool on, TempOffset? saved) async {
+    final draft = ref.read(tempOffsetToggleDraftProvider(deviceId).notifier);
+    if (on || saved == null || saved.isOff) {
+      draft.state = on;
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    void tell(String key) =>
+        messenger.showSnackBar(SnackBar(content: Text(key.tr())));
+    if (!ref.read(moduleOnlineProvider(deviceId))) {
+      tell('temp_humid_offset_offline');
+      return;
+    }
+    draft.state = false;
+    final result = await ref
+        .read(tempOffsetSaveProvider(deviceId).notifier)
+        .save(const TempOffset(0));
+    if (!context.mounted) return;
+    switch (result) {
+      case TempOffsetSaveResult.saved || TempOffsetSaveResult.unchanged:
+        return;
+      case TempOffsetSaveResult.noResponse:
+        tell('temp_offset_no_response');
+      case TempOffsetSaveResult.rejected:
+        tell('temp_offset_rejected');
+      case TempOffsetSaveResult.failed:
+        tell('temp_offset_failed');
+    }
   }
 
   /// 온도 / 습도 — 이탈 알림 토글 + 적정 범위 행 + 각주.

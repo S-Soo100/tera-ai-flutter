@@ -58,7 +58,8 @@ class Device {
   /// `relay` / `mosfet` / null(미보고).
   String? get boardType => capabilities?['board'] as String?;
 
-  static double? _parseTempOffset(Object? raw) {
+  /// `temp_offset_c` 원문 → ℃. 숫자 아님·±10 밖은 null(구 펌웨어와 같게 본다).
+  static double? parseTempOffset(Object? raw) {
     final v = parseDouble(raw);
     if (v == null || !v.isFinite) return null;
     return v.abs() > tempOffsetLimitC ? null : v;
@@ -78,7 +79,7 @@ class Device {
           : null,
       capabilities: caps is Map ? caps.cast<String, dynamic>() : null,
       lcd: DeviceLcdText.fromJson(j),
-      tempOffsetC: _parseTempOffset(j['temp_offset_c']),
+      tempOffsetC: parseTempOffset(j['temp_offset_c']),
     );
   }
 }

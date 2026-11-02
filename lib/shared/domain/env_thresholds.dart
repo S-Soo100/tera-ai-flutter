@@ -11,6 +11,8 @@
 /// 활성 조건을 흔들지 않게 하려는 것이다.
 library;
 
+import 'num_format.dart';
+
 /// `v`를 0.1 단위 정수로. 18.3 → 183.
 int _tenths(double v) => (v * 10).round();
 
@@ -130,11 +132,10 @@ class EnvRange {
 
 /// 온도 보정 — [value]는 **사용자 보정값**(측정값에 더하는 수, 끔 = 0).
 ///
-/// ⚠️ **D1 임시 규칙(2026-11-02 사용자, 서버 회신 Q1 대기):** 끔 = `offset_c: 0`
-/// 전송, 사용자 보정 = 그 값 그대로 기기 값. 회신이 "공장값(−1.5℃)에 더해서"
-/// 라면 [fromDevice]·[toDeviceValue]·[isOff]만 바꾸면 되도록, 다른 곳은
-/// [value]를 기기 값으로 직접 쓰지 말고 반드시 이 둘을 거친다.
-/// 끔 = 0은 펌웨어 기본 −1.5 기기의 온도를 +1.5℃ 올린다(끌 때 확인 모달).
+/// 기기 값(`devices.temp_offset_c`·명령 `offset_c`) = 공장 보정 −1.5 + 사용자
+/// 보정(서버 회신 2026-11-02 §1.2 — D1 임시 규칙 "끔 = 0"을 대체). 다른 곳은
+/// [value]를 기기 값으로 직접 쓰지 말고 반드시 [fromDevice]·[toDeviceValue]를
+/// 거친다. 끔에 0을 보내면 보드 발열이 실려 온도가 약 1.5℃ 높게 올라온다.
 class TempOffset {
   final double value;
 
@@ -166,16 +167,30 @@ class TempOffset {
     return TempOffset((subtract ? -t : t) / 10);
   }
 
-  /// 기기가 보고한 `devices.temp_offset_c` → 사용자 보정값. throw 없음
-  /// (±4 초과는 [outOfEditorRange]로 드러낸다). D1 임시: 그대로.
-  static TempOffset fromDevice(double deviceValue) => TempOffset(deviceValue);
+  /// 공장 보정(보드 발열 상쇄) — 펌웨어 빌드 기본값. 기기에는 값이 하나뿐이라
+  /// (NVS가 기본값을 **덮어쓴다**) "공장 보정 + 사용자 보정"을 합쳐 보낸다
+  /// (서버 회신 2026-11-02 §1.2). 보드별로 달라지면 서버가 `capabilities`로
+  /// 알려 주기로 했다 — 그때 이 상수를 기기별 값으로 바꾼다.
+  static const double factoryDeviceValue = -1.5;
 
-  /// 기기 명령 `set_temp_offset`의 `offset_c`. D1 임시: 그대로.
-  double toDeviceValue() => value;
+  /// 기기가 보고한 `devices.temp_offset_c` → 사용자 보정값(공장 보정을 뺀 값).
+  /// throw 없음(편집기 밖은 [outOfEditorRange]로 드러낸다). 0.1 단위로 맞춘다.
+  static TempOffset fromDevice(double deviceValue) =>
+      TempOffset(_tenths(deviceValue - factoryDeviceValue) / 10);
 
-  /// 기기가 보낸 보정 후 온도(`t_a`)에서 원래 측정값 복원.
-  static double rawFrom(double reportedTemp, double deviceOffset) =>
-      reportedTemp - deviceOffset;
+  /// 기기 명령 `set_temp_offset`의 `offset_c` — 끔(0)이면 공장 보정 −1.5.
+  /// 편집기 끝값(±4)이면 −5.5 ~ +2.5로 서버 허용 ±10 안이다.
+  double toDeviceValue() => _tenths(value + factoryDeviceValue) / 10;
+
+  /// 화면의 "현재 측정 온도" — 기기가 보낸 보정 후 온도(`t_a`)에서 사용자 보정만
+  /// 걷어낸 값(공장 보정은 남긴다: 보정 꺼짐일 때 홈에 보이는 값과 같다).
+  static double measuredFrom(double reportedTemp, double deviceOffset) =>
+      reportedTemp - fromDevice(deviceOffset).value;
+
+  /// "+1" / "-2" / "+0.5" — 온습도 설정의 "측정값 {}℃"(Figma S35·S06).
+  String get signedLabel => value > 0
+      ? '+${formatCompact(value)}'
+      : formatCompact(value);
 
   /// 원래 측정값에 이 보정을 적용한 값.
   double apply(double raw) => raw + value;

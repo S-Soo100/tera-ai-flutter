@@ -13,6 +13,7 @@ import 'package:vivanaut/features/home/presentation/env_range_setting_screen.dar
 import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart'
     show ScheduleSwitch;
 import 'package:vivanaut/features/home/presentation/temp_humid_setting_screen.dart';
+import 'package:vivanaut/features/home/presentation/temp_offset_providers.dart';
 import 'package:vivanaut/features/my_cage/data/device_settings_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:vivanaut/features/my_cage/domain/device_settings.dart';
@@ -101,6 +102,11 @@ void main() {
       overrides: [
         deviceListProvider
             .overrideWith((ref) async => devices ?? [_device(offset: -1.5)]),
+        deviceOffsetProvider('d1').overrideWith((ref) => Stream.value(
+            (devices ?? [_device(offset: -1.5)])
+                .where((d) => d.id == 'd1')
+                .firstOrNull
+                ?.tempOffsetC)),
         deviceSettingsRepositoryProvider
             .overrideWithValue(_SettingsRepo(settings)),
         moduleLinkProvider('d1').overrideWithValue(ModuleLink.online),
@@ -147,25 +153,35 @@ void main() {
     expect(find.text('35% ~ 85%'), findsOneWidget);
   });
 
-  testWidgets('(2) 보정 -1.5 → 켜짐 + "측정값 -1.5℃"', (tester) async {
-    await pump(tester, devices: [_device(offset: -1.5)]);
-    expect(
-        _switchValue(tester, TempHumidSettingScreen.offsetToggleKey), isTrue);
-    expect(
-        tester
-            .widget<Text>(find.byKey(TempHumidSettingScreen.offsetValueKey))
-            .data,
-        '측정값 -1.5℃');
-    expect(
-        find.byKey(TempHumidSettingScreen.offsetUnsupportedKey), findsNothing);
-  });
+  String? offsetText(WidgetTester tester) => tester
+      .widget<Text>(find.byKey(TempHumidSettingScreen.offsetValueKey))
+      .data;
 
-  testWidgets('(2) 보정 0 → 꺼짐, 보정 값 행 없음', (tester) async {
-    await pump(tester, devices: [_device(offset: 0)]);
+  testWidgets('(2) 공장 보정 −1.5만 → 꺼짐, 보정 값 행 없음(S04)', (tester) async {
+    await pump(tester, devices: [_device(offset: -1.5)]);
     expect(
         _switchValue(tester, TempHumidSettingScreen.offsetToggleKey), isFalse);
     expect(find.byKey(TempHumidSettingScreen.offsetValueKey), findsNothing);
     expect(find.text('보정 값'), findsNothing);
+  });
+
+  testWidgets('(2) 기기 −0.5 → 켜짐 + "측정값 +1℃"(S35)', (tester) async {
+    await pump(tester, devices: [_device(offset: -0.5)]);
+    expect(
+        _switchValue(tester, TempHumidSettingScreen.offsetToggleKey), isTrue);
+    expect(offsetText(tester), '측정값 +1℃');
+    expect(
+        find.byKey(TempHumidSettingScreen.offsetUnsupportedKey), findsNothing);
+  });
+
+  testWidgets('(2) 기기 −3.5 → 켜짐 + "측정값 -2℃"(S06)', (tester) async {
+    await pump(tester, devices: [_device(offset: -3.5)]);
+    expect(offsetText(tester), '측정값 -2℃');
+  });
+
+  testWidgets('기기 0(옛 "끔 = 0" 기기) → 켜짐 + "측정값 +1.5℃"', (tester) async {
+    await pump(tester, devices: [_device(offset: 0)]);
+    expect(offsetText(tester), '측정값 +1.5℃');
   });
 
   testWidgets('구 펌웨어(보정값 모름) → 꺼짐·비활성 + 펌웨어 안내', (tester) async {
@@ -174,15 +190,6 @@ void main() {
         _switchValue(tester, TempHumidSettingScreen.offsetToggleKey), isFalse);
     expect(find.text('펌웨어 업데이트 후 사용할 수 있어요'), findsOneWidget);
     expect(find.byKey(TempHumidSettingScreen.offsetValueKey), findsNothing);
-  });
-
-  testWidgets('보정 토글은 아직 표시만 — 눌러도 바뀌지 않는다', (tester) async {
-    await pump(tester, devices: [_device(offset: -1.5)]);
-    await tester.tap(find.byKey(TempHumidSettingScreen.offsetToggleKey),
-        warnIfMissed: false);
-    await tester.pumpAndSettle();
-    expect(
-        _switchValue(tester, TempHumidSettingScreen.offsetToggleKey), isTrue);
   });
 
   testWidgets('(3) 사육장 이름을 보인다', (tester) async {

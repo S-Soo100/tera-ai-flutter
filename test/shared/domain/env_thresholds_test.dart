@@ -135,8 +135,12 @@ void main() {
       expect(o.value, 0.3);
       expect(o.isSubtract, isFalse);
     });
-    test('원래 측정값 복원',
-        () => expect(TempOffset.rawFrom(24.7, -1.5), closeTo(26.2, 1e-9)));
+    test('화면 측정값 = 기기 보고값 − 사용자 보정', () {
+      // 공장 보정(−1.5)만 걸린 기기: 보고값이 곧 측정값.
+      expect(TempOffset.measuredFrom(24.7, -1.5), closeTo(24.7, 1e-9));
+      // 사용자 +1.0(기기 −0.5): 보고 25.7 → 측정 24.7.
+      expect(TempOffset.measuredFrom(25.7, -0.5), closeTo(24.7, 1e-9));
+    });
     test('편집기 범위 0.1~4.0', () {
       expect(() => TempOffset.of(subtract: false, magnitude: 4.1),
           throwsArgumentError);
@@ -149,21 +153,38 @@ void main() {
       expect(() => TempOffset.of(subtract: false, magnitude: 1.05),
           throwsArgumentError);
     });
-    test('기기 값 ±4 초과도 throw 없음', () {
-      final o = TempOffset.fromDevice(-6);
+    test('기기 값이 편집기 범위(사용자 ±4) 밖이어도 throw 없음', () {
+      final o = TempOffset.fromDevice(-6); // 사용자 −4.5
+      expect(o.value, -4.5);
       expect(o.outOfEditorRange, isTrue);
       expect(o.isOff, isFalse);
     });
-    test('기기 값 4.0은 편집기 범위 안',
-        () => expect(TempOffset.fromDevice(4).outOfEditorRange, isFalse));
-    test('D1 임시: 끔은 0', () {
-      expect(TempOffset.fromDevice(0).isOff, isTrue);
-      expect(const TempOffset(0).toDeviceValue(), 0);
+    test('사용자 4.0(기기 2.5)은 편집기 범위 안',
+        () => expect(TempOffset.fromDevice(2.5).outOfEditorRange, isFalse));
+    // 서버 회신 2026-11-02 §1.2: −1.5는 공장 보정, 끔 = −1.5 전송.
+    test('공장 보정 −1.5 = 꺼짐', () {
+      expect(TempOffset.fromDevice(-1.5).isOff, isTrue);
+      expect(const TempOffset(0).toDeviceValue(), -1.5);
     });
-    test('D1 임시: 기기 값 ↔ 사용자 값 그대로', () {
-      expect(TempOffset.fromDevice(-1.5).value, -1.5);
-      expect(TempOffset.fromDevice(-1.5).isOff, isFalse);
-      expect(const TempOffset(1.0).toDeviceValue(), 1.0);
+    test('기기 값 ↔ 사용자 값(회신 표)', () {
+      expect(TempOffset.fromDevice(-0.5).value, 1.0);
+      expect(TempOffset.fromDevice(-3.0).value, -1.5);
+      expect(TempOffset.fromDevice(0).value, 1.5);
+      expect(const TempOffset(1.0).toDeviceValue(), -0.5);
+      expect(const TempOffset(-0.5).toDeviceValue(), -2.0);
+    });
+    test('편집기 끝값이 서버 허용 ±10 안', () {
+      expect(TempOffset.of(subtract: true, magnitude: 4).toDeviceValue(), -5.5);
+      expect(TempOffset.of(subtract: false, magnitude: 4).toDeviceValue(), 2.5);
+    });
+    test('부동소수 오차는 0.1 단위로 맞춘다', () {
+      expect(TempOffset.fromDevice(-1.7).value, -0.2);
+      expect(const TempOffset(0.3).toDeviceValue(), -1.2);
+    });
+    test('표시 문자열: +1 / -2 / 0.5', () {
+      expect(const TempOffset(1).signedLabel, '+1');
+      expect(const TempOffset(-2).signedLabel, '-2');
+      expect(const TempOffset(0.5).signedLabel, '+0.5');
     });
   });
 }

@@ -55,6 +55,7 @@ import 'package:vivanaut/shared/widgets/glass_dock.dart';
 import 'package:vivanaut/features/home/presentation/env_detail_screen.dart';
 import 'package:vivanaut/features/home/presentation/env_range_setting_screen.dart';
 import 'package:vivanaut/features/home/presentation/temp_humid_setting_screen.dart';
+import 'package:vivanaut/features/home/presentation/temp_offset_screen.dart';
 import 'package:vivanaut/features/home/presentation/widgets/env_alert_card.dart';
 import 'package:vivanaut/features/home/presentation/widgets/env_range_bar.dart';
 import 'package:vivanaut/features/profile/data/notification_preferences_repository.dart';
@@ -306,13 +307,24 @@ void main() {
         expect(find.text('나가기'), findsOneWidget);
       });
 
-      // v4 온습도 설정 묶음(Figma 1635:6166) — 온습도 설정(보정 켜짐 −1.5).
+      // v4 온습도 설정 묶음(Figma 1635:6166) — 온습도 설정(보정 켜짐 −2, S06).
       testWidgets('온습도 설정', (tester) async {
         await _pump(tester, system,
             const TempHumidSettingScreen(deviceId: kEnvV4DeviceId),
             overrides: envV4SettingOverrides());
         expect(
             find.byKey(TempHumidSettingScreen.offsetValueKey), findsOneWidget);
+        await tester.drag(
+            find.byType(SingleChildScrollView).first, const Offset(0, -600));
+        await tester.pumpAndSettle();
+      });
+
+      // 보정값 설정(S16) — 저장값 빼기 2.0.
+      testWidgets('보정값 설정', (tester) async {
+        await _pump(tester, system,
+            const TempOffsetScreen(deviceId: kEnvV4DeviceId),
+            overrides: envV4OffsetOverrides());
+        expect(find.byKey(TempOffsetScreen.sliderKey), findsOneWidget);
         await tester.drag(
             find.byType(SingleChildScrollView).first, const Offset(0, -600));
         await tester.pumpAndSettle();

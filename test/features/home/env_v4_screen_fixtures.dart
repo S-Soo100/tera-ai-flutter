@@ -11,6 +11,7 @@ import 'package:vivanaut/features/home/presentation/env_alert_providers.dart';
 import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
 import 'package:vivanaut/features/home/presentation/env_live_providers.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivanaut/features/home/presentation/temp_offset_providers.dart';
 import 'package:vivanaut/features/my_cage/data/device_settings_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:vivanaut/features/my_cage/domain/device_settings.dart';
@@ -61,7 +62,7 @@ User envV4User() => User(
     aud: 'authenticated',
     createdAt: '2026-01-01');
 
-/// 펌웨어 기본 보정 −1.5℃가 걸린 온라인 기기(S05).
+/// 사용자 보정 −2℃(기기 값 = 공장 −1.5 + −2 = −3.5)가 걸린 온라인 기기(S06).
 const envV4Device = Device(
     id: kEnvV4DeviceId,
     ownerId: 'u1',
@@ -69,7 +70,7 @@ const envV4Device = Device(
     name: '거실 사육장',
     isOnline: true,
     lastSeenAt: null,
-    tempOffsetC: -1.5);
+    tempOffsetC: -3.5);
 
 /// 온습도 설정·적정 범위 화면용.
 List<Override> envV4SettingOverrides() => [
@@ -79,6 +80,21 @@ List<Override> envV4SettingOverrides() => [
       currentUserProvider.overrideWith((ref) => envV4User()),
       envAlertPrefsRepositoryProvider
           .overrideWith((ref, id) => EnvV4PrefsRepo()),
+      deviceOffsetProvider(kEnvV4DeviceId)
+          .overrideWith((ref) => Stream.value(envV4Device.tempOffsetC)),
+    ];
+
+/// 보정값 설정 화면용 — 기기 보고 온도 24.2℃(사용자 보정 −2 반영 후 → 측정 26.2).
+List<Override> envV4OffsetOverrides() => [
+      ...envV4SettingOverrides(),
+      envLiveViewProvider(kEnvV4DeviceId).overrideWith((ref) {
+        final now = DateTime.now();
+        return envLiveView(
+            EnvLiveReading(
+                deviceId: kEnvV4DeviceId, temperature: 24.2, measuredAt: now),
+            now: now,
+            online: true);
+      }),
     ];
 
 EnvAlert _alert(String id, String kind, String level, String message) =>

@@ -10,8 +10,9 @@ import '../../../shared/domain/env_thresholds.dart';
 /// 소유권·허용 범위 ±10.0을 검증하고 MQTT로 내려보낸다). 이 명령은 차트 마커
 /// 대상이 아니라 `CommandAction`·`actuator_marker.dart`에 넣지 않는다.
 ///
-/// 기기 값 변환은 반드시 [TempOffset.toDeviceValue]를 거친다(D1 임시 규칙이
-/// 서버 회신으로 바뀌면 그 한 곳만 고친다).
+/// 기기 값 변환은 반드시 [TempOffset.toDeviceValue]를 거친다(공장 보정 −1.5 +
+/// 사용자 보정 — 서버 회신 2026-11-02 §1.2). 사용자 JWT로 써도 되고 빈도 제한은
+/// 없다(§2) — 연타 방지는 화면 몫.
 class TempOffsetRepository {
   TempOffsetRepository(this._rest);
   final TerraRestClient _rest;

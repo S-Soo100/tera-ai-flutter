@@ -77,6 +77,20 @@ class SupabaseModuleControlRepository {
     return DeviceLinkStatus.fromJson(list.first);
   }
 
+  /// 기기가 지금 적용 중인 온도 보정(`devices.temp_offset_c`). 구 펌웨어·없는
+  /// 기기는 null. 목록 캐시가 아니라 매번 읽는다 — 보정을 바꾼 직후 다시 들어와도
+  /// 옛 값이 보이지 않게(v4 1-2).
+  Future<double?> fetchTempOffset(String deviceId) async {
+    final rows = await _supabase
+        .from('devices')
+        .select('temp_offset_c')
+        .eq('id', deviceId)
+        .limit(1);
+    final list = (rows as List).cast<Map<String, dynamic>>();
+    if (list.isEmpty) return null;
+    return Device.parseTempOffset(list.first['temp_offset_c']);
+  }
+
   /// 디바이스를 사육장에 배정. enclosureId=null 이면 배정 해제.
   /// RLS(owner_id=auth.uid)로 본인 디바이스만 UPDATE 가능.
   Future<void> assignEnclosure(String deviceId, String? enclosureId) async {
