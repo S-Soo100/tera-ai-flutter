@@ -1451,6 +1451,8 @@
   "env_alert_hint_temp_high": "환기팬 또는 냉각팬 사용을 추천드려요",
   "env_alert_hint_humid_low": "사육장에 수분을 보충해 주세요",
   "env_alert_hint_humid_high": "환기 상태를 점검해 주세요",
+  "env_alert_hint_vent_delay": "분무 후 6시간이 지났지만 사육장이 충분히 마르지 않았습니다. 환기를 점검해 주세요",
+  "env_alert_hint_mist_gap": "마지막 분무 후 15시간이 지났지만 다음 분무가 감지되지 않았습니다",
   "env_report_chip_temp": "온도",
   "env_report_chip_humid": "습도",
   "env_report_status_danger": "경고",

@@ -117,6 +117,13 @@ final envV4A10Alerts = [
 ];
 
 /// 온습도 상세(A10 상태 — 현재 15.0℃ / 34.8%, 오늘 15~26 / 34~80).
+/// A26·A36 + 습도 범위 이탈 — 온도·습도·습기 사이클 세 줄.
+final envV4CycleAlerts = [
+  _alert('t', 'env_temp_high', 'caution', '[고온 주의] 적정 온도보다 +5.2℃'),
+  _alert('h', 'env_humid_low', 'caution', '[건조 주의] 적정 습도보다 -6%p'),
+  _alert('g', 'env_mist_gap', 'caution', '[건조 주의] 분무 필요'),
+];
+
 List<Override> envV4DetailOverrides(
     {List<EnvAlert>? alerts, FakeEnvReportRepository? reports}) {
   final now = DateTime.now();

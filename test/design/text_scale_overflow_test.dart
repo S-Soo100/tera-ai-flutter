@@ -360,6 +360,17 @@ void main() {
         await tester.pumpAndSettle();
       });
 
+      // 실시간 카드 세 줄 — 온도·습도·습기 사이클(A26·A36, 설명 두 줄).
+      testWidgets('온습도 상세 — 이탈 카드 세 줄', (tester) async {
+        await _pump(tester, system, const EnvDetailScreen(),
+            overrides: envV4DetailOverrides(alerts: envV4CycleAlerts));
+        await tester.scrollUntilVisible(find.byKey(EnvAlertCard.cardKey), 200,
+            scrollable: find.byType(Scrollable).first);
+        await tester.pumpAndSettle();
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+        await tester.pumpAndSettle();
+      });
+
       // 지난 날 일일 분석 — 구간 캡션 + 온도 2줄·습도 1줄 카드(A14·A15).
       testWidgets('온습도 상세 — 지난 날 일일 분석', (tester) async {
         final yesterday = DateTime.now().subtract(const Duration(days: 1));
