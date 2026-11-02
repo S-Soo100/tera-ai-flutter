@@ -210,4 +210,35 @@ void main() {
           EnvWeeklyReportSection.hasContent(r, EnvReportElement.humid), isTrue);
     });
   });
+
+  group('주간 설명 한 문단(Figma A20)', () {
+    test('마침표 없는 줄 뒤에는 ". "로 잇는다', () {
+      expect(
+          EnvWeeklyReportSection.joinLines(
+              ['총 3회 위험 온도 발생. 적정 온도보다 최대 5.2℃ 이탈', '주간 시간에 온도 이탈이 집중되었어요']),
+          '총 3회 위험 온도 발생. 적정 온도보다 최대 5.2℃ 이탈. 주간 시간에 온도 이탈이 집중되었어요');
+    });
+    test('마침표로 끝난 줄 뒤에는 공백만', () {
+      expect(
+          EnvWeeklyReportSection.joinLines(
+              ['총 2회 위험 온도 발생.', '야간 시간에 온도 이탈이 집중되었어요']),
+          '총 2회 위험 온도 발생. 야간 시간에 온도 이탈이 집중되었어요');
+    });
+    test('한 줄·빈 목록은 그대로', () {
+      expect(EnvWeeklyReportSection.joinLines(['총 3회 적정 온도 범위를 벗어났어요']),
+          '총 3회 적정 온도 범위를 벗어났어요');
+      expect(EnvWeeklyReportSection.joinLines(const []), isNull);
+    });
+    testWidgets('주간 카드는 설명 Text 하나', (tester) async {
+      await pump(
+          tester,
+          EnvWeeklyReportSection(
+              report: _weekly(
+                  temp: _card(EnvReportElement.temp,
+                      status: EnvReportStatus.danger, lines: ['줄 하나', '줄 둘'])),
+              element: EnvReportElement.temp));
+      expect(find.text(keepAllWords('줄 하나. 줄 둘')), findsOneWidget);
+      expect(find.text(keepAllWords('줄 하나')), findsNothing);
+    });
+  });
 }

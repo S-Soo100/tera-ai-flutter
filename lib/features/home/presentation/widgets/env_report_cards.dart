@@ -44,7 +44,8 @@ class EnvDailyReportCard extends StatelessWidget {
 ///   (ERR_DISCONNECT는 카드와 함께 — 서버 §3).
 /// - `ERR_NO_DATA`면 카드를 그리지 않는다(서버도 null을 준다).
 /// - 카드 칩은 상태 "경고"/"주의"/"적정"(`#3C3C3C`), 모르는 상태면 칩 생략.
-/// - 설명은 서버 줄마다 한 Text(Figma A20은 한 문단이지만 문장을 잇지 않는다).
+/// - 설명은 서버 줄을 **한 문단**으로 잇는다(Figma A20 — 2026-11-03 사용자
+///   결정 "Figma대로"). [joinLines] 참고.
 /// 그릴 것이 없으면 아무것도 그리지 않는다.
 class EnvWeeklyReportSection extends StatelessWidget {
   const EnvWeeklyReportSection(
@@ -56,6 +57,21 @@ class EnvWeeklyReportSection extends StatelessWidget {
   static Key cardKey(EnvReportElement e) => Key('env_weekly_report_${e.name}');
   static Key noticeKey(EnvReportElement e) =>
       Key('env_weekly_notice_${e.name}');
+
+  /// 서버 주간 줄을 Figma A20처럼 한 문단으로 잇는다. 서버 줄은 "…℃ 이탈"처럼
+  /// 마침표 없이 끝나거나 "총 N회 위험 온도 발생."처럼 마침표로 끝난다 — 앞
+  /// 줄이 문장부호로 끝나지 않으면 ". ", 끝나면 " "로 잇는다(Figma "…5.2℃ 이탈.
+  /// 주간 시간에 …"). 줄이 없으면 null.
+  static String? joinLines(List<String> lines) {
+    if (lines.isEmpty) return null;
+    final b = StringBuffer(lines.first.trimRight());
+    for (final line in lines.skip(1)) {
+      final prev = b.toString();
+      b.write(RegExp(r'[.!?]$').hasMatch(prev) ? ' ' : '. ');
+      b.write(line.trim());
+    }
+    return b.toString();
+  }
 
   /// 이 지표에 그릴 것이 있는가 — 화면이 위 간격을 넣을지 정한다.
   static bool hasContent(EnvWeeklyReport report, EnvReportElement e) =>
@@ -97,7 +113,7 @@ class EnvWeeklyReportSection extends StatelessWidget {
             EnvInsightRow(
               chip: chipKey?.tr(),
               title: card.title,
-              lines: card.lines,
+              lines: [if (joinLines(card.lines) case final String p) p],
               lineLetterSpacing: -0.02,
             ),
           ]),
