@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../home/presentation/home_set_providers.dart';
+import '../domain/app_notification.dart';
+import '../domain/notification_open_target.dart';
 import 'notification_providers.dart';
 import 'push_permission_prompt.dart';
 
@@ -108,9 +111,7 @@ class NotificationCenterScreen extends ConsumerWidget {
                                             userId) {
                                       return;
                                     }
-                                    if (item.safeRoute != '/notifications') {
-                                      context.push(item.safeRoute);
-                                    }
+                                    await _open(context, ref, item, userId);
                                   }),
                         );
                       },
@@ -119,6 +120,23 @@ class NotificationCenterScreen extends ConsumerWidget {
         ]),
       ),
     );
+  }
+
+  /// 온습도 이탈이면 그 사육장으로 홈 세트를 옮긴 뒤 연다(푸시 탭과 같은 규칙,
+  /// `selectNotificationDevice`). 내 기기 목록에 없는 기기면 이동만 한다.
+  Future<void> _open(BuildContext context, WidgetRef ref, AppNotification item,
+      String? userId) async {
+    if (item.safeRoute == '/notifications') return;
+    await selectNotificationDevice(item,
+        myDeviceIds: () async => (await ref.read(homeDeviceSetsProvider.future))
+            .map((set) => set.device?.id)
+            .whereType<String>(),
+        select: (id) {
+          if (!context.mounted) return;
+          ref.read(selectedHomeDeviceIdProvider.notifier).state = id;
+        });
+    if (!context.mounted || ref.read(currentUserProvider)?.id != userId) return;
+    context.push(item.safeRoute);
   }
 
   Future<void> _action(BuildContext context, WidgetRef ref, String key,
@@ -144,7 +162,8 @@ class NotificationCenterScreen extends ConsumerWidget {
       'community',
       'notice',
       'maintenance',
-      'safety'
+      'safety',
+      'env'
     };
     return 'notifications_category_${categories.contains(category) ? category : 'other'}'
         .tr();

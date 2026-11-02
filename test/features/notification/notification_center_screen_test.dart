@@ -5,6 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivanaut/features/home/domain/enclosure_set.dart';
+import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
+import 'package:vivanaut/features/my_cage/domain/device.dart';
+import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivanaut/features/notification/data/notification_repository.dart';
 import 'package:vivanaut/features/notification/data/push_messaging_service.dart';
 import 'package:vivanaut/features/notification/presentation/notification_center_screen.dart';
@@ -24,7 +28,8 @@ void main() {
   setUpAll(initializeNotificationLocalization);
   Future<ProviderContainer> pump(
       WidgetTester tester, MemoryNotificationStore store,
-      {PushPermission permission = PushPermission.authorized}) async {
+      {PushPermission permission = PushPermission.authorized,
+      List<EnclosureSet> sets = const []}) async {
     final router = GoRouter(initialLocation: '/notifications', routes: [
       GoRoute(
           path: '/notifications',
@@ -43,6 +48,7 @@ void main() {
           notificationRepositoryProvider.overrideWithValue(
               NotificationRepository(store, currentUserId: () => 'a')),
           pushPermissionProvider.overrideWith((ref) => permission),
+          homeDeviceSetsProvider.overrideWith((ref) async => sets),
         ],
         child: localizedNotificationHost((context) => MaterialApp.router(
               routerConfig: router,
@@ -108,5 +114,57 @@ void main() {
     await pump(tester, store, permission: PushPermission.denied);
     await tester.pumpAndSettle();
     expect(find.text('알림 켜기'), findsOneWidget);
+  });
+
+  // v4 온습도 이탈 알림(2026-11-02): 알림함에서 열면 그 사육장으로 홈 세트를
+  // 옮긴 뒤 온습도 상세로 간다. 내 기기 목록에 없는 id면 옮기지 않는다.
+  EnclosureSet deviceSet(String id) => EnclosureSet(
+      enclosure: Enclosure(
+          id: 'enc-$id', name: '사육장 $id', createdAt: DateTime.utc(2026)),
+      device: Device(
+          id: id,
+          ownerId: 'a',
+          enclosureId: 'enc-$id',
+          name: '사육장 $id',
+          isOnline: true,
+          lastSeenAt: null),
+      camera: null,
+      pet: null);
+  Map<String, Object?> envRow(String deviceId) =>
+      notificationRow('n1', 'a', '2026-11-02T05:02:03Z')
+        ..['kind'] = 'env.alert.triggered'
+        ..['category'] = 'env'
+        ..['title'] = '[저온 경고] 온도가 너무 낮아 개체가 위험할 수 있어요'
+        ..['body'] = '거실 사육장'
+        ..['data'] = <String, Object?>{
+          'kind': 'env_temp_low',
+          'device_id': deviceId,
+        };
+
+  testWidgets('env alert row shows its category and selects its device',
+      (tester) async {
+    final store = MemoryNotificationStore()..rows.add(envRow('dev-2'));
+    addTearDown(store.changes.close);
+    final container = await pump(tester, store,
+        sets: [deviceSet('dev-1'), deviceSet('dev-2')]);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('온습도 이탈'), findsOneWidget);
+    expect(container.read(selectedHomeDeviceIdProvider), isNull);
+    await tester.tap(find.byKey(const Key('notification_n1')));
+    await tester.pumpAndSettle();
+    expect(find.text('environment'), findsOneWidget);
+    expect(container.read(selectedHomeDeviceIdProvider), 'dev-2');
+  });
+
+  testWidgets('env alert for a device not in my list only navigates',
+      (tester) async {
+    final store = MemoryNotificationStore()..rows.add(envRow('foreign'));
+    addTearDown(store.changes.close);
+    final container = await pump(tester, store, sets: [deviceSet('dev-1')]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('notification_n1')));
+    await tester.pumpAndSettle();
+    expect(find.text('environment'), findsOneWidget);
+    expect(container.read(selectedHomeDeviceIdProvider), isNull);
   });
 }

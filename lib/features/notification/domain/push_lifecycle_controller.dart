@@ -20,6 +20,7 @@ class PushLifecycleController {
       required this.navigate,
       required this.permissionChanged,
       required this.reportError,
+      this.prepareOpen,
       this.clearLocalNotifications});
 
   final PushMessagingPort messaging;
@@ -33,6 +34,10 @@ class PushLifecycleController {
   final void Function(String) navigate;
   final void Function(PushPermission) permissionChanged;
   final void Function(String) reportError;
+
+  /// 알림 화면으로 이동하기 직전에 부른다 — 온습도 이탈 알림이면 그 사육장으로
+  /// 홈 세트를 옮긴다(2026-11-02). 실패해도 이동은 한다.
+  final Future<void> Function(AppNotification)? prepareOpen;
 
   /// 로그아웃 뒤 이 폰의 로컬 알림을 내린다 — 예약·팬 타이머 알림은 기기(계정)
   /// 몫이라 다음 계정에 남으면 안 된다(2026-09-25).
@@ -246,7 +251,13 @@ class PushLifecycleController {
       final route = knownNotificationKinds.contains(message.kind)
           ? sanitizeNotificationRoute(message.route)
           : '/notifications';
-      navigate(route == item.safeRoute ? route : '/notifications');
+      final destination = route == item.safeRoute ? route : '/notifications';
+      final prepare = prepareOpen;
+      if (prepare != null && destination != '/notifications') {
+        await _guard(() => prepare(item), 'open_target');
+        if (!_current(userId, generation)) return;
+      }
+      navigate(destination);
       opened = true;
       _bound(_opened);
     } finally {

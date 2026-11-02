@@ -167,3 +167,87 @@ test('device action copy migration admits the guard-skipped type and its copy', 
   assert.match(deviceCopyMigration, /'device\.action\.skipped',\s+'community\.comment'/);
   assert.match(deviceCopyMigration, /WHEN 'device\.action\.skipped' THEN/);
 });
+
+// ── v4 온습도 이탈 푸시(env.alert.triggered, 2026-11-02 Task 8) ──────────────────
+const envAlertMigration = readFileSync(
+  new URL('../../migrations/20261102000100_notification_env_alert.sql', import.meta.url),
+  'utf8',
+);
+const deviceOfflineMigration = readFileSync(
+  new URL('../../migrations/20261001000000_notification_device_offline_copy.sql', import.meta.url),
+  'utf8',
+);
+
+function functionBlock(sql, name) {
+  return sql.match(
+    new RegExp(`CREATE OR REPLACE FUNCTION public\\.${name}\\([\\s\\S]*?\\n\\$\\$;`),
+  )?.[0];
+}
+
+function typeCheckList(sql) {
+  const block = sql.match(
+    /ADD CONSTRAINT notification_events_type_check CHECK \(type IN \(([\s\S]*?)\)\);/,
+  )?.[1];
+  return block ? [...block.matchAll(/'([^']+)'/g)].map((m) => m[1]) : [];
+}
+
+// 이전 정의의 줄이 모두 같은 순서로 남아 있어야 한다(분기·문구 유실 방지).
+function assertKeepsEveryLine(previous, next, label) {
+  const nextLines = next.split('\n').map((line) => line.trim());
+  let cursor = 0;
+  for (const line of previous.split('\n').map((l) => l.trim()).filter(Boolean)) {
+    const found = nextLines.indexOf(line, cursor);
+    assert.ok(found >= 0, `${label}: 이전 정의의 줄이 빠졌거나 순서가 바뀜 — ${line}`);
+    cursor = found + 1;
+  }
+}
+
+test('env alert migration keeps every existing type and admits env.alert.triggered', () => {
+  const previous = typeCheckList(deviceCopyMigration);
+  const next = typeCheckList(envAlertMigration);
+  assert.equal(previous.length, 11, '기준 타입 목록(20260916)을 읽지 못함');
+  assert.match(envAlertMigration, /DROP CONSTRAINT IF EXISTS notification_events_type_check/);
+  for (const type of previous) assert.ok(next.includes(type), `타입 유실: ${type}`);
+  assert.ok(next.includes('env.alert.triggered'));
+  assert.equal(next.length, previous.length + 1);
+});
+
+test('env alert trigger copies the 2026-10-01 body and adds only the env branch', () => {
+  const previous = functionBlock(deviceOfflineMigration, 'notification_event_after_insert');
+  const next = functionBlock(envAlertMigration, 'notification_event_after_insert');
+  assert.ok(previous && next, 'trigger function must exist in both migrations');
+  assert.doesNotMatch(envAlertMigration, /CREATE TRIGGER/);
+  // outbox INSERT는 수신 끔 IF 안으로 들여 쓰므로 줄 단위 비교에서 그 부분만 뺀다.
+  const [previousHead] = previous.split('  IF v_notification_id IS NOT NULL THEN');
+  assertKeepsEveryLine(previousHead, next, 'notification_event_after_insert');
+  for (const type of typeCheckList(deviceCopyMigration)) {
+    assert.match(next, new RegExp(`WHEN '${type.replace(/\./g, '\\.')}' THEN`), `분기 유실: ${type}`);
+  }
+  const envBranch = next.match(/WHEN 'env\.alert\.triggered' THEN([\s\S]*?)\n\s*END CASE;/)?.[1];
+  assert.ok(envBranch, 'env 분기는 CASE의 마지막 WHEN이어야 한다');
+  assert.match(envBranch, /v_title := NEW\.payload ->> 'title';/);
+  assert.match(envBranch, /v_body := COALESCE\(NULLIF\(NEW\.payload ->> 'device_name', ''\), '사육장'\);/);
+  assert.match(envBranch, /v_route := '\/env-detail';/);
+});
+
+test('env alert trigger skips only the outbox when the account turned the topic off', () => {
+  const next = functionBlock(envAlertMigration, 'notification_event_after_insert');
+  const appInsert = next.indexOf('INSERT INTO public.app_notifications');
+  const preference = next.indexOf('FROM public.notification_preferences');
+  const outboxInsert = next.indexOf('INSERT INTO public.notification_outbox');
+  assert.ok(appInsert >= 0 && preference > appInsert && outboxInsert > preference,
+    '기록(app_notifications) → 수신 설정 확인 → outbox 순서여야 한다');
+  assert.match(next, /COALESCE\(\(\s*SELECT p\.env_temp\s+FROM public\.notification_preferences AS p\s+WHERE p\.user_id = NEW\.user_id\s*\), true\)/);
+  assert.match(next, /COALESCE\(\(\s*SELECT p\.env_humid\s+FROM public\.notification_preferences AS p\s+WHERE p\.user_id = NEW\.user_id\s*\), true\)/);
+  assert.match(next, /NEW\.payload ->> 'kind' LIKE 'env\\_temp\\_%'/);
+  assert.match(next, /NEW\.payload ->> 'kind' LIKE 'env\\_humid\\_%'/);
+  assert.match(next, /IF v_notification_id IS NOT NULL AND v_push_enabled THEN/);
+});
+
+test('env alert claim keeps the original ordering and ranks env alerts with safety', () => {
+  const previous = functionBlock(migration, 'claim_notification_outbox');
+  const next = functionBlock(envAlertMigration, 'claim_notification_outbox');
+  assert.ok(previous && next, 'claim function must exist in both migrations');
+  assertKeepsEveryLine(previous, next, 'claim_notification_outbox');
+  assert.match(next, /WHEN n\.kind LIKE 'safety\.%' THEN 0\s+WHEN n\.kind = 'env\.alert\.triggered' THEN 0\s+WHEN n\.kind LIKE 'device\.action\.%' THEN 1/);
+});

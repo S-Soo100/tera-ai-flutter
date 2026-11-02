@@ -26,6 +26,20 @@ test('builds string-only data and safety channel', () => {
   });
 });
 
+test('env alert uses the safety channel; other kinds stay on default', () => {
+  const channel = (kind) => buildFirebaseMessage({
+    token: 'token',
+    notificationId: 'n1',
+    kind,
+    title: '[저온 경고] 온도가 너무 낮아 개체가 위험할 수 있어요',
+    body: '거실 사육장',
+    route: '/env-detail',
+  }).message.android.notification.channel_id;
+  assert.equal(channel('env.alert.triggered'), 'vivanaut_safety');
+  assert.equal(channel('device.action.failed'), 'vivanaut_default');
+  assert.equal(channel('highlight.ready'), 'vivanaut_default');
+});
+
 test('classifies typed unregistered token as terminal', () => {
   assert.equal(classifyFcmFailure(404, { fcmErrorCode: 'UNREGISTERED' }), 'disable-token');
 });

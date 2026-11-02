@@ -1037,6 +1037,7 @@
   "notifications_category_notice": "공지",
   "notifications_category_maintenance": "관리",
   "notifications_category_safety": "긴급·안전",
+  "notifications_category_env": "온습도 이탈",
   "notifications_category_other": "일반 알림",
   "push_channel_default_name": "비바나트 알림",
   "push_channel_default_description": "하이라이트, 사육장 동작, 커뮤니티와 관리 알림",

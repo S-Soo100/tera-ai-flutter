@@ -444,4 +444,79 @@ void main() {
     await controller.open(messaging.initial!);
     expect(navigated, ['/env-detail']);
   });
+
+  group('env alert tap selects its device before navigation', () {
+    late List<String> events;
+    late PushLifecycleController envController;
+    late Object? prepareError;
+    setUp(() {
+      events = [];
+      prepareError = null;
+      envController = PushLifecycleController(
+        messaging: messaging,
+        devices: devices,
+        preferences: MemoryPushPreferences(),
+        appVersion: () async => '0.165.0+452',
+        locale: () => 'ko',
+        findNotification: (id, userId) async => AppNotification.fromJson({
+          'id': id,
+          'user_id': userId,
+          'kind': 'env.alert.triggered',
+          'category': 'env',
+          'route': '/env-detail',
+          'title': '[저온 경고] 온도가 너무 낮아 개체가 위험할 수 있어요',
+          'body': '거실 사육장',
+          'data': <String, Object?>{
+            'device_id': 'dev-2',
+            'kind': 'env_temp_low'
+          },
+        }),
+        markRead: (id) async => events.add('read:$id'),
+        display: (_) async {},
+        navigate: (route) => events.add('navigate:$route'),
+        prepareOpen: (item) async {
+          events.add('prepare:${item.targetDeviceId}');
+          final error = prepareError;
+          if (error != null) throw error;
+        },
+        permissionChanged: (_) {},
+        reportError: (code) => events.add('error:$code'),
+      );
+    });
+    tearDown(() => envController.dispose());
+
+    test('prepare runs after read and before navigate', () async {
+      await envController.setUser('a');
+      await envController.open(const PushMessage(
+          notificationId: 'e1',
+          kind: 'env.alert.triggered',
+          route: '/env-detail'));
+      expect(events, ['read:e1', 'prepare:dev-2', 'navigate:/env-detail']);
+    });
+
+    test('untrusted payload route falls back without selecting a device',
+        () async {
+      await envController.setUser('a');
+      await envController.open(const PushMessage(
+          notificationId: 'e2',
+          kind: 'env.alert.triggered',
+          route: '/home/routines'));
+      expect(events, ['read:e2', 'navigate:/notifications']);
+    });
+
+    test('prepare failure is reported and navigation still happens', () async {
+      prepareError = StateError('offline');
+      await envController.setUser('a');
+      await envController.open(const PushMessage(
+          notificationId: 'e3',
+          kind: 'env.alert.triggered',
+          route: '/env-detail'));
+      expect(events, [
+        'read:e3',
+        'prepare:dev-2',
+        'error:open_target',
+        'navigate:/env-detail'
+      ]);
+    });
+  });
 }
