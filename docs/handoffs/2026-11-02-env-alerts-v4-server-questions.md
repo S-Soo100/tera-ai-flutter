@@ -48,3 +48,15 @@ Figma 환기팬·분무 시트에 "자동 환기"·"자동 분무" 토글이 있
 | 2 | 푸시 문구 | `payload.title` **그대로** 쓴다. 알림 본문은 사육장 이름(`device_name`, 없으면 "사육장"). |
 | 3 | 푸시 수신 OFF | 앱 Supabase에서 거른다(트리거가 계정별 `notification_preferences.env_temp`/`env_humid`를 보고 끔이면 알림함 기록만 남기고 푸시 대기열을 건너뜀). 서버는 지금처럼 항상 적재하면 된다. |
 | 4 | 0.1℃ 단위·MIN = MAX를 보내는 화면 | **없다.** 새 적정 범위 화면은 온도 0.5·습도 5 단위 스테퍼만 있고 MIN < MAX가 아니면 저장 버튼이 막힌다. 옛 목표값 시트는 `target_temp_c`·`target_humidity_pct`(단일값)만 보내고 MIN/MAX는 보내지 않는다. → Stage N2(설정 범위 검증) 배포해도 된다. |
+
+## 4. 앱 Supabase 운영 반영 (2026-11-02)
+
+| 항목 | 상태 |
+|---|---|
+| `notification_preferences` 테이블(계정별 `env_temp`·`env_humid`, RLS 본인 행만) | ✅ 운영 적용(MCP migration `env_alert_preferences`) |
+| `notification_events_type_check`에 `env.alert.triggered` 추가, 트리거 `notification_event_after_insert`(제목 = `payload.title`, 본문 = 사육장 이름, 수신 끔이면 outbox만 건너뜀), `claim_notification_outbox` 우선순위 0 | ✅ 운영 적용(MCP migration `notification_env_alert`). 적용 전 운영 함수 본문과 대조, 적용 후 기존 분기·권한 유지 확인 |
+| `notification-ingest` 재배포(계약에 `env.alert.triggered`) | ✅ v8 |
+| `dispatch-push` 재배포(`env.alert.triggered`도 Android `vivanaut_safety` 채널) | ✅ v9 |
+
+→ 서버 §4 **2단계(`PUSH_ENV_ALERTS_ENABLED`)에 필요한 앱 Supabase 쪽 준비는 끝났다.** 다만 이탈 알림 끄기 화면과 실시간 카드는 앱 0.165.x에 있다. 앱 배포 전에 켜면 기존 앱 사용자는 푸시를 받지만 끌 방법이 없다 — 켜는 시점은 앱 배포 일정과 맞춰 정한다.
+→ 1단계(`ALERTS_V4_ENABLED`)는 기존 앱에 영향이 없다(기존 앱은 `alerts`를 읽지 않음). 새 카드는 앱 0.164.0 이상에서 보인다.
