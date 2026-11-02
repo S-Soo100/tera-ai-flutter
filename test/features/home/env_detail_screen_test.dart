@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:vivanaut/core/router/app_router.dart';
+import 'package:vivanaut/features/home/domain/env_realtime_values.dart';
 import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
 import 'package:vivanaut/features/home/presentation/env_detail_screen.dart';
+import 'package:vivanaut/features/home/presentation/env_live_providers.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivanaut/features/home/presentation/widgets/control_log_list.dart';
 import 'package:vivanaut/features/home/presentation/widgets/env_day_chart.dart';
+import 'package:vivanaut/features/home/presentation/widgets/env_range_bar.dart';
 import 'package:vivanaut/features/home/presentation/widgets/week_range_chart.dart';
+import 'package:vivanaut/features/my_cage/data/device_settings_repository.dart';
+import 'package:vivanaut/features/my_cage/domain/device_settings.dart';
 import 'package:vivanaut/shared/domain/actuator_marker.dart';
 import 'package:vivanaut/shared/domain/axis_bounds.dart';
 import 'package:vivanaut/shared/domain/control_log.dart';
@@ -59,16 +65,49 @@ List<ControlLogEntry> _log() => [
   );
 }
 
+class _SettingsRepo implements DeviceSettingsRepository {
+  _SettingsRepo(this.current);
+  final DeviceSettings current;
+
+  @override
+  Future<DeviceSettings> get(String deviceId) async => current;
+
+  @override
+  Future<DeviceSettings> patch(String deviceId,
+          {double? targetTempC,
+          double? targetHumidityPct,
+          double? targetTempMin,
+          double? targetTempMax,
+          double? targetHumidMin,
+          double? targetHumidMax}) async =>
+      current;
+}
+
 Future<void> _pump(
   WidgetTester tester, {
   bool empty = false,
   List<ControlLogEntry>? log,
   Future<List<ControlLogEntry>> Function()? loadLog,
+  String? deviceId,
+  DeviceSettings? settings,
 }) async {
+  final now = DateTime.now();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        currentDeviceIdProvider.overrideWith((ref) async => null),
+        currentDeviceIdProvider.overrideWith((ref) async => deviceId),
+        if (deviceId != null) ...[
+          envLiveViewProvider(deviceId).overrideWithValue(envLiveView(
+              EnvLiveReading(
+                  deviceId: deviceId,
+                  temperature: 22,
+                  humidity: 59.4,
+                  measuredAt: now),
+              now: now,
+              online: true)),
+          deviceSettingsRepositoryProvider.overrideWithValue(
+              _SettingsRepo(settings ?? DeviceSettings(deviceId: deviceId))),
+        ],
         envDailyAverageProvider.overrideWith((ref) async =>
             (temperature: 27.5, humidity: 55.0, countUnavailable: false)),
         envDayChartDataProvider
@@ -82,6 +121,10 @@ Future<void> _pump(
         routerConfig: GoRouter(
           routes: [
             GoRoute(path: '/', builder: (_, __) => const EnvDetailScreen()),
+            GoRoute(
+                path: '$kTempHumidSettingPath/:deviceId',
+                builder: (_, state) => Text(
+                    'setting:${state.pathParameters['deviceId']}')),
           ],
         ),
       ),
@@ -101,7 +144,10 @@ void main() {
     });
     expect(find.text('env_log_load_failed'), findsOneWidget);
     expect(find.byKey(ControlLogList.sectionKey), findsNothing);
+    // 범위 바(70)가 들어와 기본 800×600 화면에서 재시도 버튼이 아래로 밀린다
+    // — 스크롤한 뒤 한 프레임 그려야 탭 좌표가 맞는다.
     await tester.ensureVisible(find.text('retry'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('retry'));
     await tester.pumpAndSettle();
     expect(calls, 2);
@@ -178,5 +224,52 @@ void main() {
     expect(find.byKey(EnvDayChart.chartKey), findsNothing);
     expect(find.text('env_detail_no_data'), findsOneWidget);
     expect(find.text('env_detail_empty_log'), findsOneWidget);
+  });
+
+  testWidgets('기기가 없으면 설정 아이콘을 숨긴다', (tester) async {
+    await _pump(tester);
+    expect(find.byKey(EnvDetailScreen.closeKey), findsOneWidget);
+    expect(find.byKey(EnvDetailScreen.settingsKey), findsNothing);
+  });
+
+  testWidgets('설정 아이콘 → 온습도 설정, ✕는 왼쪽·설정은 오른쪽', (tester) async {
+    await _pump(tester, deviceId: 'd1');
+    final width = tester.getSize(find.byType(EnvDetailScreen)).width;
+    expect(tester.getCenter(find.byKey(EnvDetailScreen.closeKey)).dx,
+        lessThan(width / 2));
+    expect(tester.getCenter(find.byKey(EnvDetailScreen.settingsKey)).dx,
+        greaterThan(width / 2));
+    await tester.tap(find.byKey(EnvDetailScreen.settingsKey));
+    await tester.pumpAndSettle();
+    expect(find.text('setting:d1'), findsOneWidget);
+  });
+
+  testWidgets('맨 위는 범위 바 두 줄 — 적정 구간은 기기 설정에서', (tester) async {
+    await _pump(tester,
+        deviceId: 'd1',
+        settings: const DeviceSettings(
+            deviceId: 'd1',
+            targetTempMin: 19,
+            targetTempMax: 25.5,
+            targetHumidMin: 45,
+            targetHumidMax: 75));
+    expect(find.byType(EnvRangeBar), findsNWidgets(2));
+    expect(find.byKey(EnvRangeBar.bandKey), findsNWidgets(2));
+    // 적정 구간 눈금(formatCompact) — 설정값 그대로.
+    expect(find.text('19'), findsOneWidget);
+    expect(find.text('25.5'), findsOneWidget);
+    expect(find.text('45'), findsOneWidget);
+    expect(find.text('75'), findsOneWidget);
+    // 바 양옆 = 오늘 최저·최고(버림).
+    expect(
+        tester
+            .widget<Text>(find.byKey(const Key('env_range_bar_low_temp')))
+            .data,
+        '22');
+    expect(
+        tester
+            .widget<Text>(find.byKey(const Key('env_range_bar_high_humid')))
+            .data,
+        '66');
   });
 }

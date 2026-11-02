@@ -7,15 +7,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../core/theme/viva_colors.dart';
-import '../../../shared/domain/env_chart_data.dart';
 import '../../../shared/domain/env_day.dart';
 import '../../../shared/domain/num_format.dart';
+import '../../my_cage/presentation/device_settings_providers.dart';
 import '../../../shared/domain/week_range.dart';
 import 'env_detail_providers.dart';
 import 'home_control_providers.dart';
 import 'widgets/control_log_list.dart';
+import 'widgets/env_range_bar.dart';
 import 'widgets/env_day_chart.dart';
 import 'widgets/week_range_chart.dart';
 
@@ -29,6 +31,7 @@ class EnvDetailScreen extends ConsumerStatefulWidget {
   const EnvDetailScreen({super.key});
 
   static const closeKey = Key('env_detail_close');
+  static const settingsKey = Key('env_detail_settings');
   static const segmentDailyKey = Key('env_detail_segment_daily');
   static const segmentWeeklyKey = Key('env_detail_segment_weekly');
   static const dayPrevKey = Key('env_detail_day_prev');
@@ -63,9 +66,13 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     );
   }
 
-  // ── 상단바 (§A.5 — bg appBar #FAFAFA + 하단 1px, 타이틀 중앙, ✕ 우측) ──
+  // ── 상단바 (Figma S03·A06 — bg appBar #FAFAFA + 하단 1px, 타이틀 중앙,
+  //    ✕ 왼쪽 위, 설정(discover_tune) 오른쪽 위) ──
 
   Widget _topBar(GlassPalette glass) {
+    final device = ref.watch(currentDeviceIdProvider);
+    // 기기가 없거나 아직 모르면 설정 아이콘을 숨긴다 — 대상 없는 설정 화면은 없다.
+    final deviceId = device.isLoading ? null : device.valueOrNull;
     return Container(
       decoration: BoxDecoration(color: glass.appBar),
       // Figma 1081:4873 — 헤더 106(62+44) 안에서 하단선을 그린다(높이 미추가).
@@ -90,18 +97,41 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                   color: glass.textPrimary,
                 ),
               ),
+              // Figma Button/Enabled (12,62 44×44) — 글리프 24가 22에서 시작.
               Positioned(
-                right: 6,
-                child: IconButton(
-                  key: EnvDetailScreen.closeKey,
-                  onPressed: () => context.pop(),
-                  iconSize: 24,
-                  constraints:
-                      const BoxConstraints(minWidth: 44, minHeight: 44),
-                  icon: FigmaIcon.tinted(FigmaIcons.close,
-                      color: glass.textSecondary, size: 24),
+                left: 12,
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: IconButton(
+                    key: EnvDetailScreen.closeKey,
+                    onPressed: () => context.pop(),
+                    padding: EdgeInsets.zero,
+                    iconSize: 24,
+                    icon: FigmaIcon.tinted(FigmaIcons.close,
+                        color: glass.textSecondary, size: 24),
+                  ),
                 ),
               ),
+              // Figma discover_tune (337,62 44×44) — 44 프레임 export 그대로.
+              if (deviceId != null)
+                Positioned(
+                  right: 12,
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: IconButton(
+                      key: EnvDetailScreen.settingsKey,
+                      tooltip: 'temp_humid_title'.tr(),
+                      onPressed: () =>
+                          context.push(tempHumidSettingPath(deviceId)),
+                      padding: EdgeInsets.zero,
+                      iconSize: 44,
+                      icon: FigmaIcon.tinted(FigmaIcons.management,
+                          color: glass.textSecondary, size: 44),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -194,13 +224,15 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
       padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
       children: [
         _dayPager(glass, day),
-        const SizedBox(height: 12),
+        // Figma A06 — 날짜(172~212) → 범위 바 228.
+        const SizedBox(height: 16),
         Semantics(
             label: (day.isToday ? 'env_value_realtime' : 'env_value_daily_mean')
                 .tr(),
-            child: _valueBar(glass, day, chartAsync.valueOrNull)),
+            child: _valueBar(glass, day)),
         if (!day.isToday) _averageStatus(glass),
-        const SizedBox(height: 16),
+        // Figma A06 — 범위 바(228~298) → 그래프 319.
+        const SizedBox(height: 21),
         chartAsync.when(
           loading: () => _skeleton(glass, height: EnvDayChart.totalHeight),
           error: (_, __) => _noData(glass, height: EnvDayChart.totalHeight),
@@ -215,8 +247,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                   initialFraction: _nowFraction(day),
                 ),
         ),
-        // Figma 1081:4873 — 차트(294~550) → 제어 기록 패널 584(상단선 1 포함).
-        const SizedBox(height: 33),
+        // Figma A06 — 그래프(319~575) → 제어 기록 패널 601.
+        const SizedBox(height: 26),
         logAsync.when(
           loading: () => _skeleton(glass, height: 160),
           error: (_, __) => Padding(
@@ -350,21 +382,23 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     return const SizedBox.shrink();
   }
 
-  /// 오늘은 유효한 실시간 값, 과거는 지표별 유효 개수로 계산한 일평균.
-  Widget _valueBar(GlassPalette glass, EnvDay day, EnvChartData? data) {
+  /// 맨 위 범위 바 두 줄(Figma A04·A06). 오늘은 유효한 실시간 값, 과거는
+  /// 지표별 유효 개수로 계산한 일평균. 바 양옆은 그날 최저·최고, 적정 구간은
+  /// 지난 날에도 **현재** 설정이다(Figma A14와 같다 — 과거 설정 이력은 없다).
+  Widget _valueBar(GlassPalette glass, EnvDay day) {
     final ex = ref.watch(envDayExtremesProvider).valueOrNull;
 
     final now = ref.watch(envDetailNowProvider).valueOrNull ?? DateTime.now();
     final today = day.start.year == now.year &&
         day.start.month == now.month &&
         day.start.day == now.day;
+    final device = ref.watch(currentDeviceIdProvider);
+    final deviceId = device.isLoading ? null : device.valueOrNull;
     double? temp;
     double? humid;
     // 오늘 현재값 — 홈 카드와 같은 규칙(마지막 정상값 유지 + 신선도, 2026-09-28).
     EnvLiveView? live;
     if (today) {
-      final device = ref.watch(currentDeviceIdProvider);
-      final deviceId = device.isLoading ? null : device.valueOrNull;
       if (deviceId != null) {
         final view = ref.watch(envLiveViewProvider(deviceId));
         live = view;
@@ -382,7 +416,11 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     if (temp != null && (!temp.isFinite || temp <= 0)) temp = null;
     if (humid != null && (!humid.isFinite || humid <= 0)) humid = null;
 
-    String fmt(double? v) => v == null ? '--' : formatCompact(v);
+    // 적정 구간 — 조회 중·실패면 null(구간 없이 그린다, 기본값으로 대신하지 않음).
+    final settings = deviceId == null
+        ? null
+        : ref.watch(deviceSettingsProvider(deviceId)).valueOrNull;
+
     final caption = live == null ? null : envLiveCaption(live);
     // 오래됐으면 값 색을 흐리게(값은 지우지 않는다).
     final dim = switch (live?.freshness) {
@@ -392,36 +430,31 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     };
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      // Figma A06 BarGraph (15,228 363×70).
+      padding: const EdgeInsets.symmetric(horizontal: 15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _valueColumn(
-                glass: glass,
-                icon: 'redesign_v2/env_temperature',
-                accent: VivaColors.mainDark.withValues(alpha: dim),
-                value: temp == null
-                    ? '--'
-                    : 'home_live_temp_value'.tr(args: [formatCompact(temp)]),
-                minMax: 'home_env_minmax_temp'
-                    .tr(args: [fmt(ex?.tempMax), fmt(ex?.tempMin)]),
-              ),
-              _valueColumn(
-                glass: glass,
-                icon: 'redesign_v2/env_humidity',
-                accent: VivaColors.subDark.withValues(alpha: dim),
-                value: humid == null
-                    ? '--'
-                    : 'home_live_humid_value'.tr(args: [formatCompact(humid)]),
-                minMax: 'home_env_minmax_humid'
-                    .tr(args: [fmt(ex?.humidMax), fmt(ex?.humidMin)]),
-              ),
-            ],
+          EnvRangeBar(
+            kind: EnvBarKind.temp,
+            value: temp,
+            low: ex?.tempMin,
+            high: ex?.tempMax,
+            range: settings?.tempRange,
+            dim: dim,
+          ),
+          const SizedBox(height: 12),
+          EnvRangeBar(
+            kind: EnvBarKind.humid,
+            value: humid,
+            low: ex?.humidMin,
+            high: ex?.humidMax,
+            range: settings?.humidRange,
+            dim: dim,
           ),
           if (caption != null) ...[
-            const SizedBox(height: 8),
+            // 습도 바 아래 눈금(12)이 바 줄 밖으로 내려와 있어 그만큼 띄운다.
+            const SizedBox(height: 16),
             Text(caption,
                 key: const Key('env_live_caption'),
                 style: TextStyle(
@@ -430,58 +463,6 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                     fontWeight: FontWeight.w500,
                     color: glass.textTertiary)),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _valueColumn({
-    required GlassPalette glass,
-    required String icon,
-    required Color accent,
-    required String value,
-    required String minMax,
-  }) {
-    // Figma §A.5(668:1049): 위 Row(아이콘+값), 아래 최고/최저는 열 왼쪽부터
-    // 전체 폭을 쓴다 — 아이콘 오른쪽에 가두면 실데이터 길이에서 말줄임된다.
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              FigmaIcon.metric(icon, size: 28),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Pretendard',
-                    fontSize: 28,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 28 * -0.02,
-                    height: 1.193359375,
-                    color: accent,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            minMax,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 14,
-              height: 16.70703125 / 14,
-              fontWeight: FontWeight.w500,
-              color: glass.textTertiary,
-            ),
-          ),
         ],
       ),
     );
