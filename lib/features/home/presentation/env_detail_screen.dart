@@ -18,8 +18,12 @@ import '../../../shared/domain/week_range.dart';
 import 'env_detail_providers.dart';
 import 'home_control_providers.dart';
 import 'env_alert_providers.dart';
+import 'env_report_providers.dart';
+import '../domain/env_report.dart';
+import '../../../shared/widgets/inline_retry.dart';
 import 'widgets/control_log_list.dart';
 import 'widgets/env_alert_card.dart';
+import 'widgets/env_report_cards.dart';
 import 'widgets/env_range_bar.dart';
 import 'widgets/env_day_chart.dart';
 import 'widgets/week_range_chart.dart';
@@ -37,6 +41,8 @@ class EnvDetailScreen extends ConsumerStatefulWidget {
   static const settingsKey = Key('env_detail_settings');
   static const segmentDailyKey = Key('env_detail_segment_daily');
   static const segmentWeeklyKey = Key('env_detail_segment_weekly');
+  static const dailyReportCaptionKey = Key('env_daily_report_caption');
+  static const reportErrorKey = Key('env_report_error');
   static const dayPrevKey = Key('env_detail_day_prev');
   static const dayNextKey = Key('env_detail_day_next');
   static const weekPrevKey = Key('env_detail_week_prev');
@@ -270,13 +276,15 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     );
   }
 
-  /// v4 실시간 이탈 카드(Figma A10) — **오늘 화면에서만, 열린 행이 있을 때만**.
-  /// 지난 날 자리는 일간 분석(서버 Stage P) 몫이라 비워 둔다. 조회 중·실패면
-  /// 카드 없이 둔다(안전 알림 자체는 푸시·알림함이 맡는다).
+  /// 그래프 아래 카드 자리 — 오늘은 v4 실시간 이탈 카드(Figma A10, 열린 행이
+  /// 있을 때만), 지난 날은 서버 일일 분석 카드(A14). 오늘 판정은 1분 틱으로 해
+  /// 자정을 넘겨도 굳지 않는다. 오늘 페이지는 일일 분석을 조회하지 않는다(아직
+  /// 없다 — 다음 날 아침 생성).
   List<Widget> _alertCard(EnvDay day) {
-    final alerts = day.isToday
-        ? ref.watch(openEnvAlertsProvider).valueOrNull ?? const <EnvAlert>[]
-        : const <EnvAlert>[];
+    final now = ref.watch(envDetailNowProvider).valueOrNull ?? DateTime.now();
+    if (!day.containsNow(now)) return _dailyReport(day);
+    final alerts =
+        ref.watch(openEnvAlertsProvider).valueOrNull ?? const <EnvAlert>[];
     if (alerts.isEmpty) {
       // Figma A06 — 그래프(319~575) → 제어 기록 패널 601.
       return const [SizedBox(height: 26)];
@@ -291,6 +299,82 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
       const SizedBox(height: 20),
     ];
   }
+
+  /// 지난 날 일일 분석(계획 2026-11-03 Task 5). 처음 로딩은 자리 없이 기다린다 —
+  /// 대부분의 날은 카드가 없어 스켈레톤이 오히려 깜빡인다(계획 D9). 재조회 중엔
+  /// 이전 값을 유지한다. 카드 위 캡션은 서버 집계 구간(08:00~다음 날 08:00) —
+  /// 위 그래프(자정~자정)와 시각이 어긋나서다(계획 D3).
+  List<Widget> _dailyReport(EnvDay day) {
+    final glass = context.glass;
+    return ref.watch(envDailyReportProvider(day)).when(
+          skipLoadingOnReload: true,
+          loading: () => const [SizedBox(height: 26)],
+          error: (_, __) => [
+            const SizedBox(height: 22),
+            _reportError(glass,
+                onRetry: () => ref.invalidate(envDailyReportProvider(day))),
+            const SizedBox(height: 20),
+          ],
+          data: (report) {
+            if (report == null || report.cards.isEmpty) {
+              return const [SizedBox(height: 26)];
+            }
+            final caption =
+                _windowCaption(report.windowStart, report.windowEnd);
+            return [
+              // Figma A14 — 그래프 575 → 카드 597(좌우 16, 폭 361) → 제어 기록.
+              const SizedBox(height: 22),
+              if (caption != null) ...[
+                Padding(
+                  key: EnvDetailScreen.dailyReportCaptionKey,
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Text(caption,
+                      style: TextStyle(
+                        fontFamily: 'Pretendard',
+                        fontSize: 14,
+                        height: 18 / 14,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 14 * -0.02,
+                        color: glass.textTertiary,
+                      )),
+                ),
+                const SizedBox(height: 8),
+              ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: EnvDailyReportCard(report: report),
+              ),
+              const SizedBox(height: 20),
+            ];
+          },
+        );
+  }
+
+  /// "11/2 08:00 ~ 11/3 08:00 분석" — 행의 구간 그대로(로컬 시각). 없으면 null.
+  String? _windowCaption(DateTime? start, DateTime? end) {
+    if (start == null || end == null) return null;
+    final f = DateFormat('M/d HH:mm');
+    return 'env_report_window'.tr(args: [f.format(start), f.format(end)]);
+  }
+
+  /// 분석 조회 실패 — 한 줄 안내 + 다시 시도("이벤트 없음"으로 오해하지 않게).
+  Widget _reportError(GlassPalette glass, {required VoidCallback onRetry}) =>
+      Padding(
+        key: EnvDetailScreen.reportErrorKey,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(children: [
+          Expanded(
+            child: Text('env_report_load_failed'.tr(),
+                style: TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: glass.textTertiary,
+                )),
+          ),
+          InlineRetry(onRetry: onRetry),
+        ]),
+      );
 
   /// 오늘이면 현재 시각의 하루 내 비율(초기 스크롤용), 과거일은 0.
   double _nowFraction(EnvDay day) {
@@ -497,30 +581,45 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
   Widget _weeklyBody(GlassPalette glass) {
     final week = ref.watch(envDetailWeekProvider);
     final rowsAsync = ref.watch(envWeekRowsProvider);
+    final now = ref.watch(envDetailNowProvider).valueOrNull ?? DateTime.now();
+    // 이번 주는 아직 리포트가 없다(다음 월 09:05 이후 생성) — 조회하지 않는다.
+    final reportAsync = now.isBefore(week.end)
+        ? null
+        : ref.watch(envWeeklyReportProvider(week));
+    final report = reportAsync?.valueOrNull;
+    final reportFailed =
+        reportAsync != null && reportAsync.hasError && !reportAsync.hasValue;
 
-    return ListView(
-      padding:
-          EdgeInsets.only(bottom: 24 + MediaQuery.paddingOf(context).bottom),
-      children: [
-        _weekPager(glass, week),
-        // Figma 1081:5052 — 페이저(172~212) → 헤더 236.
-        const SizedBox(height: 24),
-        rowsAsync.when(
-          loading: () => Column(
-            children: [
-              _skeleton(glass, height: WeekRangeChart.chartHeight),
-              const SizedBox(height: 24),
-              _skeleton(glass, height: WeekRangeChart.chartHeight),
-            ],
-          ),
-          error: (_, __) => _noData(glass, height: WeekRangeChart.chartHeight),
-          data: (rows) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                WeekRangeChart(
-                  rows: rows.temp,
+    // 지표 차트 아래 자리(Figma A19 — 차트 끝 529 → 카드 541, 카드 끝 610 →
+    // 습도 차트 646). 차트 조회 상태와 따로 그린다 — 차트가 실패해도 분석은 보인다.
+    List<Widget> section(EnvReportElement e) {
+      if (reportFailed && e == EnvReportElement.temp) {
+        return [
+          const SizedBox(height: 12),
+          _reportError(glass,
+              onRetry: () => ref.invalidate(envWeeklyReportProvider(week))),
+        ];
+      }
+      if (report == null || !EnvWeeklyReportSection.hasContent(report, e)) {
+        return const [];
+      }
+      return [
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: EnvWeeklyReportSection(report: report, element: e),
+        ),
+      ];
+    }
+
+    final tempSection = section(EnvReportElement.temp);
+    final humidSection = section(EnvReportElement.humid);
+
+    Widget chart(List<DayMinMax> data, {required bool temp}) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: temp
+              ? WeekRangeChart(
+                  rows: data,
                   // Figma 1081:5052 — 최고 막대 #D61619, 수치·헤더 #C00306.
                   accent: glass.tempAccent,
                   valueColor: VivaColors.mainDark,
@@ -529,10 +628,9 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                       'env_detail_temp_value'.tr(args: [formatCompact(v)]),
                   axisFormat: (v, d) => 'stats_axis_temp'
                       .tr(namedArgs: {'v': v.toStringAsFixed(d)}),
-                ),
-                const SizedBox(height: 40),
-                WeekRangeChart(
-                  rows: rows.humid,
+                )
+              : WeekRangeChart(
+                  rows: data,
                   // Figma 1081:5052 — 최고 막대 #2E408C, 수치·헤더 #192553.
                   accent: glass.humidAccent,
                   valueColor: VivaColors.subDark,
@@ -542,9 +640,36 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                   axisFormat: (v, d) => 'stats_axis_humid'
                       .tr(namedArgs: {'v': v.toStringAsFixed(d)}),
                 ),
-              ],
-            ),
-          ),
+        );
+
+    return ListView(
+      padding:
+          EdgeInsets.only(bottom: 24 + MediaQuery.paddingOf(context).bottom),
+      children: [
+        _weekPager(glass, week),
+        // Figma 1081:5052 — 페이저(172~212) → 헤더 236.
+        const SizedBox(height: 24),
+        ...rowsAsync.when(
+          loading: () => [
+            _skeleton(glass, height: WeekRangeChart.chartHeight),
+            ...tempSection,
+            SizedBox(height: tempSection.isEmpty ? 24 : 36),
+            _skeleton(glass, height: WeekRangeChart.chartHeight),
+            ...humidSection,
+          ],
+          error: (_, __) => [
+            _noData(glass, height: WeekRangeChart.chartHeight),
+            ...tempSection,
+            ...humidSection,
+          ],
+          data: (rows) => [
+            chart(rows.temp, temp: true),
+            ...tempSection,
+            // 카드가 있으면 Figma A19 36, 없으면 기존 40.
+            SizedBox(height: tempSection.isEmpty ? 40 : 36),
+            chart(rows.humid, temp: false),
+            ...humidSection,
+          ],
         ),
       ],
     );

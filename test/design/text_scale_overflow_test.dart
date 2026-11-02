@@ -56,6 +56,9 @@ import 'package:vivanaut/features/home/presentation/env_detail_screen.dart';
 import 'package:vivanaut/features/home/presentation/env_range_setting_screen.dart';
 import 'package:vivanaut/features/home/presentation/temp_humid_setting_screen.dart';
 import 'package:vivanaut/features/home/presentation/temp_offset_screen.dart';
+import 'package:vivanaut/features/home/domain/env_report.dart';
+import 'package:vivanaut/features/home/presentation/widgets/env_report_cards.dart';
+import 'package:vivanaut/shared/domain/week_range.dart';
 import 'package:vivanaut/features/home/presentation/widgets/env_alert_card.dart';
 import 'package:vivanaut/features/home/presentation/widgets/env_range_bar.dart';
 import 'package:vivanaut/features/profile/data/notification_preferences_repository.dart';
@@ -321,8 +324,8 @@ void main() {
 
       // 보정값 설정(S16) — 저장값 빼기 2.0.
       testWidgets('보정값 설정', (tester) async {
-        await _pump(tester, system,
-            const TempOffsetScreen(deviceId: kEnvV4DeviceId),
+        await _pump(
+            tester, system, const TempOffsetScreen(deviceId: kEnvV4DeviceId),
             overrides: envV4OffsetOverrides());
         expect(find.byKey(TempOffsetScreen.sliderKey), findsOneWidget);
         await tester.drag(
@@ -353,6 +356,49 @@ void main() {
             overrides: envV4DetailOverrides());
         expect(find.byKey(EnvRangeBar.trackKey), findsNWidgets(2));
         await tester.scrollUntilVisible(find.byKey(EnvAlertCard.cardKey), 200,
+            scrollable: find.byType(Scrollable).first);
+        await tester.pumpAndSettle();
+      });
+
+      // 지난 날 일일 분석 — 구간 캡션 + 온도 2줄·습도 1줄 카드(A14·A15).
+      testWidgets('온습도 상세 — 지난 날 일일 분석', (tester) async {
+        final yesterday = DateTime.now().subtract(const Duration(days: 1));
+        await _pump(tester, system, const EnvDetailScreen(),
+            overrides: envV4DetailOverrides(
+                reports: FakeEnvReportRepository(
+                    daily: envV4DailyReport(yesterday))));
+        await tester.tap(find.byKey(EnvDetailScreen.dayPrevKey));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+            find.byKey(EnvDetailScreen.dailyReportCaptionKey), 200,
+            scrollable: find.byType(Scrollable).first);
+        await tester.pumpAndSettle();
+        final d = DateTime(yesterday.year, yesterday.month, yesterday.day);
+        final n = DateTime(d.year, d.month, d.day + 1);
+        expect(
+            find.text(
+                '${d.month}/${d.day} 08:00 ~ ${n.month}/${n.day} 08:00 분석'),
+            findsOneWidget);
+        await tester.scrollUntilVisible(
+            find.byKey(EnvDailyReportCard.cardKey), 200,
+            scrollable: find.byType(Scrollable).first);
+        await tester.pumpAndSettle();
+      });
+
+      // 지난주 주간 분석 — 온도 카드 + 습도 안내·카드(A19·A20).
+      testWidgets('온습도 상세 — 지난주 주간 분석', (tester) async {
+        final monday = WeekRange.containing(DateTime.now()).previous.monday;
+        await _pump(tester, system, const EnvDetailScreen(),
+            overrides: envV4DetailOverrides(
+                reports: FakeEnvReportRepository(
+                    weekly: envV4WeeklyReport(monday))));
+        await tester.tap(find.byKey(EnvDetailScreen.segmentWeeklyKey));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(EnvDetailScreen.weekPrevKey));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+            find.byKey(EnvWeeklyReportSection.cardKey(EnvReportElement.humid)),
+            200,
             scrollable: find.byType(Scrollable).first);
         await tester.pumpAndSettle();
       });

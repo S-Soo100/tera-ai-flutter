@@ -2,6 +2,8 @@
 // provider 대역. 글자 배율 검사(test/design/text_scale_overflow_test.dart)와
 // 수치 검수용 렌더가 같이 쓴다.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vivanaut/features/home/data/env_report_repository.dart';
+import 'package:vivanaut/features/home/domain/env_report.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/home/data/env_alert_prefs_repository.dart';
@@ -115,7 +117,8 @@ final envV4A10Alerts = [
 ];
 
 /// 온습도 상세(A10 상태 — 현재 15.0℃ / 34.8%, 오늘 15~26 / 34~80).
-List<Override> envV4DetailOverrides({List<EnvAlert>? alerts}) {
+List<Override> envV4DetailOverrides(
+    {List<EnvAlert>? alerts, FakeEnvReportRepository? reports}) {
   final now = DateTime.now();
   final start = DateTime(now.year, now.month, now.day);
   final week = WeekRange.containing(now);
@@ -165,5 +168,90 @@ List<Override> envV4DetailOverrides({List<EnvAlert>? alerts}) {
             for (final d in week.days) DayMinMax(day: d, min: 40, max: 80)
           ],
         )),
+    // 일일·주간 분석은 진짜 provider + 가짜 저장소(기본: 행 없음).
+    envReportRepositoryProvider
+        .overrideWithValue(reports ?? FakeEnvReportRepository()),
+    currentUserProvider.overrideWith((ref) => envV4User()),
   ];
+}
+
+/// A15 — 지난 날 일일 분석(낮은 온도 2줄 + 건조 1줄), 구간 [date] 08:00 ~ 다음 날 08:00.
+EnvDailyReport envV4DailyReport(DateTime date) => EnvDailyReport(
+      deviceId: kEnvV4DeviceId,
+      reportDate: DateTime(date.year, date.month, date.day),
+      windowStart: DateTime(date.year, date.month, date.day, 8),
+      windowEnd: DateTime(date.year, date.month, date.day + 1, 8),
+      tempCard: const EnvReportCard(
+          element: EnvReportElement.temp,
+          code: 'TEMP_CAUTION_LOW',
+          status: EnvReportStatus.caution,
+          title: '낮은 온도가 기록됐어요',
+          lines: [
+            '14:21~16:20 적정 온도보다 최대 -3.1℃ 이탈',
+            '16:30~17:00 적정 온도보다 최대 -2℃ 이탈'
+          ]),
+      humidCard: const EnvReportCard(
+          element: EnvReportElement.humid,
+          code: 'HUM_DRY',
+          status: EnvReportStatus.caution,
+          title: '건조를 주의해 주세요',
+          lines: ['9:30~12:00 적정 습도보다 최대 -12.5% 이탈']),
+    );
+
+/// A19·A20 — 지난주 주간 분석(온도 경고 카드 + 습도 수집 끊김 안내와 카드).
+EnvWeeklyReport envV4WeeklyReport(DateTime monday) => EnvWeeklyReport(
+      deviceId: kEnvV4DeviceId,
+      weekStart: monday,
+      tempCard: const EnvReportCard(
+          element: EnvReportElement.temp,
+          code: 'TEMP_DANGER',
+          status: EnvReportStatus.danger,
+          title: '주간 중 위험 온도가 감지되었어요',
+          lines: ['총 3회 위험 온도 발생. 적정 온도보다 최대 5.2℃ 이탈']),
+      humidCard: const EnvReportCard(
+          element: EnvReportElement.humid,
+          code: 'HUM_DRY',
+          status: EnvReportStatus.caution,
+          title: '사육장이 건조한 날이 많았어요',
+          lines: ['총 3회 건조 주의가 발생. 사육장에 수분을 보충해 주세요']),
+      notices: const [
+        EnvReportNotice(
+            code: 'ERR_DISCONNECT',
+            element: EnvReportElement.humid,
+            title: '데이터 수집이 불안정했어요',
+            body: '기기 연결 상태를 확인해 주세요'),
+      ],
+    );
+
+/// 호출을 기록하고 값을 바로 돌려주는 가짜 저장소.
+class FakeEnvReportRepository implements EnvReportRepository {
+  FakeEnvReportRepository({this.daily, this.weekly, this.failDaily = 0});
+  EnvDailyReport? daily;
+  EnvWeeklyReport? weekly;
+
+  /// 처음 [failDaily]번은 오류 스트림을 돌려준다(다시 시도 검증).
+  int failDaily;
+  final List<String> dailyCalls = [];
+  final List<String> weeklyCalls = [];
+
+  @override
+  Stream<EnvDailyReport?> watchDaily(String deviceId, DateTime date,
+      {required EnvReportSubscribe subscribe}) {
+    dailyCalls.add('$deviceId@${envReportDateKey(date)}');
+    if (failDaily > 0) {
+      failDaily--;
+      return Stream.error(Exception('boom'));
+    }
+    return Stream.value(daily);
+  }
+
+  @override
+  Stream<EnvWeeklyReport?> watchWeekly(String deviceId, DateTime monday,
+      {required EnvReportSubscribe subscribe}) {
+    weeklyCalls.add('$deviceId@${envReportDateKey(monday)}');
+    return Stream.value(weekly);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

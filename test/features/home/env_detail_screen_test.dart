@@ -23,6 +23,13 @@ import 'package:vivanaut/shared/domain/control_log.dart';
 import 'package:vivanaut/shared/domain/env_chart_data.dart';
 import 'package:vivanaut/shared/domain/env_extremes.dart';
 import 'package:vivanaut/shared/domain/week_range.dart';
+import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
+import 'package:vivanaut/features/home/data/env_report_repository.dart';
+import 'package:vivanaut/features/home/domain/env_report.dart';
+import 'package:vivanaut/features/home/presentation/widgets/env_report_cards.dart';
+import 'package:vivanaut/shared/widgets/inline_retry.dart';
+import 'package:vivanaut/shared/domain/env_day.dart';
+import 'env_v4_screen_fixtures.dart';
 
 EnvChartData _chartData({bool empty = false}) {
   final today = DateTime.now();
@@ -94,6 +101,8 @@ Future<void> _pump(
   String? deviceId,
   DeviceSettings? settings,
   List<EnvAlert> alerts = const [],
+  FakeEnvReportRepository? reports,
+  bool weekRowsError = false,
 }) async {
   final now = DateTime.now();
   await tester.pumpWidget(
@@ -120,7 +129,11 @@ Future<void> _pump(
         envDayExtremesProvider.overrideWith((ref) async => _extremes),
         envDayControlLogProvider.overrideWith(
             (ref) async => loadLog != null ? await loadLog() : log ?? _log()),
-        envWeekRowsProvider.overrideWith((ref) async => _weekRows()),
+        envWeekRowsProvider.overrideWith((ref) async =>
+            weekRowsError ? throw Exception('boom') : _weekRows()),
+        envReportRepositoryProvider
+            .overrideWithValue(reports ?? FakeEnvReportRepository()),
+        currentUserProvider.overrideWith((ref) => envV4User()),
       ],
       child: MaterialApp.router(
         routerConfig: GoRouter(
@@ -128,8 +141,8 @@ Future<void> _pump(
             GoRoute(path: '/', builder: (_, __) => const EnvDetailScreen()),
             GoRoute(
                 path: '$kTempHumidSettingPath/:deviceId',
-                builder: (_, state) => Text(
-                    'setting:${state.pathParameters['deviceId']}')),
+                builder: (_, state) =>
+                    Text('setting:${state.pathParameters['deviceId']}')),
           ],
         ),
       ),
@@ -176,12 +189,13 @@ void main() {
     final width = tester.getSize(find.byType(EnvDetailScreen)).width;
     final today = find.text(_dateLabel(DateTime.now()));
     // 전엔 숨긴 → 자리가 40, ← 가 48이라 4pt 오른쪽으로 밀렸다.
-    expect(tester.getCenter(today).dx, moreOrLessEquals(width / 2, epsilon: .5));
+    expect(
+        tester.getCenter(today).dx, moreOrLessEquals(width / 2, epsilon: .5));
     await tester.tap(find.byKey(EnvDetailScreen.dayPrevKey));
     await tester.pumpAndSettle();
     final now = DateTime.now();
-    final yesterday = find.text(
-        _dateLabel(DateTime(now.year, now.month, now.day - 1)));
+    final yesterday =
+        find.text(_dateLabel(DateTime(now.year, now.month, now.day - 1)));
     expect(tester.getCenter(yesterday).dx,
         moreOrLessEquals(width / 2, epsilon: .5));
   });
@@ -310,5 +324,132 @@ void main() {
     await tester.tap(find.byKey(EnvDetailScreen.dayPrevKey));
     await tester.pumpAndSettle();
     expect(find.byKey(EnvAlertCard.cardKey), findsNothing);
+  });
+
+  group('일일·주간 분석(계획 2026-11-03 Task 5)', () {
+    final yesterday = EnvDay.of(DateTime.now()).previous;
+    final lastWeek = WeekRange.containing(DateTime.now()).previous;
+
+    Future<void> toYesterday(WidgetTester tester) async {
+      await tester.tap(find.byKey(EnvDetailScreen.dayPrevKey));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> toLastWeek(WidgetTester tester) async {
+      await tester.tap(find.byKey(EnvDetailScreen.segmentWeeklyKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(EnvDetailScreen.weekPrevKey));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('today_does_not_query_daily_report', (tester) async {
+      final repo = FakeEnvReportRepository();
+      await _pump(tester, deviceId: 'd1', reports: repo);
+      expect(repo.dailyCalls, isEmpty);
+      expect(find.byKey(EnvDailyReportCard.cardKey), findsNothing);
+    });
+
+    testWidgets('지난 날 일일 카드 — 그래프 아래·제어 기록 위, 좌우 16', (tester) async {
+      final repo =
+          FakeEnvReportRepository(daily: envV4DailyReport(yesterday.date));
+      await _pump(tester, deviceId: 'd1', reports: repo);
+      await toYesterday(tester);
+      expect(repo.dailyCalls, ['d1@${envReportDateKey(yesterday.date)}']);
+      final card = find.byKey(EnvDailyReportCard.cardKey);
+      expect(card, findsOneWidget);
+      final rect = tester.getRect(card);
+      expect(rect.left, 16);
+      expect(rect.top,
+          greaterThan(tester.getRect(find.byKey(EnvDayChart.chartKey)).bottom));
+      await tester.scrollUntilVisible(
+          find.byKey(ControlLogList.sectionKey), 200,
+          scrollable: find.byType(Scrollable).first);
+      expect(tester.getRect(find.byKey(ControlLogList.sectionKey)).top,
+          greaterThan(tester.getRect(card).bottom));
+    });
+
+    testWidgets('daily_caption_shows_report_window', (tester) async {
+      await _pump(tester,
+          deviceId: 'd1',
+          reports:
+              FakeEnvReportRepository(daily: envV4DailyReport(yesterday.date)));
+      await toYesterday(tester);
+      final caption = find.byKey(EnvDetailScreen.dailyReportCaptionKey);
+      expect(caption, findsOneWidget);
+      expect(tester.getRect(caption).bottom,
+          lessThan(tester.getRect(find.byKey(EnvDailyReportCard.cardKey)).top));
+    });
+
+    testWidgets('지난 날 행 없음 → 카드·캡션 없음', (tester) async {
+      await _pump(tester, deviceId: 'd1', reports: FakeEnvReportRepository());
+      await toYesterday(tester);
+      expect(find.byKey(EnvDailyReportCard.cardKey), findsNothing);
+      expect(find.byKey(EnvDetailScreen.dailyReportCaptionKey), findsNothing);
+    });
+
+    testWidgets('daily_report_error_retry', (tester) async {
+      final repo = FakeEnvReportRepository(
+          daily: envV4DailyReport(yesterday.date), failDaily: 1);
+      await _pump(tester, deviceId: 'd1', reports: repo);
+      await toYesterday(tester);
+      expect(find.byKey(EnvDetailScreen.reportErrorKey), findsOneWidget);
+      expect(find.byKey(EnvDailyReportCard.cardKey), findsNothing);
+      await tester.tap(find.descendant(
+          of: find.byKey(EnvDetailScreen.reportErrorKey),
+          matching: find.byType(InlineRetry)));
+      await tester.pumpAndSettle();
+      expect(find.byKey(EnvDetailScreen.reportErrorKey), findsNothing);
+      expect(find.byKey(EnvDailyReportCard.cardKey), findsOneWidget);
+    });
+
+    testWidgets('주간 — 온도·습도 차트 아래 각 섹션, 간격 12/36', (tester) async {
+      final repo =
+          FakeEnvReportRepository(weekly: envV4WeeklyReport(lastWeek.monday));
+      await _pump(tester, deviceId: 'd1', reports: repo);
+      await toLastWeek(tester);
+      expect(repo.weeklyCalls, ['d1@${envReportDateKey(lastWeek.monday)}']);
+      final charts = find.byType(WeekRangeChart);
+      final tempCard =
+          find.byKey(EnvWeeklyReportSection.cardKey(EnvReportElement.temp));
+      expect(tempCard, findsOneWidget);
+      expect(tester.getRect(tempCard).top - tester.getRect(charts.first).bottom,
+          12);
+      // 습도 차트까지 만들어지게 내린다(ListView는 보이는 것만 그린다).
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(charts, findsNWidgets(2));
+      expect(tester.getRect(charts.last).top - tester.getRect(tempCard).bottom,
+          36);
+      await tester.scrollUntilVisible(
+          find.byKey(EnvWeeklyReportSection.cardKey(EnvReportElement.humid)),
+          200,
+          scrollable: find.byType(Scrollable).first);
+      expect(
+          find.byKey(EnvWeeklyReportSection.noticeKey(EnvReportElement.humid)),
+          findsOneWidget);
+    });
+
+    testWidgets('this_week_does_not_query_weekly_report', (tester) async {
+      final repo =
+          FakeEnvReportRepository(weekly: envV4WeeklyReport(lastWeek.monday));
+      await _pump(tester, deviceId: 'd1', reports: repo);
+      await tester.tap(find.byKey(EnvDetailScreen.segmentWeeklyKey));
+      await tester.pumpAndSettle();
+      expect(repo.weeklyCalls, isEmpty);
+      expect(find.byKey(EnvWeeklyReportSection.cardKey(EnvReportElement.temp)),
+          findsNothing);
+    });
+
+    testWidgets('weekly_cards_survive_chart_error', (tester) async {
+      await _pump(tester,
+          deviceId: 'd1',
+          weekRowsError: true,
+          reports: FakeEnvReportRepository(
+              weekly: envV4WeeklyReport(lastWeek.monday)));
+      await toLastWeek(tester);
+      expect(find.byType(WeekRangeChart), findsNothing);
+      expect(find.byKey(EnvWeeklyReportSection.cardKey(EnvReportElement.temp)),
+          findsOneWidget);
+    });
   });
 }
