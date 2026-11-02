@@ -62,17 +62,19 @@
 | G1 | 앱이 `alerts`를 읽을 수 있다 — `own alerts select` RLS + Realtime publication에 `alerts` 포함 | **확인**(운영 DB, 2026-11-02) |
 | G2 | `devices.temp_offset_c` = 기기가 지금 적용 중인 보정값, `t_a`는 보정 후 값. 원래 측정값 = `t_a − temp_offset_c` | **확인**(서버 `handlers.py:986`, `docs/MQTT.md:90`) |
 | G3 | 펌웨어 빌드 기본 보정이 **−1.5℃**(`CONFIG_APP_TEMP_OFFSET_MDEG`) → 새 기기도 이미 −1.5 적용 중 | **확인**(MQTT.md). 앱 표시 의미는 결정 필요(D1) |
-| G4 | 앱이 `POST /devices/{id}/commands` `set_temp_offset`을 써도 된다(현재 "운영 콘솔 대행용"이라 적힘) | **미확인** — 서버 요청 문서에서 확인 |
+| G4 | 앱이 `POST /devices/{id}/commands` `set_temp_offset`을 쓴다(현재 "운영 콘솔 대행용"이라 적힘) | **사용 결정**(2026-11-02 사용자). 제약 여부는 서버 질의 Q2 |
 | G5 | 서버 v4 판정이 `device_settings.target_temp_min/max·target_humid_min/max`를 60초 TTL로 읽는다 | **확인**(stage-n D8) |
 | G6 | `notification_preferences` 테이블이 없다 — 앱 팀이 만든다 | **확인**(운영 DB 조회 0행, `notification_preferences_repository.dart` 주석) |
-| G7 | "이탈 알림" 토글은 사용자 단위(계정)로 둔다 | **미확인** — D2 |
+| G7 | "이탈 알림" 토글은 사용자 단위(계정)로 둔다 | **확정** — D2 |
 
 ## 사용자가 정할 것
 
-| # | 질문 | 추천 | 영향 |
+> 서버 질의는 [`docs/handoffs/2026-11-02-env-alerts-v4-server-questions.md`](../../handoffs/2026-11-02-env-alerts-v4-server-questions.md)에 모았다.
+
+| # | 질문 | 결정 | 영향 |
 |---|---|---|---|
-| D1 | 보정 **꺼짐**의 의미: 기기에 `offset_c=0`을 보낼까, 빌드 기본(−1.5)으로 둘까? 그리고 지금 −1.5가 적용된 기기는 처음에 "꺼짐"으로 볼까? | **꺼짐 = 0 전송.** 처음 화면은 `temp_offset_c == 0`일 때만 꺼짐, 그 외는 켜짐 + 그 값 표시 | Task 4. 펌웨어 기본 −1.5를 0으로 바꾸는 건 펌웨어·서버 담당에 확인 필요 |
-| D2 | 이탈 알림 토글을 계정 단위로 둘까, 기기 단위로 둘까? | **계정 단위**(온도·습도 2개). 알림 설정 화면의 다른 토글과 같은 층 | Task 7·8 테이블 모양 |
+| D1 | 보정 **꺼짐**의 의미와 펌웨어 기본 −1.5℃의 관계 | **임시 결정(2026-11-02 사용자): 끔 = `offset_c: 0` 전송, 사용자 보정 = 그 값 그대로.** 첫 화면은 `temp_offset_c == 0`일 때만 꺼짐. **서버 회신 대기**(질의 Q1) — 회신으로 바뀌는 건 "기기에 보낼 값" 계산 한 곳(`TempOffset.toDeviceValue`) | Task 1·3·4. Task 4는 회신을 보고 마지막에 구현 |
+| D2 | 이탈 알림 토글을 계정 단위로 둘까, 기기 단위로 둘까? | **확정(2026-11-02 사용자): 계정 단위**(온도·습도 2개) | Task 7·8 테이블 모양 |
 | D3 | 기존 환경설정(`/env-settings`)의 "목표 온습도"(단일 목표값 `target_temp_c`) 타일을 어떻게 할까? | **"온습도 설정" 행으로 바꿔 새 화면으로 연결**, 단일 목표값 시트는 사육장 탭 카드에만 남김 | Task 3 |
 | D4 | 실시간 카드 설명 문구에 넣을 수치: 확정 시 차이(`context.diff`)인가, 지금까지 최대 이탈(`context.peak_diff`)인가? | **제목은 서버 `message` 그대로**(푸시와 같은 문구), 설명은 1-5 설명 문구 고정 | Task 6 |
 
@@ -124,7 +126,7 @@
   - `EnvRange EnvRange.fromSettings(double? min, double? max, EnvRangeRule rule, EnvRange fallback)` — 서버 D8과 같은 규칙: null → 디폴트, 범위 밖 → clamp, `min >= max` → 그 요소 디폴트
   - `bool EnvRangeRule.canDecrease(double v)` / `canIncrease(double v)` / `double decrease(v)` / `increase(v)` — 스텝 이동
   - `bool EnvRange.isValidFor(EnvRangeRule rule)` — 범위 안·스텝 배수·min<max
-  - `class TempOffset { final double value; }`: `static const minMagnitude = 0.1, maxMagnitude = 4.0, step = 0.1`, `bool get isOff => value == 0`, `double get magnitude`, `bool get isSubtract`, `factory TempOffset.fromSigned(double)`, `factory TempOffset.of({required bool subtract, required double magnitude})`, `double rawFrom(double reportedTemp, double appliedOffset)` = `reportedTemp - appliedOffset`, `double apply(double raw)` = `raw + value`
+  - `class TempOffset { final double value; }`: `static const minMagnitude = 0.1, maxMagnitude = 4.0, step = 0.1`, `bool get isOff => value == 0`, `double get magnitude`, `bool get isSubtract`, `factory TempOffset.fromSigned(double)`, `factory TempOffset.of({required bool subtract, required double magnitude})`, `double rawFrom(double reportedTemp, double appliedOffset)` = `reportedTemp - appliedOffset`, `double apply(double raw)` = `raw + value`, `double toDeviceValue()` = 기기에 보낼 `offset_c` — **D1 임시 결정대로 `value` 그대로(끔 = 0)**. 서버 회신(질의 Q1)이 "공장 보정에 더해서"면 이 함수만 바꾼다
 - Must know: 부동소수 비교는 0.1 단위로 반올림해서 한다(`(v*10).round()`). 0.5·5 배수 검사도 같은 방식. 경고 경계(15/29)는 판정용이 아니라 **설정 가능 범위**와 숫자가 같을 뿐이다 — 이 파일은 판정을 하지 않는다.
 - Acceptance: 아래 테스트 PASS.
 
@@ -167,7 +169,7 @@ test('보정 크기 0.1~4.0', () { expect(() => TempOffset.of(subtract: false, m
   - `class TempOffsetRepository { Future<void> send(String deviceId, TempOffset offset); }` — REST `POST /devices/{id}/commands` body `{"action":"set_temp_offset","payload":{"offset_c": <value>}}` (`TerraRestClient` 사용). provider `tempOffsetRepositoryProvider`
 - Must know:
   - `patchBody`는 **보낸 필드만** 넣는다(기존 규칙). MIN/MAX는 두 값을 함께 보낸다 — 한쪽만 보내면 서버 병합 검사에서 순서에 따라 400이 날 수 있다.
-  - G4 미확인: 서버가 이 엔드포인트를 앱에 열지 않으면 대안은 Supabase `commands` 직결 INSERT(`SupabaseModuleControlRepository.sendCommand` 경로) — 이 경우 `CommandAction`에 `setTempOffset`('set_temp_offset')을 추가하고 **`actuator_marker.dart`의 `_kindByAction`은 건드리지 않는다**(차트 마커 대상이 아님, LCD와 같은 처리). 서버 회신 전까지 REST로 구현하고 이 문단을 계획서에 남긴다.
+  - 보정 명령은 REST `POST /devices/{id}/commands`로 보낸다(G4, 2026-11-02 사용자 결정). Supabase `commands` 직결 INSERT로 보내지 않는다. `payload.offset_c`는 `TempOffset.toDeviceValue()`.
   - `Device`는 `camerasProvider`처럼 생존 신호만 바뀐 갱신을 버리는 비교가 있으면 `tempOffsetC`를 비교 키에 넣는다(안 넣으면 보정 반영이 화면에 안 온다).
 - Acceptance: 테스트 PASS + `flutter analyze` 0.
 
@@ -418,13 +420,10 @@ test('device_key 없어도 통과', () => assert.equal(validateNotificationEvent
 
 ## 서버에 회신할 것 (구현과 함께)
 
+질문과 지금 보낼 회신은 [`docs/handoffs/2026-11-02-env-alerts-v4-server-questions.md`](../../handoffs/2026-11-02-env-alerts-v4-server-questions.md)에 있다(Q1 보정 끔·−1.5, Q2 commands 엔드포인트, Q3 자동 환기·분무, §2 문구·수신 끔). 구현 뒤에 보낼 것:
+
 | 서버 문서 항목 | 회신 내용 | 시점 |
 |---|---|---|
-| §1 표시 준비 | Task 6 병합 후 "1단계(`ALERTS_V4_ENABLED`) 켜도 됨" | Task 6 뒤 |
-| §2 수신부 | Task 8 마이그레이션 운영 적용 후 "2단계 켜도 됨" | Task 8 뒤 |
-| §2.2 문구 | `payload.title` 그대로 사용 | 지금 |
-| §3 수신 끔 | 앱 Supabase에서 거름(서버에 설정 불필요) | 지금 |
-| G4 | `POST /devices/{id}/commands` `set_temp_offset`을 앱이 써도 되는지 | 지금 |
-| D1 | 보정 꺼짐 = 0 전송 시 펌웨어 기본 −1.5와의 관계 | 지금 |
-| N2 | 앱은 15~29(0.5)·35~85(5)·MIN<MAX 밖 값을 보내지 않음 → N2 배포 가능 | Task 5 뒤 |
-| 자동 환기·분무 | Figma S41~S44 기능의 서버·펌웨어 계획 문의 | 지금 |
+| §4 1단계 | Task 6 배포 후 "`ALERTS_V4_ENABLED` 켜도 됨" | Task 6 뒤 |
+| §4 2단계 | Task 8 운영 반영 후 "`PUSH_ENV_ALERTS_ENABLED` 켜도 됨" | Task 8 뒤 |
+| N2 | 앱 범위 밖 값 미전송 확인 → N2 배포 가능 | Task 5 뒤 |
