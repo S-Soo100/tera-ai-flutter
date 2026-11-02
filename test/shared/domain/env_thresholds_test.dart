@@ -100,6 +100,28 @@ void main() {
     });
   });
 
+  group('EnvRangeRule 스테퍼 판정(MIN < MAX 유지)', () {
+    const r = EnvRangeRule.temp;
+    test('최소 +는 최대 바로 아래에서 멈춘다', () {
+      expect(r.canIncreaseMin(const EnvRange(25, 26)), isTrue);
+      expect(r.canIncreaseMin(const EnvRange(25.5, 26)), isFalse);
+    });
+    test('최대 −는 최소 바로 위에서 멈춘다', () {
+      expect(r.canDecreaseMax(const EnvRange(18, 19)), isTrue);
+      expect(r.canDecreaseMax(const EnvRange(18, 18.5)), isFalse);
+    });
+    test('경계 — 최소 15에서 −, 최대 29에서 + 불가', () {
+      expect(r.canDecreaseMin(const EnvRange(15, 26)), isFalse);
+      expect(r.canIncreaseMax(const EnvRange(18, 29)), isFalse);
+      expect(r.canDecreaseMin(const EnvRange(18, 26)), isTrue);
+      expect(r.canIncreaseMax(const EnvRange(18, 26)), isTrue);
+    });
+    test('습도 5 단위', () {
+      expect(EnvRangeRule.humid.canIncreaseMin(const EnvRange(75, 80)), isFalse);
+      expect(EnvRangeRule.humid.canDecreaseMax(const EnvRange(40, 50)), isTrue);
+    });
+  });
+
   group('TempOffset', () {
     test('보정 빼기 1.0', () {
       final o = TempOffset.of(subtract: true, magnitude: 1.0);

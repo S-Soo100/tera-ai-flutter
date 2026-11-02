@@ -48,11 +48,15 @@ class EnvAlertRepository {
   /// 처음 조회 → 이후 실시간 INSERT/UPDATE를 반영한다. **재합류하면 처음
   /// 조회를 다시 해 목록을 통째로 바꾼다** — 끊긴 사이 종료된 행이 남지 않게
   /// (Review Focus 1). 조회가 진행 중에 온 실시간 행은 조회 결과 위에 다시
-  /// 얹어 잃지 않는다. 처음 조회가 실패하면 오류를 내보내고, 다음 재합류에서
-  /// 다시 맞춘다. 같은 목록은 다시 내보내지 않는다.
+  /// 얹어 잃지 않는다. 처음 조회가 실패하면 오류를 내보내고 [retryDelay] 뒤
+  /// 다시 조회한다(재합류를 기다리지 않는다 — 망은 멀쩡한데 조회만 잠깐 실패하면
+  /// 재합류가 오지 않아 화면을 닫을 때까지 카드가 안 뜬다). 못 불러온 상태에서
+  /// 실시간 행이 오면 타이머를 기다리지 않고 바로 다시 조회한다. 같은 목록은
+  /// 다시 내보내지 않는다.
   Stream<List<EnvAlert>> watchOpen(
     String deviceId, {
     required EnvAlertSubscribe subscribe,
+    Duration Function(int failures) retryDelay = defaultRetryDelay,
   }) {
     final controller = StreamController<List<EnvAlert>>();
     final open = <String, EnvAlert>{};
@@ -61,6 +65,8 @@ class EnvAlertRepository {
     var loaded = false;
     var gen = 0;
     var closed = false;
+    var failures = 0;
+    Timer? retry;
     List<EnvAlert>? last;
 
     void emit() {
@@ -81,6 +87,8 @@ class EnvAlertRepository {
 
     Future<void> refetch() async {
       final mine = ++gen;
+      retry?.cancel();
+      retry = null;
       sinceFetch.clear();
       try {
         final rows = await fetchOpen(deviceId);
@@ -91,10 +99,14 @@ class EnvAlertRepository {
         sinceFetch.values.forEach(apply);
         sinceFetch.clear();
         loaded = true;
+        failures = 0;
         emit();
       } catch (e, st) {
         if (closed || mine != gen) return;
-        if (!loaded) controller.addError(e, st);
+        // 재합류 재조회 실패 — 이미 그린 목록은 실시간으로 이어 간다.
+        if (loaded) return;
+        controller.addError(e, st);
+        retry = Timer(retryDelay(++failures), () => unawaited(refetch()));
       }
     }
 
@@ -104,6 +116,10 @@ class EnvAlertRepository {
       if (device != null && device.toString() != deviceId) return;
       final a = EnvAlert.fromRow(row);
       if (a == null) return;
+      // 처음 조회가 실패한 채로 이탈이 생겼다 — 재시도 타이머를 기다리지 않는다.
+      // 다시 조회를 먼저 시작해야 이 행이 그 조회 결과 위에 얹힌다(refetch가
+      // sinceFetch를 비우므로). 조회 중이면 그 결과 위에 얹히니 다시 부르지 않는다.
+      if (!loaded && retry != null) unawaited(refetch());
       sinceFetch[a.id] = a;
       apply(a);
       emit();
@@ -119,10 +135,15 @@ class EnvAlertRepository {
 
     controller.onCancel = () {
       closed = true;
+      retry?.cancel();
       close();
     };
     return controller.stream;
   }
+
+  /// 처음 조회 재시도 간격 — 5초에서 두 배씩, 최대 60초.
+  static Duration defaultRetryDelay(int failures) =>
+      Duration(seconds: (5 << (failures - 1).clamp(0, 4)).clamp(5, 60));
 }
 
 final envAlertRepositoryProvider = Provider.autoDispose<EnvAlertRepository>(

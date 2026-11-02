@@ -225,7 +225,7 @@ test('env alert trigger copies the 2026-10-01 body and adds only the env branch'
   }
   const envBranch = next.match(/WHEN 'env\.alert\.triggered' THEN([\s\S]*?)\n\s*END CASE;/)?.[1];
   assert.ok(envBranch, 'env 분기는 CASE의 마지막 WHEN이어야 한다');
-  assert.match(envBranch, /v_title := NEW\.payload ->> 'title';/);
+  assert.match(envBranch, /v_title := COALESCE\(NULLIF\(NEW\.payload ->> 'title', ''\), '사육장 온습도를 확인해 주세요'\);/);
   assert.match(envBranch, /v_body := COALESCE\(NULLIF\(NEW\.payload ->> 'device_name', ''\), '사육장'\);/);
   assert.match(envBranch, /v_route := '\/env-detail';/);
 });

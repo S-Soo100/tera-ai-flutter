@@ -89,6 +89,21 @@ void main() {
     expect(m.left - t.left, moreOrLessEquals((t.width - 12) * 0.5));
   });
 
+  testWidgets('적정 MAX와 같은 값이면 원 중심이 그 눈금 위에 있다', (tester) async {
+    await pump(
+        tester,
+        const EnvRangeBar(
+            kind: EnvBarKind.temp,
+            value: 26,
+            low: 20,
+            high: 27,
+            range: EnvRange.tempDefault));
+    final t = track(tester);
+    final expected = t.left + EnvBarKind.temp.fractionOf(26) * t.width;
+    expect(marker(tester).center.dx, moreOrLessEquals(expected));
+    expect(tester.getCenter(find.text('26')).dx, moreOrLessEquals(expected));
+  });
+
   testWidgets('최저 15.9 → "15" (버림), 최고 26.99 → "26"', (tester) async {
     await pump(
         tester,

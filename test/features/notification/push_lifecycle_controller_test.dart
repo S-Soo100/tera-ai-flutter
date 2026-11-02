@@ -445,7 +445,7 @@ void main() {
     expect(navigated, ['/env-detail']);
   });
 
-  group('env alert tap selects its device before navigation', () {
+  group('env alert tap navigates, then selects its device', () {
     late List<String> events;
     late PushLifecycleController envController;
     late Object? prepareError;
@@ -485,13 +485,46 @@ void main() {
     });
     tearDown(() => envController.dispose());
 
-    test('prepare runs after read and before navigate', () async {
+    test('navigate first, then select the device (no wait before moving)',
+        () async {
       await envController.setUser('a');
       await envController.open(const PushMessage(
           notificationId: 'e1',
           kind: 'env.alert.triggered',
           route: '/env-detail'));
-      expect(events, ['read:e1', 'prepare:dev-2', 'navigate:/env-detail']);
+      await pumpEventQueue();
+      expect(events, ['read:e1', 'navigate:/env-detail', 'prepare:dev-2']);
+    });
+
+    test('slow device lookup does not delay navigation', () async {
+      final gate = Completer<void>();
+      final slow = PushLifecycleController(
+        messaging: messaging,
+        devices: devices,
+        preferences: MemoryPushPreferences(),
+        appVersion: () async => '0.165.0+452',
+        locale: () => 'ko',
+        findNotification: envController.findNotification,
+        markRead: (id) async => events.add('read:$id'),
+        display: (_) async {},
+        navigate: (route) => events.add('navigate:$route'),
+        prepareOpen: (item) async {
+          await gate.future;
+          events.add('prepare:${item.targetDeviceId}');
+        },
+        permissionChanged: (_) {},
+        reportError: (code) => events.add('error:$code'),
+      );
+      addTearDown(slow.dispose);
+      await slow.setUser('a');
+      await slow.open(const PushMessage(
+          notificationId: 'e4',
+          kind: 'env.alert.triggered',
+          route: '/env-detail'));
+      expect(events, ['read:e4', 'navigate:/env-detail']);
+      gate.complete();
+      await pumpEventQueue();
+      expect(events.last, 'prepare:dev-2');
     });
 
     test('untrusted payload route falls back without selecting a device',
@@ -511,11 +544,12 @@ void main() {
           notificationId: 'e3',
           kind: 'env.alert.triggered',
           route: '/env-detail'));
+      await pumpEventQueue();
       expect(events, [
         'read:e3',
+        'navigate:/env-detail',
         'prepare:dev-2',
-        'error:open_target',
-        'navigate:/env-detail'
+        'error:open_target'
       ]);
     });
   });

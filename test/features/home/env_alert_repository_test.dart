@@ -194,6 +194,45 @@ void main() {
     ]);
   });
 
+  test('처음 조회 실패 → 재합류 없이도 잠시 뒤 다시 조회한다', () async {
+    server.fail = true;
+    final errors = <Object>[];
+    sub = EnvAlertRepository(client)
+        .watchOpen('d1',
+            subscribe: channel.subscribe,
+            retryDelay: (_) => const Duration(milliseconds: 10))
+        .listen((list) => seen.add([for (final a in list) a.id]),
+            onError: errors.add);
+    await pumpEventQueue();
+    expect(errors, hasLength(1));
+    server
+      ..fail = false
+      ..rows = [_row(id: 'a')];
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await pumpEventQueue();
+    expect(seen, [
+      ['a']
+    ]);
+    expect(server.requests, hasLength(2));
+  });
+
+  test('못 불러온 상태에서 실시간 행이 오면 바로 다시 조회한다', () async {
+    server.fail = true;
+    sub = EnvAlertRepository(client)
+        .watchOpen('d1',
+            subscribe: channel.subscribe,
+            retryDelay: (_) => const Duration(hours: 1))
+        .listen((list) => seen.add([for (final a in list) a.id]),
+            onError: (_) {});
+    await pumpEventQueue();
+    server
+      ..fail = false
+      ..rows = [_row(id: 'a')];
+    channel.onRow!(_row(id: 'h', kind: 'env_humid_low'));
+    await pumpEventQueue();
+    expect(seen.last, ['a', 'h']);
+  });
+
   test('구독을 끊으면 채널을 닫는다', () async {
     await listen();
     expect(channel.closed, isFalse);

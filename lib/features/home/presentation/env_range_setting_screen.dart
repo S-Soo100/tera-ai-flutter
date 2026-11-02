@@ -151,8 +151,6 @@ class EnvRangeSettingScreen extends ConsumerWidget {
   static const saveKey = Key('env_range_save');
   static const discardKey = Key('env_range_discard');
 
-  static int _t(double v) => (v * 10).round();
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final target = (deviceId, kind);
@@ -202,10 +200,10 @@ class EnvRangeSettingScreen extends ConsumerWidget {
     final min = current.min;
     final max = current.max;
 
-    final minDown = rule.canDecrease(min);
-    final minUp = rule.canIncrease(min) && _t(rule.increase(min)) < _t(max);
-    final maxDown = rule.canDecrease(max) && _t(rule.decrease(max)) > _t(min);
-    final maxUp = rule.canIncrease(max);
+    final minDown = rule.canDecreaseMin(current);
+    final minUp = rule.canIncreaseMin(current);
+    final maxDown = rule.canDecreaseMax(current);
+    final maxUp = rule.canIncreaseMax(current);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),

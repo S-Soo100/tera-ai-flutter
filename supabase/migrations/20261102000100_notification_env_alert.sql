@@ -158,7 +158,9 @@ BEGIN
     WHEN 'env.alert.triggered' THEN
       -- v4 온습도 이탈(기획 1-5 "타이틀만"): 제목은 서버 완성본 그대로, 본문은
       -- 어느 사육장인지 알리는 사육장 이름만. category는 split_part → 'env'.
-      v_title := NEW.payload ->> 'title';
+      -- 제목이 비면(계약 검사를 거치지 않은 적재 등) title NOT NULL 위반으로
+      -- 이벤트 적재 전체가 실패하므로 다른 분기처럼 기본 문구로 채운다.
+      v_title := COALESCE(NULLIF(NEW.payload ->> 'title', ''), '사육장 온습도를 확인해 주세요');
       v_body := COALESCE(NULLIF(NEW.payload ->> 'device_name', ''), '사육장');
       v_route := '/env-detail';
   END CASE;

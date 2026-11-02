@@ -63,6 +63,22 @@ class EnvRangeRule {
   /// 한 칸 올림. 이미 상한이면 상한 그대로.
   double increase(double v) =>
       (_snapT(v) + _stepT).clamp(_lowerT, _upperT) / 10;
+
+  // ── 적정 범위 스테퍼(MIN < MAX를 깨지 않는 이동만) ──
+
+  /// 최소 −: 하한 위에서만.
+  bool canDecreaseMin(EnvRange r) => canDecrease(r.min);
+
+  /// 최소 +: 한 칸 올려도 최대보다 작을 때만.
+  bool canIncreaseMin(EnvRange r) =>
+      canIncrease(r.min) && _tenths(increase(r.min)) < _tenths(r.max);
+
+  /// 최대 −: 한 칸 내려도 최소보다 클 때만.
+  bool canDecreaseMax(EnvRange r) =>
+      canDecrease(r.max) && _tenths(decrease(r.max)) > _tenths(r.min);
+
+  /// 최대 +: 상한 아래에서만.
+  bool canIncreaseMax(EnvRange r) => canIncrease(r.max);
 }
 
 /// 적정 범위 MIN~MAX. 적정 = `min ≤ 값 ≤ max`(경계 포함).

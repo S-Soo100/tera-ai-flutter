@@ -241,8 +241,10 @@ class EnvRangeBar extends StatelessWidget {
             Positioned(
               key: markerKey,
               top: _trackTop,
-              // 원은 바 안에 머문다 — 0이면 왼쪽 끝, 1이면 오른쪽 끝에 붙는다.
-              left: kind.fractionOf(v) * (width - _markerSize),
+              // 원 중심은 눈금·적정 구간과 같은 축(비율 × 폭)에 놓는다 — 26.0℃면
+              // '26' 눈금 바로 위. 바 끝에서만 원이 밖으로 나가지 않게 막는다.
+              left: (kind.fractionOf(v) * width - _markerSize / 2)
+                  .clamp(0.0, (width - _markerSize).clamp(0.0, width)),
               width: _markerSize,
               height: _markerSize,
               child: DecoratedBox(

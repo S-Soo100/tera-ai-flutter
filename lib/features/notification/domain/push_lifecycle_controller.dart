@@ -35,8 +35,10 @@ class PushLifecycleController {
   final void Function(PushPermission) permissionChanged;
   final void Function(String) reportError;
 
-  /// 알림 화면으로 이동하기 직전에 부른다 — 온습도 이탈 알림이면 그 사육장으로
-  /// 홈 세트를 옮긴다(2026-11-02). 실패해도 이동은 한다.
+  /// 알림 화면으로 이동한 **뒤에** 기다리지 않고 부른다 — 온습도 이탈 알림이면
+  /// 그 사육장으로 홈 세트를 옮긴다(2026-11-02). 기기 목록 조회(최대 수 초)가
+  /// 이동을 늦추지 않게 하려는 것이고, 온습도 상세는 홈 세트를 지켜보므로
+  /// 옮겨지는 순간 그 사육장으로 바뀐다. 실패는 보고만 한다.
   final Future<void> Function(AppNotification)? prepareOpen;
 
   /// 로그아웃 뒤 이 폰의 로컬 알림을 내린다 — 예약·팬 타이머 알림은 기기(계정)
@@ -252,14 +254,13 @@ class PushLifecycleController {
           ? sanitizeNotificationRoute(message.route)
           : '/notifications';
       final destination = route == item.safeRoute ? route : '/notifications';
-      final prepare = prepareOpen;
-      if (prepare != null && destination != '/notifications') {
-        await _guard(() => prepare(item), 'open_target');
-        if (!_current(userId, generation)) return;
-      }
       navigate(destination);
       opened = true;
       _bound(_opened);
+      final prepare = prepareOpen;
+      if (prepare != null && destination != '/notifications') {
+        unawaited(_guard(() => prepare(item), 'open_target'));
+      }
     } finally {
       if (!opened && generation == _generation) {
         _opened.remove(message.notificationId);
