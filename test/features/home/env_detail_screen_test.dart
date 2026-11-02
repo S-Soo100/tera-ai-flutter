@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vivanaut/core/router/app_router.dart';
+import 'package:vivanaut/features/home/domain/env_alert.dart';
 import 'package:vivanaut/features/home/domain/env_realtime_values.dart';
+import 'package:vivanaut/features/home/presentation/env_alert_providers.dart';
 import 'package:vivanaut/features/home/presentation/env_detail_providers.dart';
 import 'package:vivanaut/features/home/presentation/env_detail_screen.dart';
 import 'package:vivanaut/features/home/presentation/env_live_providers.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
 import 'package:vivanaut/features/home/presentation/widgets/control_log_list.dart';
+import 'package:vivanaut/features/home/presentation/widgets/env_alert_card.dart';
 import 'package:vivanaut/features/home/presentation/widgets/env_day_chart.dart';
 import 'package:vivanaut/features/home/presentation/widgets/env_range_bar.dart';
 import 'package:vivanaut/features/home/presentation/widgets/week_range_chart.dart';
@@ -90,12 +93,14 @@ Future<void> _pump(
   Future<List<ControlLogEntry>> Function()? loadLog,
   String? deviceId,
   DeviceSettings? settings,
+  List<EnvAlert> alerts = const [],
 }) async {
   final now = DateTime.now();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         currentDeviceIdProvider.overrideWith((ref) async => deviceId),
+        openEnvAlertsProvider.overrideWith((ref) => Stream.value(alerts)),
         if (deviceId != null) ...[
           envLiveViewProvider(deviceId).overrideWithValue(envLiveView(
               EnvLiveReading(
@@ -271,5 +276,39 @@ void main() {
             .widget<Text>(find.byKey(const Key('env_range_bar_high_humid')))
             .data,
         '66');
+  });
+
+  final lowDanger = EnvAlert.fromRow({
+    'id': 'a1',
+    'device_id': 'd1',
+    'kind': 'env_temp_low',
+    'message': '[저온 경고] 온도가 너무 낮아 개체가 위험할 수 있어요',
+    'context': {'rule': 'v4', 'level': 'danger'},
+    'triggered_at': '2026-11-02T05:00:00Z',
+    'resolved_at': null,
+  })!;
+
+  testWidgets('열린 행 0개면 카드 없음', (tester) async {
+    await _pump(tester, deviceId: 'd1');
+    expect(find.byKey(EnvAlertCard.cardKey), findsNothing);
+  });
+
+  testWidgets('오늘 열린 행이 있으면 그래프 아래·제어 기록 위에 카드', (tester) async {
+    await _pump(tester, deviceId: 'd1', alerts: [lowDanger]);
+    final card = find.byKey(EnvAlertCard.cardKey);
+    expect(card, findsOneWidget);
+    expect(tester.getRect(card).top,
+        greaterThan(tester.getRect(find.byKey(EnvDayChart.chartKey)).bottom));
+    await tester.scrollUntilVisible(find.byKey(ControlLogList.sectionKey), 200,
+        scrollable: find.byType(Scrollable).first);
+    expect(tester.getRect(find.byKey(ControlLogList.sectionKey)).top,
+        greaterThan(tester.getRect(card).bottom));
+  });
+
+  testWidgets('지난 날에는 열린 행이 있어도 카드를 그리지 않는다', (tester) async {
+    await _pump(tester, deviceId: 'd1', alerts: [lowDanger]);
+    await tester.tap(find.byKey(EnvDetailScreen.dayPrevKey));
+    await tester.pumpAndSettle();
+    expect(find.byKey(EnvAlertCard.cardKey), findsNothing);
   });
 }

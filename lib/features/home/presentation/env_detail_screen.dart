@@ -1,3 +1,4 @@
+import '../domain/env_alert.dart';
 import '../domain/env_realtime_values.dart';
 import 'env_live_providers.dart';
 import '../../../shared/widgets/figma_icon.dart';
@@ -16,7 +17,9 @@ import '../../my_cage/presentation/device_settings_providers.dart';
 import '../../../shared/domain/week_range.dart';
 import 'env_detail_providers.dart';
 import 'home_control_providers.dart';
+import 'env_alert_providers.dart';
 import 'widgets/control_log_list.dart';
+import 'widgets/env_alert_card.dart';
 import 'widgets/env_range_bar.dart';
 import 'widgets/env_day_chart.dart';
 import 'widgets/week_range_chart.dart';
@@ -247,8 +250,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                   initialFraction: _nowFraction(day),
                 ),
         ),
-        // Figma A06 — 그래프(319~575) → 제어 기록 패널 601.
-        const SizedBox(height: 26),
+        ..._alertCard(day),
         logAsync.when(
           loading: () => _skeleton(glass, height: 160),
           error: (_, __) => Padding(
@@ -266,6 +268,28 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
         ),
       ],
     );
+  }
+
+  /// v4 실시간 이탈 카드(Figma A10) — **오늘 화면에서만, 열린 행이 있을 때만**.
+  /// 지난 날 자리는 일간 분석(서버 Stage P) 몫이라 비워 둔다. 조회 중·실패면
+  /// 카드 없이 둔다(안전 알림 자체는 푸시·알림함이 맡는다).
+  List<Widget> _alertCard(EnvDay day) {
+    final alerts = day.isToday
+        ? ref.watch(openEnvAlertsProvider).valueOrNull ?? const <EnvAlert>[]
+        : const <EnvAlert>[];
+    if (alerts.isEmpty) {
+      // Figma A06 — 그래프(319~575) → 제어 기록 패널 601.
+      return const [SizedBox(height: 26)];
+    }
+    return [
+      // Figma A10 — 그래프 575 → 카드 597, 카드 끝 736 → 제어 기록 756.
+      const SizedBox(height: 22),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: EnvAlertCard(alerts: alerts),
+      ),
+      const SizedBox(height: 20),
+    ];
   }
 
   /// 오늘이면 현재 시각의 하루 내 비율(초기 스크롤용), 과거일은 0.

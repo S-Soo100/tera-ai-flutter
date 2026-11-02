@@ -1418,5 +1418,10 @@
   "temp_humid_temp_note": "{}℃ 미만이거나 {}℃ 초과인 경우 이탈 안내를 합니다",
   "temp_humid_humid_note": "{}% 미만이거나 {}% 초과인 경우 이탈 안내를 합니다",
   "temp_humid_alert_save_failed": "알림 설정을 저장하지 못했어요. 잠시 후 다시 시도해 주세요",
-  "temp_humid_device_missing": "이 사육장을 찾을 수 없어요. 연동이 해제되었을 수 있어요"
+  "temp_humid_device_missing": "이 사육장을 찾을 수 없어요. 연동이 해제되었을 수 있어요",
+  "env_alert_hint_temp_low_danger": "즉시 온도를 올려주세요",
+  "env_alert_hint_temp_low_caution": "난방 장치 사용을 추천드려요",
+  "env_alert_hint_temp_high": "환기팬 또는 냉각팬 사용을 추천드려요",
+  "env_alert_hint_humid_low": "사육장에 수분을 보충해 주세요",
+  "env_alert_hint_humid_high": "환기 상태를 점검해 주세요"
 }
