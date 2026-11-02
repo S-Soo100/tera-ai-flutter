@@ -4,6 +4,7 @@ import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/core/theme/glass_palette.dart';
 import 'package:vivanaut/core/theme/viva_colors.dart';
 import 'package:vivanaut/features/home/presentation/widgets/week_range_chart.dart';
+import 'package:vivanaut/shared/domain/env_thresholds.dart';
 import 'package:vivanaut/shared/domain/week_range.dart';
 import 'package:vivanaut/shared/widgets/figma_icon.dart';
 
@@ -20,7 +21,7 @@ void main() {
   ];
 
   Future<GlassPalette> pump(WidgetTester tester,
-      {List<DayMinMax>? data}) async {
+      {List<DayMinMax>? data, EnvRange? range, double? ceiling}) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     late GlassPalette glass;
     await tester.pumpWidget(MaterialApp(
@@ -37,6 +38,8 @@ void main() {
               iconAsset: 'redesign_v2/env_temperature',
               headerFormat: (v) => '$v°C',
               axisFormat: (v, d) => '${v.toStringAsFixed(d)}°',
+              range: range,
+              ceiling: ceiling,
             ),
           );
         }),
@@ -90,40 +93,43 @@ void main() {
     expect(low.bottom, lessThanOrEqualTo(mon.top));
   });
 
-  testWidgets('max bar and both of its labels use the accent colours',
-      (tester) async {
+  Finder barsOf(Color c) => find.byWidgetPredicate((w) =>
+      w is Container &&
+      w.decoration is BoxDecoration &&
+      (w.decoration! as BoxDecoration).color == c);
+
+  testWidgets('A19 — 최고·최저 막대와 그 수치가 강조색, 나머지는 #949090', (tester) async {
     final glass = await pump(tester);
     final chart = tester.getRect(grid());
 
-    final bars = find.byWidgetPredicate((w) =>
-        w is Container &&
-        w.decoration is BoxDecoration &&
-        (w.decoration! as BoxDecoration).color == glass.tempAccent);
-    expect(bars, findsOneWidget);
-    final bar = tester.getRect(bars);
+    // 최고(화 33) 1개 + 최저(목·금 23) 2개.
+    final bars = barsOf(glass.tempAccent);
+    expect(bars, findsNWidgets(3));
+    final bar = tester.getRect(bars.first);
     expect(bar.width, 10);
     // 열 가운데(341/7 * 1.5), 최고 33 → y=32 선(가장 위 눈금 34 아래 한 칸).
     expect(bar.center.dx, closeTo(chart.left + 341 / 7 * 1.5, 0.01));
     expect(bar.top, closeTo(chart.top + 32 + 32 * 0.5, 0.01));
 
     final maxLabel = find.text('33');
-    expect(tester.widget<Text>(maxLabel).style!.color, VivaColors.mainDark);
+    expect(tester.widget<Text>(maxLabel).style!.color, VivaColors.mainLight);
     expect(tester.widget<Text>(maxLabel).style!.fontSize, 14);
     expect(tester.getRect(maxLabel).bottom, closeTo(bar.top - 4, 0.5));
     // 최고 막대의 아래 수치도 강조색.
     final tueMin = find.byWidgetPredicate((w) =>
-        w is Text && w.data == '25' && w.style?.color == VivaColors.mainDark);
+        w is Text && w.data == '25' && w.style?.color == VivaColors.mainLight);
     expect(tueMin, findsOneWidget);
     expect(tester.getRect(tueMin).top, closeTo(bar.bottom + 4, 0.5));
 
-    // 다른 막대 수치는 #626262, 최저 막대는 #B4AEAE.
+    // 최저 막대(목·금)의 위·아래 수치도 강조색.
+    final minLabels = find.byWidgetPredicate((w) =>
+        w is Text && w.data == '23' && w.style?.color == VivaColors.mainLight);
+    expect(minLabels, findsNWidgets(2));
+
+    // 보통 막대 #949090(월·수·토·일 4개), 수치 #626262.
+    expect(barsOf(VivaColors.labelQuaternary), findsNWidgets(4));
     final neutral = tester.widget<Text>(find.text('30').first).style!;
     expect(neutral.color, glass.bodySecondary);
-    final minBars = find.byWidgetPredicate((w) =>
-        w is Container &&
-        w.decoration is BoxDecoration &&
-        (w.decoration! as BoxDecoration).color == VivaColors.fillIcon);
-    expect(minBars, findsNWidgets(2));
 
     // 헤더: 원본 복합색 아이콘 28, 최고값 강조색.
     final icon = tester.widget<FigmaIcon>(find.byType(FigmaIcon));
@@ -135,6 +141,53 @@ void main() {
     expect(tester.widget<Text>(find.text('23.0°C')).style!.color,
         glass.textTertiary);
     expect(tester.takeException(), isNull);
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('적정 범위 띠 — 막대 뒤 전체 폭, 축이 띠를 담는다', (tester) async {
+    final glass = await pump(tester, range: const EnvRange(20, 30));
+    final chart = tester.getRect(grid());
+    final band = find.byKey(WeekRangeChart.bandKey);
+    expect(band, findsOneWidget);
+    // 값 20~33(띠 포함) → 칸 5 눈금. 띠 위·아래가 30°·20° 눈금선에 닿는다.
+    final top = tester.getRect(find.text('30°'));
+    final bottom = tester.getRect(find.text('20°'));
+    final rect = tester.getRect(band);
+    expect(rect.top, closeTo(top.bottom, 0.5));
+    expect(rect.bottom, closeTo(bottom.bottom, 0.5));
+    // 축 라벨 칸까지 덮는다(369 = 341 + 28).
+    expect(rect.left, closeTo(chart.left, 0.01));
+    expect(rect.width, closeTo(369, 0.01));
+    final box = tester.widget<ColoredBox>(
+        find.descendant(of: band, matching: find.byType(ColoredBox)));
+    expect(box.color, glass.bodySecondary.withValues(alpha: 0.05));
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('범위가 없으면 띠도 없다', (tester) async {
+    await pump(tester);
+    expect(find.byKey(WeekRangeChart.bandKey), findsNothing);
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('데이터 없는 주는 범위가 있어도 축·띠를 만들지 않는다', (tester) async {
+    await pump(tester,
+        data: [for (final d in week.days) DayMinMax(day: d)],
+        range: const EnvRange(18, 26));
+    expect(find.byKey(WeekRangeChart.bandKey), findsNothing);
+    expect(find.text('env_detail_no_data'), findsOneWidget);
+    await tester.binding.setSurfaceSize(null);
+  });
+
+  testWidgets('습도 상한 100 — 35~98%는 10~100% 축', (tester) async {
+    await pump(tester, ceiling: 100, data: [
+      DayMinMax(day: week.days[0], min: 35, max: 98),
+      for (var i = 1; i < 7; i++)
+        DayMinMax(day: week.days[i], min: 50, max: 70),
+    ]);
+    expect(find.text('100°'), findsOneWidget);
+    expect(find.text('10°'), findsOneWidget);
+    expect(find.text('120°'), findsNothing);
     await tester.binding.setSurfaceSize(null);
   });
 }

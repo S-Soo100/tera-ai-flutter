@@ -44,10 +44,16 @@ class AxisBounds {
   /// 쓰고 직선처럼 눕는다. 그래서 0.2까지 내려간다.
   ///
   /// 유효한 값(0 초과)이 하나도 없으면 null — 데이터 없이 가짜 축을 그리지 않는다.
+  ///
+  /// [ceiling]은 축이 넘으면 안 되는 위 끝이다(습도 100%). 여유 칸이 위로 붙어
+  /// 넘치면 아래로 밀고, 그래도 안 담기면 [ceiling]에 맞춘 5의 배수 칸으로
+  /// 다시 잡는다(35~98% → 10~100%, 15 단위). 그것도 0 아래로 내려가면 표준 축을
+  /// 쓴다. 값이 [ceiling]을 넘으면 무시한다 — 데이터를 자르지 않는다.
   static AxisBounds? forValues(
     Iterable<double> values, {
     double minStep = 0.2,
     int divisions = defaultDivisions,
+    double? ceiling,
   }) {
     final valid = values.where((v) => v > 0).toList();
     if (valid.isEmpty) return null;
@@ -66,6 +72,23 @@ class AxisBounds {
         min -= s;
       } else {
         max += s;
+      }
+    }
+
+    if (ceiling != null && max > ceiling && hi <= ceiling) {
+      final shift = ((max - ceiling) / s).ceilToDouble() * s;
+      if (min - shift >= 0 && min - shift <= lo) {
+        return AxisBounds._(
+            min: min - shift, max: max - shift, step: s, divisions: divisions);
+      }
+      final anchored = ((ceiling - lo) / divisions / 5).ceilToDouble() * 5;
+      if (ceiling - anchored * divisions >= 0) {
+        return AxisBounds._(
+          min: ceiling - anchored * divisions,
+          max: ceiling,
+          step: anchored,
+          divisions: divisions,
+        );
       }
     }
 

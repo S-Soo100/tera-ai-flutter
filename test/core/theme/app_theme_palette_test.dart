@@ -76,7 +76,7 @@ void main() {
       expect(light.envTempPeak, const Color(0xFFF85478));
       expect(light.envHumidValue, const Color(0xFF00B2F3));
       expect(light.envHumidPeak, const Color(0xFF00B2F3));
-      expect(light.envBarNeutral, const Color(0xFF626262));
+      expect(light.envBarNeutral, const Color(0xFF949090)); // A19 보통 막대
       expect(light.envBarMinimum, VivaColors.fillIcon); // 1081:5052 최저 막대
     });
 

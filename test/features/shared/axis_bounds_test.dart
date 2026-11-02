@@ -137,6 +137,45 @@ void main() {
       expect(AxisBounds.forValues(const []), isNull);
     });
   });
+
+  group('상한(ceiling) — 습도 축은 100%를 넘지 않는다', () {
+    const d = 6; // 주간 차트 7라벨
+
+    test('맞으면 그대로 — 표준 축이 상한 안이면 바꾸지 않는다', () {
+      final a = AxisBounds.forValues([40.7, 96.9], divisions: d, ceiling: 100)!;
+      expect((a.min, a.max, a.step), (40.0, 100.0, 10.0));
+    });
+
+    test('여유를 위로 붙여 넘치면 아래로 민다 — 60~99.5는 40~100', () {
+      final a = AxisBounds.forValues([60, 99.5], divisions: d, ceiling: 100)!;
+      expect((a.min, a.max, a.step), (40.0, 100.0, 10.0));
+    });
+
+    test('10 단위에 안 담기면 100에 맞춘 5의 배수 칸 — 35~98은 10~100(15)', () {
+      // 2026-11-03 mini13 — 표준 규칙은 0~120%를 그렸다.
+      final a = AxisBounds.forValues([35, 98], divisions: d, ceiling: 100)!;
+      expect((a.min, a.max, a.step), (10.0, 100.0, 15.0));
+      expect(a.ticks.last, 100);
+      expect(a.decimals, 0);
+    });
+
+    test('상한 안에 못 담으면 표준 축 — 음수 축은 만들지 않는다', () {
+      final a = AxisBounds.forValues([5, 98], divisions: d, ceiling: 100)!;
+      expect(a.min, greaterThanOrEqualTo(0));
+      expect(a.ticks, hasLength(d + 1));
+      expect(a.min, lessThanOrEqualTo(5));
+    });
+
+    test('값이 상한을 넘으면 상한을 무시한다 — 데이터를 자르지 않는다', () {
+      final a = AxisBounds.forValues([50, 104], divisions: d, ceiling: 100)!;
+      expect(a.max, greaterThanOrEqualTo(104));
+    });
+
+    test('상한 없으면 기존과 같다', () {
+      final a = AxisBounds.forValues([35, 98], divisions: d)!;
+      expect((a.min, a.max), (0.0, 120.0));
+    });
+  });
 }
 
 /// [v]보다 작거나 같은 가장 큰 10의 거듭제곱.

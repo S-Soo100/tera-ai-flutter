@@ -615,14 +615,23 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     final tempSection = section(EnvReportElement.temp);
     final humidSection = section(EnvReportElement.humid);
 
+    // 적정 범위 띠(A19) — 일간 범위 바와 같이 지난주에도 **현재** 설정이다.
+    // 조회 중·실패면 띠 없이 그린다(기본값으로 대신하지 않음).
+    final device = ref.watch(currentDeviceIdProvider);
+    final deviceId = device.isLoading ? null : device.valueOrNull;
+    final settings = deviceId == null
+        ? null
+        : ref.watch(deviceSettingsProvider(deviceId)).valueOrNull;
+
     Widget chart(List<DayMinMax> data, {required bool temp}) => Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: temp
               ? WeekRangeChart(
                   rows: data,
-                  // Figma 1081:5052 — 최고 막대 #D61619, 수치·헤더 #C00306.
+                  // Figma A19 — 최고·최저 막대와 수치 #D61619, 헤더 #C00306.
                   accent: glass.tempAccent,
                   valueColor: VivaColors.mainDark,
+                  range: settings?.tempRange,
                   iconAsset: 'redesign_v2/env_temperature',
                   headerFormat: (v) =>
                       'env_detail_temp_value'.tr(args: [formatCompact(v)]),
@@ -631,9 +640,11 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                 )
               : WeekRangeChart(
                   rows: data,
-                  // Figma 1081:5052 — 최고 막대 #2E408C, 수치·헤더 #192553.
+                  // Figma A19 — 최고·최저 막대와 수치 #2E408C, 헤더 #192553.
                   accent: glass.humidAccent,
                   valueColor: VivaColors.subDark,
+                  range: settings?.humidRange,
+                  ceiling: 100,
                   iconAsset: 'redesign_v2/env_humidity',
                   headerFormat: (v) =>
                       'env_detail_humid_value'.tr(args: [formatCompact(v)]),
