@@ -42,7 +42,7 @@
 - 푸시 수신 끔이어도 기록은 남긴다(`app_notifications`는 쌓고 outbox만 건너뜀).
 - 설정 쓰기는 REST만(`PATCH /devices/{id}/settings`) — Supabase 직결 UPDATE 금지(기존 규칙). 보정은 기기 명령으로만.
 - 로딩은 shimmer, 문자열은 `ko.json`, 색은 `context.glass`/VIVA 역할색, 글자 크기는 Figma 그대로(CLAUDE.md).
-- 건드리지 않는 것: 홈 `EnvSummaryCard`·라이브 오버레이 표시 규칙(`envLiveViewProvider`), 온습도 상세 **주간** 탭, 사육장 제어 기록, 펌웨어 발 `alerts`(`temp_high`·`heater_latched` 등), 기존 `safety.*`·`device.action.*` 푸시, 환기팬·분무 시트.
+- 건드리지 않는 것: 환경설정 `/env-settings`(진입점 없는 옛 화면, D3)와 단일 목표값 `target_temp_c`, 홈 `EnvSummaryCard`·라이브 오버레이 표시 규칙(`envLiveViewProvider`), 온습도 상세 **주간** 탭, 사육장 제어 기록, 펌웨어 발 `alerts`(`temp_high`·`heater_latched` 등), 기존 `safety.*`·`device.action.*` 푸시, 환기팬·분무 시트.
 
 ## 유저 체험 시뮬레이션
 
@@ -75,7 +75,7 @@
 |---|---|---|---|
 | D1 | 보정 **꺼짐**의 의미와 펌웨어 기본 −1.5℃의 관계 | **임시 결정(2026-11-02 사용자): 끔 = `offset_c: 0` 전송, 사용자 보정 = 그 값 그대로.** 첫 화면은 `temp_offset_c == 0`일 때만 꺼짐. **서버 회신 대기**(질의 Q1) — 회신으로 바뀌는 건 "기기에 보낼 값" 계산 한 곳(`TempOffset.toDeviceValue`) | Task 1·3·4. Task 4는 회신을 보고 마지막에 구현 |
 | D2 | 이탈 알림 토글을 계정 단위로 둘까, 기기 단위로 둘까? | **확정(2026-11-02 사용자): 계정 단위**(온도·습도 2개) | Task 7·8 테이블 모양 |
-| D3 | 기존 환경설정(`/env-settings`)의 "목표 온습도"(단일 목표값 `target_temp_c`) 타일을 어떻게 할까? | **"온습도 설정" 행으로 바꿔 새 화면으로 연결**, 단일 목표값 시트는 사육장 탭 카드에만 남김 | Task 3 |
+| D3 | 기존 환경설정(`/env-settings`)의 "목표 온습도"(단일 목표값 `target_temp_c`) 타일을 어떻게 할까? | **확정(2026-11-02 사용자): 건드리지 않는다.** `/env-settings`는 UI 진입점이 없는 화면이고(`push` 0건, 2026-09-18 점검 RESULTS #8), Figma 진입점은 온습도 상세 아이콘(S03→S04)과 알림 설정(S39→S40) 둘뿐이다. 옛 화면·단일 목표값 정리는 별도 작업 | Task 3에서 제외 |
 | D4 | 실시간 카드 설명 문구에 넣을 수치: 확정 시 차이(`context.diff`)인가, 지금까지 최대 이탈(`context.peak_diff`)인가? | **제목은 서버 `message` 그대로**(푸시와 같은 문구), 설명은 1-5 설명 문구 고정 | Task 6 |
 
 ## 선택지와 추천
@@ -193,7 +193,6 @@ test('보정 명령 본문', () async { /* fake TerraRestClient */ await repo.se
 - Create: `lib/features/home/presentation/temp_humid_setting_screen.dart` (`TempHumidSettingScreen`)
 - Create: `lib/features/home/presentation/temp_humid_setting_providers.dart`
 - Modify: `lib/core/router/app_router.dart` — `/env-detail` 아래 `settings`(+ 자식 `temp`, `humid`, `offset`)
-- Modify: `lib/features/my_cage/presentation/env_settings_screen.dart` — D3 결정대로 `SetpointSettingTile` 자리에 "온습도 설정" 행
 - Modify: `assets/l10n/ko.json`
 - Test: `test/features/home/temp_humid_setting_screen_test.dart`
 
@@ -208,7 +207,7 @@ test('보정 명령 본문', () async { /* fake TerraRestClient */ await repo.se
   - 보정 토글 켜기는 **화면 상태만** 바꾼다(S45). 보정 값 행 오른쪽 문구: 미저장 = "설정하기", 저장됨 = "측정값 −2℃"/"측정값 +1℃"(`formatCompact`).
   - 보정 토글 끄기 = D1 결정대로 `offset_c=0` 전송(확인 모달 없이, 실패 시 토글 원복 + `ControlFeedback`가 아닌 화면 스낵바 — 이 화면은 시트가 아니다).
   - 대상 기기가 없으면(세트에 사육장 없음) 빈 상태 + 이유 문구, 오프라인이면 `DeviceOfflineNotice` 재사용.
-  - 기존 `SetpointSettingTile`·`showSetpointSheet`는 지우지 않는다(사육장 탭 카드가 씀).
+  - 진입점은 온습도 상세 설정 아이콘(Task 6)과 알림 설정 행(Task 9) 두 곳뿐이다. `/env-settings`·`SetpointSettingTile`·`showSetpointSheet`는 건드리지 않는다(D3).
 - Acceptance: 위젯 테스트 — (1) 설정 없음 → "18℃ ~ 26℃", "40% ~ 80%" (2) 보정 토글 켬 → "설정하기" 행 등장, repository 호출 0회 (3) 저장된 보정 −2 → "측정값 -2℃" (4) 적정 온도 행 탭 → `kTempRangePath` push.
 
 - [ ] **Step 1: 실패 테스트** — Acceptance 4개를 `testWidgets`로(가짜 `DeviceSettingsRepository`·`Device` override)
