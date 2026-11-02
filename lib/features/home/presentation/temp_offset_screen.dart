@@ -386,10 +386,15 @@ class _MagnitudeRow extends StatelessWidget {
   }
 }
 
-/// 트랙을 슬라이더 폭 전체(Figma 200)에 그린다 — 기본 모양은 썸 반폭(26)씩 안쪽에
-/// 그려 트랙이 148로 줄어든다. 썸이 움직이는 범위는 기본 그대로(양끝 26 안쪽).
+/// 트랙을 썸이 움직이는 범위에 맞춰 그린다(Figma S19·S25): 최대(4.0)면 썸 오른쪽
+/// 끝 = 트랙 끝(회색이 비어져 나오지 않음), 최소(0.1)면 썸 왼쪽 끝이 트랙 시작에서
+/// 4 안쪽이라 빨간 채움이 조금 보인다. 기본 모양은 썸 중심 범위에만 트랙을 그려
+/// 양끝이 썸 밖으로 남는다.
 class _FullWidthTrackShape extends RoundedRectSliderTrackShape {
   const _FullWidthTrackShape();
+
+  static const double _thumbHalf = 26; // PillThumbShape 52 / 2
+  static const double _leadIn = 4;
 
   @override
   void paint(PaintingContext context, Offset offset,
@@ -402,16 +407,25 @@ class _FullWidthTrackShape extends RoundedRectSliderTrackShape {
       bool isDiscrete = false,
       bool isEnabled = false,
       double additionalActiveTrackHeight = 2}) {
+    final travel = getPreferredRect(
+        parentBox: parentBox,
+        offset: offset,
+        sliderTheme: sliderTheme,
+        isEnabled: isEnabled,
+        isDiscrete: isDiscrete);
     final h = sliderTheme.trackHeight ?? 6;
-    final top = offset.dy + (parentBox.size.height - h) / 2;
+    final top = travel.center.dy - h / 2;
+    // 둥근 트랙의 눈금 슬라이더는 썸 중심을 트랙 높이 절반(3)씩 더 안쪽에 둔다
+    // (Flutter `_RenderSlider`) — 썸 실제 이동 범위에 맞춘다.
+    final inset = h / 2;
+    final left = travel.left + inset - _thumbHalf - _leadIn;
+    final right = travel.right - inset + _thumbHalf;
     final radius = Radius.circular(h / 2);
     final canvas = context.canvas;
-    canvas.drawRRect(
-        RRect.fromLTRBR(
-            offset.dx, top, offset.dx + parentBox.size.width, top + h, radius),
+    canvas.drawRRect(RRect.fromLTRBR(left, top, right, top + h, radius),
         Paint()..color = sliderTheme.inactiveTrackColor!);
     canvas.drawRRect(
-        RRect.fromLTRBR(offset.dx, top, thumbCenter.dx, top + h, radius),
+        RRect.fromLTRBR(left, top, thumbCenter.dx, top + h, radius),
         Paint()..color = sliderTheme.activeTrackColor!);
   }
 }
