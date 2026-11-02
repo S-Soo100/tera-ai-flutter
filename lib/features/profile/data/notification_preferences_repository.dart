@@ -6,8 +6,9 @@ import 'package:hive/hive.dart';
 /// **저장처는 아직 로컬(Hive)이다**(2026-09-16 계획 C4 "저장처 결정 필요").
 /// 서버 `notification_preferences` 테이블과 `dispatch-push`의 사전 조회는
 /// 앱 팀 마이그레이션·서버 배포 뒤에 붙는다 — 그때까지 이 값은 기기 안에서만
-/// 유지되고 발송을 막지 못한다(RESULTS §C4). [marketingAgreedAt]은 광고성
-/// 정보 수신 동의 기록이라 켤 때마다 시각을 남긴다.
+/// 유지되고 발송을 막지 못한다(RESULTS §C4). 예외: 온습도 이탈 알림
+/// env_temp·env_humid만 서버에 있음(2026-11-02, `EnvAlertPrefsRepository`).
+/// [marketingAgreedAt]은 광고성 정보 수신 동의 기록이라 켤 때마다 시각을 남긴다.
 class NotificationPrefs {
   const NotificationPrefs({
     this.highlight = true,

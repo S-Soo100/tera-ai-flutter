@@ -444,4 +444,113 @@ void main() {
     await controller.open(messaging.initial!);
     expect(navigated, ['/env-detail']);
   });
+
+  group('env alert tap navigates, then selects its device', () {
+    late List<String> events;
+    late PushLifecycleController envController;
+    late Object? prepareError;
+    setUp(() {
+      events = [];
+      prepareError = null;
+      envController = PushLifecycleController(
+        messaging: messaging,
+        devices: devices,
+        preferences: MemoryPushPreferences(),
+        appVersion: () async => '0.165.0+452',
+        locale: () => 'ko',
+        findNotification: (id, userId) async => AppNotification.fromJson({
+          'id': id,
+          'user_id': userId,
+          'kind': 'env.alert.triggered',
+          'category': 'env',
+          'route': '/env-detail',
+          'title': '[저온 경고] 온도가 너무 낮아 개체가 위험할 수 있어요',
+          'body': '거실 사육장',
+          'data': <String, Object?>{
+            'device_id': 'dev-2',
+            'kind': 'env_temp_low'
+          },
+        }),
+        markRead: (id) async => events.add('read:$id'),
+        display: (_) async {},
+        navigate: (route) => events.add('navigate:$route'),
+        prepareOpen: (item) async {
+          events.add('prepare:${item.targetDeviceId}');
+          final error = prepareError;
+          if (error != null) throw error;
+        },
+        permissionChanged: (_) {},
+        reportError: (code) => events.add('error:$code'),
+      );
+    });
+    tearDown(() => envController.dispose());
+
+    test('navigate first, then select the device (no wait before moving)',
+        () async {
+      await envController.setUser('a');
+      await envController.open(const PushMessage(
+          notificationId: 'e1',
+          kind: 'env.alert.triggered',
+          route: '/env-detail'));
+      await pumpEventQueue();
+      expect(events, ['read:e1', 'navigate:/env-detail', 'prepare:dev-2']);
+    });
+
+    test('slow device lookup does not delay navigation', () async {
+      final gate = Completer<void>();
+      final slow = PushLifecycleController(
+        messaging: messaging,
+        devices: devices,
+        preferences: MemoryPushPreferences(),
+        appVersion: () async => '0.165.0+452',
+        locale: () => 'ko',
+        findNotification: envController.findNotification,
+        markRead: (id) async => events.add('read:$id'),
+        display: (_) async {},
+        navigate: (route) => events.add('navigate:$route'),
+        prepareOpen: (item) async {
+          await gate.future;
+          events.add('prepare:${item.targetDeviceId}');
+        },
+        permissionChanged: (_) {},
+        reportError: (code) => events.add('error:$code'),
+      );
+      addTearDown(slow.dispose);
+      await slow.setUser('a');
+      await slow.open(const PushMessage(
+          notificationId: 'e4',
+          kind: 'env.alert.triggered',
+          route: '/env-detail'));
+      expect(events, ['read:e4', 'navigate:/env-detail']);
+      gate.complete();
+      await pumpEventQueue();
+      expect(events.last, 'prepare:dev-2');
+    });
+
+    test('untrusted payload route falls back without selecting a device',
+        () async {
+      await envController.setUser('a');
+      await envController.open(const PushMessage(
+          notificationId: 'e2',
+          kind: 'env.alert.triggered',
+          route: '/home/routines'));
+      expect(events, ['read:e2', 'navigate:/notifications']);
+    });
+
+    test('prepare failure is reported and navigation still happens', () async {
+      prepareError = StateError('offline');
+      await envController.setUser('a');
+      await envController.open(const PushMessage(
+          notificationId: 'e3',
+          kind: 'env.alert.triggered',
+          route: '/env-detail'));
+      await pumpEventQueue();
+      expect(events, [
+        'read:e3',
+        'navigate:/env-detail',
+        'prepare:dev-2',
+        'error:open_target'
+      ]);
+    });
+  });
 }

@@ -58,8 +58,39 @@ import '../../features/my_cage/presentation/enclosure_settings_screen.dart';
 import '../../features/my_cage/presentation/env_settings_screen.dart';
 import '../../features/home/presentation/routine_settings_screen.dart';
 import '../../features/home/presentation/env_detail_screen.dart';
+import '../../features/home/presentation/env_range_setting_screen.dart';
+import '../../features/home/presentation/temp_humid_setting_screen.dart';
 import '../../shared/widgets/glass_dock.dart';
 import 'tab_branches.dart';
+
+/// 온습도 설정 묶음(Figma 1635:6166, v4). **최상위 라우트**다 — 온습도 상세의
+/// 자식이 아니라서 알림 설정에서 들어와도 뒤로 가기가 알림 설정으로 간다.
+/// 대상 기기는 경로의 `:deviceId`로 고정한다(편집 중 홈 세트가 바뀌어도 그 기기).
+const kTempHumidSettingPath = '/temp-humid-settings';
+
+/// 온습도 설정 화면 경로.
+String tempHumidSettingPath(String deviceId) =>
+    '$kTempHumidSettingPath/${Uri.encodeComponent(deviceId)}';
+
+/// 적정 온도·습도 설정 화면 경로(`…/temp`, `…/humid`).
+String tempHumidRangePath(String deviceId, EnvRangeKind kind) =>
+    '${tempHumidSettingPath(deviceId)}/${kind.name}';
+
+/// 온습도 설정 묶음 라우트. 앱 라우터와 화면 테스트가 같은 정의를 쓴다.
+GoRoute buildTempHumidSettingRoute() => GoRoute(
+      path: '$kTempHumidSettingPath/:deviceId',
+      builder: (context, state) =>
+          TempHumidSettingScreen(deviceId: state.pathParameters['deviceId']!),
+      // 보정값 설정(`offset`)은 Task 4에서 여기에 붙인다.
+      routes: [
+        for (final kind in EnvRangeKind.values)
+          GoRoute(
+            path: kind.name,
+            builder: (context, state) => EnvRangeSettingScreen(
+                deviceId: state.pathParameters['deviceId']!, kind: kind),
+          ),
+      ],
+    );
 
 /// 인증 상태 변경 시 redirect만 재평가 (GoRouter 재생성 방지)
 class _AuthChangeNotifier extends ChangeNotifier {
@@ -533,6 +564,8 @@ GoRouter buildAppRouter({
         path: '/env-settings',
         builder: (context, state) => const EnvSettingsScreen(),
       ),
+      // v4 온습도 설정 묶음 — 비공개(kPublicPaths 미등록), 기기별 설정이다.
+      buildTempHumidSettingRoute(),
     ],
   );
 }

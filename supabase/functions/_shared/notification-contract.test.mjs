@@ -147,3 +147,67 @@ test('accepts guard-skipped events with an optional guard object and rejects a n
     payload: { ...skipped.payload, outcome: 'failed' },
   }).status, 400);
 });
+
+// v4 온습도 이탈 푸시(terra-server docs/APP_ENV_ALERT_PUSH_2026-11-02.md §2.1).
+// device_key는 비어 있으면 키 자체가 빠진다 — undefined는 키 제거로 다룬다.
+function envEvent(overrides = {}) {
+  const payload = {
+    alert_id: '5ec3b4d1-0000-4000-8000-222222222222',
+    device_id: '7a1c0e2f-0000-4000-8000-333333333333',
+    device_key: 'terra-1a2b3c4d',
+    device_name: '거실 사육장',
+    enclosure_id: '9b2d1f3a-0000-4000-8000-444444444444',
+    kind: 'env_temp_high',
+    level: 'caution',
+    phase: 'started',
+    title: '[고온 주의] 적정 온도보다 +0.3℃',
+    value: 26.3,
+    threshold: 26.0,
+    ...overrides,
+  };
+  for (const key of Object.keys(payload)) {
+    if (payload[key] === undefined) delete payload[key];
+  }
+  return {
+    schema_version: 1,
+    event_id: `alert:${payload.alert_id}:${payload.phase}`,
+    type: 'env.alert.triggered',
+    occurred_at: '2026-11-02T05:02:03+00:00',
+    user_id: '4da7f48b-0000-4000-8000-111111111111',
+    payload,
+  };
+}
+
+test('env alert started 통과', () => assert.equal(validateNotificationEvent(envEvent()).ok, true));
+test('env alert reminder 통과', () => assert.equal(validateNotificationEvent(envEvent({ phase: 'reminder' })).ok, true));
+test('env alert level 오타 거절', () => assert.equal(validateNotificationEvent(envEvent({ level: 'warning' })).ok, false));
+test('env alert title 빈 값 거절', () => assert.equal(validateNotificationEvent(envEvent({ title: '' })).ok, false));
+test('device_key 없어도 통과', () => assert.equal(validateNotificationEvent(envEvent({ device_key: undefined })).ok, true));
+
+test('env alert는 kind 4종과 danger 등급을 받는다', () => {
+  for (const kind of ['env_temp_high', 'env_temp_low', 'env_humid_low', 'env_humid_high']) {
+    assert.equal(validateNotificationEvent(envEvent({ kind, level: 'danger' })).ok, true, kind);
+  }
+});
+
+test('env alert는 모르는 kind·phase와 필수 id 누락을 400으로 거절한다', () => {
+  for (const overrides of [
+    { kind: 'temp_high' },
+    { kind: 'env_light_low' },
+    { phase: 'resolved' },
+    { alert_id: undefined },
+    { device_id: '  ' },
+    { title: undefined },
+  ]) {
+    assert.equal(validateNotificationEvent(envEvent(overrides)).status, 400, JSON.stringify(overrides));
+  }
+});
+
+test('env alert 선택 텍스트 필드는 있으면 문자열이어야 한다', () => {
+  for (const field of ['device_key', 'device_name', 'enclosure_id']) {
+    assert.equal(validateNotificationEvent(envEvent({ [field]: 42 })).status, 400, field);
+    assert.equal(validateNotificationEvent(envEvent({ [field]: undefined })).ok, true, field);
+    assert.equal(validateNotificationEvent(envEvent({ [field]: '' })).ok, true, field);
+    assert.equal(validateNotificationEvent(envEvent({ [field]: null })).ok, true, field);
+  }
+});

@@ -10,6 +10,7 @@ const notificationTypes = new Set([
   'maintenance.water_tank',
   'safety.alert',
   'safety.recovered',
+  'env.alert.triggered',
 ]);
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -107,6 +108,31 @@ function validateDeviceEvent(type, payload) {
   return null;
 }
 
+// v4 온습도 이탈 푸시(terra-server docs/APP_ENV_ALERT_PUSH_2026-11-02.md §2).
+// level은 caution/danger다(alerts.severity의 warning/critical이 아님). value·
+// threshold는 앱 문구에 쓰지 않으므로 검사하지 않는다 — 제목은 payload.title.
+const envAlertKinds = new Set(['env_temp_high', 'env_temp_low', 'env_humid_low', 'env_humid_high']);
+const envAlertLevels = new Set(['caution', 'danger']);
+const envAlertPhases = new Set(['started', 'reminder']);
+const envAlertOptionalTextFields = ['device_key', 'device_name', 'enclosure_id'];
+
+function validateEnvAlertEvent(payload) {
+  if (!requireText(payload, ['alert_id', 'device_id', 'kind', 'level', 'phase', 'title'])) {
+    return 'env alert payload is incomplete';
+  }
+  if (!envAlertKinds.has(payload.kind)) return 'env alert kind is unsupported';
+  if (!envAlertLevels.has(payload.level)) return 'env alert level must be caution or danger';
+  if (!envAlertPhases.has(payload.phase)) return 'env alert phase must be started or reminder';
+  // 빈 문자열은 통과시킨다 — 이름 없는 사육장 때문에 푸시가 400으로 버려지면
+  // 안 된다. 트리거가 빈 device_name을 '사육장'으로 채운다.
+  for (const field of envAlertOptionalTextFields) {
+    if (payload[field] !== undefined && payload[field] !== null && typeof payload[field] !== 'string') {
+      return `env alert ${field} must be a string when present`;
+    }
+  }
+  return null;
+}
+
 function validatePayload(type, payload) {
   if (type.startsWith('device.action.')) {
     return validateDeviceEvent(type, payload);
@@ -127,6 +153,9 @@ function validatePayload(type, payload) {
     return payload.state === expectedState
       ? null
       : 'safety type and state must match';
+  }
+  if (type === 'env.alert.triggered') {
+    return validateEnvAlertEvent(payload);
   }
   if (type === 'community.comment') {
     return requireText(payload, ['post_id', 'comment_id'])

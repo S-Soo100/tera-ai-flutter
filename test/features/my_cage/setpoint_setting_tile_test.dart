@@ -25,7 +25,12 @@ class _FakeRepo implements DeviceSettingsRepository {
 
   @override
   Future<DeviceSettings> patch(String deviceId,
-      {double? targetTempC, double? targetHumidityPct}) async {
+      {double? targetTempC,
+      double? targetHumidityPct,
+      double? targetTempMin,
+      double? targetTempMax,
+      double? targetHumidMin,
+      double? targetHumidMax}) async {
     calls.add('patch:$deviceId:t=$targetTempC:h=$targetHumidityPct');
     if (fail) throw Exception('boom');
     current = DeviceSettings(

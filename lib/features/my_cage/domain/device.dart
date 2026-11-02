@@ -1,3 +1,4 @@
+import '../../../shared/domain/num_format.dart';
 import 'lcd_text.dart';
 
 /// Supabase `devices` row 매핑.
@@ -20,6 +21,19 @@ class Device {
   /// 2026-10-07 서버 회신).
   final DeviceLcdText lcd;
 
+  /// 기기가 **지금 적용 중인** 온도 보정값(`devices.temp_offset_c`, ℃).
+  /// 기기가 보내는 `t_a`는 이미 보정된 값이고 원래 측정값 = `t_a − 이 값`
+  /// (서버 `handlers.py`, `docs/MQTT.md`). 펌웨어 빌드 기본은 −1.5℃.
+  ///
+  /// null = 모름(구 펌웨어·미보고). 숫자가 아니거나 기기 명령 허용 범위
+  /// ±10.0(서버 `TEMP_OFFSET_LIMIT_C`) 밖이면 믿을 수 없는 값이라 null로 둔다.
+  /// 이 값은 `deviceListProvider` 1회 조회에서 온다 — 저장 후 갱신은 보정
+  /// 화면이 맡는다.
+  final double? tempOffsetC;
+
+  /// 기기 명령 `set_temp_offset` 허용 범위(서버 `TEMP_OFFSET_LIMIT_C`).
+  static const double tempOffsetLimitC = 10.0;
+
   const Device({
     required this.id,
     required this.ownerId,
@@ -30,6 +44,7 @@ class Device {
     this.hardwareId,
     this.capabilities,
     this.lcd = DeviceLcdText.unknown,
+    this.tempOffsetC,
   });
 
   /// LED 밝기(PWM) 조절이 되는 보드인가. 릴레이 보드는 `brightness`를 무시하고
@@ -42,6 +57,12 @@ class Device {
 
   /// `relay` / `mosfet` / null(미보고).
   String? get boardType => capabilities?['board'] as String?;
+
+  static double? _parseTempOffset(Object? raw) {
+    final v = parseDouble(raw);
+    if (v == null || !v.isFinite) return null;
+    return v.abs() > tempOffsetLimitC ? null : v;
+  }
 
   factory Device.fromJson(Map<String, dynamic> j) {
     final caps = j['capabilities'];
@@ -57,6 +78,7 @@ class Device {
           : null,
       capabilities: caps is Map ? caps.cast<String, dynamic>() : null,
       lcd: DeviceLcdText.fromJson(j),
+      tempOffsetC: _parseTempOffset(j['temp_offset_c']),
     );
   }
 }

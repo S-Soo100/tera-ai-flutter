@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,9 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../home/presentation/home_set_providers.dart';
+import '../domain/app_notification.dart';
+import '../domain/notification_open_target.dart';
 import 'notification_providers.dart';
 import 'push_permission_prompt.dart';
 
@@ -108,9 +113,7 @@ class NotificationCenterScreen extends ConsumerWidget {
                                             userId) {
                                       return;
                                     }
-                                    if (item.safeRoute != '/notifications') {
-                                      context.push(item.safeRoute);
-                                    }
+                                    await _open(context, ref, item, userId);
                                   }),
                         );
                       },
@@ -119,6 +122,28 @@ class NotificationCenterScreen extends ConsumerWidget {
         ]),
       ),
     );
+  }
+
+  /// 연 뒤, 온습도 이탈이면 그 사육장으로 홈 세트를 옮긴다(푸시 탭과 같은 규칙,
+  /// `selectNotificationDevice`). 기기 목록 조회를 기다리지 않고 먼저 이동한다 —
+  /// 온습도 상세는 홈 세트를 지켜보므로 옮겨지는 순간 그 사육장으로 바뀐다.
+  /// 내 기기 목록에 없는 기기면 이동만 한다.
+  Future<void> _open(BuildContext context, WidgetRef ref, AppNotification item,
+      String? userId) async {
+    if (item.safeRoute == '/notifications') return;
+    if (!context.mounted || ref.read(currentUserProvider)?.id != userId) return;
+    context.push(item.safeRoute);
+    unawaited(selectNotificationDevice(item,
+        myDeviceIds: () async => (await ref.read(homeDeviceSetsProvider.future))
+            .map((set) => set.device?.id)
+            .whereType<String>(),
+        select: (id) {
+          if (!context.mounted ||
+              ref.read(currentUserProvider)?.id != userId) {
+            return;
+          }
+          ref.read(selectedHomeDeviceIdProvider.notifier).state = id;
+        }));
   }
 
   Future<void> _action(BuildContext context, WidgetRef ref, String key,
@@ -144,7 +169,8 @@ class NotificationCenterScreen extends ConsumerWidget {
       'community',
       'notice',
       'maintenance',
-      'safety'
+      'safety',
+      'env'
     };
     return 'notifications_category_${categories.contains(category) ? category : 'other'}'
         .tr();

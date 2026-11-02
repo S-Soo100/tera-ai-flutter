@@ -5,12 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import '../../../shared/services/local_notifications.dart';
+import '../../home/presentation/home_set_providers.dart';
 import '../../my_cage/data/device_wifi_name_store.dart';
 import '../../my_cage/data/lcd_text_store.dart';
 import '../../profile/presentation/profile_providers.dart';
 import '../data/push_device_repository.dart';
 import '../data/push_messaging_service.dart';
 import '../data/push_preferences.dart';
+import '../domain/app_notification.dart';
+import '../domain/notification_open_target.dart';
 import '../domain/push_lifecycle_controller.dart';
 import 'notification_providers.dart';
 
@@ -47,7 +50,7 @@ final pushLifecycleControllerProvider =
       // Negative IDs never cancel/replace the existing positive fan timer IDs.
       id: -1 - (message.notificationId.hashCode & 0x3fffffff),
       title: message.title, body: message.body,
-      safety: message.kind.startsWith('safety.'),
+      safety: usesSafetyChannel(message.kind),
       payload: jsonEncode({
         'notification_id': message.notificationId,
         'kind': message.kind,
@@ -62,6 +65,12 @@ final pushLifecycleControllerProvider =
       await const HiveDeviceWifiNameStore().clearAll();
       await const HiveLcdTextStore().clearAll();
     },
+    prepareOpen: (item) => selectNotificationDevice(item,
+        myDeviceIds: () async => (await ref.read(homeDeviceSetsProvider.future))
+            .map((set) => set.device?.id)
+            .whereType<String>(),
+        select: (id) =>
+            ref.read(selectedHomeDeviceIdProvider.notifier).state = id),
     navigate: (route) {
       final router = ref.read(routerProvider);
       if (router.routeInformationProvider.value.uri.path != route) {

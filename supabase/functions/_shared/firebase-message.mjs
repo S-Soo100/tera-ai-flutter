@@ -1,3 +1,10 @@
+// 높은 중요도 채널(vivanaut_safety)을 쓰는 알림. 앱 로컬 표시도 같은 규칙
+// (lib/features/notification/domain/app_notification.dart usesSafetyChannel).
+export function usesSafetyChannel(kind) {
+  const value = String(kind);
+  return value.startsWith('safety.') || value === 'env.alert.triggered';
+}
+
 export function buildFirebaseMessage({
   token,
   notificationId,
@@ -21,7 +28,7 @@ export function buildFirebaseMessage({
       android: {
         priority: 'high',
         notification: {
-          channel_id: String(kind).startsWith('safety.')
+          channel_id: usesSafetyChannel(kind)
             ? 'vivanaut_safety'
             : 'vivanaut_default',
         },
