@@ -55,8 +55,8 @@ void main() {
     expect(a.isOpen, isTrue);
     expect(a.triggeredAt.isUtc, isFalse); // 로컬로 바꿔 둔다.
 
-    final humid = EnvAlert.fromRow(_row(
-        kind: 'env_humid_low', message: '[건조 주의] 적정 습도보다 -6%p'))!;
+    final humid = EnvAlert.fromRow(
+        _row(kind: 'env_humid_low', message: '[건조 주의] 적정 습도보다 -6%p'))!;
     expect(humid.title, '적정 습도보다 -6%p'); // %p → % 바꾸지 않는다(D4).
     expect(humid.metric, EnvAlertMetric.humid);
   });
@@ -88,8 +88,8 @@ void main() {
   });
 
   test('주의→경고 전환이 같은 시각이면 경고를 남긴다(G8)', () {
-    final caution = EnvAlert.fromRow(_row(
-        id: 'c', kind: 'env_temp_low', level: 'caution'))!;
+    final caution = EnvAlert.fromRow(
+        _row(id: 'c', kind: 'env_temp_low', level: 'caution'))!;
     final danger = EnvAlert.fromRow(_row(
         id: 'd',
         kind: 'env_temp_low',
@@ -130,5 +130,83 @@ void main() {
     expect(key('env_temp_high', 'caution'), 'env_alert_hint_temp_high');
     expect(key('env_humid_low', 'caution'), 'env_alert_hint_humid_low');
     expect(key('env_humid_high', 'caution'), 'env_alert_hint_humid_high');
+  });
+
+  group('습기 사이클 — 환기 지연·분무 공백(서버 Stage O, Figma A26·A36)', () {
+    test('vent_delay_parsed', () {
+      final a = EnvAlert.fromRow(
+          _row(kind: 'env_vent_delay', message: '[환기 지연] 분무 후 건기 미도달'))!;
+      expect(a.metric, EnvAlertMetric.humid);
+      expect(a.chip, '환기 지연');
+      expect(a.title, '분무 후 건기 미도달');
+      expect(a.isHumidCycle, isTrue);
+      expect(a.hintKey, 'env_alert_hint_vent_delay');
+    });
+
+    test('mist_gap_parsed', () {
+      final a = EnvAlert.fromRow(
+          _row(kind: 'env_mist_gap', message: '[건조 주의] 분무 필요'))!;
+      expect(a.metric, EnvAlertMetric.humid);
+      expect(a.chip, '건조 주의');
+      expect(a.title, '분무 필요');
+      expect(a.isHumidCycle, isTrue);
+      expect(a.hintKey, 'env_alert_hint_mist_gap');
+      expect(
+          EnvAlert.fromRow(_row(kind: 'env_humid_low'))!.isHumidCycle, isFalse);
+    });
+
+    test('missing_level_cycle_kind_is_caution', () {
+      for (final ctx in [
+        {'rule': 'v4'},
+        {'rule': 'v4', 'level': 'warning'},
+      ]) {
+        final a = EnvAlert.fromRow(_row(kind: 'env_vent_delay', context: ctx))!;
+        expect(a.level, EnvAlertLevel.caution, reason: '$ctx');
+      }
+      expect(
+          EnvAlert.fromRow(_row(kind: 'env_mist_gap', level: 'danger'))!.level,
+          EnvAlertLevel.danger);
+    });
+
+    test('unknown_level_legacy_kind_dropped', () {
+      for (final ctx in [
+        {'rule': 'v4'},
+        {'rule': 'v4', 'level': 'warning'},
+      ]) {
+        expect(
+            EnvAlert.fromRow(_row(kind: 'env_humid_low', context: ctx)), isNull,
+            reason: '$ctx');
+      }
+    });
+
+    test('humid_and_cycle_both_shown — 온도 → 습도 → 사이클', () {
+      final cycle = EnvAlert.fromRow(_row(id: 'g', kind: 'env_mist_gap'))!;
+      final humid = EnvAlert.fromRow(_row(id: 'h', kind: 'env_humid_low'))!;
+      final temp = EnvAlert.fromRow(_row(id: 't'))!;
+      expect(
+          EnvAlert.openLatestPerMetric([cycle, humid, temp]).map((a) => a.id),
+          ['t', 'h', 'g']);
+    });
+
+    test('cycle_latest_only', () {
+      final vent = EnvAlert.fromRow(_row(
+          id: 'v',
+          kind: 'env_vent_delay',
+          triggeredAt: '2026-11-02T05:00:00+00:00'))!;
+      final gap = EnvAlert.fromRow(_row(
+          id: 'g',
+          kind: 'env_mist_gap',
+          triggeredAt: '2026-11-02T06:00:00+00:00'))!;
+      expect(EnvAlert.openLatestPerMetric([vent, gap]).map((a) => a.id), ['g']);
+    });
+
+    test('danger_first_across_slots', () {
+      final cycle = EnvAlert.fromRow(_row(id: 'g', kind: 'env_vent_delay'))!;
+      final humidDanger = EnvAlert.fromRow(
+          _row(id: 'h', kind: 'env_humid_high', level: 'danger'))!;
+      expect(
+          EnvAlert.openLatestPerMetric([cycle, humidDanger]).map((a) => a.id),
+          ['h', 'g']);
+    });
   });
 }

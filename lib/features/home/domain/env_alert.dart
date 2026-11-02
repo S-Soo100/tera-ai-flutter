@@ -45,14 +45,29 @@ class EnvAlert {
 
   bool get isOpen => resolvedAt == null;
 
+  /// 습기 사이클 알림(환기 지연·분무 공백, 서버 Stage O — Figma A26·A36).
+  /// 습도 범위 이탈과 다른 칸이라 서로 가리지 않는다([openLatestPerMetric]).
+  bool get isHumidCycle => _humidCycleKinds.contains(kind);
+
   static const Map<String, EnvAlertMetric> _metricByKind = {
     'env_temp_high': EnvAlertMetric.temp,
     'env_temp_low': EnvAlertMetric.temp,
     'env_humid_low': EnvAlertMetric.humid,
     'env_humid_high': EnvAlertMetric.humid,
+    'env_vent_delay': EnvAlertMetric.humid,
+    'env_mist_gap': EnvAlertMetric.humid,
   };
 
-  static final RegExp _message = RegExp(r'^\s*\[([^\]]*)\]\s*(.*)$', dotAll: true);
+  /// kind 이름은 서버 Stage O pre-plan 기준(미확정 — 계획
+  /// `2026-11-03-env-humid-cycle-alerts-app.md` G1). 바뀌면 여기와 위 표,
+  /// 수신 끄기 SQL(`notification_event_after_insert`)만 고친다.
+  static const Set<String> _humidCycleKinds = {
+    'env_vent_delay',
+    'env_mist_gap',
+  };
+
+  static final RegExp _message =
+      RegExp(r'^\s*\[([^\]]*)\]\s*(.*)$', dotAll: true);
 
   /// v4 행만 통과시킨다. 아니면(다른 kind·rule·등급·필수 값 누락) null.
   static EnvAlert? fromRow(Map<String, dynamic> row) {
@@ -64,10 +79,13 @@ class EnvAlert {
     final context = _contextOf(row['context']);
     if (context == null || context['rule'] != 'v4') return null;
     final level = switch (context['level']) {
-      'caution' => EnvAlertLevel.caution,
-      'danger' => EnvAlertLevel.danger,
-      _ => null,
-    };
+          'caution' => EnvAlertLevel.caution,
+          'danger' => EnvAlertLevel.danger,
+          _ => null,
+        } ??
+        // 습기 사이클은 서버 pre-plan에 severity만 있고 level이 정해지지
+        // 않았다 — 계약이 조금 달라도 카드가 사라지지 않게 주의로 본다(D1).
+        (_humidCycleKinds.contains(kind) ? EnvAlertLevel.caution : null);
     // 서버 계약상 v4 행은 등급이 늘 있다. 모르는 등급은 설명 문구·순서를
     // 정할 수 없어 그리지 않는다.
     if (level == null) return null;
@@ -107,24 +125,29 @@ class EnvAlert {
     return null;
   }
 
-  /// 화면에 그릴 열린 행 — **지표별 `triggeredAt` 최신 1개**(G8: 주의→경고는
-  /// 기존 행 종료 + 새 행이라 잠깐 둘 다 열려 보일 수 있다. 시각이 같으면
-  /// 경고를 남긴다). 순서는 경고 먼저, 같은 등급이면 온도 → 습도.
+  /// 화면에 그릴 열린 행 — **칸(온도 / 습도 범위 이탈 / 습기 사이클)별
+  /// `triggeredAt` 최신 1개**(G8: 주의→경고는 기존 행 종료 + 새 행이라 잠깐
+  /// 둘 다 열려 보일 수 있다. 시각이 같으면 경고를 남긴다). 순서는 경고 먼저,
+  /// 같은 등급이면 온도 → 습도 → 사이클. 습도와 사이클을 나눈 건 "지금
+  /// 건조함"과 "15시간째 분무 없음"이 서로 가리지 않게(2026-11-03 사용자 결정).
   static List<EnvAlert> openLatestPerMetric(Iterable<EnvAlert> alerts) {
-    final latest = <EnvAlertMetric, EnvAlert>{};
+    final latest = <int, EnvAlert>{};
     for (final a in alerts) {
       if (!a.isOpen) continue;
-      final cur = latest[a.metric];
-      if (cur == null || _newer(a, cur)) latest[a.metric] = a;
+      final cur = latest[a._slot];
+      if (cur == null || _newer(a, cur)) latest[a._slot] = a;
     }
     final list = latest.values.toList()
       ..sort((a, b) {
         final byLevel = b.level.index.compareTo(a.level.index);
         if (byLevel != 0) return byLevel;
-        return a.metric.index.compareTo(b.metric.index);
+        return a._slot.compareTo(b._slot);
       });
     return list;
   }
+
+  /// 칸 번호 — 온도 0, 습도 범위 이탈 1, 습기 사이클 2.
+  int get _slot => isHumidCycle ? 2 : metric.index;
 
   static bool _newer(EnvAlert a, EnvAlert b) {
     final t = a.triggeredAt.compareTo(b.triggeredAt);
@@ -136,10 +159,13 @@ class EnvAlert {
 
   /// 설명 한 줄의 ko.json 키 — 노션 v4 1-5 설명 열을 `kind + level`로 고정 매핑.
   String get hintKey => switch ((kind, level)) {
-        ('env_temp_low', EnvAlertLevel.danger) => 'env_alert_hint_temp_low_danger',
+        ('env_temp_low', EnvAlertLevel.danger) =>
+          'env_alert_hint_temp_low_danger',
         ('env_temp_low', _) => 'env_alert_hint_temp_low_caution',
         ('env_temp_high', _) => 'env_alert_hint_temp_high',
         ('env_humid_low', _) => 'env_alert_hint_humid_low',
+        ('env_vent_delay', _) => 'env_alert_hint_vent_delay',
+        ('env_mist_gap', _) => 'env_alert_hint_mist_gap',
         _ => 'env_alert_hint_humid_high',
       };
 

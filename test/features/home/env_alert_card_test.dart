@@ -44,28 +44,27 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  final humidCaution = _alert(
-      'h', 'env_humid_low', 'caution', '[건조 주의] 적정 습도보다 -5%p');
-  final tempDanger = _alert('t', 'env_temp_low', 'danger',
-      '[저온 경고] 온도가 너무 낮아 개체가 위험할 수 있어요');
+  final humidCaution =
+      _alert('h', 'env_humid_low', 'caution', '[건조 주의] 적정 습도보다 -5%p');
+  final tempDanger =
+      _alert('t', 'env_temp_low', 'danger', '[저온 경고] 온도가 너무 낮아 개체가 위험할 수 있어요');
 
   testWidgets('열린 행 0개면 카드 없음', (tester) async {
     await pump(tester, const []);
     expect(find.byKey(EnvAlertCard.cardKey), findsNothing);
   });
 
-  testWidgets('경고가 주의보다 위 — 칩·제목은 message 그대로, 설명은 고정 문구',
-      (tester) async {
+  testWidgets('경고가 주의보다 위 — 칩·제목은 message 그대로, 설명은 고정 문구', (tester) async {
     await pump(
         tester, EnvAlert.openLatestPerMetric([humidCaution, tempDanger]));
-    final dangerRow = tester.getRect(find.byKey(EnvAlertCard.rowKey(tempDanger)));
+    final dangerRow =
+        tester.getRect(find.byKey(EnvAlertCard.rowKey(tempDanger)));
     final cautionRow =
         tester.getRect(find.byKey(EnvAlertCard.rowKey(humidCaution)));
     expect(dangerRow.top, lessThan(cautionRow.top));
 
     expect(find.text('저온 경고'), findsOneWidget);
-    expect(find.text(keepAllWords('온도가 너무 낮아 개체가 위험할 수 있어요')),
-        findsOneWidget);
+    expect(find.text(keepAllWords('온도가 너무 낮아 개체가 위험할 수 있어요')), findsOneWidget);
     expect(find.text(keepAllWords('즉시 온도를 올려주세요')), findsOneWidget);
     expect(find.text('건조 주의'), findsOneWidget);
     // %p를 %로 바꾸거나 숫자를 다시 계산하지 않는다(D4).
@@ -78,10 +77,47 @@ void main() {
   testWidgets('칩 색 — 온도는 tempAccent, 습도는 humidAccent', (tester) async {
     await pump(tester, [tempDanger, humidCaution]);
     final glass = GlassPalette.light;
-    expect(tester.widget<Text>(find.text('저온 경고')).style!.color,
-        glass.tempAccent);
+    expect(
+        tester.widget<Text>(find.text('저온 경고')).style!.color, glass.tempAccent);
     expect(tester.widget<Text>(find.text('건조 주의')).style!.color,
         glass.humidAccent);
+  });
+
+  final tempHigh =
+      _alert('th', 'env_temp_high', 'caution', '[고온 주의] 적정 온도보다 +5.2℃');
+  final vent = _alert('v', 'env_vent_delay', 'caution', '[환기 지연] 분무 후 건기 미도달');
+  final mistGap = _alert('g', 'env_mist_gap', 'caution', '[건조 주의] 분무 필요');
+
+  testWidgets('A26 — 사이클 줄: 습도 칩, 고정 설명, 온도 줄 아래', (tester) async {
+    await pump(tester, EnvAlert.openLatestPerMetric([vent, tempHigh]));
+    final glass = GlassPalette.light;
+    expect(tester.widget<Text>(find.text('환기 지연')).style!.color,
+        glass.humidAccent);
+    expect(find.text(keepAllWords('분무 후 건기 미도달')), findsOneWidget);
+    expect(
+        find.text(
+            keepAllWords('분무 후 6시간이 지났지만 사육장이 충분히 마르지 않았습니다. 환기를 점검해 주세요')),
+        findsOneWidget);
+    expect(tester.getRect(find.byKey(EnvAlertCard.rowKey(tempHigh))).top,
+        lessThan(tester.getRect(find.byKey(EnvAlertCard.rowKey(vent))).top));
+    // 높이 158(Figma)은 실제 글꼴이 필요해 mini13 캡처로 대조한다 — 테스트
+    // 글꼴은 글자마다 정사각형이라 설명이 더 많이 줄바꿈된다.
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('건조 + 분무 공백 + 온도 = 세 줄, 온도 → 습도 → 사이클', (tester) async {
+    await pump(tester,
+        EnvAlert.openLatestPerMetric([mistGap, humidCaution, tempHigh]));
+    final tops = [
+      for (final a in [tempHigh, humidCaution, mistGap])
+        tester.getRect(find.byKey(EnvAlertCard.rowKey(a))).top
+    ];
+    expect(tops[0], lessThan(tops[1]));
+    expect(tops[1], lessThan(tops[2]));
+    expect(find.text('건조 주의'), findsNWidgets(2));
+    expect(find.text(keepAllWords('마지막 분무 후 15시간이 지났지만 다음 분무가 감지되지 않았습니다')),
+        findsOneWidget);
+    expect(find.byType(Divider), findsNWidgets(2));
   });
 
   testWidgets('한 줄이면 구분선 없음, Figma 높이 69', (tester) async {

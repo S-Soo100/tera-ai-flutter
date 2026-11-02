@@ -27,3 +27,17 @@
 
 - 실제 Supabase(branch·운영)에서의 적용, `notification-ingest`·`dispatch-push` 재배포 후 HTTP 202·FCM 발송.
 - 앱 PostgREST upsert 요청이 위 SQL과 같은 결과를 내는지(로컬엔 PostgREST 없음).
+
+## 습기 사이클 kind 수신 끄기 — `20261103000000_notification_env_alert_humid_cycle.sql` (2026-11-03)
+
+계획 `docs/superpowers/plans/2026-11-03-env-humid-cycle-alerts-app.md` Task 3. 같은 바탕(위 준비 + 20261102 두 파일) 위에 새 마이그레이션을 얹었다. 바탕 함수의 `md5(prosrc)` = `9584664ac29955c9e825f1cb85564c98` — **운영과 같다**(같은 날 운영 조회). 새 파일과 바탕의 차이는 수신 끄기 CASE의 습도 분기 하나(diff 확인).
+
+| # | 시나리오 | 기대 | 결과 |
+|---|---|---|---|
+| a | 습도 끔 사용자에게 `env_vent_delay` | 기록 1 · outbox 0 | ✅ 1 · 0 |
+| b | 습도 끔 사용자에게 `env_mist_gap` | 1 · 0 | ✅ 1 · 0 |
+| c | 설정 행 없는 사용자에게 `env_vent_delay` | 1 · 1 | ✅ 1 · 1 |
+| d | 습도 끔·온도 켬 사용자에게 `env_temp_high` | 1 · 1 | ✅ 1 · 1 |
+| e1 | 습도 끔 사용자에게 `env_humid_low`(회귀) | 1 · 0 | ✅ 1 · 0 |
+| e2 | `safety.alert`(회귀) | 1 · 1 | ✅ 1 · 1 |
+| f | 운영 원문 대비 diff | 습도 분기만 | ✅ |
