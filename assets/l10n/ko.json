@@ -1450,5 +1450,12 @@
   "env_alert_hint_temp_low_caution": "난방 장치 사용을 추천드려요",
   "env_alert_hint_temp_high": "환기팬 또는 냉각팬 사용을 추천드려요",
   "env_alert_hint_humid_low": "사육장에 수분을 보충해 주세요",
-  "env_alert_hint_humid_high": "환기 상태를 점검해 주세요"
+  "env_alert_hint_humid_high": "환기 상태를 점검해 주세요",
+  "env_report_chip_temp": "온도",
+  "env_report_chip_humid": "습도",
+  "env_report_status_danger": "경고",
+  "env_report_status_caution": "주의",
+  "env_report_status_normal": "적정",
+  "env_report_load_failed": "분석을 불러오지 못했어요",
+  "env_report_window": "{} ~ {} 분석"
 }
