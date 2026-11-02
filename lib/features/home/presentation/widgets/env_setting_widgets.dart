@@ -89,10 +89,13 @@ class EnvSettingScaffold extends StatelessWidget {
             left: 12,
             right: 12,
             bottom: ctaBottom - _ctaHeight,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              cta!,
-              SizedBox(height: _ctaHeight, child: secondary),
-            ]),
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  cta!,
+                  SizedBox(height: _ctaHeight, child: secondary),
+                ]),
           ),
       ]),
     );

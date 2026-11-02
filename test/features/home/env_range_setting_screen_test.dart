@@ -135,6 +135,9 @@ void main() {
     expect(_stepperValue(tester, EnvRangeSettingScreen.maxStepperKey), '26');
     expect(find.byKey(EnvRangeSettingScreen.discardKey), findsNothing);
     expect(find.text('적정 온도 가이드'), findsOneWidget);
+    // 하단 고정 저장 버튼 — Figma CTA (12,695) 369×56(안전영역 0이면 아래 101).
+    expect(tester.getRect(find.byKey(EnvRangeSettingScreen.saveKey)),
+        const Rect.fromLTWH(12, 695, 369, 56));
   });
 
   testWidgets('(1) 최대 29에서 + 비활성', (tester) async {

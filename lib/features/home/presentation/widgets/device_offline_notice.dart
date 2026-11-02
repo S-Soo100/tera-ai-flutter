@@ -16,14 +16,20 @@ import '../home_control_providers.dart';
 ///
 /// 온라인이면 아무것도 그리지 않는다 — 정상일 때 자리를 먹는 배너는 곧 안 읽힌다.
 class DeviceOfflineNotice extends ConsumerWidget {
-  const DeviceOfflineNotice({super.key});
+  const DeviceOfflineNotice({super.key, this.deviceId});
+
+  /// 볼 기기. null이면 홈 세트의 기기(`currentDeviceIdProvider`). 경로로 기기를
+  /// 고정한 화면(온습도 설정 등)은 그 기기 id를 넘긴다 — 홈 세트가 바뀌어도
+  /// 보고 있는 기기의 연결을 알린다.
+  final String? deviceId;
 
   static const noticeKey = Key('device_offline_notice');
   static const checkingKey = Key('device_link_checking_notice');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final deviceId = ref.watch(currentDeviceIdProvider).valueOrNull;
+    final deviceId =
+        this.deviceId ?? ref.watch(currentDeviceIdProvider).valueOrNull;
     if (deviceId == null) return const SizedBox.shrink();
     final link = ref.watch(moduleLinkProvider(deviceId));
     if (link == ModuleLink.online) return const SizedBox.shrink();

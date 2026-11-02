@@ -59,6 +59,7 @@ import '../../features/my_cage/presentation/env_settings_screen.dart';
 import '../../features/home/presentation/routine_settings_screen.dart';
 import '../../features/home/presentation/env_detail_screen.dart';
 import '../../features/home/presentation/env_range_setting_screen.dart';
+import '../../features/home/presentation/temp_humid_setting_screen.dart';
 import '../../shared/widgets/glass_dock.dart';
 import 'tab_branches.dart';
 
@@ -78,15 +79,9 @@ String tempHumidRangePath(String deviceId, EnvRangeKind kind) =>
 /// 온습도 설정 묶음 라우트. 앱 라우터와 화면 테스트가 같은 정의를 쓴다.
 GoRoute buildTempHumidSettingRoute() => GoRoute(
       path: '$kTempHumidSettingPath/:deviceId',
-      // 온습도 설정 화면 자체는 Task 3에서 붙인다 — 그 전까지 부모 경로로
-      // 들어오면 적정 온도 설정으로 보낸다(진입점이 아직 없다).
-      redirect: (context, state) {
-        final id = state.pathParameters['deviceId'];
-        if (id == null) return null;
-        return state.uri.path == tempHumidSettingPath(id)
-            ? tempHumidRangePath(id, EnvRangeKind.temp)
-            : null;
-      },
+      builder: (context, state) =>
+          TempHumidSettingScreen(deviceId: state.pathParameters['deviceId']!),
+      // 보정값 설정(`offset`)은 Task 4에서 여기에 붙인다.
       routes: [
         for (final kind in EnvRangeKind.values)
           GoRoute(
