@@ -182,7 +182,9 @@ class EnvRangeSettingScreen extends ConsumerWidget {
             label: 'env_range_save'.tr(),
             onPressed: canSave ? () => _save(context, ref, current) : null),
         secondary: dirty && !draft.saving
-            ? _DiscardButton(
+            ? EnvSettingTextButton(
+                key: discardKey,
+                label: 'env_range_discard'.tr(),
                 onPressed: () =>
                     ref.read(envRangeDraftProvider(target).notifier).discard())
             : null,
@@ -312,34 +314,5 @@ class EnvRangeSettingScreen extends ConsumerWidget {
       messenger
           .showSnackBar(SnackBar(content: Text('env_range_save_failed'.tr())));
     }
-  }
-}
-
-/// 변경 사항 취소(S10 TextButton 369×56 r12) — 18/600 행간 28 `#C00306`.
-class _DiscardButton extends StatelessWidget {
-  const _DiscardButton({required this.onPressed});
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final glass = context.glass;
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: TextButton(
-        key: EnvRangeSettingScreen.discardKey,
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-            foregroundColor: glass.navSelected,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12))),
-        child: Text('env_range_discard'.tr(),
-            style: envSettingText(context,
-                size: 18,
-                weight: FontWeight.w600,
-                lineHeight: 28,
-                color: glass.navSelected)),
-      ),
-    );
   }
 }

@@ -60,6 +60,7 @@ import '../../features/home/presentation/routine_settings_screen.dart';
 import '../../features/home/presentation/env_detail_screen.dart';
 import '../../features/home/presentation/env_range_setting_screen.dart';
 import '../../features/home/presentation/temp_humid_setting_screen.dart';
+import '../../features/home/presentation/temp_offset_screen.dart';
 import '../../shared/widgets/glass_dock.dart';
 import 'tab_branches.dart';
 
@@ -76,13 +77,21 @@ String tempHumidSettingPath(String deviceId) =>
 String tempHumidRangePath(String deviceId, EnvRangeKind kind) =>
     '${tempHumidSettingPath(deviceId)}/${kind.name}';
 
+/// 보정값 설정(Figma 1635:5551).
+String tempHumidOffsetPath(String deviceId) =>
+    '${tempHumidSettingPath(deviceId)}/offset';
+
 /// 온습도 설정 묶음 라우트. 앱 라우터와 화면 테스트가 같은 정의를 쓴다.
 GoRoute buildTempHumidSettingRoute() => GoRoute(
       path: '$kTempHumidSettingPath/:deviceId',
       builder: (context, state) =>
           TempHumidSettingScreen(deviceId: state.pathParameters['deviceId']!),
-      // 보정값 설정(`offset`)은 Task 4에서 여기에 붙인다.
       routes: [
+        GoRoute(
+          path: 'offset',
+          builder: (context, state) =>
+              TempOffsetScreen(deviceId: state.pathParameters['deviceId']!),
+        ),
         for (final kind in EnvRangeKind.values)
           GoRoute(
             path: kind.name,

@@ -242,3 +242,34 @@ class EnvSettingLinkTrailing extends StatelessWidget {
         ],
       );
 }
+
+/// 하단 빨간 글자 버튼(S10 "변경 사항 취소" · S16 "취소") — TextButton 369×56
+/// r12, 18/600 행간 28 `#C00306`.
+class EnvSettingTextButton extends StatelessWidget {
+  const EnvSettingTextButton(
+      {super.key, required this.label, required this.onPressed});
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = context.glass;
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+            foregroundColor: glass.navSelected,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12))),
+        child: Text(label,
+            style: envSettingText(context,
+                size: 18,
+                weight: FontWeight.w600,
+                lineHeight: 28,
+                color: glass.navSelected)),
+      ),
+    );
+  }
+}

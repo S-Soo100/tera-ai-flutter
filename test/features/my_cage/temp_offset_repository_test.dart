@@ -37,24 +37,24 @@ void main() {
     expect(fake.lastPost?.$1, '/devices/d1/commands');
     expect(fake.lastPost?.$2, {
       'action': 'set_temp_offset',
-      'payload': {'offset_c': 1.0}
+      'payload': {'offset_c': -0.5} // 공장 −1.5 + 사용자 +1.0
     });
   });
 
-  test('D1 임시: 끔은 offset_c 0', () async {
+  test('끔은 공장 보정 −1.5(서버 회신 §1.2)', () async {
     final fake = _FakeRest({'id': 'c2'});
     await TempOffsetRepository(fake).send('d1', const TempOffset(0));
     expect(fake.lastPost?.$2, {
       'action': 'set_temp_offset',
-      'payload': {'offset_c': 0.0}
+      'payload': {'offset_c': -1.5}
     });
   });
 
-  test('빼기 보정은 음수로 나간다', () async {
+  test('빼기 보정은 공장 보정에서 더 뺀다', () async {
     final fake = _FakeRest({'id': 'c3'});
     await TempOffsetRepository(fake)
         .send('d1', TempOffset.of(subtract: true, magnitude: 1.5));
-    expect(fake.lastPost?.$2?['payload'], {'offset_c': -1.5});
+    expect(fake.lastPost?.$2?['payload'], {'offset_c': -3.0});
   });
 
   test('응답에 id가 없으면 null', () async {
