@@ -22,12 +22,20 @@ class DeviceSettingsRepository {
     String deviceId, {
     double? targetTempC,
     double? targetHumidityPct,
+    double? targetTempMin,
+    double? targetTempMax,
+    double? targetHumidMin,
+    double? targetHumidMax,
   }) async {
     final decoded = await _client.patch(
       '/devices/$deviceId/settings',
       DeviceSettings.patchBody(
         targetTempC: targetTempC,
         targetHumidityPct: targetHumidityPct,
+        targetTempMin: targetTempMin,
+        targetTempMax: targetTempMax,
+        targetHumidMin: targetHumidMin,
+        targetHumidMax: targetHumidMax,
       ),
     );
     return DeviceSettings.fromJson(Map<String, dynamic>.from(decoded as Map));

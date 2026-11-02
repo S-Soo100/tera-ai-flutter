@@ -1,3 +1,4 @@
+import '../../../shared/domain/env_thresholds.dart';
 import '../../../shared/domain/num_format.dart';
 
 /// 기기 목표 환경(setpoint) — terra-api `GET/PATCH /devices/{id}/settings`
@@ -42,6 +43,17 @@ class DeviceSettings {
   /// 목표가 하나라도 있는가. 둘 다 null이면 "미설정" 상태.
   bool get hasTarget => targetTempC != null || targetHumidityPct != null;
 
+  /// v4 적정 온도 범위(2026-11-02). 미설정·범위 밖·스텝 밖·`min >= max`는
+  /// [EnvRange.fromSettings] 규칙으로 디폴트(18~26℃)나 허용값으로 맞춘다.
+  /// 위 "임의 기본값 금지"는 단일 목표값([targetTempC]) 얘기다 — 적정 범위는
+  /// 기획 v4 1-1이 크레스티드 게코 디폴트를 정했고 서버 판정도 같은 디폴트를 쓴다.
+  EnvRange get tempRange => EnvRange.fromSettings(
+      targetTempMin, targetTempMax, EnvRangeRule.temp, EnvRange.tempDefault);
+
+  /// v4 적정 습도 범위(디폴트 40~80%). 규칙은 [tempRange]와 같다.
+  EnvRange get humidRange => EnvRange.fromSettings(targetHumidMin,
+      targetHumidMax, EnvRangeRule.humid, EnvRange.humidDefault);
+
   factory DeviceSettings.fromJson(Map<String, dynamic> j) {
     return DeviceSettings(
       deviceId: j['device_id'] as String? ?? '',
@@ -58,12 +70,23 @@ class DeviceSettings {
   }
 
   /// PATCH 본문. **보낸 필드만 갱신**되므로 바꾸지 않을 값은 키째로 뺀다.
+  ///
+  /// v4 적정 범위(`target_*_min/max`)는 한 화면에서 MIN·MAX를 **함께** 보낸다
+  /// — 한쪽만 보내면 서버의 `min ≤ max` 검증이 저장된 반대쪽과 비교한다.
   static Map<String, dynamic> patchBody({
     double? targetTempC,
     double? targetHumidityPct,
+    double? targetTempMin,
+    double? targetTempMax,
+    double? targetHumidMin,
+    double? targetHumidMax,
   }) =>
       {
         if (targetTempC != null) 'target_temp_c': targetTempC,
         if (targetHumidityPct != null) 'target_humidity_pct': targetHumidityPct,
+        if (targetTempMin != null) 'target_temp_min': targetTempMin,
+        if (targetTempMax != null) 'target_temp_max': targetTempMax,
+        if (targetHumidMin != null) 'target_humid_min': targetHumidMin,
+        if (targetHumidMax != null) 'target_humid_max': targetHumidMax,
       };
 }
