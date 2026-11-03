@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -173,6 +174,16 @@ class _MemSpeedStore implements PlayerSpeedStore {
 }
 
 void main() {
+  // 조작줄 폭은 실제 글꼴(Pretendard)로 잰다 — 테스트 기본 글꼴은 글자마다
+  // 정사각형이라 시간 알약이 실제보다 두 배 넘게 넓어진다.
+  setUpAll(() async {
+    final fonts = FontLoader('Pretendard');
+    for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+      fonts.addFont(rootBundle.load('assets/fonts/Pretendard-$w.otf'));
+    }
+    await fonts.load();
+  });
+
   late _Video video;
   late _Queue queue;
   late _Memos memos;
@@ -217,7 +228,7 @@ void main() {
             createdAt: '2026-01-01')),
         clipVisibilityAccountProvider.overrideWithValue(null),
         playerSpeedStoreProvider
-            .overrideWithValue(speedStore ?? _MemSpeedStore(1.0)),
+            .overrideWithValue(speedStore ?? _MemSpeedStore(2.0)),
         liveRecordingRepositoryProvider.overrideWithValue(repo),
         liveRecordingUploadQueueProvider.overrideWith((ref) => queue),
         liveRecordingsProvider.overrideWith((ref) async => items),
@@ -272,11 +283,12 @@ void main() {
     expect(find.byTooltip('live_recording_delete_confirm'), findsOneWidget);
   });
 
-  testWidgets('2X는 배속을 순환하고, 가로 버튼은 가로 화면으로 바꾼다', (tester) async {
+  testWidgets('배속은 2x에서 시작해 3x로 넘어가고, 가로 버튼은 가로 화면으로 바꾼다', (tester) async {
     await pump(tester);
+    expect(video.speeds.last, 2.0);
     await tester.tap(find.byKey(const Key('player_speed')));
     await tester.pump();
-    expect(video.speeds.last, 1.2);
+    expect(video.speeds.last, 3.0);
     await tester.tap(find.byKey(const Key('player_orientation')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('player_landscape_close')), findsOneWidget);
@@ -284,13 +296,13 @@ void main() {
   });
 
   testWidgets('저장된 배속으로 재생을 시작하고, 바꾼 배속은 저장한다', (tester) async {
-    final store = _MemSpeedStore(1.5);
+    final store = _MemSpeedStore(3.0);
     await pump(tester, speedStore: store);
-    expect(video.speeds.last, 1.5);
+    expect(video.speeds.last, 3.0);
     await tester.tap(find.byKey(const Key('player_speed')));
     await tester.pump();
-    expect(video.speeds.last, 2.0);
-    expect(store.value, 2.0);
+    expect(video.speeds.last, 4.0);
+    expect(store.value, 4.0);
   });
 
   testWidgets('다운로드·공유는 폰 녹화 파일을 그대로 넘긴다', (tester) async {

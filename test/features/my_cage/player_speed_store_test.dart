@@ -7,6 +7,7 @@ import 'package:vivanaut/features/my_cage/data/player_speed_store.dart';
 import 'package:vivanaut/features/my_cage/presentation/player_view_providers.dart';
 
 /// 2026-10-30 사용자 결정 — 배속을 한 번 바꾸면 다른 영상·앱 재시작에도 이어진다.
+/// 2026-11-03 Figma 1689:5771 — 단계 1x~4x, 미저장·옛 값은 기본 2배.
 void main() {
   late Directory dir;
 
@@ -23,41 +24,45 @@ void main() {
 
   const store = HivePlayerSpeedStore();
 
-  test('미저장 기본은 1배', () {
-    expect(store.load(), 1.0);
-  });
-
-  test('저장 → 그대로 재현', () async {
-    await store.save(1.5);
-    expect(store.load(), 1.5);
-  });
-
-  test('손상·목록 밖 값은 1배로', () async {
-    final box = Hive.box<dynamic>(HivePlayerSpeedStore.boxName);
-    await box.put(HivePlayerSpeedStore.key, 'garbage');
-    expect(store.load(), 1.0);
-    await box.put(HivePlayerSpeedStore.key, 1.75);
-    expect(store.load(), 1.0);
-    await box.put(HivePlayerSpeedStore.key, 2);
+  test('미저장 기본은 2배', () {
     expect(store.load(), 2.0);
   });
 
-  test('박스가 닫혀 있으면 1배·저장 생략', () async {
-    await Hive.close();
-    await store.save(2.0);
+  test('저장 → 그대로 재현', () async {
+    await store.save(3.0);
+    expect(store.load(), 3.0);
+  });
+
+  test('손상·옛 값(1.2·1.5)은 2배, 1배·4배는 그대로', () async {
+    final box = Hive.box<dynamic>(HivePlayerSpeedStore.boxName);
+    await box.put(HivePlayerSpeedStore.key, 'garbage');
+    expect(store.load(), 2.0);
+    await box.put(HivePlayerSpeedStore.key, 1.2);
+    expect(store.load(), 2.0);
+    await box.put(HivePlayerSpeedStore.key, 1.5);
+    expect(store.load(), 2.0);
+    await box.put(HivePlayerSpeedStore.key, 1.0);
     expect(store.load(), 1.0);
+    await box.put(HivePlayerSpeedStore.key, 4);
+    expect(store.load(), 4.0);
+  });
+
+  test('박스가 닫혀 있으면 2배·저장 생략', () async {
+    await Hive.close();
+    await store.save(4.0);
+    expect(store.load(), 2.0);
   });
 
   test('바꾼 배속은 앱을 다시 켠 것(새 컨테이너)에도 남는다', () async {
     final first = ProviderContainer();
-    expect(first.read(playerSpeedProvider), 1.0);
-    first.read(playerSpeedProvider.notifier).set(1.2);
-    expect(first.read(playerSpeedProvider), 1.2);
+    expect(first.read(playerSpeedProvider), 2.0);
+    first.read(playerSpeedProvider.notifier).set(4.0);
+    expect(first.read(playerSpeedProvider), 4.0);
     await Future<void>.delayed(Duration.zero);
     first.dispose();
 
     final second = ProviderContainer();
     addTearDown(second.dispose);
-    expect(second.read(playerSpeedProvider), 1.2);
+    expect(second.read(playerSpeedProvider), 4.0);
   });
 }

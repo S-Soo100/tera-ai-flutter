@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
+import 'package:vivanaut/core/theme/viva_colors.dart';
 import 'package:vivanaut/core/theme/glass_palette.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
@@ -79,8 +81,21 @@ class _Video extends VideoPlayerPlatform {
 
 /// Figma 941:1834(세로)·941:1928(가로) 실측 좌표.
 void main() {
+  // 조작줄 폭은 실제 글꼴(Pretendard)로 잰다 — 테스트 기본 글꼴은 글자마다
+  // 정사각형이라 시간 알약이 실제보다 두 배 넘게 넓어진다.
+  setUpAll(() async {
+    final fonts = FontLoader('Pretendard');
+    for (final w in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+      fonts.addFont(rootBundle.load('assets/fonts/Pretendard-$w.otf'));
+    }
+    await fonts.load();
+  });
+
   Future<void> pump(WidgetTester tester, Size size,
-      {EdgeInsets padding = EdgeInsets.zero, _Export? export}) async {
+      {EdgeInsets padding = EdgeInsets.zero,
+      _Export? export,
+      double textScale = 1,
+      Map<String, double> playFromSec = const {}}) async {
     VideoPlayerPlatform.instance = _Video();
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -104,10 +119,14 @@ void main() {
         child: MaterialApp(
             theme: AppTheme.light,
             builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(padding: padding),
+                data: MediaQuery.of(context).copyWith(
+                    padding: padding,
+                    textScaler: TextScaler.linear(textScale)),
                 child: child!),
-            home: const ClipPlaylistPlayerScreen(
-                clipId: 'b', playlist: ['a', 'b', 'c']))));
+            home: ClipPlaylistPlayerScreen(
+                clipId: 'b',
+                playlist: const ['a', 'b', 'c'],
+                playFromSec: playFromSec))));
     await tester.pump(const Duration(seconds: 1));
   }
 
@@ -118,17 +137,37 @@ void main() {
     // 영상은 실제 16:9(221.06)라 원본 박스 224보다 3 짧다 → 행 y427.06
     // (헤더 106 + 84 + 221.06 + 시크 16). 원본 좌표 430과의 차이는 영상
     // 비율 때문이며 그 아래 액션 행·스트립은 원본과 같다.
+    // 조작줄 — Figma 1689:5771(배속 버튼 수정 261103): 좌우 16, 회색 원·알약.
     final play = tester.getRect(find.byKey(const Key('player_play_pause')));
-    expect(play.left, 12);
+    expect(play.left, 16);
     expect(play.top, closeTo(430, 3));
     expect(play.size, const Size(36, 36));
-    final speed = tester.getRect(find.byKey(const Key('player_speed')));
-    expect(speed.left, 297);
-    final expand = tester.getRect(find.byKey(const Key('player_orientation')));
-    expect(expand.left, 345);
+    final timePill = tester.getRect(find.byKey(const Key('player_time_pill')));
+    expect(timePill.left, 60);
+    expect(timePill.height, 36);
     final time = tester.getRect(find.textContaining(' / '));
-    expect(time.left, 56);
-    expect(tester.widget<Text>(find.textContaining(' / ')).style!.fontSize, 14);
+    expect(time.left, 72);
+    final timeStyle =
+        tester.widget<Text>(find.textContaining(' / ')).style!;
+    expect(timeStyle.fontSize, 14);
+    expect(timeStyle.fontWeight, FontWeight.w600);
+    final speed = tester.getRect(find.byKey(const Key('player_speed')));
+    expect(speed, Rect.fromLTWH(252, play.top, 81, 36));
+    final gauge = find.descendant(
+        of: find.byKey(const Key('player_speed')),
+        matching: find.byWidgetPredicate(
+            (w) => w is FigmaIcon && w.name == FigmaIcons.speedGauge));
+    expect(tester.getRect(gauge), Rect.fromLTWH(264, play.top + 4, 28, 28));
+    // 처음 기본 2x — 글자 윤곽 19×13, 왼쪽 45·세로 가운데.
+    final label = find.descendant(
+        of: find.byKey(const Key('player_speed')),
+        matching: find.byWidgetPredicate((w) =>
+            w is FigmaIcon && w.name == FigmaIcons.speedLabel(2.0)));
+    expect(tester.getRect(label),
+        Rect.fromLTWH(297, play.top + 11.5, 19, 13));
+    final expand = tester.getRect(find.byKey(const Key('player_orientation')));
+    expect(expand.left, 341);
+    expect(expand.right, 377);
 
     final pill =
         tester.getRect(find.byKey(ClipPlaylistPlayerScreen.actionPillKey));
@@ -159,6 +198,21 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('글자 2배·처음부터 버튼이 함께여도 조작줄이 넘치지 않는다',
+      (tester) async {
+    await pump(tester, const Size(393, 852),
+        padding: const EdgeInsets.only(top: 62, bottom: 34),
+        textScale: 2,
+        playFromSec: const {'b': 30});
+    expect(find.byKey(ClipPlaylistPlayerScreen.fromStartKey), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    // 배속 알약은 그림 글자라 81 그대로, 오른쪽 끝도 그대로.
+    expect(tester.getSize(find.byKey(const Key('player_speed'))),
+        const Size(81, 36));
+    expect(tester.getRect(find.byKey(const Key('player_orientation'))).right,
+        377);
+  });
+
   testWidgets('landscape: overlay chrome at Figma 941:1928 coordinates',
       (tester) async {
     await pump(tester, const Size(852, 393));
@@ -178,6 +232,9 @@ void main() {
         const Offset(48, 285));
     expect(tester.getRect(find.byKey(const Key('player_orientation'))).topLeft,
         const Offset(768, 285));
+    expect(tester.getRect(find.byKey(const Key('player_speed'))),
+        const Rect.fromLTWH(679, 285, 81, 36));
+    expect(tester.getRect(find.byKey(const Key('player_time_pill'))).left, 92);
     final strip = tester.getRect(find.byType(ClipFilmstrip));
     expect(strip, const Rect.fromLTWH(48, 325, 510, 48));
     // 세로 화살표는 가로에 없다.
@@ -188,11 +245,12 @@ void main() {
             .widgetList<Scaffold>(find.byType(Scaffold))
             .map((s) => s.backgroundColor),
         contains(AppTheme.landscapeBackdrop));
-    // 회색 위 조작부 아이콘은 밝게(대비), 바닥 흐림도 같은 회색.
+    // 조작부는 회색 면(#F4F4F4) 알약·원 위라 가로에서도 진한 글자(Figma
+    // 1689:5647). 바닥 흐림은 같은 회색.
     final play = tester.widget<FigmaIcon>(find.descendant(
         of: find.byKey(const Key('player_play_pause')),
         matching: find.byType(FigmaIcon)));
-    expect(play.color, AppTheme.landscapeForeground);
+    expect(play.color, VivaColors.labelPrimary);
     final fades = tester
         .widgetList<DecoratedBox>(find.byType(DecoratedBox))
         .map((d) => d.decoration)

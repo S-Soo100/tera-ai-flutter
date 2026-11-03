@@ -89,16 +89,25 @@ abstract final class FigmaIcons {
   static const bookmarkFilled = 'redesign_v2/bookmark_full';
   static const delete = 'delete';
   static const play = 'play';
-  static const speed2x = 'speed_2x';
+  /// 배속 알약의 속도계(28 프레임, Figma 1689:5536 `speed_4`).
+  static const speedGauge = 'redesign_v2/2828/speed_4';
 
-  /// 배속 글리프. ⚠️ **export 파일명이 글리프와 어긋난다** — `speed_1_2x.svg`가
-  /// "1X"를, `speed_1_2x-1.svg`가 "1.2X"를 그린다(2026-09-21 렌더 실측).
-  /// 파일명만 보고 고르면 1.2배속 자리에 "1X"가 나온다.
-  static String speed(double value) => switch (value) {
-        >= 2 => speed2x,
-        >= 1.5 => 'redesign_v2/speed_1_5x',
-        >= 1.2 => 'redesign_v2/speed_1_2x-1',
-        _ => 'redesign_v2/speed_1_2x',
+  /// 배속 알약의 글자 "1x"~"4x" — Pretendard SemiBold 18 윤곽(디자이너 전달
+  /// 2026-11-03). 크기가 제각각(17×13~20×14)이라 고유 크기로 그린다.
+  /// 목록 밖 값이면 기본 2x.
+  static String speedLabel(double value) => switch (value) {
+        1.0 => 'redesign_v2/speed_label_1x',
+        3.0 => 'redesign_v2/speed_label_3x',
+        4.0 => 'redesign_v2/speed_label_4x',
+        _ => 'redesign_v2/speed_label_2x',
+      };
+
+  /// [speedLabel] 글리프의 고유 크기(각 SVG의 viewBox).
+  static Size speedLabelSize(double value) => switch (value) {
+        1.0 => const Size(17, 13),
+        3.0 => const Size(20, 14),
+        4.0 => const Size(20, 13),
+        _ => const Size(19, 13),
       };
   static const expand = 'expand';
   static const calendar = 'calendar';
