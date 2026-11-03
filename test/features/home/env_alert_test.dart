@@ -83,7 +83,7 @@ void main() {
         level: 'caution',
         message: '[고온 주의] 적정 온도보다 +1.0℃',
         triggeredAt: '2026-11-02T05:10:00+00:00'))!;
-    final list = EnvAlert.openLatestPerMetric([newer, old]);
+    final list = EnvAlert.openLatestPerSlot([newer, old]);
     expect(list.map((a) => a.id), ['new']);
   });
 
@@ -95,8 +95,8 @@ void main() {
         kind: 'env_temp_low',
         level: 'danger',
         message: '[저온 경고] 온도가 너무 낮아 개체가 위험할 수 있어요'))!;
-    expect(EnvAlert.openLatestPerMetric([danger, caution]).single.id, 'd');
-    expect(EnvAlert.openLatestPerMetric([caution, danger]).single.id, 'd');
+    expect(EnvAlert.openLatestPerSlot([danger, caution]).single.id, 'd');
+    expect(EnvAlert.openLatestPerSlot([caution, danger]).single.id, 'd');
   });
 
   test('종료된 행은 빠지고, 경고 먼저 · 같은 등급이면 온도 → 습도', () {
@@ -105,20 +105,19 @@ void main() {
     final tempCaution = EnvAlert.fromRow(
         _row(id: 'tc', kind: 'env_temp_high', level: 'caution'))!;
     expect(
-        EnvAlert.openLatestPerMetric([tempCaution, humidDanger])
-            .map((a) => a.id),
+        EnvAlert.openLatestPerSlot([tempCaution, humidDanger]).map((a) => a.id),
         ['hd', 'tc']);
 
     final tempC = EnvAlert.fromRow(_row(id: 't', level: 'caution'))!;
     final humidC = EnvAlert.fromRow(
         _row(id: 'h', kind: 'env_humid_low', level: 'caution'))!;
-    expect(EnvAlert.openLatestPerMetric([humidC, tempC]).map((a) => a.id),
+    expect(EnvAlert.openLatestPerSlot([humidC, tempC]).map((a) => a.id),
         ['t', 'h']);
 
     final resolved = EnvAlert.fromRow(
         _row(id: 'r', resolvedAt: '2026-11-02T06:00:00+00:00'))!;
     expect(resolved.isOpen, isFalse);
-    expect(EnvAlert.openLatestPerMetric([resolved]), isEmpty);
+    expect(EnvAlert.openLatestPerSlot([resolved]), isEmpty);
   });
 
   test('설명 문구 키 — kind+level 고정 매핑(노션 v4 1-5)', () {
@@ -183,8 +182,7 @@ void main() {
       final cycle = EnvAlert.fromRow(_row(id: 'g', kind: 'env_mist_gap'))!;
       final humid = EnvAlert.fromRow(_row(id: 'h', kind: 'env_humid_low'))!;
       final temp = EnvAlert.fromRow(_row(id: 't'))!;
-      expect(
-          EnvAlert.openLatestPerMetric([cycle, humid, temp]).map((a) => a.id),
+      expect(EnvAlert.openLatestPerSlot([cycle, humid, temp]).map((a) => a.id),
           ['t', 'h', 'g']);
     });
 
@@ -197,15 +195,14 @@ void main() {
           id: 'g',
           kind: 'env_mist_gap',
           triggeredAt: '2026-11-02T06:00:00+00:00'))!;
-      expect(EnvAlert.openLatestPerMetric([vent, gap]).map((a) => a.id), ['g']);
+      expect(EnvAlert.openLatestPerSlot([vent, gap]).map((a) => a.id), ['g']);
     });
 
     test('danger_first_across_slots', () {
       final cycle = EnvAlert.fromRow(_row(id: 'g', kind: 'env_vent_delay'))!;
       final humidDanger = EnvAlert.fromRow(
           _row(id: 'h', kind: 'env_humid_high', level: 'danger'))!;
-      expect(
-          EnvAlert.openLatestPerMetric([cycle, humidDanger]).map((a) => a.id),
+      expect(EnvAlert.openLatestPerSlot([cycle, humidDanger]).map((a) => a.id),
           ['h', 'g']);
     });
   });

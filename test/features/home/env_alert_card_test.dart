@@ -55,8 +55,7 @@ void main() {
   });
 
   testWidgets('경고가 주의보다 위 — 칩·제목은 message 그대로, 설명은 고정 문구', (tester) async {
-    await pump(
-        tester, EnvAlert.openLatestPerMetric([humidCaution, tempDanger]));
+    await pump(tester, EnvAlert.openLatestPerSlot([humidCaution, tempDanger]));
     final dangerRow =
         tester.getRect(find.byKey(EnvAlertCard.rowKey(tempDanger)));
     final cautionRow =
@@ -89,7 +88,7 @@ void main() {
   final mistGap = _alert('g', 'env_mist_gap', 'caution', '[건조 주의] 분무 필요');
 
   testWidgets('A26 — 사이클 줄: 습도 칩, 고정 설명, 온도 줄 아래', (tester) async {
-    await pump(tester, EnvAlert.openLatestPerMetric([vent, tempHigh]));
+    await pump(tester, EnvAlert.openLatestPerSlot([vent, tempHigh]));
     final glass = GlassPalette.light;
     expect(tester.widget<Text>(find.text('환기 지연')).style!.color,
         glass.humidAccent);
@@ -106,8 +105,8 @@ void main() {
   });
 
   testWidgets('건조 + 분무 공백 + 온도 = 세 줄, 온도 → 습도 → 사이클', (tester) async {
-    await pump(tester,
-        EnvAlert.openLatestPerMetric([mistGap, humidCaution, tempHigh]));
+    await pump(
+        tester, EnvAlert.openLatestPerSlot([mistGap, humidCaution, tempHigh]));
     final tops = [
       for (final a in [tempHigh, humidCaution, mistGap])
         tester.getRect(find.byKey(EnvAlertCard.rowKey(a))).top

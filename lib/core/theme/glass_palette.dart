@@ -439,7 +439,9 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     envTempPeak: Color(0xFFF85478),
     envHumidPeak: Color(0xFF00B2F3),
     envBarNeutral: VivaColors.labelQuaternary, // 주간 보통 막대 #949090 (A19)
-    envBarMinimum: VivaColors.fillIcon, // 주간 최저 막대 #B4AEAE (1081:5052)
+    // 일간 범위 바(env_range_bar) 그라데이션 시작색 #B4AEAE. 주간 최저 막대는
+    // 0.167.2(A19)부터 강조색이라 이 색을 쓰지 않는다.
+    envBarMinimum: VivaColors.fillIcon,
     navSelected: VivaColors.mainDark,
     navUnselected: VivaColors.labelTertiary,
   );

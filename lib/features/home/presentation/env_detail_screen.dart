@@ -616,12 +616,19 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     final humidSection = section(EnvReportElement.humid);
 
     // 적정 범위 띠(A19) — 일간 범위 바와 같이 지난주에도 **현재** 설정이다.
-    // 조회 중·실패면 띠 없이 그린다(기본값으로 대신하지 않음).
+    // 실패면 띠 없이 그린다(기본값으로 대신하지 않음). 띠는 축 계산에 들어가므로
+    // **첫 조회 중엔 차트도 기다린다** — 먼저 그리면 설정이 도착할 때 축이 바뀌어
+    // 막대·라벨이 한 번 튄다(리뷰 지적 2026-11-03). 다시 조회 중엔 이전 값 유지.
     final device = ref.watch(currentDeviceIdProvider);
     final deviceId = device.isLoading ? null : device.valueOrNull;
-    final settings = deviceId == null
-        ? null
-        : ref.watch(deviceSettingsProvider(deviceId)).valueOrNull;
+    final settingsAsync =
+        deviceId == null ? null : ref.watch(deviceSettingsProvider(deviceId));
+    final settings = settingsAsync?.valueOrNull;
+    final settingsPending = device.isLoading ||
+        (settingsAsync != null &&
+            settingsAsync.isLoading &&
+            !settingsAsync.hasValue &&
+            !settingsAsync.hasError);
 
     Widget chart(List<DayMinMax> data, {required bool temp}) => Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -660,7 +667,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
         _weekPager(glass, week),
         // Figma 1081:5052 — 페이저(172~212) → 헤더 236.
         const SizedBox(height: 24),
-        ...rowsAsync.when(
+        ...(settingsPending ? const AsyncLoading<Never>() : rowsAsync).when(
           loading: () => [
             _skeleton(glass, height: WeekRangeChart.chartHeight),
             ...tempSection,
