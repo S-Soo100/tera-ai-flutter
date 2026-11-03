@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/shared/domain/keep_all_words.dart';
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/home/presentation/home_screen.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
@@ -116,7 +117,8 @@ void main() {
           tester.widget<Text>(find.byKey(LcdSettingsScreen.saverValueKey)).data,
           '꺼짐');
       expect(find.text('20:00~8:00'), findsOneWidget);
-      expect(find.text('설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다'), findsOneWidget);
+      expect(find.text(keepAllWords('설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다')),
+          findsOneWidget);
       expect(_switchValue(tester, LcdSettingsScreen.powerSwitchKey), isTrue);
       expect(_switchValue(tester, LcdSettingsScreen.quietSwitchKey), isFalse);
       expect(tester.takeException(), isNull);
@@ -201,7 +203,7 @@ void main() {
       final env =
           await _pump(tester, link: lcdLink(support: LcdSupport.needsUpdate));
       expect(find.byKey(LcdSettingsScreen.updateNoteKey), findsOneWidget);
-      expect(find.text('기기 업데이트 후 쓸 수 있어요'), findsOneWidget);
+      expect(find.text(keepAllWords('기기 업데이트 후 쓸 수 있어요')), findsOneWidget);
       for (final k in [
         LcdSettingsScreen.powerRowKey,
         LcdSettingsScreen.saverRowKey,
@@ -245,7 +247,8 @@ void main() {
   group('오프라인', () {
     testWidgets('스위치 막음 + 안내, 예약이 꺼져 있으면 시간은 고칠 수 있다', (tester) async {
       final env = await _pump(tester, link: lcdLink(), online: false);
-      expect(find.text('기기가 연결돼 있지 않아 지금은 보낼 수 없어요'), findsOneWidget);
+      expect(find.text(keepAllWords('기기가 연결돼 있지 않아 지금은 보낼 수 없어요')),
+          findsOneWidget);
       await tester.tap(find.byKey(LcdSettingsScreen.powerSwitchKey),
           warnIfMissed: false);
       await tester.tap(find.byKey(LcdSettingsScreen.quietSwitchKey),
@@ -321,11 +324,13 @@ void main() {
   });
 
   group('전원 보조 글자·각주 (§12-1 / §11-3)', () {
-    testWidgets('구 규칙 — 전원 켜짐 + 예약 시간 안이면 "지금은 꺼짐 예약 시간이라 … 켜져요"',
+    testWidgets(keepAllWords('구 규칙 — 전원 켜짐 + 예약 시간 안이면 "지금은 꺼짐 예약 시간이라 … 켜져요"'),
         (tester) async {
       await _pump(tester, link: lcdLink(quiet: _quiet20to8), now: _night);
-      expect(find.text('지금은 꺼짐 예약 시간이라 오전 8:00에 켜져요'), findsOneWidget);
-      expect(find.text('설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다'), findsOneWidget);
+      expect(find.text(keepAllWords('지금은 꺼짐 예약 시간이라 오전 8:00에 켜져요')),
+          findsOneWidget);
+      expect(find.text(keepAllWords('설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다')),
+          findsOneWidget);
     });
 
     testWidgets('화면을 열어 둔 채 예약 시간이 되면, 다시 그릴 때(앱 복귀) 안내가 나온다', (tester) async {
@@ -352,7 +357,8 @@ void main() {
         tester.binding.handleAppLifecycleStateChanged(s);
       }
       await tester.pumpAndSettle();
-      expect(find.text('지금은 꺼짐 예약 시간이라 오전 8:00에 켜져요'), findsOneWidget,
+      expect(find.text(keepAllWords('지금은 꺼짐 예약 시간이라 오전 8:00에 켜져요')),
+          findsOneWidget,
           reason: '"지금"을 캐시하지 않는다');
     });
 
@@ -361,14 +367,15 @@ void main() {
       expect(find.byKey(LcdSettingsScreen.powerNoteKey), findsNothing);
     });
 
-    testWidgets('구 규칙 — 전원 꺼짐이면 각주가 "다시 켤 때까지 꺼져 있어요"', (tester) async {
+    testWidgets(keepAllWords('구 규칙 — 전원 꺼짐이면 각주가 "다시 켤 때까지 꺼져 있어요"'),
+        (tester) async {
       await _pump(tester,
           link: lcdLink(power: false, quiet: _quiet20to8), now: _night);
       expect(find.byKey(LcdSettingsScreen.powerNoteKey), findsNothing,
           reason: '이미 꺼져 있다 — 예약 시간 안내 안 함');
       expect(
           tester.widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey)).data,
-          '다시 켤 때까지 꺼져 있어요');
+          keepAllWords('다시 켤 때까지 꺼져 있어요'));
     });
 
     testWidgets('신 규칙 — 화면 꺼짐 + 예약 시간 안이면 예약 안내, 각주는 Figma 그대로',
@@ -382,13 +389,15 @@ void main() {
           now: _night);
       expect(find.text('화면 전원 · 꺼짐'), findsOneWidget,
           reason: '스위치 = 실제 화면 상태(lcd_screen_on)');
-      expect(find.text('지금은 꺼짐 예약 시간이라 오전 8:00에 켜져요'), findsOneWidget);
+      expect(find.text(keepAllWords('지금은 꺼짐 예약 시간이라 오전 8:00에 켜져요')),
+          findsOneWidget);
       expect(
           tester.widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey)).data,
-          '설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다');
+          keepAllWords('설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다'));
     });
 
-    testWidgets('신 규칙 — 수동 조작 중이면 "… 부터 예약대로 돌아가요"', (tester) async {
+    testWidgets(keepAllWords('신 규칙 — 수동 조작 중이면 "… 부터 예약대로 돌아가요"'),
+        (tester) async {
       await _pump(tester,
           link: lcdLink(
               screenOn: true,
@@ -397,19 +406,19 @@ void main() {
               // 2026-11-04 08:00 KST.
               overrideUntil: DateTime.utc(2026, 11, 3, 23)),
           now: _night);
-      expect(find.text('오전 8:00부터 예약대로 돌아가요'), findsOneWidget);
+      expect(find.text(keepAllWords('오전 8:00부터 예약대로 돌아가요')), findsOneWidget);
     });
 
-    testWidgets('신 규칙 — 예약 없이 꺼져 있으면 "다시 켤 때까지 꺼져 있어요"(전원 줄 아래)',
+    testWidgets(keepAllWords('신 규칙 — 예약 없이 꺼져 있으면 "다시 켤 때까지 꺼져 있어요"(전원 줄 아래)'),
         (tester) async {
       await _pump(tester,
           link: lcdLink(power: false, screenOn: false, lcdOverride: true));
       expect(
           tester.widget<Text>(find.byKey(LcdSettingsScreen.powerNoteKey)).data,
-          '다시 켤 때까지 꺼져 있어요');
+          keepAllWords('다시 켤 때까지 꺼져 있어요'));
       expect(
           tester.widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey)).data,
-          '설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다');
+          keepAllWords('설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다'));
     });
 
     testWidgets('신 펌웨어라도 화면 상태 보고 전(null)이면 구 규칙', (tester) async {
@@ -419,7 +428,7 @@ void main() {
       expect(find.text('화면 전원 · 꺼짐'), findsOneWidget);
       expect(
           tester.widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey)).data,
-          '다시 켤 때까지 꺼져 있어요');
+          keepAllWords('다시 켤 때까지 꺼져 있어요'));
     });
 
     testWidgets('예약 명령 대기 중엔 예약 시간 안내를 숨긴다', (tester) async {
