@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,7 @@ import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
 import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/player_view_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/clip_filmstrip.dart';
 import 'package:vivanaut/shared/widgets/figma_icon.dart';
@@ -120,8 +122,7 @@ void main() {
             theme: AppTheme.light,
             builder: (context, child) => MediaQuery(
                 data: MediaQuery.of(context).copyWith(
-                    padding: padding,
-                    textScaler: TextScaler.linear(textScale)),
+                    padding: padding, textScaler: TextScaler.linear(textScale)),
                 child: child!),
             home: ClipPlaylistPlayerScreen(
                 clipId: 'b',
@@ -147,8 +148,7 @@ void main() {
     expect(timePill.height, 36);
     final time = tester.getRect(find.textContaining(' / '));
     expect(time.left, 72);
-    final timeStyle =
-        tester.widget<Text>(find.textContaining(' / ')).style!;
+    final timeStyle = tester.widget<Text>(find.textContaining(' / ')).style!;
     expect(timeStyle.fontSize, 14);
     expect(timeStyle.fontWeight, FontWeight.w600);
     final speed = tester.getRect(find.byKey(const Key('player_speed')));
@@ -161,10 +161,9 @@ void main() {
     // 처음 기본 2x — 글자 윤곽 19×13, 왼쪽 45·세로 가운데.
     final label = find.descendant(
         of: find.byKey(const Key('player_speed')),
-        matching: find.byWidgetPredicate((w) =>
-            w is FigmaIcon && w.name == FigmaIcons.speedLabel(2.0)));
-    expect(tester.getRect(label),
-        Rect.fromLTWH(297, play.top + 11.5, 19, 13));
+        matching: find.byWidgetPredicate(
+            (w) => w is FigmaIcon && w.name == FigmaIcons.speedLabel(2.0)));
+    expect(tester.getRect(label), Rect.fromLTWH(297, play.top + 11.5, 19, 13));
     final expand = tester.getRect(find.byKey(const Key('player_orientation')));
     expect(expand.left, 341);
     expect(expand.right, 377);
@@ -198,8 +197,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('글자 2배·처음부터 버튼이 함께여도 조작줄이 넘치지 않는다',
-      (tester) async {
+  testWidgets('글자 2배·처음부터 버튼이 함께여도 조작줄이 넘치지 않는다', (tester) async {
     await pump(tester, const Size(393, 852),
         padding: const EdgeInsets.only(top: 62, bottom: 34),
         textScale: 2,
@@ -209,8 +207,56 @@ void main() {
     // 배속 알약은 그림 글자라 81 그대로, 오른쪽 끝도 그대로.
     expect(tester.getSize(find.byKey(const Key('player_speed'))),
         const Size(81, 36));
-    expect(tester.getRect(find.byKey(const Key('player_orientation'))).right,
-        377);
+    expect(
+        tester.getRect(find.byKey(const Key('player_orientation'))).right, 377);
+  });
+
+  testWidgets('작은 화면(320)·글자 2배에서도 시간 알약이 배속 알약을 밀어내지 않는다', (tester) async {
+    await pump(tester, const Size(320, 568),
+        textScale: 2, playFromSec: const {'b': 30});
+    expect(tester.takeException(), isNull);
+    final time = tester.getRect(find.byKey(const Key('player_time_pill')));
+    final speed = tester.getRect(find.byKey(const Key('player_speed')));
+    expect(speed, Rect.fromLTWH(320 - 16 - 36 - 8 - 81, speed.top, 81, 36));
+    expect(time.right, lessThanOrEqualTo(speed.left - 8));
+  });
+
+  testWidgets('배속 버튼을 다시 그려지기 전에 두 번 눌러도 두 단계 넘어간다', (tester) async {
+    await pump(tester, const Size(393, 852));
+    final speed = find.byKey(const Key('player_speed'));
+    await tester.tap(speed);
+    await tester.tap(speed);
+    await tester.pump();
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(ClipPlaylistPlayerScreen)));
+    expect(container.read(playerSpeedProvider), 4.0);
+  });
+
+  testWidgets('배속 버튼은 스크린리더에서도 눌린다', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pump(tester, const Size(393, 852));
+    final speed = find.byKey(const Key('player_speed'));
+    final node = tester.getSemantics(speed);
+    expect(node, containsSemantics(isButton: true, hasTapAction: true));
+    node.owner!.performAction(node.id, SemanticsAction.tap);
+    await tester.pump();
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(ClipPlaylistPlayerScreen)));
+    expect(container.read(playerSpeedProvider), 3.0);
+    handle.dispose();
+  });
+
+  testWidgets('가로 "처음부터"는 회색 알약 위 진한 글자', (tester) async {
+    await pump(tester, const Size(852, 393), playFromSec: const {'b': 30});
+    await tester.tap(find.byKey(const Key('player_orientation')));
+    await tester.pump(const Duration(milliseconds: 300));
+    final style = tester
+        .widget<TextButton>(find.byKey(ClipPlaylistPlayerScreen.fromStartKey))
+        .style!;
+    final palette = AppTheme.light.extension<GlassPalette>()!;
+    expect(style.backgroundColor!.resolve({}), palette.surfaceTint);
+    expect(style.foregroundColor!.resolve({}), palette.textPrimary);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('landscape: overlay chrome at Figma 941:1928 coordinates',
