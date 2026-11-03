@@ -191,6 +191,27 @@ void main() {
       expect(find.text(keepAllWords('주간 분석을 위한 데이터를 모으고 있어요')), findsOneWidget);
     });
 
+    testWidgets('ERR_DISCONNECT 안내만(카드 null) — 서버 #33 이후 흔한 경우',
+        (tester) async {
+      final r = _weekly(notices: const [
+        EnvReportNotice(
+            code: 'ERR_DISCONNECT',
+            element: EnvReportElement.humid,
+            title: '주간 데이터 수집이 원활하지 않았어요',
+            body: '센서 전원과 Wi-Fi 연결 상태를 확인해 주세요'),
+      ]);
+      expect(
+          EnvWeeklyReportSection.hasContent(r, EnvReportElement.humid), isTrue);
+      await pump(tester,
+          EnvWeeklyReportSection(report: r, element: EnvReportElement.humid));
+      expect(
+          find.byKey(EnvWeeklyReportSection.noticeKey(EnvReportElement.humid)),
+          findsOneWidget);
+      expect(find.byKey(EnvWeeklyReportSection.cardKey(EnvReportElement.humid)),
+          findsNothing);
+      expect(find.text(keepAllWords('주간 데이터 수집이 원활하지 않았어요')), findsOneWidget);
+    });
+
     testWidgets('다른 지표 안내·카드는 그리지 않는다', (tester) async {
       final r = _weekly(
           humid: _card(EnvReportElement.humid, title: '습도 카드'),
