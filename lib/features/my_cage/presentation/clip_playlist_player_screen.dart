@@ -1162,78 +1162,124 @@ class _ClipPlaylistPlayerScreenState
   /// Figma "배속 버튼 수정 261103"(1689:5771) — 높이 36, 왼쪽 재생 원 36 + 8 +
   /// 시간 알약, 오른쪽 배속 알약 81 + 8 + 확대 원 36. 모두 회색 면(#F4F4F4)
   /// 위라 가로에서도 진한 글자. 세로는 좌우 16 안쪽, 가로는 SafeArea 여백 그대로.
+  ///
+  /// 시간 알약은 나머지 고정 폭(재생 36·8·간격 8·배속 81·8·확대 36 = 177)을 뺀
+  /// 만큼까지만 넓어지고, 넘치면 글자를 줄인다 — 작은 화면에서 휴대폰 글자를
+  /// 키우면 배속·확대 버튼이 밀려나던 문제(리뷰 2026-11-04).
   Widget _controlRow(GlassPalette glass, {bool padded = true}) {
     final speed = ref.watch(playerSpeedProvider);
     final landscape = ref.watch(playerOrientationProvider(_orientationKey));
     final controller = _controller;
     final fg = glass.textPrimary;
-    String time(Duration value) =>
-        '${value.inMinutes}:${(value.inSeconds % 60).toString().padLeft(2, '0')}';
     return Padding(
         padding: EdgeInsets.symmetric(horizontal: padded ? 16 : 0),
         child: SizedBox(
             height: 36,
-            child: Row(children: [
-              _roundButton36(glass,
-                  key: const Key('player_play_pause'),
-                  onTap: _togglePlay,
-                  // 재생 삼각형은 원 안 시각 중심에 맞춰 오른쪽으로 1.67
-                  // (Figma 잉크 x13.00~26.25, 기존 export는 11.33~24.67).
-                  child: _isPlaying
-                      ? FigmaIcon.tinted(FigmaIcons.pause, size: 36, color: fg)
-                      : Transform.translate(
-                          offset: const Offset(1.67, 0),
-                          child: FigmaIcon.tinted(FigmaIcons.play,
-                              size: 36, color: fg))),
-              const SizedBox(width: 8),
-              if (controller != null)
-                Container(
-                    key: const Key('player_time_pill'),
-                    height: 36,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                        color: glass.surfaceTint,
-                        borderRadius: BorderRadius.circular(16)),
-                    child: ValueListenableBuilder(
-                        valueListenable: controller,
-                        builder: (context, value, _) => Text(
-                            '${time(value.position)} / ${time(value.duration)}',
-                            maxLines: 1,
-                            style: TextStyle(
-                                fontFamily: 'Pretendard',
-                                fontSize: 14,
-                                height: 16.70703125 / 14,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: -0.28,
-                                color: glass.textSecondary)))),
-              if (_startedMidway)
-                Flexible(
-                    child: TextButton(
-                        key: ClipPlaylistPlayerScreen.fromStartKey,
-                        onPressed: _restartFromZero,
-                        child: Text('crecam_player_from_start'.tr(),
-                            maxLines: 1, overflow: TextOverflow.ellipsis))),
-              const Spacer(),
-              _speedPill(glass, speed),
-              const SizedBox(width: 8),
-              Tooltip(
-                  message:
-                      (landscape ? 'player_portrait' : 'player_landscape').tr(),
-                  child: _roundButton36(glass,
-                      key: const Key('player_orientation'),
-                      onTap: () => ref
-                          .read(playerOrientationProvider(_orientationKey)
-                              .notifier)
-                          .toggle(),
-                      // 세로=zoom_out_map(expand), 가로=zoom_in_map(축소). 원
-                      // 안에서 그림 20→18(0.9배, Figma 잉크 9~27) — 기존 36
-                      // export를 32.4로 그린다.
-                      child: FigmaIcon.tinted(
-                          landscape ? FigmaIcons.zoomInMap : FigmaIcons.expand,
-                          color: fg,
-                          size: 32.4))),
-            ])));
+            child: LayoutBuilder(
+                builder: (context, constraints) => Row(children: [
+                      _roundButton36(glass,
+                          key: const Key('player_play_pause'),
+                          onTap: _togglePlay,
+                          // 재생 삼각형은 원 안 시각 중심에 맞춰 오른쪽으로 1.67
+                          // (Figma 잉크 x13.00~26.25, 기존 export는 11.33~24.67).
+                          child: _isPlaying
+                              ? FigmaIcon.tinted(FigmaIcons.pause,
+                                  size: 36, color: fg)
+                              : Transform.translate(
+                                  offset: const Offset(1.67, 0),
+                                  child: FigmaIcon.tinted(FigmaIcons.play,
+                                      size: 36, color: fg))),
+                      const SizedBox(width: 8),
+                      if (controller != null)
+                        _timePill(glass, controller,
+                            maxWidth: math.max(0, constraints.maxWidth - 177)),
+                      if (_startedMidway)
+                        Flexible(
+                            child: Padding(
+                                padding:
+                                    EdgeInsets.only(left: landscape ? 8 : 0),
+                                child: TextButton(
+                                    key: ClipPlaylistPlayerScreen.fromStartKey,
+                                    onPressed: _restartFromZero,
+                                    // 가로는 회색 바탕 위라 다른 조작부처럼 회색 알약에
+                                    // 진한 글자(남색 글자는 대비 약 2:1, 리뷰 2026-11-04).
+                                    style: landscape
+                                        ? TextButton.styleFrom(
+                                            backgroundColor: glass.surfaceTint,
+                                            foregroundColor: glass.textPrimary,
+                                            minimumSize: const Size(0, 36),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 12),
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(16)))
+                                        : null,
+                                    child: Text('crecam_player_from_start'.tr(),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis)))),
+                      const Spacer(),
+                      _speedPill(glass, speed),
+                      const SizedBox(width: 8),
+                      Tooltip(
+                          message: (landscape
+                                  ? 'player_portrait'
+                                  : 'player_landscape')
+                              .tr(),
+                          child: _roundButton36(glass,
+                              key: const Key('player_orientation'),
+                              onTap: () => ref
+                                  .read(
+                                      playerOrientationProvider(_orientationKey)
+                                          .notifier)
+                                  .toggle(),
+                              // 세로=zoom_out_map(expand), 가로=zoom_in_map(축소). 원
+                              // 안에서 그림 20→18(0.9배, Figma 잉크 9~27) — 기존 36
+                              // export를 32.4로 그린다.
+                              child: FigmaIcon.tinted(
+                                  landscape
+                                      ? FigmaIcons.zoomInMap
+                                      : FigmaIcons.expand,
+                                  color: fg,
+                                  size: 32.4))),
+                    ]))));
+  }
+
+  /// 회색 시간 알약 — 글자에 맞춰 줄어들고, [maxWidth]를 넘으면 글자를 줄인다.
+  Widget _timePill(GlassPalette glass, VideoPlayerController controller,
+      {required double maxWidth}) {
+    String time(Duration value) =>
+        '${value.inMinutes}:${(value.inSeconds % 60).toString().padLeft(2, '0')}';
+    return Container(
+        key: const Key('player_time_pill'),
+        height: 36,
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+            color: glass.surfaceTint, borderRadius: BorderRadius.circular(16)),
+        child: Center(
+            widthFactor: 1,
+            child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: ValueListenableBuilder(
+                    valueListenable: controller,
+                    builder: (context, value, _) => Text(
+                        '${time(value.position)} / ${time(value.duration)}',
+                        maxLines: 1,
+                        style: TextStyle(
+                            fontFamily: 'Pretendard',
+                            fontSize: 14,
+                            height: 16.70703125 / 14,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.28,
+                            color: glass.textSecondary))))));
+  }
+
+  /// 다음 배속으로. 누르는 순간의 값을 읽는다 — build 때 잡아 둔 값을 쓰면
+  /// 다시 그려지기 전 연타가 같은 단계로 합쳐진다(리뷰 2026-11-04).
+  void _cycleSpeed() {
+    final next = nextPlayerSpeed(ref.read(playerSpeedProvider));
+    ref.read(playerSpeedProvider.notifier).set(next);
+    _controller?.setPlaybackSpeed(next);
   }
 
   /// 회색 원 36(r18) 버튼 — 재생/일시정지·확대/축소.
@@ -1258,6 +1304,9 @@ class _ClipPlaylistPlayerScreenState
     return Semantics(
         button: true,
         label: 'player_speed_label'.tr(args: [speed.round().toString()]),
+        // 아래 InkWell의 누르기 동작은 excludeSemantics로 함께 빠지므로 여기서
+        // 다시 건다 — 없으면 TalkBack 두 번 탭이 아무 일도 안 한다.
+        onTap: _cycleSpeed,
         excludeSemantics: true,
         child: SizedBox(
             key: const Key('player_speed'),
@@ -1268,11 +1317,7 @@ class _ClipPlaylistPlayerScreenState
                 borderRadius: BorderRadius.circular(16),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
-                    onTap: () {
-                      final next = nextPlayerSpeed(speed);
-                      ref.read(playerSpeedProvider.notifier).set(next);
-                      _controller?.setPlaybackSpeed(next);
-                    },
+                    onTap: _cycleSpeed,
                     child: Stack(children: [
                       Positioned(
                           left: 12,
