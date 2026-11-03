@@ -1,7 +1,7 @@
 name: vivanaut
 description: 파충류 사육자를 위한 올인원 앱
 publish_to: 'none'
-version: 0.168.2+463
+version: 0.169.0+464
 
 environment:
   sdk: ^3.5.0
@@ -26,6 +26,7 @@ dependencies:
   path_provider: ^2.1.5
   crypto: ^3.0.6
   http: ^1.2.0
+  http_parser: ^4.1.2
   # 직접 녹화 썸네일 PNG→JPEG(서버 PUT이 image/jpeg 서명, 2026-10-21) — 이미 전이 의존(4.8.0)
   image: ^4.8.0
   flutter_dotenv: ^5.2.1
@@ -49,6 +50,7 @@ dependencies:
   firebase_messaging: ^15.2.10
   clock: ^1.1.2
   wakelock_plus: ^1.6.1
+  crop_your_image: ^2.0.1
 
 dev_dependencies:
   # Diagnostic capture locale setup uses the existing transitive plugin directly.

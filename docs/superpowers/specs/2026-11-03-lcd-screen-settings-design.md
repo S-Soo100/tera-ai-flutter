@@ -175,7 +175,7 @@ Figma 메모(디자이너 원문 요약):
 | `my_cage/domain/device.dart` | `lcdSaverCapable`, 새 LCD 필드 파싱(Device·DeviceLinkStatus) |
 | `core/network/terra_rest_client.dart` | `put`, multipart POST |
 | `my_cage/data/lcd_repository.dart` | power·quiet·saver·image·getState |
-| `my_cage/data/lcd_quiet_store.dart` (신규) | 예약 시간 기억(D2 — Hive `app_settings`의 `device_lcd_quiet_<계정>_<기기 행 id>`, 처음 값 20:00~08:00), 로그아웃 삭제(`push_providers.dart`) |
+| `my_cage/data/lcd_quiet_store.dart` (신규) | 예약 시간 기억(D2 — Hive `app_settings`의 `lcd_quiet_<계정>_<기기 행 id>`, 처음 값 20:00~08:00), 로그아웃 삭제(`push_providers.dart`) |
 | `my_cage/presentation/lcd_screen_providers.dart` (신규) | 상태·명령 확인 대기·미리보기 URL |
 | `my_cage/presentation/lcd_settings_screen.dart`·`lcd_quiet_time_screen.dart`·`lcd_saver_screen.dart` (신규) | 세 화면 + `lcd_photo_crop_screen.dart`(D5) |
 | `my_cage/presentation/widgets/lcd_setting_tile.dart` | 안내 한 줄, 진입 경로 |
@@ -209,7 +209,7 @@ Figma 메모(디자이너 원문 요약):
 - 진입 시 값을 기준선으로 잡고, 편집 중 들어오는 실시간 값은 초안을 덮지 않는다. 저장 안 한 변경은 뒤로 가면 버린다.
 - 칸에 안 맞는 서버값은 실제 값 그대로("20초", "7초") 표시, stepper를 처음 누를 때 가장 가까운 칸으로 맞추고 그때부터 '바뀜'. 스위치만 바꾸면 시간은 서버값 그대로 보낸다.
 - `mode`는 서버 값 그대로 보낸다(없으면 rotate) — 기존 `image` 기기를 몰래 바꾸지 않음. `image`면 각주를 "모듈 화면에 사진만 표시돼요"로.
-- 사진 '있음' = 서버 `lcd_image_key` 있음(ACK 뒤). 없으면 보호기 **켜기만** 막고 끄기는 허용, 설정 화면 줄 오른쪽은 "사진 없음".
+- 사진 '있음' = 서버 `lcd_image_key` 있음(ACK 뒤). 없으면 보호기 **켜기만** 막고 끄기는 허용, 설정 화면 줄 오른쪽은 켜져 있을 때만 "사진 없음"(꺼져 있으면 Figma대로 "꺼짐" — 수치 검수 반영).
 - 사진 명령 대기 중엔 완료를 막는다(기기 다운로드와 보호기 명령이 겹치지 않게). 완료 뒤 대기는 설정 화면의 '화면 보호 사진 설정' 줄 shimmer, 대기 중 재진입은 편집 잠금.
 
 ### 11-5. 사진

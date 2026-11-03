@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/glass_dock.dart';
 import '../../../shared/widgets/glass_tab_shell.dart';
@@ -11,6 +12,7 @@ import '../../../shared/widgets/redesign_empty_state.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../my_cage/presentation/my_cage_providers.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
+import '../../my_cage/domain/lcd_screen_state.dart';
 import '../../my_cage/presentation/widgets/lcd_setting_tile.dart';
 import 'home_set_providers.dart';
 import 'widgets/cage_control_grid.dart';
@@ -194,17 +196,19 @@ class _ScheduleSection extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        // 위 8 간격은 로우가 갖는다 — 숨길 때 간격도 같이 사라진다.
         const HomeLcdRow(),
       ],
     );
   }
 }
 
-/// LCD 문구 로우 — 사육장 설정에서 이동(2026-09-07 사용자 지시). 일정 로우와
-/// 같은 문법(h51 surfaceTint radius 12). 대상은 현재 세트의 제어 기기 —
-/// 기기가 없는 세트에서는 로우를 그리지 않는다(회색 버튼만 두면 고장으로
-/// 읽힌다는 기존 규칙).
+/// '모듈 화면 설정' 로우(Figma 1659:5675, 2026-11-03 — 구 'LCD 문구' 로우를
+/// 대체). 일정 로우와 같은 문법(h51 surfaceTint radius 12), 오른쪽은 지금 LCD
+/// 문구. 탭하면 모듈 화면 설정 화면(문구·전원·꺼짐 예약·보호 사진).
+///
+/// 대상은 현재 세트의 제어 기기 — 기기가 없는 세트, LCD가 없는 허브
+/// (`LcdSupport.noLcd`, 기획 §12-4)에서는 로우를 그리지 않는다.
 class HomeLcdRow extends ConsumerWidget {
   const HomeLcdRow({super.key});
 
@@ -214,66 +218,71 @@ class HomeLcdRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final device = ref.watch(currentSetProvider).valueOrNull?.device;
     if (device == null) return const SizedBox.shrink();
+    // 실시간 능력(OTA 반영) → 목록 스냅샷.
+    final support = ref.watch(deviceLinkStatusProvider(device.id)
+            .select((s) => s.valueOrNull?.lcdSupport)) ??
+        device.lcdSupport;
+    if (support == LcdSupport.noLcd) return const SizedBox.shrink();
     final glass = context.glass;
-    return Material(
-      color: glass.surfaceTint,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        key: rowKey,
-        borderRadius: BorderRadius.circular(12),
-        // 기본값 = 페어링 때 감지된 기기 이름(`devices.device_id`).
-        onTap: () => showLcdSheet(context, ref, device.id,
-            defaultText: device.hardwareId),
-        child: SizedBox(
-          height: 51,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'redesign_home_lcd_label'.tr(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: 'Pretendard',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 16 * -0.02,
+    return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Material(
+          color: glass.surfaceTint,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            key: rowKey,
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => context.push(lcdSettingsPath(device.id)),
+            child: SizedBox(
+              height: 51,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'redesign_home_lcd_label'.tr(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Pretendard',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 16 * -0.02,
+                          color: glass.textSecondary,
+                        ),
+                      ),
+                    ),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 118),
+                      // 기기가 띄운 문구(서버 확정값 → 방금 보낸 문구 → 이 폰
+                      // 저장값) — 늘 하드웨어 ID만 보여 바꾼 문구가 적용됐는지
+                      // 알 수 없었다(2026-09-25, 2026-10-07 서버 값 우선).
+                      child: Text(
+                          ref.watch(lcdDisplayTextProvider(device.id)) ??
+                              device.hardwareId ??
+                              '--',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontFamily: 'Pretendard',
+                              fontSize: 14,
+                              height: 1.193359375,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: -.28,
+                              color: glass.textTertiary)),
+                    ),
+                    const SizedBox(width: 8),
+                    FigmaIcon.tinted(
+                      FigmaIcons.arrowNext,
+                      size: 24,
                       color: glass.textSecondary,
                     ),
-                  ),
+                  ],
                 ),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 118),
-                  // 기기가 띄운 문구(서버 확정값 → 방금 보낸 문구 → 이 폰
-                  // 저장값) — 늘 하드웨어 ID만 보여 바꾼 문구가 적용됐는지
-                  // 알 수 없었다(2026-09-25, 2026-10-07 서버 값 우선).
-                  child: Text(
-                      ref.watch(lcdDisplayTextProvider(device.id)) ??
-                          device.hardwareId ??
-                          '--',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontFamily: 'Pretendard',
-                          fontSize: 14,
-                          height: 1.193359375,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: -.28,
-                          color: glass.textTertiary)),
-                ),
-                const SizedBox(width: 8),
-                FigmaIcon.tinted(
-                  FigmaIcons.arrowNext,
-                  size: 24,
-                  color: glass.textSecondary,
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 }

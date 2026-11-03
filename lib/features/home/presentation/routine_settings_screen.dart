@@ -566,11 +566,16 @@ class ScheduleSwitch extends StatelessWidget {
       {super.key,
       required this.value,
       required this.color,
-      required this.onChanged});
+      required this.onChanged,
+      this.onKnobColor});
 
   final bool value;
   final Color color;
   final ValueChanged<bool> onChanged;
+
+  /// 켜짐일 때 손잡이 색. null이면 꺼짐과 같은 #F4F4F4 — 모듈 화면 설정
+  /// (Figma 1659:5964)은 켜짐 손잡이가 #FAFAFA다.
+  final Color? onKnobColor;
 
   @override
   Widget build(BuildContext context) {
@@ -597,7 +602,9 @@ class ScheduleSwitch extends StatelessWidget {
                         width: 50,
                         height: 28,
                         decoration: BoxDecoration(
-                            color: glass.surfaceTint,
+                            color: value
+                                ? onKnobColor ?? glass.surfaceTint
+                                : glass.surfaceTint,
                             borderRadius: BorderRadius.circular(14)))))));
   }
 }

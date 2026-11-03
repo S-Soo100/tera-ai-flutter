@@ -73,9 +73,9 @@ final lcdDisplayTextProvider =
 
 /// LCD 문구 입력 화면 열기 (2026-08-14 핸드오프 §3 → 2026-09-16 P08 전체 화면).
 ///
-/// 진입점은 홈 '기기 예약 설정' 섹션의 LCD 로우다(2026-09-07 사용자 지시로
-/// 사육장 설정에서 이동). 대상은 **현재 세트의 제어 기기**(예약·목표
-/// 온습도와 같은 기준). `lcd_bitmap/lcd_clear`가 차트 마커에서 제외되는
+/// 진입점은 모듈 화면 설정 화면의 '화면 표시 문구' 줄이다(2026-11-03 — 전엔
+/// 홈 LCD 로우에서 바로 열었다). 완료하면 그 화면으로 돌아간다. 대상은 그
+/// 화면의 기기(홈 현재 세트의 제어 기기). `lcd_bitmap/lcd_clear`가 차트 마커에서 제외되는
 /// 규칙은 그대로다(액추에이터 동작이 아님).
 Future<void> showLcdSheet(
   BuildContext context,
@@ -227,6 +227,15 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
                                     style: managementStyle(context,
                                         color: glass.textTertiary))),
                           ])),
+                      // Figma 1659:5764 — 입력칸 아래 8(y432) x24 12/500.
+                      // 안내만 하고 중복 검사는 하지 않는다(기획 D11).
+                      const SizedBox(height: 8),
+                      Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text('lcd_text_unique_hint'.tr(),
+                              key: const Key('lcd_unique_hint'),
+                              style: managementStyle(context,
+                                  size: 12, color: glass.textTertiary))),
                     ])),
             Positioned(
                 left: 12,

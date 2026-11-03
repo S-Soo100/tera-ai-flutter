@@ -1,4 +1,5 @@
 import '../../../shared/domain/num_format.dart';
+import 'lcd_screen_state.dart';
 import 'lcd_text.dart';
 
 /// Supabase `devices` row 매핑.
@@ -20,6 +21,9 @@ class Device {
   /// 기기가 ACK로 확정한 LCD 문구(`devices.lcd_text`·`lcd_text_updated_at`,
   /// 2026-10-07 서버 회신).
   final DeviceLcdText lcd;
+
+  /// 모듈 화면 설정(전원·꺼짐 예약·보호기·사진, `devices.lcd_*`, 2026-11-03).
+  final DeviceLcdScreen lcdScreen;
 
   /// 기기가 **지금 적용 중인** 온도 보정값(`devices.temp_offset_c`, ℃).
   /// 기기가 보내는 `t_a`는 이미 보정된 값이고 원래 측정값 = `t_a − 이 값`
@@ -44,8 +48,15 @@ class Device {
     this.hardwareId,
     this.capabilities,
     this.lcd = DeviceLcdText.unknown,
+    this.lcdScreen = DeviceLcdScreen.unknown,
     this.tempOffsetC,
   });
+
+  /// 모듈 화면 설정 지원 단계(기획 §12-4).
+  LcdSupport get lcdSupport => LcdSupport.fromCapabilities(capabilities);
+
+  /// 신 nano 펌웨어 — 수동 전원 조작이 다음 예약 경계까지만(기획 §12-1).
+  bool get lcdOverride => lcdOverrideFromCapabilities(capabilities);
 
   /// LED 밝기(PWM) 조절이 되는 보드인가. 릴레이 보드는 `brightness`를 무시하고
   /// 켜기만 하므로 이 값이 true일 때만 밝기 UI를 보여준다.
@@ -79,6 +90,7 @@ class Device {
           : null,
       capabilities: caps is Map ? caps.cast<String, dynamic>() : null,
       lcd: DeviceLcdText.fromJson(j),
+      lcdScreen: DeviceLcdScreen.fromJson(j),
       tempOffsetC: parseTempOffset(j['temp_offset_c']),
     );
   }
@@ -89,34 +101,64 @@ class Device {
 /// 같은 행 UPDATE에 실려 오는 LCD 문구([lcd])도 함께 나른다(2026-10-07) —
 /// 기기마다 채널을 하나 더 열지 않으려고. 연결 판정 소비처는 `isOnline`만
 /// select하므로 LCD 변화로 다시 그려지지 않는다.
+///
+/// 모듈 화면 설정([lcdScreen])과 LCD 능력([lcdSupport]·[lcdOverride])도 같은
+/// 길로 온다(2026-11-03) — OTA 뒤 `capabilities.lcd_saver`가 켜지면 열린 화면도
+/// 바로 활성화된다(기획 §11-1). capabilities는 LCD 판정에 쓰는 값만 담는다 —
+/// 전체 맵을 담으면 무관한 능력 변화까지 `==`가 달라진다.
 class DeviceLinkStatus {
-  const DeviceLinkStatus(
-      {required this.isOnline,
-      required this.lastSeenAt,
-      this.lcd = DeviceLcdText.unknown});
+  const DeviceLinkStatus({
+    required this.isOnline,
+    required this.lastSeenAt,
+    this.lcd = DeviceLcdText.unknown,
+    this.lcdScreen = DeviceLcdScreen.unknown,
+    this.lcdSupport = LcdSupport.needsUpdate,
+    this.lcdOverride = false,
+  });
 
   final bool isOnline;
   final DateTime? lastSeenAt;
   final DeviceLcdText lcd;
+  final DeviceLcdScreen lcdScreen;
+  final LcdSupport lcdSupport;
+  final bool lcdOverride;
 
   factory DeviceLinkStatus.of(Device d) => DeviceLinkStatus(
-      isOnline: d.isOnline, lastSeenAt: d.lastSeenAt, lcd: d.lcd);
+      isOnline: d.isOnline,
+      lastSeenAt: d.lastSeenAt,
+      lcd: d.lcd,
+      lcdScreen: d.lcdScreen,
+      lcdSupport: d.lcdSupport,
+      lcdOverride: d.lcdOverride);
 
-  factory DeviceLinkStatus.fromJson(Map<String, dynamic> j) => DeviceLinkStatus(
-        isOnline: j['is_online'] as bool? ?? false,
-        lastSeenAt: j['last_seen_at'] != null
-            ? DateTime.tryParse(j['last_seen_at'].toString())
-            : null,
-        lcd: DeviceLcdText.fromJson(j),
-      );
+  factory DeviceLinkStatus.fromJson(Map<String, dynamic> j) {
+    final caps = _capabilitiesOf(j['capabilities']);
+    return DeviceLinkStatus(
+      isOnline: j['is_online'] as bool? ?? false,
+      lastSeenAt: j['last_seen_at'] != null
+          ? DateTime.tryParse(j['last_seen_at'].toString())
+          : null,
+      lcd: DeviceLcdText.fromJson(j),
+      lcdScreen: DeviceLcdScreen.fromJson(j),
+      lcdSupport: LcdSupport.fromCapabilities(caps),
+      lcdOverride: lcdOverrideFromCapabilities(caps),
+    );
+  }
+
+  static Map<String, dynamic>? _capabilitiesOf(Object? raw) =>
+      raw is Map ? raw.cast<String, dynamic>() : null;
 
   @override
   bool operator ==(Object other) =>
       other is DeviceLinkStatus &&
       other.isOnline == isOnline &&
       other.lastSeenAt == lastSeenAt &&
-      other.lcd == lcd;
+      other.lcd == lcd &&
+      other.lcdScreen == lcdScreen &&
+      other.lcdSupport == lcdSupport &&
+      other.lcdOverride == lcdOverride;
 
   @override
-  int get hashCode => Object.hash(isOnline, lastSeenAt, lcd);
+  int get hashCode => Object.hash(
+      isOnline, lastSeenAt, lcd, lcdScreen, lcdSupport, lcdOverride);
 }

@@ -61,6 +61,9 @@ import '../../features/home/presentation/env_detail_screen.dart';
 import '../../features/home/presentation/env_range_setting_screen.dart';
 import '../../features/home/presentation/temp_humid_setting_screen.dart';
 import '../../features/home/presentation/temp_offset_screen.dart';
+import '../../features/my_cage/presentation/lcd_quiet_time_screen.dart';
+import '../../features/my_cage/presentation/lcd_saver_screen.dart';
+import '../../features/my_cage/presentation/lcd_settings_screen.dart';
 import '../../shared/widgets/glass_dock.dart';
 import 'tab_branches.dart';
 
@@ -98,6 +101,42 @@ GoRoute buildTempHumidSettingRoute() => GoRoute(
             builder: (context, state) => EnvRangeSettingScreen(
                 deviceId: state.pathParameters['deviceId']!, kind: kind),
           ),
+      ],
+    );
+
+/// 모듈 화면 설정(LCD 전원·꺼짐 예약·보호 사진, 2026-11-03). **최상위 라우트**
+/// (셸 밖 — 독 없음). 대상 기기는 경로의 `:deviceId`로 고정한다.
+const kLcdSettingsPath = '/lcd-settings';
+
+/// 모듈 화면 설정 화면 경로.
+String lcdSettingsPath(String deviceId) =>
+    '$kLcdSettingsPath/${Uri.encodeComponent(deviceId)}';
+
+/// 화면 꺼짐 시간(Figma 1659:6267).
+String lcdQuietTimePath(String deviceId) =>
+    '${lcdSettingsPath(deviceId)}/quiet-time';
+
+/// 화면 보호 사진 설정(Figma 1659:6396 / 1660:6700).
+String lcdSaverPath(String deviceId) => '${lcdSettingsPath(deviceId)}/saver';
+
+/// 모듈 화면 설정 라우트. 앱 라우터와 화면 테스트가 같은 정의를 쓴다.
+/// 사진 자르기는 라우트 없이 루트 Navigator push로 결과를 받는다
+/// (`showLcdPhotoCrop`).
+GoRoute buildLcdSettingsRoute() => GoRoute(
+      path: '$kLcdSettingsPath/:deviceId',
+      builder: (context, state) =>
+          LcdSettingsScreen(deviceId: state.pathParameters['deviceId']!),
+      routes: [
+        GoRoute(
+          path: 'quiet-time',
+          builder: (context, state) =>
+              LcdQuietTimeScreen(deviceId: state.pathParameters['deviceId']!),
+        ),
+        GoRoute(
+          path: 'saver',
+          builder: (context, state) =>
+              LcdSaverScreen(deviceId: state.pathParameters['deviceId']!),
+        ),
       ],
     );
 
@@ -575,6 +614,8 @@ GoRouter buildAppRouter({
       ),
       // v4 온습도 설정 묶음 — 비공개(kPublicPaths 미등록), 기기별 설정이다.
       buildTempHumidSettingRoute(),
+      // 모듈 화면 설정 — 홈 '모듈 화면 설정' 줄에서 연다(기기별, 비공개).
+      buildLcdSettingsRoute(),
     ],
   );
 }

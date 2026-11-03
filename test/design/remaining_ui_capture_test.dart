@@ -43,7 +43,6 @@ import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/home/presentation/widgets/device_control_sheet.dart';
 import 'package:vivanaut/features/home/domain/schedule_device.dart';
 import '../features/home/control_sheet_fixtures.dart' as ctl;
-import 'package:vivanaut/features/home/presentation/home_screen.dart';
 import 'package:vivanaut/features/home/presentation/schedule_providers.dart';
 import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart';
 import '../features/home/schedule_fixtures.dart';
@@ -85,6 +84,11 @@ class _Lcd implements LcdRepository {
   Future<void> setText(String deviceId, String text) async {}
   @override
   Future<void> clear(String deviceId) async {}
+
+  // 모듈 화면 설정 호출(2026-11-03)은 이 캡처가 쓰지 않는다.
+  @override
+  Object? noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
 }
 
 class _FlowController extends DeviceAddFlowController {
@@ -767,7 +771,17 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await tester.pumpWidget(
-        shell(boundary, const Scaffold(body: HomeLcdRow()), overrides: [
+        // 2026-11-03부터 문구 화면은 모듈 화면 설정의 '화면 표시 문구' 줄에서
+        // 연다(홈 줄은 설정 화면으로 간다) — 같은 호출로 연다.
+        shell(
+            boundary,
+            Scaffold(
+                body: Consumer(
+                    builder: (context, ref, _) => TextButton(
+                        key: const Key('open_lcd_sheet'),
+                        onPressed: () => showLcdSheet(context, ref, 'd1'),
+                        child: const Text('open')))),
+            overrides: [
       lcdRepositoryProvider.overrideWithValue(_Lcd()),
       lcdTextAccountProvider.overrideWithValue(null),
       currentSetProvider.overrideWith((ref) async => EnclosureSet(
@@ -784,7 +798,7 @@ void main() {
           pet: null)),
     ]));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(const Key('open_lcd_sheet')));
     await capture(tester, boundary, 'p08-lcd-empty');
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '도도도네 집');
     await capture(tester, boundary, 'p08-lcd-filled');
