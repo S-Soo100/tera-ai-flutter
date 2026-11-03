@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../shared/domain/keep_all_words.dart';
 import 'dart:typed_data';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -633,8 +634,8 @@ class _Note extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(top: 8, left: 12, right: 12),
-        child:
-            Text(text, key: textKey, style: _noteStyle(context, color: color)),
+        child: Text(keepAllWords(text),
+            key: textKey, style: _noteStyle(context, color: color)),
       );
 }
 

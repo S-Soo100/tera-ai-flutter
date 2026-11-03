@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image/image.dart' as img;
+import 'package:vivanaut/shared/domain/keep_all_words.dart';
 import 'package:vivanaut/core/router/app_router.dart';
 import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart'
     show ScheduleSwitch;
@@ -161,7 +162,8 @@ void main() {
           const Offset(237, 402));
       expect(tester.getTopLeft(find.byKey(LcdSaverScreen.noteKey)),
           const Offset(36, 511));
-      expect(find.text('모듈 화면에 사진과 기존 온습도 표시가 번갈아 나타납니다'), findsOneWidget);
+      expect(find.text(keepAllWords('모듈 화면에 사진과 기존 온습도 표시가 번갈아 나타납니다')),
+          findsOneWidget);
       expect(tester.getRect(find.byKey(LcdSaverScreen.doneKey)),
           const Rect.fromLTWH(12, 852 - 34 - 66 - 56, 369, 56));
       expect(find.text('1분'), findsOneWidget, reason: '미설정 기본 1분');
@@ -193,7 +195,7 @@ void main() {
     testWidgets('켜기만 막고 안내를 보인다', (tester) async {
       await _open(tester, link: lcdLink());
       expect(find.byKey(LcdSaverScreen.needPhotoNoteKey), findsOneWidget);
-      expect(find.text('사진을 먼저 추가해 주세요'), findsOneWidget);
+      expect(find.text(keepAllWords('사진을 먼저 추가해 주세요')), findsOneWidget);
       expect(_switchOn(tester), isFalse);
       expect(_switchIgnored(tester), isTrue);
       expect(find.text('보호기 · 꺼짐'), findsOneWidget);
@@ -262,7 +264,7 @@ void main() {
           showOfflineIcon: false);
       final env =
           await _open(tester, link: lcdLink(imageKey: 'k1', saver: server));
-      expect(find.text('모듈 화면에 사진만 표시돼요'), findsOneWidget,
+      expect(find.text(keepAllWords('모듈 화면에 사진만 표시돼요')), findsOneWidget,
           reason: 'mode image 각주');
       await tester.tap(find.byKey(LcdSaverScreen.switchKey));
       await tester.pump();
@@ -470,7 +472,8 @@ void main() {
   testWidgets('오프라인 — 스위치·stepper·완료·사진 칸·연필 모두 막고 안내 (§11-6)', (tester) async {
     final env =
         await _open(tester, link: lcdLink(imageKey: 'k1'), online: false);
-    expect(find.text('기기가 연결돼 있지 않아 지금은 보낼 수 없어요'), findsOneWidget);
+    expect(
+        find.text(keepAllWords('기기가 연결돼 있지 않아 지금은 보낼 수 없어요')), findsOneWidget);
     expect(_switchIgnored(tester), isTrue);
     for (final row in [LcdSaverScreen.imageRowKey, LcdSaverScreen.infoRowKey]) {
       expect(_stepEnabled(tester, row, VivaStepper.increaseKey), isFalse);
