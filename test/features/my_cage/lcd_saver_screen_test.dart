@@ -370,12 +370,12 @@ void main() {
       expect(find.byKey(LcdSaverScreen.photoAddKey), findsOneWidget);
       expect(find.byKey(LcdSaverScreen.needPhotoNoteKey), findsOneWidget);
       expect(_switchIgnored(tester), isTrue, reason: '사진 없음 규칙');
-      // 설정 화면 줄도 "사진 없음".
+      // 설정 화면 줄은 보호기가 꺼져 있으니 '꺼짐'(사진 없음 표시는 켜 놨을 때만).
       env.router.pop();
       await _frames(tester);
       expect(
           tester.widget<Text>(find.byKey(LcdSettingsScreen.saverValueKey)).data,
-          '사진 없음');
+          '꺼짐');
       // 다음 key 변경이면 풀린다.
       env.feed.set(lcdLink(imageKey: 'k3'));
       await _frames(tester);

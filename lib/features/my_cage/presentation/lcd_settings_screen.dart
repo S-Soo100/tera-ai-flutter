@@ -232,11 +232,14 @@ class _LcdSettingsScreenState extends ConsumerState<LcdSettingsScreen> {
     // (§11-6). 켜져 있으면 고치는 즉시 기기로 보낸다.
     final canEditTime = supported && !quiet.pending && (!scheduleOn || online);
 
-    final saverLabel = !view.screen.hasImage
-        ? 'lcd_saver_no_photo'
-        : view.screen.saverOrDefault.enabled
+    // Figma 1659:5964 — 사진 없이 꺼져 있으면 '꺼짐'. '사진 없음'은 켜 놨는데
+    // 사진이 없을 때만(기기는 온습도만 띄운다, §11-4).
+    final saverOn = view.screen.saverOrDefault.enabled;
+    final saverLabel = !saverOn
+        ? 'lcd_state_off'
+        : view.screen.hasImage
             ? 'lcd_state_on'
-            : 'lcd_state_off';
+            : 'lcd_saver_no_photo';
 
     final notes = <Widget>[
       if (!supported)

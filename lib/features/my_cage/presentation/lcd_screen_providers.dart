@@ -759,6 +759,15 @@ class LcdQuietDraft
     final pending =
         ref.read(lcdCommandProvider((deviceId, LcdCommandKind.quiet))).target;
     final LcdQuietWindow resolved = ref.read(lcdQuietTimeProvider(deviceId));
+    // 기기 값을 불러오기 전에 열렸으면 처음 값이 기본값으로 굳는다 — 값이
+    // 도착했을 때 아직 손대지 않았으면 그 값으로 다시 잡는다(수치 검수 발견).
+    if (ref.read(lcdScreenViewProvider(deviceId)).valueOrNull == null) {
+      ref.listen(lcdScreenViewProvider(deviceId), (prev, next) {
+        if (prev?.valueOrNull != null || next.valueOrNull == null) return;
+        if (state.window != state.initial) return;
+        state = LcdQuietDraftState.of(ref.read(lcdQuietTimeProvider(deviceId)));
+      });
+    }
     final initial =
         (pending is LcdQuietTarget ? pending.window : null) ?? resolved;
     return LcdQuietDraftState.of(initial);

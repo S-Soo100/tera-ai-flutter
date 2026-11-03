@@ -111,7 +111,10 @@ void main() {
 
       // 오른쪽 값 16/500 #949090.
       expect(find.text('viva-iot-0001'), findsOneWidget);
-      expect(find.text('사진 없음'), findsOneWidget);
+      // 사진 없이 꺼져 있으면 Figma대로 '꺼짐'('사진 없음'은 켜 놨을 때만).
+      expect(
+          tester.widget<Text>(find.byKey(LcdSettingsScreen.saverValueKey)).data,
+          '꺼짐');
       expect(find.text('20:00~8:00'), findsOneWidget);
       expect(find.text('설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다'), findsOneWidget);
       expect(_switchValue(tester, LcdSettingsScreen.powerSwitchKey), isTrue);

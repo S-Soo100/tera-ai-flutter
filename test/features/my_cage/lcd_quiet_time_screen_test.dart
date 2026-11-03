@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/core/router/app_router.dart';
@@ -54,6 +56,26 @@ bool _doneEnabled(WidgetTester tester) =>
 
 void main() {
   setUpAll(initLcdTestStrings);
+
+  testWidgets('기기 값을 불러오기 전에 열려도 도착한 서버 시간으로 잡는다', (tester) async {
+    final rows = CommandRows();
+    final feed = StreamController<DeviceLinkStatus?>();
+    addTearDown(rows.close);
+    addTearDown(feed.close);
+    await pumpLcdRouter(tester,
+        settle: false,
+        initial: lcdQuietTimePath(kLcdDevice),
+        overrides: lcdOverrides(
+            repo: FakeLcdRepo(),
+            rows: rows,
+            link: feed.stream,
+            now: _noon,
+            devices: const [lcdTestDevice]));
+    feed.add(lcdLink(quiet: LcdQuietWindow.parse('18:00', '08:00')));
+    await tester.pumpAndSettle();
+    expect(_text(tester, _k(true, 'hour')), '6');
+    expect(_text(tester, _k(false, 'hour')), '8');
+  });
 
   testWidgets('수치 (Figma 1659:6267, 393×852)', (tester) async {
     await _open(tester, link: lcdLink());
