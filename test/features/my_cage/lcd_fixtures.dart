@@ -19,6 +19,8 @@ import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:vivanaut/features/my_cage/domain/lcd_screen_state.dart';
 import 'package:vivanaut/features/my_cage/domain/lcd_text.dart';
 import 'package:vivanaut/features/my_cage/presentation/lcd_screen_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/sys_health_controllers.dart'
+    show commandRowProvider;
 import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/lcd_setting_tile.dart';
 
@@ -223,11 +225,12 @@ List<Override> lcdOverrides({
   String? account = 'u1',
   bool online = true,
   DateTime? now,
+  DateTime Function()? clock,
   List<Device> devices = const [],
 }) =>
     [
       lcdRepositoryProvider.overrideWithValue(repo),
-      lcdCommandRowProvider.overrideWith((ref, id) => rows.of(id).stream),
+      commandRowProvider.overrideWith((ref, id) => rows.of(id).stream),
       deviceLinkStatusProvider.overrideWith((ref, id) => link),
       lcdLinkRefreshProvider.overrideWith((ref, id) =>
           refresh?.call() ?? Completer<DeviceLinkStatus?>().future),
@@ -236,7 +239,10 @@ List<Override> lcdOverrides({
       lcdTextStoreProvider.overrideWithValue(MemoryTextStore()),
       moduleOnlineProvider.overrideWith((ref, id) => online),
       deviceListProvider.overrideWith((ref) async => devices),
-      if (now != null) lcdNowProvider.overrideWithValue(now),
+      if (clock != null)
+        lcdNowProvider.overrideWithValue(clock)
+      else if (now != null)
+        lcdNowProvider.overrideWithValue(() => now),
     ];
 
 const unsupportedFirmware =

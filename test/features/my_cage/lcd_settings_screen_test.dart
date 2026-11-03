@@ -328,6 +328,34 @@ void main() {
       expect(find.text('설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다'), findsOneWidget);
     });
 
+    testWidgets('화면을 열어 둔 채 예약 시간이 되면, 다시 그릴 때(앱 복귀) 안내가 나온다', (tester) async {
+      var now = _noon;
+      final rows = CommandRows();
+      addTearDown(rows.close);
+      await pumpLcdRouter(tester,
+          overrides: lcdOverrides(
+              repo: FakeLcdRepo(),
+              rows: rows,
+              link: Stream.value(lcdLink(quiet: _quiet20to8)),
+              clock: () => now,
+              devices: const [lcdTestDevice]));
+      expect(find.byKey(LcdSettingsScreen.powerNoteKey), findsNothing);
+      now = _night;
+      for (final s in const [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(s);
+      }
+      await tester.pumpAndSettle();
+      expect(find.text('지금은 꺼짐 예약 시간이라 오전 8:00에 켜져요'), findsOneWidget,
+          reason: '"지금"을 캐시하지 않는다');
+    });
+
     testWidgets('구 규칙 — 예약 시간 밖이면 보조 글자 없음', (tester) async {
       await _pump(tester, link: lcdLink(quiet: _quiet20to8), now: _noon);
       expect(find.byKey(LcdSettingsScreen.powerNoteKey), findsNothing);

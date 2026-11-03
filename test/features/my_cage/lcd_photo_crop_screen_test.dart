@@ -2,7 +2,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image/image.dart' as img;
+import 'package:vivanaut/core/router/app_router.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/features/my_cage/domain/lcd_photo_codec.dart';
 import 'package:vivanaut/features/my_cage/presentation/lcd_photo_crop_screen.dart';
@@ -17,6 +19,23 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     LcdPhotoPick? result;
+    // 앱과 같은 라우트(모듈 화면 설정 아래 saver/crop)로 연다.
+    final router = GoRouter(routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, _) => Scaffold(
+          body: Center(
+            child: TextButton(
+              onPressed: () async => result = await showLcdPhotoCrop(context,
+                  kLcdDevice, img.encodeJpg(img.Image(width: 50, height: 40))),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+      buildLcdSettingsRoute(),
+    ]);
+    addTearDown(router.dispose);
     await tester.pumpWidget(ProviderScope(
       child: EasyLocalization(
         supportedLocales: const [Locale('ko')],
@@ -24,7 +43,7 @@ void main() {
         path: 'assets/l10n',
         assetLoader: const KoStrings(),
         child: Builder(
-          builder: (c) => MaterialApp(
+          builder: (c) => MaterialApp.router(
             theme: AppTheme.light,
             locale: c.locale,
             supportedLocales: c.supportedLocales,
@@ -33,18 +52,7 @@ void main() {
                 data: MediaQuery.of(context).copyWith(
                     padding: const EdgeInsets.only(top: 62, bottom: 34)),
                 child: child!),
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: Center(
-                  child: TextButton(
-                    onPressed: () async => result = await showLcdPhotoCrop(
-                        context,
-                        img.encodeJpg(img.Image(width: 50, height: 40))),
-                    child: const Text('open'),
-                  ),
-                ),
-              ),
-            ),
+            routerConfig: router,
           ),
         ),
       ),

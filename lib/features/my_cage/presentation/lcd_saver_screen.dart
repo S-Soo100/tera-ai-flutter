@@ -504,7 +504,7 @@ class _LcdSaverScreenState extends ConsumerState<LcdSaverScreen> {
   Future<void> _pickAndUpload() async {
     final picker = ref.read(lcdPhotoPickerProvider);
     final feedback = ControlFeedback.of(context);
-    final pick = await picker(context);
+    final pick = await picker(context, _id);
     if (!mounted) return;
     switch (pick) {
       case LcdPhotoCancelled():
@@ -519,7 +519,9 @@ class _LcdSaverScreenState extends ConsumerState<LcdSaverScreen> {
         }
         final view = ref.read(lcdScreenViewProvider(_id)).valueOrNull;
         await ref.read(lcdCommandProvider(_imageKey).notifier).run(
-            LcdImageTarget.upload(bytes, previousKey: view?.rawImageKey),
+            LcdImageTarget.upload(bytes,
+                previousKey: view?.rawImageKey,
+                previousUpdatedAt: view?.screen.updatedAt),
             onResult: (r) => _announcePhoto(feedback, r));
     }
   }
@@ -535,7 +537,9 @@ class _LcdSaverScreenState extends ConsumerState<LcdSaverScreen> {
     if (!ok || !mounted) return;
     final view = ref.read(lcdScreenViewProvider(_id)).valueOrNull;
     await ref.read(lcdCommandProvider(_imageKey).notifier).run(
-        LcdImageTarget.delete(previousKey: view?.rawImageKey),
+        LcdImageTarget.delete(
+            previousKey: view?.rawImageKey,
+            previousUpdatedAt: view?.screen.updatedAt),
         onResult: (r) => _announcePhoto(feedback, r));
   }
 

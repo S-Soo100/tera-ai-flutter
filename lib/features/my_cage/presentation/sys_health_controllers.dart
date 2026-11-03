@@ -65,9 +65,10 @@ final sysHealthProvider =
   return controller.stream;
 });
 
-/// 사육장 재시작 명령 한 건의 상태(`commands` 행). 먼저 한 번 읽고 — REST 응답
-/// 전에 이미 acked됐을 수 있다 — 그 행의 UPDATE를 구독한다.
-final rebootCommandProvider = StreamProvider.autoDispose
+/// 명령 한 건의 상태(`commands` 행) — 사육장 재시작·온도 보정·LCD 화면 설정이
+/// 같이 쓴다. 먼저 한 번 읽고 — REST 응답 전에 이미 acked됐을 수 있다 — 그
+/// 행의 UPDATE를 구독한다.
+final commandRowProvider = StreamProvider.autoDispose
     .family<RebootCommandState?, String>((ref, commandId) {
   final repo = ref.watch(deviceHealthRepositoryProvider);
   final supabase = ref.watch(supabaseClientProvider);
@@ -84,7 +85,7 @@ final rebootCommandProvider = StreamProvider.autoDispose
   bindResilientChannel(
     ref,
     supabase: supabase,
-    name: 'reboot-command-$commandId',
+    name: 'command-row-$commandId',
     configure: (c) => c.onPostgresChanges(
       event: PostgresChangeEvent.update,
       schema: 'public',
@@ -278,7 +279,7 @@ class RebootController
 
   void _watchCommand(String commandId) {
     _command?.close();
-    _command = ref.listen(rebootCommandProvider(commandId), (_, next) {
+    _command = ref.listen(commandRowProvider(commandId), (_, next) {
       final command = next.valueOrNull;
       if (command == null || !state.rebooting) return;
       switch (command.status) {

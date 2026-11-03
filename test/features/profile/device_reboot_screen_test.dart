@@ -52,7 +52,7 @@ void main() {
           for (final e in health.entries)
             sysHealthProvider((PairTargetKind.device, e.key))
                 .overrideWith((ref) => Stream.value(e.value)),
-          rebootCommandProvider('cmd-1')
+          commandRowProvider('cmd-1')
               .overrideWith((ref) => const Stream.empty()),
           deviceHealthRepositoryProvider.overrideWithValue(repo),
         ],

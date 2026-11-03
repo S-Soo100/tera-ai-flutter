@@ -5,19 +5,21 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../domain/lcd_photo_codec.dart';
 import 'widgets/management_widgets.dart';
 
-/// 사진 자르기 화면을 루트 Navigator에 띄우고 결과를 받는다(§3-6, D5).
-/// 뒤로·닫기는 [LcdPhotoCancelled], 자르기·인코딩 실패는 [LcdPhotoUnreadable].
+/// 사진 자르기 화면(`lcdPhotoCropPath`, GoRouter 등록)을 띄우고 결과를 받는다
+/// (§3-6, D5). 뒤로·닫기는 [LcdPhotoCancelled], 자르기·인코딩 실패는
+/// [LcdPhotoUnreadable].
 Future<LcdPhotoPick> showLcdPhotoCrop(
-    BuildContext context, Uint8List source) async {
-  final result = await Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute<LcdPhotoPick>(
-          builder: (_) => LcdPhotoCropScreen(source: source)));
+    BuildContext context, String deviceId, Uint8List source) async {
+  final result = await GoRouter.of(context)
+      .push<LcdPhotoPick>(lcdPhotoCropPath(deviceId), extra: source);
   return result ?? const LcdPhotoCancelled();
 }
 
@@ -44,6 +46,12 @@ class _CropPhaseNotifier extends AutoDisposeNotifier<_CropPhase> {
 /// 틀은 본문 영역 가운데, 좌우 24 안쪽(393 기준 345×276).
 class LcdPhotoCropScreen extends ConsumerStatefulWidget {
   const LcdPhotoCropScreen({super.key, required this.source});
+
+  /// 라우트 `extra`에서 — 바이트가 없으면(앱 재시작 복원·잘못된 진입) 바로
+  /// 취소로 돌아간다.
+  static Widget fromExtra(Object? extra) => extra is Uint8List
+      ? LcdPhotoCropScreen(source: extra)
+      : const _MissingCropSource();
 
   /// EXIF 회전을 굽고 긴 변 ≤2048로 정리된 사진([prepareLcdPhotoSource]).
   final Uint8List source;
@@ -192,5 +200,20 @@ class _LcdPhotoCropScreenState extends ConsumerState<LcdPhotoCropScreen> {
         ]),
       ),
     );
+  }
+}
+
+/// 자를 사진 없이 열린 경우 — 다음 프레임에 취소로 닫는다.
+class _MissingCropSource extends StatelessWidget {
+  const _MissingCropSource();
+
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        Navigator.of(context).maybePop<LcdPhotoPick>(const LcdPhotoCancelled());
+      }
+    });
+    return ColoredBox(color: context.glass.textPrimary);
   }
 }

@@ -3,11 +3,8 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart' show BuildContext;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/network/terra_rest_client.dart';
-import '../../../core/supabase/realtime_binding.dart';
-import '../../../core/supabase/supabase_provider.dart';
 import '../data/device_health_repository.dart';
 import '../data/lcd_quiet_store.dart';
 import '../data/lcd_repository.dart';
@@ -15,6 +12,7 @@ import '../domain/device.dart';
 import '../domain/lcd_photo_codec.dart';
 import '../domain/lcd_screen_state.dart';
 import 'lcd_photo_picker.dart';
+import 'sys_health_controllers.dart' show commandRowProvider;
 import 'supabase_module_providers.dart';
 import 'widgets/lcd_setting_tile.dart' show lcdTextAccountProvider;
 
@@ -63,23 +61,30 @@ LcdLinkValues? _selectLink(AsyncValue<DeviceLinkStatus?> s) {
   return v == null ? null : _linkValuesOf(v);
 }
 
-/// 실시간 구독([deviceLinkStatusProvider])과 진입 시 재조회([lcdLinkRefreshProvider])
-/// 중 **나중에 도착한 값**. 실시간 값은 바뀔 때만 오므로(같은 값 재방출 없음)
-/// 도착 순서가 곧 신선도 순서다.
+/// 실시간 구독([deviceLinkStatusProvider])과 진입 시 재조회([lcdLinkRefreshProvider]).
+/// 재조회는 목록 캐시가 오래됐을 때를 메우는 용도라, 들어온 뒤 실시간 변경이
+/// 한 번이라도 오면 그쪽이 더 새롭다 — 그 뒤에 늦게 도착한 재조회 응답(보낸
+/// 건 더 먼저)은 버린다. 안 그러면 방금 바꾼 스위치가 옛 값으로 돌아간다.
 final _lcdLinkProvider = NotifierProvider.autoDispose
     .family<_LcdLinkController, LcdLinkValues?, String>(_LcdLinkController.new);
 
 class _LcdLinkController
     extends AutoDisposeFamilyNotifier<LcdLinkValues?, String> {
+  bool _liveSeen = false;
+
   @override
   LcdLinkValues? build(String deviceId) {
+    _liveSeen = false;
     ref.listen(deviceLinkStatusProvider(deviceId).select(_selectLink),
-        (_, next) {
-      if (next != null) state = next;
+        (prev, next) {
+      if (next == null) return;
+      // 첫 값은 목록 스냅샷일 수 있다 — 그다음부터가 실시간 변경이다.
+      if (prev != null || state != null) _liveSeen = true;
+      state = next;
     });
     ref.listen(lcdLinkRefreshProvider(deviceId), (_, next) {
       final v = next.valueOrNull;
-      if (v != null) state = _linkValuesOf(v);
+      if (v != null && !_liveSeen) state = _linkValuesOf(v);
     });
     return _selectLink(ref.read(deviceLinkStatusProvider(deviceId)));
   }
@@ -231,9 +236,15 @@ final lcdPreviewUrlProvider =
   return (await repo.getState(deviceId)).previewUrl;
 });
 
-/// "지금" — 꺼짐 예약 시간 안인지 판정할 때만 쓴다. 그릴 때·앱 복귀 때만
-/// 다시 계산한다(경계 타이머 없음, §11-3). 복귀 때 화면이 invalidate한다.
-final lcdNowProvider = Provider.autoDispose<DateTime>((ref) => clock.now());
+/// "지금"을 주는 함수 — 꺼짐 예약 시간 안인지 판정할 때만 쓴다. 그릴 때마다
+/// 부른다(값을 캐시하면 화면을 열어 둔 채 경계를 지나도 안내가 안 바뀐다).
+/// 경계 타이머는 없고(§11-3), 앱 복귀 때는 [lcdResumeTickProvider]로 다시
+/// 그린다. 테스트가 고정 시각으로 바꾼다.
+final lcdNowProvider = Provider<DateTime Function()>((ref) => clock.now);
+
+/// 앱 복귀 횟수 — 설정 화면이 올리고 지켜본다(복귀하면 다시 그려 "지금"을
+/// 새로 읽는다).
+final lcdResumeTickProvider = StateProvider.autoDispose<int>((ref) => 0);
 
 // ── 꺼짐 예약 시간 ─────────────────────────────────────────────────────────────
 
@@ -282,9 +293,10 @@ final lcdQuietTimeProvider =
     Provider.autoDispose.family<LcdQuietWindow, String>((ref, deviceId) {
   final server = ref.watch(lcdScreenViewProvider(deviceId)
       .select((v) => v.valueOrNull?.screen.quiet));
-  return server ??
-      ref.watch(lcdQuietMemoryProvider(deviceId)) ??
-      LcdQuietWindow.defaults;
+  // 서버 값이 있어도 기억을 늘 지켜본다 — 살아 있어야 서버 값을 폰에 옮겨
+  // 둔다(§11-3). 다른 기기·웹에서 예약을 꺼도 마지막 시간이 남는다.
+  final memory = ref.watch(lcdQuietMemoryProvider(deviceId));
+  return server ?? memory ?? LcdQuietWindow.defaults;
 });
 
 // ── 명령 ─────────────────────────────────────────────────────────────────────
@@ -350,23 +362,33 @@ final class LcdSaverTarget extends LcdCommandTarget {
 }
 
 /// 보호 사진 올리기([bytes]) / 지우기([bytes] null). [previousKey]는 보낼 때의
-/// 서버 `lcd_image_key`(가리기 전 — [LcdScreenView.rawImageKey]).
+/// 서버 `lcd_image_key`(가리기 전 — [LcdScreenView.rawImageKey]),
+/// [previousUpdatedAt]은 그때의 `lcd_updated_at`.
 final class LcdImageTarget extends LcdCommandTarget {
-  const LcdImageTarget.upload(List<int> this.bytes, {this.previousKey});
-  const LcdImageTarget.delete({this.previousKey}) : bytes = null;
+  const LcdImageTarget.upload(List<int> this.bytes,
+      {this.previousKey, this.previousUpdatedAt});
+  const LcdImageTarget.delete({this.previousKey, this.previousUpdatedAt})
+      : bytes = null;
 
   final List<int>? bytes;
   final String? previousKey;
+  final DateTime? previousUpdatedAt;
 
   bool get isDelete => bytes == null;
 
   @override
   LcdCommandKind get kind => LcdCommandKind.image;
 
+  /// 같은 사진을 다시 올리면 key(sha)가 그대로다 — 서버가 ACK로 확정 시각을
+  /// 새로 쓴 것으로도 닿았다고 본다(안 그러면 매번 3초를 다 기다린다).
   @override
-  bool reachedBy(LcdScreenView view) => isDelete
-      ? !view.screen.hasImage
-      : view.screen.imageKey != null && view.screen.imageKey != previousKey;
+  bool reachedBy(LcdScreenView view) {
+    final s = view.screen;
+    if (isDelete) return !s.hasImage;
+    if (s.imageKey == null) return false;
+    return s.imageKey != previousKey ||
+        (s.updatedAt != null && s.updatedAt != previousUpdatedAt);
+  }
 }
 
 /// 명령 하나의 끝. 문구는 [messageKeyFor]가 고른다(§11-2·§12-2).
@@ -452,6 +474,11 @@ const kLcdCommandGiveUpAfter = Duration(seconds: 40);
 /// ok 뒤 기기 확정값(`devices`)이 목표에 닿기를 기다리는 최대 시간(§11-2).
 const kLcdConfirmHold = Duration(seconds: 3);
 
+/// 신 펌웨어(`lcd_override`)의 전원 — 스위치는 `lcd_screen_on`으로 그리는데
+/// 그 값은 ACK가 아니라 3초 telemetry로 바뀐다(바뀔 때만 반영). 3초면 보고
+/// 직전에 놓아 스위치가 잠깐 옛 값으로 튄다.
+const kLcdScreenConfirmHold = Duration(seconds: 8);
+
 /// 실행기 상태.
 class LcdCommandState {
   const LcdCommandState({
@@ -478,45 +505,6 @@ class LcdCommandState {
 
   bool get pending => target != null;
 }
-
-/// 명령 행(`commands`) 한 건 — 먼저 한 번 읽고(REST 응답 전에 끝났을 수 있다)
-/// 그 행의 UPDATE를 구독한다(§11-2).
-final lcdCommandRowProvider = StreamProvider.autoDispose
-    .family<RebootCommandState?, String>((ref, commandId) {
-  final repo = ref.watch(deviceHealthRepositoryProvider);
-  final supabase = ref.watch(supabaseClientProvider);
-  final controller = StreamController<RebootCommandState?>();
-
-  Future<void> reload() async {
-    try {
-      final row = await repo.fetchCommand(commandId);
-      if (!controller.isClosed && row != null) controller.add(row);
-    } catch (_) {/* Realtime·앱 쪽 한도가 남는다. */}
-  }
-
-  unawaited(reload());
-  bindResilientChannel(
-    ref,
-    supabase: supabase,
-    name: 'lcd-command-$commandId',
-    configure: (c) => c.onPostgresChanges(
-      event: PostgresChangeEvent.update,
-      schema: 'public',
-      table: 'commands',
-      filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq, column: 'id', value: commandId),
-      callback: (payload) {
-        if (!controller.isClosed) {
-          controller
-              .add(DeviceHealthRepository.commandStateOf(payload.newRecord));
-        }
-      },
-    ),
-    onRejoined: () => unawaited(reload()),
-  );
-  ref.onDispose(controller.close);
-  return controller.stream;
-});
 
 /// LCD 명령 실행기 — 종류마다 하나. 보내기 → 명령 행 → 결과 → (ok면) 기기
 /// 확정값이 목표에 닿을 때까지 최대 3초 목표 유지(§11-2).
@@ -613,7 +601,7 @@ class LcdCommandController
     });
     _giveUp = Timer(
         kLcdCommandGiveUpAfter, () => _finish(gen, LcdCommandResult.noAck));
-    _row = ref.listen(lcdCommandRowProvider(commandId), (_, next) {
+    _row = ref.listen(commandRowProvider(commandId), (_, next) {
       final row = next.valueOrNull;
       if (row == null || !_current(gen)) return;
       final outcome = classifyLcdCommand(row.status, row.result);
@@ -663,11 +651,16 @@ class LcdCommandController
       return view != null && target.reachedBy(view);
     }
 
-    if (reached(ref.read(lcdScreenViewProvider(_deviceId)))) {
+    final now = ref.read(lcdScreenViewProvider(_deviceId));
+    if (reached(now)) {
       _finish(gen, LcdCommandResult.ok);
       return;
     }
-    _hold = Timer(kLcdConfirmHold, () => _finish(gen, LcdCommandResult.ok));
+    final hold =
+        target is LcdPowerTarget && (now.valueOrNull?.overrideRule ?? false)
+            ? kLcdScreenConfirmHold
+            : kLcdConfirmHold;
+    _hold = Timer(hold, () => _finish(gen, LcdCommandResult.ok));
     _view = ref.listen(lcdScreenViewProvider(_deviceId), (_, next) {
       if (reached(next)) _finish(gen, LcdCommandResult.ok);
     });
@@ -908,6 +901,7 @@ class LcdSaverDraft
 // ── 사진 고르기 ───────────────────────────────────────────────────────────────
 
 /// 사진 한 장을 고르고 잘라 업로드용 JPEG로 만든다. 테스트는 이걸 바꾼다.
-typedef LcdPhotoPicker = Future<LcdPhotoPick> Function(BuildContext context);
+typedef LcdPhotoPicker = Future<LcdPhotoPick> Function(
+    BuildContext context, String deviceId);
 
 final lcdPhotoPickerProvider = Provider<LcdPhotoPicker>((ref) => pickLcdPhoto);

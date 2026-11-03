@@ -112,7 +112,7 @@ void main() {
         deviceListProvider.overrideWith((ref) async => [_row(deviceOffset)]),
         deviceOffsetProvider(kEnvV4DeviceId)
             .overrideWith((ref) => device.offsetStream()),
-        rebootCommandProvider
+        commandRowProvider
             .overrideWith((ref, id) => device._commands.stream),
         tempOffsetRepositoryProvider.overrideWithValue(offsets),
         moduleLinkProvider(kEnvV4DeviceId)

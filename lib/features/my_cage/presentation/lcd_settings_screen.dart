@@ -100,7 +100,7 @@ class _LcdSettingsScreenState extends ConsumerState<LcdSettingsScreen> {
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(onResume: () {
-      if (mounted) ref.invalidate(lcdNowProvider);
+      if (mounted) ref.read(lcdResumeTickProvider.notifier).state++;
     });
   }
 
@@ -355,7 +355,8 @@ class _LcdSettingsScreenState extends ConsumerState<LcdSettingsScreen> {
   /// 확정값 기준이고, 같은 종류 명령 대기 중엔 숨긴다.
   String? _powerNote(LcdScreenView view, bool powerPending, bool quietPending) {
     if (powerPending) return null;
-    final now = ref.watch(lcdNowProvider);
+    ref.watch(lcdResumeTickProvider);
+    final now = ref.watch(lcdNowProvider)();
     final quiet = view.screen.quiet;
     final inQuiet = !quietPending && quiet != null && quiet.contains(now);
     String endLabel() => lcdAmPmLabel(quiet!.endAmPm);
