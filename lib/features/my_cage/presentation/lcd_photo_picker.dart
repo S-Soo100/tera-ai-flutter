@@ -11,7 +11,7 @@ import 'lcd_photo_crop_screen.dart';
 ///
 /// 사진첩 권한 거절·취소는 조용히 [LcdPhotoCancelled](§2-6 "조용히 원래 화면").
 /// iOS는 `requestFullMetadata: false`로 전체 사진 접근 권한 없이 고른다.
-Future<LcdPhotoPick> pickLcdPhoto(BuildContext context) async {
+Future<LcdPhotoPick> pickLcdPhoto(BuildContext context, String deviceId) async {
   final XFile? file;
   try {
     file = await ImagePicker().pickImage(
@@ -30,5 +30,5 @@ Future<LcdPhotoPick> pickLcdPhoto(BuildContext context) async {
   final source = await Isolate.run(() => prepareLcdPhotoSource(raw));
   if (source == null) return const LcdPhotoUnreadable();
   if (!context.mounted) return const LcdPhotoCancelled();
-  return showLcdPhotoCrop(context, source);
+  return showLcdPhotoCrop(context, deviceId, source);
 }

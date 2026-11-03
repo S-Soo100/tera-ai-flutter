@@ -100,6 +100,22 @@ void main() {
       });
     });
 
+    test('들어온 뒤 실시간 변경이 오면, 늦게 도착한 재조회 응답(옛 값)은 버린다', () {
+      fakeAsync((async) {
+        final refresh = Completer<DeviceLinkStatus?>();
+        final h = _Harness(
+            initial: lcdLink(power: true), refresh: () => refresh.future);
+        async.elapse(Duration.zero);
+        h.link.add(lcdLink(power: false)); // 방금 끈 결과(ACK)
+        async.elapse(Duration.zero);
+        refresh.complete(lcdLink(power: true)); // 끄기 전에 보낸 재조회
+        async.elapse(Duration.zero);
+        expect(h.view.requireValue.screen.power, isFalse,
+            reason: '스위치가 옛 값으로 돌아가지 않는다');
+        h.dispose();
+      });
+    });
+
     test('실시간 값이 없고 재조회도 실패하면 오류', () {
       fakeAsync((async) {
         final h = _Harness(refresh: () async => throw Exception('net'));
@@ -168,6 +184,37 @@ void main() {
         expect(h.command(_power).pending, isFalse);
         h.dispose();
       });
+    });
+
+    test('신 펌웨어 전원은 telemetry를 기다려 8초까지 목표를 유지한다', () {
+      fakeAsync((async) {
+        final h = _Harness(
+            initial: lcdLink(power: true, screenOn: false, lcdOverride: true));
+        async.elapse(Duration.zero);
+        unawaited(h.runner(_power).run(const LcdPowerTarget(true)));
+        async.elapse(Duration.zero);
+        h.rows.emit('c1', 'acked', 'ok');
+        async.elapse(const Duration(seconds: 4));
+        expect(h.command(_power).pending, isTrue,
+            reason: '3초에 놓으면 보고 전이라 스위치가 튄다');
+        async.elapse(const Duration(seconds: 4, milliseconds: 100));
+        expect(h.command(_power).pending, isFalse);
+        expect(h.command(_power).result, LcdCommandResult.ok);
+        h.dispose();
+      });
+    });
+
+    test('같은 사진을 다시 올리면 key가 같아도 확정 시각이 바뀌면 닿은 것', () {
+      final before = DateTime.utc(2026, 11, 3, 1);
+      final after = DateTime.utc(2026, 11, 3, 2);
+      LcdScreenView viewAt(DateTime at) => LcdScreenView(
+          screen: DeviceLcdScreen(imageKey: 'k1', updatedAt: at),
+          support: LcdSupport.supported,
+          lcdOverride: false);
+      final target = LcdImageTarget.upload(const [1],
+          previousKey: 'k1', previousUpdatedAt: before);
+      expect(target.reachedBy(viewAt(before)), isFalse);
+      expect(target.reachedBy(viewAt(after)), isTrue);
     });
 
     test('8초 무응답이면 늦어요(대기 유지), 서버 no_ack에서 원위치', () {
@@ -313,6 +360,22 @@ void main() {
         async.elapse(Duration.zero);
         expect(h.container.read(lcdQuietTimeProvider(kLcdDevice)), _night);
         expect(store.values['u1/d1'], _night);
+        h.dispose();
+      });
+    });
+
+    test('서버 예약 시간이 바뀌면 폰 기억도 따라간다(다른 기기에서 꺼도 마지막 시간이 남게)', () {
+      fakeAsync((async) {
+        final store = MemoryQuietStore();
+        final h = _Harness(initial: lcdLink(quiet: _night), quietStore: store);
+        async.elapse(Duration.zero);
+        const later = LcdQuietWindow(startMinute: 23 * 60, endMinute: 5 * 60);
+        h.link.add(lcdLink(quiet: later));
+        async.elapse(Duration.zero);
+        expect(store.values['u1/d1'], later);
+        h.link.add(lcdLink()); // 웹에서 해제
+        async.elapse(Duration.zero);
+        expect(h.container.read(lcdQuietTimeProvider(kLcdDevice)), later);
         h.dispose();
       });
     });

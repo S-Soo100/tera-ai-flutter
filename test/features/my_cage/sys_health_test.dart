@@ -603,7 +603,7 @@ void main() {
       repo = _DeviceRepo();
       container = ProviderContainer(overrides: [
         sysHealthProvider(_devT).overrideWith((ref) => health.stream),
-        rebootCommandProvider('cmd-1').overrideWith((ref) => command.stream),
+        commandRowProvider('cmd-1').overrideWith((ref) => command.stream),
         deviceHealthRepositoryProvider.overrideWithValue(repo),
       ]);
       container.listen(rebootProvider(_devT), (_, __) {});

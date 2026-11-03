@@ -12,7 +12,7 @@ import '../../my_cage/data/temp_offset_repository.dart';
 import '../../my_cage/domain/device.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../../my_cage/presentation/sys_health_controllers.dart'
-    show rebootCommandProvider;
+    show commandRowProvider;
 
 /// 기기가 지금 적용 중인 온도 보정(`devices.temp_offset_c`, 기기 값 ℃). null =
 /// 구 펌웨어(보고하지 않음) 또는 없는 기기.
@@ -152,7 +152,7 @@ class TempOffsetSaver extends AutoDisposeFamilyNotifier<TempOffset?, String> {
               ? TempOffsetSaveResult.saved
               : TempOffsetSaveResult.noResponse));
       if (commandId != null) {
-        commandSub = ref.listen(rebootCommandProvider(commandId), (_, next) {
+        commandSub = ref.listen(commandRowProvider(commandId), (_, next) {
           final command = next.valueOrNull;
           if (command == null) return;
           switch (command.status) {

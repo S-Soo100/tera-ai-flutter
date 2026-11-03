@@ -62,7 +62,7 @@ Future<_Env> _open(
         online: online,
         now: DateTime.utc(2026, 11, 3, 3),
         devices: const [lcdTestDevice]),
-    lcdPhotoPickerProvider.overrideWithValue((_) async {
+    lcdPhotoPickerProvider.overrideWithValue((_, __) async {
       env.pickCalls++;
       return env.pick;
     }),
