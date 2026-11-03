@@ -786,6 +786,7 @@
   "crecam_home_empty_all": "아직 움직임이 뚜렷한 영상이 없어요",
   "player_portrait": "세로 보기",
   "player_landscape": "가로 보기",
+  "player_speed_label": "{}배속",
   "crecam_home_period": "기간 설정",
   "crecam_home_empty_day": "이 날짜에는 영상이 없어요",
   "crecam_home_empty_range": "이 기간에는 움직임이 뚜렷한 영상이 없어요",

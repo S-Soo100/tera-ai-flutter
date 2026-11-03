@@ -1159,44 +1159,54 @@ class _ClipPlaylistPlayerScreenState
     );
   }
 
-  /// Figma 941:1834 Frame 144 — 높이 36, 재생 36 + 8 + 시각 14/500,
-  /// 우측 2X 36 + 12 + 확대 36. 세로는 좌우 12 안쪽, 가로는 SafeArea 여백 그대로.
+  /// Figma "배속 버튼 수정 261103"(1689:5771) — 높이 36, 왼쪽 재생 원 36 + 8 +
+  /// 시간 알약, 오른쪽 배속 알약 81 + 8 + 확대 원 36. 모두 회색 면(#F4F4F4)
+  /// 위라 가로에서도 진한 글자. 세로는 좌우 16 안쪽, 가로는 SafeArea 여백 그대로.
   Widget _controlRow(GlassPalette glass, {bool padded = true}) {
     final speed = ref.watch(playerSpeedProvider);
     final landscape = ref.watch(playerOrientationProvider(_orientationKey));
     final controller = _controller;
-    // 가로는 회색 바탕 위라 밝은 글자·아이콘(대비).
-    final fg = landscape ? AppTheme.landscapeForeground : glass.textPrimary;
-    final fg2 = landscape
-        ? AppTheme.landscapeForegroundSecondary
-        : glass.textSecondary;
+    final fg = glass.textPrimary;
     String time(Duration value) =>
         '${value.inMinutes}:${(value.inSeconds % 60).toString().padLeft(2, '0')}';
     return Padding(
-        padding: EdgeInsets.symmetric(horizontal: padded ? 12 : 0),
+        padding: EdgeInsets.symmetric(horizontal: padded ? 16 : 0),
         child: SizedBox(
             height: 36,
             child: Row(children: [
-              _iconButton36(
+              _roundButton36(glass,
                   key: const Key('player_play_pause'),
                   onTap: _togglePlay,
-                  child: FigmaIcon.tinted(
-                      _isPlaying ? FigmaIcons.pause : FigmaIcons.play,
-                      size: 36,
-                      color: fg)),
+                  // 재생 삼각형은 원 안 시각 중심에 맞춰 오른쪽으로 1.67
+                  // (Figma 잉크 x13.00~26.25, 기존 export는 11.33~24.67).
+                  child: _isPlaying
+                      ? FigmaIcon.tinted(FigmaIcons.pause, size: 36, color: fg)
+                      : Transform.translate(
+                          offset: const Offset(1.67, 0),
+                          child: FigmaIcon.tinted(FigmaIcons.play,
+                              size: 36, color: fg))),
               const SizedBox(width: 8),
               if (controller != null)
-                ValueListenableBuilder(
-                    valueListenable: controller,
-                    builder: (context, value, _) => Text(
-                        '${time(value.position)} / ${time(value.duration)}',
-                        style: TextStyle(
-                            fontFamily: 'Pretendard',
-                            fontSize: 14,
-                            height: 16.70703125 / 14,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: -0.28,
-                            color: fg2))),
+                Container(
+                    key: const Key('player_time_pill'),
+                    height: 36,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                        color: glass.surfaceTint,
+                        borderRadius: BorderRadius.circular(16)),
+                    child: ValueListenableBuilder(
+                        valueListenable: controller,
+                        builder: (context, value, _) => Text(
+                            '${time(value.position)} / ${time(value.duration)}',
+                            maxLines: 1,
+                            style: TextStyle(
+                                fontFamily: 'Pretendard',
+                                fontSize: 14,
+                                height: 16.70703125 / 14,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.28,
+                                color: glass.textSecondary)))),
               if (_startedMidway)
                 Flexible(
                     child: TextButton(
@@ -1205,46 +1215,78 @@ class _ClipPlaylistPlayerScreenState
                         child: Text('crecam_player_from_start'.tr(),
                             maxLines: 1, overflow: TextOverflow.ellipsis))),
               const Spacer(),
-              _iconButton36(
-                  key: const Key('player_speed'),
-                  // 1X → 1.2X → 1.5X → 2X → 1X (Figma 아이콘 시트, 2026-09-21).
-                  onTap: () {
-                    final next = nextPlayerSpeed(speed);
-                    ref.read(playerSpeedProvider.notifier).set(next);
-                    _controller?.setPlaybackSpeed(next);
-                  },
-                  child: FigmaIcon.tinted(FigmaIcons.speed(speed),
-                      color: fg, size: 36)),
-              const SizedBox(width: 12),
-              _iconButton36(
-                  key: const Key('player_orientation'),
-                  tooltip:
+              _speedPill(glass, speed),
+              const SizedBox(width: 8),
+              Tooltip(
+                  message:
                       (landscape ? 'player_portrait' : 'player_landscape').tr(),
-                  onTap: () => ref
-                      .read(playerOrientationProvider(_orientationKey).notifier)
-                      .toggle(),
-                  // 세로=zoom_out_map(expand), 가로=zoom_in_map(축소) —
-                  // 둘 다 Figma 36 export(941:1834/1928).
-                  child: FigmaIcon.tinted(
-                      landscape ? FigmaIcons.zoomInMap : FigmaIcons.expand,
-                      color: fg,
-                      size: 36)),
+                  child: _roundButton36(glass,
+                      key: const Key('player_orientation'),
+                      onTap: () => ref
+                          .read(playerOrientationProvider(_orientationKey)
+                              .notifier)
+                          .toggle(),
+                      // 세로=zoom_out_map(expand), 가로=zoom_in_map(축소). 원
+                      // 안에서 그림 20→18(0.9배, Figma 잉크 9~27) — 기존 36
+                      // export를 32.4로 그린다.
+                      child: FigmaIcon.tinted(
+                          landscape ? FigmaIcons.zoomInMap : FigmaIcons.expand,
+                          color: fg,
+                          size: 32.4))),
             ])));
   }
 
-  Widget _iconButton36(
-      {required Key key,
-      required VoidCallback onTap,
-      required Widget child,
-      String? tooltip}) {
-    final button = SizedBox.square(
-        key: key,
-        dimension: 36,
-        child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: Center(child: child)));
-    return tooltip == null ? button : Tooltip(message: tooltip, child: button);
+  /// 회색 원 36(r18) 버튼 — 재생/일시정지·확대/축소.
+  Widget _roundButton36(GlassPalette glass,
+          {required Key key,
+          required VoidCallback onTap,
+          required Widget child}) =>
+      SizedBox.square(
+          key: key,
+          dimension: 36,
+          child: Material(
+              color: glass.surfaceTint,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(onTap: onTap, child: Center(child: child))));
+
+  /// 배속 알약 81×36 r16 — 속도계 28 @(12,4) + 글자 윤곽 왼쪽 45·세로 가운데
+  /// (Figma 1689:5535). 2x → 3x → 4x → 1x → 2x, 바꾸면 기억한다.
+  /// 글자는 그림이라 휴대폰 글자 크기와 무관하게 81 안에 머문다.
+  Widget _speedPill(GlassPalette glass, double speed) {
+    final label = FigmaIcons.speedLabelSize(speed);
+    return Semantics(
+        button: true,
+        label: 'player_speed_label'.tr(args: [speed.round().toString()]),
+        excludeSemantics: true,
+        child: SizedBox(
+            key: const Key('player_speed'),
+            width: 81,
+            height: 36,
+            child: Material(
+                color: glass.surfaceTint,
+                borderRadius: BorderRadius.circular(16),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                    onTap: () {
+                      final next = nextPlayerSpeed(speed);
+                      ref.read(playerSpeedProvider.notifier).set(next);
+                      _controller?.setPlaybackSpeed(next);
+                    },
+                    child: Stack(children: [
+                      Positioned(
+                          left: 12,
+                          top: 4,
+                          child: FigmaIcon.tinted(FigmaIcons.speedGauge,
+                              color: glass.textPrimary, size: 28)),
+                      Positioned(
+                          left: 45,
+                          top: (36 - label.height) / 2,
+                          child: FigmaIcon.tinted(FigmaIcons.speedLabel(speed),
+                              color: glass.textPrimary,
+                              size: label.width,
+                              height: label.height)),
+                    ])))));
   }
 
   /// 가로 상단 가운데 날짜 알약 (Figma 941:1928 Frame 145 — 130×48 r24).
