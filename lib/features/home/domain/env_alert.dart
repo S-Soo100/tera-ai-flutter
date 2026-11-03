@@ -46,24 +46,43 @@ class EnvAlert {
   bool get isOpen => resolvedAt == null;
 
   /// 습기 사이클 알림(환기 지연·분무 공백, 서버 Stage O — Figma A26·A36).
-  /// 습도 범위 이탈과 다른 칸이라 서로 가리지 않는다([openLatestPerMetric]).
-  bool get isHumidCycle => _humidCycleKinds.contains(kind);
+  /// 습도 범위 이탈과 다른 칸이라 서로 가리지 않는다([openLatestPerSlot]).
+  bool get isHumidCycle => _kinds[kind]?.cycle ?? false;
 
-  static const Map<String, EnvAlertMetric> _metricByKind = {
-    'env_temp_high': EnvAlertMetric.temp,
-    'env_temp_low': EnvAlertMetric.temp,
-    'env_humid_low': EnvAlertMetric.humid,
-    'env_humid_high': EnvAlertMetric.humid,
-    'env_vent_delay': EnvAlertMetric.humid,
-    'env_mist_gap': EnvAlertMetric.humid,
-  };
-
-  /// kind 이름은 서버 Stage O pre-plan 기준(미확정 — 계획
-  /// `2026-11-03-env-humid-cycle-alerts-app.md` G1). 바뀌면 여기와 위 표,
-  /// 수신 끄기 SQL(`notification_event_after_insert`)만 고친다.
-  static const Set<String> _humidCycleKinds = {
-    'env_vent_delay',
-    'env_mist_gap',
+  /// 앱이 받는 kind와 그 지표·칸·설명 문구 키(노션 v4 1-5). **새 kind는 이 표
+  /// 한 곳**과 수신 끄기 SQL(`notification_event_after_insert`)에만 더한다 —
+  /// 표가 갈라져 있으면 하나를 빠뜨려도 오류 없이 엉뚱한 설명·칸으로 그려진다.
+  /// `hint`가 null이면 등급별로 갈린다(저온만 경고·주의 문구가 다르다).
+  /// 사이클 kind 이름은 서버 Stage O pre-plan 기준(회신 2026-11-03: 계획과 같음,
+  /// `env_mist_gap`은 기획 O-e 확정 때 바뀔 수 있음).
+  static const Map<String, ({EnvAlertMetric metric, bool cycle, String? hint})>
+      _kinds = {
+    'env_temp_high': (
+      metric: EnvAlertMetric.temp,
+      cycle: false,
+      hint: 'env_alert_hint_temp_high',
+    ),
+    'env_temp_low': (metric: EnvAlertMetric.temp, cycle: false, hint: null),
+    'env_humid_low': (
+      metric: EnvAlertMetric.humid,
+      cycle: false,
+      hint: 'env_alert_hint_humid_low',
+    ),
+    'env_humid_high': (
+      metric: EnvAlertMetric.humid,
+      cycle: false,
+      hint: 'env_alert_hint_humid_high',
+    ),
+    'env_vent_delay': (
+      metric: EnvAlertMetric.humid,
+      cycle: true,
+      hint: 'env_alert_hint_vent_delay',
+    ),
+    'env_mist_gap': (
+      metric: EnvAlertMetric.humid,
+      cycle: true,
+      hint: 'env_alert_hint_mist_gap',
+    ),
   };
 
   static final RegExp _message =
@@ -73,8 +92,8 @@ class EnvAlert {
   static EnvAlert? fromRow(Map<String, dynamic> row) {
     final kind = row['kind'];
     if (kind is! String) return null;
-    final metric = _metricByKind[kind];
-    if (metric == null) return null;
+    final spec = _kinds[kind];
+    if (spec == null) return null;
 
     final context = _contextOf(row['context']);
     if (context == null || context['rule'] != 'v4') return null;
@@ -83,10 +102,11 @@ class EnvAlert {
           'danger' => EnvAlertLevel.danger,
           _ => null,
         } ??
-        // 습기 사이클은 서버 pre-plan에 severity만 있고 level이 정해지지
-        // 않았다 — 계약이 조금 달라도 카드가 사라지지 않게 주의로 본다(D1).
-        (_humidCycleKinds.contains(kind) ? EnvAlertLevel.caution : null);
-    // 서버 계약상 v4 행은 등급이 늘 있다. 모르는 등급은 설명 문구·순서를
+        // 습기 사이클은 등급이 아직 다 정해지지 않았다(환기 지연 caution,
+        // 분무 공백은 O-e 대기) — 없거나 모르는 값이면 주의로 본다(D1, 서버도
+        // 이 방어를 두라고 회신). 이 보완을 지우면 카드가 조용히 사라진다.
+        (spec.cycle ? EnvAlertLevel.caution : null);
+    // 기존 4종은 서버 계약상 등급이 늘 있다. 모르는 등급은 설명 문구·순서를
     // 정할 수 없어 그리지 않는다.
     if (level == null) return null;
 
@@ -101,7 +121,7 @@ class EnvAlert {
     return EnvAlert(
       id: id.toString(),
       kind: kind,
-      metric: metric,
+      metric: spec.metric,
       level: level,
       chip: chip == null || chip.isEmpty ? null : chip,
       title: match == null ? message.trim() : match.group(2)!.trim(),
@@ -130,7 +150,7 @@ class EnvAlert {
   /// 둘 다 열려 보일 수 있다. 시각이 같으면 경고를 남긴다). 순서는 경고 먼저,
   /// 같은 등급이면 온도 → 습도 → 사이클. 습도와 사이클을 나눈 건 "지금
   /// 건조함"과 "15시간째 분무 없음"이 서로 가리지 않게(2026-11-03 사용자 결정).
-  static List<EnvAlert> openLatestPerMetric(Iterable<EnvAlert> alerts) {
+  static List<EnvAlert> openLatestPerSlot(Iterable<EnvAlert> alerts) {
     final latest = <int, EnvAlert>{};
     for (final a in alerts) {
       if (!a.isOpen) continue;
@@ -158,16 +178,14 @@ class EnvAlert {
   }
 
   /// 설명 한 줄의 ko.json 키 — 노션 v4 1-5 설명 열을 `kind + level`로 고정 매핑.
-  String get hintKey => switch ((kind, level)) {
-        ('env_temp_low', EnvAlertLevel.danger) =>
-          'env_alert_hint_temp_low_danger',
-        ('env_temp_low', _) => 'env_alert_hint_temp_low_caution',
-        ('env_temp_high', _) => 'env_alert_hint_temp_high',
-        ('env_humid_low', _) => 'env_alert_hint_humid_low',
-        ('env_vent_delay', _) => 'env_alert_hint_vent_delay',
-        ('env_mist_gap', _) => 'env_alert_hint_mist_gap',
-        _ => 'env_alert_hint_humid_high',
-      };
+  String get hintKey {
+    final spec = _kinds[kind];
+    if (spec == null) return 'env_alert_hint_humid_high';
+    return spec.hint ??
+        (level == EnvAlertLevel.danger
+            ? 'env_alert_hint_temp_low_danger'
+            : 'env_alert_hint_temp_low_caution');
+  }
 
   @override
   bool operator ==(Object other) =>

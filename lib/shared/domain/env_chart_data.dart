@@ -124,7 +124,9 @@ class EnvChartData {
     }
 
     final tempAxis = AxisBounds.forValues(temps, minStep: tempStep);
-    final humidAxis = AxisBounds.forValues(humids, minStep: humidStep);
+    // 습도는 100%를 넘지 않는다 — 넓은 날(40~92%) 축이 20..120이 되던 것.
+    final humidAxis =
+        AxisBounds.forValues(humids, minStep: humidStep, ceiling: 100);
 
     List<({double x, double y})> points(
       double? Function(TelemetryBucket) pick,

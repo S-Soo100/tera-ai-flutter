@@ -171,6 +171,14 @@ void main() {
       expect(a.max, greaterThanOrEqualTo(104));
     });
 
+    test('밀어도 최고값이 빠지면 밀지 않는다 — 상한이 칸의 배수가 아닐 때', () {
+      // 리뷰 지적: 41~98.6, 상한 99 → 40..100을 10 밀면 30..90이라 98.6이 빠졌다.
+      final a = AxisBounds.forValues([41, 98.6], divisions: d, ceiling: 99)!;
+      expect(a.max, greaterThanOrEqualTo(98.6));
+      expect(a.min, lessThanOrEqualTo(41));
+      expect(a.ticks, hasLength(d + 1));
+    });
+
     test('상한 없으면 기존과 같다', () {
       final a = AxisBounds.forValues([35, 98], divisions: d)!;
       expect((a.min, a.max), (0.0, 120.0));

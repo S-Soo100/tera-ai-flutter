@@ -1,3 +1,5 @@
+import 'package:vivanaut/shared/domain/env_thresholds.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -76,11 +78,17 @@ List<ControlLogEntry> _log() => [
 }
 
 class _SettingsRepo implements DeviceSettingsRepository {
-  _SettingsRepo(this.current);
+  _SettingsRepo(this.current, {this.gate});
   final DeviceSettings current;
 
+  /// 있으면 이게 끝날 때까지 조회를 붙잡는다(첫 조회 중 화면 검사).
+  final Future<void>? gate;
+
   @override
-  Future<DeviceSettings> get(String deviceId) async => current;
+  Future<DeviceSettings> get(String deviceId) async {
+    await gate;
+    return current;
+  }
 
   @override
   Future<DeviceSettings> patch(String deviceId,
@@ -103,6 +111,7 @@ Future<void> _pump(
   List<EnvAlert> alerts = const [],
   FakeEnvReportRepository? reports,
   bool weekRowsError = false,
+  Future<void>? settingsGate,
 }) async {
   final now = DateTime.now();
   await tester.pumpWidget(
@@ -119,8 +128,9 @@ Future<void> _pump(
                   measuredAt: now),
               now: now,
               online: true)),
-          deviceSettingsRepositoryProvider.overrideWithValue(
-              _SettingsRepo(settings ?? DeviceSettings(deviceId: deviceId))),
+          deviceSettingsRepositoryProvider.overrideWithValue(_SettingsRepo(
+              settings ?? DeviceSettings(deviceId: deviceId),
+              gate: settingsGate)),
         ],
         envDailyAverageProvider.overrideWith((ref) async =>
             (temperature: 27.5, humidity: 55.0, countUnavailable: false)),
@@ -235,6 +245,44 @@ void main() {
     await tester.tap(find.byKey(EnvDetailScreen.segmentDailyKey));
     await tester.pumpAndSettle();
     expect(find.byKey(EnvDayChart.chartKey), findsOneWidget);
+  });
+
+  testWidgets('주간 — 적정 범위 띠는 현재 설정, 습도 축 상한 100(A19)', (tester) async {
+    await _pump(tester,
+        deviceId: 'd1',
+        settings: const DeviceSettings(
+            deviceId: 'd1',
+            targetTempMin: 20,
+            targetTempMax: 27,
+            targetHumidMin: 45,
+            targetHumidMax: 75));
+    await tester.tap(find.byKey(EnvDetailScreen.segmentWeeklyKey));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    final charts =
+        tester.widgetList<WeekRangeChart>(find.byType(WeekRangeChart)).toList();
+    expect(charts, hasLength(2));
+    expect(charts.first.range, const EnvRange(20, 27));
+    expect(charts.first.ceiling, isNull);
+    expect(charts.last.range, const EnvRange(45, 75));
+    expect(charts.last.ceiling, 100);
+    expect(find.byKey(WeekRangeChart.bandKey), findsNWidgets(2));
+  });
+
+  testWidgets('주간 — 설정 첫 조회가 끝나기 전엔 차트를 그리지 않는다(축 튐 방지)', (tester) async {
+    final gate = Completer<void>();
+    await _pump(tester, deviceId: 'd1', settingsGate: gate.future);
+    await tester.tap(find.byKey(EnvDetailScreen.segmentWeeklyKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.byType(WeekRangeChart), findsNothing);
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.byType(WeekRangeChart), findsWidgets);
+    expect(
+        tester.widget<WeekRangeChart>(find.byType(WeekRangeChart).first).range,
+        isNotNull);
   });
 
   testWidgets('빈 데이터 — 차트 자리에 안내, 기록 없으면 빈 문구', (tester) async {

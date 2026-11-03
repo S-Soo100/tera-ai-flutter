@@ -77,7 +77,8 @@ class AxisBounds {
 
     if (ceiling != null && max > ceiling && hi <= ceiling) {
       final shift = ((max - ceiling) / s).ceilToDouble() * s;
-      if (min - shift >= 0 && min - shift <= lo) {
+      // 상한이 칸의 배수가 아니면 민 위 끝이 최고값보다 낮아질 수 있다.
+      if (min - shift >= 0 && min - shift <= lo && max - shift >= hi) {
         return AxisBounds._(
             min: min - shift, max: max - shift, step: s, divisions: divisions);
       }

@@ -36,6 +36,14 @@ void main() {
       expect(d.humidAxis!.ticks, hasLength(6));
     });
 
+    test('습도 축은 100%를 넘지 않는다 — 40~92%는 0..120이 아니다', () {
+      // 리뷰 지적(2026-11-03): 주간에만 상한을 넣어 일간은 20..120이었다.
+      final d = _data([_b(_from, h: 40), _b(_to, h: 92)]);
+      expect(d.humidAxis!.max, lessThanOrEqualTo(100));
+      expect(d.humidAxis!.min, lessThanOrEqualTo(40));
+      expect(d.humidAxis!.ticks, hasLength(6));
+    });
+
     test('한쪽 지표만 있으면 다른 축은 null', () {
       final d = _data([_b(_from, t: 24), _b(_to, t: 26)]);
       expect(d.tempAxis, isNotNull);

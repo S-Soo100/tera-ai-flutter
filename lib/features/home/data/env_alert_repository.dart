@@ -43,7 +43,7 @@ class EnvAlertRepository {
     ];
   }
 
-  /// 열린 행 목록 스트림 — 지표별 최신 1개, 경고 먼저([EnvAlert.openLatestPerMetric]).
+  /// 열린 행 목록 스트림 — 칸(온도·습도·습기 사이클)별 최신 1개, 경고 먼저([EnvAlert.openLatestPerSlot]).
   ///
   /// 처음 조회 → 이후 실시간 INSERT/UPDATE를 반영한다. **재합류하면 처음
   /// 조회를 다시 해 목록을 통째로 바꾼다** — 끊긴 사이 종료된 행이 남지 않게
@@ -71,7 +71,7 @@ class EnvAlertRepository {
 
     void emit() {
       if (closed || !loaded) return;
-      final list = EnvAlert.openLatestPerMetric(open.values);
+      final list = EnvAlert.openLatestPerSlot(open.values);
       if (last != null && listEquals(last, list)) return;
       last = list;
       controller.add(list);
