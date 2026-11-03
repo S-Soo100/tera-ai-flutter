@@ -39,6 +39,7 @@
 - **옛 배속 SVG 4개(`redesign_v2/speed_1_2x*`·`speed_1_5x`·`speed_2x`)는 지우지 않았다.** 9월 재설계 에셋 지도(`2026-09-15-redesign-asset-map.json`, 70개 "안 써도 보관")에 들어 있고 `redesign_asset_capture_test`가 그 목록을 렌더한다. 지도 밖의 `assets/icons/speed_2x.svg`만 지웠다.
 - `player_icon_frame_test`("아이콘은 export 프레임 크기로")에 확대·축소 아이콘 예외(32.4)를 근거와 함께 명시했다. 새 export가 오면 예외를 지운다.
 - **후속(2026-11-04, 0.170.2):** 코드 보정을 없앴다. Figma 벡터 실좌표(talk-to-figma `scan_nodes_by_types`)는 play `1689:5757` x13.0586·y9.8935 13.1857×16, zoom_out_map `1689:5766`·zoom_in_map `1689:5763` 9,9 18×18. 기존 path가 같은 모양(play 13.1858×16, zoom 20×20)이라 그 박스로 옮기거나 0.9배 해 `assets/icons/redesign_v2/3636/{play_arrow,zoom_out_map,zoom_in_map}.svg`를 만들었다(소켓은 SVG export를 못 해 PNG로 돌아옴). play 보정은 원래 1.67이 아니라 +1.6514·−0.1064였다. 라이브 확대 화면 축소 버튼도 같은 그림(사용자 결정). 디자이너 SVG가 오면 같은 경로에 덮어쓰면 된다. 옛 `play`·`expand`·`redesign_v2/zoom_in_map`은 09-15 에셋 지도 해시 때문에 남긴다.
+- **디자이너 원본(2026-11-04 02:44 전달):** `zoom_in_map.svg`는 새 좌표(9~27)라 원본으로 교체(만든 파일과 좌표 차이 최대 0.0001, 마스크 #D9D9D9→#FFFFFF만 정규화). 같이 온 `버린/play_arrow.svg`·`버린/zoom_out_map.svg`는 옛 좌표(play x11.4072~, zoom 8~28 — 기존 `play.svg`·`expand.svg`와 같은 path)라 쓰지 않고 만든 파일을 유지한다. 새 좌표 원본이 오면 그때 교체.
 - `FigmaIcons.speedLabel`은 shared 위젯이 기능 도메인을 가져오지 않도록 정확히 일치할 때만 고르고 나머지는 2x — 옛 값 해석은 `normalizePlayerSpeed`(도메인)가 맡는다.
 - 테스트 기본 글꼴은 글자마다 정사각형이라 시간 알약이 실제보다 두 배 넘게 넓어진다 → `player_layout_test`·`live_recording_player_test`에 Pretendard를 싣는다.
 
