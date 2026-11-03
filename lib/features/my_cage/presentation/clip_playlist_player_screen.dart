@@ -1180,15 +1180,10 @@ class _ClipPlaylistPlayerScreenState
                       _roundButton36(glass,
                           key: const Key('player_play_pause'),
                           onTap: _togglePlay,
-                          // 재생 삼각형은 원 안 시각 중심에 맞춰 오른쪽으로 1.67
-                          // (Figma 잉크 x13.00~26.25, 기존 export는 11.33~24.67).
-                          child: _isPlaying
-                              ? FigmaIcon.tinted(FigmaIcons.pause,
-                                  size: 36, color: fg)
-                              : Transform.translate(
-                                  offset: const Offset(1.67, 0),
-                                  child: FigmaIcon.tinted(FigmaIcons.play,
-                                      size: 36, color: fg))),
+                          child: FigmaIcon.tinted(
+                              _isPlaying ? FigmaIcons.pause : FigmaIcons.play,
+                              size: 36,
+                              color: fg)),
                       const SizedBox(width: 8),
                       if (controller != null)
                         _timePill(glass, controller,
@@ -1232,15 +1227,13 @@ class _ClipPlaylistPlayerScreenState
                                       playerOrientationProvider(_orientationKey)
                                           .notifier)
                                   .toggle(),
-                              // 세로=zoom_out_map(expand), 가로=zoom_in_map(축소). 원
-                              // 안에서 그림 20→18(0.9배, Figma 잉크 9~27) — 기존 36
-                              // export를 32.4로 그린다.
+                              // 세로=zoom_out_map(expand), 가로=zoom_in_map(축소).
                               child: FigmaIcon.tinted(
                                   landscape
                                       ? FigmaIcons.zoomInMap
                                       : FigmaIcons.expand,
                                   color: fg,
-                                  size: 32.4))),
+                                  size: 36))),
                     ]))));
   }
 

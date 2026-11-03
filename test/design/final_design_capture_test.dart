@@ -274,6 +274,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(CameraLiveFullscreenScreen.rotateButtonKey),
         findsNothing);
+    await capture(tester, 'widget-live-landscape');
     await tester.tap(find.byKey(const Key('live_fullscreen_orientation')));
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await tester.pumpAndSettle();
