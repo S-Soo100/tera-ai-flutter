@@ -85,6 +85,11 @@ class _Lcd implements LcdRepository {
   Future<void> setText(String deviceId, String text) async {}
   @override
   Future<void> clear(String deviceId) async {}
+
+  // 모듈 화면 설정 호출(2026-11-03)은 이 캡처가 쓰지 않는다.
+  @override
+  Object? noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
 }
 
 class _FlowController extends DeviceAddFlowController {

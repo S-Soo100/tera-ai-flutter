@@ -1,7 +1,7 @@
 import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../config/env_config.dart';
 import 'auth_session.dart';
@@ -15,6 +15,11 @@ class TerraRestException implements Exception {
 
   /// 요청이 잘못된 경우(400) — 앱이 못 만들 값을 보냈다는 뜻이다.
   bool get isBadRequest => statusCode == 400;
+
+  /// 400 `unsupported_firmware: …` — 기기 펌웨어가 이 기능을 모른다(LCD 보호기·
+  /// 전원·예약, 2026-11-03 가이드 §1). 원문은 사용자에게 보이지 않는다.
+  bool get isUnsupportedFirmware =>
+      statusCode == 400 && detail.contains('unsupported_firmware');
 
   @override
   String toString() => 'TerraRestException($statusCode): $detail';
@@ -60,17 +65,52 @@ class TerraRestClient {
             body: jsonEncode(body),
           ));
 
-  Future<void> delete(String path) async =>
+  Future<Object?> put(String path, Map<String, dynamic> body) async =>
+      _run(() async => _http.put(
+            _uri(path),
+            headers: await _headers(withJson: true),
+            body: jsonEncode(body),
+          ));
+
+  /// 본문이 있으면 디코드해 돌려준다 — LCD 해제(`DELETE …/lcd/quiet`)처럼
+  /// 201 `{id, action, status}`를 주는 호출이 있다. 본문이 없으면 null.
+  Future<Object?> delete(String path) async =>
       _run(() async => _http.delete(_uri(path), headers: await _headers()));
+
+  /// multipart/form-data POST — 파일 하나([field]). 사진 업로드
+  /// (`POST /devices/{id}/lcd/image`, 필드 `file`, 2026-11-03)용.
+  ///
+  /// 인증·401 재시도·오류 규칙은 다른 호출과 같다. 요청은 재시도 때마다 새로
+  /// 만든다(보낸 multipart 요청은 다시 못 쓴다). 업로드라 한도는 [uploadTimeout].
+  Future<Object?> postMultipart(
+    String path, {
+    required String field,
+    required List<int> bytes,
+    required String filename,
+    required String contentType,
+  }) async =>
+      _run(() async {
+        final req = http.MultipartRequest('POST', _uri(path))
+          ..headers.addAll(await _headers())
+          ..files.add(http.MultipartFile.fromBytes(field, bytes,
+              filename: filename, contentType: MediaType.parse(contentType)));
+        return http.Response.fromStream(await _http.send(req));
+      }, timeout: uploadTimeout);
+
+  /// multipart 업로드 한도 — 5MB를 느린 망에서도 올릴 수 있게 넉넉히.
+  static const uploadTimeout = Duration(seconds: 60);
+
+  static const _timeout = Duration(seconds: 15);
 
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
-  Future<Object?> _run(Future<http.Response> Function() send) async {
-    var resp = await send().timeout(const Duration(seconds: 15));
+  Future<Object?> _run(Future<http.Response> Function() send,
+      {Duration timeout = _timeout}) async {
+    var resp = await send().timeout(timeout);
     // 만료 토큰 한 번에 로그아웃시키지 않는다 — 되살려 한 번 더 보낸다.
     // 되살리지 못한 게 "세션이 끝나서"라면 [AuthSession]이 이미 로그아웃했다.
     if (resp.statusCode == 401 && await _session.recoverFromUnauthorized()) {
-      resp = await send().timeout(const Duration(seconds: 15));
+      resp = await send().timeout(timeout);
     }
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
       throw TerraRestException(resp.statusCode, _detail(resp.body));

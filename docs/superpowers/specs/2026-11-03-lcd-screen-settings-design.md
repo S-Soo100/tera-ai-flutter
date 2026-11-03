@@ -175,7 +175,7 @@ Figma 메모(디자이너 원문 요약):
 | `my_cage/domain/device.dart` | `lcdSaverCapable`, 새 LCD 필드 파싱(Device·DeviceLinkStatus) |
 | `core/network/terra_rest_client.dart` | `put`, multipart POST |
 | `my_cage/data/lcd_repository.dart` | power·quiet·saver·image·getState |
-| `my_cage/data/lcd_quiet_store.dart` (신규) | 예약 시간 기억(D2 — Hive `app_settings`의 `device_lcd_quiet_<계정>_<기기 행 id>`, 처음 값 20:00~08:00), 로그아웃 삭제(`push_providers.dart`) |
+| `my_cage/data/lcd_quiet_store.dart` (신규) | 예약 시간 기억(D2 — Hive `app_settings`의 `lcd_quiet_<계정>_<기기 행 id>`, 처음 값 20:00~08:00), 로그아웃 삭제(`push_providers.dart`) |
 | `my_cage/presentation/lcd_screen_providers.dart` (신규) | 상태·명령 확인 대기·미리보기 URL |
 | `my_cage/presentation/lcd_settings_screen.dart`·`lcd_quiet_time_screen.dart`·`lcd_saver_screen.dart` (신규) | 세 화면 + `lcd_photo_crop_screen.dart`(D5) |
 | `my_cage/presentation/widgets/lcd_setting_tile.dart` | 안내 한 줄, 진입 경로 |

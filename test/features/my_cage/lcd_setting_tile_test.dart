@@ -37,6 +37,11 @@ class _FakeLcdRepo implements LcdRepository {
     await pending?.future;
     if (fail) throw Exception('boom');
   }
+
+  // 모듈 화면 설정 호출(2026-11-03)은 문구 시트가 쓰지 않는다.
+  @override
+  Object? noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
 }
 
 /// 앱 재시작을 흉내 내려고 ProviderScope 밖에서 살아남는 메모리 저장소.

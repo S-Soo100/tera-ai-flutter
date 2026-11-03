@@ -26,6 +26,7 @@ dependencies:
   path_provider: ^2.1.5
   crypto: ^3.0.6
   http: ^1.2.0
+  http_parser: ^4.1.2
   # 직접 녹화 썸네일 PNG→JPEG(서버 PUT이 image/jpeg 서명, 2026-10-21) — 이미 전이 의존(4.8.0)
   image: ^4.8.0
   flutter_dotenv: ^5.2.1
