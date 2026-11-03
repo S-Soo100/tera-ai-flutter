@@ -70,13 +70,41 @@ class FakeLcdRepo implements LcdRepository {
   Future<String> clearQuiet(String deviceId) async =>
       _next('quiet_clear:$deviceId');
 
+  /// 마지막 `PUT saver` 본문.
+  LcdSaverSettings? lastSaver;
+
   @override
-  Future<String> setSaver(String deviceId, LcdSaverSettings settings) async =>
-      _next('saver:$deviceId');
+  Future<String> setSaver(String deviceId, LcdSaverSettings settings) async {
+    lastSaver = settings;
+    return _next('saver:$deviceId');
+  }
 
   @override
   Future<String> deleteImage(String deviceId) async =>
       _next('image_clear:$deviceId');
+
+  /// 마지막 업로드 바이트.
+  List<int>? lastUpload;
+
+  /// 업로드 201의 미리보기.
+  String? uploadPreviewUrl = 'https://preview.test/new.jpg';
+
+  /// 있으면 업로드가 이것이 끝날 때까지 기다린다(201 전).
+  Completer<void>? uploadGate;
+
+  @override
+  Future<LcdImageUpload> uploadImage(
+    String deviceId,
+    List<int> bytes, {
+    String filename = 'photo.jpg',
+    String contentType = 'image/jpeg',
+  }) async {
+    lastUpload = bytes;
+    await uploadGate?.future;
+    final id = _next('image:$deviceId:${bytes.length}');
+    return LcdImageUpload(
+        commandId: id, previewUrl: uploadPreviewUrl, sha256: null);
+  }
 
   @override
   Future<void> setText(String deviceId, String text) async {
@@ -136,6 +164,27 @@ class CommandRows {
       await c.close();
     }
   }
+}
+
+/// 실시간 기기 행 — 구독할 때마다 지금 값을 먼저 주고 이후 [set]을 흘린다
+/// (provider가 다시 만들어져도 다시 구독할 수 있다).
+class LcdLinkFeed {
+  LcdLinkFeed(this.value);
+  DeviceLinkStatus value;
+  final _updates = StreamController<DeviceLinkStatus>.broadcast();
+
+  Stream<DeviceLinkStatus?> get stream => Stream.multi((c) {
+        c.add(value);
+        final sub = _updates.stream.listen(c.add);
+        c.onCancel = sub.cancel;
+      });
+
+  void set(DeviceLinkStatus next) {
+    value = next;
+    _updates.add(next);
+  }
+
+  Future<void> close() => _updates.close();
 }
 
 DeviceLinkStatus lcdLink({

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_screen.dart';
 import 'package:vivanaut/features/my_cage/presentation/sys_health_controllers.dart';
@@ -66,7 +67,9 @@ import 'package:vivanaut/features/profile/presentation/notification_settings_scr
 import 'package:vivanaut/shared/widgets/viva_stepper.dart';
 
 import 'package:vivanaut/features/my_cage/domain/lcd_screen_state.dart';
+import 'package:vivanaut/features/my_cage/presentation/lcd_photo_crop_screen.dart';
 import 'package:vivanaut/features/my_cage/presentation/lcd_quiet_time_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/lcd_saver_screen.dart';
 import 'package:vivanaut/features/my_cage/presentation/lcd_settings_screen.dart';
 
 import '../features/home/control_sheet_fixtures.dart';
@@ -102,7 +105,7 @@ final _draft = ComposeDraft(FavoriteClip(
     ownerId: 'u'));
 
 Future<void> _pump(WidgetTester tester, double system, Widget home,
-    {List<Override> overrides = const []}) async {
+    {List<Override> overrides = const [], bool settle = true}) async {
   tester.view.physicalSize = const Size(393, 852);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -126,7 +129,14 @@ Future<void> _pump(WidgetTester tester, double system, Widget home,
                           textScaler: AppTextScaler(TextScaler.linear(system))),
                       child: child!),
                   home: home)))));
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    // 끝나지 않는 반짝임(불러오는 중) — 몇 프레임만 흘린다.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
 }
 
 void main() {
@@ -482,6 +492,44 @@ void main() {
         await tester.drag(
             find.byType(SingleChildScrollView).first, const Offset(0, -600));
         await tester.pumpAndSettle();
+      });
+
+      // 화면 보호 사진 설정(Figma 1659:6396 / 1660:6700) — 글자가 가장 많은
+      // 상태: 사진 없음(사진 먼저 안내) + 오프라인 안내 + 칸 밖 값("1분 30초").
+      // 사진 있음은 연필·미리보기 자리까지.
+      for (final imageKey in [null, 'k1']) {
+        testWidgets('화면 보호 사진 설정 ${imageKey ?? '사진 없음'}', (tester) async {
+          final rows = CommandRows();
+          addTearDown(rows.close);
+          await _pump(
+              tester, system, const LcdSaverScreen(deviceId: kLcdDevice),
+              overrides: lcdOverrides(
+                  repo: FakeLcdRepo(),
+                  rows: rows,
+                  link: Stream.value(lcdLink(
+                      imageKey: imageKey,
+                      saver: LcdSaverSettings.defaults
+                          .copyWith(enabled: true, imageSec: 90))),
+                  online: false));
+          expect(find.byKey(LcdSaverScreen.doneKey), findsOneWidget);
+          expect(find.byKey(LcdSaverScreen.offlineNoteKey), findsOneWidget);
+          await tester.drag(
+              find.byType(SingleChildScrollView).first, const Offset(0, -600));
+          await tester.pumpAndSettle();
+        });
+      }
+
+      // 사진 자르기(Figma 밖 — 공통 헤더·CTA만). 사진은 isolate에서 읽으니
+      // 불러오는 중(반짝임) 모양으로 본다.
+      testWidgets('사진 자르기', (tester) async {
+        await _pump(
+            tester,
+            system,
+            LcdPhotoCropScreen(
+                source: img.encodeJpg(img.Image(width: 50, height: 40))),
+            settle: false);
+        expect(find.text('사진 자르기'), findsOneWidget);
+        expect(find.byKey(LcdPhotoCropScreen.doneKey), findsOneWidget);
       });
 
       // 카메라 오프라인 안내(Figma 1525:10689) — 홈·카메라 탭 면(369:271)과

@@ -62,6 +62,7 @@ import '../../features/home/presentation/env_range_setting_screen.dart';
 import '../../features/home/presentation/temp_humid_setting_screen.dart';
 import '../../features/home/presentation/temp_offset_screen.dart';
 import '../../features/my_cage/presentation/lcd_quiet_time_screen.dart';
+import '../../features/my_cage/presentation/lcd_saver_screen.dart';
 import '../../features/my_cage/presentation/lcd_settings_screen.dart';
 import '../../shared/widgets/glass_dock.dart';
 import 'tab_branches.dart';
@@ -115,7 +116,12 @@ String lcdSettingsPath(String deviceId) =>
 String lcdQuietTimePath(String deviceId) =>
     '${lcdSettingsPath(deviceId)}/quiet-time';
 
+/// 화면 보호 사진 설정(Figma 1659:6396 / 1660:6700).
+String lcdSaverPath(String deviceId) => '${lcdSettingsPath(deviceId)}/saver';
+
 /// 모듈 화면 설정 라우트. 앱 라우터와 화면 테스트가 같은 정의를 쓴다.
+/// 사진 자르기는 라우트 없이 루트 Navigator push로 결과를 받는다
+/// (`showLcdPhotoCrop`).
 GoRoute buildLcdSettingsRoute() => GoRoute(
       path: '$kLcdSettingsPath/:deviceId',
       builder: (context, state) =>
@@ -125,6 +131,11 @@ GoRoute buildLcdSettingsRoute() => GoRoute(
           path: 'quiet-time',
           builder: (context, state) =>
               LcdQuietTimeScreen(deviceId: state.pathParameters['deviceId']!),
+        ),
+        GoRoute(
+          path: 'saver',
+          builder: (context, state) =>
+              LcdSaverScreen(deviceId: state.pathParameters['deviceId']!),
         ),
       ],
     );

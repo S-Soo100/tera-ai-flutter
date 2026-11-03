@@ -24,7 +24,9 @@ String lcdAmPmLabel(LcdAmPmTime t) =>
     '${(t.pm ? 'routine_pm' : 'routine_am').tr()} ${t.clockLabel}';
 
 /// LCD 명령 결과 안내 — 늦어지면 한 번, 실패하면 이유(§11-2·§12-2). 화면이
-/// 루트 전체 화면이라 스낵바가 아니라 [ControlFeedback]이다. 사진(④)도 쓴다.
+/// 루트 전체 화면이라 스낵바가 아니라 [ControlFeedback]이다. 사진 명령은
+/// 화면을 나가도 알려야 해서 실행기의 `run(onResult:)`로 안내한다(보호 사진
+/// 화면).
 void listenLcdCommandFeedback(
     WidgetRef ref, BuildContext context, LcdCommandKey key) {
   ref.listen<LcdCommandState>(lcdCommandProvider(key), (prev, next) {
@@ -72,6 +74,7 @@ class LcdSettingsScreen extends ConsumerStatefulWidget {
   static const textValueKey = Key('lcd_settings_text_value');
   static const saverRowKey = Key('lcd_settings_saver_row');
   static const saverValueKey = Key('lcd_settings_saver_value');
+  static const saverPendingKey = Key('lcd_settings_saver_pending');
   static const quietRowKey = Key('lcd_settings_quiet_row');
   static const quietSwitchKey = Key('lcd_settings_quiet_switch');
   static const quietPendingKey = Key('lcd_settings_quiet_pending');
@@ -113,6 +116,9 @@ class _LcdSettingsScreenState extends ConsumerState<LcdSettingsScreen> {
     final quietKey = (_id, LcdCommandKind.quiet);
     listenLcdCommandFeedback(ref, context, powerKey);
     listenLcdCommandFeedback(ref, context, quietKey);
+    // 보호기 완료는 보호 사진 화면이 보내고 바로 돌아온다 — 결과는 여기서
+    // 안내한다(§11-4). 사진 명령은 실행기가 직접 안내한다(화면 밖, §11-5).
+    listenLcdCommandFeedback(ref, context, (_id, LcdCommandKind.saver));
 
     final view = ref.watch(lcdScreenViewProvider(_id));
     final support = view.valueOrNull?.support;
@@ -203,7 +209,7 @@ class _LcdSettingsScreenState extends ConsumerState<LcdSettingsScreen> {
     final online = ref.watch(moduleOnlineProvider(_id));
     final power = ref.watch(lcdCommandProvider((_id, LcdCommandKind.power)));
     final quiet = ref.watch(lcdCommandProvider((_id, LcdCommandKind.quiet)));
-    // 보호기·사진 대기는 ④의 보호 사진 화면이 만든다 — 줄 반짝임만 여기서.
+    // 보호기·사진 대기는 보호 사진 화면이 만든다 — 줄 반짝임만 여기서.
     final saverBusy =
         ref.watch(lcdCommandProvider((_id, LcdCommandKind.saver))).pending ||
             ref.watch(lcdCommandProvider((_id, LcdCommandKind.image))).pending;
@@ -264,7 +270,7 @@ class _LcdSettingsScreenState extends ConsumerState<LcdSettingsScreen> {
             ]),
             dimmed: !supported,
             rightPadding: 8,
-            trailing: _Switch(
+            trailing: LcdSwitch(
               key: LcdSettingsScreen.powerSwitchKey,
               value: powerOn,
               enabled: canPower,
@@ -281,16 +287,19 @@ class _LcdSettingsScreenState extends ConsumerState<LcdSettingsScreen> {
       const SizedBox(height: 24),
       _LcdGroup(children: [
         _textRow(context),
+        // 대기 중에도 들어갈 수 있다 — 화면 안에서 편집을 잠근다(§11-4).
+        // 오프라인도 들어가서 화면 안에서 막는다(§11-6, 사진·값을 볼 수 있게).
         _Pending(
+          pendingKey: LcdSettingsScreen.saverPendingKey,
           pending: saverBusy,
+          absorb: false,
           child: _LcdRow(
             key: LcdSettingsScreen.saverRowKey,
             title: 'lcd_settings_saver_row'.tr(),
             dimmed: !supported,
             trailing: _LinkValue(
                 Text(saverLabel.tr(), key: LcdSettingsScreen.saverValueKey)),
-            // ④에서 화면 보호 사진 설정 화면으로 연결한다.
-            onTap: null,
+            onTap: () => context.push(lcdSaverPath(_id)),
           ),
         ),
       ]),
@@ -305,7 +314,7 @@ class _LcdSettingsScreenState extends ConsumerState<LcdSettingsScreen> {
             title: 'lcd_settings_quiet_toggle'.tr(),
             dimmed: !supported,
             rightPadding: 8,
-            trailing: _Switch(
+            trailing: LcdSwitch(
               key: LcdSettingsScreen.quietSwitchKey,
               value: scheduleOn,
               enabled: canQuiet,
@@ -497,9 +506,11 @@ class _LinkValue extends StatelessWidget {
       );
 }
 
-/// Figma 토글 — 켬 #C00306·끔 #B4AEAE, 손잡이 켬 #FAFAFA·끔 #F4F4F4.
-class _Switch extends StatelessWidget {
-  const _Switch({
+/// Figma 토글 80×32 — 켬 #C00306·끔 #B4AEAE, 손잡이 켬 #FAFAFA·끔 #F4F4F4.
+/// [enabled]가 false면 눌리지 않고, [dimmed]면 흐리게(오프라인·사진 없음).
+/// 보호 사진 화면도 쓴다.
+class LcdSwitch extends StatelessWidget {
+  const LcdSwitch({
     super.key,
     required this.value,
     required this.enabled,
@@ -528,28 +539,31 @@ class _Switch extends StatelessWidget {
 }
 
 /// 확인 대기 반짝임 — 덮은 줄은 눌리지 않는다(사육장 제어와 같은 문법).
+/// [absorb]가 false면 반짝임만 그리고 탭은 아래 줄로 보낸다(보호 사진 줄 —
+/// 대기 중 재진입은 화면 안에서 잠근다).
 class _Pending extends StatelessWidget {
   const _Pending({
     required this.pending,
     required this.child,
     this.pendingKey,
     this.radius = 0,
+    this.absorb = true,
   });
 
   final bool pending;
   final Widget child;
   final Key? pendingKey;
   final double radius;
+  final bool absorb;
 
   @override
   Widget build(BuildContext context) {
     if (!pending) return child;
+    final overlay = ControlLoadingOverlay(
+        key: pendingKey, borderRadius: BorderRadius.circular(radius));
     return Stack(children: [
       child,
-      Positioned.fill(
-        child: ControlLoadingOverlay(
-            key: pendingKey, borderRadius: BorderRadius.circular(radius)),
-      ),
+      Positioned.fill(child: absorb ? overlay : IgnorePointer(child: overlay)),
     ]);
   }
 }
