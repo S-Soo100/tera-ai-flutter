@@ -51,7 +51,10 @@ abstract final class FigmaIcons {
   static const memoFilled = 'redesign_v2/sticky_note_2_full';
   static const edit = 'redesign_v2/edit';
   static const more = 'redesign_v2/more_vert';
-  static const pause = 'final_pause';
+
+  /// 일시정지(36) — 그림 x10~25.43(Figma 1689:5722 화면 버튼, 2026-11-04
+  /// 디자이너 export에서 회색 원 배경만 뺐다).
+  static const pause = 'redesign_v2/3636/pause';
   static const envTemperature = 'final_temperature';
   static const envHumidity = 'final_humidity';
   static const close = 'close';
@@ -61,7 +64,7 @@ abstract final class FigmaIcons {
   static const trash = 'redesign_v2/delete';
 
   /// 플레이어 가로 축소(36) — 세로의 [expand](zoom_out_map)와 짝. 그림 18 @9
-  /// (Figma 1689:5763, 2026-11-03 "수정된 아이콘" — 전엔 20 @8). 라이브 확대
+  /// (Figma 1689:5761 "수정된 아이콘" 디자이너 export — 전엔 20 @8). 라이브 확대
   /// 화면 축소 버튼도 같은 그림(사용자 결정 2026-11-04).
   static const zoomInMap = 'redesign_v2/3636/zoom_in_map';
 
@@ -91,7 +94,8 @@ abstract final class FigmaIcons {
   static const bookmarkFilled = 'redesign_v2/bookmark_full';
   static const delete = 'delete';
 
-  /// 재생 삼각형 — 원 36 안 시각 중심 x13.06·y9.89(Figma 1689:5757, 2026-11-03).
+  /// 재생 삼각형 — 그림 x13~26.19·y10~26(Figma 1689:5513 화면 버튼, 2026-11-04
+  /// 디자이너 export에서 회색 원 배경만 뺐다).
   static const play = 'redesign_v2/3636/play_arrow';
 
   /// 배속 알약의 속도계(28 프레임, Figma 1689:5536 `speed_4`).
@@ -115,7 +119,8 @@ abstract final class FigmaIcons {
         _ => const Size(19, 13),
       };
 
-  /// 플레이어 세로 확대(36) — 그림 18 @9(Figma 1689:5766, 2026-11-03).
+  /// 플레이어 세로 확대(36) — 그림 18 @9(Figma 1689:5500 화면 버튼, 2026-11-04
+  /// 디자이너 export).
   static const expand = 'redesign_v2/3636/zoom_out_map';
   static const calendar = 'calendar';
 
