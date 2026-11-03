@@ -1,6 +1,6 @@
 # 모듈 화면 설정 (LCD 전원·꺼짐 예약·화면 보호 사진) — 기획 (2026-11-03)
 
-- 상태: **결정 확정 + 교차 검수 반영 (2026-11-03) — 구현 승인 대기**. 검수 결과 [`lcd-screen-settings-review-final.md`](../../design-audits/2026-11-03-lcd-screen-settings/lcd-screen-settings-review-final.md), 반영 규칙은 **§11이 본문보다 우선**. D2~D11은 사용자가 추천안 그대로 승인. D1 확정(2026-11-03: C — 서버 규칙대로 구현 + 요청서 [`docs/handoffs/2026-11-03-lcd-quiet-manual-override-request.md`](../../handoffs/2026-11-03-lcd-quiet-manual-override-request.md)).
+- 상태: **회신 반영, 구현 중 (2026-11-03)**. 백엔드 회신 [`2026-11-03-lcd-saver-reply.md`](../../references/2026-11-03-lcd-saver-reply.md) — **§12 > §11 > 본문** 순으로 우선. 검수 결과 [`lcd-screen-settings-review-final.md`](../../design-audits/2026-11-03-lcd-screen-settings/lcd-screen-settings-review-final.md), 반영 규칙은 **§11이 본문보다 우선**. D2~D11은 사용자가 추천안 그대로 승인. D1 확정(2026-11-03: C — 서버 규칙대로 구현 + 요청서 [`docs/handoffs/2026-11-03-lcd-quiet-manual-override-request.md`](../../handoffs/2026-11-03-lcd-quiet-manual-override-request.md)).
 - CAOF 트랙: **Critical** — 새 기기 기능 3종 + 사진 업로드(multipart) + 새 화면 3개, 서버 계약·펌웨어 게이트 의존.
 - 원본
   - 백엔드·펌웨어(이관훈님) 가이드: [`docs/references/2026-11-03-lcd-saver-app-guide.md`](../../references/2026-11-03-lcd-saver-app-guide.md) — 계약 원문은 terra-server `API.md §4.14`.
@@ -122,8 +122,8 @@ Figma 메모(디자이너 원문 요약):
 
 | # | Figma | 서버/펌웨어 (가이드) | 영향 |
 |---|---|---|---|
-| C1 | 꺼짐 예약 중에도 **전원을 켤 수 있다** | `화면 켜짐 = 전원 ON AND NOT 예약 시간` — 예약 시간엔 전원이 켜짐이어도 꺼져 있다 | 앱 스위치는 켜짐인데 LCD는 꺼진 상태가 생긴다 |
-| C2 | 예약 중 껐다면 **종료 시각에 다시 켜짐** | 전원 끄기는 **끈끈함(sticky)** — 예약이 끝나도 안 켜지고 켜기로만 풀림 | 디자이너 예시(21시 켬→끔→8시 켜짐)와 반대로 동작 |
+| C1 | 꺼짐 예약 중에도 **전원을 켤 수 있다** | `화면 켜짐 = 전원 ON AND NOT 예약 시간` — 예약 시간엔 전원이 켜짐이어도 꺼져 있다 | 앱 스위치는 켜짐인데 LCD는 꺼진 상태가 생긴다 → **해소 예정**: 신 펌웨어(`lcd_override`)가 Figma 규칙으로 동작(§12-1) |
+| C2 | 예약 중 껐다면 **종료 시각에 다시 켜짐** | 전원 끄기는 **끈끈함(sticky)** — 예약이 끝나도 안 켜지고 켜기로만 풀림 | 디자이너 예시(21시 켬→끔→8시 켜짐)와 반대로 동작 → **해소 예정**(§12-1) |
 | C3 | 예약 스위치를 꺼도 시간 줄은 그대로 보임(기본 20:00~8:00) | 해제는 `DELETE` → 서버 값 NULL, 시간이 남지 않는다 | 끄고 다시 켤 때 시간을 앱이 기억해야 한다 |
 | C4 | 보호기 모드 선택 없음(번갈아 표시만), 오프라인 아이콘 설정 없음 | `mode: rotate|image`, `show_offline_icon` | 범위 밖으로 두면 문제 없음 |
 | C5 | 사진 노출 1~5분 | `image_sec` 5~300초, 서버 기본 20초 | 미설정 기본값은 Figma(1분/10초). 칸에 안 맞는 서버값(20초 등)은 **실제 값 그대로 표시**, stepper를 처음 누를 때 칸으로 맞춤(§11) |
@@ -227,3 +227,39 @@ Figma 메모(디자이너 원문 요약):
 ### 11-8. 계약 스파이크 (단계 ①.5)
 - 조건: 서버 재배포 확인 + 앱에서 접근 가능한 `capabilities.lcd_saver=true` 온라인 기기(운영 DB상 `terra-d9feaaa2` 1대 — 계정 확인 필요).
 - 실측: PUT power·quiet, POST image(성공 1·기기 끈 상태 실패 1), 사진 수신 중 PUT saver → `commands` 결과 시점, `devices` 실시간에 새 컬럼이 실리는지와 ok 뒤 지연, 실패 뒤 `lcd_image_key`, 겹침 결과. 결과에 따라 §11-2·11-5 수치 조정.
+
+## 12. 백엔드 회신 반영 (2026-11-03, §11보다 우선)
+
+원문: [`docs/references/2026-11-03-lcd-saver-reply.md`](../../references/2026-11-03-lcd-saver-reply.md)
+
+### 12-1. 전원 — 펌웨어 능력으로 두 규칙 분기
+- **`capabilities.lcd_override == true`(신 nano 펌웨어, OTA 예정):** 예약이 있으면 켜기/끄기는 다음 예약 경계까지만, 없으면 sticky(Figma 규칙). API는 `PUT /lcd/power {on}` 그대로.
+  - 스위치 = `devices.lcd_screen_on`(기기가 telemetry로 보고한 **실제 화면 상태**, 바뀔 때만 반영). null이면(첫 보고 전) 아래 구 규칙으로 그린다.
+  - 누르면 `{on: !lcd_screen_on}`. 확인 대기는 §11-2 그대로이되 목표 일치 판정은 `lcd_screen_on`으로(ack ok 뒤 telemetry 3초 안팎).
+  - `lcd_override_until`이 있으면 전원 줄 아래 "{오전/오후 h:mm}부터 예약대로 돌아가요". 없고 화면이 꺼져 있고 예약 시간이면 "지금은 꺼짐 예약 시간이라 {종료}에 켜져요", 예약이 없고 꺼져 있으면 "다시 켤 때까지 꺼져 있어요".
+  - 예약 각주는 Figma 문구 그대로("설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다") — §11-3의 문구 교체는 구 규칙에만.
+  - 오프라인이면 마지막 보고값을 그대로 그린다(제어는 기존 오프라인 규칙으로 막힘).
+- **`lcd_override` 없음(현재 펌웨어):** §11·D1 C 그대로(스위치 = `lcd_power`, sticky 끄기, 예약 시간엔 꺼짐).
+- 예약 밖에서 끈 화면이 아침 경계에서 켜지는지는 **펌웨어 규칙**이라 앱은 `lcd_screen_on`만 그린다. 기본은 회신 권고(표대로: 20:00부터 예약 → 08:00 켜짐), 디자이너가 "낮에 끈 건 계속 꺼짐"을 원하면 펌웨어에 "예약 밖 끄기만 sticky"로 요청 — **디자이너 결론 대기, 앱 구현엔 영향 없음.**
+
+### 12-2. 사진 실패
+- 서버가 `dl_connect`/`dl_read`/`http_NNN`/`sha_mismatch`/`flash_write`에서 `lcd_image_key`를 NULL로 비운다(이번 주 서버 수정).
+  - 앱: 이 결과면 "기기에 사진이 없어요. 다시 올려 주세요"를 보이고 **사진 칸을 바로 빈 칸으로** 그린다(서버 수정 전에도 맞게 — 다음 `lcd_image_key` 변경 때까지 앱이 기억). 보호기 켜기도 사진 없음 규칙(§11-4)을 따른다.
+- `busy`/`no_token`/`bad_request`/`no_ack` → 기기에 옛 사진이 남아 있다. "원위치"가 맞고, 문구에 "기존 사진은 그대로예요"를 붙인다.
+- 기기의 사진 유무 직접 보고(telemetry `lcd` 블록)는 컬럼 이름이 정해지면 반영 — 그 전엔 쓰지 않는다.
+
+### 12-3. 사진 받는 중 다른 LCD 명령
+- `lcd_saver`/`lcd_power`/`lcd_quiet`는 다운로드와 별개로 바로 적용된다(무해). 그래도 §11-4대로 사진 대기 중엔 보호기 완료를 막는다(단순, 회신상 무해). `lcd_image` 연속은 `busy` → 기존대로 보내는 중엔 교체 메뉴를 막는다.
+
+### 12-4. 기기 구분 (D8 구체화)
+| `capabilities` | 판정 | 화면 |
+|---|---|---|
+| `hub == true` && `lcd == false` | LCD 없는 허브 | 홈 '모듈 화면 설정' 줄 자체를 숨김 |
+| `hub == true` (그 외) | 허브(개발 중단) | 문구 줄만, 전원·보호 사진·꺼짐 예약 세 줄 **숨김** |
+| `hub` 없음 && `lcd_saver != true` (null 포함) | nano 구 펌웨어 | 세 줄 흐리게 + "기기 업데이트 후 쓸 수 있어요" |
+| `lcd_saver == true` | 지원 | 전부 사용 |
+
+### 12-5. 운영 상태
+- Realtime: `devices` UPDATE에 `lcd_*` 전부 실려 옴(확인됨, 별도 설정 없음). 새 컬럼 `lcd_screen_on`·`lcd_override_until`도 같은 경로 — 타입은 서버 배포 후 DB로 확인, 그전엔 관대하게 파싱(bool / ISO 시각).
+- 서버 재배포: 이관훈님이 바로 진행 후 알림 예정.
+- 시험 기기: 없음(`terra-d9feaaa2`는 베타 테스트용) — **계약 스파이크(①.5)는 시험 기기가 정해질 때까지 보류**, 그동안 단위·위젯 테스트로 진행하고 실기는 마지막에 몰아서.
