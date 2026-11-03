@@ -65,7 +65,12 @@ import 'package:vivanaut/features/profile/data/notification_preferences_reposito
 import 'package:vivanaut/features/profile/presentation/notification_settings_screen.dart';
 import 'package:vivanaut/shared/widgets/viva_stepper.dart';
 
+import 'package:vivanaut/features/my_cage/domain/lcd_screen_state.dart';
+import 'package:vivanaut/features/my_cage/presentation/lcd_quiet_time_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/lcd_settings_screen.dart';
+
 import '../features/home/control_sheet_fixtures.dart';
+import '../features/my_cage/lcd_fixtures.dart';
 import '../features/home/env_v4_screen_fixtures.dart';
 import '../helpers/inert_live_controller.dart';
 
@@ -424,6 +429,59 @@ void main() {
             ]);
         expect(
             find.byKey(NotificationSettingsScreen.envAlertKey), findsOneWidget);
+      });
+
+      // 모듈 화면 설정(Figma 1659:5964) — 글자가 가장 많은 상태: 예약 켜짐 +
+      // 예약 시간 안 안내 + 오프라인 안내 + 긴 문구. 구 펌웨어는 업데이트 안내.
+      for (final support in [LcdSupport.supported, LcdSupport.needsUpdate]) {
+        testWidgets('모듈 화면 설정 ${support.name}', (tester) async {
+          final rows = CommandRows();
+          addTearDown(rows.close);
+          await _pump(
+              tester, system, const LcdSettingsScreen(deviceId: kLcdDevice),
+              overrides: lcdOverrides(
+                  repo: FakeLcdRepo(),
+                  rows: rows,
+                  link: Stream.value(lcdLink(
+                      support: support,
+                      quiet: LcdQuietWindow.defaults,
+                      imageKey: 'k1')),
+                  online: false,
+                  now: DateTime.utc(2026, 11, 3, 14),
+                  devices: const [
+                    Device(
+                        id: kLcdDevice,
+                        ownerId: 'u1',
+                        enclosureId: null,
+                        name: '사육장 1',
+                        hardwareId: '일이삼사오육칠팔구십일이삼사오육칠팔구십',
+                        isOnline: false,
+                        lastSeenAt: null),
+                  ]));
+          expect(find.byKey(LcdSettingsScreen.quietNoteKey), findsOneWidget);
+          await tester.drag(
+              find.byType(SingleChildScrollView).first, const Offset(0, -600));
+          await tester.pumpAndSettle();
+        });
+      }
+
+      // 화면 꺼짐 시간(Figma 1659:6267) — 오프라인 안내까지.
+      testWidgets('화면 꺼짐 시간', (tester) async {
+        final rows = CommandRows();
+        addTearDown(rows.close);
+        await _pump(
+            tester, system, const LcdQuietTimeScreen(deviceId: kLcdDevice),
+            overrides: lcdOverrides(
+                repo: FakeLcdRepo(),
+                rows: rows,
+                link: Stream.value(lcdLink(quiet: LcdQuietWindow.defaults)),
+                online: false,
+                now: DateTime.utc(2026, 11, 3, 3)));
+        expect(find.byKey(LcdQuietTimeScreen.doneKey), findsOneWidget);
+        expect(find.byKey(LcdQuietTimeScreen.offlineNoteKey), findsOneWidget);
+        await tester.drag(
+            find.byType(SingleChildScrollView).first, const Offset(0, -600));
+        await tester.pumpAndSettle();
       });
 
       // 카메라 오프라인 안내(Figma 1525:10689) — 홈·카메라 탭 면(369:271)과

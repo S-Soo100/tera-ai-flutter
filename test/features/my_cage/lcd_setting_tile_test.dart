@@ -14,7 +14,10 @@ import 'package:vivanaut/features/my_cage/data/lcd_text_store.dart';
 import 'package:vivanaut/features/my_cage/domain/lcd_text.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/lcd_setting_tile.dart';
 
-/// LCD 문구 진입점(홈 `HomeLcdRow`, 2026-09-07 이동) + 시트([showLcdSheet]).
+/// LCD 문구 화면([showLcdSheet]) + 홈 줄(`HomeLcdRow`)의 문구 표시.
+///
+/// 2026-11-03부터 홈 줄은 모듈 화면 설정 화면으로 가고, 문구 화면은 그 화면의
+/// '화면 표시 문구' 줄에서 연다 — 여기선 같은 호출을 하는 [_Opener]로 연다.
 ///
 /// 네트워크를 타지 않는 대역. 호출 기록으로 "정말 REST로 갔는가"를 본다.
 class _FakeLcdRepo implements LcdRepository {
@@ -73,6 +76,26 @@ class _MemoryLcdTextStore implements LcdTextStore {
   Future<void> clearAll() async => values.clear();
 }
 
+const _openKey = Key('open_lcd_sheet');
+
+/// 모듈 화면 설정의 '화면 표시 문구' 줄과 같은 호출로 문구 화면을 연다.
+class _Opener extends ConsumerWidget {
+  const _Opener();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final device = ref.watch(currentSetProvider).valueOrNull?.device;
+    if (device == null) return const SizedBox.shrink();
+    return TextButton(
+        key: _openKey,
+        onPressed: () => showLcdSheet(context, ref, device.id,
+            defaultText: device.hardwareId),
+        child: const Text('open'));
+  }
+}
+
+const _host = Scaffold(body: Column(children: [HomeLcdRow(), _Opener()]));
+
 Future<void> _pump(WidgetTester tester, _FakeLcdRepo repo,
     {String? deviceId = 'd1',
     String? hardwareId,
@@ -89,8 +112,8 @@ Future<void> _pump(WidgetTester tester, _FakeLcdRepo repo,
         lcdTextAccountProvider.overrideWithValue(account),
         deviceLinkStatusProvider.overrideWith((ref, id) =>
             link ??
-            Stream.value(const DeviceLinkStatus(
-                isOnline: true, lastSeenAt: null))),
+            Stream.value(
+                const DeviceLinkStatus(isOnline: true, lastSeenAt: null))),
         moduleOnlineProvider.overrideWith((ref, id) => true),
         currentSetProvider.overrideWith((ref) async => deviceId == null
             ? null
@@ -109,9 +132,7 @@ Future<void> _pump(WidgetTester tester, _FakeLcdRepo repo,
                 pet: null,
               )),
       ],
-      child: const MaterialApp(
-        home: Scaffold(body: HomeLcdRow()),
-      ),
+      child: const MaterialApp(home: _host),
     ),
   );
   await tester.pumpAndSettle();
@@ -122,7 +143,7 @@ void main() {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo);
 
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '밥 6시');
@@ -138,7 +159,7 @@ void main() {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo);
 
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('lcd_text_field')), 'a' * 80);
@@ -155,7 +176,7 @@ void main() {
     final repo = _FakeLcdRepo(fail: true);
     await _pump(tester, repo);
 
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '재시도 문구');
     await tester.pump();
@@ -177,7 +198,7 @@ void main() {
   testWidgets('프로그램 입력도 공백 포함 20자까지만 전송한다', (tester) async {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo);
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
 
     final field =
@@ -194,7 +215,7 @@ void main() {
     final pending = Completer<void>();
     final repo = _FakeLcdRepo(pending: pending);
     await _pump(tester, repo);
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '전송 문구');
     await tester.pump();
@@ -261,9 +282,9 @@ void main() {
                 data: MediaQuery.of(context).copyWith(
                     padding: const EdgeInsets.only(top: 62, bottom: 34)),
                 child: child!),
-            home: const Scaffold(body: HomeLcdRow()))));
+            home: _host)));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
     expect(find.byType(BottomSheet), findsNothing);
     expect(tester.getRect(find.byKey(const Key('lcd_illustration_slot'))),
@@ -274,6 +295,15 @@ void main() {
     expect(field.top,
         tester.getRect(find.text('lcd_screen_description')).bottom + 16);
     expect(field.height, 65);
+    // Figma 1659:5764 — 입력칸 아래 8에 안내 한 줄(x24, 12/500 #949090).
+    final hint = tester.getRect(find.byKey(const Key('lcd_unique_hint')));
+    expect(hint.top, field.bottom + 8);
+    expect(hint.left, 24);
+    final hintText =
+        tester.widget<Text>(find.byKey(const Key('lcd_unique_hint')));
+    expect(hintText.data, 'lcd_text_unique_hint');
+    expect(hintText.style?.fontSize, 12);
+    expect(hintText.style?.color, const Color(0xFF949090));
     expect(tester.getRect(find.byKey(const Key('lcd_counter'))).right,
         closeTo(364, 0.5));
     expect(find.text('0/20'), findsOneWidget);
@@ -302,7 +332,7 @@ void main() {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo, hardwareId: 'terra-cb7d7864');
 
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
 
     expect(
@@ -332,14 +362,14 @@ void main() {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo, hardwareId: 'terra-cb7d7864');
 
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '도도네 집');
     await tester.pump();
     await tester.tap(find.byKey(const Key('lcd_apply')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
     expect(
         tester
@@ -354,7 +384,7 @@ void main() {
     final repo = _FakeLcdRepo();
     await _pump(tester, repo);
 
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
     expect(find.text('0/20'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -365,7 +395,7 @@ void main() {
     final store = _MemoryLcdTextStore();
     final repo = _FakeLcdRepo();
     await _pump(tester, repo, hardwareId: 'terra-cb7d7864', store: store);
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '도도네 집');
     await tester.pump();
@@ -378,7 +408,7 @@ void main() {
     expect(find.text('도도네 집'), findsOneWidget);
     expect(find.text('terra-cb7d7864'), findsNothing);
 
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
     expect(
         tester
@@ -407,7 +437,7 @@ void main() {
   testWidgets('전송 실패면 문구를 저장하지 않는다', (tester) async {
     final store = _MemoryLcdTextStore();
     await _pump(tester, _FakeLcdRepo(fail: true), store: store);
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('lcd_text_field')), '실패 문구');
     await tester.pump();
@@ -437,13 +467,13 @@ void main() {
     testWidgets('보내면 즉시 새 문구, ACK가 오면 서버 값으로 이어진다', (tester) async {
       final link = StreamController<DeviceLinkStatus?>();
       addTearDown(link.close);
-      await _pump(tester, _FakeLcdRepo(), store: _MemoryLcdTextStore(),
-          link: link.stream);
+      await _pump(tester, _FakeLcdRepo(),
+          store: _MemoryLcdTextStore(), link: link.stream);
       link.add(status('옛 문구', t0));
       await tester.pumpAndSettle();
       expect(find.text('옛 문구'), findsOneWidget);
 
-      await tester.tap(find.byKey(HomeLcdRow.rowKey));
+      await tester.tap(find.byKey(_openKey));
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('lcd_text_field')), '새 문구');
       await tester.pump();
@@ -460,12 +490,12 @@ void main() {
     testWidgets('30초 안에 ACK가 없으면 기기에 뜬 옛 문구로 돌아간다', (tester) async {
       final link = StreamController<DeviceLinkStatus?>();
       addTearDown(link.close);
-      await _pump(tester, _FakeLcdRepo(), store: _MemoryLcdTextStore(),
-          link: link.stream);
+      await _pump(tester, _FakeLcdRepo(),
+          store: _MemoryLcdTextStore(), link: link.stream);
       link.add(status('옛 문구', t0));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(HomeLcdRow.rowKey));
+      await tester.tap(find.byKey(_openKey));
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('lcd_text_field')), '새 문구');
       await tester.pump();
@@ -509,11 +539,10 @@ void main() {
       child: ValueListenableBuilder<bool>(
           valueListenable: showRow,
           builder: (context, show, _) => MaterialApp(
-              home: Scaffold(
-                  body: show ? const HomeLcdRow() : const SizedBox()))),
+              home: show ? _host : const Scaffold(body: SizedBox()))),
     ));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(HomeLcdRow.rowKey));
+    await tester.tap(find.byKey(_openKey));
     await tester.pumpAndSettle();
 
     showRow.value = false; // 홈 줄 폐기 + 앱 다시 그리기
