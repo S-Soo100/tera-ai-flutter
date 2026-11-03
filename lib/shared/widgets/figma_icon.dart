@@ -60,8 +60,10 @@ abstract final class FigmaIcons {
   /// 44 프레임 export(글리프 17×19 가운데) — 예약 목록 휴지통(Figma 1106:5317).
   static const trash = 'redesign_v2/delete';
 
-  /// 플레이어 가로 축소(36) — 세로의 [expand](zoom_out_map)와 짝(Figma 941:1928).
-  static const zoomInMap = 'redesign_v2/zoom_in_map';
+  /// 플레이어 가로 축소(36) — 세로의 [expand](zoom_out_map)와 짝. 그림 18 @9
+  /// (Figma 1689:5763, 2026-11-03 "수정된 아이콘" — 전엔 20 @8). 라이브 확대
+  /// 화면 축소 버튼도 같은 그림(사용자 결정 2026-11-04).
+  static const zoomInMap = 'redesign_v2/3636/zoom_in_map';
 
   /// ±10초 피드백 칩 글리프 26(Figma 941:1928 Toast_V). 되감기는 좌우 반전.
   static const fastForward = 'redesign_v2/fast_forward';
@@ -88,7 +90,10 @@ abstract final class FigmaIcons {
   static const bookmark = 'redesign_v2/bookmark_empty';
   static const bookmarkFilled = 'redesign_v2/bookmark_full';
   static const delete = 'delete';
-  static const play = 'play';
+
+  /// 재생 삼각형 — 원 36 안 시각 중심 x13.06·y9.89(Figma 1689:5757, 2026-11-03).
+  static const play = 'redesign_v2/3636/play_arrow';
+
   /// 배속 알약의 속도계(28 프레임, Figma 1689:5536 `speed_4`).
   static const speedGauge = 'redesign_v2/2828/speed_4';
 
@@ -109,7 +114,9 @@ abstract final class FigmaIcons {
         4.0 => const Size(20, 13),
         _ => const Size(19, 13),
       };
-  static const expand = 'expand';
+
+  /// 플레이어 세로 확대(36) — 그림 18 @9(Figma 1689:5766, 2026-11-03).
+  static const expand = 'redesign_v2/3636/zoom_out_map';
   static const calendar = 'calendar';
 
   /// 하이라이트·북마크 상단바 달력(Figma calendar_month 20, 날짜 점 있음).

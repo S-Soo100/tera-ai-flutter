@@ -119,19 +119,11 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   }
 
-  /// 디자인이 export와 다른 그림 크기를 정한 예외 — 이유 없이 늘리지 말 것.
-  /// 확대·축소: Figma 1689:5771(2026-11-03)이 회색 원 36 안의 그림을 20→18로
-  /// 줄였다(0.9배). 새 export가 오면 지우고 프레임 크기로 되돌린다.
-  final drawnSmaller = {
-    FigmaIcons.expand: 32.4,
-    FigmaIcons.zoomInMap: 32.4,
-  };
-
   void expectFramesMatch(WidgetTester tester) {
     final icons = tester.widgetList<FigmaIcon>(find.byType(FigmaIcon));
     expect(icons, isNotEmpty);
     for (final icon in icons) {
-      expect(icon.size, drawnSmaller[icon.name] ?? _frameOf(icon.name),
+      expect(icon.size, _frameOf(icon.name),
           reason: '${icon.name}: export 프레임과 다른 크기로 그린다');
     }
   }
