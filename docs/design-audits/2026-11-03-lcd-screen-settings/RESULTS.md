@@ -63,4 +63,4 @@
 | 문구 화면 뒤로 → 설정 화면 복귀 | 통과 | |
 | **각주가 어절 중간에서 줄바꿈("켜집니 / 다")** | **발견 → 0.169.2에서 수정**(keepAllWords), 재확인 통과 | 전 `simulator/settings_needs_update_before_wrap_fix.png` / 후 `simulator/settings_needs_update.png` |
 
-- 참고(이번 변경 밖): 문구 화면 바탕은 앱 #FAFAFA, Figma 1659:5764는 #FFFFFF — 기존 화면 그대로 둠.
+- 문구 화면 색(픽셀 측정, 2026-11-03 정정): 상단·제목 줄·바탕 모두 앱 #FFFFFF = Figma 1659:5764 #FFFFFF, 입력칸 안쪽 앱 #FAFAFA = Figma #FAFAFA. 일치. (먼저 적었던 "앱 바탕 #FAFAFA"는 입력칸 색을 잘못 읽은 것.) 다른 LCD 화면 5개도 상단·헤더·바탕·하단 색이 Figma와 같다(설정 #FAFAFA/#F4F4F4, 꺼짐 시간·보호 사진 #F4F4F4).
