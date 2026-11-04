@@ -44,7 +44,7 @@ class DeviceSettings {
   bool get hasTarget => targetTempC != null || targetHumidityPct != null;
 
   /// v4 적정 온도 범위(2026-11-02). 미설정·범위 밖·스텝 밖·`min >= max`는
-  /// [EnvRange.fromSettings] 규칙으로 디폴트(18~26℃)나 허용값으로 맞춘다.
+  /// [EnvRange.fromSettings] 규칙으로 디폴트(18~27℃)나 허용값으로 맞춘다.
   /// 위 "임의 기본값 금지"는 단일 목표값([targetTempC]) 얘기다 — 적정 범위는
   /// 기획 v4 1-1이 크레스티드 게코 디폴트를 정했고 서버 판정도 같은 디폴트를 쓴다.
   EnvRange get tempRange => EnvRange.fromSettings(

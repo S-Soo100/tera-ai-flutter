@@ -128,12 +128,12 @@ void main() {
     return router;
   }
 
-  testWidgets('(1) 설정 없음 → 18℃ ~ 26℃, 40% ~ 80%와 각주', (tester) async {
+  testWidgets('(1) 설정 없음 → 18℃ ~ 27℃, 40% ~ 80%와 각주', (tester) async {
     await pump(tester);
     expect(find.text('온습도 설정'), findsOneWidget);
-    expect(find.text('18℃ ~ 26℃'), findsOneWidget);
+    expect(find.text('18℃ ~ 27℃'), findsOneWidget);
     expect(find.text('40% ~ 80%'), findsOneWidget);
-    expect(find.text('18℃ 미만이거나 26℃ 초과인 경우 이탈 안내를 합니다'), findsOneWidget);
+    expect(find.text('18℃ 미만이거나 27℃ 초과인 경우 이탈 안내를 합니다'), findsOneWidget);
     expect(find.text('40% 미만이거나 80% 초과인 경우 이탈 안내를 합니다'), findsOneWidget);
     expect(_switchValue(tester, TempHumidSettingScreen.tempAlertToggleKey),
         isTrue);

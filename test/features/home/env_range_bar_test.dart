@@ -94,14 +94,14 @@ void main() {
         tester,
         const EnvRangeBar(
             kind: EnvBarKind.temp,
-            value: 26,
+            value: 27,
             low: 20,
-            high: 27,
+            high: 28,
             range: EnvRange.tempDefault));
     final t = track(tester);
-    final expected = t.left + EnvBarKind.temp.fractionOf(26) * t.width;
+    final expected = t.left + EnvBarKind.temp.fractionOf(27) * t.width;
     expect(marker(tester).center.dx, moreOrLessEquals(expected));
-    expect(tester.getCenter(find.text('26')).dx, moreOrLessEquals(expected));
+    expect(tester.getCenter(find.text('27')).dx, moreOrLessEquals(expected));
   });
 
   testWidgets('최저 15.9 → "15" (버림), 최고 26.99 → "26"', (tester) async {

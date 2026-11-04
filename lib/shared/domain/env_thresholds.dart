@@ -90,8 +90,10 @@ class EnvRange {
 
   const EnvRange(this.min, this.max);
 
-  /// 온도 디폴트 18~26℃.
-  static const EnvRange tempDefault = EnvRange(18, 26);
+  /// 온도 디폴트 18~27℃ — 서버 판정 디폴트와 같아야 한다(2026-11-04 사용자
+  /// 결정으로 상한 26→27, 서버도 같은 날 변경 요청. 26에선 고온 주의가 너무
+  /// 쉽게 울렸다).
+  static const EnvRange tempDefault = EnvRange(18, 27);
 
   /// 습도 디폴트 40~80%.
   static const EnvRange humidDefault = EnvRange(40, 80);
