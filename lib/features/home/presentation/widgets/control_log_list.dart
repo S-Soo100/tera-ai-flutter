@@ -117,6 +117,7 @@ class ControlLogList extends StatelessWidget {
                 fontFamily: 'Pretendard',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
+                letterSpacing: 14 * -0.02,
                 color: glass.textTertiary,
               ),
             )
@@ -197,6 +198,8 @@ class _LogRow extends StatelessWidget {
                   fontSize: 14,
                   height: 16.70703125 / 14,
                   fontWeight: FontWeight.w500,
+                  // 빠지면 Material 기본 +0.25가 들어간다(Figma −0.28).
+                  letterSpacing: 14 * -0.02,
                   color: glass.textTertiary,
                 ),
               ),
@@ -238,6 +241,7 @@ class _LogRow extends StatelessWidget {
                 fontSize: 14,
                 height: 16.70703125 / 14,
                 fontWeight: FontWeight.w500,
+                letterSpacing: 14 * -0.02,
                 color: glass.textTertiary,
               ),
             ),

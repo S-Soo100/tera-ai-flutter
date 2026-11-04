@@ -49,6 +49,38 @@ void main() {
     expect(find.text('env_detail_env_value'), findsNWidgets(2));
   });
 
+  // Figma 1610:5526 — 시각·"작동 시점 온습도"·델타는 14/500 자간 −0.28.
+  // 지정이 빠지면 Material 기본 +0.25가 들어갔다(2026-11-04 글자 대조).
+  testWidgets('작은 글자(시각·캡션·델타) 자간은 Figma −0.28', (tester) async {
+    await _pump(tester, [
+      ControlLogEntry(
+        kind: MarkerKind.fan,
+        state: ControlLogState.on,
+        at: DateTime(2026, 8, 30, 10, 0),
+        temperature: 30,
+        humidity: 50,
+      ),
+      ControlLogEntry(
+        kind: MarkerKind.fan,
+        state: ControlLogState.off,
+        at: DateTime(2026, 8, 30, 12, 30),
+        temperature: 25,
+        humidity: 52,
+        deltaTemperature: -5,
+        deltaHumidity: 2,
+      ),
+    ]);
+    final small = tester
+        .widgetList<Text>(find.byType(Text))
+        .where((t) => t.style?.fontSize == 14)
+        .toList();
+    // 시각 2 + 캡션 1 + 델타 1.
+    expect(small, hasLength(4));
+    for (final t in small) {
+      expect(t.style!.letterSpacing, closeTo(-0.28, 1e-9), reason: t.data);
+    }
+  });
+
   testWidgets('분무는 캡션, 델타 없는 off는 미상 변화량', (tester) async {
     await _pump(tester, [
       ControlLogEntry(

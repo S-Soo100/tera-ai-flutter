@@ -430,7 +430,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     await _pump(tester, clipId: 'b', playlist: ['a', 'b']);
 
-    expect(find.text('2026. 08. 28'), findsOneWidget);
+    expect(find.text('2026. 8.28'), findsOneWidget);
     // 시각은 공용 formatAmPmTime(전체 문구 l10n 키) — 테스트엔
     // EasyLocalization이 없어 namedArgs 미치환 키 원문이 나온다.
     expect(find.text('time_am_fmt'), findsOneWidget);
