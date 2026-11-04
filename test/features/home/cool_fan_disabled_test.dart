@@ -45,8 +45,10 @@ Future<void> _clearToast(WidgetTester tester) =>
     tester.pump(const Duration(seconds: 3));
 
 void main() {
-  test('배포 기본값은 냉각팬 꺼 둠', () {
-    expect(FeatureFlags.coolFanEnabled, isFalse);
+  // 2026-10-16 끔 → 2026-11-04 사용자 결정으로 다시 켬(0.171.0). 아래 테스트는
+  // 다시 끌 때를 위해 꺼진 상태 동작을 계속 고정한다.
+  test('배포 기본값은 냉각팬 켜 둠', () {
+    expect(FeatureFlags.coolFanEnabled, isTrue);
   });
 
   testWidgets('꺼진 냉각팬 칸 — "비활성화", 탭하면 토스트만 뜨고 시트·명령 없음',
