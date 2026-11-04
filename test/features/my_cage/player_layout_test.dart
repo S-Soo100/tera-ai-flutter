@@ -13,9 +13,11 @@ import 'package:vivanaut/core/theme/glass_palette.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/my_cage/data/favorite_clip_repository.dart';
 import 'package:vivanaut/features/my_cage/data/video_export_service.dart';
+import 'package:vivanaut/features/my_cage/domain/clip_visibility.dart';
 import 'package:vivanaut/features/my_cage/domain/favorite_clip.dart';
 import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
+import 'package:vivanaut/features/my_cage/presentation/clip_visibility_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/player_view_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
@@ -97,7 +99,8 @@ void main() {
       {EdgeInsets padding = EdgeInsets.zero,
       _Export? export,
       double textScale = 1,
-      Map<String, double> playFromSec = const {}}) async {
+      Map<String, double> playFromSec = const {},
+      List<Override> extra = const []}) async {
     VideoPlayerPlatform.instance = _Video();
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -117,6 +120,7 @@ void main() {
               .overrideWith((ref, id) async => 'https://example.test/$id'),
           if (export != null)
             videoExportServiceProvider.overrideWithValue(export),
+          ...extra,
         ],
         child: MaterialApp(
             theme: AppTheme.light,
@@ -257,6 +261,48 @@ void main() {
     expect(style.backgroundColor!.resolve({}), palette.surfaceTint);
     expect(style.foregroundColor!.resolve({}), palette.textPrimary);
     expect(tester.takeException(), isNull);
+  });
+
+  // 2026-11-04 릴리스 APK 실측: 회전·앱 복귀 때 카메라 탭이 숨김 목록을 다시
+  // 불러오는 동안(loading) 화면이 방향 구독 전에 빠져나가 컨트롤러가 폐기되고,
+  // 폐기 처리가 세로로 되돌렸다(가로 전환 0.4초 뒤 세로 복귀).
+  testWidgets('가로로 본 뒤 숨김 목록을 다시 불러와도 가로가 유지된다', (tester) async {
+    final orientations = <Object?>[];
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'SystemChrome.setPreferredOrientations') {
+        orientations.add(call.arguments);
+      }
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+    final visibility = StateProvider<ClipVisibilityState>(
+        (_) => const ClipVisibilityState(loading: false));
+    await pump(tester, const Size(852, 393), extra: [
+      currentClipVisibilityProvider.overrideWith((ref) => ref.watch(visibility)),
+    ]);
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(ClipPlaylistPlayerScreen)));
+    await tester.tap(find.byKey(const Key('player_orientation')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('player_landscape_close')), findsOneWidget);
+    final requestsBefore = orientations.length;
+
+    container.read(visibility.notifier).state = const ClipVisibilityState();
+    await tester.pump();
+    await tester.pump();
+    container.read(visibility.notifier).state =
+        const ClipVisibilityState(loading: false);
+    // settled(정적 큐)는 앞 테스트가 남긴 Future에 묶일 수 있어 기다리지 않고
+    // 프레임만 넘긴다. 판정은 화면(가로 조작부)으로 하고, 플랫폼 기록은
+    // 재로딩 동안 세로 요청이 새로 생기지 않았는지만 본다.
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    expect(find.byKey(const Key('player_landscape_close')), findsOneWidget);
+    expect(orientations.skip(requestsBefore),
+        isNot(contains(['DeviceOrientation.portraitUp'])));
   });
 
   testWidgets('landscape: overlay chrome at Figma 941:1928 coordinates',

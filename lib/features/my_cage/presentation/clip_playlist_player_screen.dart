@@ -692,6 +692,12 @@ class _ClipPlaylistPlayerScreenState
     }
     ref.watch(playerPlaylistProvider(_playlistSeed));
     ref.watch(playerIndexProvider(_playlistSeed));
+    // 방향·조작부 표시는 아래 로딩·빈 목록 분기보다 먼저 구독한다. 앱 복귀(회전
+    // 때도 온다) 뒤 숨김 목록을 다시 불러오는 한 프레임만 구독이 빠져도
+    // autoDispose로 폐기돼 가로가 세로로 되돌아갔다(2026-11-04 실측).
+    final landscape = ref.watch(playerOrientationProvider(_orientationKey));
+    final controlsVisible =
+        ref.watch(playerControlsVisibleProvider(_orientationKey));
     final visibility = ref.watch(currentClipVisibilityProvider);
     ref.listen(currentClipVisibilityProvider.select((value) => value.hiddenIds),
         (_, hidden) {
@@ -727,8 +733,6 @@ class _ClipPlaylistPlayerScreenState
           .addPostFrameCallback((_) => _applyHiddenClips(visibility.hiddenIds));
       return const Scaffold(body: SizedBox.shrink());
     }
-    final controlsVisible =
-        ref.watch(playerControlsVisibleProvider(_orientationKey));
     final currentId = _currentClipId;
     final MotionClip? clip;
     final bool isFav;
@@ -754,7 +758,6 @@ class _ClipPlaylistPlayerScreenState
             ref.watch(favoriteClipMetaProvider(currentId))?.startedAt;
     }
 
-    final landscape = ref.watch(playerOrientationProvider(_orientationKey));
     if (landscape) {
       // Figma 941:1928 / 1081:6895 — 영상 위 overlay chrome. 여백 좌우 48·
       // 상 24·하 20은 SafeArea 최소값(노치 기기는 더 큰 쪽을 쓴다).
