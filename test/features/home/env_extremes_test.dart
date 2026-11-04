@@ -20,6 +20,40 @@ TelemetryBucket _b({
     });
 
 void main() {
+  group('EnvExtremes.including (실시간 현재값 반영, 2026-11-04)', () {
+    final base = EnvExtremes.from([
+      _b(tMin: 23.7, tMax: 25.9, hMin: 46.4, hMax: 50.1),
+    ]);
+
+    test('현재값이 범위 밖이면 최고·최저를 넓힌다', () {
+      final e = base.including(temperature: 26.9, humidity: 36.6);
+      expect(e.tempMax, 26.9);
+      expect(e.tempMin, 23.7);
+      expect(e.humidMin, 36.6);
+      expect(e.humidMax, 50.1);
+    });
+
+    test('현재값이 범위 안이면 그대로', () {
+      final e = base.including(temperature: 24, humidity: 48);
+      expect(e.tempMax, 25.9);
+      expect(e.humidMin, 46.4);
+    });
+
+    test('기록이 없으면 현재값이 곧 최고·최저', () {
+      final e = EnvExtremes.from(const [])
+          .including(temperature: 26.9, humidity: null);
+      expect(e.tempMin, 26.9);
+      expect(e.tempMax, 26.9);
+      expect(e.humidMin, isNull);
+    });
+
+    test('null·0·비정상 값은 무시', () {
+      final e = base.including(temperature: 0, humidity: double.nan);
+      expect(e.tempMin, 23.7);
+      expect(e.humidMin, 46.4);
+    });
+  });
+
   group('EnvExtremes.from', () {
     test('여러 버킷에서 전체 최고/최저를 뽑는다', () {
       final e = EnvExtremes.from([

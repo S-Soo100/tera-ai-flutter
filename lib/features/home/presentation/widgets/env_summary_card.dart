@@ -34,7 +34,12 @@ class EnvSummaryCard extends ConsumerWidget {
     // 표시 규칙). 전엔 센서 단발 실패·12초 무소식·폰 시계 차이마다 `--`가 됐다.
     final values = ref.watch(envLiveViewProvider(deviceId));
     final caption = envLiveCaption(values);
-    final ex = ref.watch(homeTodayExtremesProvider).valueOrNull;
+    var ex = ref.watch(homeTodayExtremesProvider).valueOrNull;
+    // 갱신 사이에 현재값이 오늘 최고보다 높게 보이지 않게(2026-11-04).
+    if (values.freshness == EnvFreshness.fresh) {
+      ex = ex?.including(
+          temperature: values.temperature, humidity: values.humidity);
+    }
     final glass = context.glass;
     final valueColor = switch (values.freshness) {
       EnvFreshness.fresh => glass.textPrimary,

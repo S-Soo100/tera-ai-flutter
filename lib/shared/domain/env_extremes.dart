@@ -20,6 +20,22 @@ class EnvExtremes {
   /// 온도·습도 중 하나라도 유효 표본이 있으면 true.
   bool get hasData => tempMin != null || humidMin != null;
 
+  /// 실시간 현재값을 더한 최고/최저 — 오늘 화면에서 현재값이 최고보다 높게
+  /// 보이지 않게 한다(2026-11-04). null·0·비정상 값은 무시한다.
+  EnvExtremes including({double? temperature, double? humidity}) {
+    bool valid(double? v) => v != null && v.isFinite && v > 0;
+    double? lo(double? a, double? v) =>
+        !valid(v) ? a : (a == null || v! < a ? v : a);
+    double? hi(double? a, double? v) =>
+        !valid(v) ? a : (a == null || v! > a ? v : a);
+    return EnvExtremes(
+      tempMin: lo(tempMin, temperature),
+      tempMax: hi(tempMax, temperature),
+      humidMin: lo(humidMin, humidity),
+      humidMax: hi(humidMax, humidity),
+    );
+  }
+
   factory EnvExtremes.from(List<TelemetryBucket> buckets) {
     final temps = <double>[];
     final humids = <double>[];

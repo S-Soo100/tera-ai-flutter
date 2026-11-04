@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../shared/domain/num_format.dart';
 import '../domain/device.dart';
 import '../domain/device_command.dart';
 import '../domain/telemetry_bucket.dart';
@@ -151,5 +152,41 @@ class SupabaseModuleControlRepository {
     return (rows as List)
         .map((r) => TelemetryBucket.fromJson(r as Map<String, dynamic>))
         .toList();
+  }
+
+  /// [telemetryHistory] + **아직 마감 전인 30분 칸**을 원본 `telemetry`로 채운 것.
+  ///
+  /// `telemetry_30m`은 칸이 끝나야 생겨서, 오늘 화면의 최고·최저·그래프가
+  /// 최대 30분 넘게 늦었다(2026-11-04 — 오늘 최고 25.9인데 현재 26.9·알림
+  /// 27.7). 오늘처럼 끝이 지금인 창에만 쓴다. 원본은 최근 1000행(약 1시간,
+  /// PostgREST 상한)만 읽어, 집계가 더 밀려도 최신 쪽이 남는다.
+  Future<List<TelemetryBucket>> telemetryHistoryWithTail(
+    String deviceId,
+    DateTime from, {
+    DateTime? to,
+  }) async {
+    final closed = await telemetryHistory(deviceId, from, to: to);
+    final tailFrom = TelemetryBucket.tailFrom(closed, from);
+    if (to != null && !tailFrom.isBefore(to)) return closed;
+    var q = _supabase
+        .from('telemetry')
+        .select('ts, t_a, h_a, a_ok')
+        .eq('device_id', deviceId)
+        .gte('ts', tailFrom.toUtc().toIso8601String());
+    if (to != null) q = q.lt('ts', to.toUtc().toIso8601String());
+    final rows = await q.order('ts', ascending: false).limit(1000);
+    final samples = <RawEnvSample>[];
+    for (final r in (rows as List).cast<Map<String, dynamic>>()) {
+      final ts = DateTime.tryParse(r['ts']?.toString() ?? '');
+      if (ts == null) continue;
+      samples.add((
+        ts: ts,
+        t: parseDouble(r['t_a']),
+        h: parseDouble(r['h_a']),
+        ok: r['a_ok'] == true,
+      ));
+    }
+    return TelemetryBucket.withOpenTail(
+        closed, TelemetryBucket.aggregate(samples));
   }
 }
