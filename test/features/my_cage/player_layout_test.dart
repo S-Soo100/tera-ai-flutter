@@ -23,6 +23,7 @@ import 'package:vivanaut/features/my_cage/presentation/player_view_providers.dar
 import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/clip_filmstrip.dart';
 import 'package:vivanaut/shared/widgets/figma_icon.dart';
+import 'package:vivanaut/shared/widgets/video_seek_bar.dart';
 
 class _Favorite extends Fake implements FavoriteClipRepository {
   @override
@@ -199,6 +200,41 @@ void main() {
     expect(strip.top, 716);
     expect(strip.height, 48);
     expect(tester.takeException(), isNull);
+  });
+
+  // Figma 1689:5305·1689:5647 재생바·날짜 (2026-11-04 글자·픽셀 대조).
+  testWidgets('재생바는 Figma 모양 — 세로 좌우 끝까지 영상 바로 아래, 가로 여백 48',
+      (tester) async {
+    await pump(tester, const Size(393, 852),
+        padding: const EdgeInsets.only(top: 62, bottom: 34));
+    var bar = tester.widget<VideoSeekBar>(find.byType(VideoSeekBar));
+    expect(bar.figma, FigmaSeekBar.portrait);
+    var rect = tester.getRect(find.byType(VideoSeekBar));
+    // 영상 아래(106 + 84 + 16:9 221.06)에 바로 붙고 화면 폭 전체.
+    expect(rect.left, 0);
+    expect(rect.width, 393);
+    expect(rect.top, closeTo(106 + 84 + 393 * 9 / 16, 0.01));
+    expect(find.text('2026. 8.28'), findsOneWidget);
+
+    await pump(tester, const Size(852, 393));
+    await tester.tap(find.byKey(const Key('player_orientation')));
+    await tester.pump(const Duration(milliseconds: 300));
+    bar = tester.widget<VideoSeekBar>(find.byType(VideoSeekBar));
+    expect(bar.figma, FigmaSeekBar.landscape);
+    rect = tester.getRect(find.byType(VideoSeekBar));
+    expect(rect.left, 48);
+    expect(rect.right, 852 - 48);
+    // 가로 날짜 알약 시각 — 세로 머리글과 같은 #626262.
+    // 알약 안 두 번째 줄(첫 줄은 날짜). 시각 글자는 번역 초기화 여부에 따라
+    // 달라 내용으로 찾지 않는다.
+    final pillTexts = tester
+        .widgetList<Text>(find.descendant(
+            of: find.byKey(const Key('player_landscape_date')),
+            matching: find.byType(Text)))
+        .toList();
+    expect(pillTexts.first.data, '2026. 8.28');
+    final time = pillTexts.last;
+    expect(time.style!.color, VivaColors.labelTertiary);
   });
 
   testWidgets('글자 2배·처음부터 버튼이 함께여도 조작줄이 넘치지 않는다', (tester) async {

@@ -61,6 +61,10 @@ import 'recording_library_providers.dart';
 final _seekFeedbackProvider =
     StateProvider.autoDispose.family<int?, Object>((ref, key) => null);
 
+/// 머리글·가로 알약 날짜 — Figma 플레이어 프레임 4곳(941:1834·941:1928·
+/// 1689:5305·1689:5647) 모두 "2026. 8.28"(월·일 0 채움 없음, 일 앞 공백 없음).
+const _kDateFormat = 'yyyy. M.d';
+
 class ClipPlaylistPlayerScreen extends ConsumerStatefulWidget {
   const ClipPlaylistPlayerScreen({
     super.key,
@@ -820,7 +824,8 @@ class _ClipPlaylistPlayerScreenState
                                   child: VideoSeekBar(
                                       controller:
                                           _initialized ? _controller : null,
-                                      onSeek: _seekTo)),
+                                      onSeek: _seekTo,
+                                      figma: FigmaSeekBar.landscape)),
                               const SizedBox(height: 4),
                               _controlRow(glass, padded: false),
                               const SizedBox(height: 4),
@@ -859,7 +864,8 @@ class _ClipPlaylistPlayerScreenState
                                 child: VideoSeekBar(
                                     onSeek: _seekTo,
                                     controller:
-                                        _initialized ? _controller : null)),
+                                        _initialized ? _controller : null,
+                                    figma: FigmaSeekBar.portrait)),
                             Visibility(
                                 visible: controlsVisible,
                                 maintainSize: true,
@@ -1028,7 +1034,7 @@ class _ClipPlaylistPlayerScreenState
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    DateFormat('yyyy. MM. dd').format(startedAt.toLocal()),
+                    DateFormat(_kDateFormat).format(startedAt.toLocal()),
                     style: TextStyle(
                       fontFamily: 'Pretendard',
                       fontSize: 16,
@@ -1343,7 +1349,7 @@ class _ClipPlaylistPlayerScreenState
             maxScaleFactor: 1.2,
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text(DateFormat('yyyy. MM. dd').format(startedAt.toLocal()),
+              Text(DateFormat(_kDateFormat).format(startedAt.toLocal()),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -1363,7 +1369,8 @@ class _ClipPlaylistPlayerScreenState
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.28,
                       height: 17 / 14,
-                      color: glass.mediaMeta)),
+                      // Figma 1689:5647 — 세로 머리글과 같은 #626262.
+                      color: glass.bodySecondary)),
             ])));
   }
 

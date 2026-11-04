@@ -258,7 +258,7 @@ void main() {
 
   testWidgets('일반 영상 플레이어와 같은 틀 — 알약 4버튼·화살표·필름스트립·2X·가로', (tester) async {
     await pump(tester, open: 'r1', playlist: ['c1', 'rec:r1', 'c2']);
-    expect(find.text('2026. 10. 21'), findsOneWidget);
+    expect(find.text('2026. 10.21'), findsOneWidget);
     expect(find.byType(VideoPlayer), findsOneWidget);
     expect(find.byType(KeepScreenOnWhilePlaying), findsOneWidget);
     expect(find.byType(VideoSeekBar), findsOneWidget);
@@ -385,7 +385,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(queue.deleted, ['r1']);
     expect(find.byType(ClipPlaylistPlayerScreen), findsOneWidget);
-    expect(find.text('2026. 08. 28'), findsOneWidget);
+    expect(find.text('2026. 8.28'), findsOneWidget);
     expect(find.byKey(ClipPlaylistPlayerScreen.paginationKey), findsNothing);
     // 일반 영상으로 돌아오면 휴지통은 다시 숨기기, 북마크는 원래 토글.
     expect(find.byTooltip('clip_hide_action'), findsOneWidget);
@@ -394,19 +394,19 @@ void main() {
 
   testWidgets('이전/다음 화살표가 녹화 ↔ 일반 영상을 오간다', (tester) async {
     await pump(tester, open: 'r1', playlist: ['c1', 'rec:r1', 'rec:r2', 'c2']);
-    expect(find.text('2026. 10. 21'), findsOneWidget);
+    expect(find.text('2026. 10.21'), findsOneWidget);
 
     // 녹화 → 이전 = 일반 영상 c1(날짜·북마크 토글이 일반 영상 것).
     await tester.tap(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey));
     await tester.pumpAndSettle();
-    expect(find.text('2026. 08. 28'), findsOneWidget);
+    expect(find.text('2026. 8.28'), findsOneWidget);
     expect(find.byTooltip('clip_favorite_remove'), findsOneWidget);
     expect(find.byKey(ClipPlaylistPlayerScreen.prevArrowKey), findsNothing);
 
     // 일반 영상 → 다음 = 녹화 r1(폰 파일로 재생, 북마크 고정).
     await tester.tap(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey));
     await tester.pumpAndSettle();
-    expect(find.text('2026. 10. 21'), findsOneWidget);
+    expect(find.text('2026. 10.21'), findsOneWidget);
     expect(find.byType(VideoPlayer), findsOneWidget);
     expect(bookmarkAsset(tester), FigmaIcons.bookmarkFilled);
     expect(find.byTooltip('clip_favorite_remove'), findsNothing);
@@ -417,7 +417,7 @@ void main() {
     expect(find.byType(VideoPlayer), findsOneWidget);
     await tester.tap(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey));
     await tester.pumpAndSettle();
-    expect(find.text('2026. 08. 28'), findsOneWidget);
+    expect(find.text('2026. 8.28'), findsOneWidget);
     expect(find.byKey(ClipPlaylistPlayerScreen.nextArrowKey), findsNothing);
   });
 

@@ -142,7 +142,7 @@ void main() {
             clipId: 'rec:srv:s1', playlist: ['c1', 'rec:srv:s1']),
         recordings: [_server('s1', 21)]);
     expect(video.sources, ['https://r2.test/rec/s1.mp4']);
-    expect(find.text('2026. 10. 21'), findsOneWidget);
+    expect(find.text('2026. 10.21'), findsOneWidget);
     // 휴지통은 녹화 삭제 뜻.
     expect(find.byTooltip('live_recording_delete_confirm'), findsOneWidget);
   });
