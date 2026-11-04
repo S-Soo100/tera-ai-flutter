@@ -9,13 +9,13 @@ void main() {
         () => expect(
             EnvRange.fromSettings(
                 null, null, EnvRangeRule.temp, EnvRange.tempDefault),
-            const EnvRange(18, 26)));
+            const EnvRange(18, 27)));
     test(
         '한쪽 null은 그쪽만 디폴트',
         () => expect(
             EnvRange.fromSettings(
                 20, null, EnvRangeRule.temp, EnvRange.tempDefault),
-            const EnvRange(20, 26)));
+            const EnvRange(20, 27)));
     test(
         '범위 밖은 clamp',
         () => expect(
@@ -33,13 +33,13 @@ void main() {
         () => expect(
             EnvRange.fromSettings(
                 24, 24, EnvRangeRule.temp, EnvRange.tempDefault),
-            const EnvRange(18, 26)));
+            const EnvRange(18, 27)));
     test(
         '맞춘 뒤 뒤집히면 둘 다 디폴트 — 한쪽만 디폴트로 채운 경우 포함',
         () => expect(
             EnvRange.fromSettings(
                 null, 17, EnvRangeRule.temp, EnvRange.tempDefault),
-            const EnvRange(18, 26)));
+            const EnvRange(18, 27)));
     test(
         '습도 저장값',
         () => expect(

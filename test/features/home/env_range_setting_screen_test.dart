@@ -123,16 +123,16 @@ void main() {
         '/temp-humid-settings/d1/humid');
   });
 
-  testWidgets('설정 없음 → 저장값 18℃ ~ 26℃, 스테퍼 18·26, 취소 버튼 없음', (tester) async {
+  testWidgets('설정 없음 → 저장값 18℃ ~ 27℃, 스테퍼 18·27, 취소 버튼 없음', (tester) async {
     await pump(tester, _FakeRepo(const DeviceSettings(deviceId: 'd1')));
     expect(find.text('적정 온도 설정'), findsOneWidget);
     expect(
         tester
             .widget<Text>(find.byKey(EnvRangeSettingScreen.savedValueKey))
             .data,
-        '18℃ ~ 26℃');
+        '18℃ ~ 27℃');
     expect(_stepperValue(tester, EnvRangeSettingScreen.minStepperKey), '18');
-    expect(_stepperValue(tester, EnvRangeSettingScreen.maxStepperKey), '26');
+    expect(_stepperValue(tester, EnvRangeSettingScreen.maxStepperKey), '27');
     expect(find.byKey(EnvRangeSettingScreen.discardKey), findsNothing);
     expect(find.text('적정 온도 가이드'), findsOneWidget);
     // 하단 고정 저장 버튼 — Figma CTA (12,695) 369×56(안전영역 0이면 아래 101).
@@ -181,7 +181,7 @@ void main() {
         tester
             .widget<Text>(find.byKey(EnvRangeSettingScreen.savedValueKey))
             .data,
-        '18℃ ~ 26℃');
+        '18℃ ~ 27℃');
     expect(find.text('변경 사항 취소'), findsOneWidget);
     await tester.tap(find.byKey(EnvRangeSettingScreen.discardKey));
     await tester.pumpAndSettle();
@@ -189,7 +189,7 @@ void main() {
     expect(find.byKey(EnvRangeSettingScreen.discardKey), findsNothing);
   });
 
-  testWidgets('(3) 저장 → patch(17.5, 26) 1회 + 설정 다시 읽기 + 뒤로', (tester) async {
+  testWidgets('(3) 저장 → patch(17.5, 27) 1회 + 설정 다시 읽기 + 뒤로', (tester) async {
     final repo = _FakeRepo(const DeviceSettings(deviceId: 'd1'));
     await pump(tester, repo);
     final getsBefore = repo.gets;
@@ -199,11 +199,11 @@ void main() {
     await tester.tap(find.byKey(EnvRangeSettingScreen.saveKey));
     await tester.pumpAndSettle();
     expect(repo.patches, [
-      {'tempMin': 17.5, 'tempMax': 26.0}
+      {'tempMin': 17.5, 'tempMax': 27.0}
     ]);
     expect(repo.gets, greaterThan(getsBefore), reason: 'invalidate로 다시 읽음');
     expect(find.byType(EnvRangeSettingScreen), findsNothing);
-    expect(find.text('parent 17.5~26.0'), findsOneWidget);
+    expect(find.text('parent 17.5~27.0'), findsOneWidget);
   });
 
   testWidgets('저장 실패 → 값 유지 + 안내, 화면 그대로', (tester) async {
