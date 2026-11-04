@@ -33,21 +33,32 @@ final envDetailWeekProvider = StateProvider.autoDispose<WeekRange>(
     (ref) => WeekRange.containing(DateTime.now()));
 
 /// 보고 있는 날의 30분 버킷. 기기가 없으면 빈 목록.
+///
+/// **오늘**은 마감 전 30분 칸까지 원본으로 채우고([telemetryHistoryWithTail])
+/// 1분 틱마다 다시 읽는다 — 마감 칸만 읽으면 최고·최저·그래프가 30분 넘게
+/// 늦어 현재값·실시간 알림과 어긋났다(2026-11-04). 지난 날은 날짜가 바뀔
+/// 때만 다시 읽는다.
 final envDayBucketsProvider =
     FutureProvider.autoDispose<List<TelemetryBucket>>((ref) async {
   // watch는 await 앞에서 (home_set_providers.dart 규칙).
   final repository = ref.watch(supabaseModuleControlRepositoryProvider);
   final day = ref.watch(envDetailDayProvider);
   ref.watch(envDetailNowProvider.select((value) {
-    final now = value.valueOrNull;
-    return now == null ? null : (now.year, now.month, now.day);
+    // 첫 틱 전에도 같은 키를 내야 열자마자 두 번 읽지 않는다.
+    final now = value.valueOrNull ?? DateTime.now();
+    // 오늘이면 분마다, 아니면 날짜가 바뀔 때만 키가 바뀐다.
+    return day.containsNow(now)
+        ? (now.year, now.month, now.day, now.hour, now.minute)
+        : (now.year, now.month, now.day, null, null);
   }));
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) return const [];
   // 오늘은 아직 안 지난 시간을 물어볼 이유가 없다 — 끝을 now로 자른다.
   final now = DateTime.now();
   final to = day.end.isBefore(now) ? day.end : now;
-  return repository.telemetryHistory(deviceId, day.start, to: to);
+  return day.containsNow(now)
+      ? repository.telemetryHistoryWithTail(deviceId, day.start, to: to)
+      : repository.telemetryHistory(deviceId, day.start, to: to);
 });
 
 /// 보고 있는 날의 차트 데이터. x = 0(자정)~1(다음 자정) — 오늘의 미도래
@@ -121,8 +132,12 @@ final envWeekRowsProvider =
   var buckets = const <TelemetryBucket>[];
   if (deviceId != null) {
     final now = DateTime.now();
-    final to = week.end.isBefore(now) ? week.end : now;
-    buckets = await repository.telemetryHistory(deviceId, week.start, to: to);
+    // 이번 주는 오늘의 마감 전 칸까지(일간과 같은 규칙, 2026-11-04).
+    buckets = week.end.isBefore(now)
+        ? await repository.telemetryHistory(deviceId, week.start,
+            to: week.end)
+        : await repository.telemetryHistoryWithTail(deviceId, week.start,
+            to: now);
   }
   return (
     temp: weekTempRanges(buckets, week),
@@ -130,13 +145,20 @@ final envWeekRowsProvider =
   );
 });
 
+/// 오늘 최고/최저·그래프를 다시 읽는 주기 — 마감 전 칸이 자라는 속도에 맞춘다.
+const kEnvTodayRefresh = Duration(minutes: 1);
+
 /// 홈 요약 카드의 오늘(자정~지금) 최고/최저 (§A.4 ③, B.4 결정).
 ///
 /// 홈 24h 차트 창과 **다른 구간**이다 — 카드 문구가 "오늘"이라 자정 경계다.
+/// 마감 전 칸까지 읽고 [kEnvTodayRefresh]마다 다시 읽는다(2026-11-04 — 전엔
+/// 앱을 연 시점 값에 머물렀다). 사이 구간은 카드가 현재값을 더해 메운다.
 final homeTodayExtremesProvider =
     FutureProvider.autoDispose<EnvExtremes>((ref) async {
   final repository = ref.watch(supabaseModuleControlRepositoryProvider);
   final day = ref.watch(_todayProvider);
+  final refresh = Timer(kEnvTodayRefresh, ref.invalidateSelf);
+  ref.onDispose(refresh.cancel);
   final deviceId = await ref.watch(currentDeviceIdProvider.future);
   if (deviceId == null) {
     return const EnvExtremes(
@@ -146,7 +168,7 @@ final homeTodayExtremesProvider =
       humidMax: null,
     );
   }
-  final buckets = await repository.telemetryHistory(deviceId, day.start,
+  final buckets = await repository.telemetryHistoryWithTail(deviceId, day.start,
       to: DateTime.now());
   return EnvExtremes.from(buckets);
 });

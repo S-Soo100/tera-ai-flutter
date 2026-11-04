@@ -243,6 +243,9 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
         // Figma A06 — 범위 바(228~298) → 그래프 319.
         const SizedBox(height: 21),
         chartAsync.when(
+          // 오늘은 1분마다 다시 읽는다 — 그동안 그래프를 지우지 않는다.
+          skipLoadingOnReload: true,
+          skipError: true,
           loading: () => _skeleton(glass, height: EnvDayChart.totalHeight),
           error: (_, __) => _noData(glass, height: EnvDayChart.totalHeight),
           data: (d) => !d.hasData
@@ -494,7 +497,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
   /// 지표별 유효 개수로 계산한 일평균. 바 양옆은 그날 최저·최고, 적정 구간은
   /// 지난 날에도 **현재** 설정이다(Figma A14와 같다 — 과거 설정 이력은 없다).
   Widget _valueBar(GlassPalette glass, EnvDay day) {
-    final ex = ref.watch(envDayExtremesProvider).valueOrNull;
+    var ex = ref.watch(envDayExtremesProvider).valueOrNull;
 
     final now = ref.watch(envDetailNowProvider).valueOrNull ?? DateTime.now();
     final today = day.start.year == now.year &&
@@ -523,6 +526,11 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     }
     if (temp != null && (!temp.isFinite || temp <= 0)) temp = null;
     if (humid != null && (!humid.isFinite || humid <= 0)) humid = null;
+    // 오늘 최고·최저에 지금 값을 더한다 — 1분 갱신 사이에 현재값이 최고보다
+    // 높게 보이지 않게(2026-11-04). 오래된 값은 더하지 않는다.
+    if (live?.freshness == EnvFreshness.fresh) {
+      ex = ex?.including(temperature: temp, humidity: humid);
+    }
 
     // 적정 구간 — 조회 중·실패면 null(구간 없이 그린다, 기본값으로 대신하지 않음).
     final settings = deviceId == null
