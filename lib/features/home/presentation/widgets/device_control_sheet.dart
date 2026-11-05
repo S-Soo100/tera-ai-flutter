@@ -7,19 +7,24 @@ import '../../../../core/network/user_facing_error.dart';
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/skeleton_loading.dart';
 import '../../../../shared/domain/fan_actuator.dart';
+import '../../../../shared/domain/num_format.dart';
 import '../../../my_cage/domain/actuator_state.dart';
 import '../../../my_cage/domain/device_command.dart';
+import '../../../my_cage/domain/device_settings.dart';
 import '../../../my_cage/domain/telemetry_reading.dart';
+import '../../../my_cage/presentation/device_settings_providers.dart';
 import '../../../my_cage/presentation/management_colors.dart';
 import '../../../my_cage/presentation/supabase_module_providers.dart';
 import '../../../my_cage/presentation/widgets/clip_toast.dart';
 import '../../../my_cage/presentation/widgets/management_widgets.dart';
+import '../../domain/auto_env.dart';
 import '../../domain/fan_timer_duration.dart';
 import '../../domain/mist_duration.dart';
 import '../../domain/running_timer.dart';
 import '../../domain/schedule.dart';
 import '../../domain/schedule_device.dart';
 import '../../domain/schedule_last_run.dart';
+import '../auto_env_providers.dart';
 import '../cage_control_actions.dart';
 import '../control_pending.dart';
 import '../home_control_providers.dart';
@@ -34,6 +39,7 @@ import '../routine_settings_screen.dart'
         scheduleStateLabel;
 import '../schedule_draft_apply.dart';
 import '../schedule_providers.dart';
+import 'auto_env_toggle.dart';
 import 'control_feedback.dart';
 import 'control_loading_overlay.dart';
 import 'led_brightness_row.dart';
@@ -106,6 +112,9 @@ class DeviceControlSheet extends ConsumerStatefulWidget {
   static const addScheduleKey = Key('device_sheet_add_schedule');
   static const saveScheduleKey = Key('device_sheet_save_schedule');
   static const brightnessSliderKey = Key('device_sheet_brightness_slider');
+  static const autoVentKey = Key('auto_vent_toggle');
+  static const autoMistKey = Key('auto_mist_toggle');
+  static const autoVentDividerKey = Key('auto_vent_divider');
 
   @override
   ConsumerState<DeviceControlSheet> createState() => _DeviceControlSheetState();
@@ -128,6 +137,14 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   /// 환기팬 작동 시간 선택(null = 계속). 냉각팬은 30/60/120분만.
   FanTimerDuration? _fanChoice;
   bool _fanChoiceSeeded = false;
+
+  /// 아무 칩도 고르지 않은 상태 — 서버 자동 환기가 켠 팬(D5). [_fanChoice]의
+  /// null은 "계속"이라 따로 둔다. 사용자가 칩을 누르면 풀린다.
+  bool _fanChoiceNone = false;
+
+  /// 자동 환기·분무 저장 왕복 중 — 재탭을 무시하고 줄 위에 shimmer를 흘린다.
+  /// 명령 왕복 잠금([_busy])과는 별개다: 저장 중에도 수동 제어는 된다.
+  bool _autoSaving = false;
 
   /// 분무 분사 시간 — 직전 선택(미저장이면 3초).
   late MistDuration _mistChoice =
@@ -177,7 +194,11 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   /// 꺼짐 → 직전 저장값(기본 30분). 냉각팬은 '계속' 칩이 없어, 타이머 없이
   /// 켜져 있으면 아무 칩도 고르지 않는다 — 전엔 '30분 뒤'가 선택돼 보여 30분
   /// 뒤 꺼질 거라고 믿게 했다(2026-09-25).
-  void _seedFanChoice(bool on, RunningTimer? timer) {
+  ///
+  /// 서버 자동 환기가 켠 팬([autoVentActive], 타이머 없음)도 아무 칩도 고르지
+  /// 않는다(D5) — "계속"으로 보이면 원인이 풀려 꺼질 때 고장으로 읽힌다.
+  void _seedFanChoice(bool on, RunningTimer? timer,
+      {bool autoVentActive = false}) {
     if (_fanChoiceSeeded) return;
     _fanChoiceSeeded = true;
     final cooling = widget.device == ScheduleDevice.cool;
@@ -190,12 +211,19 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
     }
     if (on) {
       _fanChoice = null;
+      _fanChoiceNone = autoVentActive && !cooling;
       return;
     }
+    _fanChoice = _savedFanChoice();
+  }
+
+  /// 꺼진 팬의 칩 시드 — 직전에 기기가 받아들인 값(냉각팬은 30분 이상).
+  FanTimerDuration? _savedFanChoice() {
+    final cooling = widget.device == ScheduleDevice.cool;
     final saved = ref
         .read(fanChoiceStoreProvider)
         .load(_actuator!.storageKey(widget.deviceId));
-    _fanChoice = cooling && (saved == null || saved == FanTimerDuration.m10)
+    return cooling && (saved == null || saved == FanTimerDuration.m10)
         ? FanTimerDuration.m30
         : saved;
   }
@@ -241,6 +269,15 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
               ref.read(telemetryStreamProvider(widget.deviceId)).valueOrNull,
               widget.device) ==
           ActuatorState.on;
+      // 자동 환기가 켰던 팬이 꺼진 뒤 스위치로 켜면, 고르지 않은 "계속" 대신
+      // 꺼진 팬을 열었을 때와 같은 직전 저장값으로 켠다(D5).
+      if (_fanChoiceNone && !wasOn) {
+        final saved = _savedFanChoice();
+        setState(() {
+          _fanChoice = saved;
+          _fanChoiceNone = false;
+        });
+      }
       // 냉각팬엔 '계속'이 없다 — 아무 칩도 없으면(타이머 없이 켜져 있던 상태)
       // 기본 30분으로 켠다.
       final choice = _fanChoice ??
@@ -261,18 +298,89 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
     if (_busy) return;
     // 꺼져 있으면 선택만.
     if (!on) {
-      setState(() => _fanChoice = d);
+      setState(() {
+        _fanChoice = d;
+        _fanChoiceNone = false;
+      });
       return;
     }
     // 켜진 채 이미 고른 칩을 다시 누르면 보내지 않는다 — 같은 명령 재전송은
     // 기기 busy 거절이나 타이머 리셋만 낳는다(2026-09-25 점검: 운영 busy의
-    // 대부분이 성공 0.7~2.4초 뒤 같은 명령).
-    if (d == _fanChoice) return;
+    // 대부분이 성공 0.7~2.4초 뒤 같은 명령). 선택 없음(D5)에서 "계속"(null)을
+    // 누르는 건 고른 적 없는 칩이라 보낸다.
+    if (!_fanChoiceNone && d == _fanChoice) return;
     // 켜진 채 바꾸면 그 값으로 다시 켠다(타이머 교체). 실패하면 칩을 되돌린다.
     final previous = _fanChoice;
-    setState(() => _fanChoice = d);
+    final previousNone = _fanChoiceNone;
+    setState(() {
+      _fanChoice = d;
+      _fanChoiceNone = false;
+    });
     final ok = await _fanPower(true);
-    if (!ok && mounted) setState(() => _fanChoice = previous);
+    if (!ok && mounted) {
+      setState(() {
+        _fanChoice = previous;
+        _fanChoiceNone = previousNone;
+      });
+    }
+  }
+
+  /// 자동 환기·분무 토글 저장(계약 C1). 낙관적 반영은 없다 — 스위치는
+  /// [DeviceSettingsNotifier.saveAuto]가 넣은 서버 응답 값을 그린다.
+  /// 실패(서버가 필드를 무시한 [AutoEnvSaveMismatch] 포함)면 시트 위 안내.
+  Future<void> _saveAuto({required bool vent, required bool value}) async {
+    if (_autoSaving) return;
+    if (!_targetStillValid()) return;
+    final notifier = ref.read(deviceSettingsProvider(widget.deviceId).notifier);
+    // 안내는 루트 Overlay라 저장 중 시트가 닫혀도 뜬다 — await 전에 잡는다.
+    final feedback = ControlFeedback.of(context);
+    setState(() => _autoSaving = true);
+    try {
+      await (vent
+          ? notifier.saveAuto(vent: value)
+          : notifier.saveAuto(mist: value));
+    } catch (e) {
+      debugPrint('[auto-env] save failed: $e');
+      feedback.show('auto_env_save_failed'.tr());
+    } finally {
+      if (mounted) setState(() => _autoSaving = false);
+    }
+  }
+
+  /// 자동 환기([vent])·자동 분무 블록. 출시 스위치가 켜져 있고, 텔레메트리를
+  /// 받았고, 그 장치(환기=`fan`, 분무=`relay`)를 보고하는 기기에서만 그린다 —
+  /// 지원을 모르는 기기에 자동을 켜게 두지 않는다. 안 그리면 null.
+  Widget? _autoEnvBlock(TelemetryReading? t, Color accent,
+      {required bool vent}) {
+    if (!ref.watch(autoEnvReleasedProvider)) return null;
+    final reported = vent ? t?.fan : t?.relay;
+    if (reported == null || reported == ActuatorState.unavailable) return null;
+    final settings = ref.watch(deviceSettingsProvider(widget.deviceId));
+    final failed = settings.hasError;
+    // 불러오는 중엔 디폴트 범위로 문구를 만들어 스켈레톤 높이만 잡는다.
+    final s = settings.valueOrNull ?? DeviceSettings(deviceId: widget.deviceId);
+    final description = failed
+        ? 'auto_env_load_failed'.tr()
+        : vent
+            ? 'auto_vent_desc'.tr(args: [
+                formatCompact(s.humidRange.max),
+                formatCompact(s.tempRange.max),
+              ])
+            : 'auto_mist_desc'.tr(args: [formatCompact(s.humidRange.min)]);
+    return AutoEnvToggle(
+      key: vent
+          ? DeviceControlSheet.autoVentKey
+          : DeviceControlSheet.autoMistKey,
+      label: (vent ? 'auto_vent_label' : 'auto_mist_label').tr(),
+      description: description,
+      value: vent ? s.autoVentEnabled : s.autoMistEnabled,
+      // 예약 실행 중(schedule_hold)은 보지 않는다(D2-b) — 서버가 알아서 쉰다.
+      enabled: settings is AsyncData<DeviceSettings> && !_autoSaving,
+      loading: settings.isLoading && !settings.hasValue && !failed,
+      saving: _autoSaving,
+      accent: accent,
+      onChanged: (v) => _saveAuto(vent: vent, value: v),
+    );
   }
 
   Future<void> _ledPower(bool on) => _locked(() async {
@@ -395,7 +503,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
 
   Widget _immediate(BuildContext context, Color accent) {
     final t = ref.watch(telemetryStreamProvider(widget.deviceId)).valueOrNull;
-    if (widget.device == ScheduleDevice.mist) return _mist(context, accent);
+    if (widget.device == ScheduleDevice.mist) return _mist(context, accent, t);
 
     final pending = ref.watch(controlPendingProvider(widget.deviceId));
     final busy = _sending || pending != null;
@@ -413,7 +521,9 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
       timer = timers
           .where((x) => x.actuatorLabelKey == actuator.labelKey)
           .firstOrNull;
-      _seedFanChoice(on, timer);
+      _seedFanChoice(on, timer,
+          autoVentActive: widget.device == ScheduleDevice.fan &&
+              ref.watch(autoEnvStateProvider(widget.deviceId)).ventActive);
     } else {
       _seedBrightness(t);
     }
@@ -455,7 +565,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                     child: ScheduleChoiceChip(
                         key: Key('fan_timer_${d.minutes}'),
                         label: d.labelKey.tr(),
-                        selected: _fanChoice == d,
+                        selected: !_fanChoiceNone && _fanChoice == d,
                         accent: accent,
                         enabled: !busy,
                         onTap: () => _fanChip(d, on))),
@@ -466,11 +576,23 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                   child: ScheduleChoiceChip(
                       key: const Key('fan_steady_on'),
                       label: 'home_fan_steady_on'.tr(),
-                      selected: _fanChoice == null,
+                      selected: !_fanChoiceNone && _fanChoice == null,
                       accent: accent,
                       enabled: !busy,
                       onTap: () => _fanChip(null, on))),
             ])));
+        // Figma 1635:6168: 칩 아래 24 → 1px 선(내용 폭 전체) → 20 → 자동 환기.
+        if (_autoEnvBlock(t, accent, vent: true) case final auto?) {
+          children.addAll([
+            const SizedBox(height: 24),
+            ColoredBox(
+                key: DeviceControlSheet.autoVentDividerKey,
+                color: context.glass.outline,
+                child: const SizedBox(height: 1)),
+            const SizedBox(height: 20),
+            auto,
+          ]);
+        }
       // 꺼 둔 냉각팬은 종료 칩(=다시 켜기) 대신 끄기만 된다는 안내 한 줄.
       case ScheduleDevice.cool when _coolOffOnly:
         children.add(Padding(
@@ -538,7 +660,10 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   /// Figma 분무 시트(1106:6391)엔 시간 선택이 없다 — 같은 시트의 환기팬
   /// "작동 시간"(1107:8428) 칩 문법을 그대로 가져와 CTA 위에 둔다
   /// (2026-09-23 사용자 결정). 칩은 선택만, 송신은 CTA뿐.
-  Widget _mist(BuildContext context, Color accent) {
+  ///
+  /// 자동 분무는 탭 바로 아래(Figma 1657:5353 자리, 선 없음) → 24 → 칩(D3-a).
+  /// 칩은 CTA와 한 묶음(수동 분사 시간)이라 그 사이에 끼우지 않는다.
+  Widget _mist(BuildContext context, Color accent, TelemetryReading? t) {
     final locked =
         ref.watch(mistLockProvider(widget.deviceId)).isLocked(DateTime.now());
     final run = ref.watch(mistRunProvider(widget.deviceId));
@@ -547,7 +672,9 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
         run != null;
     // 분무 편집기·목록과 같은 #2E408C(humidAccent).
     final color = context.glass.humidAccent;
+    final auto = _autoEnvBlock(t, color, vent: false);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (auto != null) ...[auto, const SizedBox(height: 24)],
       ScheduleSection(
           label: 'home_mist_duration_label'.tr(),
           gap: 8,
