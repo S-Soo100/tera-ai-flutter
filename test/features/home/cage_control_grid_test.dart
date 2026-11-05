@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/core/config/feature_flags.dart';
@@ -207,6 +208,31 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(find.text('home_tile_on_with_fmt'), findsOneWidget);
     expect(find.text('home_timer_running'), findsNothing);
+  });
+
+  testWidgets('좁은 폭(384)에서도 타이머 부제가 "…"로 잘리지 않고 타일 안에 들어간다',
+      (tester) async {
+    // 2026-11-05 QA(Galaxy S21+, 약 384dp): "켜짐 · 9m 46s 뒤 꺼짐"이 잘렸다.
+    tester.view.physicalSize = const Size(384, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await _pump(tester, reading: _reading(fan: ActuatorState.on), timers: [
+      RunningTimer(
+          id: 't',
+          deviceId: _deviceId,
+          actuatorLabelKey: 'module_actuator_fan',
+          durationMinutes: 10,
+          endsAt: DateTime.now().add(const Duration(minutes: 9, seconds: 46)))
+    ]);
+    await tester.pump(const Duration(seconds: 1));
+    final status = find.text('home_tile_on_with_fmt');
+    expect(tester.renderObject<RenderParagraph>(status).didExceedMaxLines,
+        isFalse);
+    final tile = find
+        .ancestor(of: status, matching: find.byType(InkWell))
+        .first;
+    expect(tester.getRect(status).right,
+        lessThanOrEqualTo(tester.getRect(tile).right));
   });
 
   test('formatCountdownShort — 1h 20m / 30m 56s / 7s', () {
