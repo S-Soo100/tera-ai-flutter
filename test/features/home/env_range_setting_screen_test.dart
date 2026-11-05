@@ -36,7 +36,9 @@ class _FakeRepo implements DeviceSettingsRepository {
       double? targetTempMin,
       double? targetTempMax,
       double? targetHumidMin,
-      double? targetHumidMax}) async {
+      double? targetHumidMax,
+      bool? autoVentEnabled,
+      bool? autoMistEnabled}) async {
     patches.add({
       if (targetTempC != null) 'tempC': targetTempC,
       if (targetHumidityPct != null) 'humidPct': targetHumidityPct,

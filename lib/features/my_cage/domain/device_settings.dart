@@ -18,6 +18,12 @@ class DeviceSettings {
   final double? targetTempMax;
   final double? targetHumidMin;
   final double? targetHumidMax;
+
+  /// 서버 자동 환기·자동 분무 켬(계약 C1, 기본 false). 판정·실행은 서버가
+  /// 하고 앱은 이 값을 읽고 쓰기만 한다. 마이그레이션 전 서버는 키를 안
+  /// 보내므로 false다.
+  final bool autoVentEnabled;
+  final bool autoMistEnabled;
   final DateTime? updatedAt;
 
   const DeviceSettings({
@@ -28,6 +34,8 @@ class DeviceSettings {
     this.targetTempMax,
     this.targetHumidMin,
     this.targetHumidMax,
+    this.autoVentEnabled = false,
+    this.autoMistEnabled = false,
     this.updatedAt,
   });
 
@@ -63,6 +71,10 @@ class DeviceSettings {
       targetTempMax: parseDouble(j['target_temp_max']),
       targetHumidMin: parseDouble(j['target_humid_min']),
       targetHumidMax: parseDouble(j['target_humid_max']),
+      // `== true`만 켬 — 서버는 bool만 받는다(문자열 "true"는 422). 다른
+      // 모양이 오면 켜졌다고 믿지 않는다.
+      autoVentEnabled: j['auto_vent_enabled'] == true,
+      autoMistEnabled: j['auto_mist_enabled'] == true,
       updatedAt: j['updated_at'] != null
           ? DateTime.tryParse(j['updated_at'].toString())?.toLocal()
           : null,
@@ -73,6 +85,8 @@ class DeviceSettings {
   ///
   /// v4 적정 범위(`target_*_min/max`)는 한 화면에서 MIN·MAX를 **함께** 보낸다
   /// — 한쪽만 보내면 서버의 `min ≤ max` 검증이 저장된 반대쪽과 비교한다.
+  ///
+  /// 자동 토글(`auto_*_enabled`)은 두 필드만 보내도 된다(계약 C1).
   static Map<String, dynamic> patchBody({
     double? targetTempC,
     double? targetHumidityPct,
@@ -80,6 +94,8 @@ class DeviceSettings {
     double? targetTempMax,
     double? targetHumidMin,
     double? targetHumidMax,
+    bool? autoVentEnabled,
+    bool? autoMistEnabled,
   }) =>
       {
         if (targetTempC != null) 'target_temp_c': targetTempC,
@@ -88,5 +104,7 @@ class DeviceSettings {
         if (targetTempMax != null) 'target_temp_max': targetTempMax,
         if (targetHumidMin != null) 'target_humid_min': targetHumidMin,
         if (targetHumidMax != null) 'target_humid_max': targetHumidMax,
+        if (autoVentEnabled != null) 'auto_vent_enabled': autoVentEnabled,
+        if (autoMistEnabled != null) 'auto_mist_enabled': autoMistEnabled,
       };
 }

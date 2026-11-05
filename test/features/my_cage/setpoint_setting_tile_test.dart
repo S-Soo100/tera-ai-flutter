@@ -30,7 +30,9 @@ class _FakeRepo implements DeviceSettingsRepository {
       double? targetTempMin,
       double? targetTempMax,
       double? targetHumidMin,
-      double? targetHumidMax}) async {
+      double? targetHumidMax,
+      bool? autoVentEnabled,
+      bool? autoMistEnabled}) async {
     calls.add('patch:$deviceId:t=$targetTempC:h=$targetHumidityPct');
     if (fail) throw Exception('boom');
     current = DeviceSettings(

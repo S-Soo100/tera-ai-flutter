@@ -42,7 +42,9 @@ class EnvV4SettingsRepo implements DeviceSettingsRepository {
           double? targetTempMin,
           double? targetTempMax,
           double? targetHumidMin,
-          double? targetHumidMax}) async =>
+          double? targetHumidMax,
+          bool? autoVentEnabled,
+          bool? autoMistEnabled}) async =>
       current;
 }
 

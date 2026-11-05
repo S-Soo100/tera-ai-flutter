@@ -1,4 +1,5 @@
 import '../../../shared/domain/num_format.dart';
+import '../../home/domain/auto_env.dart';
 import 'lcd_screen_state.dart';
 import 'lcd_text.dart';
 
@@ -35,6 +36,10 @@ class Device {
   /// 화면이 맡는다.
   final double? tempOffsetC;
 
+  /// 서버 자동 환경 제어의 지금 상태(`devices.auto_env_state`, 계약 C3).
+  /// 목록 스냅샷 값이고, 실시간 값은 [DeviceLinkStatus.autoEnv]로 온다.
+  final AutoEnvState autoEnv;
+
   /// 기기 명령 `set_temp_offset` 허용 범위(서버 `TEMP_OFFSET_LIMIT_C`).
   static const double tempOffsetLimitC = 10.0;
 
@@ -50,6 +55,7 @@ class Device {
     this.lcd = DeviceLcdText.unknown,
     this.lcdScreen = DeviceLcdScreen.unknown,
     this.tempOffsetC,
+    this.autoEnv = AutoEnvState.none,
   });
 
   /// 모듈 화면 설정 지원 단계(기획 §12-4).
@@ -92,6 +98,7 @@ class Device {
       lcd: DeviceLcdText.fromJson(j),
       lcdScreen: DeviceLcdScreen.fromJson(j),
       tempOffsetC: parseTempOffset(j['temp_offset_c']),
+      autoEnv: AutoEnvState.fromJson(j['auto_env_state']),
     );
   }
 }
@@ -106,6 +113,10 @@ class Device {
 /// 길로 온다(2026-11-03) — OTA 뒤 `capabilities.lcd_saver`가 켜지면 열린 화면도
 /// 바로 활성화된다(기획 §11-1). capabilities는 LCD 판정에 쓰는 값만 담는다 —
 /// 전체 맵을 담으면 무관한 능력 변화까지 `==`가 달라진다.
+///
+/// 서버 자동 환경 제어 상태([autoEnv], `devices.auto_env_state`)도 같은 길로
+/// 온다(2026-11-05) — 서버는 바뀔 때만 갱신하지만 이 객체는 생존 신호 행에도
+/// 다시 만들어지므로 [AutoEnvState]는 값으로 비교한다.
 class DeviceLinkStatus {
   const DeviceLinkStatus({
     required this.isOnline,
@@ -114,6 +125,7 @@ class DeviceLinkStatus {
     this.lcdScreen = DeviceLcdScreen.unknown,
     this.lcdSupport = LcdSupport.needsUpdate,
     this.lcdOverride = false,
+    this.autoEnv = AutoEnvState.none,
   });
 
   final bool isOnline;
@@ -122,6 +134,7 @@ class DeviceLinkStatus {
   final DeviceLcdScreen lcdScreen;
   final LcdSupport lcdSupport;
   final bool lcdOverride;
+  final AutoEnvState autoEnv;
 
   factory DeviceLinkStatus.of(Device d) => DeviceLinkStatus(
       isOnline: d.isOnline,
@@ -129,7 +142,8 @@ class DeviceLinkStatus {
       lcd: d.lcd,
       lcdScreen: d.lcdScreen,
       lcdSupport: d.lcdSupport,
-      lcdOverride: d.lcdOverride);
+      lcdOverride: d.lcdOverride,
+      autoEnv: d.autoEnv);
 
   factory DeviceLinkStatus.fromJson(Map<String, dynamic> j) {
     final caps = _capabilitiesOf(j['capabilities']);
@@ -142,6 +156,7 @@ class DeviceLinkStatus {
       lcdScreen: DeviceLcdScreen.fromJson(j),
       lcdSupport: LcdSupport.fromCapabilities(caps),
       lcdOverride: lcdOverrideFromCapabilities(caps),
+      autoEnv: AutoEnvState.fromJson(j['auto_env_state']),
     );
   }
 
@@ -156,9 +171,10 @@ class DeviceLinkStatus {
       other.lcd == lcd &&
       other.lcdScreen == lcdScreen &&
       other.lcdSupport == lcdSupport &&
-      other.lcdOverride == lcdOverride;
+      other.lcdOverride == lcdOverride &&
+      other.autoEnv == autoEnv;
 
   @override
   int get hashCode => Object.hash(
-      isOnline, lastSeenAt, lcd, lcdScreen, lcdSupport, lcdOverride);
+      isOnline, lastSeenAt, lcd, lcdScreen, lcdSupport, lcdOverride, autoEnv);
 }
