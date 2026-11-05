@@ -138,10 +138,25 @@ class EnvRange {
 /// 보정(서버 회신 2026-11-02 §1.2 — D1 임시 규칙 "끔 = 0"을 대체). 다른 곳은
 /// [value]를 기기 값으로 직접 쓰지 말고 반드시 [fromDevice]·[toDeviceValue]를
 /// 거친다. 끔에 0을 보내면 보드 발열이 실려 온도가 약 1.5℃ 높게 올라온다.
+///
+/// 새 계약(서버 `APP_TEMP_OFFSET_SERVER_BASE_2026-11-05.md`)에선 서버가 공장
+/// 보정을 맡아 사용자 보정값(`devices.temp_offset_user_c`)을 그대로 준다 —
+/// [parseUser]로 읽는다. 어느 계약을 쓰는지는 `FeatureFlags.tempOffsetUserContract`.
+///
+/// 값 비교(`==`)는 **0.1 단위 정수**로 한다. 생존 신호로 기기 행이 3초마다
+/// 다시 와도 같은 보정값이면 같은 객체로 보여 화면이 다시 그려지지 않게 하려는
+/// 것이다.
 class TempOffset {
   final double value;
 
   const TempOffset(this.value);
+
+  /// 새 계약의 사용자 보정값 읽기 허용 범위(서버 §1·§2: −8.5 ~ +11.5).
+  /// 출처: 기기 허용 ±10.0(서버 `TEMP_OFFSET_LIMIT_C`)에서 공장 보정 −1.5를
+  /// 걷어낸 값 — 사용자값 = 기기값 − (−1.5)이므로 −10 + 1.5 = −8.5,
+  /// +10 + 1.5 = +11.5. 편집기 범위 ±4.0은 그 안에 있다.
+  static const double userMin = -8.5;
+  static const double userMax = 11.5;
 
   /// 편집기 크기 상한 4.0℃, 0.1℃ 단위(Figma S24). 기기 명령 허용은 ±10.0.
   static const double maxMagnitude = 4.0;
@@ -180,6 +195,17 @@ class TempOffset {
   static TempOffset fromDevice(double deviceValue) =>
       TempOffset(_tenths(deviceValue - factoryDeviceValue) / 10);
 
+  /// 새 계약 `devices.temp_offset_user_c` 원문 → 사용자 보정값. 숫자 문자열도
+  /// 읽는다([parseDouble] — `Device.parseTempOffset`과 같은 규칙). 숫자 아님·
+  /// [userMin]~[userMax] 밖은 믿을 수 없는 값이라 null(구 펌웨어와 같게 본다).
+  /// 0.1 단위로 맞춘다(서버 컬럼은 `numeric(4,1)`).
+  static TempOffset? parseUser(Object? raw) {
+    final v = parseDouble(raw);
+    if (v == null || !v.isFinite) return null;
+    if (v < userMin || v > userMax) return null;
+    return TempOffset(_tenths(v) / 10);
+  }
+
   /// 기기 명령 `set_temp_offset`의 `offset_c` — 끔(0)이면 공장 보정 −1.5.
   /// 편집기 끝값(±4)이면 −5.5 ~ +2.5로 서버 허용 ±10 안이다.
   double toDeviceValue() => _tenths(value + factoryDeviceValue) / 10;
@@ -187,7 +213,12 @@ class TempOffset {
   /// 화면의 "현재 측정 온도" — 기기가 보낸 보정 후 온도(`t_a`)에서 사용자 보정만
   /// 걷어낸 값(공장 보정은 남긴다: 보정 꺼짐일 때 홈에 보이는 값과 같다).
   static double measuredFrom(double reportedTemp, double deviceOffset) =>
-      reportedTemp - fromDevice(deviceOffset).value;
+      measuredFromUser(reportedTemp, fromDevice(deviceOffset));
+
+  /// [measuredFrom]의 사용자 보정값판 — 보고 온도 − 사용자 보정. 두 계약 모두
+  /// 이 식 하나로 계산한다.
+  static double measuredFromUser(double reportedTemp, TempOffset user) =>
+      reportedTemp - user.value;
 
   /// "+1" / "-2" / "+0.5" — 온습도 설정의 "측정값 {}℃"(Figma S35·S06).
   String get signedLabel => value > 0
@@ -196,4 +227,14 @@ class TempOffset {
 
   /// 원래 측정값에 이 보정을 적용한 값.
   double apply(double raw) => raw + value;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TempOffset && _tenths(other.value) == _tenths(value);
+
+  @override
+  int get hashCode => _tenths(value).hashCode;
+
+  @override
+  String toString() => 'TempOffset($value)';
 }

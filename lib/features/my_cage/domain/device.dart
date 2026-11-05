@@ -1,3 +1,4 @@
+import '../../../shared/domain/env_thresholds.dart';
 import '../../../shared/domain/num_format.dart';
 import '../../home/domain/auto_env.dart';
 import 'lcd_screen_state.dart';
@@ -36,6 +37,12 @@ class Device {
   /// 화면이 맡는다.
   final double? tempOffsetC;
 
+  /// 서버가 공장 보정을 걷어낸 **사용자 보정값**(`devices.temp_offset_user_c`,
+  /// 새 계약 — 서버 `APP_TEMP_OFFSET_SERVER_BASE_2026-11-05.md` §2).
+  /// null = 모름(구 펌웨어·미보고·서버 배포 전). 이 필드를 직접 읽지 말고
+  /// 계약 스위치를 받는 [userOffsetOf]를 거친다.
+  final TempOffset? tempOffsetUserC;
+
   /// 서버 자동 환경 제어의 지금 상태(`devices.auto_env_state`, 계약 C3).
   /// 목록 스냅샷 값이고, 실시간 값은 [DeviceLinkStatus.autoEnv]로 온다.
   final AutoEnvState autoEnv;
@@ -55,6 +62,7 @@ class Device {
     this.lcd = DeviceLcdText.unknown,
     this.lcdScreen = DeviceLcdScreen.unknown,
     this.tempOffsetC,
+    this.tempOffsetUserC,
     this.autoEnv = AutoEnvState.none,
   });
 
@@ -98,9 +106,50 @@ class Device {
       lcd: DeviceLcdText.fromJson(j),
       lcdScreen: DeviceLcdScreen.fromJson(j),
       tempOffsetC: parseTempOffset(j['temp_offset_c']),
+      tempOffsetUserC: TempOffset.parseUser(j['temp_offset_user_c']),
       autoEnv: AutoEnvState.fromJson(j['auto_env_state']),
     );
   }
+}
+
+/// 온도 보정 컬럼 — 새 계약이면 사용자값 `temp_offset_user_c`, 옛 계약이면
+/// 기기에 걸린 합산값 `temp_offset_c`(서버 `APP_TEMP_OFFSET_SERVER_BASE_2026-11-05.md`).
+///
+/// [userOffsetFromRow]와 함께 `device.dart`에 둔다 — 옛 계약 해석에
+/// [Device.parseTempOffset]이 필요한데 `shared/domain`이 feature를 import하면
+/// 안 되기 때문이다.
+String tempOffsetColumn({required bool userContract}) =>
+    userContract ? 'temp_offset_user_c' : 'temp_offset_c';
+
+/// `devices` 행(조회 결과·실시간 `newRecord`) → 사용자 보정값. 계약에 따라
+/// 갈리는 해석은 여기 한 곳뿐이다.
+///
+/// - 그 계약의 컬럼 키가 행에 없으면 `known: false` — 호출부는 무시한다(키가
+///   빠진 행으로 "구 펌웨어(null)"를 덮어쓰지 않게).
+/// - 키가 있으면 `known: true`. 새 계약은 [TempOffset.parseUser], 옛 계약은
+///   [Device.parseTempOffset] → [TempOffset.fromDevice]. 값이 null·범위 밖이면
+///   `offset: null`(구 펌웨어).
+({bool known, TempOffset? offset}) userOffsetFromRow(
+  Map<String, dynamic> row, {
+  required bool userContract,
+}) {
+  final column = tempOffsetColumn(userContract: userContract);
+  if (!row.containsKey(column)) return (known: false, offset: null);
+  final raw = row[column];
+  if (userContract) return (known: true, offset: TempOffset.parseUser(raw));
+  final device = Device.parseTempOffset(raw);
+  return (
+    known: true,
+    offset: device == null ? null : TempOffset.fromDevice(device),
+  );
+}
+
+/// 목록 스냅샷 [Device]의 사용자 보정값 — 새 계약은 [Device.tempOffsetUserC],
+/// 옛 계약은 [Device.tempOffsetC]를 [TempOffset.fromDevice]로. null = 구 펌웨어.
+TempOffset? userOffsetOf(Device d, {required bool userContract}) {
+  if (userContract) return d.tempOffsetUserC;
+  final device = d.tempOffsetC;
+  return device == null ? null : TempOffset.fromDevice(device);
 }
 
 /// 기기 연결 상태만 — `devices` 실시간 UPDATE와 목록 스냅샷 공용(2026-09-25).

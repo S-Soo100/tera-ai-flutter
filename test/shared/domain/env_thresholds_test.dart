@@ -187,4 +187,36 @@ void main() {
       expect(const TempOffset(0.5).signedLabel, '+0.5');
     });
   });
+
+  // 새 계약(서버 `APP_TEMP_OFFSET_SERVER_BASE_2026-11-05.md` §1·§2) — 계획 Task 1.
+  group('TempOffset 사용자 보정값(새 계약)', () {
+    test('parseUser — 범위·단위·숫자 문자열', () {
+      expect(TempOffset.parseUser(1.0), const TempOffset(1.0));
+      expect(TempOffset.parseUser('1.0'), const TempOffset(1.0));
+      expect(TempOffset.parseUser(11.5), const TempOffset(11.5));
+      expect(TempOffset.parseUser(-8.5), const TempOffset(-8.5));
+      expect(TempOffset.parseUser(-8.6), isNull);
+      expect(TempOffset.parseUser(11.6), isNull);
+      expect(TempOffset.parseUser(null), isNull);
+      expect(TempOffset.parseUser('abc'), isNull);
+      expect(TempOffset.parseUser(true), isNull);
+      expect(TempOffset.parseUser('NaN'), isNull);
+      expect(TempOffset.parseUser(-2.04), const TempOffset(-2.0));
+      expect(TempOffset.parseUser(-2.04)!.value, -2.0);
+    });
+    test('값 비교는 0.1 단위', () {
+      expect(const TempOffset(1.0) == const TempOffset(1.0), isTrue);
+      expect(const TempOffset(1.0).hashCode, const TempOffset(1.0).hashCode);
+      expect(const TempOffset(1.0) == const TempOffset(1.1), isFalse);
+      // 누적 오차가 있어도 같은 0.1 단위면 같다.
+      expect(
+          const TempOffset(0.1 + 0.1 + 0.1) == const TempOffset(0.3), isTrue);
+      expect(TempOffset.fromDevice(-3.5), const TempOffset(-2.0));
+    });
+    test('측정값 = 보고 − 사용자 보정', () {
+      expect(TempOffset.measuredFromUser(25.0, const TempOffset(1.0)), 24.0);
+      // 옛 경로도 같은 식을 거친다(기기 −0.5 = 사용자 +1.0).
+      expect(TempOffset.measuredFrom(25.0, -0.5), 24.0);
+    });
+  });
 }
