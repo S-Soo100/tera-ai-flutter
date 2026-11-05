@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../my_cage/presentation/my_cage_providers.dart';
 import '../../my_cage/presentation/supabase_module_providers.dart';
+import '../../my_cage/domain/device.dart';
 import '../../my_cage/domain/enclosure.dart';
 import '../../my_pets/presentation/my_pets_providers.dart';
 import '../data/enclosure_set_repository.dart';
@@ -70,11 +71,16 @@ final selectedHomeDeviceIdProvider = StateProvider<String?>((ref) {
 });
 
 /// Device-anchored Home choices, including devices without a persisted group.
+///
+/// 순서는 고정한다 — 그룹 생성순, 그다음 그룹 없는 기기 등록순. 기기 목록은
+/// 최근 신호 순이라 그대로 쓰면 드롭다운 순서와 기본 사육장(기억한 선택이 없을
+/// 때 첫 항목)이 실행할 때마다 바뀌었다(2026-11-05).
 final homeDeviceSetsProvider = FutureProvider<List<EnclosureSet>>((ref) async {
   final groups = ref.watch(enclosureSetsProvider.future);
   final devices = ref.watch(deviceListProvider.future);
   final sets = await groups;
-  final allDevices = await devices;
+  final allDevices = [...await devices]
+    ..sort(homeDeviceOrder(sets));
   return [
     for (final device in allDevices)
       sets.where((s) => s.device?.id == device.id).firstOrNull ??
@@ -89,6 +95,28 @@ final homeDeviceSetsProvider = FutureProvider<List<EnclosureSet>>((ref) async {
               isUngroupedDevice: true),
   ];
 });
+
+/// [homeDeviceSetsProvider]의 기기 순서. 그룹에 든 기기는 [sets](사육장
+/// 생성순) 순서, 그룹 없는 기기는 그 뒤에 등록순(모르면 맨 뒤), 같으면 id순.
+int Function(Device, Device) homeDeviceOrder(List<EnclosureSet> sets) {
+  final groupRank = {
+    for (var i = 0; i < sets.length; i++)
+      if (sets[i].device != null) sets[i].device!.id: i,
+  };
+  return (a, b) {
+    final byGroup = (groupRank[a.id] ?? sets.length)
+        .compareTo(groupRank[b.id] ?? sets.length);
+    if (byGroup != 0) return byGroup;
+    final at = a.createdAt, bt = b.createdAt;
+    if (at != null && bt != null) {
+      final byCreated = at.compareTo(bt);
+      if (byCreated != 0) return byCreated;
+    } else if (at != null || bt != null) {
+      return at == null ? 1 : -1;
+    }
+    return a.id.compareTo(b.id);
+  };
+}
 
 // ── 현재 세트 ──────────────────────────────────────────────────────────────────
 

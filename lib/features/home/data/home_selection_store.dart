@@ -9,6 +9,9 @@ abstract class HomeSelectionStore {
 
   /// null이면 지운다.
   Future<void> save(String userId, String? deviceId);
+
+  /// 로그아웃 뒤 모든 계정의 기억을 지운다(CLAUDE.md 3층 계정 격리 ③).
+  Future<void> clearAll();
 }
 
 /// Hive `app_settings` 박스의 `home_selected_device_<계정 id>` 키.
@@ -19,7 +22,8 @@ class HiveHomeSelectionStore implements HomeSelectionStore {
   const HiveHomeSelectionStore();
 
   static const boxName = 'app_settings';
-  static String keyFor(String userId) => 'home_selected_device_$userId';
+  static const _prefix = 'home_selected_device_';
+  static String keyFor(String userId) => '$_prefix$userId';
 
   Box<dynamic>? get _box => Hive.isBoxOpen(boxName) ? Hive.box(boxName) : null;
 
@@ -38,5 +42,14 @@ class HiveHomeSelectionStore implements HomeSelectionStore {
     } else {
       await box.put(keyFor(userId), deviceId);
     }
+  }
+
+  @override
+  Future<void> clearAll() async {
+    final box = _box;
+    if (box == null) return;
+    await box.deleteAll(box.keys
+        .where((k) => k is String && k.startsWith(_prefix))
+        .toList());
   }
 }

@@ -14,6 +14,10 @@ class Device {
   final bool isOnline;
   final DateTime? lastSeenAt;
 
+  /// 등록 시각(`devices.created_at`). 홈 사육장 순서를 고정하는 데 쓴다 —
+  /// 목록 조회는 최근 신호 순이라 실행할 때마다 순서가 바뀐다.
+  final DateTime? createdAt;
+
   /// 보드 능력 (`devices.capabilities` JSONB, 2026-08-18 백엔드 회신 §2).
   /// 예: `{"board":"mosfet","led_dimmable":true}`. 구 행은 서버가
   /// `{"board":"relay","led_dimmable":false}`로 백필했고, null이면 아직 아무도
@@ -57,6 +61,7 @@ class Device {
     required this.name,
     required this.isOnline,
     required this.lastSeenAt,
+    this.createdAt,
     this.hardwareId,
     this.capabilities,
     this.lcd = DeviceLcdText.unknown,
@@ -102,6 +107,7 @@ class Device {
       lastSeenAt: j['last_seen_at'] != null
           ? DateTime.tryParse(j['last_seen_at'].toString())
           : null,
+      createdAt: DateTime.tryParse(j['created_at']?.toString() ?? ''),
       capabilities: caps is Map ? caps.cast<String, dynamic>() : null,
       lcd: DeviceLcdText.fromJson(j),
       lcdScreen: DeviceLcdScreen.fromJson(j),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import '../../../shared/services/local_notifications.dart';
+import '../../home/data/home_selection_store.dart';
 import '../../home/presentation/home_set_providers.dart';
 import '../../my_cage/data/device_wifi_name_store.dart';
 import '../../my_cage/data/lcd_quiet_store.dart';
@@ -60,12 +61,13 @@ final pushLifecycleControllerProvider =
     ),
     // 로그아웃 뒤 로컬 정리 — 예약 알림과 기기별 Wi-Fi 이름(집·사무실
     // 네트워크 이름이라 계정 데이터로 본다, CLAUDE.md 3층 계정 격리 ③),
-    // 기기별 LCD 문구·화면 꺼짐 예약 시간.
+    // 기기별 LCD 문구·화면 꺼짐 예약 시간, 홈에서 마지막으로 본 사육장.
     clearLocalNotifications: () async {
       await core.cancelAll();
       await const HiveDeviceWifiNameStore().clearAll();
       await const HiveLcdTextStore().clearAll();
       await const HiveLcdQuietStore().clearAll();
+      await const HiveHomeSelectionStore().clearAll();
     },
     prepareOpen: (item) => selectNotificationDevice(item,
         myDeviceIds: () async => (await ref.read(homeDeviceSetsProvider.future))
