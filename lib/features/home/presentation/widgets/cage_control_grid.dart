@@ -390,18 +390,25 @@ class _DeviceTile extends StatelessWidget {
                           ),
                           // Figma 668:876 실측 4 (이름끝 2732 → 상태 2736).
                           const SizedBox(height: 4),
-                          Text(
-                            status,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontFamily: 'Pretendard',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 14 * -0.02,
-                              color: active
-                                  ? glass.textSecondary
-                                  : glass.textTertiary,
+                          // 좁은 폰(약 384dp)에선 "켜짐 · 9m 46s 뒤 꺼짐"이
+                          // 칸보다 길다 — "…"로 자르면 남은 시간이 사라지니
+                          // 넘칠 때만 줄여 한 줄에 담는다(글자 크기는 Figma
+                          // 그대로, 2026-11-05 QA).
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              status,
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontFamily: 'Pretendard',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 14 * -0.02,
+                                color: active
+                                    ? glass.textSecondary
+                                    : glass.textTertiary,
+                              ),
                             ),
                           ),
                         ],
