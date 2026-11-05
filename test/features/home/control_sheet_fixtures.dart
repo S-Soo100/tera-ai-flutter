@@ -101,11 +101,13 @@ List<Override> controlOverrides({
   // 자동 환기·분무 토글(출시 스위치 기본 꺼짐 — 기존 테스트 화면 변화 없음).
   bool autoEnvReleased = false,
   AutoEnvState autoEnv = AutoEnvState.none,
+  // 시트가 열린 뒤 자동 상태가 바뀌는 경우 — 주면 [autoEnv] 대신 쓴다.
+  Override? autoEnvOverride,
   DeviceSettingsRepository? settingsRepo,
 }) =>
     [
       autoEnvReleasedProvider.overrideWithValue(autoEnvReleased),
-      autoEnvStateProvider.overrideWith((ref, id) => autoEnv),
+      autoEnvOverride ?? autoEnvStateProvider.overrideWith((ref, id) => autoEnv),
       deviceSettingsRepositoryProvider
           .overrideWithValue(settingsRepo ?? FakeDeviceSettingsRepo()),
       coolFanEnabledProvider.overrideWithValue(coolFanEnabled),
@@ -162,7 +164,8 @@ class FakeDeviceSettingsRepo implements DeviceSettingsRepository {
   DeviceSettings current;
   final Duration patchDelay;
   final bool ignoresAutoFields;
-  final bool getError;
+  /// 테스트 중 바꿀 수 있다 — 실패 뒤 다시 불러오기(리뷰 5).
+  bool getError;
   final Completer<void>? getGate;
   final List<Map<String, dynamic>> patches = [];
 

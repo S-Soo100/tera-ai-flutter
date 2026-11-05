@@ -233,9 +233,11 @@ List<ControlLogEntry> buildControlLog({
   // - 사이에 환기팬의 다른 명령(사용자 on/off/toggle, 자동 off)이 끼면 끊는다.
   // - 합칠 때 첫 줄의 timerMs를 "마지막 회차가 끝나는 시각 − 첫 줄 시각"으로
   //   늘린다. 그래야 아래 타이머 만료 판정이 꺼짐 줄의 시작·델타를 지우지 않는다.
+  // - 머리가 보이는 창([visibleFrom]) 밖이면 창 안 첫 재켜짐부터 새로 묶는다
+  //   — 창 밖 머리에 흡수되면 그날 "켜짐" 줄·차트 마커가 통째로 사라진다
+  //   (리뷰 2026-11-05). 그날 지속 시간은 창 안 첫 재켜짐부터 센다.
   // ⚠️ 받아들인 한계: 자정 전부터 이어진 자동 환기는 직전 조회(readPreceding)가
-  // 기기마다 1건만 읽어 첫 시작을 모를 수 있다 — 그날 꺼짐 줄의 지속 시간·
-  // 델타가 빠질 수 있다(사용자 명령도 같은 한계).
+  // 기기마다 1건만 읽어 첫 시작을 모를 수 있다(사용자 명령도 같은 한계).
   final merged = <_Cmd>[];
   int? ventHead; // 묶는 중인 자동 환기의 merged 인덱스
   DateTime? ventLastAt; // 그 묶음의 마지막 회차 시각
@@ -246,7 +248,12 @@ List<ControlLogEntry> buildControlLog({
       continue;
     }
     final isAutoOn = p.auto && p.state == ControlLogState.on;
+    final crossesWindow = visibleFrom != null &&
+        ventHead != null &&
+        merged[ventHead].at.isBefore(visibleFrom) &&
+        !p.at.isBefore(visibleFrom);
     if (isAutoOn &&
+        !crossesWindow &&
         ventHead != null &&
         ventLastAt != null &&
         ventLastMs != null &&

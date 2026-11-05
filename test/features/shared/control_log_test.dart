@@ -380,6 +380,30 @@ void main() {
       expect(log.last.duration, const Duration(minutes: 90));
     });
 
+    test('리뷰4 — 보이는 창 앞에서 시작한 자동 환기는 창 안 첫 재켜짐부터 한 줄', () {
+      // 자정 전(창 밖) 시작 → 창 안 재켜짐·꺼짐. 창 안 재켜짐이 창 밖 머리에
+      // 흡수되면 그날 "켜짐" 줄·마커가 통째로 사라진다.
+      final from = t0.add(const Duration(minutes: 30));
+      final reOn = t0.add(const Duration(minutes: 60, seconds: 5));
+      final off = t0.add(const Duration(minutes: 150));
+      final log = buildControlLog(
+        commandRows: [
+          row('fan_on', t0, source: 'auto', ms: 3600000),
+          row('fan_on', reOn, source: 'auto', ms: 3600000),
+          row('fan_on', reOn.add(const Duration(minutes: 60, seconds: 5)),
+              source: 'auto', ms: 3600000),
+          row('fan_off', off, source: 'auto', reason: 'auto_vent_end'),
+        ],
+        buckets: const [],
+        visibleFrom: from,
+      );
+      expect(
+          log.map((e) => e.state), [ControlLogState.on, ControlLogState.off]);
+      expect(log.first.at, reOn);
+      expect(log.first.auto, isTrue);
+      expect(log.last.duration, off.difference(reOn));
+    });
+
     test('합친 자동 환기의 꺼짐 줄에 델타가 남는다', () {
       final log = buildControlLog(commandRows: [
         row('fan_on', t0, source: 'auto', ms: 3600000),
