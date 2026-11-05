@@ -15,7 +15,7 @@
 | 알림 배포·기기 이벤트 | [배포 체크리스트](2026-09-15-fcm-deployment-checklist.md), [재개 기록](2026-09-15-fcm-session-checkpoint.md), [이벤트 요청](2026-09-15-terra-server-notification-events-request.md) | 실기기 수신·생산자 연동·미확인 후속 작업이 남아 있음. 후속 9/16 회신·결정을 우선 확인 |
 | 하이라이트 | [정책 v2 요청](2026-09-19-petcam-lab-highlight-policy-v2-request.md) | 구 승인 스냅샷 정책을 대체. 배포 확인 기록과 남은 요청 보존 |
 | 마이페이지 | [서버 요청](2026-09-16-mypage-server-requests.md) | 서버 의존 항목의 완료 근거가 확인되지 않아 보존 |
-| 자동 환기·분무 | [서버·펌웨어 요청](2026-11-05-auto-vent-mist-request.md) | Figma `1657:5406`. 11/3 "계획 없음" 회신 뒤 정식 요청. 회신 전까지 앱 토글 없음 |
+| 자동 환기·분무 | [서버·펌웨어 요청](2026-11-05-auto-vent-mist-request.md), [앱 계획](../superpowers/plans/2026-11-05-auto-env-app.md) | 서버 회신(계약 확정) → 앱 Task 1~4 main 병합(0.174.0+479, 토글 숨김). §7 추가 질문 5개 회신·서버 전체 켬 대기 → Task 5 출시 |
 | LCD 문구 | [서버 요청](2026-10-06-lcd-text-server-request.md) | 회신 반영(0.154.0, 서버 값 우선)·서버 배포 완료(10/7). 실기기 검증 대기 |
 | 카메라 회전 | [9/9 후속 통보](../handoff-update-camera-rotate180-2026-09-09.md) | 재부팅 후 적용 계약과 라이브 멈춤 수정의 실기기 미확인 기록 포함. 최신 토글 노출 정책은 CLAUDE.md 우선 |
 
