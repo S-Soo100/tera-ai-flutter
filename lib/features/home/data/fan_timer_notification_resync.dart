@@ -32,8 +32,7 @@ class FanTimerNotificationResync {
           // runningTimersProvider(칩)와 같은 쿼리 — 판정 소스를 하나로 유지.
           final rows = await _client
               .from('commands')
-              .select(
-                  'id, device_id, action, status, result, payload, issued_at')
+              .select(kFanTimerColumns)
               .eq('device_id', deviceId)
               .inFilter('action', actuator.actions)
               .order('issued_at', ascending: false)

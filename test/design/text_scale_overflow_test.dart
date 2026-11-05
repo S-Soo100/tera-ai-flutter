@@ -299,6 +299,32 @@ void main() {
                 sent: [], telemetry: reading(fan: ActuatorState.off)));
       });
 
+      // 자동 환기·분무 토글(계획 2026-11-05 Task 4, 출시 스위치 켠 화면) —
+      // 설명 두 줄이 1.3배·상한에서 넘치지 않는다(Review Focus 4).
+      for (final device in [ScheduleDevice.fan, ScheduleDevice.mist]) {
+        testWidgets('${device.name} 제어 시트 · 자동 토글', (tester) async {
+          await _pump(
+              tester,
+              system,
+              Scaffold(
+                  body: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: DeviceControlSheet(
+                          deviceId: kTestDeviceId,
+                          device: device,
+                          initialTab: DeviceControlTab.immediate))),
+              overrides: controlOverrides(
+                  sent: [],
+                  telemetry: reading(fan: ActuatorState.off),
+                  autoEnvReleased: true));
+          expect(
+              find.byKey(device == ScheduleDevice.fan
+                  ? DeviceControlSheet.autoVentKey
+                  : DeviceControlSheet.autoMistKey),
+              findsOneWidget);
+        });
+      }
+
       testWidgets('확인 모달·오프라인 안내', (tester) async {
         await _pump(
             tester,

@@ -80,6 +80,39 @@ void main() {
     });
   });
 
+  group('DeviceSettings 자동 토글 (계획 2026-11-05 Task 1)', () {
+    test('설정 파싱 — 자동 토글', () {
+      expect(
+          DeviceSettings.fromJson({'device_id': 'd', 'auto_vent_enabled': true})
+              .autoVentEnabled,
+          isTrue);
+      expect(
+          DeviceSettings.fromJson({'device_id': 'd'}).autoMistEnabled, isFalse);
+      expect(
+          DeviceSettings.fromJson(
+              {'device_id': 'd', 'auto_mist_enabled': 'true'}).autoMistEnabled,
+          isFalse);
+    });
+    test(
+        '패치 본문 — 자동 토글만',
+        () => expect(DeviceSettings.patchBody(autoVentEnabled: false),
+            {'auto_vent_enabled': false}));
+    test(
+        '패치 본문 — 두 자동 토글',
+        () => expect(
+            DeviceSettings.patchBody(
+                autoVentEnabled: true, autoMistEnabled: false),
+            {'auto_vent_enabled': true, 'auto_mist_enabled': false}));
+    test('repository.patch는 자동 토글을 넘긴다', () async {
+      final rest = _FakeRest();
+      final saved = await DeviceSettingsRepository(rest)
+          .patch('d1', autoMistEnabled: true);
+      expect(rest.lastPatch?.$2, {'auto_mist_enabled': true});
+      expect(saved.autoMistEnabled, isTrue);
+      expect(saved.autoVentEnabled, isFalse);
+    });
+  });
+
   group('Device.tempOffsetC', () {
     test('temp_offset_c 파싱', () {
       expect(

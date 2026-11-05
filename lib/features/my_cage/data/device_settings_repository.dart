@@ -26,6 +26,8 @@ class DeviceSettingsRepository {
     double? targetTempMax,
     double? targetHumidMin,
     double? targetHumidMax,
+    bool? autoVentEnabled,
+    bool? autoMistEnabled,
   }) async {
     final decoded = await _client.patch(
       '/devices/$deviceId/settings',
@@ -36,6 +38,8 @@ class DeviceSettingsRepository {
         targetTempMax: targetTempMax,
         targetHumidMin: targetHumidMin,
         targetHumidMax: targetHumidMax,
+        autoVentEnabled: autoVentEnabled,
+        autoMistEnabled: autoMistEnabled,
       ),
     );
     return DeviceSettings.fromJson(Map<String, dynamic>.from(decoded as Map));

@@ -8,6 +8,15 @@ import '../../../shared/domain/fan_actuator.dart';
 /// 구현하면(핸드오프 §2) 이 휴리스틱은 서버 상태 기반으로 교체한다.
 const kCommandAckGrace = Duration(seconds: 15);
 
+/// 팬 타이머 판정([RunningTimer.fanTimerFrom])에 쓰는 `commands` 컬럼.
+///
+/// 칩(`runningTimersProvider`)과 앱 열 때 알림 재동기화
+/// (`FanTimerNotificationResync`)가 **같은 상수**로 읽는다 — 한쪽만 `source`를
+/// 빠뜨리면 화면과 알림이 타이머 유무를 다르게 말한다. `source`는 서버 자동
+/// 환기 명령을 가려내려고 넣었다(2026-11-05).
+const kFanTimerColumns =
+    'id, device_id, action, status, result, payload, issued_at, source';
+
 /// PRD §4.2.1 진행 중 타이머 칩의 데이터 모델.
 ///
 /// 서버에 타이머 상태 테이블은 **없다**(A안 확정, 2026-08-14 핸드오프 §1.3).
@@ -55,6 +64,13 @@ class RunningTimer {
   /// 그걸 계속 타이머로 치면 **실제로는 안 도는 팬**을 카운트다운한다.
   /// 유예 초과 미ACK는 fan_off여도 없는 셈 친다(대칭) — 유실된 off가 이전의
   /// 정상 타이머를 가짜로 취소하는 것도 막는다.
+  ///
+  /// 최신 유효 명령이 `source == 'auto'`(서버 자동 환기, 2026-11-05 계약)면
+  /// 사용자 타이머가 아니다 → null. 서버는 자동 환기를 1시간짜리 `fan_on`으로
+  /// 내는데, 이걸 타이머로 치면 사용자가 걸지 않은 카운트다운과 "타이머 끝"
+  /// 알림이 뜬다. 그 아래의 사용자 타이머도 살리지 않는다 — 자동 명령이 팬
+  /// 상태를 덮어썼으니 이전 타이머는 끝난 셈이다. 출시 스위치와 무관하다:
+  /// 다른 폰에서 자동을 켜도 이 폰의 이력에 자동 행이 온다.
   static RunningTimer? fanTimerFrom(
     List<Map<String, dynamic>> rows,
     DateTime now, {
@@ -72,6 +88,7 @@ class RunningTimer {
           now.difference(issuedAtRaw) > kCommandAckGrace) {
         continue; // 미ACK 유예 초과 — 기기에 닿지 못한 명령.
       }
+      if (r['source'] == 'auto') return null; // 서버 자동 환기 — 사용자 타이머 아님.
       if (r['action'] != actuator.onAction) return null;
       final payload = r['payload'];
       final ms = payload is Map ? (payload['duration_ms'] as num?) : null;

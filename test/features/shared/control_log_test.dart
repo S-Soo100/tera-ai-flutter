@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/features/home/domain/auto_env.dart';
 import 'package:vivanaut/features/my_cage/domain/telemetry_bucket.dart';
 import 'package:vivanaut/shared/domain/actuator_marker.dart';
 import 'package:vivanaut/shared/domain/control_log.dart';
@@ -7,6 +8,9 @@ Map<String, dynamic> row(
   String action,
   DateTime localAt, {
   String status = 'acked',
+  String? source,
+  String? reason,
+  int? ms,
 }) {
   return {
     'id': '${action}_${localAt.millisecondsSinceEpoch}',
@@ -15,6 +19,9 @@ Map<String, dynamic> row(
     'result': 'ok',
     // 실 DB처럼 UTC 문자열로 준다 — 파서가 .toLocal()을 하는지 검증.
     'issued_at': localAt.toUtc().toIso8601String(),
+    if (source != null) 'source': source,
+    if (reason != null) 'reason': reason,
+    if (ms != null) 'payload': {'duration_ms': ms},
   };
 }
 
@@ -336,6 +343,117 @@ void main() {
       expect(log[1].temperature, 25.0);
       expect(log[1].deltaTemperature, isNull);
       expect(log[1].deltaHumidity, isNull);
+    });
+  });
+
+  group('buildControlLog — 서버 자동 명령', () {
+    final t0 = DateTime(2026, 11, 5, 13, 30);
+
+    test('자동 명령 표시 정보', () {
+      final log = buildControlLog(commandRows: [
+        row('fan_on', t0,
+            source: 'auto', reason: 'auto_vent:humid_high', ms: 3600000),
+      ], buckets: const []);
+      expect(log.single.auto, isTrue);
+      expect(log.single.reason, AutoEnvReason.ventHumidHigh);
+    });
+
+    test('reason 키가 없는 행(마이그레이션 전 서버)·사용자 명령은 자동 아님', () {
+      final log = buildControlLog(commandRows: [
+        row('fan_on', t0, source: 'app', ms: 1800000),
+        row('mist', t0.add(const Duration(minutes: 5))),
+      ], buckets: const []);
+      expect(log.map((e) => e.auto), [false, false]);
+      expect(log.map((e) => e.reason), [null, null]);
+    });
+
+    test('매시간 다시 켠 자동 환기는 한 줄 + 전체 지속 시간', () {
+      final log = buildControlLog(commandRows: [
+        row('fan_on', t0, source: 'auto', ms: 3600000),
+        row('fan_on', t0.add(const Duration(minutes: 60, seconds: 5)),
+            source: 'auto', ms: 3600000),
+        row('fan_off', t0.add(const Duration(minutes: 90)),
+            source: 'auto', reason: 'auto_vent_end'),
+      ], buckets: const []);
+      expect(
+          log.map((e) => e.state), [ControlLogState.on, ControlLogState.off]);
+      expect(log.last.duration, const Duration(minutes: 90));
+    });
+
+    test('합친 자동 환기의 꺼짐 줄에 델타가 남는다', () {
+      final log = buildControlLog(commandRows: [
+        row('fan_on', t0, source: 'auto', ms: 3600000),
+        row('fan_on', t0.add(const Duration(minutes: 60, seconds: 5)),
+            source: 'auto', ms: 3600000),
+        row('fan_off', t0.add(const Duration(minutes: 90)),
+            source: 'auto', reason: 'auto_vent_end'),
+      ], buckets: [
+        bucket(t0, t: 30, h: 85),
+        bucket(t0.add(const Duration(minutes: 90)), t: 27, h: 70),
+      ]);
+      expect(log.last.reason, AutoEnvReason.ventEnd);
+      expect(log.last.deltaTemperature, -3);
+      expect(log.last.deltaHumidity, -15);
+    });
+
+    test('재명령이 5분 늦어도 합친다', () {
+      final log = buildControlLog(commandRows: [
+        row('fan_on', t0, source: 'auto', ms: 3600000),
+        row('fan_on', t0.add(const Duration(minutes: 66)),
+            source: 'auto', ms: 3600000),
+      ], buckets: const []);
+      expect(log.length, 1);
+    });
+
+    test('창(타이머 + 10분)을 넘기면 새 줄', () {
+      final log = buildControlLog(commandRows: [
+        row('fan_on', t0, source: 'auto', ms: 3600000),
+        row('fan_on', t0.add(const Duration(minutes: 71)),
+            source: 'auto', ms: 3600000),
+      ], buckets: const []);
+      expect(log.length, 2);
+    });
+
+    test('사이에 사용자 명령이 끼면 합치지 않는다', () {
+      final log = buildControlLog(commandRows: [
+        row('fan_on', t0, source: 'auto', ms: 3600000),
+        row('fan_on', t0.add(const Duration(minutes: 10)),
+            source: 'app', ms: 1800000),
+        row('fan_on', t0.add(const Duration(minutes: 50)),
+            source: 'auto', ms: 3600000),
+      ], buckets: const []);
+      expect(log.length, 3);
+    });
+
+    test('자동 꺼짐 뒤 자동 켜짐은 새 줄', () {
+      final log = buildControlLog(commandRows: [
+        row('fan_on', t0, source: 'auto', ms: 3600000),
+        row('fan_off', t0.add(const Duration(minutes: 20)), source: 'auto'),
+        row('fan_on', t0.add(const Duration(minutes: 30)),
+            source: 'auto', ms: 3600000),
+      ], buckets: const []);
+      expect(log.map((e) => e.state),
+          [ControlLogState.on, ControlLogState.off, ControlLogState.on]);
+    });
+
+    test('다른 기기 명령(냉각팬·분무)은 자동 환기 묶음을 끊지 않는다', () {
+      final log = buildControlLog(commandRows: [
+        row('fan_on', t0, source: 'auto', ms: 3600000),
+        row('fan2_on', t0.add(const Duration(minutes: 10)), source: 'app'),
+        row('mist', t0.add(const Duration(minutes: 20)), source: 'app'),
+        row('fan_on', t0.add(const Duration(minutes: 60, seconds: 5)),
+            source: 'auto', ms: 3600000),
+      ], buckets: const []);
+      expect(log.where((e) => e.kind == MarkerKind.fan), hasLength(1));
+    });
+
+    test('자동 분무 직후 손 분무는 따로', () {
+      final log = buildControlLog(commandRows: [
+        row('mist', t0, source: 'auto', ms: 3000),
+        row('mist', t0.add(const Duration(seconds: 5)),
+            source: 'app', ms: 3000),
+      ], buckets: const []);
+      expect(log.map((e) => e.auto), [true, false]);
     });
   });
 }
