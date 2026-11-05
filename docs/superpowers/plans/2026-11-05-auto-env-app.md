@@ -2,6 +2,8 @@
 
 > **구현 방식 (CAOF):** Critical 트랙(4개 이상 파일, 서버 계약 의존). 사용자 승인 뒤 task 단위로 구현한다. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
+> **서버 §7 회신 (2026-11-05 저녁, 요청서 §8):** D1 해소(서버가 Figma대로 습도 1시간 연속, 분무 뒤 보호 삭제) · Q4 → 합치기 창 8분(0.174.2) · Q5 확인 · D2는 앱이 예약 목록으로 판정해야 함(서버 `schedule_hold`는 토글 꺼진 기기 미계산) — 후속 · Q3 테스트 기기 UUID 전달 대기.
+>
 > **진행 (2026-11-05):** Task 2·1·3·4 완료 → main 병합(0.171.3~0.174.0+479, 토글 숨김). 남은 것: 사용자 `/code-review`, 서버 §7 질문 회신(요청서 §7), Task 5.
 >
 > **r2 (2026-11-05):** 교차 검수(Codex + Claude) 반영. 검수 결과 `docs/superpowers/plans/2026-11-05-auto-env-app-review-final.md`.

@@ -429,10 +429,21 @@ void main() {
       expect(log.length, 1);
     });
 
-    test('창(타이머 + 10분)을 넘기면 새 줄', () {
+    test('재시도로 6분 늦은 재켜짐도 합친다(서버 회신 Q4 상한)', () {
       final log = buildControlLog(commandRows: [
         row('fan_on', t0, source: 'auto', ms: 3600000),
-        row('fan_on', t0.add(const Duration(minutes: 71)),
+        row('fan_on', t0.add(const Duration(minutes: 66, seconds: 30)),
+            source: 'auto', ms: 3600000),
+      ], buckets: const []);
+      expect(log.length, 1);
+    });
+
+    test('끝난 뒤 10분 지나 새로 켠 자동 환기는 새 줄(서버 회신 Q4)', () {
+      // 서버는 자동 환기가 끝나면 10분은 다시 켜지 않는다 — 그 뒤의 켜짐은
+      // 이어진 게 아니라 새 자동 환기다.
+      final log = buildControlLog(commandRows: [
+        row('fan_on', t0, source: 'auto', ms: 3600000),
+        row('fan_on', t0.add(const Duration(minutes: 70)),
             source: 'auto', ms: 3600000),
       ], buckets: const []);
       expect(log.length, 2);

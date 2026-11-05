@@ -67,9 +67,11 @@ class ControlLogEntry {
 const kMistChainGap = Duration(seconds: 8);
 
 /// 자동 환기 재켜짐을 이어진 것으로 볼 여유 — 직전 자동 `fan_on`의 타이머가
-/// 끝난 뒤 이 안에 온 자동 `fan_on`은 같은 줄로 합친다(계획 D4). 서버의
-/// "꺼진 팬 재명령 최소 5분 간격"을 덮는 값이다(Q4 회신으로 상한 확인 예정).
-const kAutoVentChainSlack = Duration(minutes: 10);
+/// 끝난 뒤 이 안에 온 자동 `fan_on`은 같은 줄로 합친다(계획 D4). 서버 회신
+/// (2026-11-05 Q4): 재켜짐은 보통 만료 15초 안, 재시도해도 최대 약 6분이고,
+/// 끝난 뒤 새로 켜는 건 항상 10분 이상 뒤다 — 그 사이(6~9분)인 8분. 10분으로
+/// 두면 새로 시작한 자동 환기까지 합쳐진다.
+const kAutoVentChainSlack = Duration(minutes: 8);
 
 /// 파싱한 명령 한 건 — 묶기·델타 짝짓기 사이에서 쓰는 중간 모양.
 typedef _Cmd = ({
