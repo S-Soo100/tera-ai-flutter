@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/core/theme/glass_palette.dart';
 import 'package:vivanaut/features/home/domain/auto_env.dart';
+import 'package:vivanaut/features/home/presentation/auto_env_providers.dart';
 import 'package:vivanaut/features/home/domain/mist_duration.dart';
 import 'package:vivanaut/features/home/domain/running_timer.dart'
     show kCommandAckGrace;
@@ -74,6 +75,8 @@ Future<FakeDeviceSettingsRepo> pumpSheet(
   Completer<void>? settingsGate,
   Object? telemetry = const _DefaultTelemetry(),
   AutoEnvState autoEnv = AutoEnvState.none,
+  Override? autoEnvOverride,
+  bool online = true,
   List<(CommandAction, Map<String, dynamic>?)>? sent,
   bool settle = true,
 }) async {
@@ -94,6 +97,8 @@ Future<FakeDeviceSettingsRepo> pumpSheet(
           telemetryStream: Stream.value(reading0),
           autoEnvReleased: released,
           autoEnv: autoEnv,
+          autoEnvOverride: autoEnvOverride,
+          online: online,
           settingsRepo: repo),
       Scaffold(body: Consumer(builder: (context, ref, _) {
     // 실제 홈처럼 제어 타일이 텔레메트리·타이머를 먼저 구독해 둔다 — 시트는
@@ -327,7 +332,8 @@ void main() {
     testWidgets('설정 로드 실패 — 비활성 + 실패 문구', (t) async {
       final repo = await pumpSheet(t, ScheduleDevice.mist,
           released: true, settingsError: true);
-      expect(find.text('자동 설정을 불러오지 못했어요'), findsOneWidget);
+      expect(find.text('자동 설정을 불러오지 못했어요. 눌러서 다시 시도해 주세요'),
+          findsOneWidget);
       expect(find.textContaining('미만으로 내려가면'), findsNothing);
       await t.tap(find.byKey(DeviceControlSheet.autoMistKey));
       await t.pumpAndSettle();
@@ -387,6 +393,63 @@ void main() {
       final autoBottom =
           t.getBottomLeft(find.byKey(DeviceControlSheet.autoMistKey)).dy;
       expect(t.getTopLeft(find.text('분사 시간')).dy - autoBottom, 24);
+    });
+
+    // ── 코드 리뷰 반영(2026-11-05) ──────────────────────────────────────
+
+    testWidgets('리뷰1 — 저장 중에도 줄은 활성 모양(회색으로 바뀌지 않는다)', (t) async {
+      await pumpSheet(t, ScheduleDevice.fan,
+          released: true, patchDelay: const Duration(seconds: 1));
+      await t.tap(find.byKey(DeviceControlSheet.autoVentKey));
+      await t.pump();
+      expect(find.byKey(AutoEnvToggle.savingKey), findsOneWidget);
+      final row = t.widget<Container>(find.descendant(
+          of: find.byKey(DeviceControlSheet.autoVentKey),
+          matching: find.byKey(AutoEnvToggle.rowKey)));
+      expect((row.decoration! as BoxDecoration).color,
+          GlassPalette.light.surfaceHeader);
+      await t.pump(const Duration(seconds: 2));
+    });
+
+    testWidgets('리뷰2 — 기기가 오프라인이어도 자동 설정은 저장된다(서버 설정)', (t) async {
+      final repo =
+          await pumpSheet(t, ScheduleDevice.mist, released: true, online: false);
+      await t.tap(find.byKey(DeviceControlSheet.autoMistKey));
+      await t.pumpAndSettle();
+      expect(repo.patches, [
+        {'auto_mist_enabled': true}
+      ]);
+      expect(switchValue(t, DeviceControlSheet.autoMistKey), isTrue);
+    });
+
+    testWidgets('리뷰3 — 시트를 연 뒤 자동 환기가 시작되면 칩 선택을 비운다', (t) async {
+      final autoEnv = StateProvider<AutoEnvState>((_) => AutoEnvState.none);
+      await pumpSheet(t, ScheduleDevice.fan,
+          released: true,
+          telemetry: reading(fan: ActuatorState.on),
+          autoEnvOverride: autoEnvStateProvider
+              .overrideWith((ref, id) => ref.watch(autoEnv)));
+      expect(chipSelected(t, const Key('fan_steady_on')), isTrue);
+      ProviderScope.containerOf(t.element(find.text('open')))
+          .read(autoEnv.notifier)
+          .state = const AutoEnvState(ventActive: true);
+      await t.pumpAndSettle();
+      expect(chipSelected(t, const Key('fan_steady_on')), isFalse);
+    });
+
+    testWidgets('리뷰5 — 불러오기 실패 줄을 누르면 다시 불러온다', (t) async {
+      final repo = await pumpSheet(t, ScheduleDevice.mist,
+          released: true, settingsError: true);
+      repo.getError = false;
+      await t.tap(find.byKey(DeviceControlSheet.autoMistKey));
+      await t.pumpAndSettle();
+      expect(find.textContaining('미만으로 내려가면'), findsOneWidget);
+      expect(repo.patches, isEmpty);
+      await t.tap(find.byKey(DeviceControlSheet.autoMistKey));
+      await t.pumpAndSettle();
+      expect(repo.patches, [
+        {'auto_mist_enabled': true}
+      ]);
     });
 
     testWidgets('자동이 켠 팬은 작동 시간 칩이 선택되지 않는다(D5)', (t) async {

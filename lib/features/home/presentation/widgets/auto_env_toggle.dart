@@ -27,14 +27,19 @@ class AutoEnvToggle extends StatelessWidget {
     required this.onChanged,
     required this.accent,
     this.saving = false,
+    this.onRetry,
   });
 
   final String label;
   final String description;
   final bool value;
 
-  /// false면 탭을 무시하고 비활성 모양으로 그린다(설정 조회 실패·저장 중).
+  /// false면 탭을 무시하고 비활성 모양으로 그린다(설정 조회 실패). 저장 중은
+  /// [saving]이 탭을 막는다 — 모양은 그대로 둔다.
   final bool enabled;
+
+  /// 비활성 줄을 눌렀을 때(조회 실패 → 다시 불러오기). null이면 무시.
+  final VoidCallback? onRetry;
 
   /// 설정을 불러오는 중 — 같은 높이의 shimmer 스켈레톤으로 대신한다.
   final bool loading;
@@ -58,7 +63,9 @@ class AutoEnvToggle extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         // 줄 전체가 터치 영역 — 스위치만 누르게 하면 48 높이 줄에서 빗맞는다.
-        onTap: interactive ? () => onChanged(!value) : null,
+        onTap: interactive
+            ? () => onChanged(!value)
+            : (!enabled && !loading && !saving ? onRetry : null),
         child: Container(
           key: rowKey,
           height: 48,

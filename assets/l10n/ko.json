@@ -1130,7 +1130,7 @@
   "auto_mist_label": "자동 분무",
   "auto_mist_desc": "습도가 {}% 미만으로 내려가면 자동으로 1회 분무",
   "auto_env_save_failed": "자동 설정을 저장하지 못했어요. 잠시 후 다시 시도해 주세요",
-  "auto_env_load_failed": "자동 설정을 불러오지 못했어요",
+  "auto_env_load_failed": "자동 설정을 불러오지 못했어요. 눌러서 다시 시도해 주세요",
   "home_led_pick_title": "조명을 켜거나 끕니다",
   "home_led_turn_on": "켜기",
   "home_led_turn_off": "끄기",

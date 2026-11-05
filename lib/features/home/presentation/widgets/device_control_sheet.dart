@@ -142,6 +142,10 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   /// null은 "계속"이라 따로 둔다. 사용자가 칩을 누르면 풀린다.
   bool _fanChoiceNone = false;
 
+  /// 직전 build의 서버 자동 환기 동작 여부 — 시트를 연 뒤 자동이 시작되면
+  /// 칩 선택을 비우려고 바뀌는 순간을 잡는다(리뷰 2026-11-05).
+  bool? _lastAutoVentActive;
+
   /// 자동 환기·분무 저장 왕복 중 — 재탭을 무시하고 줄 위에 shimmer를 흘린다.
   /// 명령 왕복 잠금([_busy])과는 별개다: 저장 중에도 수동 제어는 된다.
   bool _autoSaving = false;
@@ -330,7 +334,12 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   /// 실패(서버가 필드를 무시한 [AutoEnvSaveMismatch] 포함)면 시트 위 안내.
   Future<void> _saveAuto({required bool vent, required bool value}) async {
     if (_autoSaving) return;
-    if (!_targetStillValid()) return;
+    // 서버 설정이라 기기가 오프라인이어도 저장한다 — [_targetStillValid]는
+    // 오프라인도 막으므로 대상(세트의 기기)이 바뀌었는지만 본다.
+    if (_currentDeviceId != widget.deviceId) {
+      ControlFeedback.of(context).show('home_fan_target_changed'.tr());
+      return;
+    }
     final notifier = ref.read(deviceSettingsProvider(widget.deviceId).notifier);
     // 안내는 루트 Overlay라 저장 중 시트가 닫혀도 뜬다 — await 전에 잡는다.
     final feedback = ControlFeedback.of(context);
@@ -375,11 +384,17 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
       description: description,
       value: vent ? s.autoVentEnabled : s.autoMistEnabled,
       // 예약 실행 중(schedule_hold)은 보지 않는다(D2-b) — 서버가 알아서 쉰다.
-      enabled: settings is AsyncData<DeviceSettings> && !_autoSaving,
+      // 저장 중은 [AutoEnvToggle.saving]이 탭을 막는다 — 여기서 끄면 줄이
+      // "쓸 수 없음" 회색으로 깜빡인다.
+      enabled: settings is AsyncData<DeviceSettings>,
       loading: settings.isLoading && !settings.hasValue && !failed,
       saving: _autoSaving,
       accent: accent,
       onChanged: (v) => _saveAuto(vent: vent, value: v),
+      // 조회 실패 줄을 누르면 다시 불러온다 — 시트를 닫았다 열지 않아도 되게.
+      onRetry: failed
+          ? () => ref.invalidate(deviceSettingsProvider(widget.deviceId))
+          : null,
     );
   }
 
@@ -521,9 +536,15 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
       timer = timers
           .where((x) => x.actuatorLabelKey == actuator.labelKey)
           .firstOrNull;
-      _seedFanChoice(on, timer,
-          autoVentActive: widget.device == ScheduleDevice.fan &&
-              ref.watch(autoEnvStateProvider(widget.deviceId)).ventActive);
+      final autoVentActive = widget.device == ScheduleDevice.fan &&
+          ref.watch(autoEnvStateProvider(widget.deviceId)).ventActive;
+      _seedFanChoice(on, timer, autoVentActive: autoVentActive);
+      // 시트를 연 뒤 서버 자동 환기가 시작되면 칩 선택을 비운다(D5) — 시드는
+      // 첫 build 한 번뿐이라 따로 본다. 사용자 타이머가 있으면 그대로 둔다.
+      if (_lastAutoVentActive == false && autoVentActive && timer == null) {
+        _fanChoiceNone = true;
+      }
+      _lastAutoVentActive = autoVentActive;
     } else {
       _seedBrightness(t);
     }
