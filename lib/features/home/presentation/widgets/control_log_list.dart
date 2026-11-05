@@ -147,6 +147,42 @@ class _LogRow extends StatelessWidget {
     ControlLogState.ran: 'env_detail_ran',
   };
 
+  /// 줄 제목. 서버 자동 명령은 "자동 환기 켜짐"·"자동 분무 3초 작동"으로
+  /// 사용자 명령과 구분한다(2026-11-05). 자동 분무의 길이를 모르면 초를
+  /// 추측하지 않고 "자동 분무 작동"으로 쓴다.
+  String _title(String name) {
+    if (entry.auto &&
+        entry.kind == MarkerKind.fan &&
+        entry.state != ControlLogState.ran) {
+      return (entry.state == ControlLogState.on
+              ? 'env_detail_auto_vent_on'
+              : 'env_detail_auto_vent_off')
+          .tr();
+    }
+    if (entry.auto &&
+        entry.kind == MarkerKind.mist &&
+        entry.state == ControlLogState.ran) {
+      return entry.sprayMs != null
+          ? 'env_detail_auto_mist_for'
+              .tr(args: ['${(entry.sprayMs! / 1000).round()}'])
+          : 'env_detail_ran'.tr(args: ['auto_mist_label'.tr()]);
+    }
+    // 분무는 분사 시간을 밝힌다 — 이어 보낸 회차는 한 줄로 합쳐졌다.
+    return entry.sprayMs != null
+        ? 'env_detail_ran_for'
+            .tr(args: [name, '${(entry.sprayMs! / 1000).round()}'])
+        : _stateKey[entry.state]!.tr(args: [name]);
+  }
+
+  /// 시각 줄 — 자동 명령의 원인을 알면 "오후 1:30 · 습도 높음".
+  String _timeLine() {
+    final time = formatAmPmTime(entry.at);
+    final reason = entry.reason;
+    return reason == null
+        ? time
+        : 'env_detail_time_reason'.tr(args: [time, reason.labelKey.tr()]);
+  }
+
   /// `+2` / `-5` — 델타는 방향이 본체라 부호를 항상 붙인다.
   static String _signed(double v) =>
       v < 0 ? '-${formatCompact(-v)}' : '+${formatCompact(v)}';
@@ -176,11 +212,7 @@ class _LogRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                // 분무는 분사 시간을 밝힌다 — 이어 보낸 회차는 한 줄로 합쳐졌다.
-                entry.sprayMs != null
-                    ? 'env_detail_ran_for'
-                        .tr(args: [name, '${(entry.sprayMs! / 1000).round()}'])
-                    : _stateKey[entry.state]!.tr(args: [name]),
+                _title(name),
                 style: TextStyle(
                   fontFamily: 'Pretendard',
                   fontSize: 16,
@@ -192,7 +224,7 @@ class _LogRow extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                formatAmPmTime(entry.at),
+                _timeLine(),
                 style: TextStyle(
                   fontFamily: 'Pretendard',
                   fontSize: 14,

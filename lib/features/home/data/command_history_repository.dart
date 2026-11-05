@@ -20,7 +20,6 @@ class CommandHistoryRepository {
   const CommandHistoryRepository(this.client);
   final SupabaseClient client;
   static const pageSize = 500;
-  static const _columns = 'id,action,status,result,issued_at,payload,source';
 
   /// 예약이 낸 명령(`source='schedule'`) 최근 [since]부터, 최신순 최대 200건.
   Future<List<CommandHistoryRow>> recentScheduleRuns(String deviceId,
@@ -45,9 +44,12 @@ class CommandHistoryRepository {
     final rows = <CommandHistoryRow>[];
     ({DateTime at, String id})? cursor;
     while (true) {
+      // 컬럼을 고르지 않는다 — 자동 명령 원인(`reason`) 컬럼은 서버
+      // 마이그레이션 뒤에만 있다. 이름을 박으면 그 전 서버에서 400이 난다
+      // (`fetchLinkStatus`와 같은 이유). 파서는 키가 있을 때만 읽는다.
       var query = client
           .from('commands')
-          .select(_columns)
+          .select()
           .eq('device_id', deviceId)
           .eq('status', 'acked')
           .eq('result', 'ok')
@@ -99,7 +101,7 @@ class CommandHistoryRepository {
       for (final kind in MarkerKind.values)
         client
             .from('commands')
-            .select(_columns)
+            .select() // 전체 컬럼 — readPeriod와 같은 이유(reason 유무).
             .eq('device_id', deviceId)
             .eq('status', 'acked')
             .eq('result', 'ok')

@@ -1,3 +1,4 @@
+import '../../features/home/domain/auto_env.dart';
 import '../../features/my_cage/domain/telemetry_bucket.dart';
 import 'actuator_marker.dart';
 
@@ -32,6 +33,15 @@ class ControlLogEntry {
   /// 명령은 한 줄로 묶어 합친다(2026-09-25) — 9초가 세 줄로 찍히면 세 번
   /// 뿌린 것으로 읽힌다.
   final int? sprayMs;
+
+  /// 서버 자동 환경 제어가 낸 명령(`commands.source='auto'`, 2026-11-05).
+  /// 화면은 "자동 환기 켜짐"·"자동 분무 3초 작동"처럼 구분해 그린다.
+  final bool auto;
+
+  /// 자동 명령의 원인(`commands.reason`). 컬럼이 생기기 전 서버의 행·모르는
+  /// 값·사용자 명령은 null — 화면은 원인 없이 시각만 보인다.
+  final AutoEnvReason? reason;
+
   Duration? get duration => state != ControlLogState.off ||
           startedAt == null ||
           !at.isAfter(startedAt!)
@@ -48,11 +58,30 @@ class ControlLogEntry {
     this.deltaHumidity,
     this.startedAt,
     this.sprayMs,
+    this.auto = false,
+    this.reason,
   });
 }
 
 /// 이어진 분무로 볼 최대 간격 — 앱의 회차 간격 5초·서버 이어 붙이기 약 7초.
 const kMistChainGap = Duration(seconds: 8);
+
+/// 자동 환기 재켜짐을 이어진 것으로 볼 여유 — 직전 자동 `fan_on`의 타이머가
+/// 끝난 뒤 이 안에 온 자동 `fan_on`은 같은 줄로 합친다(계획 D4). 서버의
+/// "꺼진 팬 재명령 최소 5분 간격"을 덮는 값이다(Q4 회신으로 상한 확인 예정).
+const kAutoVentChainSlack = Duration(minutes: 10);
+
+/// 파싱한 명령 한 건 — 묶기·델타 짝짓기 사이에서 쓰는 중간 모양.
+typedef _Cmd = ({
+  MarkerKind kind,
+  ControlLogState state,
+  DateTime at,
+  String id,
+  int? timerMs,
+  bool continuation,
+  bool auto,
+  AutoEnvReason? reason,
+});
 
 /// action 문자열 → (kind, state).
 ///
@@ -99,6 +128,9 @@ bool isControlLogStart(Object? action) =>
 ///   오프라인 센티넬이다(메모리 `project_telemetry_zero_sentinel`).
 /// - 델타 짝: off는 같은 kind의 직전 on을 **소진**한다 — on 하나에 off가
 ///   둘이면 두 번째 off는 짝이 없다(기기는 이미 꺼져 있었다).
+/// - 묶기는 델타 짝짓기 **전**에 한다 — 이어진 분무(자동·손 분무는 따로)와
+///   매시간 다시 켠 자동 환기(계획 D4)는 한 줄이다. 온습도 상세의 차트
+///   마커도 이 결과를 그대로 쓰므로 함께 줄어든다(의도).
 List<ControlLogEntry> buildControlLog({
   required List<Map<String, Object?>> commandRows,
   required List<TelemetryBucket> buckets,
@@ -124,14 +156,7 @@ List<ControlLogEntry> buildControlLog({
   }
 
   // 파싱 + 시간 오름차순 정렬 (델타 짝짓기는 시간순이 전제다).
-  final parsed = <({
-    MarkerKind kind,
-    ControlLogState state,
-    DateTime at,
-    String id,
-    int? timerMs,
-    bool continuation
-  })>[];
+  final parsed = <_Cmd>[];
   for (final r in commandRows) {
     if (r['status'] != 'acked' || r['result'] != 'ok') continue;
     final action = r['action'];
@@ -151,7 +176,11 @@ List<ControlLogEntry> buildControlLog({
       id: r['id'] is String ? r['id']! as String : '',
       timerMs: duration is int && duration > 0 ? duration : null,
       // 서버가 펌웨어 5초 상한 때문에 이어 보낸 분무(원래 요청의 나머지).
-      continuation: r['source'] == 'timer'
+      continuation: r['source'] == 'timer',
+      auto: r['source'] == 'auto',
+      // `reason` 컬럼은 서버 마이그레이션 뒤에만 있다 — 키가 있을 때만 읽는다.
+      reason:
+          r.containsKey('reason') ? AutoEnvReason.fromWire(r['reason']) : null,
     ));
   }
   parsed.sort((a, b) {
@@ -160,25 +189,21 @@ List<ControlLogEntry> buildControlLog({
   });
 
   // 이어진 분무(앱 3초×N·서버 5초+5초)는 첫 명령 한 줄로 묶고 분사 시간을
-  // 합친다. 간격은 직전 **회차**부터 잰다.
-  final merged = <({
-    MarkerKind kind,
-    ControlLogState state,
-    DateTime at,
-    String id,
-    int? timerMs,
-    bool continuation
-  })>[];
-  int? head; // 묶는 중인 분무의 merged 인덱스
+  // 합친다. 간격은 직전 **회차**부터 잰다. 자동 분무와 손 분무는 묶지 않는다
+  // — 자동 3초 직후 손으로 뿌린 것이 "자동 분무 6초"로 읽히면 안 된다. 서버
+  // 이음 행(`source='timer'`)은 원래 요청의 나머지라 머리의 자동 여부를 따른다.
+  final mistMerged = <_Cmd>[];
+  int? head; // 묶는 중인 분무의 mistMerged 인덱스
   DateTime? chainLast; // 그 묶음의 마지막 회차 시각
   for (final p in parsed) {
     final isMist = p.kind == MarkerKind.mist && p.state == ControlLogState.ran;
     if (isMist &&
         head != null &&
         chainLast != null &&
-        p.at.difference(chainLast) <= kMistChainGap) {
-      final h = merged[head];
-      merged[head] = (
+        p.at.difference(chainLast) <= kMistChainGap &&
+        (p.continuation || p.auto == mistMerged[head].auto)) {
+      final h = mistMerged[head];
+      mistMerged[head] = (
         kind: h.kind,
         state: h.state,
         at: h.at,
@@ -189,14 +214,76 @@ List<ControlLogEntry> buildControlLog({
             ? h.timerMs
             : (h.timerMs ?? 0) + p.timerMs!,
         continuation: h.continuation,
+        auto: h.auto,
+        reason: h.reason,
       );
       chainLast = p.at;
       continue;
     }
-    merged.add(p);
+    mistMerged.add(p);
     if (isMist) {
-      head = merged.length - 1;
+      head = mistMerged.length - 1;
       chainLast = p.at;
+    }
+  }
+
+  // 매시간 다시 켠 자동 환기(계획 D4)를 한 줄로 합친다. 원인이 남아 있으면
+  // 서버는 1시간 타이머가 끝날 때마다 `fan_on`을 다시 보낸다(하루 최대 12줄).
+  // - 직전 회차의 `at + timerMs + [kAutoVentChainSlack]` 안에 온 자동 `fan_on`만.
+  // - 사이에 환기팬의 다른 명령(사용자 on/off/toggle, 자동 off)이 끼면 끊는다.
+  // - 합칠 때 첫 줄의 timerMs를 "마지막 회차가 끝나는 시각 − 첫 줄 시각"으로
+  //   늘린다. 그래야 아래 타이머 만료 판정이 꺼짐 줄의 시작·델타를 지우지 않는다.
+  // ⚠️ 받아들인 한계: 자정 전부터 이어진 자동 환기는 직전 조회(readPreceding)가
+  // 기기마다 1건만 읽어 첫 시작을 모를 수 있다 — 그날 꺼짐 줄의 지속 시간·
+  // 델타가 빠질 수 있다(사용자 명령도 같은 한계).
+  final merged = <_Cmd>[];
+  int? ventHead; // 묶는 중인 자동 환기의 merged 인덱스
+  DateTime? ventLastAt; // 그 묶음의 마지막 회차 시각
+  int? ventLastMs; // 그 회차의 타이머
+  for (final p in mistMerged) {
+    if (p.kind != MarkerKind.fan) {
+      merged.add(p);
+      continue;
+    }
+    final isAutoOn = p.auto && p.state == ControlLogState.on;
+    if (isAutoOn &&
+        ventHead != null &&
+        ventLastAt != null &&
+        ventLastMs != null &&
+        !p.at.isAfter(ventLastAt
+            .add(Duration(milliseconds: ventLastMs))
+            .add(kAutoVentChainSlack))) {
+      final h = merged[ventHead];
+      merged[ventHead] = (
+        kind: h.kind,
+        state: h.state,
+        at: h.at,
+        id: h.id,
+        // 타이머 없는 재켜짐이면 끝을 모른다 — 만료로 보지 않게 null.
+        timerMs: p.timerMs == null
+            ? null
+            : p.at
+                .add(Duration(milliseconds: p.timerMs!))
+                .difference(h.at)
+                .inMilliseconds,
+        continuation: h.continuation,
+        auto: h.auto,
+        reason: h.reason,
+      );
+      ventLastAt = p.at;
+      ventLastMs = p.timerMs;
+      continue;
+    }
+    merged.add(p);
+    if (isAutoOn) {
+      ventHead = merged.length - 1;
+      ventLastAt = p.at;
+      ventLastMs = p.timerMs;
+    } else {
+      // 환기팬의 다른 명령 — 이어진 자동 환기가 아니다.
+      ventHead = null;
+      ventLastAt = null;
+      ventLastMs = null;
     }
   }
 
@@ -244,6 +331,8 @@ List<ControlLogEntry> buildControlLog({
       sprayMs: p.kind == MarkerKind.mist && p.state == ControlLogState.ran
           ? p.timerMs
           : null,
+      auto: p.auto,
+      reason: p.reason,
     );
     if (p.state == ControlLogState.on) {
       lastOn[p.kind] = (entry: entry, timerMs: p.timerMs);

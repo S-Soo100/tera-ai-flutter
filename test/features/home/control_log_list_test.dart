@@ -1,8 +1,12 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/features/home/domain/auto_env.dart';
 import 'package:vivanaut/features/home/presentation/widgets/control_log_list.dart';
 import 'package:vivanaut/shared/domain/actuator_marker.dart';
 import 'package:vivanaut/shared/domain/control_log.dart';
+
+import '../notification/notification_test_host.dart';
 
 Future<void> _pump(WidgetTester tester, List<ControlLogEntry> entries) async {
   await tester.pumpWidget(
@@ -123,5 +127,91 @@ void main() {
   testWidgets('빈 목록 — 빈 상태 문구', (tester) async {
     await _pump(tester, const []);
     expect(find.text('env_detail_empty_log'), findsOneWidget);
+  });
+
+  // ⚠️ 이 묶음은 ko.json을 실제로 불러온다(Localization 싱글턴이 남는다) —
+  // 키를 그대로 단언하는 위 테스트들보다 **뒤에** 둘 것.
+  group('서버 자동 명령(실제 문구)', () {
+    setUpAll(initializeNotificationLocalization);
+
+    Future<void> pumpLog(WidgetTester t, List<ControlLogEntry> entries) async {
+      await t.pumpWidget(localizedNotificationHost((context) => MaterialApp(
+            localizationsDelegates: context.localizationDelegates,
+            supportedLocales: context.supportedLocales,
+            locale: context.locale,
+            home: Scaffold(
+              body: SingleChildScrollView(
+                  child: ControlLogList(entries: entries)),
+            ),
+          )));
+      await t.pumpAndSettle();
+    }
+
+    ControlLogEntry entry({
+      required MarkerKind kind,
+      required ControlLogState state,
+      bool auto = false,
+      AutoEnvReason? reason,
+      int? sprayMs,
+    }) =>
+        ControlLogEntry(
+          kind: kind,
+          state: state,
+          at: DateTime(2026, 11, 5, 13, 30),
+          temperature: 28,
+          humidity: 82,
+          auto: auto,
+          reason: reason,
+          sprayMs: sprayMs,
+        );
+
+    testWidgets('자동 환기 줄', (t) async {
+      await pumpLog(t, [
+        entry(
+            kind: MarkerKind.fan,
+            state: ControlLogState.on,
+            auto: true,
+            reason: AutoEnvReason.ventHumidHigh)
+      ]);
+      expect(find.text('자동 환기 켜짐'), findsOneWidget);
+      expect(find.textContaining('· 습도 높음'), findsOneWidget);
+    });
+
+    testWidgets('자동 환기 꺼짐 + 적정 범위 도달', (t) async {
+      await pumpLog(t, [
+        entry(
+            kind: MarkerKind.fan,
+            state: ControlLogState.off,
+            auto: true,
+            reason: AutoEnvReason.ventEnd)
+      ]);
+      expect(find.text('자동 환기 꺼짐'), findsOneWidget);
+      expect(find.textContaining('· 적정 범위 도달'), findsOneWidget);
+    });
+
+    testWidgets('자동 분무 — 초를 알면 초, 모르면 추측하지 않는다', (t) async {
+      await pumpLog(t, [
+        entry(
+            kind: MarkerKind.mist,
+            state: ControlLogState.ran,
+            auto: true,
+            reason: AutoEnvReason.mist,
+            sprayMs: 3000),
+        entry(kind: MarkerKind.mist, state: ControlLogState.ran, auto: true),
+      ]);
+      expect(find.text('자동 분무 3초 작동'), findsOneWidget);
+      expect(find.text('자동 분무 작동'), findsOneWidget);
+      expect(find.textContaining('· 습도 낮음'), findsOneWidget);
+    });
+
+    testWidgets('원인이 없으면 시각만, 사용자 명령은 기존 제목', (t) async {
+      await pumpLog(t, [
+        entry(kind: MarkerKind.fan, state: ControlLogState.on, auto: true),
+        entry(kind: MarkerKind.fan, state: ControlLogState.off),
+      ]);
+      expect(find.text('자동 환기 켜짐'), findsOneWidget);
+      expect(find.text('환기팬 꺼짐'), findsOneWidget);
+      expect(find.textContaining('·'), findsNothing);
+    });
   });
 }

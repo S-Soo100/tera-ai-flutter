@@ -173,4 +173,31 @@ void main() {
     expect(logs.single.deltaTemperature, -5);
     expect(logs.single.duration, const Duration(days: 3, hours: 2));
   });
+
+  // 컬럼을 고르면 `reason` 컬럼이 생기기 전후 어느 한쪽 서버에서 400이 난다.
+  test('기간·직전 조회는 컬럼을 고르지 않는다(reason 유무와 무관)', () async {
+    final selects = <String?>[];
+    var periodCalls = 0;
+    final client = SupabaseClient('https://test.supabase.co', 'test-key',
+        httpClient: MockClient((request) async {
+      final q = request.url.queryParameters;
+      selects.add(q['select']);
+      final latest = q['order'] == 'issued_at.desc.nullslast,id.desc.nullslast';
+      final rows = latest || periodCalls++ > 0
+          ? <Map<String, Object?>>[]
+          : [
+              _row(1, from)
+                ..['source'] = 'auto'
+                ..['reason'] = 'auto_vent:humid_high'
+            ];
+      return http.Response(jsonEncode(rows), 200,
+          request: request, headers: {'content-type': 'application/json'});
+    }));
+    addTearDown(client.dispose);
+    final history = await CommandHistoryRepository(client)
+        .readWithContext('device', from: from, to: to);
+    expect(selects, isNotEmpty);
+    expect(selects.toSet(), {'*'});
+    expect(history.rows.single['reason'], 'auto_vent:humid_high');
+  });
 }
