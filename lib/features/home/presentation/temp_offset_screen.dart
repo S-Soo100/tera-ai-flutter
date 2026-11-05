@@ -26,7 +26,7 @@ import 'widgets/led_brightness_row.dart' show PillThumbShape;
 ///   토글을 다시 끈다(S46).
 /// - 저장해 둔 값을 고치다 취소하면 저장값 그대로(S47) — 명령 없음.
 /// - 현재 측정 온도 = 기기 보고값에서 지금 사용자 보정을 걷어낸 값
-///   ([TempOffset.measuredFrom]), 보정 온도 = 측정값 ± 선택값.
+///   ([TempOffset.measuredFromUser]), 보정 온도 = 측정값 ± 선택값.
 /// - 저장은 기기가 새 값을 보고할 때까지 기다린다([TempOffsetSaver.save], 최대
 ///   15초). 그동안 나가기·중복 저장을 막는다. 기기가 오프라인이면 저장을 막고
 ///   위에 이유를 띄운다.
@@ -64,9 +64,7 @@ class TempOffsetScreen extends ConsumerWidget {
     final offset = ref.watch(deviceOffsetProvider(deviceId));
     final saving = ref.watch(tempOffsetSaveProvider(deviceId)) != null;
     final online = ref.watch(moduleOnlineProvider(deviceId));
-    final deviceValue = offset.valueOrNull;
-    final saved =
-        deviceValue == null ? null : TempOffset.fromDevice(deviceValue);
+    final saved = offset.valueOrNull;
     final selection = saved == null
         ? null
         : ref.watch(tempOffsetSelectionProvider(deviceId)) ?? initialFor(saved);
@@ -75,7 +73,7 @@ class TempOffsetScreen extends ConsumerWidget {
     final Widget body;
     if (saved != null && selection != null) {
       body = _content(context, ref,
-          deviceValue: deviceValue!, selection: selection, saving: saving);
+          saved: saved, selection: selection, saving: saving);
     } else if (offset.hasValue) {
       body = _message(context, 'temp_offset_unsupported'.tr(),
           key: unsupportedKey);
@@ -123,7 +121,7 @@ class TempOffsetScreen extends ConsumerWidget {
   }
 
   Widget _content(BuildContext context, WidgetRef ref,
-      {required double deviceValue,
+      {required TempOffset saved,
       required TempOffsetSelection selection,
       required bool saving}) {
     final glass = context.glass;
@@ -131,7 +129,7 @@ class TempOffsetScreen extends ConsumerWidget {
     final reported = live.temperature;
     final measured = reported == null
         ? null
-        : TempOffset.measuredFrom(reported, deviceValue);
+        : TempOffset.measuredFromUser(reported, saved);
     final chosen = TempOffset.of(
         subtract: selection.subtract, magnitude: selection.tenths / 10);
     final corrected = measured == null ? null : chosen.apply(measured);

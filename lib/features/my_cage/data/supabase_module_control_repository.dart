@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../shared/domain/env_thresholds.dart';
 import '../../../shared/domain/num_format.dart';
 import '../domain/device.dart';
 import '../domain/device_command.dart';
@@ -78,18 +79,23 @@ class SupabaseModuleControlRepository {
     return DeviceLinkStatus.fromJson(list.first);
   }
 
-  /// 기기가 지금 적용 중인 온도 보정(`devices.temp_offset_c`). 구 펌웨어·없는
-  /// 기기는 null. 목록 캐시가 아니라 매번 읽는다 — 보정을 바꾼 직후 다시 들어와도
-  /// 옛 값이 보이지 않게(v4 1-2).
-  Future<double?> fetchTempOffset(String deviceId) async {
+  /// 기기에 걸린 **사용자 보정값**. 구 펌웨어·없는 기기는 null. 목록 캐시가
+  /// 아니라 매번 읽는다 — 보정을 바꾼 직후 다시 들어와도 옛 값이 보이지 않게
+  /// (v4 1-2).
+  ///
+  /// 읽는 컬럼과 해석은 계약에 따라 [tempOffsetColumn]·[userOffsetFromRow]가
+  /// 정한다(옛 계약 = 합산값 `temp_offset_c`에서 공장 보정을 걷어냄, 새 계약 =
+  /// `temp_offset_user_c` 그대로).
+  Future<TempOffset?> fetchUserTempOffset(String deviceId,
+      {required bool userContract}) async {
     final rows = await _supabase
         .from('devices')
-        .select('temp_offset_c')
+        .select(tempOffsetColumn(userContract: userContract))
         .eq('id', deviceId)
         .limit(1);
     final list = (rows as List).cast<Map<String, dynamic>>();
     if (list.isEmpty) return null;
-    return Device.parseTempOffset(list.first['temp_offset_c']);
+    return userOffsetFromRow(list.first, userContract: userContract).offset;
   }
 
   /// 디바이스를 사육장에 배정. enclosureId=null 이면 배정 해제.

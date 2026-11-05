@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:vivanaut/core/config/feature_flags.dart';
 import 'package:vivanaut/core/router/app_router.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
@@ -18,6 +19,7 @@ import 'package:vivanaut/features/my_cage/data/device_settings_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:vivanaut/features/my_cage/domain/device_settings.dart';
 import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
+import 'package:vivanaut/shared/domain/env_thresholds.dart';
 
 import '../notification/notification_test_host.dart';
 
@@ -72,14 +74,16 @@ User _user() => User(
     aud: 'authenticated',
     createdAt: '2026-01-01');
 
-Device _device({double? offset, String? name = '거실 사육장'}) => Device(
-    id: 'd1',
-    ownerId: 'u1',
-    enclosureId: null,
-    name: name,
-    isOnline: true,
-    lastSeenAt: null,
-    tempOffsetC: offset);
+Device _device({double? offset, TempOffset? user, String? name = '거실 사육장'}) =>
+    Device(
+        id: 'd1',
+        ownerId: 'u1',
+        enclosureId: null,
+        name: name,
+        isOnline: true,
+        lastSeenAt: null,
+        tempOffsetC: offset,
+        tempOffsetUserC: user);
 
 bool _switchValue(WidgetTester tester, Key key) =>
     tester.widget<ScheduleSwitch>(find.byKey(key)).value;
@@ -92,6 +96,8 @@ void main() {
     List<Device>? devices,
     DeviceSettings settings = const DeviceSettings(deviceId: 'd1'),
     _PrefsRepo? prefs,
+    bool offsetFetchFails = false,
+    bool userContract = false,
   }) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -104,11 +110,15 @@ void main() {
       overrides: [
         deviceListProvider
             .overrideWith((ref) async => devices ?? [_device(offset: -1.5)]),
-        deviceOffsetProvider('d1').overrideWith((ref) => Stream.value(
-            (devices ?? [_device(offset: -1.5)])
-                .where((d) => d.id == 'd1')
-                .firstOrNull
-                ?.tempOffsetC)),
+        tempOffsetUserContractProvider.overrideWithValue(userContract),
+        deviceOffsetProvider('d1').overrideWith((ref) {
+          if (offsetFetchFails) return Stream.error(Exception('offline'));
+          final d = (devices ?? [_device(offset: -1.5)])
+              .where((d) => d.id == 'd1')
+              .firstOrNull;
+          return Stream.value(
+              d == null ? null : userOffsetOf(d, userContract: userContract));
+        }),
         deviceSettingsRepositoryProvider
             .overrideWithValue(_SettingsRepo(settings)),
         moduleLinkProvider('d1').overrideWithValue(ModuleLink.online),
@@ -192,6 +202,33 @@ void main() {
         _switchValue(tester, TempHumidSettingScreen.offsetToggleKey), isFalse);
     expect(find.text('펌웨어 업데이트 후 사용할 수 있어요'), findsOneWidget);
     expect(find.byKey(TempHumidSettingScreen.offsetValueKey), findsNothing);
+  });
+
+  group('보정 조회 실패 → 목록 값을 같은 계약으로 해석', () {
+    testWidgets('옛 계약 — 합산 −3.5 → "측정값 -2℃"', (tester) async {
+      await pump(tester,
+          offsetFetchFails: true,
+          devices: [_device(offset: -3.5, user: const TempOffset(-1.0))]);
+      expect(offsetText(tester), '측정값 -2℃');
+    });
+
+    testWidgets('새 계약 — 사용자값 −1.0 그대로(공장 보정 이중 변환 없음)', (tester) async {
+      await pump(tester,
+          offsetFetchFails: true,
+          userContract: true,
+          devices: [_device(offset: -3.5, user: const TempOffset(-1.0))]);
+      expect(offsetText(tester), '측정값 -1℃');
+    });
+
+    testWidgets('새 계약 — 사용자값 없음 → 펌웨어 안내', (tester) async {
+      await pump(tester,
+          offsetFetchFails: true,
+          userContract: true,
+          devices: [_device(offset: -3.5)]);
+      expect(_switchValue(tester, TempHumidSettingScreen.offsetToggleKey),
+          isFalse);
+      expect(find.text('펌웨어 업데이트 후 사용할 수 있어요'), findsOneWidget);
+    });
   });
 
   testWidgets('(3) 사육장 이름을 보인다', (tester) async {

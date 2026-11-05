@@ -23,6 +23,7 @@ import 'package:vivanaut/shared/domain/axis_bounds.dart';
 import 'package:vivanaut/shared/domain/control_log.dart';
 import 'package:vivanaut/shared/domain/env_chart_data.dart';
 import 'package:vivanaut/shared/domain/env_extremes.dart';
+import 'package:vivanaut/shared/domain/env_thresholds.dart';
 import 'package:vivanaut/shared/domain/week_range.dart';
 
 const kEnvV4DeviceId = 'd1';
@@ -84,8 +85,9 @@ List<Override> envV4SettingOverrides() => [
       currentUserProvider.overrideWith((ref) => envV4User()),
       envAlertPrefsRepositoryProvider
           .overrideWith((ref, id) => EnvV4PrefsRepo()),
+      // 사용자 보정값(기기 −3.5 = 공장 −1.5 + 사용자 −2.0).
       deviceOffsetProvider(kEnvV4DeviceId)
-          .overrideWith((ref) => Stream.value(envV4Device.tempOffsetC)),
+          .overrideWith((ref) => Stream.value(const TempOffset(-2.0))),
     ];
 
 /// 보정값 설정 화면용 — 기기 보고 온도 24.2℃(사용자 보정 −2 반영 후 → 측정 26.2).

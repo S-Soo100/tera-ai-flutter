@@ -136,4 +136,52 @@ void main() {
           isNull);
     });
   });
+
+  // 새 계약(서버 `APP_TEMP_OFFSET_SERVER_BASE_2026-11-05.md` §2) — 계획 Task 1.
+  group('사용자 보정값 — 계약별 해석', () {
+    test('행 해석 — 계약별 컬럼, 키 없음은 모름', () {
+      final row = <String, dynamic>{
+        'temp_offset_c': -3.5,
+        'temp_offset_user_c': -2.0,
+      };
+      expect(userOffsetFromRow(row, userContract: true).offset,
+          const TempOffset(-2.0));
+      expect(userOffsetFromRow(row, userContract: false).offset,
+          const TempOffset(-2.0));
+      expect(
+          userOffsetFromRow({'temp_offset_c': -3.5}, userContract: true).known,
+          isFalse);
+      expect(
+          userOffsetFromRow({'temp_offset_user_c': -2.0}, userContract: false)
+              .known,
+          isFalse);
+      expect(
+          userOffsetFromRow({'temp_offset_user_c': null}, userContract: true),
+          (known: true, offset: null));
+      expect(userOffsetFromRow({'temp_offset_c': null}, userContract: false),
+          (known: true, offset: null));
+      expect(tempOffsetColumn(userContract: true), 'temp_offset_user_c');
+      expect(tempOffsetColumn(userContract: false), 'temp_offset_c');
+    });
+    test('새 계약은 −8.5~+11.5 밖을 null로, 옛 계약은 ±10 밖을 null로', () {
+      expect(
+          userOffsetFromRow({'temp_offset_user_c': 11.6}, userContract: true),
+          (known: true, offset: null));
+      expect(userOffsetFromRow({'temp_offset_c': 12}, userContract: false),
+          (known: true, offset: null));
+    });
+    test('Device.temp_offset_user_c·userOffsetOf', () {
+      final d = Device.fromJson(
+          {...base, 'temp_offset_c': -3.5, 'temp_offset_user_c': -2.0});
+      expect(d.tempOffsetUserC, const TempOffset(-2.0));
+      expect(userOffsetOf(d, userContract: true), const TempOffset(-2.0));
+      expect(userOffsetOf(d, userContract: false), const TempOffset(-2.0));
+      expect(userOffsetOf(Device.fromJson(base), userContract: true), isNull);
+      expect(userOffsetOf(Device.fromJson(base), userContract: false), isNull);
+      expect(
+          Device.fromJson({...base, 'temp_offset_user_c': '1.0'})
+              .tempOffsetUserC,
+          const TempOffset(1.0));
+    });
+  });
 }
