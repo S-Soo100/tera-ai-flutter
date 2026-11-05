@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/presentation/auth_providers.dart';
@@ -6,6 +8,7 @@ import '../../my_cage/presentation/supabase_module_providers.dart';
 import '../../my_cage/domain/enclosure.dart';
 import '../../my_pets/presentation/my_pets_providers.dart';
 import '../data/enclosure_set_repository.dart';
+import '../data/home_selection_store.dart';
 import '../domain/enclosure_set.dart';
 
 // ── Repository ────────────────────────────────────────────────────────────────
@@ -46,9 +49,24 @@ final selectedSetIndexProvider = StateProvider<int>((ref) {
   ref.watch(currentUserProvider.select((user) => user?.id));
   return 0;
 });
+final homeSelectionStoreProvider =
+    Provider<HomeSelectionStore>((_) => const HiveHomeSelectionStore());
+
+/// 홈에서 보고 있는 사육장 기기 id(드롭다운·카메라 스와이프·알림 이동이 바꾼다).
+/// 계정별로 폰에 저장해 앱을 다시 켜도 그 사육장으로 연다 — 저장하지 않으면
+/// 기기 목록(최근 신호 순) 첫 사육장이 떠서 실행할 때마다 바뀌었다(2026-11-05).
+/// 저장한 기기가 목록에 없으면 [currentSetProvider]가 첫 사육장으로 돌아간다.
 final selectedHomeDeviceIdProvider = StateProvider<String?>((ref) {
-  ref.watch(currentUserProvider.select((user) => user?.id));
-  return null;
+  final userId = ref.watch(currentUserProvider.select((user) => user?.id));
+  if (userId == null) return null;
+  final store = ref.watch(homeSelectionStoreProvider);
+  // StateProvider를 유지한다(5곳이 `.notifier).state = id`로 바꾼다 — Notifier로
+  // 바꾸면 보호된 state 대입이 된다). Riverpod 3 이전 때 함께 정리.
+  // ignore: deprecated_member_use
+  ref.listenSelf((previous, next) {
+    if (previous != next) unawaited(store.save(userId, next));
+  });
+  return store.load(userId);
 });
 
 /// Device-anchored Home choices, including devices without a persisted group.
