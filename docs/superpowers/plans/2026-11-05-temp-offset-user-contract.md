@@ -2,6 +2,8 @@
 
 > **구현 방식 (CAOF):** Critical 트랙(8개 파일 + 테스트, 서버 배포 순서 의존). 사용자 승인 뒤 task 단위로 구현한다. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
+> **사용자 결정 (2026-11-05):** 서버 문서를 그대로 믿고 앱만 고친다. D1·D3은 추천안(a). Q1은 보내지 않는다 — A5(배포 때 꺼져 있던 기기의 일시 잠금)는 받아들인 한계다. 스위치는 서버 문서 맨 위가 '배포 완료'로 바뀐 것을 확인한 뒤 켠다.
+>
 > **r2 (2026-11-05):** 교차 검수(Codex 12건 + Claude 16건)를 반영했다. 결과는 `2026-11-05-temp-offset-user-contract-review-final.md`.
 
 **Goal:** 공장 보정 −1.5℃를 서버가 맡는 새 계약에 맞춰, 앱이 사용자 보정값만 보내고(`user_offset_c`) 읽게(`temp_offset_user_c`) 한다. 서버 배포 전에는 지금 동작(합산값 `offset_c`·`temp_offset_c`)을 그대로 유지한다.
