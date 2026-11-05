@@ -1,5 +1,7 @@
 // v4 온도 보정(계획 Task 4, Figma S14·S16·S32~S37, 메모 S45~S47).
-// 기기 값 = 공장 보정 −1.5 + 사용자 보정(서버 회신 2026-11-02 §1.2).
+// 화면·저장기는 사용자 보정값만 본다([deviceOffsetProvider]가 계약별로 해석 —
+// 계획 2026-11-05-temp-offset-user-contract Task 2). 옛 계약 전송값 = 공장 보정
+// −1.5 + 사용자 보정(서버 회신 2026-11-02 §1.2).
 import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
@@ -33,7 +35,12 @@ import 'env_v4_screen_fixtures.dart';
 class _OffsetRepo implements TempOffsetRepository {
   _OffsetRepo({this.fail = false});
   final bool fail;
+
+  /// 옛 계약으로 나갈 기기 값(`offset_c`).
   final List<double> sent = [];
+
+  @override
+  bool get userContract => false;
 
   @override
   Future<String?> send(String deviceId, TempOffset offset) async {
@@ -43,19 +50,19 @@ class _OffsetRepo implements TempOffsetRepository {
   }
 }
 
-/// 기기 쪽 — 보정값 보고(`devices.temp_offset_c`)와 명령 행 상태.
+/// 기기 쪽 — 사용자 보정값 보고와 명령 행 상태.
 class _Device {
   _Device(this.offset);
-  double? offset;
-  final _offsets = StreamController<double?>.broadcast();
+  TempOffset? offset;
+  final _offsets = StreamController<TempOffset?>.broadcast();
   final _commands = StreamController<RebootCommandState?>.broadcast();
 
-  Stream<double?> offsetStream() async* {
+  Stream<TempOffset?> offsetStream() async* {
     yield offset;
     yield* _offsets.stream;
   }
 
-  void report(double v) {
+  void report(TempOffset v) {
     offset = v;
     _offsets.add(v);
   }
@@ -69,14 +76,15 @@ class _Device {
   }
 }
 
-Device _row(double? offset) => Device(
+/// 목록 스냅샷 — 옛 계약 컬럼(합산값)에 같은 보정을 담는다.
+Device _row(TempOffset? offset) => Device(
     id: kEnvV4DeviceId,
     ownerId: 'u1',
     enclosureId: null,
     name: '거실 사육장',
     isOnline: true,
     lastSeenAt: null,
-    tempOffsetC: offset);
+    tempOffsetC: offset?.toDeviceValue());
 
 bool _switchOn(WidgetTester tester) => tester
     .widget<ScheduleSwitch>(find.byKey(TempHumidSettingScreen.offsetToggleKey))
@@ -91,7 +99,7 @@ void main() {
   /// 온습도 설정까지 연다. 기기 보고 온도 [reported].
   Future<(GoRouter, _Device, _OffsetRepo)> pump(
     WidgetTester tester, {
-    required double? deviceOffset,
+    required TempOffset? deviceOffset,
     double reported = 24.7,
     bool online = true,
     _OffsetRepo? repo,
@@ -167,7 +175,7 @@ void main() {
   }
 
   testWidgets('켜기는 화면 상태만 — 명령 없음, "설정하기"(S32·S45)', (tester) async {
-    final (_, _, repo) = await pump(tester, deviceOffset: -1.5);
+    final (_, _, repo) = await pump(tester, deviceOffset: const TempOffset(0));
     expect(_switchOn(tester), isFalse);
     await tester.tap(find.byKey(TempHumidSettingScreen.offsetToggleKey));
     await tester.pumpAndSettle();
@@ -176,7 +184,7 @@ void main() {
   });
 
   testWidgets('첫 진입 기본 빼기 0.1 — 측정 24.7 → 보정 24.6(S14)', (tester) async {
-    await pump(tester, deviceOffset: -1.5);
+    await pump(tester, deviceOffset: const TempOffset(0));
     await turnOnAndOpen(tester);
     expect(_text(tester, TempOffsetScreen.magnitudeKey), '0.1');
     expect(_text(tester, TempOffsetScreen.measuredKey), '24.7℃');
@@ -184,7 +192,7 @@ void main() {
   });
 
   testWidgets('측정값은 사용자 보정만 걷어낸다 — 기기 −0.5·보고 27.2 → 26.2', (tester) async {
-    await pump(tester, deviceOffset: -0.5, reported: 27.2);
+    await pump(tester, deviceOffset: const TempOffset(1.0), reported: 27.2);
     await openOffset(tester);
     // 저장값 더하기 1.0으로 시작(S16).
     expect(_text(tester, TempOffsetScreen.magnitudeKey), '1.0');
@@ -193,7 +201,7 @@ void main() {
   });
 
   testWidgets('더하기 1.0 → 보정 온도 25.7, 빼기 4.0 → 20.7(S34·S37)', (tester) async {
-    await pump(tester, deviceOffset: -1.5);
+    await pump(tester, deviceOffset: const TempOffset(0));
     await turnOnAndOpen(tester);
     await tester.tap(find.byKey(TempOffsetScreen.addKey));
     setMagnitude(tester, 10);
@@ -207,7 +215,7 @@ void main() {
   });
 
   testWidgets('저장: 공장값에 더해 보내고, 기기가 보고하면 닫힌다 → "측정값 +1℃"', (tester) async {
-    final (_, device, repo) = await pump(tester, deviceOffset: -1.5);
+    final (_, device, repo) = await pump(tester, deviceOffset: const TempOffset(0));
     await turnOnAndOpen(tester);
     await tester.tap(find.byKey(TempOffsetScreen.addKey));
     setMagnitude(tester, 10);
@@ -219,7 +227,7 @@ void main() {
     await tester.tap(find.byKey(TempOffsetScreen.saveKey));
     await tester.pump();
     expect(repo.sent, [-0.5]);
-    device.report(-0.5);
+    device.report(const TempOffset(1.0));
     await tester.pumpAndSettle();
     expect(find.byType(TempOffsetScreen), findsNothing);
     expect(_switchOn(tester), isTrue);
@@ -227,7 +235,7 @@ void main() {
   });
 
   testWidgets('저장: ack ok만 오고 보고가 없으면 15초 뒤 성공으로 닫는다', (tester) async {
-    final (_, device, _) = await pump(tester, deviceOffset: -1.5);
+    final (_, device, _) = await pump(tester, deviceOffset: const TempOffset(0));
     await turnOnAndOpen(tester);
     await tapSave(tester);
     device.command('acked', 'ok');
@@ -239,7 +247,7 @@ void main() {
   });
 
   testWidgets('저장: 15초 무응답이면 실패 안내·화면 유지', (tester) async {
-    await pump(tester, deviceOffset: -1.5);
+    await pump(tester, deviceOffset: const TempOffset(0));
     await turnOnAndOpen(tester);
     await tapSave(tester);
     await tester.pump(kTempOffsetConfirmTimeout);
@@ -250,7 +258,7 @@ void main() {
   });
 
   testWidgets('저장: no_ack면 15초를 기다리지 않고 안내', (tester) async {
-    final (_, device, _) = await pump(tester, deviceOffset: -1.5);
+    final (_, device, _) = await pump(tester, deviceOffset: const TempOffset(0));
     await turnOnAndOpen(tester);
     await tapSave(tester);
     device.command('no_ack');
@@ -261,7 +269,7 @@ void main() {
   });
 
   testWidgets('저장: 기기가 거절하면 안내', (tester) async {
-    final (_, device, _) = await pump(tester, deviceOffset: -1.5);
+    final (_, device, _) = await pump(tester, deviceOffset: const TempOffset(0));
     await turnOnAndOpen(tester);
     await tapSave(tester);
     device.command('acked', 'error');
@@ -271,7 +279,7 @@ void main() {
   });
 
   testWidgets('저장: 요청 실패면 안내', (tester) async {
-    await pump(tester, deviceOffset: -1.5, repo: _OffsetRepo(fail: true));
+    await pump(tester, deviceOffset: const TempOffset(0), repo: _OffsetRepo(fail: true));
     await turnOnAndOpen(tester);
     await tapSave(tester);
     await tester.pump();
@@ -279,7 +287,7 @@ void main() {
   });
 
   testWidgets('오프라인이면 저장 비활성', (tester) async {
-    final (_, _, repo) = await pump(tester, deviceOffset: -0.5, online: false);
+    final (_, _, repo) = await pump(tester, deviceOffset: const TempOffset(1.0), online: false);
     await openOffset(tester);
     expect(
         tester
@@ -295,7 +303,7 @@ void main() {
 
   testWidgets('cancel_on_first_entry_turns_toggle_off — 명령 0회(S46)',
       (tester) async {
-    final (_, _, repo) = await pump(tester, deviceOffset: -1.5);
+    final (_, _, repo) = await pump(tester, deviceOffset: const TempOffset(0));
     await turnOnAndOpen(tester);
     setMagnitude(tester, 25);
     await tester.pumpAndSettle();
@@ -307,7 +315,7 @@ void main() {
   });
 
   testWidgets('첫 진입 뒤로가기도 취소와 같다', (tester) async {
-    final (router, _, _) = await pump(tester, deviceOffset: -1.5);
+    final (router, _, _) = await pump(tester, deviceOffset: const TempOffset(0));
     await turnOnAndOpen(tester);
     router.pop();
     await tester.pumpAndSettle();
@@ -316,7 +324,7 @@ void main() {
 
   testWidgets('cancel_after_saved_restores_previous — −2에서 +3 고르고 취소(S47)',
       (tester) async {
-    final (_, _, repo) = await pump(tester, deviceOffset: -3.5);
+    final (_, _, repo) = await pump(tester, deviceOffset: const TempOffset(-2.0));
     await openOffset(tester);
     expect(_text(tester, TempOffsetScreen.magnitudeKey), '2.0');
     await tester.tap(find.byKey(TempOffsetScreen.addKey));
@@ -333,7 +341,7 @@ void main() {
   });
 
   testWidgets('같은 값이면 보내지 않고 닫는다', (tester) async {
-    final (_, _, repo) = await pump(tester, deviceOffset: -3.5);
+    final (_, _, repo) = await pump(tester, deviceOffset: const TempOffset(-2.0));
     await openOffset(tester);
     await tapSave(tester);
     await tester.pumpAndSettle();
@@ -342,26 +350,26 @@ void main() {
   });
 
   testWidgets('편집기 밖 저장값(사용자 −4.5)은 4.0으로 시작', (tester) async {
-    await pump(tester, deviceOffset: -6);
+    await pump(tester, deviceOffset: const TempOffset(-4.5));
     await openOffset(tester);
     expect(_text(tester, TempOffsetScreen.magnitudeKey), '4.0');
   });
 
   testWidgets('끄기는 공장 보정 −1.5를 보내고, 확인되면 꺼진다', (tester) async {
-    final (_, device, repo) = await pump(tester, deviceOffset: -0.5);
+    final (_, device, repo) = await pump(tester, deviceOffset: const TempOffset(1.0));
     await tester.tap(find.byKey(TempHumidSettingScreen.offsetToggleKey));
     await tester.pump();
     expect(repo.sent, [-1.5]);
     // 확인 전에도 꺼진 모양으로 잠근다.
     expect(_switchOn(tester), isFalse);
     expect(find.byKey(TempHumidSettingScreen.offsetRowKey), findsNothing);
-    device.report(-1.5);
+    device.report(const TempOffset(0));
     await tester.pumpAndSettle();
     expect(_switchOn(tester), isFalse);
   });
 
   testWidgets('끄기 실패(no_ack) → 켜짐으로 돌아오고 안내', (tester) async {
-    final (_, device, _) = await pump(tester, deviceOffset: -0.5);
+    final (_, device, _) = await pump(tester, deviceOffset: const TempOffset(1.0));
     await tester.tap(find.byKey(TempHumidSettingScreen.offsetToggleKey));
     await tester.pump();
     device.command('no_ack');
@@ -371,7 +379,7 @@ void main() {
   });
 
   testWidgets('오프라인에서 끄기 → 보내지 않고 안내', (tester) async {
-    final (_, _, repo) = await pump(tester, deviceOffset: -0.5, online: false);
+    final (_, _, repo) = await pump(tester, deviceOffset: const TempOffset(1.0), online: false);
     await tester.tap(find.byKey(TempHumidSettingScreen.offsetToggleKey));
     await tester.pumpAndSettle();
     expect(repo.sent, isEmpty);

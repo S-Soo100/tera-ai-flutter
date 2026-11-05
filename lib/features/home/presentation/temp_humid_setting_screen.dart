@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/feature_flags.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/domain/env_thresholds.dart';
@@ -25,9 +26,10 @@ import 'widgets/env_setting_widgets.dart';
 /// 계정 단위 값(이탈 알림 토글, D2)이 한 화면에 있어서, 어느 사육장인지 첫 섹션
 /// 위에 사육장 이름을 보여 준다(Figma 밖 추가 — 2026-11-02 결정).
 ///
-/// **온도 보정**(S04·S32·S35·S06, 메모 S45~S47): 기기 값이 공장 보정(−1.5)이면
-/// 꺼짐, null(구 펌웨어)이면 비활성 + 안내, 그 외는 켜짐 + "측정값 +1℃"(기기 값
-/// −0.5). 판정은 [TempOffset.fromDevice]를 거친다(서버 회신 2026-11-02 §1.2).
+/// **온도 보정**(S04·S32·S35·S06, 메모 S45~S47): 사용자 보정값이 0이면 꺼짐,
+/// null(구 펌웨어)이면 비활성 + 안내, 그 외는 켜짐 + "측정값 +1℃". 사용자값은
+/// [deviceOffsetProvider](조회 실패 시 목록의 [userOffsetOf])가 계약에 맞춰
+/// 해석해 준다 — 이 화면은 공장 보정을 모른다.
 /// - 켜기는 화면 상태만 바꾼다 — "보정 값 · 설정하기" 행이 나타나고, 보정값
 ///   설정에서 저장해야 기기로 간다(S45). 첫 진입 취소면 다시 꺼진다(S46).
 /// - 끄기(저장된 보정이 있을 때)는 바로 공장 보정으로 되돌리는 명령을 보내고 기기
@@ -129,11 +131,14 @@ class TempHumidSettingScreen extends ConsumerWidget {
     final glass = context.glass;
     final live = ref.watch(deviceOffsetProvider(deviceId));
     final loaded = device != null && (live.hasValue || live.hasError);
-    // 실시간 조회가 실패하면 목록 값으로 그린다.
-    final deviceValue = live.hasValue ? live.value : device?.tempOffsetC;
-    final saved =
-        deviceValue == null ? null : TempOffset.fromDevice(deviceValue);
-    final unsupported = loaded && deviceValue == null;
+    // 실시간 조회가 실패하면 목록 값으로 그린다(같은 계약으로 해석).
+    final userContract = ref.watch(tempOffsetUserContractProvider);
+    final saved = live.hasValue
+        ? live.value
+        : (device == null
+            ? null
+            : userOffsetOf(device, userContract: userContract));
+    final unsupported = loaded && saved == null;
     final pending = ref.watch(tempOffsetSaveProvider(deviceId));
     final draft = ref.watch(tempOffsetToggleDraftProvider(deviceId));
     final on = pending != null

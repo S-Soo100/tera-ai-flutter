@@ -57,6 +57,40 @@ void main() {
     expect(fake.lastPost?.$2?['payload'], {'offset_c': -3.0});
   });
 
+  group('새 계약(user_offset_c, 서버 APP_TEMP_OFFSET_SERVER_BASE_2026-11-05)', () {
+    test('사용자값만 보낸다 — 0.1 단위로 맞춤, offset_c 없음', () async {
+      final fake = _FakeRest({'id': 'c4'});
+      final repo = TempOffsetRepository(fake, userContract: true);
+      expect(await repo.send('d1', const TempOffset(-2.04)), 'c4');
+      expect(fake.lastPost?.$1, '/devices/d1/commands');
+      expect(fake.lastPost?.$2?['action'], 'set_temp_offset');
+      expect(fake.lastPost?.$2?['payload'], {'user_offset_c': -2.0});
+    });
+
+    test('끔은 0 — 공장 보정은 서버가 건다', () async {
+      final fake = _FakeRest({'id': 'c5'});
+      await TempOffsetRepository(fake, userContract: true)
+          .send('d1', const TempOffset(0));
+      expect(fake.lastPost?.$2?['payload'], {'user_offset_c': 0.0});
+    });
+
+    test('편집기 값 그대로(더하기 1.5)', () async {
+      final fake = _FakeRest({'id': 'c6'});
+      await TempOffsetRepository(fake, userContract: true)
+          .send('d1', TempOffset.of(subtract: false, magnitude: 1.5));
+      expect(fake.lastPost?.$2?['payload'], {'user_offset_c': 1.5});
+    });
+  });
+
+  test('옛 계약 기본값 — offset_c 합산만(끔 = −1.5), user_offset_c 없음', () async {
+    final fake = _FakeRest({'id': 'c7'});
+    final repo = TempOffsetRepository(fake);
+    expect(repo.userContract, isFalse);
+    await repo.send('d1', const TempOffset(0));
+    expect(fake.lastPost?.$1, '/devices/d1/commands');
+    expect(fake.lastPost?.$2?['payload'], {'offset_c': -1.5});
+  });
+
   test('응답에 id가 없으면 null', () async {
     expect(
         await TempOffsetRepository(_FakeRest({}))
