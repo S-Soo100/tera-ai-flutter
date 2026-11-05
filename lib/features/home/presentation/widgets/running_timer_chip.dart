@@ -47,7 +47,7 @@ final runningTimersProvider =
     for (final actuator in FanActuator.values) {
       final rows = await client
           .from('commands')
-          .select('id, device_id, action, status, result, payload, issued_at')
+          .select(kFanTimerColumns)
           .eq('device_id', deviceId)
           .inFilter('action', actuator.actions)
           .order('issued_at', ascending: false)

@@ -53,7 +53,7 @@ void main() {
 
   group('RunningTimer.fanTimerFrom — commands 이력에서 계산 (A안)', () {
     Map<String, dynamic> cmd(String action, String status, String issuedAt,
-            {int? durationMs}) =>
+            {int? durationMs, String? source}) =>
         {
           'id': 'c-$action-$issuedAt',
           'device_id': 'dev-1',
@@ -62,6 +62,7 @@ void main() {
           'result': 'ok',
           'payload': durationMs == null ? null : {'duration_ms': durationMs},
           'issued_at': issuedAt,
+          if (source != null) 'source': source,
         };
 
     final now = DateTime.parse('2026-08-14T12:00:00Z');
@@ -145,6 +146,36 @@ void main() {
 
     test('빈 목록 → null', () {
       expect(RunningTimer.fanTimerFrom(const [], now), isNull);
+    });
+
+    // 서버 자동 환기(2026-11-05 계약)는 `source='auto'` + 1시간 fan_on을 낸다.
+    // 사용자가 건 타이머가 아니라 카운트다운·"타이머 끝" 알림을 띄우면 안 된다.
+    test('자동 fan_on은 타이머가 아니다', () {
+      final t = RunningTimer.fanTimerFrom([
+        cmd('fan_on', 'acked', '2026-08-14T11:55:00Z',
+            durationMs: 3600000, source: 'auto'),
+      ], now);
+      expect(t, isNull);
+    });
+
+    test('사용자 타이머 뒤 자동 fan_on이 오면 칩이 사라진다', () {
+      final t = RunningTimer.fanTimerFrom([
+        cmd('fan_on', 'acked', '2026-08-14T11:59:00Z',
+            durationMs: 3600000, source: 'auto'),
+        cmd('fan_on', 'acked', '2026-08-14T11:50:00Z',
+            durationMs: 1800000, source: 'app'),
+      ], now);
+      expect(t, isNull);
+    });
+
+    test('자동 fan_on 뒤 사용자 타이머는 칩이 뜬다', () {
+      final t = RunningTimer.fanTimerFrom([
+        cmd('fan_on', 'acked', '2026-08-14T11:59:00Z',
+            durationMs: 1800000, source: 'app'),
+        cmd('fan_on', 'acked', '2026-08-14T11:40:00Z',
+            durationMs: 3600000, source: 'auto'),
+      ], now);
+      expect(t?.durationMinutes, 30);
     });
   });
 }
