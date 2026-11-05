@@ -485,7 +485,8 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
   }
 }
 
-/// 라벨(16/500 #949090, 왼쪽 12) + [gap] + 내용.
+/// 라벨(16/600 #949090, 왼쪽 12) + [gap] + 내용. 굵기는 Figma 제어 시트·예약
+/// 상세 섹션 라벨 전부 600(2026-11-05 대조, 전엔 500).
 class ScheduleSection extends StatelessWidget {
   const ScheduleSection(
       {super.key, required this.label, required this.child, this.gap = 4});
@@ -499,6 +500,7 @@ class ScheduleSection extends StatelessWidget {
             padding: const EdgeInsets.only(left: 12),
             child: Text(label,
                 style: managementStyle(context,
+                    weight: FontWeight.w600,
                     color: context.glass.textTertiary))),
         SizedBox(height: gap),
         child,
