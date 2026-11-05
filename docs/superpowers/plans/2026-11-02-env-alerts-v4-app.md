@@ -25,7 +25,7 @@
 | 대기 — 서버 Stage O | 환기 지연·분무 필요 카드/푸시 (A26 하단, A36 하단) | 서버 "습기 사이클(Stage O)" 미착수 → **앱 받는 쪽은 0.168.0에서 준비**([계획](2026-11-03-env-humid-cycle-alerts-app.md)) |
 | **다음 계획** — 서버 Stage P | 일간 분석 카드 (A14~A18, A27, A28) | 서버 구현 완료(2026-11-02, `env_daily_reports`, 서버 `feat/weekly-analysis-v4` `docs/APP_DAILY_ANALYSIS_2026-11-02.md`). 앱 계획 별도 작성 |
 | **다음 계획** — 서버 Stage Q | 주간 분석 카드 + 주간 막대 그래프 재디자인 (A19~A34) | 서버 구현 완료(`env_weekly_reports`, `docs/APP_WEEKLY_ANALYSIS_2026-11-02.md`). 앱 계획 별도 작성 |
-| 대기 — 서버·펌웨어 | 자동 환기·자동 분무 토글 (S41~S44) | 서버·펌웨어에 기능 없음(`auto_vent` 등 0건, 2026-11-02 grep). 질의 Q3 |
+| 대기 — 서버·펌웨어 | 자동 환기·자동 분무 토글 (S41~S44) | 서버·펌웨어에 기능 없음(`auto_vent` 등 0건, 2026-11-02 grep). 질의 Q3 → 11/3 "계획 없음" → 기능 요청 [`2026-11-05-auto-vent-mist-request.md`](../../handoffs/2026-11-05-auto-vent-mist-request.md) |
 | 대기 — 서버 Stage N2 | 서버 쪽 MIN/MAX 범위 검증 | 앱이 범위 밖 값을 안 보낸다는 근거 = Task 1(검증)·Task 5(화면) |
 
 **구현 순서:** Task 1 → 2 → 7 → 5 → 3 → 6 → 8 → 9 → 4. 보정(Task 4와 Task 3의 보정 섹션 동작)은 D1·Q1이 미결이라 맨 뒤에 둔다.
