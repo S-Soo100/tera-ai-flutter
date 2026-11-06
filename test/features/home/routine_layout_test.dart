@@ -40,11 +40,12 @@ void main() {
     await f.load();
   });
 
-  Future<void> pump(WidgetTester tester, List<Schedule> items) async {
-    tester.view.physicalSize = const Size(393, 852);
+  Future<void> pump(WidgetTester tester, List<Schedule> items,
+      {Size size = const Size(393, 852)}) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await tester.binding.setSurfaceSize(size);
     await tester.pumpWidget(ProviderScope(
         overrides: [
           // 냉각팬이 살아 있던 Figma 레이아웃을 검증한다 — 꺼 둔 상태는
@@ -172,6 +173,32 @@ void main() {
     expect(tester.getRect(fanIcon), const Rect.fromLTWH(28, 177, 40, 40));
     expect(tester.getRect(find.text('환기팬')).left, 76);
     expect(tester.getRect(find.text('환기팬')).top, closeTo(187.5, 0.5));
+  });
+
+  // iPhone 13 mini·360dp 안드로이드(2026-11-06 시뮬레이터에서 발견): 시간 줄
+  // 345 고정이라 내용 폭 312에서 넘쳤다. 시·분 칸만 줄고 넘치지 않아야 한다.
+  testWidgets('좁은 화면(360pt) — 시간 줄이 넘치지 않고 시·분 칸만 같은 폭으로 준다',
+      (tester) async {
+    await pump(tester, const [], size: const Size(360, 780));
+    await tester.tap(find.byKey(RoutineSettingsScreen.addKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('routine_device_fan')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    for (final row in ['routine_start', 'routine_end']) {
+      final hour = boxOf(tester, Key('${row}_hour'));
+      final minute = boxOf(tester, Key('${row}_minute'));
+      expect(minute.right, lessThanOrEqualTo(360 - 24), reason: row);
+      expect(hour.width, minute.width, reason: row);
+      expect(hour.width, lessThan(108), reason: row);
+      expect(hour.height, 70, reason: row);
+      expect(tester.getRect(find.byKey(Key('${row}_hour_up'))).width,
+          hour.width,
+          reason: row);
+      // 오전/오후는 줄이지 않는다.
+      expect(tester.getRect(find.byKey(Key('${row}_am'))).width, 86,
+          reason: row);
+    }
   });
 
   testWidgets('환기팬 편집기 — 시작 118 / 오전오후 86×70 / 시·분 108×70 / 종료 283 / 반복 448',

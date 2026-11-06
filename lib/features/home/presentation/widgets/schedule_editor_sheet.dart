@@ -510,6 +510,8 @@ class ScheduleSection extends StatelessWidget {
 }
 
 /// 오전/오후 86×70 + 시 108×118 + ":" + 분 108×118 = 345 (Figma 1106:7234).
+/// 내용 폭이 345보다 좁으면(360pt 폰 = 312) 시·분 칸만 같은 폭으로 준다 —
+/// 고정 폭이라 넘쳐 분 칸이 잘리던 문제(2026-11-06, iPhone 13 mini).
 class ScheduleTimeRow extends StatelessWidget {
   const ScheduleTimeRow(
       {super.key,
@@ -562,13 +564,14 @@ class ScheduleTimeRow extends StatelessWidget {
                 }),
               ])),
           const SizedBox(width: 20),
-          _Picker(
-              prefix: '${prefix}_hour',
-              text: '${clock.hour12}',
-              onStep: (d) {
-                clock.stepHour(d);
-                onChanged();
-              }),
+          Flexible(
+              child: _Picker(
+                  prefix: '${prefix}_hour',
+                  text: '${clock.hour12}',
+                  onStep: (d) {
+                    clock.stepHour(d);
+                    onChanged();
+                  })),
           SizedBox(
               width: 23,
               child: Center(
@@ -577,18 +580,20 @@ class ScheduleTimeRow extends StatelessWidget {
                           size: 24,
                           weight: FontWeight.w600,
                           color: glass.textSecondary)))),
-          _Picker(
-              prefix: '${prefix}_minute',
-              text: clock.minute.toString().padLeft(2, '0'),
-              onStep: (d) {
-                clock.stepMinute(d);
-                onChanged();
-              }),
+          Flexible(
+              child: _Picker(
+                  prefix: '${prefix}_minute',
+                  text: clock.minute.toString().padLeft(2, '0'),
+                  onStep: (d) {
+                    clock.stepMinute(d);
+                    onChanged();
+                  })),
         ]));
   }
 }
 
 /// 위 화살표 24 + 값 상자 108×70(#E3E3E3, r8, 24/600) + 아래 화살표 24.
+/// 폭은 최대 108 — 좁은 줄에선 받은 폭만큼만 쓴다([ScheduleTimeRow]).
 class _Picker extends StatelessWidget {
   const _Picker(
       {required this.prefix, required this.text, required this.onStep});
@@ -603,7 +608,7 @@ class _Picker extends StatelessWidget {
         key: Key(key),
         onTap: () => onStep(up ? 1 : -1),
         child: SizedBox(
-            width: 108,
+            width: double.infinity,
             height: 24,
             child: Center(
                 child: FigmaIcon.tinted(
@@ -613,22 +618,24 @@ class _Picker extends StatelessWidget {
                     size: 12,
                     height: 7,
                     color: glass.textSecondary))));
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      arrow('${prefix}_up', true),
-      Container(
-          width: 108,
-          height: 70,
-          decoration: BoxDecoration(
-              color: glass.border, borderRadius: BorderRadius.circular(8)),
-          child: Center(
-              child: Text(text,
-                  key: Key(prefix),
-                  style: managementStyle(context,
-                      size: 24,
-                      weight: FontWeight.w600,
-                      color: glass.textPrimary)))),
-      arrow('${prefix}_down', false),
-    ]);
+    return ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 108),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          arrow('${prefix}_up', true),
+          Container(
+              width: double.infinity,
+              height: 70,
+              decoration: BoxDecoration(
+                  color: glass.border, borderRadius: BorderRadius.circular(8)),
+              child: Center(
+                  child: Text(text,
+                      key: Key(prefix),
+                      style: managementStyle(context,
+                          size: 24,
+                          weight: FontWeight.w600,
+                          color: glass.textPrimary)))),
+          arrow('${prefix}_down', false),
+        ]));
   }
 }
 
