@@ -255,7 +255,7 @@ void main() {
     expect(find.text('분무 예약'), findsOneWidget);
     expect(find.text('종료'), findsNothing);
     // 냉각팬 종료 칩과 같은 줄(2026-09-29 분사 시간 3/5/9초, 칩 3개 셋으로).
-    expect(find.text('분사 시간'), findsOneWidget);
+    expect(find.text('분무 시간'), findsOneWidget);
     expect(tester.getRect(find.byKey(const Key('routine_mist_3'))),
         const Rect.fromLTWH(24, 310, 111, 44));
     expect(tester.getRect(find.byKey(const Key('routine_mist_5'))),

@@ -520,11 +520,11 @@ void main() {
         await tester.pumpAndSettle();
       });
 
-      // 화면 보호 사진 설정(Figma 1659:6396 / 1660:6700) — 글자가 가장 많은
+      // 순환 사진 설정(Figma 1659:6396 / 1660:6700) — 글자가 가장 많은
       // 상태: 사진 없음(사진 먼저 안내) + 오프라인 안내 + 칸 밖 값("1분 30초").
       // 사진 있음은 연필·미리보기 자리까지.
       for (final imageKey in [null, 'k1']) {
-        testWidgets('화면 보호 사진 설정 ${imageKey ?? '사진 없음'}', (tester) async {
+        testWidgets('순환 사진 설정 ${imageKey ?? '사진 없음'}', (tester) async {
           final rows = CommandRows();
           addTearDown(rows.close);
           await _pump(

@@ -140,7 +140,7 @@ void main() {
   group('수치 (Figma 1659:6396, 393×852)', () {
     testWidgets('사진 없음 — 빈 칸·목록·각주 위치', (tester) async {
       await _open(tester, link: lcdLink());
-      expect(find.text('화면 보호 사진 설정'), findsWidgets);
+      expect(find.text('순환 사진 설정'), findsWidgets);
       expect(tester.getRect(find.byKey(LcdSaverScreen.photoBoxKey)),
           const Rect.fromLTWH(84, 130, 225, 180));
       expect(find.text('사진 추가'), findsOneWidget);
@@ -198,7 +198,7 @@ void main() {
       expect(find.text(keepAllWords('사진을 먼저 추가해 주세요')), findsOneWidget);
       expect(_switchOn(tester), isFalse);
       expect(_switchIgnored(tester), isTrue);
-      expect(find.text('보호기 · 꺼짐'), findsOneWidget);
+      expect(find.text('사진 모드 · 꺼짐'), findsOneWidget);
     });
 
     testWidgets('켜져 있으면 끌 수는 있다', (tester) async {
@@ -208,7 +208,7 @@ void main() {
       expect(_switchIgnored(tester), isFalse);
       await tester.tap(find.byKey(LcdSaverScreen.switchKey));
       await tester.pump();
-      expect(find.text('보호기 · 꺼짐'), findsOneWidget);
+      expect(find.text('사진 모드 · 꺼짐'), findsOneWidget);
       expect(_done(tester), isTrue);
       await tester.tap(find.byKey(LcdSaverScreen.doneKey));
       await _frames(tester);
@@ -456,7 +456,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('사진 삭제'));
     await tester.pumpAndSettle();
-    expect(find.text('보호 사진을 삭제할까요?'), findsOneWidget);
+    expect(find.text('순환 사진을 삭제할까요?'), findsOneWidget);
     await tester.tap(find.byKey(LcdSaverScreen.deleteConfirmKey));
     await _frames(tester);
     expect(env.repo.calls, ['image_clear:$kLcdDevice']);
