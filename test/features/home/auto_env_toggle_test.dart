@@ -379,20 +379,24 @@ void main() {
       }
     });
 
-    testWidgets('분무 시트 순서 — 탭 아래 24 → 자동 분무 → 24 → 칩', (t) async {
+    // Figma 1783:12062(2026-11-06 개정): 칩 → CTA → 24 → 선 → 20 → 자동 분무.
+    testWidgets('분무 시트 순서 — CTA 아래 24 → 1px 선 → 20 → 자동 분무', (t) async {
       await pumpSheet(t, ScheduleDevice.mist, released: true);
-      final auto = t.getTopLeft(find.byKey(DeviceControlSheet.autoMistKey)).dy;
       final chip = t
           .getTopLeft(find
               .byKey(DeviceControlSheet.mistChipKey(MistDuration.values.first)))
           .dy;
-      expect(auto, lessThan(chip));
+      final ctaBottom =
+          t.getBottomLeft(find.byKey(DeviceControlSheet.mistStartKey)).dy;
+      final divider = find.byKey(DeviceControlSheet.autoMistDividerKey);
+      final auto = t.getTopLeft(find.byKey(DeviceControlSheet.autoMistKey)).dy;
+      expect(chip, lessThan(ctaBottom));
+      expect(t.getTopLeft(divider).dy - ctaBottom, 24);
+      expect(t.getSize(divider).height, 1);
+      expect(auto - t.getBottomLeft(divider).dy, 20);
       final segmentBottom =
           t.getBottomLeft(find.byKey(DeviceControlSheet.segmentKey)).dy;
-      expect(auto - segmentBottom, 24);
-      final autoBottom =
-          t.getBottomLeft(find.byKey(DeviceControlSheet.autoMistKey)).dy;
-      expect(t.getTopLeft(find.text('분사 시간')).dy - autoBottom, 24);
+      expect(t.getTopLeft(find.text('분무 시간')).dy - segmentBottom, 24);
     });
 
     // ── 코드 리뷰 반영(2026-11-05) ──────────────────────────────────────

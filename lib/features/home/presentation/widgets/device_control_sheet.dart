@@ -115,6 +115,7 @@ class DeviceControlSheet extends ConsumerStatefulWidget {
   static const autoVentKey = Key('auto_vent_toggle');
   static const autoMistKey = Key('auto_mist_toggle');
   static const autoVentDividerKey = Key('auto_vent_divider');
+  static const autoMistDividerKey = Key('auto_mist_divider');
 
   @override
   ConsumerState<DeviceControlSheet> createState() => _DeviceControlSheetState();
@@ -682,7 +683,8 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
   /// "작동 시간"(1107:8428) 칩 문법을 그대로 가져와 CTA 위에 둔다
   /// (2026-09-23 사용자 결정). 칩은 선택만, 송신은 CTA뿐.
   ///
-  /// 자동 분무는 탭 바로 아래(Figma 1657:5353 자리, 선 없음) → 24 → 칩(D3-a).
+  /// 자동 분무는 CTA 아래(Figma 1783:12062, 2026-11-06 개정): CTA → 24 →
+  /// 1px 선(내용 폭 전체) → 20 → 자동 분무 — 환기 시트(1635:6168)와 같은 틀.
   /// 칩은 CTA와 한 묶음(수동 분사 시간)이라 그 사이에 끼우지 않는다.
   Widget _mist(BuildContext context, Color accent, TelemetryReading? t) {
     final locked =
@@ -695,7 +697,6 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
     final color = context.glass.humidAccent;
     final auto = _autoEnvBlock(t, color, vent: false);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      if (auto != null) ...[auto, const SizedBox(height: 24)],
       ScheduleSection(
           label: 'home_mist_duration_label'.tr(),
           gap: 8,
@@ -744,6 +745,15 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                         .save(widget.deviceId, choice);
                     mistWithUndo(context, ref, widget.deviceId, choice);
                   }),
+      if (auto != null) ...[
+        const SizedBox(height: 24),
+        ColoredBox(
+            key: DeviceControlSheet.autoMistDividerKey,
+            color: context.glass.outline,
+            child: const SizedBox(height: 1)),
+        const SizedBox(height: 20),
+        auto,
+      ],
     ]);
   }
 
