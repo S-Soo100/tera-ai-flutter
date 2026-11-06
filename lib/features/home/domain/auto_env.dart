@@ -6,7 +6,11 @@ import 'dart:convert';
 /// 보이면, 마이그레이션 전 서버가 `auto_*_enabled`를 무시해 사용자가 켠
 /// 스위치가 아무 일도 하지 않는다. 그래서 **토글 노출만** 이 값으로 막는다 —
 /// 타이머 판정·제어 기록 해석은 스위치와 무관하게 늘 동작한다.
-const bool kAutoEnvReleased = false;
+///
+/// 2026-11-06 사용자 결정으로 켰다 — 서버 배포 상태는 "구현 착수·서버 스위치
+/// 꺼짐"이었다(terra-server `docs/APP_AUTO_ENV_2026-11-05.md`). 서버 전체 켬
+/// 전까지 토글이 동작하지 않을 수 있다.
+const bool kAutoEnvReleased = true;
 
 /// 서버 자동 환경 제어의 지금 상태 — `devices.auto_env_state`(jsonb, 계약 C3).
 ///

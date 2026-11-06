@@ -226,11 +226,12 @@ void main() {
   });
 
   group('providers', () {
-    test('출시 스위치 기본값은 꺼짐', () {
-      expect(kAutoEnvReleased, isFalse);
+    // 2026-11-06 사용자 결정으로 출시(서버 "전체 켬" 전).
+    test('출시 스위치 켜짐', () {
+      expect(kAutoEnvReleased, isTrue);
       final c = ProviderContainer();
       addTearDown(c.dispose);
-      expect(c.read(autoEnvReleasedProvider), isFalse);
+      expect(c.read(autoEnvReleasedProvider), isTrue);
     });
 
     test('autoEnvStateProvider — 연결 상태의 autoEnv, 없으면 none', () async {
