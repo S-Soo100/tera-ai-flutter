@@ -515,7 +515,7 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
     );
   }
 
-  // ── 즉시 작동 ──────────────────────────────────────────────────────────
+  // ── 일반 ──────────────────────────────────────────────────────────
 
   Widget _immediate(BuildContext context, Color accent) {
     final t = ref.watch(telemetryStreamProvider(widget.deviceId)).valueOrNull;
@@ -603,17 +603,10 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                       enabled: !busy,
                       onTap: () => _fanChip(null, on))),
             ])));
-        // Figma 1635:6168: 칩 아래 24 → 1px 선(내용 폭 전체) → 20 → 자동 환기.
+        // Figma 1635:6168: 칩 아래 자동 환기.
         if (_autoEnvBlock(t, accent, vent: true) case final auto?) {
-          children.addAll([
-            const SizedBox(height: 24),
-            ColoredBox(
-                key: DeviceControlSheet.autoVentDividerKey,
-                color: context.glass.outline,
-                child: const SizedBox(height: 1)),
-            const SizedBox(height: 20),
-            auto,
-          ]);
+          children.addAll(_autoEnvSection(
+              context, auto, DeviceControlSheet.autoVentDividerKey));
         }
       // 꺼 둔 냉각팬은 종료 칩(=다시 켜기) 대신 끄기만 된다는 안내 한 줄.
       case ScheduleDevice.cool when _coolOffOnly:
@@ -745,19 +738,27 @@ class _DeviceControlSheetState extends ConsumerState<DeviceControlSheet> {
                         .save(widget.deviceId, choice);
                     mistWithUndo(context, ref, widget.deviceId, choice);
                   }),
-      if (auto != null) ...[
+      if (auto != null)
+        ..._autoEnvSection(
+            context, auto, DeviceControlSheet.autoMistDividerKey),
+    ]);
+  }
+
+  /// 환기·분무 시트 공통 자동 블록 틀(Figma 1635:6168 · 1783:12062):
+  /// 위 내용 → 24 → 1px 선(내용 폭 전체) → 20 → 자동 토글.
+  List<Widget> _autoEnvSection(
+          BuildContext context, Widget auto, Key dividerKey) =>
+      [
         const SizedBox(height: 24),
         ColoredBox(
-            key: DeviceControlSheet.autoMistDividerKey,
+            key: dividerKey,
             color: context.glass.outline,
             child: const SizedBox(height: 1)),
         const SizedBox(height: 20),
         auto,
-      ],
-    ]);
-  }
+      ];
 
-  // ── 예약 작동 ──────────────────────────────────────────────────────────
+  // ── 예약 ──────────────────────────────────────────────────────────
 
   Widget _scheduled(BuildContext context, Color accent) {
     final schedules = ref.watch(schedulesProvider);
