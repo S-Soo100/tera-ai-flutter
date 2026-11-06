@@ -1213,7 +1213,6 @@
   "routine_add_title": "새 예약",
   "routine_edit_title": "예약 수정",
   "routine_field_action": "동작",
-  "routine_field_duration": "분사 시간",
   "routine_field_repeat": "반복",
   "routine_field_time": "시각",
   "routine_action_locked": "동작은 바꿀 수 없어요. 바꾸려면 지우고 새로 만들어주세요.",

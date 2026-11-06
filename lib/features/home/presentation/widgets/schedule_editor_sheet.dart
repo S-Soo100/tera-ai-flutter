@@ -391,6 +391,8 @@ class _ScheduleEditorBodyState extends State<ScheduleEditorBody> {
         const SizedBox(height: 24),
         // 냉각팬 종료 칩과 같은 행(높이 44, 간격 6, y310) — 두 편집기가 같은
         // 자리에 칩과 반복을 둔다. 칩은 3개라 셋으로 나눈다.
+        // 제목은 제어 시트와 같은 키("분무 시간", Figma 1783:12070) — 예약
+        // 편집기 원본(1107:9236)엔 이 칩이 없어 시트 문구를 따른다(2026-11-06).
         ScheduleSection(
             label: 'home_mist_duration_label'.tr(),
             gap: 8,

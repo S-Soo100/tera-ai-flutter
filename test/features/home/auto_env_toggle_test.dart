@@ -379,6 +379,27 @@ void main() {
       }
     });
 
+    // Figma 1783:12062 등(2026-11-06): 상단 탭은 모든 기기 시트에서 "일반 / 예약".
+    testWidgets('상단 탭 이름 — 일반 / 예약 (모든 기기 시트)', (t) async {
+      for (final device in [
+        ScheduleDevice.led,
+        ScheduleDevice.fan,
+        ScheduleDevice.cool,
+        ScheduleDevice.mist,
+      ]) {
+        await pumpSheet(t, device, released: false);
+        for (final (key, label) in [
+          (DeviceControlSheet.immediateTabKey, '일반'),
+          (DeviceControlSheet.scheduledTabKey, '예약'),
+        ]) {
+          expect(
+              find.descendant(of: find.byKey(key), matching: find.text(label)),
+              findsOneWidget,
+              reason: '$device');
+        }
+      }
+    });
+
     // Figma 1783:12062(2026-11-06 개정): 칩 → CTA → 24 → 선 → 20 → 자동 분무.
     testWidgets('분무 시트 순서 — CTA 아래 24 → 1px 선 → 20 → 자동 분무', (t) async {
       await pumpSheet(t, ScheduleDevice.mist, released: true);
