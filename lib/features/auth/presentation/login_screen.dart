@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../core/theme/viva_colors.dart';
 import '../../../shared/widgets/figma_icon.dart';
+import '../../../shared/widgets/floating_cta_inset.dart';
 import '../../../shared/widgets/viva_check_row.dart';
 import '../../../shared/widgets/viva_text_field.dart';
 import '../data/auth_repository.dart';
@@ -133,6 +134,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ? 12.0
         : (100.0 - safeBottom - 56).clamp(10.0, double.infinity);
     final passwordErrorInRow = _passwordError;
+    // CTA(+ 키보드 없을 때 가입 링크)가 목록 바닥에서 차지하는 높이.
+    final ctaReserved = ctaBottom + 56 + (keyboardOpen ? 0 : 56);
 
     return Scaffold(
       backgroundColor: glass.surfaceHeader,
@@ -140,8 +143,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Stack(children: [
           AutofillGroup(
             child: ListView(
-              padding: EdgeInsets.fromLTRB(
-                  12, 36, 12, ctaBottom + 56 + (keyboardOpen ? 0 : 56) + 24),
+              padding: EdgeInsets.fromLTRB(12, 36, 12, ctaReserved + 24),
               children: [
                 Center(
                   child: Image.asset(
@@ -162,6 +164,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.username],
+                  scrollPadding: FloatingCtaInset.scrollPadding(ctaReserved),
                   onSubmitted: (_) => _passwordFocus.requestFocus(),
                 ),
                 VivaTextField(
@@ -176,6 +179,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   keyboardType: TextInputType.visiblePassword,
                   textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.password],
+                  scrollPadding: FloatingCtaInset.scrollPadding(ctaReserved),
                   onSubmitted: (_) => _login(),
                   gapBelow: 12,
                   suffix: GestureDetector(

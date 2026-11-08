@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/figma_icon.dart';
+import '../../../../shared/widgets/floating_cta_inset.dart';
 import '../../../my_cage/presentation/management_colors.dart';
 import '../../../my_cage/presentation/widgets/management_widgets.dart';
 
@@ -176,6 +177,13 @@ class MyPageScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final glass = context.glass;
     final bottom = MediaQuery.paddingOf(context).bottom;
+    // Figma y696 → 하단 100(안전영역 34 + 66). 안전영역이 더 크면 66 유지.
+    // 키보드가 열리면 키보드 위 12(로그인 1134:6472와 같은 규칙) — 하단 100을
+    // 지키면 버튼이 키보드 위로 떠 작은 폰에서 입력칸 자리를 다 먹는다.
+    final ctaBottom = MediaQuery.viewInsetsOf(context).bottom > 0
+        ? 12.0
+        : math.max(100.0, bottom + 66);
+    final ctaReserved = ctaBottom + 56;
     return Scaffold(
         backgroundColor: white ? glass.surfaceHeader : glass.surfaceTint,
         body: Stack(children: [
@@ -194,16 +202,15 @@ class MyPageScaffold extends StatelessWidget {
                         padding: floating == null
                             ? padding.copyWith(bottom: padding.bottom + bottom)
                             : padding.copyWith(
-                                bottom: padding.bottom + bottom + 66 + 56),
-                        child: child)),
+                                bottom: padding.bottom + ctaReserved),
+                        child: floating == null
+                            ? child
+                            : FloatingCtaInset(
+                                bottom: ctaReserved, child: child))),
               ])),
           if (floating != null)
             Positioned(
-                left: 12,
-                right: 12,
-                // Figma y696 → 하단 100(안전영역 34 + 66). 안전영역이 더 크면 66 유지.
-                bottom: math.max(100.0, bottom + 66),
-                child: floating!),
+                left: 12, right: 12, bottom: ctaBottom, child: floating!),
         ]));
   }
 }

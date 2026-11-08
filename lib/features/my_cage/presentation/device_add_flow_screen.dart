@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/widgets/figma_icon.dart';
+import '../../../shared/widgets/floating_cta_inset.dart';
 import '../../../shared/widgets/viva_modal.dart';
 import '../../notification/domain/push_consent_flow.dart';
 import '../../notification/presentation/push_pre_popup.dart';
@@ -784,6 +785,9 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
   (List<Widget>, List<Widget>, Widget?) _credentials(BuildContext context,
       DeviceAddState state, DeviceAddFlowController controller) {
     final busy = state.busy || state.step == DeviceAddStep.connecting;
+    // 연결 CTA 하나(위 안내 없음)를 비켜 포커스한 칸을 올린다.
+    final scrollPadding = FloatingCtaInset.scrollPadding(
+        _footerBottom(1, MediaQuery.viewInsetsOf(context).bottom > 0) + 56);
     final body = [
       _heading(
           context,
@@ -797,6 +801,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             child: TextField(
                 controller: _ssid,
                 enabled: !busy,
+                scrollPadding: scrollPadding,
                 autocorrect: false,
                 // Figma 982:3500 — 입력 글자 500/16 #1E1E1E.
                 style:
@@ -818,6 +823,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                 child: TextField(
                     controller: _password,
                     enabled: !busy,
+                    scrollPadding: scrollPadding,
                     obscureText: !state.showPassword,
                     autocorrect: false,
                     enableSuggestions: false,

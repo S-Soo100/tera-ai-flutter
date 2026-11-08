@@ -74,11 +74,13 @@ void main() {
   });
 
   Future<_Controller> pump(WidgetTester tester, DeviceAddState initial,
-      {double keyboard = 0, List<Override> overrides = const []}) async {
-    tester.view.physicalSize = const Size(393, 852);
+      {double keyboard = 0,
+      Size size = const Size(393, 852),
+      List<Override> overrides = const []}) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.binding.setSurfaceSize(const Size(393, 852));
+    await tester.binding.setSurfaceSize(size);
     final controller = _Controller(initial);
     await tester.pumpWidget(EasyLocalization(
         supportedLocales: const [Locale('ko')],
@@ -228,6 +230,27 @@ void main() {
     // Figma 982:3174 — 키보드(565) 위 43 → CTA 466.
     expect(
         rectOf(tester, const Key('device_add_connect')).top, closeTo(466, 0.5));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('credentials: 작은 폰 키보드 — 포커스한 칸은 연결 CTA에 안 가린다',
+      (tester) async {
+    // 직접 입력(SSID 칸까지 두 칸)이 가장 아래까지 내려온다.
+    await pump(tester,
+        const DeviceAddState(step: DeviceAddStep.credentials, ssid: ''),
+        keyboard: 300, size: const Size(375, 667));
+    final cta = rectOf(tester, const Key('device_add_connect'));
+    expect(cta.bottom, closeTo(667 - 300 - 43, 0.5));
+    final fields = find.byType(TextField);
+    expect(fields, findsNWidgets(2));
+    for (var i = 0; i < 2; i++) {
+      await tester.showKeyboard(fields.at(i));
+      await tester.pumpAndSettle();
+      final box = tester.getRect(find
+          .ancestor(of: fields.at(i), matching: find.byType(Container))
+          .first);
+      expect(box.bottom, lessThanOrEqualTo(cta.top), reason: 'field $i');
+    }
     expect(tester.takeException(), isNull);
   });
 
