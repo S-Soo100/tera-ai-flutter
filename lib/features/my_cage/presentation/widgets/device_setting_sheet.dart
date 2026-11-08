@@ -68,7 +68,9 @@ class DeviceSettingSheet extends StatelessWidget {
           bottom:
               MediaQuery.of(context).viewInsets.bottom + AppStyles.spacing16,
         ),
-        child: Column(
+        // 키보드 위 공간보다 길면(작은 폰·큰 글자) 넘치지 않고 스크롤한다.
+        child: SingleChildScrollView(
+            child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -76,7 +78,7 @@ class DeviceSettingSheet extends StatelessWidget {
             const SizedBox(height: AppStyles.spacing12),
             ...children,
           ],
-        ),
+        )),
       ),
     );
   }
