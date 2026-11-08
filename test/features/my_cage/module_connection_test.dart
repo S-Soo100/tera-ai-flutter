@@ -56,7 +56,34 @@ void main() {
   // Timer + Stream을 한 fake zone에서 동기 처리하기 위해 fakeAsync 사용.
   // (위젯 테스트의 pump는 fake-clock Timer와 real-loop Stream이 어긋난다.)
 
-  test('telemetry 12초 무수신이면 watchdog가 stale → 오프라인(제어 차단)', () {
+  test('분무 침묵처럼 30초 끊겨도 온라인 유지 — 일시 끊김은 무시', () {
+    // 펌웨어가 분무 등으로 ~25초 telemetry를 멈춘다(2026-09-07 실측). 12초
+    // 판정이던 때는 그때마다 "기기 연결이 끊겼어요"가 떴다(2026-11-08).
+    fakeAsync((async) {
+      final tele = StreamController<TelemetryReading?>();
+      final c = _container(tele, isOnline: true);
+      addTearDown(c.dispose);
+
+      async.flushMicrotasks();
+      tele.add(_telemetry());
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 30));
+      async.flushMicrotasks();
+      expect(c.read(moduleOnlineProvider('d1')), isTrue,
+          reason: '30초 침묵은 유예(60초) 안 → 온라인');
+
+      tele.add(_telemetry()); // 침묵이 끝나면 타이머가 다시 시작된다
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 59));
+      async.flushMicrotasks();
+      expect(c.read(moduleOnlineProvider('d1')), isTrue);
+
+      tele.close();
+      async.flushMicrotasks();
+    });
+  });
+
+  test('telemetry 60초 넘게 무수신이면 watchdog가 stale → 오프라인(제어 차단)', () {
     fakeAsync((async) {
       final tele = StreamController<TelemetryReading?>();
       final c = _container(tele, isOnline: true);
@@ -68,11 +95,11 @@ void main() {
       expect(c.read(moduleOnlineProvider('d1')), isTrue,
           reason: 'is_online=true & telemetry 신선 → 온라인');
 
-      async.elapse(const Duration(seconds: 13)); // watchdog 임계값 초과
+      async.elapse(const Duration(seconds: 61)); // 유예 초과
       async.flushMicrotasks();
       expect(c.read(moduleOnlineProvider('d1')), isFalse,
-          reason: 'telemetry 끊김 12초 경과 → 오프라인 감지 '
-              '(수정 전에는 hasError만 봐서 영원히 온라인으로 오판)');
+          reason: 'telemetry 끊김 60초 경과 → 오프라인 감지 '
+              '(서버 is_online은 4~5분 뒤에야 false가 된다)');
 
       tele.close();
       async.flushMicrotasks();
@@ -86,7 +113,7 @@ void main() {
       addTearDown(c.dispose);
 
       async.flushMicrotasks();
-      // 8초(임계값 12초 미만)마다 telemetry 도착 → watchdog 계속 리셋
+      // 8초(유예 60초 미만)마다 telemetry 도착 → watchdog 계속 리셋
       for (var i = 0; i < 3; i++) {
         tele.add(_telemetry());
         async.flushMicrotasks();

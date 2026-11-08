@@ -158,15 +158,23 @@ final telemetryStreamProvider = StreamProvider.autoDispose
 
 // ── 텔레메트리 최신성 watchdog ──────────────────────────────────────────────────
 
-/// 연결 끊김 판정 임계값. telemetry 3초 주기(terra-server 계약)의 4배 —
-/// 일시적 지터는 흡수하고 실제 끊김만 감지한다.
+/// telemetry 무소식 점검 주기. 3초 주기(terra-server 계약)의 4배 — 이만큼 값이
+/// 없으면 [telemetryStreamProvider]가 REST로 최신값을 확인해 조용히 죽은 구독을
+/// 살린다. **연결 끊김 판정이 아니다**(그건 [moduleLinkGrace]).
 const telemetryStaleThreshold = Duration(seconds: 12);
+
+/// 연결 끊김 판정 유예 — 이만큼 telemetry가 없어야 "기기 연결이 끊겼어요"·
+/// 제어 잠금. 펌웨어가 분무 등으로 ~25초 발행을 멈추는데(2026-09-07 실측) 12초로
+/// 판정하던 때는 그때마다(예약·자동 분무 포함) 배너가 깜빡였다(2026-11-08 사용자
+/// 결정 60초). 서버 `is_online`(180초 무응답, 실측 4~5분)보다는 빠르다. 진짜
+/// 꺼진 기기에 이 사이 보낸 명령은 제어 확인 대기가 "응답이 늦어요"로 알린다.
+const moduleLinkGrace = Duration(seconds: 60);
 
 /// telemetry 최신성 감시자 — **제어 허용 판정([moduleLinkProvider]) 전용**.
 /// 현재 온습도 표시는 이것으로 값을 지우지 않는다(`envLiveViewProvider`, 2026-09-28).
 ///
 /// [telemetryStreamProvider]가 새 값을 방출할 때마다 이 provider가 재실행되어
-/// watchdog 타이머를 리셋한다. [telemetryStaleThreshold] 동안 새 telemetry가
+/// watchdog 타이머를 리셋한다. [moduleLinkGrace] 동안 새 telemetry가
 /// 없으면 `true`(stale = 연결 끊김)를 방출한다.
 ///
 /// Supabase Realtime 스트림은 끊겨도 에러를 내지 않고 조용히 멈추므로
@@ -182,7 +190,7 @@ final telemetryStaleProvider =
 
   Timer? timer;
   if (hasFresh) {
-    timer = Timer(telemetryStaleThreshold, () {
+    timer = Timer(moduleLinkGrace, () {
       if (!controller.isClosed) controller.add(true);
     });
   }
@@ -278,7 +286,7 @@ enum ModuleLink { unknown, online, offline }
 ///
 /// `is_online`은 **이 기기**의 실시간 값([deviceLinkStatusProvider])이다 — 전엔
 /// 목록 첫 기기의 앱 시작 시점 스냅샷을 봐서, 사육장이 2대면 다른 기기 상태로
-/// 판정했다(2026-09-25). `telemetryStale`는 3초 주기 telemetry watchdog이다.
+/// 판정했다(2026-09-25). `telemetryStale`는 [moduleLinkGrace](60초) watchdog이다.
 /// 재조회 중에는 이전 값을 유지한다(`hasValue`) — `isLoading`으로 판정하면
 /// 재조회마다 "확인 중"이 깜빡인다(2026-09-19 교훈).
 final moduleLinkProvider =
