@@ -191,7 +191,9 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
         top: 24,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      child: Column(
+      // 키보드 위 공간보다 길면(작은 폰·큰 글자) 넘치지 않고 스크롤한다.
+      child: SingleChildScrollView(
+          child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -279,7 +281,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             child: Text('pet_save'.tr()),
           ),
         ],
-      ),
+      )),
     );
   }
 }

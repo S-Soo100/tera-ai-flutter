@@ -133,6 +133,9 @@ class _DeviceDetailBody extends ConsumerWidget {
               GroupEditorScreen(groupId: target?.id, initialMember: item.key)));
     }
 
+    // 키보드가 열리면 완료만 키보드 위 12에 두고 기기 삭제는 숨긴다(입력 중
+    // 오조작 방지, 그룹 편집과 같은 규칙).
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
     return PopScope(
         canPop: !dirty && !draft.saving,
         onPopInvokedWithResult: (didPop, _) {
@@ -345,35 +348,37 @@ class _DeviceDetailBody extends ConsumerWidget {
                               : () => finish(() => ref
                                   .read(deviceEditorControllerProvider.notifier)
                                   .save(inventory))),
-                      SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: TextButton(
-                              onPressed: draft.saving
-                                  ? null
-                                  : () async {
-                                      if (await managementConfirm(
-                                              context,
-                                              (wifiKind == null
-                                                      ? 'management_delete_confirm'
-                                                      : 'management_delete_confirm_wifi')
-                                                  .tr(),
-                                              action:
-                                                  'management_delete'.tr()) &&
-                                          context.mounted) {
-                                        await finish(() => ref
-                                            .read(deviceEditorControllerProvider
-                                                .notifier)
-                                            .unlink());
-                                      }
-                                    },
-                              child: Text('management_delete_device'.tr(),
-                                  style: managementStyle(context,
-                                          size: 18,
-                                          weight: FontWeight.w600,
-                                          color: glass.navSelected)
-                                      .copyWith(height: 28 / 18)))),
-                      const SizedBox(height: 10),
+                      if (!keyboard)
+                        SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: TextButton(
+                                onPressed: draft.saving
+                                    ? null
+                                    : () async {
+                                        if (await managementConfirm(
+                                                context,
+                                                (wifiKind == null
+                                                        ? 'management_delete_confirm'
+                                                        : 'management_delete_confirm_wifi')
+                                                    .tr(),
+                                                action:
+                                                    'management_delete'.tr()) &&
+                                            context.mounted) {
+                                          await finish(() => ref
+                                              .read(
+                                                  deviceEditorControllerProvider
+                                                      .notifier)
+                                              .unlink());
+                                        }
+                                      },
+                                child: Text('management_delete_device'.tr(),
+                                    style: managementStyle(context,
+                                            size: 18,
+                                            weight: FontWeight.w600,
+                                            color: glass.navSelected)
+                                        .copyWith(height: 28 / 18)))),
+                      SizedBox(height: keyboard ? 12 : 10),
                     ])))));
   }
 }

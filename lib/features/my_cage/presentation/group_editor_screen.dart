@@ -151,6 +151,13 @@ class _GroupEditorBody extends ConsumerWidget {
         draft.groupId == null ? 'management_create_group' : 'management_done',
     };
     final floatingSelection = draft.step == GroupEditorStep.members;
+    // 키보드가 열리면 버튼은 키보드 위 12, 그룹 삭제는 숨긴다(입력 중 오조작
+    // 방지·로그인 가입 링크와 같은 규칙). 하단 100을 지키면 버튼이 키보드 위로
+    // 떠 작은 폰에서 입력칸 자리를 먹었다(2026-11-08).
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final showDelete = draft.groupId != null &&
+        draft.step == GroupEditorStep.review &&
+        !keyboard;
     final buttonBottom =
         (100 - MediaQuery.paddingOf(context).bottom).clamp(16.0, 100.0);
     final nextButton = ManagementButton(
@@ -346,8 +353,7 @@ class _GroupEditorBody extends ConsumerWidget {
                               child: nextButton),
                       ])),
                       if (!floatingSelection) nextButton,
-                      if (draft.groupId != null &&
-                          draft.step == GroupEditorStep.review)
+                      if (showDelete)
                         SizedBox(
                             height: 56,
                             child: TextButton(
@@ -361,11 +367,14 @@ class _GroupEditorBody extends ConsumerWidget {
                                         .copyWith(height: 28 / 18)))),
                       if (!floatingSelection)
                         SizedBox(
-                            height: draft.groupId != null &&
-                                    draft.step == GroupEditorStep.review
-                                ? 10
-                                : (100 - MediaQuery.paddingOf(context).bottom)
-                                    .clamp(16, 100)),
+                            height: keyboard
+                                ? 12
+                                : showDelete
+                                    ? 10
+                                    : (100 -
+                                            MediaQuery.paddingOf(context)
+                                                .bottom)
+                                        .clamp(16, 100)),
                     ])))));
   }
 }
