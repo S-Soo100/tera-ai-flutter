@@ -24,6 +24,8 @@ import 'package:vivanaut/features/profile/presentation/profile_providers.dart';
 import 'package:vivanaut/features/profile/presentation/profile_screen.dart';
 import 'package:vivanaut/features/profile/presentation/withdraw_screen.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/management_widgets.dart'
+    show ManagementTopBar;
 import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart'
     show ScheduleSwitch;
 
@@ -77,9 +79,14 @@ Widget app(Widget home, List<Override> ov) => ProviderScope(
                 locale: c.locale,
                 supportedLocales: c.supportedLocales,
                 localizationsDelegates: c.localizationDelegates,
+                // 실기기처럼 키보드가 열리면 하단 안전영역(34)은 0으로 보고된다.
                 builder: (c, child) => MediaQuery(
                     data: MediaQuery.of(c).copyWith(
-                        padding: const EdgeInsets.only(top: 62, bottom: 34)),
+                        padding: EdgeInsets.only(
+                            top: 62,
+                            bottom: MediaQuery.of(c).viewInsets.bottom > 0
+                                ? 0
+                                : 34)),
                     child: child!),
                 home: home))));
 
@@ -183,6 +190,29 @@ void main() {
     expect(PasswordChangeScreen.meetsRule('sdf45412ds@'), isTrue);
     expect(PasswordChangeScreen.meetsRule('1235113213'), isFalse);
     expect(PasswordChangeScreen.meetsRule('a1!'), isFalse);
+  });
+
+  testWidgets('작은 폰 키보드 — CTA는 키보드 위 12, 포커스한 칸은 CTA에 안 가린다',
+      (tester) async {
+    await pump(tester, const PasswordChangeScreen(), overrides());
+    tester.view.physicalSize = const Size(375, 667);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    final cta = tester.getRect(find.byKey(PasswordChangeScreen.submitKey));
+    expect(cta.bottom, closeTo(667 - 300 - 12, 0.5));
+    final topBar = tester.getRect(find.byType(ManagementTopBar));
+    for (final key in [
+      PasswordChangeScreen.currentKey,
+      PasswordChangeScreen.newKey,
+      PasswordChangeScreen.confirmKey,
+    ]) {
+      await tester.showKeyboard(find.byKey(key));
+      await tester.pumpAndSettle();
+      final field = tester.getRect(find.byKey(key));
+      expect(field.bottom, lessThanOrEqualTo(cta.top), reason: '$key');
+      expect(field.top, greaterThanOrEqualTo(topBar.bottom), reason: '$key');
+    }
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('알림 설정 — 토글 저장, 마케팅 동의 일자', (tester) async {

@@ -185,6 +185,25 @@ void main() {
     expect(find.byKey(const ValueKey('login-signup')), findsNothing);
   });
 
+  testWidgets('작은 폰 키보드 — 포커스한 칸은 CTA에 안 가린다', (tester) async {
+    await _pump(tester);
+    tester.view.physicalSize = const Size(375, 667);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    final cta = _rect(tester, find.byKey(const ValueKey('login-submit')));
+    expect(cta.bottom, closeTo(667 - 300 - 12, 0.5));
+    for (final key in const [
+      ValueKey('login-email'),
+      ValueKey('login-password'),
+    ]) {
+      await tester.showKeyboard(find.byKey(key));
+      await tester.pumpAndSettle();
+      final field = _rect(tester, find.byKey(key));
+      expect(field.bottom, lessThanOrEqualTo(cta.top), reason: '$key');
+      expect(field.top, greaterThanOrEqualTo(62), reason: '$key');
+    }
+  });
+
   testWidgets('마지막 아이디·자동 로그인 값을 불러온다', (tester) async {
     await _pump(tester, prefs: _Prefs(lastEmail: 'x@y.z', autoLogin: false));
     expect(find.text('x@y.z'), findsOneWidget);

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/glass_palette.dart';
 import '../../core/theme/viva_colors.dart';
+import 'floating_cta_inset.dart';
 
 /// Figma `필드 컴포넌트`(1134:6053) 공용 입력 필드.
 ///
@@ -34,6 +35,7 @@ class VivaTextField extends StatelessWidget {
     this.autofocus = false,
     this.gapBelow = 24,
     this.fieldKey,
+    this.scrollPadding,
   });
 
   final String label;
@@ -61,6 +63,10 @@ class VivaTextField extends StatelessWidget {
   final bool autofocus;
   final double gapBelow;
   final Key? fieldKey;
+
+  /// 포커스할 때 끌어올릴 여백. null이면 감싼 [FloatingCtaInset]의 버튼 높이를
+  /// 비켜 간다(없으면 Flutter 기본 20).
+  final EdgeInsets? scrollPadding;
 
   static const double fieldHeight = 65;
   static const double _errorBlock = 8 + 14;
@@ -111,6 +117,8 @@ class VivaTextField extends StatelessWidget {
               autofillHints: autofillHints,
               onChanged: onChanged,
               onSubmitted: onSubmitted,
+              scrollPadding:
+                  scrollPadding ?? FloatingCtaInset.scrollPaddingOf(context),
               maxLengthEnforcement: MaxLengthEnforcement.none,
               cursorColor: Theme.of(context).brightness == Brightness.light
                   ? VivaColors.mainLight

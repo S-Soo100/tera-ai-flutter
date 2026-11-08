@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/widgets/figma_icon.dart';
+import '../../../../shared/widgets/floating_cta_inset.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../../auth/presentation/auth_providers.dart';
@@ -147,6 +148,8 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
     // 기기에 안 가 같은 문구를 다시 보낼 수도 없게 됐다(2026-09-25 점검).
     final online = ref.watch(moduleOnlineProvider(widget.deviceId));
     final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    // 완료 버튼이 목록 바닥에서 차지하는 높이(키보드 위 36 / 하단 66 + 56).
+    final ctaReserved = (keyboard ? 36.0 : 66.0) + 56;
     return Scaffold(
         backgroundColor: glass.surfaceHeader,
         body: SafeArea(
@@ -161,8 +164,7 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
             SingleChildScrollView(
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: EdgeInsets.fromLTRB(
-                    12, 12, 12, (keyboard ? 36 : 66) + 56 + 16),
+                padding: EdgeInsets.fromLTRB(12, 12, 12, ctaReserved + 16),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -203,6 +205,11 @@ class _LcdScreenState extends ConsumerState<_LcdScreen> {
                                 child: TextField(
                                     key: const Key('lcd_text_field'),
                                     controller: _text,
+                                    // 아래 안내 한 줄(8 + 15)까지 버튼 위로 올린다.
+                                    scrollPadding:
+                                        FloatingCtaInset.scrollPadding(
+                                            ctaReserved,
+                                            gap: 48 + 8 + 15),
                                     // 기기 이름을 기본값으로 채우지만 그 뒤로는
                                     // 자유 문구다(기기 이름과 연동되지 않는다).
                                     // 공백도 입력 한도에 포함한다.

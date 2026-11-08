@@ -138,6 +138,28 @@ Future<void> _pump(WidgetTester tester, _FakeLcdRepo repo,
   await tester.pumpAndSettle();
 }
 
+/// 전체 화면 좌표 검사용 — 온라인 기기 d1 하나가 있는 세트.
+List<Override> _fullScreenOverrides(_FakeLcdRepo repo) => [
+      lcdRepositoryProvider.overrideWithValue(repo),
+      lcdTextStoreProvider.overrideWithValue(_MemoryLcdTextStore()),
+      lcdTextAccountProvider.overrideWithValue('u1'),
+      deviceLinkStatusProvider.overrideWith((ref, id) => Stream.value(
+          const DeviceLinkStatus(isOnline: true, lastSeenAt: null))),
+      moduleOnlineProvider.overrideWith((ref, id) => true),
+      currentSetProvider.overrideWith((ref) async => EnclosureSet(
+          enclosure: Enclosure(
+              id: 'e1', name: '1번', createdAt: DateTime(2026, 8, 1)),
+          device: Device(
+              id: 'd1',
+              ownerId: null,
+              enclosureId: null,
+              name: null,
+              isOnline: true,
+              lastSeenAt: null),
+          camera: null,
+          pet: null)),
+    ];
+
 void main() {
   testWidgets('적용을 누르면 현재 기기로 setText가 나간다', (tester) async {
     final repo = _FakeLcdRepo();
@@ -257,26 +279,7 @@ void main() {
     addTearDown(tester.view.reset);
     final repo = _FakeLcdRepo();
     await tester.pumpWidget(ProviderScope(
-        overrides: [
-          lcdRepositoryProvider.overrideWithValue(repo),
-          lcdTextStoreProvider.overrideWithValue(_MemoryLcdTextStore()),
-          lcdTextAccountProvider.overrideWithValue('u1'),
-          deviceLinkStatusProvider.overrideWith((ref, id) => Stream.value(
-              const DeviceLinkStatus(isOnline: true, lastSeenAt: null))),
-          moduleOnlineProvider.overrideWith((ref, id) => true),
-          currentSetProvider.overrideWith((ref) async => EnclosureSet(
-              enclosure: Enclosure(
-                  id: 'e1', name: '1번', createdAt: DateTime(2026, 8, 1)),
-              device: Device(
-                  id: 'd1',
-                  ownerId: null,
-                  enclosureId: null,
-                  name: null,
-                  isOnline: true,
-                  lastSeenAt: null),
-              camera: null,
-              pet: null)),
-        ],
+        overrides: _fullScreenOverrides(repo),
         child: MaterialApp(
             builder: (context, child) => MediaQuery(
                 data: MediaQuery.of(context).copyWith(
@@ -323,6 +326,39 @@ void main() {
             .widget<FilledButton>(find.byKey(const Key('lcd_apply')))
             .onPressed,
         isNotNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('작은 폰 키보드 — 입력칸과 아래 안내가 완료 버튼에 안 가린다', (tester) async {
+    tester.view.physicalSize = const Size(375, 667);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+        overrides: _fullScreenOverrides(_FakeLcdRepo()),
+        child: MaterialApp(
+            // 실기기처럼 키보드가 열리면 하단 안전영역(34)은 0으로 보고된다.
+            builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                    padding: EdgeInsets.only(
+                        top: 62,
+                        bottom: MediaQuery.of(context).viewInsets.bottom > 0
+                            ? 0
+                            : 34)),
+                child: child!),
+            home: _host)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(_openKey));
+    await tester.pumpAndSettle();
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    await tester.showKeyboard(find.byKey(const Key('lcd_text_field')));
+    await tester.pumpAndSettle();
+    final cta = tester.getRect(find.byKey(const Key('lcd_apply')));
+    expect(cta.bottom, closeTo(667 - 300 - 36, 0.5));
+    expect(tester.getRect(find.byKey(const Key('lcd_field'))).bottom,
+        lessThanOrEqualTo(cta.top));
+    expect(tester.getRect(find.byKey(const Key('lcd_unique_hint'))).bottom,
+        lessThanOrEqualTo(cta.top));
     expect(tester.takeException(), isNull);
   });
 
