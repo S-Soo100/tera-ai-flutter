@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../../../shared/domain/keep_all_words.dart';
+import '../../../shared/widgets/word_joiner_span.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,7 +78,8 @@ class LcdQuietTimeScreen extends ConsumerWidget {
                   if (blockedOffline)
                     Padding(
                       padding: const EdgeInsets.only(top: 16, left: 12),
-                      child: Text(keepAllWords('lcd_offline_note'.tr()),
+                      child: Text.rich(
+                          wordJoinerSpan(keepAllWords('lcd_offline_note'.tr())),
                           key: offlineNoteKey,
                           style: managementStyle(context,
                               size: 14,

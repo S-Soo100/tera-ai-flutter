@@ -5,6 +5,7 @@ import '../../core/theme/glass_palette.dart';
 import '../../features/my_cage/presentation/management_colors.dart';
 import '../../features/my_cage/presentation/widgets/management_widgets.dart';
 import 'viva_shadow.dart';
+import 'word_joiner_span.dart';
 
 /// Figma 확인 모달(1142:8956 Modal / 1107:9697) — 345×144 흰색 r12, 안쪽 24,
 /// 문구 18/500/28 가운데, 24 아래 버튼 44 r12. 버튼 하나(297 폭 `#1E1E1E`)
@@ -72,7 +73,7 @@ Future<bool> showVivaModal(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(message,
+                            Text.rich(wordJoinerSpan(message),
                                 key: const Key('viva_modal_message'),
                                 textAlign: TextAlign.center,
                                 style: managementStyle(ctx,
@@ -80,7 +81,7 @@ Future<bool> showVivaModal(
                                     .copyWith(height: 28 / 18)),
                             if (detail != null) ...[
                               const SizedBox(height: 8),
-                              Text(detail,
+                              Text.rich(wordJoinerSpan(detail),
                                   key: const Key('viva_modal_detail'),
                                   textAlign: TextAlign.center,
                                   style: managementStyle(ctx,

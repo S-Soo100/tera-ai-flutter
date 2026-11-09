@@ -252,7 +252,7 @@ void main() {
     // 단어 단위 줄바꿈 — 글자 사이에 WORD JOINER가 들어간다.
     final text = tester.widget<Text>(find.byWidgetPredicate((w) =>
         w is Text &&
-        (w.data ?? '').replaceAll('\u2060', '') ==
+        (w.data ?? w.textSpan?.toPlainText() ?? '').replaceAll('\u2060', '') ==
             'crecam_live_offline_title'));
     expect(text.style!.fontSize, 14);
     expect(text.style!.color, const Color(0xFF949090));

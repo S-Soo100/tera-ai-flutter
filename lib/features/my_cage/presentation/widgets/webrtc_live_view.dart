@@ -10,6 +10,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/domain/keep_all_words.dart';
+import '../../../../shared/widgets/word_joiner_span.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../../shared/providers/clock_providers.dart';
 import '../../../../shared/widgets/viva_modal.dart';
@@ -531,7 +532,8 @@ class _OfflineView extends StatelessWidget {
         const LiveRasterIcon('videocam_alert',
             size: 62, color: AppTheme.liveOfflineText),
         const SizedBox(height: 8),
-        Text(keepAllWords('crecam_live_offline_title'.tr()),
+        Text.rich(
+            wordJoinerSpan(keepAllWords('crecam_live_offline_title'.tr())),
             textAlign: TextAlign.center,
             style: const TextStyle(
                 fontFamily: 'Pretendard',

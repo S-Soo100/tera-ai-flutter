@@ -37,7 +37,10 @@ SysHealth _health({bool present = true, bool online = true}) => SysHealth(
 
 /// 확인창 문구는 어절 줄바꿈 방지 문자(U+2060)가 끼어 있다 — 빼고 비교한다.
 Finder _plainText(String part) => find.byWidgetPredicate((w) =>
-    w is Text && (w.data ?? '').replaceAll('\u2060', '').contains(part));
+    w is Text &&
+    (w.data ?? w.textSpan?.toPlainText() ?? '')
+        .replaceAll('\u2060', '')
+        .contains(part));
 
 void main() {
   Future<_DeviceRepo> pump(WidgetTester tester,

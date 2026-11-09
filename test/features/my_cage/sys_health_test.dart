@@ -82,7 +82,10 @@ SysHealth _h({int? uptime, String? reset, int? rssi, int at = 0}) => SysHealth(
 
 /// 확인창 문구는 어절 줄바꿈 방지 문자(U+2060)가 끼어 있다 — 빼고 비교한다.
 Finder _plainText(String part) => find.byWidgetPredicate((w) =>
-    w is Text && (w.data ?? '').replaceAll('\u2060', '').contains(part));
+    w is Text &&
+    (w.data ?? w.textSpan?.toPlainText() ?? '')
+        .replaceAll('\u2060', '')
+        .contains(part));
 
 void main() {
   group('펌웨어 판정', () {
@@ -146,8 +149,7 @@ void main() {
       expect(resetReasonBase('SW:rtc_loop_stall(WDT)'), 'SW:rtc_loop_stall');
       expect(resetReasonBase('POWERON'), 'POWERON');
       expect(resetReasonBase(null), isNull);
-      expect(
-          _h(uptime: 24, reset: 'SW:mqtt_reboot(WDT)').rebootedSince(1044),
+      expect(_h(uptime: 24, reset: 'SW:mqtt_reboot(WDT)').rebootedSince(1044),
           isTrue);
     });
 
@@ -164,7 +166,8 @@ void main() {
           isFalse,
           reason: '누르기 전에 켜진 것');
       expect(
-          _h(uptime: 5, reset: 'POWERON').rebootedSince(null, sincePress: since),
+          _h(uptime: 5, reset: 'POWERON')
+              .rebootedSince(null, sincePress: since),
           isFalse,
           reason: '리셋 사유가 다르면 아니다');
     });
@@ -182,8 +185,8 @@ void main() {
       expect(kCameraRebootPublishedReliable, isTrue,
           reason: 'terra-server#17 운영 배포(2026-10-03)');
       expect(cameraRebootAccepted({'published': true, 'msg_id': 'm1'}), isTrue);
-      expect(cameraRebootAccepted({'published': false, 'msg_id': null}),
-          isFalse);
+      expect(
+          cameraRebootAccepted({'published': false, 'msg_id': null}), isFalse);
       expect(cameraRebootAccepted(null), isFalse);
       expect(
           cameraRebootAccepted({'published': true, 'msg_id': 'm1'},
@@ -289,8 +292,8 @@ void main() {
         // 누른 지 20초, 가동 15초 — 누른 뒤에 켜졌다.
         health.add(_h(uptime: 15, reset: kMqttRebootReason, at: 2));
         async.flushMicrotasks();
-        expect(container.read(rebootProvider(_camT)).outcome,
-            RebootOutcome.done);
+        expect(
+            container.read(rebootProvider(_camT)).outcome, RebootOutcome.done);
       });
     });
 

@@ -12,6 +12,7 @@ import '../../profile/data/notification_preferences_repository.dart';
 import '../domain/push_consent_flow.dart';
 import 'push_providers.dart';
 import '../../../shared/domain/keep_all_words.dart';
+import '../../../shared/widgets/word_joiner_span.dart';
 
 export '../../../shared/domain/keep_all_words.dart';
 
@@ -157,7 +158,7 @@ class _VivaPopupFrame extends StatelessWidget {
                         style: text(20, FontWeight.w700))),
               const SizedBox(height: 12),
               // 본문은 줄바꿈을 허용하되 어절 단위로만 접는다.
-              Text(keepAllWords(body),
+              Text.rich(wordJoinerSpan(keepAllWords(body)),
                   textAlign: TextAlign.center,
                   style: text(18, FontWeight.w500)),
               const SizedBox(height: 24),

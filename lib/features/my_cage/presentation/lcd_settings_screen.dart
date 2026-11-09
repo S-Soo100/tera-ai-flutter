@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import '../../../shared/domain/keep_all_words.dart';
+import '../../../shared/widgets/word_joiner_span.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -345,7 +346,7 @@ class _LcdSettingsScreenState extends ConsumerState<LcdSettingsScreen> {
       Padding(
         // 묶음 끝 y422 → 각주 y429.
         padding: const EdgeInsets.only(top: 7, left: 12, right: 12),
-        child: Text(keepAllWords(quietNote.tr()),
+        child: Text.rich(wordJoinerSpan(keepAllWords(quietNote.tr())),
             key: LcdSettingsScreen.quietNoteKey,
             style: _footnoteStyle(context, color: glass.textTertiary)),
       ),
@@ -401,7 +402,7 @@ class _Footnote extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(top: 8, left: 12, right: 12),
         // 좁은 폰에서 어절 중간에서 줄이 바뀌지 않게(실기기 360pt 확인).
-        child: Text(keepAllWords(text),
+        child: Text.rich(wordJoinerSpan(keepAllWords(text)),
             key: textKey, style: _footnoteStyle(context, color: color)),
       );
 }
