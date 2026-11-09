@@ -156,7 +156,7 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
     final ok = await showVivaModal(
       context,
       message: 'crecam_live_in_use_title'.tr(),
-      detail: 'crecam_live_in_use_body'.tr(),
+      detail: keepAllWords('crecam_live_in_use_body'.tr()),
       cancelLabel: 'common_cancel'.tr(),
       confirmLabel: 'crecam_live_in_use_confirm'.tr(),
     );
