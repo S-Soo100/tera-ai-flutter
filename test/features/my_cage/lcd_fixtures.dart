@@ -281,8 +281,9 @@ Future<GoRouter> pumpLcdRouter(
   String? initial,
   Widget home = const Scaffold(body: SizedBox()),
   bool settle = true,
+  Size size = const Size(393, 852),
 }) async {
-  tester.view.physicalSize = const Size(393, 852);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final router = GoRouter(

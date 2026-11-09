@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -65,6 +66,12 @@ class DesignLabScreen extends StatelessWidget {
             ],
             onTap: () => context.push('/design-test/b'),
           ),
+          if (kDebugMode)
+            ListTile(
+              key: const Key('text_spacing_check_entry'),
+              title: const Text('글자 간격 대조(임시)'),
+              onTap: () => context.push('/design-test/text-check'),
+            ),
         ],
       ),
     );

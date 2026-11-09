@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
+import '../../features/dev/presentation/text_spacing_check_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -593,6 +595,19 @@ GoRouter buildAppRouter({
             path: 'b',
             builder: (context, state) => const VariantBShell(),
           ),
+          // 글자 간격 Figma 대조용 임시 페이지 — 디버그 빌드 전용(2026-11-09).
+          if (kDebugMode)
+            GoRoute(
+              path: 'text-check',
+              builder: (context, state) => const TextSpacingCheckScreen(),
+              routes: [
+                GoRoute(
+                  path: ':name',
+                  builder: (context, state) => TextSpacingCheckPage(
+                      name: state.pathParameters['name']!),
+                ),
+              ],
+            ),
         ],
       ),
       // PRD §3.4 자동 루틴 & 타이머 설정 — 풀스크린(탭 셸 밖) 모달

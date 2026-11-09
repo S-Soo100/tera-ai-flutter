@@ -77,9 +77,25 @@ void main() {
     expect(_text(tester, _k(false, 'hour')), '8');
   });
 
+  testWidgets('좁은 폰(iPhone 13 mini 375)에서 분 칸이 넘치지 않는다', (tester) async {
+    final rows = CommandRows();
+    addTearDown(rows.close);
+    await pumpLcdRouter(tester,
+        size: const Size(375, 812),
+        initial: lcdQuietTimePath(kLcdDevice),
+        overrides: lcdOverrides(
+            repo: FakeLcdRepo(),
+            rows: rows,
+            link: Stream.value(lcdLink()),
+            now: _noon,
+            devices: const [lcdTestDevice]));
+    expect(tester.takeException(), isNull);
+    expect(tester.getRect(find.byKey(_k(false, 'minute_up'))).right, 351);
+  });
+
   testWidgets('수치 (Figma 1659:6267, 393×852)', (tester) async {
     await _open(tester, link: lcdLink());
-    expect(find.text('화면 꺼짐 시간'), findsOneWidget);
+    expect(find.text('화면 꺼짐 시간 예약'), findsOneWidget);
     final start = find.text('시작');
     expect(tester.getRect(start).topLeft, const Offset(36, 118));
     expect(tester.getRect(find.text('종료')).top, 282);

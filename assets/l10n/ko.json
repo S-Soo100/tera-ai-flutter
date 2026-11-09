@@ -1245,7 +1245,7 @@
   "lcd_power_in_quiet": "지금은 꺼짐 예약 시간이라 {}에 켜져요",
   "lcd_power_override_until": "{}부터 예약대로 돌아가요",
   "lcd_needs_update_note": "기기 업데이트 후 쓸 수 있어요",
-  "lcd_quiet_title": "화면 꺼짐 시간",
+  "lcd_quiet_title": "화면 꺼짐 시간 예약",
   "lcd_quiet_start": "시작",
   "lcd_quiet_end": "종료",
   "lcd_quiet_hour_up": "{} 시 올리기",

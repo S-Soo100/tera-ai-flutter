@@ -183,13 +183,16 @@ class _Block extends ConsumerWidget {
             const SizedBox(height: 24),
           ]),
           const SizedBox(width: 20),
-          _Picker(
-            isStart: isStart,
-            part: 'hour',
-            text: '${time.hour12}',
-            upLabel: 'lcd_quiet_hour_up'.tr(args: [label]),
-            downLabel: 'lcd_quiet_hour_down'.tr(args: [label]),
-            onStep: (d) => draft.stepHour(isStart, d),
+          // 393에서는 칸 108 그대로, 그보다 좁은 폰에서만 칸이 줄어든다.
+          Flexible(
+            child: _Picker(
+              isStart: isStart,
+              part: 'hour',
+              text: '${time.hour12}',
+              upLabel: 'lcd_quiet_hour_up'.tr(args: [label]),
+              downLabel: 'lcd_quiet_hour_down'.tr(args: [label]),
+              onStep: (d) => draft.stepHour(isStart, d),
+            ),
           ),
           SizedBox(
             width: 23,
@@ -201,13 +204,15 @@ class _Block extends ConsumerWidget {
                       color: glass.textSecondary)),
             ),
           ),
-          _Picker(
-            isStart: isStart,
-            part: 'minute',
-            text: time.minute.toString().padLeft(2, '0'),
-            upLabel: 'lcd_quiet_minute_up'.tr(args: [label]),
-            downLabel: 'lcd_quiet_minute_down'.tr(args: [label]),
-            onStep: (d) => draft.stepMinute(isStart, d),
+          Flexible(
+            child: _Picker(
+              isStart: isStart,
+              part: 'minute',
+              text: time.minute.toString().padLeft(2, '0'),
+              upLabel: 'lcd_quiet_minute_up'.tr(args: [label]),
+              downLabel: 'lcd_quiet_minute_down'.tr(args: [label]),
+              onStep: (d) => draft.stepMinute(isStart, d),
+            ),
           ),
         ]),
       ],
