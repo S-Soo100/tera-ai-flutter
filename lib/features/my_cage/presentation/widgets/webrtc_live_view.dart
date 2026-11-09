@@ -516,6 +516,11 @@ class _FailedView extends ConsumerWidget {
 /// 세로 가운데: 꺼짐 아이콘 62 → 8 → 문구 14/500 → 24 → 버튼 154.5×44 둘(간격
 /// 12, 각 최대 175 — Figma 메모). [onWifiChange]가 null이면(가로 전체화면)
 /// [카메라 재연결] 하나만.
+/// 디자인 테스트 대조용 — 오프라인 안내를 실제 위젯 그대로 띄운다.
+Widget debugLiveOfflineView(
+        {required VoidCallback onRetry, VoidCallback? onWifiChange}) =>
+    _OfflineView(onRetry: onRetry, onWifiChange: onWifiChange);
+
 class _OfflineView extends StatelessWidget {
   const _OfflineView({required this.onRetry, this.onWifiChange});
 
