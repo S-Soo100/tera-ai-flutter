@@ -106,9 +106,9 @@ class EnvInsightCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 줄이 넘치면 어절 단위로 넘긴다(글자 중간에서 끊지 않음).
-              Text(
-                keepAllWords(r.title),
-                style: TextStyle(
+              _keepAllText(
+                r.title,
+                TextStyle(
                   fontFamily: 'Pretendard',
                   fontSize: 16,
                   height: 22.1 / 16,
@@ -119,9 +119,9 @@ class EnvInsightCard extends StatelessWidget {
               ),
               if (r.lines.isNotEmpty) const SizedBox(height: 4),
               for (final line in r.lines)
-                Text(
-                  keepAllWords(line),
-                  style: TextStyle(
+                _keepAllText(
+                  line,
+                  TextStyle(
                     fontFamily: 'Pretendard',
                     fontSize: 14,
                     height: 19.3 / 14,
@@ -134,6 +134,24 @@ class EnvInsightCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// [keepAllWords]로 어절 단위 줄바꿈을 하되 자간은 Figma 값 그대로 둔다.
+  ///
+  /// `letterSpacing`은 U+2060에도 붙어 그대로 쓰면 글자 사이 자간이 두 배가
+  /// 된다(−3%가 −6%로, 글자가 빽빽해 굵어 보였다). 그 문자만 자간을 0으로 준다.
+  Widget _keepAllText(String text, TextStyle style) {
+    final parts = keepAllWords(text).split('\u2060');
+    return Text.rich(
+      TextSpan(children: [
+        for (var i = 0; i < parts.length; i++) ...[
+          if (i > 0)
+            const TextSpan(text: '\u2060', style: TextStyle(letterSpacing: 0)),
+          TextSpan(text: parts[i]),
+        ],
+      ]),
+      style: style,
     );
   }
 }
