@@ -374,7 +374,10 @@ void main() {
       expect(find.byKey(LcdSettingsScreen.powerNoteKey), findsNothing,
           reason: '이미 꺼져 있다 — 예약 시간 안내 안 함');
       expect(
-          tester.widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey)).data,
+          tester
+              .widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey))
+              .textSpan!
+              .toPlainText(),
           keepAllWords('다시 켤 때까지 꺼져 있어요'));
     });
 
@@ -392,7 +395,10 @@ void main() {
       expect(find.text(keepAllWords('지금은 꺼짐 예약 시간이라 오전 8:00에 켜져요')),
           findsOneWidget);
       expect(
-          tester.widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey)).data,
+          tester
+              .widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey))
+              .textSpan!
+              .toPlainText(),
           keepAllWords('설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다'));
     });
 
@@ -414,10 +420,16 @@ void main() {
       await _pump(tester,
           link: lcdLink(power: false, screenOn: false, lcdOverride: true));
       expect(
-          tester.widget<Text>(find.byKey(LcdSettingsScreen.powerNoteKey)).data,
+          tester
+              .widget<Text>(find.byKey(LcdSettingsScreen.powerNoteKey))
+              .textSpan!
+              .toPlainText(),
           keepAllWords('다시 켤 때까지 꺼져 있어요'));
       expect(
-          tester.widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey)).data,
+          tester
+              .widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey))
+              .textSpan!
+              .toPlainText(),
           keepAllWords('설정한 시간 동안 화면을 끄고, 이후 자동으로 다시 켜집니다'));
     });
 
@@ -427,7 +439,10 @@ void main() {
           now: _night);
       expect(find.text('화면 전원 · 꺼짐'), findsOneWidget);
       expect(
-          tester.widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey)).data,
+          tester
+              .widget<Text>(find.byKey(LcdSettingsScreen.quietNoteKey))
+              .textSpan!
+              .toPlainText(),
           keepAllWords('다시 켤 때까지 꺼져 있어요'));
     });
 
