@@ -82,6 +82,23 @@ void main() {
         glass.humidAccent);
   });
 
+  // 서버 배포 전후로 두 칩이 모두 온다(terra-server PR 58) — 어느 쪽이든 [ ]
+  // 안을 그대로 그리고, 설명은 앱 고정 문구 하나다.
+  for (final chip in ['과습 안내', '과습 주의']) {
+    testWidgets('과습 — 칩 "$chip"을 그대로 그리고 설명은 두 줄 안에 들어간다', (tester) async {
+      await pump(tester, [
+        _alert('o', 'env_humid_high', 'caution', '[$chip] 적정 습도보다 +7%p'),
+      ]);
+      expect(find.text(chip), findsOneWidget);
+      expect(find.text(keepAllWords('적정 습도보다 +7%p')), findsOneWidget);
+      final hint = find.text(
+          keepAllWords('최고 습도를 초과한 상태가 지속되고 있어요. 환기 상태를 점검해 주세요'));
+      expect(hint, findsOneWidget);
+      // 줄높이 19.3 — 두 줄을 넘으면 Figma 카드 높이가 더 늘어난다.
+      expect(tester.getSize(hint).height, lessThanOrEqualTo(19.3 * 2 + 0.5));
+    });
+  }
+
   final tempHigh =
       _alert('th', 'env_temp_high', 'caution', '[고온 주의] 적정 온도보다 +5.2℃');
   final vent = _alert('v', 'env_vent_delay', 'caution', '[환기 지연] 분무 후 건기 미도달');
