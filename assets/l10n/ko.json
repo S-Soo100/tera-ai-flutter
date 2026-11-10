@@ -717,6 +717,8 @@
   "my_cage_add_camera": "카메라 연결하기",
   "camera_rotate_title": "화면 뒤집기 (180°)",
   "camera_rotate_subtitle": "{} — 잠시 후 적용돼요. 카메라가 꺼져 있으면 다시 켜질 때 적용돼요.",
+  "camera_focus_notice": "카메라 렌즈 초점을 맞춰주세요",
+  "camera_focus_notice_more": "더보기",
   "camera_focus_guide_title": "카메라 초점 가이드",
   "camera_focus_guide_1": "영상이 흐릿하게 보인다면 렌즈 초점을 맞춰주세요",
   "camera_focus_guide_2": "렌즈 돌출 부분을 손으로 잡고 좌우로 천천히 돌리면서, 라이브 화면이 가장 선명해지는 위치를 찾아주세요",

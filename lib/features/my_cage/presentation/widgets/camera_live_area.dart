@@ -13,6 +13,7 @@ import '../../../home/presentation/home_set_providers.dart';
 import '../../domain/terra_camera.dart';
 import '../my_cage_providers.dart';
 import '../webrtc_live_controller.dart';
+import 'focus_notice_snack_bar.dart';
 import 'webrtc_live_view.dart';
 
 /// 카메라 탭 라이브 영역 — Figma Camera Home (668:427), 369×271 radius 12.
@@ -275,6 +276,14 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
                 cameraId: current.id,
               ),
             ),
+          // 운영자가 보낸 렌즈 초점 안내(Figma 1813:8260) — 영상이 보일 때만
+          // 스스로 그린다. 사람 단위라 어느 카메라로 넘겨도 같은 안내.
+          Positioned(
+            top: 12,
+            left: 12,
+            right: 12,
+            child: FocusNoticeSnackBar(cameraId: current.id),
+          ),
         ],
       ),
     );
