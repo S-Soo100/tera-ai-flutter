@@ -5,6 +5,12 @@ import '../../../core/network/terra_rest_client.dart';
 import '../domain/sys_health.dart';
 import '../domain/terra_camera.dart';
 
+/// 이 계정 목록에 보일 카메라 행인가 — 해제(`unlinked_at`)되지 않았고 다른
+/// 계정으로 넘어가지(`superseded_at`) 않았다. `superseded_at`은 **cameras에만**
+/// 있다(devices 행에 쓰지 말 것).
+bool isVisibleCameraRow(Map<String, Object?> row) =>
+    row['unlinked_at'] == null && row['superseded_at'] == null;
+
 class CameraRepository {
   final SupabaseClient _supabase;
   final TerraRestClient _rest;
@@ -20,6 +26,10 @@ class CameraRepository {
   /// 소프트 해제된 카메라(`unlinked_at` 있음, 2026-09-16 가정 계약)는 뺀다.
   /// 컬럼 미배포면 null이라 전부 남는다 — 서버 필터 대신 앱에서 거른다(직결
   /// 조회에 없는 컬럼을 필터로 걸면 배포 전 400이 난다).
+  ///
+  /// 다른 계정이 같은 보드를 등록해 서버가 `superseded_at`을 찍은 옛 행도
+  /// 뺀다(2026-11-10 서버 계약 — 해제는 아니고, 보드가 돌아오면 서버가 풀어
+  /// cameras Realtime으로 다시 나타난다).
   Future<List<TerraCamera>> listAll() async {
     final rows = await _supabase
         .from('cameras')
@@ -27,7 +37,7 @@ class CameraRepository {
         .order('created_at', ascending: false);
     return (rows as List)
         .cast<Map<String, dynamic>>()
-        .where((r) => r['unlinked_at'] == null)
+        .where(isVisibleCameraRow)
         .map(TerraCamera.fromJson)
         .toList();
   }
@@ -35,7 +45,7 @@ class CameraRepository {
   Future<TerraCamera?> getById(String id) async {
     final rows = await _supabase.from('cameras').select().eq('id', id).limit(1);
     final list = (rows as List).cast<Map<String, dynamic>>();
-    if (list.isEmpty || list.first['unlinked_at'] != null) return null;
+    if (list.isEmpty || !isVisibleCameraRow(list.first)) return null;
     return TerraCamera.fromJson(list.first);
   }
 
