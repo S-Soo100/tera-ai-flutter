@@ -31,6 +31,24 @@ class MemoryNotificationStore implements NotificationStore {
     }
   }
 
+  /// RLS 흉내 — 서버는 로그인한 계정 행만 준다. [rlsUserId]가 null이면 전부.
+  String? rlsUserId;
+
+  @override
+  Stream<List<Map<String, Object?>>> watchKind(String kind) async* {
+    List<Map<String, Object?>> pick() => rows
+        .where((r) =>
+            r['kind'] == kind &&
+            (rlsUserId == null || r['user_id'] == rlsUserId))
+        .map((r) => Map<String, Object?>.of(r))
+        .toList();
+    operations.add('watchKind:$kind');
+    yield pick();
+    await for (final _ in changes.stream) {
+      yield pick();
+    }
+  }
+
   @override
   Future<void> markRead(String id, String userId, DateTime at) async {
     operations.add('read:$id:$userId');

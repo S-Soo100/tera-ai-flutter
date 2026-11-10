@@ -3,7 +3,12 @@ import 'notification_route.dart';
 /// v4 온습도 이탈 푸시(terra-server `docs/APP_ENV_ALERT_PUSH_2026-11-02.md` §2).
 const envAlertNotificationKind = 'env.alert.triggered';
 
+/// 운영자가 특정 사용자에게 보내는 카메라 렌즈 초점 안내(사람 단위, 푸시 없음).
+/// 운영자가 SQL로 app_notifications에 직접 넣는다 — `docs/ops/camera-focus-notice.md`.
+const cameraFocusNotificationKind = 'camera.focus_needed';
+
 const knownNotificationKinds = {
+  cameraFocusNotificationKind,
   'highlight.ready',
   'device.action.started',
   'device.action.ended',
