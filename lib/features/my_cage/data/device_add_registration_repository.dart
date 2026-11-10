@@ -56,17 +56,28 @@ class DeviceAddRegistrationRepository {
   /// 이 계정의 기기 행이 아직 있으면 마지막 접속 시각·`hw_id`와 함께 돌려준다.
   /// 삭제·해제(`unlinked_at`)됐거나 다른 계정으로 넘어갔으면 null — 새로
   /// 등록해야 한다(해제된 행으로 Wi-Fi만 붙이면 목록에 안 보인다).
+  ///
+  /// 카메라는 다른 계정이 같은 보드를 등록해 서버가 `superseded_at`을 찍은
+  /// 행도 null이다(2026-11-10) — 새로 등록하면 서버가 같은 행을 되돌려 준다.
+  /// **그 컬럼은 cameras에만 있다** — devices 조회에 넣으면 PostgREST 400.
   Future<OwnedDeviceRow?> owned(
       String account, PairTargetKind kind, String id) async {
     _guard(account);
+    final isCamera = kind == PairTargetKind.camera;
     final rows = await client
-        .from(kind == PairTargetKind.camera ? 'cameras' : 'devices')
-        .select('id,last_seen_at,hw_id,is_online,unlinked_at')
+        .from(isCamera ? 'cameras' : 'devices')
+        .select(isCamera
+            ? 'id,last_seen_at,hw_id,is_online,unlinked_at,superseded_at'
+            : 'id,last_seen_at,hw_id,is_online,unlinked_at')
         .eq('owner_id', account)
         .eq('id', id)
         .limit(1);
     _guard(account);
-    if (rows.isEmpty || rows.single['unlinked_at'] != null) return null;
+    if (rows.isEmpty ||
+        rows.single['unlinked_at'] != null ||
+        rows.single['superseded_at'] != null) {
+      return null;
+    }
     final raw = rows.single['last_seen_at'];
     final hw = rows.single['hw_id'];
     final online = rows.single['is_online'];

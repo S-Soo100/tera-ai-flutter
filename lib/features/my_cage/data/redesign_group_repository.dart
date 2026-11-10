@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/terra_rest_client.dart';
+import 'camera_repository.dart' show isVisibleCameraRow;
 import '../domain/redesign_management.dart';
 
 typedef ManagementRowsLoader = Future<List<Map<String, Object?>>> Function(
@@ -116,8 +117,9 @@ class RedesignGroupRepository {
       // 해제된 기기를 제외". 컬럼이 아직 없으면 null이라 전부 남는다.
       for (final row in devices)
         if (row['unlinked_at'] == null) item(row, ManagementKind.device),
+      // 카메라는 다른 계정으로 넘어간 옛 행(`superseded_at`)도 뺀다(2026-11-10).
       for (final row in cameras)
-        if (row['unlinked_at'] == null) item(row, ManagementKind.camera),
+        if (isVisibleCameraRow(row)) item(row, ManagementKind.camera),
       for (final row in pets)
         if (row['deleted_at'] == null) item(row, ManagementKind.pet)
     ]);

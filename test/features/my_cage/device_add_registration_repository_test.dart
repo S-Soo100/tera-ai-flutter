@@ -98,4 +98,30 @@ void main() {
     expect(await repo.owned('owner', PairTargetKind.camera, 'row'), isNull,
         reason: '해제한 기기는 새로 등록해야 목록에 다시 보인다');
   });
+
+  // 2026-11-10 서버 계약: superseded_at은 cameras에만 있다. devices에 그 컬럼을
+  // 고르면 PostgREST가 400을 내 사육장 추가·Wi-Fi 바꾸기 판정이 깨진다.
+  test('owned는 카메라만 superseded_at을 보고, 사육장 조회엔 넣지 않는다', () async {
+    final requests = <http.Request>[];
+    var body =
+        '[{"id":"row","last_seen_at":null,"superseded_at":"2026-11-10T03:40:00Z"}]';
+    final client = SupabaseClient('https://example.test', 'anon',
+        httpClient: MockClient((request) async {
+      requests.add(request);
+      return http.Response(body, 200,
+          request: request, headers: {'content-type': 'application/json'});
+    }));
+    addTearDown(client.dispose);
+    final repo = DeviceAddRegistrationRepository(client,
+        accountIdProvider: () => 'owner');
+    expect(await repo.owned('owner', PairTargetKind.camera, 'row'), isNull,
+        reason: '다른 계정으로 넘어간 카메라는 새로 등록해야 한다');
+    expect(requests.last.url.queryParameters['select'],
+        contains('superseded_at'));
+    body = '[{"id":"row","last_seen_at":null}]';
+    expect(await repo.owned('owner', PairTargetKind.device, 'row'), isNotNull);
+    expect(requests.last.url.path, endsWith('/devices'));
+    expect(requests.last.url.queryParameters['select'],
+        isNot(contains('superseded_at')));
+  });
 }

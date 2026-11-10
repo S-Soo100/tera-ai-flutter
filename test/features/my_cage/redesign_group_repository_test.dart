@@ -215,6 +215,30 @@ void main() {
     expect(inventory.items.map((i) => i.key.id), ['d-live']);
   });
 
+  // 2026-11-10 서버 계약: 다른 계정이 가져간 보드의 옛 카메라 행(superseded_at).
+  test('inventory hides cameras superseded by another account', () async {
+    final repo = RedesignGroupRepository(
+        loadRows: (table) async => switch (table) {
+              'enclosures' => [],
+              'devices' => [
+                  {'id': 'd-live', 'name': '사육장 1', 'device_id': 'terra-1'},
+                ],
+              'cameras' => [
+                  {'id': 'c-live', 'name': '카메라 1', 'camera_id': 'p4cam-1'},
+                  {
+                    'id': 'c-taken',
+                    'name': '카메라 2',
+                    'camera_id': 'p4cam-2',
+                    'superseded_at': '2026-11-10T03:40:00Z'
+                  },
+                ],
+              _ => <Map<String, Object?>>[],
+            },
+        rpc: (_, __) async => null);
+    final inventory = await repo.load();
+    expect(inventory.items.map((i) => i.key.id), ['d-live', 'c-live']);
+  });
+
   // 2026-09-22: 서버가 40001을 내면 PostgREST가 무한 재시도해 응답이 안 온다.
   // 앱은 기다리지 않고 '확인 필요'로 끝낸다(같은 request_id 재시도는 안전).
   test('RPC가 응답하지 않으면 시간 제한 후 저장 확인 필요 실패로 끝낸다', () async {
