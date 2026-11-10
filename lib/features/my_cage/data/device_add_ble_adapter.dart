@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' show min;
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugPrint, defaultTargetPlatform;
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../domain/device_add_flow.dart';
@@ -45,20 +46,20 @@ class DeviceAddBleAdapter implements DeviceAddGateway {
 
   @override
   Future<void> startScan() async {
-    final permissions = await [
-      Permission.bluetoothScan,
-      Permission.bluetoothConnect,
-      Permission.locationWhenInUse
-    ].request();
+    final allowed = await _requestBlePermissions();
     if (_disposed) return;
-    if (permissions[Permission.bluetoothScan]?.isPermanentlyDenied == true ||
-        permissions[Permission.bluetoothConnect]?.isPermanentlyDenied == true) {
+    if (!allowed) {
       throw const DeviceAddScanException(DeviceAddScanProblem.permission);
     }
     final adapter = await _repo.adapterState
         .firstWhere((value) => value != BluetoothAdapterState.unknown)
         .timeout(replyTimeout);
     if (_disposed) return;
+    // iOS는 권한이 거부되면 CoreBluetooth가 unauthorized를 준다 — 블루투스가
+    // 꺼진 것이 아니니 설정 안내로 보낸다.
+    if (adapter == BluetoothAdapterState.unauthorized) {
+      throw const DeviceAddScanException(DeviceAddScanProblem.permission);
+    }
     if (adapter != BluetoothAdapterState.on) {
       throw const DeviceAddScanException(DeviceAddScanProblem.bluetoothOff);
     }
@@ -355,4 +356,25 @@ DeviceProvisionFailure _failureOf(Object error) {
         : DeviceProvisionFailure.rejected;
   }
   return DeviceProvisionFailure.ble;
+}
+
+/// 기기 추가 BLE 권한을 묻는다. false = 앱에서 다시 물을 수 없다(설정 안내).
+///
+/// iOS의 permission_handler에는 `bluetoothScan`·`bluetoothConnect` 분기가 없어
+/// 팝업 없이 곧바로 영구 거부를 돌려준다(2026-11-10 TestFlight 실기기 — 팝업도,
+/// 설정의 블루투스 항목도 없었다). iOS는 `Permission.bluetooth` 하나로 묻고
+/// (Podfile `PERMISSION_BLUETOOTH=1` 필요), BLE에 위치 권한이 필요 없어 묻지 않는다.
+/// Android는 12+ 근처 기기 권한 + 구버전 스캔용 위치 권한 그대로.
+Future<bool> _requestBlePermissions() async {
+  if (defaultTargetPlatform == TargetPlatform.iOS) {
+    final status = await Permission.bluetooth.request();
+    return !status.isPermanentlyDenied && !status.isRestricted;
+  }
+  final permissions = await [
+    Permission.bluetoothScan,
+    Permission.bluetoothConnect,
+    Permission.locationWhenInUse
+  ].request();
+  return permissions[Permission.bluetoothScan]?.isPermanentlyDenied != true &&
+      permissions[Permission.bluetoothConnect]?.isPermanentlyDenied != true;
 }
