@@ -106,8 +106,9 @@ class ManagementButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool red;
 
-  /// 누를 수 있는 회색 버튼 — Figma 바탕 #E3E3E3. 글자는 Figma의 흰색이
-  /// 회색 위에서 안 읽혀 진한 글자(2026-10-21 라이브 재시작, 사용자 결정).
+  /// 누를 수 있는 회색 버튼 — Figma 바탕 #E3E3E3 + 흰 글자·그림 #FAFAFA
+  /// (2026-11-10 사용자 결정, 10-21의 진한 글자를 Figma로 되돌림). 비활성
+  /// 글자는 [disabledForeground]로 따로 정한다.
   final bool grey;
   final bool compact;
 
@@ -121,7 +122,7 @@ class ManagementButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabledForeground = grey
-        ? context.glass.textPrimary
+        ? context.glass.buttonForeground
         : ManagementColors.buttonForeground(context);
     final foreground = onPressed == null && disabledForeground != null
         ? disabledForeground!

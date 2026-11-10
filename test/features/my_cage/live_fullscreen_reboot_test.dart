@@ -13,6 +13,7 @@ import 'package:vivanaut/features/my_cage/presentation/camera_live_fullscreen_sc
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/sys_health_controllers.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/camera_focus_guide.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/management_widgets.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
 
@@ -112,7 +113,8 @@ void main() {
     expect(
         tester.getBottomLeft(button).dy, greaterThan(852 / 2),
         reason: '맨 아래');
-    // 켜져 있을 때는 Figma처럼 회색 바탕(#E3E3E3) + 진한 글자.
+    // 켜져 있을 때는 Figma(1813:8235·971:1837) 그대로 회색 바탕(#E3E3E3) +
+    // 흰 글자·그림(#FAFAFA) — 2026-11-10 사용자 결정(구 10-21 진한 글자 대체).
     expect(tester.widget<ManagementButton>(button).grey, isTrue);
     final style = tester
         .widget<FilledButton>(
@@ -125,7 +127,12 @@ void main() {
                 of: button, matching: find.text('camera_reboot')))
             .style
             ?.color,
-        VivaColors.labelPrimary);
+        VivaColors.fillBack);
+    // 초점 가이드 바로 아래 20(Figma 1813:8179) — 바닥 고정이 아니라 가이드를
+    // 가리지 않는다(2026-11-10 사용자 결정).
+    final guideBottom =
+        tester.getBottomLeft(find.byKey(CameraFocusGuide.boxKey)).dy;
+    expect(tester.getTopLeft(button).dy - guideBottom, 20);
     await tester.tap(button);
     await tester.pumpAndSettle();
     expect(repo.reboots, 0, reason: '확인 전엔 보내지 않는다');
