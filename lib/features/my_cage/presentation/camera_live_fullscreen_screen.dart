@@ -19,6 +19,7 @@ import 'my_cage_providers.dart';
 import 'player_view_providers.dart';
 import 'sys_health_controllers.dart';
 import 'webrtc_live_controller.dart';
+import 'widgets/camera_focus_guide.dart';
 import 'widgets/camera_rotate_tile.dart';
 import 'widgets/crecam_detail_top_bar.dart';
 import 'widgets/live_control_rows.dart';
@@ -310,6 +311,9 @@ class _CameraLiveFullscreenScreenState
                             subtitle: 'management_power_on_label'.tr(),
                             trailing: LivePowerSegment(dimmed: !available),
                           ),
+                          // Figma 1813:8229 — 전원 줄 아래 24, 항상 노출.
+                          const SizedBox(height: 24),
+                          const CameraFocusGuide(),
                         ])),
                     const SizedBox(height: 24),
                   ]))),

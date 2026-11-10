@@ -613,6 +613,8 @@ void main() {
           expect(find.text('실시간 녹화'), findsOneWidget);
           expect(find.text('카메라 180° 회전'), findsOneWidget);
           expect(find.text('녹화 시작'), findsOneWidget);
+          // 초점 가이드(Figma 1813:8229) — 세 문장이 글자에 맞춰 늘어난다.
+          expect(find.text('카메라 초점 가이드'), findsOneWidget);
         });
       }
     });
