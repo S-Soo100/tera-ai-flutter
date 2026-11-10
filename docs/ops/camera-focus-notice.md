@@ -9,6 +9,7 @@
 - 앱 0.176.0 이상에서 막대가 보인다. 그보다 낮은 버전에서는 알림함에 "일반 알림"으로만 보인다.
 
 근거: 계획 `docs/superpowers/plans/2026-11-10-camera-focus-notice.md`, Figma `카메라 초점`(1813:8269).
+서버 쪽 운영 절차: terra-server `docs/OPERATIONS.md` "1-3. 카메라 렌즈 초점 안내 발송"(gwanhun/terra-server#63, 2026-11-10 기준 머지 전). 계약 값과 SQL은 이 문서와 같다.
 
 ## 보내기
 
