@@ -111,11 +111,11 @@
   - 세로 화면에만 넣는다. 세로 본문이 스크롤 영역인지 먼저 확인한다. 아니면 가이드가 하단 재시작 버튼에 가리지 않게 본문을 스크롤 가능하게 한다(재시작 버튼 위치는 유지).
 - Acceptance: 테스트 통과, 시뮬레이터 캡처에서 위 수치를 대조.
 
-- [ ] **Step 1: 실패하는 테스트** — `세로 상세에 초점 가이드 제목과 3문장이 있다`(Global Constraints 문구 그대로 `find.text`), `가로에는 없다`, 글자 1.0/1.3/2.0 무오버플로.
-- [ ] **Step 2: 실패 확인** — `flutter test test/features/my_cage/camera_focus_guide_test.dart` → FAIL.
-- [ ] **Step 3: 구현**.
-- [ ] **Step 4: 통과 확인** — 위 명령 + `flutter test test/design/` PASS, `flutter analyze` 0.
-- [ ] **Step 5: 버전 minor + CHANGELOG `추가: 카메라 상세에 렌즈 초점 가이드` → 커밋** `feat(camera): 카메라 상세 초점 가이드`.
+- [x] **Step 1: 실패하는 테스트** — `세로 상세에 초점 가이드 제목과 3문장이 있다`(Global Constraints 문구 그대로 `find.text`), `가로에는 없다`, 글자 1.0/1.3/2.0 무오버플로.
+- [x] **Step 2: 실패 확인** — `flutter test test/features/my_cage/camera_focus_guide_test.dart` → FAIL.
+- [x] **Step 3: 구현**.
+- [x] **Step 4: 통과 확인** — 위 명령 + `flutter test test/design/` PASS, `flutter analyze` 0.
+- [x] **Step 5: 버전 minor + CHANGELOG `추가: 카메라 상세에 렌즈 초점 가이드` → 커밋** `feat(camera): 카메라 상세 초점 가이드`.
 
 ### Task 2: 초점 안내 데이터·상태 + 운영자 발송 문서
 
@@ -138,16 +138,16 @@
 - Must know: 기존 `watchNotifications`와 `notificationsProvider`는 바꾸지 않는다. 가짜 store는 `notification_repository_test.dart`의 구현을 확장한다.
 - Acceptance: 테스트 통과 + Step 6 실기 확인.
 
-- [ ] **Step 1: 실패하는 테스트**
+- [x] **Step 1: 실패하는 테스트**
   - `미읽음 초점 안내가 있으면 보인다` — 행 1개(kind `camera.focus_needed`, read_at null) → visible true.
   - `읽은 안내·다른 계정 행은 무시한다` — read_at 있음 + user_id 다른 행 → false.
   - `dismiss는 미읽음 초점 안내 전부를 읽음 처리한다` — 2건 → markRead 호출 id 2개, visible은 stream 갱신 전에 바로 false.
   - `markRead 실패한 id는 다시 보인다` — 가짜 store가 1건 throw → visible true.
   - `계정이 바뀌면 숨김과 목록이 새 계정 기준이다` — A에서 dismiss → B(미읽음 1건)로 전환 → visible true.
-- [ ] **Step 2: 실패 확인** — `flutter test test/features/notification/focus_notice_providers_test.dart` → FAIL.
-- [ ] **Step 3: 구현**(Produces 시그니처 그대로).
-- [ ] **Step 4: 통과 확인** — `flutter test test/features/notification/` 전체 PASS.
-- [ ] **Step 5: 운영자 문서** `docs/ops/camera-focus-notice.md` — 아래 보내기 SQL, 결과가 `INSERT 0 1`인지 확인, 보낸 기록 조회, 취소(`read_at = now()`) SQL.
+- [x] **Step 2: 실패 확인** — `flutter test test/features/notification/focus_notice_providers_test.dart` → FAIL.
+- [x] **Step 3: 구현**(Produces 시그니처 그대로).
+- [x] **Step 4: 통과 확인** — `flutter test test/features/notification/` 전체 PASS.
+- [x] **Step 5: 운영자 문서** `docs/ops/camera-focus-notice.md` — 아래 보내기 SQL, 결과가 `INSERT 0 1`인지 확인, 보낸 기록 조회, 취소(`read_at = now()`) SQL.
 
 ```sql
 insert into public.app_notifications
@@ -161,7 +161,7 @@ where u.email = '<대상 이메일>';
 ```
 
 - [ ] **Step 6: 실기 프로토타입(사용자가 고른 운영자 계정)** — 앱을 디버그 실행한다. 임시로 `focusNoticeIdsProvider`를 로그로 찍는 상태에서 위 SQL을 1회 넣는다. 수 초 안에 `[focus-notice] ids=[…]` 로그가 나오는지 본다. SQL로 `read_at`을 채운 뒤 `ids=[]` 로그가 나오는지도 본다. 실패하면 중단하고 보고한다.
-- [ ] **Step 7: 버전 patch + CHANGELOG → 커밋** `feat(notification): 카메라 초점 안내 수신 상태`.
+- [x] **Step 7: 버전 patch + CHANGELOG → 커밋** `feat(notification): 카메라 초점 안내 수신 상태`.
 
 ### Task 3: 알림함에서 초점 안내 열기
 
@@ -182,13 +182,13 @@ where u.email = '<대상 이메일>';
   다른 kind는 기존 그대로 처리한다.
 - Acceptance: 테스트 통과, 기존 알림함 테스트 무회귀.
 
-- [ ] **Step 1: 실패하는 테스트**
+- [x] **Step 1: 실패하는 테스트**
   - `focusNoticeCameraPath`: (`['a','b']`,`'b'`)→`/crecam/cameras/b/live`; (`['a','b']`,`'z'`)→`/crecam/cameras/a/live`; (`[]`,`null`)→`null`.
   - `알림함에서 열면 초점 안내 전부를 읽음 처리한다` — 초점 2건 중 1건 탭 → markRead 2회, 분류 라벨 `카메라`.
-- [ ] **Step 2: 실패 확인** — `flutter test test/features/notification/`.
-- [ ] **Step 3: 구현**.
-- [ ] **Step 4: 통과 확인** — 같은 명령 PASS.
-- [ ] **Step 5: 버전 patch + CHANGELOG → 커밋** `feat(notification): 알림함에서 초점 안내를 카메라 상세로 연다`.
+- [x] **Step 2: 실패 확인** — `flutter test test/features/notification/`.
+- [x] **Step 3: 구현**.
+- [x] **Step 4: 통과 확인** — 같은 명령 PASS.
+- [x] **Step 5: 버전 patch + CHANGELOG → 커밋** `feat(notification): 알림함에서 초점 안내를 카메라 상세로 연다`.
 
 ### Task 4: 라이브 위 스낵바(카메라 탭·홈)
 
@@ -212,15 +212,15 @@ where u.email = '<대상 이메일>';
   - 카메라 탭의 이름 배지, LiveSurface status·corner, 가운데 알약(멈춤·종료 임박)과 동시에 뜰 때 겹침을 대조표에 기록한다.
 - Acceptance: 테스트 통과, `flutter analyze` 0.
 
-- [ ] **Step 1: 실패하는 테스트**
+- [x] **Step 1: 실패하는 테스트**
   - `안내가 있고 streaming이면 문구와 더보기가 보인다`.
   - `failed·offline·connecting 단계에서는 그리지 않는다`.
   - `누르면 상세로 이동하고 사라진다` — push 경로 `/crecam/cameras/c1/live`, 이후 `find.byKey(tapKey)` 없음.
   - `text_scale_overflow_test.dart`에 스낵바 1.0/1.3/2.0 무오버플로를 추가한다.
-- [ ] **Step 2: 실패 확인** — `flutter test test/features/my_cage/focus_notice_snack_bar_test.dart`.
-- [ ] **Step 3: 위젯 구현 + 두 Stack에 배치 + 기존 테스트 override**.
-- [ ] **Step 4: 통과 확인** — `flutter test` 전체 PASS, `flutter analyze` 0.
-- [ ] **Step 5: 버전 patch + CHANGELOG → 커밋** `feat(camera): 라이브 위 렌즈 초점 안내 스낵바`.
+- [x] **Step 2: 실패 확인** — `flutter test test/features/my_cage/focus_notice_snack_bar_test.dart`.
+- [x] **Step 3: 위젯 구현 + 두 Stack에 배치 + 기존 테스트 override**.
+- [x] **Step 4: 통과 확인** — `flutter test` 전체 PASS, `flutter analyze` 0.
+- [x] **Step 5: 버전 patch + CHANGELOG → 커밋** `feat(camera): 라이브 위 렌즈 초점 안내 스낵바`.
 
 ### Task 5: 화면 검수·병합
 
