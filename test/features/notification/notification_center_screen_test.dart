@@ -34,6 +34,7 @@ void main() {
       {PushPermission permission = PushPermission.authorized,
       List<EnclosureSet> sets = const [],
       List<TerraCamera> cameras = const [],
+      bool camerasFail = false,
       String? selectedCamera}) async {
     final router = GoRouter(initialLocation: '/notifications', routes: [
       GoRoute(
@@ -61,7 +62,9 @@ void main() {
               NotificationRepository(store, currentUserId: () => 'a')),
           pushPermissionProvider.overrideWith((ref) => permission),
           homeDeviceSetsProvider.overrideWith((ref) async => sets),
-          camerasProvider.overrideWith((ref) => Stream.value(cameras)),
+          camerasProvider.overrideWith((ref) => camerasFail
+              ? Stream.error(StateError('network'))
+              : Stream.value(cameras)),
           selectedCrecamCameraProvider.overrideWith((ref) => selectedCamera),
         ],
         child: localizedNotificationHost((context) => MaterialApp.router(
@@ -236,5 +239,16 @@ void main() {
     expect(find.text('camera tab'), findsOneWidget);
     expect(find.byType(NotificationCenterScreen), findsNothing,
         reason: 'go — 알림함 위에 쌓지 않는다');
+  });
+
+  testWidgets('초점 안내 — 카메라 목록을 못 받아도 고른 카메라가 있으면 그 상세로',
+      (tester) async {
+    final store = MemoryNotificationStore()..rows.add(focusRow('f1'));
+    addTearDown(store.changes.close);
+    await pump(tester, store, camerasFail: true, selectedCamera: 'c2');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('notification_f1')));
+    await tester.pumpAndSettle();
+    expect(find.text('camera detail c2'), findsOneWidget);
   });
 }

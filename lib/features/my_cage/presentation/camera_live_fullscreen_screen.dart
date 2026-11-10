@@ -201,8 +201,9 @@ class _CameraLiveFullscreenScreenState
         if (inLandscape) _showControls();
         final result = s.result;
         if (result == null) return;
-        // 세로 토스트는 맨 아래 [카메라 재시작] 버튼 자리(Figma 저장 완료),
-        // 가로는 화면 한가운데(Figma 1525:11177).
+        // 세로 토스트는 화면 바닥 SafeArea 위 66(Figma 저장 완료 — 화면 기준
+        // 자리라 2026-11-10 재시작 버튼이 흐름으로 옮겨져도 그대로, 잠깐 떠
+        // 아래 내용을 덮는다), 가로는 화면 한가운데(Figma 1525:11177).
         showLiveRecordingResult(context, result, s.resultSeconds,
             bottom: MediaQuery.paddingOf(context).bottom + 66,
             centered: inLandscape);

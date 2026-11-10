@@ -31,10 +31,18 @@ class SupabaseNotificationStore implements NotificationStore {
       .eq('user_id', userId)
       .order('created_at', ascending: false);
 
+  /// 최근 [watchKindLimit]건만 — 읽은 지난 안내까지 앱을 켤 때마다 받지 않는다.
+  /// 안내를 누르면 미읽음 전부를 읽음 처리하므로, 미읽음이 이보다 오래된
+  /// 자리로 밀려날 일은 없다.
+  static const watchKindLimit = 20;
+
   @override
   Stream<List<Map<String, Object?>>> watchKind(String kind) => client
       .from('app_notifications')
-      .stream(primaryKey: ['id']).eq('kind', kind);
+      .stream(primaryKey: ['id'])
+      .eq('kind', kind)
+      .order('created_at', ascending: false)
+      .limit(watchKindLimit);
 
   @override
   Future<void> markRead(String id, String userId, DateTime at) async {

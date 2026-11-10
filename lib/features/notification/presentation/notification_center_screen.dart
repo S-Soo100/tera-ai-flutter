@@ -163,20 +163,23 @@ class NotificationCenterScreen extends ConsumerWidget {
         .map((n) => n.id);
     unawaited(Future.wait(others.map((id) => repo.markRead(id).catchError(
         (Object e) => debugPrint('[focus-notice] markRead failed id=$id $e')))));
+    // 이미 받은 카메라 목록이 있으면 기다리지 않는다. 목록을 못 받으면(오류·
+    // 5초 초과) 카메라 탭에서 고른 카메라를 믿고 그 상세로 간다 — 일시 오류로
+    // 카메라가 있는 사람을 카메라 탭으로 보내지 않게.
+    final selected = ref.read(selectedCrecamCameraProvider);
     List<String> ids;
     try {
-      ids = (await ref
+      final cameras = ref.read(camerasProvider).valueOrNull ??
+          await ref
               .read(camerasProvider.future)
-              .timeout(const Duration(seconds: 5)))
-          .map((c) => c.id)
-          .toList();
+              .timeout(const Duration(seconds: 5));
+      ids = cameras.map((c) => c.id).toList();
     } catch (_) {
-      ids = const [];
+      ids = [if (selected != null) selected];
     }
     if (!context.mounted || ref.read(currentUserProvider)?.id != userId) return;
-    final path = focusNoticeCameraPath(
-        myCameraIds: ids,
-        selectedCameraId: ref.read(selectedCrecamCameraProvider));
+    final path =
+        focusNoticeCameraPath(myCameraIds: ids, selectedCameraId: selected);
     if (path == null) {
       context.go('/crecam');
     } else {

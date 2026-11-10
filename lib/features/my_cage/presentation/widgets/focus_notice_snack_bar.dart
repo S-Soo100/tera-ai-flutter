@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/glass_palette.dart';
-import '../../../../core/theme/viva_colors.dart';
 import '../../../notification/presentation/focus_notice_providers.dart';
 import '../webrtc_live_controller.dart';
 import 'management_widgets.dart';
@@ -58,7 +57,7 @@ class FocusNoticeSnackBar extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               Text('camera_focus_notice_more'.tr(),
-                  style: style(FontWeight.w600, VivaColors.mainDark)),
+                  style: style(FontWeight.w600, glass.selectionOn)),
             ]),
           ),
         ),

@@ -21,7 +21,7 @@ final focusNoticeIdsProvider =
       .watchUnreadOfKind(userId, cameraFocusNotificationKind)
       .map((items) {
     final ids = List<String>.unmodifiable(items.map((item) => item.id));
-    debugPrint('[focus-notice] ids=$ids');
+    if (kDebugMode) debugPrint('[focus-notice] ids=$ids');
     return ids;
   });
 });
@@ -45,7 +45,8 @@ Future<void> dismissFocusNotices(WidgetRef ref) async {
   final ids = ref.read(focusNoticeIdsProvider).valueOrNull ?? const [];
   if (ids.isEmpty) return;
   final dismissed = ref.read(focusNoticeDismissedProvider.notifier);
-  dismissed.state = {...dismissed.state, ...ids};
+  // 지금 미읽음 전부를 숨긴다 — 예전 id는 이미 읽음이라 목록에 없으니 버린다.
+  dismissed.state = ids.toSet();
   final repo = ref.read(notificationRepositoryProvider);
   await Future.wait(ids.map((id) async {
     try {

@@ -128,4 +128,14 @@ void main() {
     await tester.pump();
     expect(find.text('false'), findsOneWidget);
   });
+
+  testWidgets('dismiss는 숨김 목록을 지금 미읽음으로 바꾼다(지난 id는 버린다)',
+      (tester) async {
+    store.rows.add(focusRow('f2', 'a'));
+    final ref = await pump(tester);
+    ref.read(focusNoticeDismissedProvider.notifier).state = {'old1', 'old2'};
+    await dismissFocusNotices(ref);
+    await tester.pump();
+    expect(ref.read(focusNoticeDismissedProvider), {'f2'});
+  });
 }
