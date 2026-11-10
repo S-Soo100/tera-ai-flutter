@@ -232,5 +232,5 @@ where u.email = '<대상 이메일>';
 - Acceptance: 시뮬레이션 2~8 캡처, Figma 수치 대조표(차이는 보고 후 확정), `/code-review` 요청(사용자 호출).
 
 - [x] **Step 1:** 운영자 계정으로 SQL 1행 → 시뮬레이터에서 시뮬레이션 2~8을 캡처하고 대조표를 작성한다.
-- [ ] **Step 2:** 사용자에게 `/code-review`를 요청하고, 지적은 `receiving-code-review`로 처리한다.
-- [ ] **Step 3:** 버전을 main 대비 재조정하고 `tools/worktree.sh finish feat/camera-focus-notice`를 실행한다.
+- [x] **Step 2:** 사용자에게 `/code-review`를 요청하고, 지적은 `receiving-code-review`로 처리한다.
+- [x] **Step 3:** 버전을 main 대비 재조정하고 `tools/worktree.sh finish feat/camera-focus-notice`를 실행한다.
