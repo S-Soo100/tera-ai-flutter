@@ -160,7 +160,7 @@ from auth.users u, (select gen_random_uuid()::text as id) e
 where u.email = '<대상 이메일>';
 ```
 
-- [ ] **Step 6: 실기 프로토타입(사용자가 고른 운영자 계정)** — 앱을 디버그 실행한다. 임시로 `focusNoticeIdsProvider`를 로그로 찍는 상태에서 위 SQL을 1회 넣는다. 수 초 안에 `[focus-notice] ids=[…]` 로그가 나오는지 본다. SQL로 `read_at`을 채운 뒤 `ids=[]` 로그가 나오는지도 본다. 실패하면 중단하고 보고한다.
+- [x] **Step 6: 실기 프로토타입(사용자가 고른 운영자 계정)** — 앱을 디버그 실행한다. 임시로 `focusNoticeIdsProvider`를 로그로 찍는 상태에서 위 SQL을 1회 넣는다. 수 초 안에 `[focus-notice] ids=[…]` 로그가 나오는지 본다. SQL로 `read_at`을 채운 뒤 `ids=[]` 로그가 나오는지도 본다. 실패하면 중단하고 보고한다.
 - [x] **Step 7: 버전 patch + CHANGELOG → 커밋** `feat(notification): 카메라 초점 안내 수신 상태`.
 
 ### Task 3: 알림함에서 초점 안내 열기
@@ -231,6 +231,6 @@ where u.email = '<대상 이메일>';
 - Depends on: Task 1~4
 - Acceptance: 시뮬레이션 2~8 캡처, Figma 수치 대조표(차이는 보고 후 확정), `/code-review` 요청(사용자 호출).
 
-- [ ] **Step 1:** 운영자 계정으로 SQL 1행 → 시뮬레이터에서 시뮬레이션 2~8을 캡처하고 대조표를 작성한다.
+- [x] **Step 1:** 운영자 계정으로 SQL 1행 → 시뮬레이터에서 시뮬레이션 2~8을 캡처하고 대조표를 작성한다.
 - [ ] **Step 2:** 사용자에게 `/code-review`를 요청하고, 지적은 `receiving-code-review`로 처리한다.
 - [ ] **Step 3:** 버전을 main 대비 재조정하고 `tools/worktree.sh finish feat/camera-focus-notice`를 실행한다.
