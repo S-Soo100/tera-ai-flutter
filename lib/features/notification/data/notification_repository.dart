@@ -3,6 +3,10 @@ import '../domain/app_notification.dart';
 
 abstract interface class NotificationStore {
   Stream<List<Map<String, Object?>>> watch(String userId);
+
+  /// 한 종류의 알림만 실시간으로 본다. 행 범위는 RLS(본인 것만)가 정한다 —
+  /// Realtime stream은 eq 필터를 하나만 받아 user_id 대신 kind로 거른다.
+  Stream<List<Map<String, Object?>>> watchKind(String kind);
   Future<Map<String, Object?>?> findById(String id, String userId);
   Future<void> markRead(String id, String userId, DateTime at);
   Future<void> markAllRead(String userId, DateTime at);
@@ -26,6 +30,19 @@ class SupabaseNotificationStore implements NotificationStore {
       .stream(primaryKey: ['id'])
       .eq('user_id', userId)
       .order('created_at', ascending: false);
+
+  /// 최근 [watchKindLimit]건만 — 읽은 지난 안내까지 앱을 켤 때마다 받지 않는다.
+  /// 안내를 누르면 미읽음 전부를 읽음 처리하므로, 미읽음이 이보다 오래된
+  /// 자리로 밀려날 일은 없다.
+  static const watchKindLimit = 20;
+
+  @override
+  Stream<List<Map<String, Object?>>> watchKind(String kind) => client
+      .from('app_notifications')
+      .stream(primaryKey: ['id'])
+      .eq('kind', kind)
+      .order('created_at', ascending: false)
+      .limit(watchKindLimit);
 
   @override
   Future<void> markRead(String id, String userId, DateTime at) async {
@@ -72,6 +89,16 @@ class NotificationRepository {
             .compareTo(a.createdAt?.millisecondsSinceEpoch ?? 0));
         return List.unmodifiable(items);
       });
+
+  /// [userId]의 읽지 않은 [kind] 알림. RLS만 믿지 않고 계정·읽음을 한 번 더 거른다.
+  Stream<List<AppNotification>> watchUnreadOfKind(String userId, String kind) =>
+      _store.watchKind(kind).map((rows) => List.unmodifiable(rows
+          .map(AppNotification.fromJson)
+          .where((item) =>
+              item.userId == userId &&
+              item.kind == kind &&
+              item.id.isNotEmpty &&
+              !item.isRead)));
 
   Future<void> markRead(String id) async {
     final userId = _currentUserId();

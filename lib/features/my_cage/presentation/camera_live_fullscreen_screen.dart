@@ -19,6 +19,7 @@ import 'my_cage_providers.dart';
 import 'player_view_providers.dart';
 import 'sys_health_controllers.dart';
 import 'webrtc_live_controller.dart';
+import 'widgets/camera_focus_guide.dart';
 import 'widgets/camera_rotate_tile.dart';
 import 'widgets/crecam_detail_top_bar.dart';
 import 'widgets/live_control_rows.dart';
@@ -200,8 +201,9 @@ class _CameraLiveFullscreenScreenState
         if (inLandscape) _showControls();
         final result = s.result;
         if (result == null) return;
-        // 세로 토스트는 맨 아래 [카메라 재시작] 버튼 자리(Figma 저장 완료),
-        // 가로는 화면 한가운데(Figma 1525:11177).
+        // 세로 토스트는 화면 바닥 SafeArea 위 66(Figma 저장 완료 — 화면 기준
+        // 자리라 2026-11-10 재시작 버튼이 흐름으로 옮겨져도 그대로, 잠깐 떠
+        // 아래 내용을 덮는다), 가로는 화면 한가운데(Figma 1525:11177).
         showLiveRecordingResult(context, result, s.resultSeconds,
             bottom: MediaQuery.paddingOf(context).bottom + 66,
             centered: inLandscape);
@@ -310,10 +312,14 @@ class _CameraLiveFullscreenScreenState
                             subtitle: 'management_power_on_label'.tr(),
                             trailing: LivePowerSegment(dimmed: !available),
                           ),
+                          // Figma 1813:8229 — 전원 줄 아래 24, 항상 노출.
+                          const SizedBox(height: 24),
+                          const CameraFocusGuide(),
                         ])),
-                    const SizedBox(height: 24),
+                    // 재시작은 가이드 아래 20에 흐름으로 둔다 — 바닥 고정이면
+                    // 가이드를 가린다(2026-11-10 사용자 결정, Figma 1813:8179).
+                    _LiveRebootFooter(camera: camera, recording: recording),
                   ]))),
-                  _LiveRebootFooter(camera: camera, recording: recording),
                 ]))),
       ]),
     );
@@ -507,9 +513,10 @@ class _LiveAspectBox extends ConsumerWidget {
 
 /// 세로 확대 화면 맨 아래 [카메라 재시작](2026-10-03 사용자 지시, Figma 밖 —
 /// 버튼은 Figma 971:1837 '다시 스캔' 컴포넌트 그대로). 재시작할 수 없으면
-/// 숨기지 않고 비활성 + 이유를 위에 둔다(사용자 결정). 위치는 Figma 공통 하단
-/// CTA와 같게 좌우 12·SafeArea 위 66. 녹화 중엔 막는다(재부팅으로 녹화가
-/// 끊긴다).
+/// 숨기지 않고 비활성 + 이유를 위에 둔다(사용자 결정). 위치는 좌우 12, 초점
+/// 가이드 아래 20, 스크롤 끝 24 — 2026-11-10부터 바닥 고정(SafeArea 위 66)이
+/// 아니라 흐름 안에 둔다(고정이면 초점 가이드를 가려서, 사용자 결정).
+/// 녹화 중엔 막는다(재부팅으로 녹화가 끊긴다).
 ///
 /// **오프라인은 Figma처럼 빨간 버튼으로 둔다**(2026-10-21 사용자 결정 A). 꺼진
 /// 카메라는 명령을 못 받고 서버도 보관하지 않아, 보내면 2분 기다린 뒤 전원
@@ -540,7 +547,7 @@ class _LiveRebootFooter extends ConsumerWidget {
                         : null;
     final enabled = cam != null && !inProgress && reason == null;
     return Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 66),
+        padding: const EdgeInsets.fromLTRB(12, 20, 12, 24),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           if (reason != null)
             Padding(

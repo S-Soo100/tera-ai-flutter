@@ -9,6 +9,9 @@ import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
+import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
+import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
+import 'package:vivanaut/features/notification/domain/app_notification.dart';
 import 'package:vivanaut/features/notification/data/notification_repository.dart';
 import 'package:vivanaut/features/notification/data/push_messaging_service.dart';
 import 'package:vivanaut/features/notification/presentation/notification_center_screen.dart';
@@ -29,11 +32,21 @@ void main() {
   Future<ProviderContainer> pump(
       WidgetTester tester, MemoryNotificationStore store,
       {PushPermission permission = PushPermission.authorized,
-      List<EnclosureSet> sets = const []}) async {
+      List<EnclosureSet> sets = const [],
+      List<TerraCamera> cameras = const [],
+      bool camerasFail = false,
+      String? selectedCamera}) async {
     final router = GoRouter(initialLocation: '/notifications', routes: [
       GoRoute(
           path: '/notifications',
           builder: (_, __) => const NotificationCenterScreen()),
+      GoRoute(
+          path: '/crecam',
+          builder: (_, __) => const Scaffold(body: Text('camera tab'))),
+      GoRoute(
+          path: '/crecam/cameras/:id/live',
+          builder: (_, state) => Scaffold(
+              body: Text('camera detail ${state.pathParameters['id']}'))),
       GoRoute(
           path: '/env-detail',
           builder: (_, __) {
@@ -49,6 +62,10 @@ void main() {
               NotificationRepository(store, currentUserId: () => 'a')),
           pushPermissionProvider.overrideWith((ref) => permission),
           homeDeviceSetsProvider.overrideWith((ref) async => sets),
+          camerasProvider.overrideWith((ref) => camerasFail
+              ? Stream.error(StateError('network'))
+              : Stream.value(cameras)),
+          selectedCrecamCameraProvider.overrideWith((ref) => selectedCamera),
         ],
         child: localizedNotificationHost((context) => MaterialApp.router(
               routerConfig: router,
@@ -166,5 +183,72 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('environment'), findsOneWidget);
     expect(container.read(selectedHomeDeviceIdProvider), isNull);
+  });
+
+  // 카메라 렌즈 초점 안내(2026-11-10): 사람 단위라 카메라 id가 없다 — 알림함에서
+  // 열면 지금 고른 카메라(없으면 첫 카메라) 상세로, 카메라가 없으면 카메라 탭.
+  // 여러 건이면 한 번에 전부 읽음.
+  Map<String, Object?> focusRow(String id) =>
+      notificationRow(id, 'a', '2026-11-10T01:00:00Z')
+        ..['kind'] = cameraFocusNotificationKind
+        ..['category'] = 'camera'
+        ..['route'] = '/crecam'
+        ..['title'] = '카메라 렌즈 초점을 맞춰주세요';
+  TerraCamera cam(String id) => TerraCamera(
+      id: id,
+      cameraId: 'p4-$id',
+      name: '카메라 $id',
+      isOnline: true,
+      createdAt: DateTime.utc(2026));
+
+  testWidgets('초점 안내는 분류 카메라 — 열면 고른 카메라 상세 + 초점 안내 전부 읽음',
+      (tester) async {
+    final store = MemoryNotificationStore()
+      ..rows.add(focusRow('f1'))
+      ..rows.add(focusRow('f2'));
+    addTearDown(store.changes.close);
+    await pump(tester, store,
+        cameras: [cam('c1'), cam('c2')], selectedCamera: 'c2');
+    await tester.pumpAndSettle();
+    expect(find.textContaining('카메라 ·'), findsNWidgets(2));
+    await tester.tap(find.byKey(const Key('notification_f1')));
+    await tester.pumpAndSettle();
+    expect(find.text('camera detail c2'), findsOneWidget);
+    expect(store.operations.where((o) => o.startsWith('read:')).toSet(),
+        {'read:f1:a', 'read:f2:a'});
+  });
+
+  testWidgets('초점 안내 — 고른 카메라가 없으면 첫 카메라, 카메라가 없으면 카메라 탭',
+      (tester) async {
+    final store = MemoryNotificationStore()..rows.add(focusRow('f1'));
+    addTearDown(store.changes.close);
+    await pump(tester, store, cameras: [cam('c1')]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('notification_f1')));
+    await tester.pumpAndSettle();
+    expect(find.text('camera detail c1'), findsOneWidget);
+  });
+
+  testWidgets('초점 안내 — 카메라 0대면 카메라 탭으로 go', (tester) async {
+    final store = MemoryNotificationStore()..rows.add(focusRow('f1'));
+    addTearDown(store.changes.close);
+    await pump(tester, store);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('notification_f1')));
+    await tester.pumpAndSettle();
+    expect(find.text('camera tab'), findsOneWidget);
+    expect(find.byType(NotificationCenterScreen), findsNothing,
+        reason: 'go — 알림함 위에 쌓지 않는다');
+  });
+
+  testWidgets('초점 안내 — 카메라 목록을 못 받아도 고른 카메라가 있으면 그 상세로',
+      (tester) async {
+    final store = MemoryNotificationStore()..rows.add(focusRow('f1'));
+    addTearDown(store.changes.close);
+    await pump(tester, store, camerasFail: true, selectedCamera: 'c2');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('notification_f1')));
+    await tester.pumpAndSettle();
+    expect(find.text('camera detail c2'), findsOneWidget);
   });
 }

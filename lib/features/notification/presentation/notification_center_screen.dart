@@ -9,7 +9,9 @@ import '../../../shared/widgets/glass_page_shell.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../home/presentation/home_set_providers.dart';
+import '../../my_cage/presentation/my_cage_providers.dart';
 import '../domain/app_notification.dart';
+import '../domain/focus_notice_target.dart';
 import '../domain/notification_open_target.dart';
 import 'notification_providers.dart';
 import 'push_permission_prompt.dart';
@@ -130,6 +132,9 @@ class NotificationCenterScreen extends ConsumerWidget {
   /// 내 기기 목록에 없는 기기면 이동만 한다.
   Future<void> _open(BuildContext context, WidgetRef ref, AppNotification item,
       String? userId) async {
+    if (item.kind == cameraFocusNotificationKind) {
+      return _openFocusNotice(context, ref, item, userId);
+    }
     if (item.safeRoute == '/notifications') return;
     if (!context.mounted || ref.read(currentUserProvider)?.id != userId) return;
     context.push(item.safeRoute);
@@ -144,6 +149,42 @@ class NotificationCenterScreen extends ConsumerWidget {
           }
           ref.read(selectedHomeDeviceIdProvider.notifier).state = id;
         }));
+  }
+
+  /// 카메라 렌즈 초점 안내 — 남은 미읽음 초점 안내도 함께 읽음 처리해
+  /// 라이브 위 스낵바가 한 번에 사라지게 하고(운영자가 두 번 보낸 경우),
+  /// 고른 카메라 상세로 간다. 카메라가 없으면 카메라 탭으로 `go`.
+  Future<void> _openFocusNotice(BuildContext context, WidgetRef ref,
+      AppNotification item, String? userId) async {
+    final repo = ref.read(notificationRepositoryProvider);
+    final others = (ref.read(notificationsProvider).valueOrNull ?? const [])
+        .where((n) =>
+            n.kind == cameraFocusNotificationKind && !n.isRead && n.id != item.id)
+        .map((n) => n.id);
+    unawaited(Future.wait(others.map((id) => repo.markRead(id).catchError(
+        (Object e) => debugPrint('[focus-notice] markRead failed id=$id $e')))));
+    // 이미 받은 카메라 목록이 있으면 기다리지 않는다. 목록을 못 받으면(오류·
+    // 5초 초과) 카메라 탭에서 고른 카메라를 믿고 그 상세로 간다 — 일시 오류로
+    // 카메라가 있는 사람을 카메라 탭으로 보내지 않게.
+    final selected = ref.read(selectedCrecamCameraProvider);
+    List<String> ids;
+    try {
+      final cameras = ref.read(camerasProvider).valueOrNull ??
+          await ref
+              .read(camerasProvider.future)
+              .timeout(const Duration(seconds: 5));
+      ids = cameras.map((c) => c.id).toList();
+    } catch (_) {
+      ids = [if (selected != null) selected];
+    }
+    if (!context.mounted || ref.read(currentUserProvider)?.id != userId) return;
+    final path =
+        focusNoticeCameraPath(myCameraIds: ids, selectedCameraId: selected);
+    if (path == null) {
+      context.go('/crecam');
+    } else {
+      context.push(path);
+    }
   }
 
   Future<void> _action(BuildContext context, WidgetRef ref, String key,
@@ -170,7 +211,8 @@ class NotificationCenterScreen extends ConsumerWidget {
       'notice',
       'maintenance',
       'safety',
-      'env'
+      'env',
+      'camera'
     };
     return 'notifications_category_${categories.contains(category) ? category : 'other'}'
         .tr();

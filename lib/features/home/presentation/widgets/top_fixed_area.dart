@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../my_cage/presentation/webrtc_live_controller.dart';
+import '../../../my_cage/presentation/widgets/focus_notice_snack_bar.dart';
 import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
 import '../home_set_providers.dart';
 
@@ -51,6 +52,12 @@ class TopFixedArea extends ConsumerWidget {
                         child: Center(
                             child: FigmaIcon.tinted(FigmaIcons.liveExpand,
                                 size: 17, color: AppTheme.liveOnDark)))))),
+      // 렌즈 초점 안내 — 카메라 탭과 같다(Figma 1813:8265 "홈화면에도 동일").
+      Positioned(
+          top: 12,
+          left: 12,
+          right: 12,
+          child: FocusNoticeSnackBar(cameraId: camera.id)),
     ]);
   }
 }
