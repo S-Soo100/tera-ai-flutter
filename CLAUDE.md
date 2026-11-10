@@ -257,6 +257,7 @@ flutter test             # 테스트 실행
 
 - 코드 수정 후 `flutter analyze` 에러 0 확인 필수.
 - `flutter build`는 Claude Code 안에서 직접 실행 가능 (리소스 경합 낮음, Unity와 다름).
+- **iOS TestFlight 업로드(2026-11-10)**: `tools/testflight.sh`(스킬 `testflight`) — 최신 origin/main을 임시 작업 공간에서 팀 `XYNNB47RN3`(개인 멤버십)·번들 `com.vivanaut.beta`("비바나트 베타")로만 바꿔 빌드·업로드하고 지운다. 이 두 값을 main의 `project.pbxproj`에 넣지 말 것(`com.vivanaut.app`은 법인 팀용). 업로드는 Xcode에 bss.rol20이 로그인된 이 Mac에서만 된다. `--dry-run`은 빌드까지만.
 
 ### 커밋 (2026-08-06 확정) — 묻지 말고 자동
 **작업 단위마다 커밋한다. 사용자에게 커밋 여부를 묻지 않는다.**
