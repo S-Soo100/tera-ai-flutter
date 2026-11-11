@@ -9,6 +9,7 @@ import 'core/theme/theme_mode_provider.dart';
 import 'features/home/presentation/fan_timer_resync_observer.dart';
 import 'features/my_cage/presentation/live_recording_upload_queue.dart';
 import 'features/notification/presentation/push_lifecycle_observer.dart';
+import 'shared/widgets/dismiss_keyboard_on_tap.dart';
 import 'shared/widgets/offline_banner.dart';
 
 class App extends ConsumerWidget {
@@ -45,20 +46,23 @@ class App extends ConsumerWidget {
           child: PushLifecycleObserver(
             router: router,
             child: FanTimerResyncObserver(
-              child: Stack(
-                children: [
-                  child!,
-                  // 연결이 끊겨도 화면을 덮지 않는다 — 위쪽 안내만(UX-05).
-                  if (!online)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      top: 0,
-                      child: OfflineBanner(
-                        onRetry: () => ref.invalidate(connectivityProvider),
+              // 입력칸 바깥 탭 = 키보드 닫기(전 화면 공통).
+              child: DismissKeyboardOnTap(
+                child: Stack(
+                  children: [
+                    child!,
+                    // 연결이 끊겨도 화면을 덮지 않는다 — 위쪽 안내만(UX-05).
+                    if (!online)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        top: 0,
+                        child: OfflineBanner(
+                          onRetry: () => ref.invalidate(connectivityProvider),
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
