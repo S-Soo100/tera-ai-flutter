@@ -57,7 +57,8 @@ class TopFixedArea extends ConsumerWidget {
           top: 12,
           left: 12,
           right: 12,
-          child: FocusNoticeSnackBar(cameraId: camera.id)),
+          child: FocusNoticeSnackBar(
+              cameraId: camera.id, deviceId: camera.cameraId)),
     ]);
   }
 }

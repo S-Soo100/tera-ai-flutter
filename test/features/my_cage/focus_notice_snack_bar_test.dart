@@ -37,17 +37,22 @@ void main() {
 
   late MemoryNotificationStore store;
   setUp(() {
+    Map<String, Object?> row(String id, String cameraId) => {
+          ...notificationRow(id, 'a', '2026-11-10T01:00:00Z'),
+          'kind': cameraFocusNotificationKind,
+          'category': 'camera',
+          'data': <String, Object?>{'camera_id': cameraId},
+        };
+    // c1에 안내 1건, 다른 카메라 c2에도 1건.
     store = MemoryNotificationStore()
-      ..rows.add({
-        ...notificationRow('f1', 'a', '2026-11-10T01:00:00Z'),
-        'kind': cameraFocusNotificationKind,
-        'category': 'camera',
-      });
+      ..rows.add(row('f1', 'c1'))
+      ..rows.add(row('g1', 'c2'));
   });
 
   Future<void> pump(WidgetTester tester,
       {WebRtcLivePhase phase = WebRtcLivePhase.streaming,
-      double textScale = 1}) async {
+      double textScale = 1,
+      String cameraId = 'c1'}) async {
     final router = GoRouter(routes: [
       GoRoute(
           path: '/',
@@ -55,13 +60,15 @@ void main() {
               body: SizedBox(
                   width: 369,
                   height: 271,
-                  child: Stack(children: const [
-                    Positioned.fill(child: ColoredBox(color: Colors.black)),
+                  child: Stack(children: [
+                    const Positioned.fill(
+                        child: ColoredBox(color: Colors.black)),
                     Positioned(
                         top: 12,
                         left: 12,
                         right: 12,
-                        child: FocusNoticeSnackBar(cameraId: 'c1')),
+                        child: FocusNoticeSnackBar(
+                            cameraId: cameraId, deviceId: 'p4-$cameraId')),
                   ])))),
       GoRoute(
           path: '/crecam/cameras/:id/live',
@@ -109,10 +116,8 @@ void main() {
     expect(more.style!.fontWeight, FontWeight.w600);
     expect(more.style!.color, VivaColors.mainDark);
     // 좌우 패딩 16.
-    expect(tester.getTopLeft(find.text('카메라 렌즈 초점을 맞춰주세요')).dx - rect.left,
-        16);
-    expect(rect.right - tester.getTopRight(find.text('더보기')).dx,
-        16);
+    expect(tester.getTopLeft(find.text('카메라 렌즈 초점을 맞춰주세요')).dx - rect.left, 16);
+    expect(rect.right - tester.getTopRight(find.text('더보기')).dx, 16);
     final material = tester.widget<Material>(
         find.ancestor(of: bar, matching: find.byType(Material)).first);
     expect(material.color, VivaColors.fillButton);
@@ -131,12 +136,16 @@ void main() {
     WebRtcLivePhase.limited,
     WebRtcLivePhase.rebooting,
   ]) {
-    testWidgets('${phase.name} 단계에서는 그리지 않는다(안내·버튼을 가리지 않게)',
-        (tester) async {
+    testWidgets('${phase.name} 단계에서는 그리지 않는다(안내·버튼을 가리지 않게)', (tester) async {
       await pump(tester, phase: phase);
       expect(find.byKey(FocusNoticeSnackBar.tapKey), findsNothing);
     });
   }
+
+  testWidgets('안내가 없는 카메라 라이브에는 그리지 않는다', (tester) async {
+    await pump(tester, cameraId: 'c3');
+    expect(find.byKey(FocusNoticeSnackBar.tapKey), findsNothing);
+  });
 
   testWidgets('안내가 없으면 아무것도 그리지 않는다', (tester) async {
     store.rows.clear();
@@ -150,6 +159,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('detail c1'), findsOneWidget);
     expect(store.operations, contains('read:f1:a'));
+    expect(store.operations, isNot(contains('read:g1:a')),
+        reason: '다른 카메라(c2) 안내는 그대로');
   });
 
   testWidgets('글자 2배면 높이가 늘고 넘치지 않는다', (tester) async {
