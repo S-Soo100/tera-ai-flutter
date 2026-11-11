@@ -18,17 +18,23 @@ import 'management_widgets.dart';
 /// 사라진다(1회성).
 /// 배치는 부모 Stack이 `Positioned(top: 12, left: 12, right: 12)`로 한다.
 class FocusNoticeSnackBar extends ConsumerWidget {
-  const FocusNoticeSnackBar({super.key, required this.cameraId});
+  const FocusNoticeSnackBar(
+      {super.key, required this.cameraId, required this.deviceId});
 
+  /// `cameras.id`(uuid).
   final String cameraId;
+
+  /// 기기 ID(`cameras.camera_id`) — 운영자가 이것으로 지정해도 알아본다.
+  final String deviceId;
 
   static const tapKey = Key('focus_notice_snack_bar');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final visible = ref.watch(focusNoticeVisibleProvider(cameraId));
-    final hasVideo = ref.watch(webrtcLiveControllerProvider(cameraId)
-        .select((s) => s.phase.hasVideo));
+    final camera = (id: cameraId, deviceId: deviceId);
+    final visible = ref.watch(focusNoticeVisibleProvider(camera));
+    final hasVideo = ref.watch(
+        webrtcLiveControllerProvider(cameraId).select((s) => s.phase.hasVideo));
     if (!visible || !hasVideo) return const SizedBox.shrink();
 
     final glass = context.glass;
@@ -44,7 +50,7 @@ class FocusNoticeSnackBar extends ConsumerWidget {
         key: tapKey,
         onTap: () {
           context.push('/crecam/cameras/$cameraId/live');
-          dismissFocusNotices(ref, cameraId);
+          dismissFocusNotices(ref, camera);
         },
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 36),

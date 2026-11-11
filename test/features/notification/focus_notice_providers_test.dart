@@ -13,7 +13,7 @@ import 'package:vivanaut/features/notification/presentation/notification_provide
 import 'notification_repository_test.dart';
 
 Map<String, Object?> focusRow(String id, String userId,
-        {String? readAt, String? cameraId = 'c1'}) =>
+        {String? readAt, String? cameraId = 'c1', String? deviceId}) =>
     {
       ...notificationRow(id, userId, '2026-11-10T01:00:00Z'),
       'kind': cameraFocusNotificationKind,
@@ -23,8 +23,12 @@ Map<String, Object?> focusRow(String id, String userId,
       'data': <String, Object?>{
         'kind': cameraFocusNotificationKind,
         if (cameraId != null) 'camera_id': cameraId,
+        if (deviceId != null) 'device_id': deviceId,
       },
     };
+
+const c1 = (id: 'c1', deviceId: 'p4-c1');
+const c2 = (id: 'c2', deviceId: 'p4-c2');
 
 class _FailingStore extends MemoryNotificationStore {
   final failIds = <String>{};
@@ -59,9 +63,9 @@ void main() {
       ],
       child: Consumer(builder: (context, ref, _) {
         captured = ref;
-        final c1 = ref.watch(focusNoticeVisibleProvider('c1'));
-        final c2 = ref.watch(focusNoticeVisibleProvider('c2'));
-        return Text('$c1/$c2', textDirection: TextDirection.ltr);
+        final a = ref.watch(focusNoticeVisibleProvider(c1));
+        final b = ref.watch(focusNoticeVisibleProvider(c2));
+        return Text('$a/$b', textDirection: TextDirection.ltr);
       }),
     ));
     await tester.pump();
@@ -74,6 +78,29 @@ void main() {
     await pump(tester);
     expect(find.text('true/false'), findsOneWidget);
     expect(store.operations, contains('watchKind:camera.focus_needed'));
+  });
+
+  testWidgets('camera_id에 기기 ID를 넣어도 그 카메라에 보인다', (tester) async {
+    store.rows.add(focusRow('f1', 'a', cameraId: 'p4-c2'));
+    await pump(tester);
+    expect(find.text('false/true'), findsOneWidget);
+  });
+
+  testWidgets('camera_id 없이 device_id만 있어도 그 카메라에 보인다', (tester) async {
+    store.rows.add(focusRow('f1', 'a', cameraId: null, deviceId: 'p4-c1'));
+    await pump(tester);
+    expect(find.text('true/false'), findsOneWidget);
+  });
+
+  testWidgets('dismiss는 uuid·기기 ID로 들어온 같은 카메라 안내를 함께 읽음 처리한다', (tester) async {
+    store.rows
+      ..add(focusRow('f1', 'a', cameraId: 'c1'))
+      ..add(focusRow('f2', 'a', cameraId: 'p4-c1'));
+    final ref = await pump(tester);
+    await dismissFocusNotices(ref, c1);
+    await tester.pump();
+    expect(store.operations.where((o) => o.startsWith('read:')).toSet(),
+        {'read:f1:a', 'read:f2:a'});
   });
 
   testWidgets('camera_id 없는 사람 단위(v1) 안내는 어느 카메라에도 막대를 띄우지 않는다',
@@ -92,15 +119,14 @@ void main() {
     expect(find.text('false/false'), findsOneWidget);
   });
 
-  testWidgets('dismiss는 그 카메라 안내만 읽음 처리하고 다른 카메라 안내는 남긴다',
-      (tester) async {
+  testWidgets('dismiss는 그 카메라 안내만 읽음 처리하고 다른 카메라 안내는 남긴다', (tester) async {
     store.rows
       ..add(focusRow('f1', 'a', cameraId: 'c1'))
       ..add(focusRow('f2', 'a', cameraId: 'c1'))
       ..add(focusRow('g1', 'a', cameraId: 'c2'));
     final ref = await pump(tester);
     expect(find.text('true/true'), findsOneWidget);
-    final done = dismissFocusNotices(ref, 'c1');
+    final done = dismissFocusNotices(ref, c1);
     await tester.pump();
     // 서버 갱신을 기다리지 않고 c1만 바로 숨는다.
     expect(find.text('false/true'), findsOneWidget);
@@ -115,7 +141,7 @@ void main() {
     store.rows.add(focusRow('f1', 'a'));
     store.failIds.add('f1');
     final ref = await pump(tester);
-    await dismissFocusNotices(ref, 'c1');
+    await dismissFocusNotices(ref, c1);
     await tester.pump();
     expect(store.operations, contains('fail:f1'));
     expect(find.text('true/false'), findsOneWidget);
@@ -126,7 +152,7 @@ void main() {
       ..add(focusRow('f1', 'a'))
       ..add(focusRow('g1', 'b'));
     final ref = await pump(tester);
-    await dismissFocusNotices(ref, 'c1');
+    await dismissFocusNotices(ref, c1);
     await tester.pump();
     expect(find.text('false/false'), findsOneWidget);
 
@@ -151,7 +177,7 @@ void main() {
       ..add(focusRow('g1', 'a', cameraId: 'c2'));
     final ref = await pump(tester);
     ref.read(focusNoticeDismissedProvider.notifier).state = {'old1', 'g1'};
-    await dismissFocusNotices(ref, 'c1');
+    await dismissFocusNotices(ref, c1);
     await tester.pump();
     // 지난 id(old1)는 버리고, 아직 미읽음인 다른 카메라 숨김(g1)은 남긴다.
     expect(ref.read(focusNoticeDismissedProvider), {'g1', 'f2'});

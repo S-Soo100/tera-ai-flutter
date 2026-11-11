@@ -31,18 +31,16 @@ class SupabaseNotificationStore implements NotificationStore {
       .eq('user_id', userId)
       .order('created_at', ascending: false);
 
-  /// 최근 [watchKindLimit]건만 — 읽은 지난 안내까지 앱을 켤 때마다 받지 않는다.
-  /// 안내를 누르면 미읽음 전부를 읽음 처리하므로, 미읽음이 이보다 오래된
-  /// 자리로 밀려날 일은 없다.
-  static const watchKindLimit = 20;
-
+  /// 건수 제한을 두지 않는다 — Realtime stream은 `read_at is null`로 거를 수
+  /// 없어 읽음 여부는 받은 뒤 거르는데, 초점 안내는 카메라 단위로 읽음 처리돼
+  /// 오래된 미읽음이 다른 카메라 안내 뒤로 밀려나면 영영 안 뜬다. 운영자가 손으로
+  /// 보내는 종류라 계정당 행이 적다.
   @override
   Stream<List<Map<String, Object?>>> watchKind(String kind) => client
       .from('app_notifications')
       .stream(primaryKey: ['id'])
       .eq('kind', kind)
-      .order('created_at', ascending: false)
-      .limit(watchKindLimit);
+      .order('created_at', ascending: false);
 
   @override
   Future<void> markRead(String id, String userId, DateTime at) async {

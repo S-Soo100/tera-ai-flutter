@@ -3,7 +3,7 @@ import 'notification_route.dart';
 /// v4 온습도 이탈 푸시(terra-server `docs/APP_ENV_ALERT_PUSH_2026-11-02.md` §2).
 const envAlertNotificationKind = 'env.alert.triggered';
 
-/// 운영자가 특정 사용자에게 보내는 카메라 렌즈 초점 안내(사람 단위, 푸시 없음).
+/// 운영자가 특정 카메라에 보내는 렌즈 초점 안내(카메라 단위, 푸시 없음).
 /// 운영자가 SQL로 app_notifications에 직접 넣는다 — `docs/ops/camera-focus-notice.md`.
 const cameraFocusNotificationKind = 'camera.focus_needed';
 
@@ -66,13 +66,22 @@ class AppNotification {
     return id is String && id.isNotEmpty ? id : null;
   }
 
-  /// 카메라 렌즈 초점 안내가 가리키는 카메라(`cameras.id`). 운영자가
-  /// `data.camera_id`로 넣는다(기획 2026-11-11 카메라 단위). 없으면(v1 사람 단위
-  /// 행) null — 라이브 막대는 띄우지 않는다.
-  String? get focusCameraId {
-    if (kind != cameraFocusNotificationKind) return null;
-    final id = data['camera_id'];
-    return id is String && id.isNotEmpty ? id : null;
+  /// 카메라 렌즈 초점 안내가 가리키는 카메라 표시들 — `data.camera_id`와
+  /// `data.device_id`. 지정 방법은 서버가 정하므로(기획 2026-11-11 Q2)
+  /// `cameras.id`(uuid)든 기기 ID(`cameras.camera_id`)든 받는다. 비어 있으면(v1
+  /// 사람 단위 행) 라이브 막대는 띄우지 않는다.
+  Set<String> get focusCameraRefs {
+    if (kind != cameraFocusNotificationKind) return const {};
+    return {
+      for (final key in const ['camera_id', 'device_id'])
+        if (data[key] case final String id when id.isNotEmpty) id,
+    };
+  }
+
+  /// 이 초점 안내가 [cameraId](`cameras.id`)·[deviceId](기기 ID) 카메라를 가리키는가.
+  bool focusTargets(String cameraId, String deviceId) {
+    final refs = focusCameraRefs;
+    return refs.contains(cameraId) || refs.contains(deviceId);
   }
 
   String get safeRoute => knownNotificationKinds.contains(kind)

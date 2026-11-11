@@ -6,7 +6,7 @@
 - 푸시(휴대폰 시스템 알림)는 나가지 않는다.
 - 막대나 알림을 한 번 누르면 그 카메라 안내만 읽음 처리되어 모든 기기에서 사라진다. 다른 카메라 안내는 그대로다.
 - 같은 카메라에 다시 보내면 다시 뜬다.
-- 앱 0.177.0 이상에서 동작한다. 0.176.x는 고려하지 않는다(2026-11-11 결정).
+- 앱 0.177.0 이상에서 동작한다(기기 ID 지정은 0.177.1부터). 0.176.x는 고려하지 않는다(2026-11-11 결정).
 
 근거: 기획 `docs/superpowers/specs/2026-11-11-camera-focus-notice-per-camera-design.md`, Figma `카메라 초점`(1813:8269).
 서버 쪽 운영 절차: terra-server `docs/OPERATIONS.md` "1-3. 카메라 렌즈 초점 안내 발송"(gwanhun/terra-server#63). 2026-11-11 카메라 단위로 갱신을 요청했다.
@@ -21,12 +21,12 @@
 | kind / category | `camera.focus_needed` / `camera` |
 | title | `카메라 렌즈 초점을 맞춰주세요` |
 | body | `영상이 흐릿하게 보인다면 렌즈 초점을 맞춰주세요` (문구는 Figma 그대로) |
-| data | object. **`camera_id` = 그 카메라의 `cameras.id`(uuid) 필수.** 사람이 읽을 용도로 `device_id`·`camera_name`을 넣어도 된다 |
+| data | object. **`camera_id` 필수** — 그 카메라의 `cameras.id`(uuid) 또는 기기 ID(`cameras.camera_id`, 예 `p4cam-…`). 앱 0.177.1부터 둘 다 알아보고, `device_id`에 기기 ID를 넣어도 된다. `camera_name`은 사람이 읽을 용도 |
 | route | `/crecam/cameras/<cameras.id>/live` (기록용) |
 | source / source_event_id / dedupe_key | `external` / 새 uuid / `ops-focus:<같은 uuid>` |
 | read_at | null |
 
-`data.camera_id`가 없으면 막대가 어디에도 뜨지 않는다. 그 경우 알림함에만 남는다.
+`data.camera_id`·`device_id`가 모두 없거나 내 카메라와 맞지 않으면 막대가 어디에도 뜨지 않는다. 그 경우 알림함에만 남는다.
 
 카메라를 어떻게 지정할지(기기 ID, 관리 화면 등)는 서버가 정한다. 아래는 기기 ID(`cameras.camera_id`, DB 전체에서 UNIQUE)로 보내는 예시다.
 
@@ -64,5 +64,6 @@ order by n.created_at desc limit 50;
 ```sql
 update public.app_notifications set read_at = now()
 where kind = 'camera.focus_needed' and read_at is null
-  and data->>'camera_id' = (select id::text from public.cameras where camera_id = '<기기 ID>');
+  and (data->>'camera_id' = '<기기 ID>' or data->>'device_id' = '<기기 ID>'
+       or data->>'camera_id' = (select id::text from public.cameras where camera_id = '<기기 ID>'));
 ```

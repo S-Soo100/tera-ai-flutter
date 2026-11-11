@@ -205,8 +205,7 @@ void main() {
       isOnline: true,
       createdAt: DateTime.utc(2026));
 
-  testWidgets('초점 안내는 분류 카메라 — 열면 그 카메라 상세 + 그 카메라 안내만 읽음',
-      (tester) async {
+  testWidgets('초점 안내는 분류 카메라 — 열면 그 카메라 상세 + 그 카메라 안내만 읽음', (tester) async {
     final store = MemoryNotificationStore()
       ..rows.add(focusRow('f1', cameraId: 'c2'))
       ..rows.add(focusRow('f2', cameraId: 'c2'))
@@ -224,8 +223,7 @@ void main() {
         {'read:f1:a', 'read:f2:a'});
   });
 
-  testWidgets('초점 안내 — 가리키는 카메라가 내 목록에 없으면 카메라 탭으로 go',
-      (tester) async {
+  testWidgets('초점 안내 — 가리키는 카메라가 내 목록에 없으면 카메라 탭으로 go', (tester) async {
     final store = MemoryNotificationStore()
       ..rows.add(focusRow('f1', cameraId: 'gone'));
     addTearDown(store.changes.close);
@@ -238,8 +236,7 @@ void main() {
         reason: 'go — 알림함 위에 쌓지 않는다');
   });
 
-  testWidgets('초점 안내 — 카메라 목록을 못 받아도 가리키는 카메라 상세로',
-      (tester) async {
+  testWidgets('초점 안내 — 카메라 목록을 못 받으면 확인 못 한 카메라 상세 대신 카메라 탭', (tester) async {
     final store = MemoryNotificationStore()
       ..rows.add(focusRow('f1', cameraId: 'c2'));
     addTearDown(store.changes.close);
@@ -247,11 +244,28 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('notification_f1')));
     await tester.pumpAndSettle();
-    expect(find.text('camera detail c2'), findsOneWidget);
+    expect(find.text('camera tab'), findsOneWidget,
+        reason: '연결 해제·이관된 카메라일 수 있다');
   });
 
-  testWidgets('v1 초점 안내(camera_id 없음) — 고른 카메라가 없으면 첫 카메라 상세',
+  testWidgets('초점 안내 — camera_id가 기기 ID여도 그 카메라 상세 + 같은 카메라 안내 읽음',
       (tester) async {
+    final store = MemoryNotificationStore()
+      ..rows.add(focusRow('f1', cameraId: 'p4-c2'))
+      ..rows.add(focusRow('f2', cameraId: 'c2'))
+      ..rows.add(focusRow('h1', cameraId: 'c1'));
+    addTearDown(store.changes.close);
+    await pump(tester, store,
+        cameras: [cam('c1'), cam('c2')], selectedCamera: 'c1');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('notification_f1')));
+    await tester.pumpAndSettle();
+    expect(find.text('camera detail c2'), findsOneWidget);
+    expect(store.operations.where((o) => o.startsWith('read:')).toSet(),
+        {'read:f1:a', 'read:f2:a'});
+  });
+
+  testWidgets('v1 초점 안내(camera_id 없음) — 고른 카메라가 없으면 첫 카메라 상세', (tester) async {
     final store = MemoryNotificationStore()..rows.add(focusRow('f1'));
     addTearDown(store.changes.close);
     await pump(tester, store, cameras: [cam('c1')]);

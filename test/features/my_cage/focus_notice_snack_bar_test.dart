@@ -67,7 +67,8 @@ void main() {
                         top: 12,
                         left: 12,
                         right: 12,
-                        child: FocusNoticeSnackBar(cameraId: cameraId)),
+                        child: FocusNoticeSnackBar(
+                            cameraId: cameraId, deviceId: 'p4-$cameraId')),
                   ])))),
       GoRoute(
           path: '/crecam/cameras/:id/live',
@@ -115,10 +116,8 @@ void main() {
     expect(more.style!.fontWeight, FontWeight.w600);
     expect(more.style!.color, VivaColors.mainDark);
     // 좌우 패딩 16.
-    expect(tester.getTopLeft(find.text('카메라 렌즈 초점을 맞춰주세요')).dx - rect.left,
-        16);
-    expect(rect.right - tester.getTopRight(find.text('더보기')).dx,
-        16);
+    expect(tester.getTopLeft(find.text('카메라 렌즈 초점을 맞춰주세요')).dx - rect.left, 16);
+    expect(rect.right - tester.getTopRight(find.text('더보기')).dx, 16);
     final material = tester.widget<Material>(
         find.ancestor(of: bar, matching: find.byType(Material)).first);
     expect(material.color, VivaColors.fillButton);
@@ -137,8 +136,7 @@ void main() {
     WebRtcLivePhase.limited,
     WebRtcLivePhase.rebooting,
   ]) {
-    testWidgets('${phase.name} 단계에서는 그리지 않는다(안내·버튼을 가리지 않게)',
-        (tester) async {
+    testWidgets('${phase.name} 단계에서는 그리지 않는다(안내·버튼을 가리지 않게)', (tester) async {
       await pump(tester, phase: phase);
       expect(find.byKey(FocusNoticeSnackBar.tapKey), findsNothing);
     });
