@@ -9,11 +9,13 @@ import '../webrtc_live_controller.dart';
 import 'management_widgets.dart';
 
 /// 라이브 위 카메라 렌즈 초점 안내 — Figma 1813:8260(카메라 탭), 메모 "홈화면에도
-/// 동일하게 적용". 운영자가 보낸 미읽음 안내가 있고 영상이 보일 때만
+/// 동일하게 적용". 운영자가 **이 카메라([cameraId])에** 보낸 미읽음 안내가 있고
+/// (기획 2026-11-11 카메라 단위 — 다른 카메라 라이브에는 안 뜬다) 영상이 보일 때만
 /// (`streaming`·`stalled`) 그린다 — 연결 중·실패·시청 제한 화면의 문구와 버튼을
 /// 가리지 않는다.
 ///
-/// 막대 어디든 누르면 그 카메라 상세로 가고, 안내는 읽음 처리돼 사라진다(1회성).
+/// 막대 어디든 누르면 그 카메라 상세로 가고, 그 카메라 안내만 읽음 처리돼
+/// 사라진다(1회성).
 /// 배치는 부모 Stack이 `Positioned(top: 12, left: 12, right: 12)`로 한다.
 class FocusNoticeSnackBar extends ConsumerWidget {
   const FocusNoticeSnackBar({super.key, required this.cameraId});
@@ -24,7 +26,7 @@ class FocusNoticeSnackBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final visible = ref.watch(focusNoticeVisibleProvider);
+    final visible = ref.watch(focusNoticeVisibleProvider(cameraId));
     final hasVideo = ref.watch(webrtcLiveControllerProvider(cameraId)
         .select((s) => s.phase.hasVideo));
     if (!visible || !hasVideo) return const SizedBox.shrink();
@@ -42,7 +44,7 @@ class FocusNoticeSnackBar extends ConsumerWidget {
         key: tapKey,
         onTap: () {
           context.push('/crecam/cameras/$cameraId/live');
-          dismissFocusNotices(ref);
+          dismissFocusNotices(ref, cameraId);
         },
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 36),

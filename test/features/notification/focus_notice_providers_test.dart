@@ -1,5 +1,5 @@
-// 카메라 렌즈 초점 안내(계획 2026-11-10 Task 2) — 운영자가 app_notifications에
-// 넣은 `camera.focus_needed` 미읽음 행이 있으면 라이브 위 스낵바를 띄운다.
+// 카메라 렌즈 초점 안내 — 카메라 단위(기획 2026-11-11). 운영자가 app_notifications에
+// 넣은 `camera.focus_needed` 미읽음 행의 `data.camera_id` 카메라 라이브에만 막대를 띄운다.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,12 +12,18 @@ import 'package:vivanaut/features/notification/presentation/notification_provide
 
 import 'notification_repository_test.dart';
 
-Map<String, Object?> focusRow(String id, String userId, {String? readAt}) => {
+Map<String, Object?> focusRow(String id, String userId,
+        {String? readAt, String? cameraId = 'c1'}) =>
+    {
       ...notificationRow(id, userId, '2026-11-10T01:00:00Z'),
       'kind': cameraFocusNotificationKind,
       'category': 'camera',
       'route': '/crecam',
       'read_at': readAt,
+      'data': <String, Object?>{
+        'kind': cameraFocusNotificationKind,
+        if (cameraId != null) 'camera_id': cameraId,
+      },
     };
 
 class _FailingStore extends MemoryNotificationStore {
@@ -41,6 +47,7 @@ void main() {
     user = StateProvider<User?>((_) => notificationUser('a'));
   });
 
+  /// 화면에 'c1/c2' 두 카메라의 막대 표시 여부를 `true/false`로 그린다.
   Future<WidgetRef> pump(WidgetTester tester) async {
     late WidgetRef captured;
     await tester.pumpWidget(ProviderScope(
@@ -52,8 +59,9 @@ void main() {
       ],
       child: Consumer(builder: (context, ref, _) {
         captured = ref;
-        final visible = ref.watch(focusNoticeVisibleProvider);
-        return Text('$visible', textDirection: TextDirection.ltr);
+        final c1 = ref.watch(focusNoticeVisibleProvider('c1'));
+        final c2 = ref.watch(focusNoticeVisibleProvider('c2'));
+        return Text('$c1/$c2', textDirection: TextDirection.ltr);
       }),
     ));
     await tester.pump();
@@ -61,11 +69,18 @@ void main() {
     return captured;
   }
 
-  testWidgets('미읽음 초점 안내가 있으면 보인다', (tester) async {
-    store.rows.add(focusRow('f1', 'a'));
+  testWidgets('안내는 지정한 카메라에만 보인다', (tester) async {
+    store.rows.add(focusRow('f1', 'a', cameraId: 'c1'));
     await pump(tester);
-    expect(find.text('true'), findsOneWidget);
+    expect(find.text('true/false'), findsOneWidget);
     expect(store.operations, contains('watchKind:camera.focus_needed'));
+  });
+
+  testWidgets('camera_id 없는 사람 단위(v1) 안내는 어느 카메라에도 막대를 띄우지 않는다',
+      (tester) async {
+    store.rows.add(focusRow('f1', 'a', cameraId: null));
+    await pump(tester);
+    expect(find.text('false/false'), findsOneWidget);
   });
 
   testWidgets('읽은 안내·다른 계정 행·다른 종류는 무시한다', (tester) async {
@@ -74,50 +89,51 @@ void main() {
       ..add(focusRow('f2', 'b'))
       ..add(notificationRow('s1', 'a', '2026-11-10T01:00:00Z'));
     await pump(tester);
-    expect(find.text('false'), findsOneWidget);
+    expect(find.text('false/false'), findsOneWidget);
   });
 
-  testWidgets('dismiss는 미읽음 초점 안내 전부를 읽음 처리한다', (tester) async {
+  testWidgets('dismiss는 그 카메라 안내만 읽음 처리하고 다른 카메라 안내는 남긴다',
+      (tester) async {
     store.rows
-      ..add(focusRow('f1', 'a'))
-      ..add(focusRow('f2', 'a'));
+      ..add(focusRow('f1', 'a', cameraId: 'c1'))
+      ..add(focusRow('f2', 'a', cameraId: 'c1'))
+      ..add(focusRow('g1', 'a', cameraId: 'c2'));
     final ref = await pump(tester);
-    final done = dismissFocusNotices(ref);
+    expect(find.text('true/true'), findsOneWidget);
+    final done = dismissFocusNotices(ref, 'c1');
     await tester.pump();
-    // 서버 갱신을 기다리지 않고 바로 숨는다.
-    expect(find.text('false'), findsOneWidget);
+    // 서버 갱신을 기다리지 않고 c1만 바로 숨는다.
+    expect(find.text('false/true'), findsOneWidget);
     await done;
     await tester.pump();
     expect(store.operations.where((o) => o.startsWith('read:')).toSet(),
         {'read:f1:a', 'read:f2:a'});
-    expect(find.text('false'), findsOneWidget);
+    expect(find.text('false/true'), findsOneWidget);
   });
 
   testWidgets('markRead에 실패한 id는 다시 보인다', (tester) async {
     store.rows.add(focusRow('f1', 'a'));
     store.failIds.add('f1');
     final ref = await pump(tester);
-    await dismissFocusNotices(ref);
+    await dismissFocusNotices(ref, 'c1');
     await tester.pump();
     expect(store.operations, contains('fail:f1'));
-    expect(find.text('true'), findsOneWidget);
+    expect(find.text('true/false'), findsOneWidget);
   });
 
   testWidgets('계정이 바뀌면 숨김과 목록이 새 계정 기준이다', (tester) async {
     store.rows
       ..add(focusRow('f1', 'a'))
       ..add(focusRow('g1', 'b'));
-    store.failIds.add('f1'); // A의 읽음은 실패해도 숨김은 A 것만이어야
     final ref = await pump(tester);
-    store.failIds.clear();
-    await dismissFocusNotices(ref);
+    await dismissFocusNotices(ref, 'c1');
     await tester.pump();
-    expect(find.text('false'), findsOneWidget);
+    expect(find.text('false/false'), findsOneWidget);
 
     ref.read(user.notifier).state = notificationUser('b');
     await tester.pump();
     await tester.pump();
-    expect(find.text('true'), findsOneWidget);
+    expect(find.text('true/false'), findsOneWidget);
   });
 
   testWidgets('로그아웃이면 보이지 않는다', (tester) async {
@@ -126,16 +142,18 @@ void main() {
     ref.read(user.notifier).state = null;
     await tester.pump();
     await tester.pump();
-    expect(find.text('false'), findsOneWidget);
+    expect(find.text('false/false'), findsOneWidget);
   });
 
-  testWidgets('dismiss는 숨김 목록을 지금 미읽음으로 바꾼다(지난 id는 버린다)',
-      (tester) async {
-    store.rows.add(focusRow('f2', 'a'));
+  testWidgets('dismiss는 이미 읽음이 된 지난 id를 숨김 목록에서 버린다', (tester) async {
+    store.rows
+      ..add(focusRow('f2', 'a', cameraId: 'c1'))
+      ..add(focusRow('g1', 'a', cameraId: 'c2'));
     final ref = await pump(tester);
-    ref.read(focusNoticeDismissedProvider.notifier).state = {'old1', 'old2'};
-    await dismissFocusNotices(ref);
+    ref.read(focusNoticeDismissedProvider.notifier).state = {'old1', 'g1'};
+    await dismissFocusNotices(ref, 'c1');
     await tester.pump();
-    expect(ref.read(focusNoticeDismissedProvider), {'f2'});
+    // 지난 id(old1)는 버리고, 아직 미읽음인 다른 카메라 숨김(g1)은 남긴다.
+    expect(ref.read(focusNoticeDismissedProvider), {'g1', 'f2'});
   });
 }

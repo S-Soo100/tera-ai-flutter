@@ -66,6 +66,15 @@ class AppNotification {
     return id is String && id.isNotEmpty ? id : null;
   }
 
+  /// 카메라 렌즈 초점 안내가 가리키는 카메라(`cameras.id`). 운영자가
+  /// `data.camera_id`로 넣는다(기획 2026-11-11 카메라 단위). 없으면(v1 사람 단위
+  /// 행) null — 라이브 막대는 띄우지 않는다.
+  String? get focusCameraId {
+    if (kind != cameraFocusNotificationKind) return null;
+    final id = data['camera_id'];
+    return id is String && id.isNotEmpty ? id : null;
+  }
+
   String get safeRoute => knownNotificationKinds.contains(kind)
       ? sanitizeNotificationRoute(route)
       : '/notifications';

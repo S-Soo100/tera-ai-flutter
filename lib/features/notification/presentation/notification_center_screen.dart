@@ -151,21 +151,26 @@ class NotificationCenterScreen extends ConsumerWidget {
         }));
   }
 
-  /// 카메라 렌즈 초점 안내 — 남은 미읽음 초점 안내도 함께 읽음 처리해
-  /// 라이브 위 스낵바가 한 번에 사라지게 하고(운영자가 두 번 보낸 경우),
-  /// 고른 카메라 상세로 간다. 카메라가 없으면 카메라 탭으로 `go`.
+  /// 카메라 렌즈 초점 안내 — 안내가 가리키는 카메라(기획 2026-11-11 카메라 단위)
+  /// 상세로 가고, 그 카메라의 남은 미읽음 안내도 함께 읽음 처리해 그 카메라 라이브
+  /// 막대가 한 번에 사라지게 한다(운영자가 두 번 보낸 경우). 다른 카메라 안내는
+  /// 그대로. 카메라가 내 목록에 없으면 카메라 탭으로 `go`.
   Future<void> _openFocusNotice(BuildContext context, WidgetRef ref,
       AppNotification item, String? userId) async {
     final repo = ref.read(notificationRepositoryProvider);
+    final target = item.focusCameraId;
     final others = (ref.read(notificationsProvider).valueOrNull ?? const [])
         .where((n) =>
-            n.kind == cameraFocusNotificationKind && !n.isRead && n.id != item.id)
+            n.kind == cameraFocusNotificationKind &&
+            !n.isRead &&
+            n.id != item.id &&
+            n.focusCameraId == target)
         .map((n) => n.id);
     unawaited(Future.wait(others.map((id) => repo.markRead(id).catchError(
         (Object e) => debugPrint('[focus-notice] markRead failed id=$id $e')))));
     // 이미 받은 카메라 목록이 있으면 기다리지 않는다. 목록을 못 받으면(오류·
-    // 5초 초과) 카메라 탭에서 고른 카메라를 믿고 그 상세로 간다 — 일시 오류로
-    // 카메라가 있는 사람을 카메라 탭으로 보내지 않게.
+    // 5초 초과) 안내가 가리키는 카메라(v1 행은 카메라 탭에서 고른 카메라)를 믿고
+    // 그 상세로 간다 — 일시 오류로 카메라 탭으로 보내지 않게.
     final selected = ref.read(selectedCrecamCameraProvider);
     List<String> ids;
     try {
@@ -175,11 +180,12 @@ class NotificationCenterScreen extends ConsumerWidget {
               .timeout(const Duration(seconds: 5));
       ids = cameras.map((c) => c.id).toList();
     } catch (_) {
-      ids = [if (selected != null) selected];
+      final fallback = target ?? selected;
+      ids = [if (fallback != null) fallback];
     }
     if (!context.mounted || ref.read(currentUserProvider)?.id != userId) return;
-    final path =
-        focusNoticeCameraPath(myCameraIds: ids, selectedCameraId: selected);
+    final path = focusNoticeCameraPath(
+        myCameraIds: ids, selectedCameraId: selected, targetCameraId: target);
     if (path == null) {
       context.go('/crecam');
     } else {

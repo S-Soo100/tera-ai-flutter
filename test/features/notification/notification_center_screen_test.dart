@@ -185,15 +185,19 @@ void main() {
     expect(container.read(selectedHomeDeviceIdProvider), isNull);
   });
 
-  // 카메라 렌즈 초점 안내(2026-11-10): 사람 단위라 카메라 id가 없다 — 알림함에서
-  // 열면 지금 고른 카메라(없으면 첫 카메라) 상세로, 카메라가 없으면 카메라 탭.
-  // 여러 건이면 한 번에 전부 읽음.
-  Map<String, Object?> focusRow(String id) =>
+  // 카메라 렌즈 초점 안내 — 카메라 단위(기획 2026-11-11). 알림함에서 열면
+  // data.camera_id 카메라 상세로, 그 카메라 안내만 전부 읽음. camera_id가 없는
+  // v1(사람 단위) 행은 고른 카메라(없으면 첫 카메라) 상세로 간다.
+  Map<String, Object?> focusRow(String id, {String? cameraId}) =>
       notificationRow(id, 'a', '2026-11-10T01:00:00Z')
         ..['kind'] = cameraFocusNotificationKind
         ..['category'] = 'camera'
         ..['route'] = '/crecam'
-        ..['title'] = '카메라 렌즈 초점을 맞춰주세요';
+        ..['title'] = '카메라 렌즈 초점을 맞춰주세요'
+        ..['data'] = <String, Object?>{
+          'kind': cameraFocusNotificationKind,
+          if (cameraId != null) 'camera_id': cameraId,
+        };
   TerraCamera cam(String id) => TerraCamera(
       id: id,
       cameraId: 'p4-$id',
@@ -201,24 +205,52 @@ void main() {
       isOnline: true,
       createdAt: DateTime.utc(2026));
 
-  testWidgets('초점 안내는 분류 카메라 — 열면 고른 카메라 상세 + 초점 안내 전부 읽음',
+  testWidgets('초점 안내는 분류 카메라 — 열면 그 카메라 상세 + 그 카메라 안내만 읽음',
       (tester) async {
     final store = MemoryNotificationStore()
-      ..rows.add(focusRow('f1'))
-      ..rows.add(focusRow('f2'));
+      ..rows.add(focusRow('f1', cameraId: 'c2'))
+      ..rows.add(focusRow('f2', cameraId: 'c2'))
+      ..rows.add(focusRow('h1', cameraId: 'c1'));
     addTearDown(store.changes.close);
     await pump(tester, store,
-        cameras: [cam('c1'), cam('c2')], selectedCamera: 'c2');
+        cameras: [cam('c1'), cam('c2')], selectedCamera: 'c1');
     await tester.pumpAndSettle();
-    expect(find.textContaining('카메라 ·'), findsNWidgets(2));
+    expect(find.textContaining('카메라 ·'), findsNWidgets(3));
     await tester.tap(find.byKey(const Key('notification_f1')));
     await tester.pumpAndSettle();
-    expect(find.text('camera detail c2'), findsOneWidget);
+    expect(find.text('camera detail c2'), findsOneWidget,
+        reason: '고른 카메라(c1)가 아니라 안내가 가리키는 카메라');
     expect(store.operations.where((o) => o.startsWith('read:')).toSet(),
         {'read:f1:a', 'read:f2:a'});
   });
 
-  testWidgets('초점 안내 — 고른 카메라가 없으면 첫 카메라, 카메라가 없으면 카메라 탭',
+  testWidgets('초점 안내 — 가리키는 카메라가 내 목록에 없으면 카메라 탭으로 go',
+      (tester) async {
+    final store = MemoryNotificationStore()
+      ..rows.add(focusRow('f1', cameraId: 'gone'));
+    addTearDown(store.changes.close);
+    await pump(tester, store, cameras: [cam('c1')], selectedCamera: 'c1');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('notification_f1')));
+    await tester.pumpAndSettle();
+    expect(find.text('camera tab'), findsOneWidget);
+    expect(find.byType(NotificationCenterScreen), findsNothing,
+        reason: 'go — 알림함 위에 쌓지 않는다');
+  });
+
+  testWidgets('초점 안내 — 카메라 목록을 못 받아도 가리키는 카메라 상세로',
+      (tester) async {
+    final store = MemoryNotificationStore()
+      ..rows.add(focusRow('f1', cameraId: 'c2'));
+    addTearDown(store.changes.close);
+    await pump(tester, store, camerasFail: true, selectedCamera: 'c1');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('notification_f1')));
+    await tester.pumpAndSettle();
+    expect(find.text('camera detail c2'), findsOneWidget);
+  });
+
+  testWidgets('v1 초점 안내(camera_id 없음) — 고른 카메라가 없으면 첫 카메라 상세',
       (tester) async {
     final store = MemoryNotificationStore()..rows.add(focusRow('f1'));
     addTearDown(store.changes.close);
@@ -229,7 +261,7 @@ void main() {
     expect(find.text('camera detail c1'), findsOneWidget);
   });
 
-  testWidgets('초점 안내 — 카메라 0대면 카메라 탭으로 go', (tester) async {
+  testWidgets('v1 초점 안내 — 카메라 0대면 카메라 탭으로 go', (tester) async {
     final store = MemoryNotificationStore()..rows.add(focusRow('f1'));
     addTearDown(store.changes.close);
     await pump(tester, store);
@@ -237,18 +269,5 @@ void main() {
     await tester.tap(find.byKey(const Key('notification_f1')));
     await tester.pumpAndSettle();
     expect(find.text('camera tab'), findsOneWidget);
-    expect(find.byType(NotificationCenterScreen), findsNothing,
-        reason: 'go — 알림함 위에 쌓지 않는다');
-  });
-
-  testWidgets('초점 안내 — 카메라 목록을 못 받아도 고른 카메라가 있으면 그 상세로',
-      (tester) async {
-    final store = MemoryNotificationStore()..rows.add(focusRow('f1'));
-    addTearDown(store.changes.close);
-    await pump(tester, store, camerasFail: true, selectedCamera: 'c2');
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('notification_f1')));
-    await tester.pumpAndSettle();
-    expect(find.text('camera detail c2'), findsOneWidget);
   });
 }
