@@ -174,6 +174,31 @@ void main() {
       expect(find.text(keepAllWords('연결 상태를 확인해 주세요')), findsOneWidget);
     });
 
+    testWidgets('weekly_notice_has_info_chip — Figma 1738:5281·5288', (tester) async {
+      final ctx = await pump(
+          tester,
+          section(_weekly(notices: const [
+            EnvReportNotice(
+                code: 'ERR_DISCONNECT',
+                element: EnvReportElement.temp,
+                title: '데이터 수집이 원활하지 않았어요',
+                body: '전원과 Wi-Fi 연결 상태를 확인해 주세요'),
+          ])));
+      final notice =
+          find.byKey(EnvWeeklyReportSection.noticeKey(EnvReportElement.temp));
+      final chip = find.descendant(of: notice, matching: find.text('안내'));
+      expect(chip, findsOneWidget);
+      final style = tester.widget<Text>(chip).style!;
+      expect(style.fontSize, 14);
+      expect(style.fontWeight, FontWeight.w700);
+      expect(style.color, ctx.glass.textSecondary);
+      // 칩 상자(흰 r12, 좌우 8) 오른쪽 + 8 = 제목 시작.
+      final chipBox = find.ancestor(of: chip, matching: find.byType(Container)).first;
+      final title = find.text(keepAllWords('데이터 수집이 원활하지 않았어요'));
+      expect(tester.getTopLeft(title).dx,
+          closeTo(tester.getTopRight(chipBox).dx + 8, 0.5));
+    });
+
     testWidgets('ERR_NO_DATA면 카드 대신 안내만', (tester) async {
       await pump(
           tester,

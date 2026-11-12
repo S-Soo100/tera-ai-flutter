@@ -17,7 +17,7 @@ class EnvInsightRow {
 
   final Key? key;
 
-  /// null이면 칩 없이 제목부터(주간 예외 안내).
+  /// null이면 칩 없이 제목부터.
   final String? chip;
 
   /// 칩 글자색. null이면 `textSecondary`.
