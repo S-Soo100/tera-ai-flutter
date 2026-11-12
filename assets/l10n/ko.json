@@ -1543,6 +1543,7 @@
   "env_report_status_danger": "경고",
   "env_report_status_caution": "주의",
   "env_report_status_normal": "적정",
+  "env_report_notice_chip": "안내",
   "env_report_load_failed": "분석을 불러오지 못했어요",
   "env_report_window": "{} ~ {} 분석"
 }

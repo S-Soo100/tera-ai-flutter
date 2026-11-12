@@ -40,7 +40,8 @@ class EnvDailyReportCard extends StatelessWidget {
 
 /// 주간 분석 한 지표의 자리(Figma A19 차트 아래 · A20~A25·A29~A34 카드).
 ///
-/// - 안내(`notices`, 이 지표 것)는 칩 없이 제목·본문으로, 카드보다 **위**에 둔다
+/// - 안내(`notices`, 이 지표 것)는 "안내" 칩(`#3C3C3C`, Figma 1738:5281·5288 —
+///   2026-11-12 추가) + 제목·본문으로, 카드보다 **위**에 둔다
 ///   ERR_DISCONNECT는 서버 #33(2026-11-03)부터 같은 지표의 카드와 **함께 오지
 ///   않는다** — 이벤트가 있으면 카드만, 없으면 안내만. 둘 다 와도 그린다.
 /// - `ERR_NO_DATA`면 카드를 그리지 않는다(서버도 null을 준다).
@@ -103,6 +104,7 @@ class EnvWeeklyReportSection extends StatelessWidget {
           EnvInsightCard(key: noticeKey(element), rows: [
             for (final n in notices)
               EnvInsightRow(
+                chip: 'env_report_notice_chip'.tr(),
                 title: n.title,
                 lines: [if (n.body.isNotEmpty) n.body],
                 lineLetterSpacing: -0.02,
