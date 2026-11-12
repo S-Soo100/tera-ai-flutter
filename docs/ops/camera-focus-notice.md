@@ -9,7 +9,7 @@
 - 앱 0.177.0 이상에서 동작한다(기기 ID 지정은 0.177.1부터). 0.176.x는 고려하지 않는다(2026-11-11 결정).
 
 근거: 기획 `docs/superpowers/specs/2026-11-11-camera-focus-notice-per-camera-design.md`, Figma `카메라 초점`(1813:8269).
-서버 쪽 운영 절차: terra-server `docs/OPERATIONS.md` "1-3. 카메라 렌즈 초점 안내 발송"(gwanhun/terra-server#63). 2026-11-11 카메라 단위로 갱신을 요청했다.
+서버 쪽 운영 절차: terra-server `docs/OPERATIONS.md` "1-3. 카메라 렌즈 초점 안내 발송" — 카메라 단위 갱신 gwanhun/terra-server#64(2026-11-12 회신, 머지 전 — 머지는 이관훈님). 최초 등록은 #63.
 
 ## 앱 계약 (반드시 지킬 것)
 
