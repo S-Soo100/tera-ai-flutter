@@ -172,7 +172,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   label: 'auth_password'.tr(),
                   controller: _passwordController,
                   focusNode: _passwordFocus,
-                  hintText: 'login_password_hint'.tr(),
+                  hintText: 'login_password_rule'.tr(),
                   errorText: passwordErrorInRow,
                   showErrorBelow: false,
                   obscureText: _obscurePassword,
