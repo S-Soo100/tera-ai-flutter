@@ -2,8 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show FunctionException;
-
+import '../../../core/network/terra_rest_client.dart';
 import '../../../core/theme/glass_palette.dart';
 import '../../../shared/providers/external_url_launcher.dart';
 import '../../auth/data/auth_repository.dart';
@@ -12,8 +11,8 @@ import '../../my_cage/presentation/widgets/management_widgets.dart';
 import 'widgets/my_page_widgets.dart';
 
 /// 회원 탈퇴(Figma MyAcc_withdraw 1142:8361): 질문 18/600 + 설명 16/500
-/// `#626262` + 빨간 CTA. 실제 삭제는 Edge Function `delete-account`(미배포,
-/// 계획 C6) — 없으면 "아직 준비되지 않았습니다"로 말한다.
+/// `#626262` + 빨간 CTA. 실제 처리는 terra-server `POST /account/delete`
+/// ([AuthRepository.deleteAccount]) — 응답별 안내는 `_withdraw`.
 class WithdrawScreen extends ConsumerStatefulWidget {
   const WithdrawScreen({super.key});
 
@@ -38,9 +37,15 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       // 로그아웃과 같은 경로로 푸시 기기 정리 후 세션 종료.
       await push.logout(auth.signOut);
       if (mounted) context.go('/login');
-    } on FunctionException {
-      messenger
-          .showSnackBar(SnackBar(content: Text('withdraw_not_ready'.tr())));
+    } on TerraRestException catch (e) {
+      // 409 = 관리자 계정(앱 탈퇴 불가), 404 = 서버에 탈퇴 API가 아직 없음
+      // (웹 삭제 요청 안내), 그 밖(500 등)은 다시 시도 — 서버가 멱등이다.
+      final key = switch (e.statusCode) {
+        409 => 'withdraw_not_allowed',
+        404 => 'withdraw_not_ready',
+        _ => 'withdraw_failed',
+      };
+      messenger.showSnackBar(SnackBar(content: Text(key.tr())));
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text('withdraw_failed'.tr())));
     } finally {
