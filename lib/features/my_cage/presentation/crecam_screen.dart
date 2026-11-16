@@ -683,16 +683,23 @@ class _EntryCard extends StatelessWidget {
   }
 }
 
-/// 하이라이트·북마크 공통 "업데이트 오늘/어제/N일 전". 하이라이트의 [at]은
-/// 올라온 날([latestHighlightAtProvider] — 공개 시각 또는 촬영 밤 다음 날).
+/// 하이라이트·북마크 공통 "업데이트 오늘/어제/N일 전/한 달 전". 하이라이트의
+/// [at]은 올라온 날([latestHighlightAtProvider] — 공개 시각 또는 촬영 밤 다음 날).
 String _updateLabel(DateTime at) {
-  final days = calendarDaysAgo(at, DateTime.now());
+  final l = crecamUpdatedLabelKey(calendarDaysAgo(at, DateTime.now()));
+  return l.arg == null ? l.key.tr() : l.key.tr(args: [l.arg!]);
+}
 
-  return days <= 0
-      ? 'crecam_updated_today'.tr()
-      : days == 1
-          ? 'crecam_updated_yesterday'.tr()
-          : 'crecam_updated_days'.tr(args: ['$days']);
+/// 지난 날수 → 문구 키. 29일까지 "N일 전", 그 뒤로 30일마다 "한 달 전·두 달
+/// 전…열두 달 전"(Figma 1081:4138 "한 달 전"·1081:4162 "두 달 전"), 열세 달부터
+/// "N달 전". 기준(30일)은 2026-11-16 사용자 결정 — Figma엔 경계가 없다.
+({String key, String? arg}) crecamUpdatedLabelKey(int days) {
+  if (days <= 0) return (key: 'crecam_updated_today', arg: null);
+  if (days == 1) return (key: 'crecam_updated_yesterday', arg: null);
+  if (days < 30) return (key: 'crecam_updated_days', arg: '$days');
+  final months = days ~/ 30;
+  if (months <= 12) return (key: 'crecam_updated_month_$months', arg: null);
+  return (key: 'crecam_updated_months', arg: '$months');
 }
 
 // ── 명시 기간 설정 ──
