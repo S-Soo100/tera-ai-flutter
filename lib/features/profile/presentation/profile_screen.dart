@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/glass_palette.dart';
 import '../../../core/theme/theme_mode_provider.dart';
+import '../../../shared/providers/external_url_launcher.dart';
 import '../../../shared/widgets/figma_icon.dart';
 import '../../../shared/widgets/skeleton_loading.dart';
 import '../../community/presentation/community_providers.dart';
@@ -22,7 +23,7 @@ import 'widgets/my_page_widgets.dart';
 /// 커뮤니티 설정: 프로필 카드(→ `/profile/community`) + 차단한 사용자(→
 /// `/profile/blocked`, 오른쪽 N명). 앱 설정: 알림(→ `/profile/notifications`) ·
 /// 내 계정(→ `/profile/account`) · 버전 정보 — 여기까지 원본 좌표(348/420/492).
-/// 그 아래는 원본에 없는 행: 받은 알림(→ `/notifications`, 알림 내역 화면이 갈
+/// 그 아래는 원본에 없는 행: 개인정보처리방침(외부 브라우저, Play 정책) · 받은 알림(→ `/notifications`, 알림 내역 화면이 갈
 /// 곳이 없어 남긴다, 미읽음 점 유지) · 화면 모드(사용자 결정 전까지 유지) ·
 /// 라이브 연결 진단 내보내기(지원용, 2026-09-23) · 사육장 기기 재시작(비상용,
 /// 2026-10-04 → `/profile/device-reboot`) · 디자인 랩(개발 빌드만).
@@ -36,6 +37,7 @@ class ProfileScreen extends ConsumerWidget {
   static const notificationsRowKey = Key('mypage_notifications_row');
   static const accountRowKey = Key('mypage_account_row');
   static const versionRowKey = Key('mypage_version_row');
+  static const privacyRowKey = Key('mypage_privacy_row');
   static const themeRowKey = Key('mypage_theme_row');
   static const liveDiagRowKey = Key('mypage_live_diag_row');
   static const deviceRebootRowKey = Key('mypage_device_reboot_row');
@@ -95,6 +97,14 @@ class ProfileScreen extends ConsumerWidget {
             icon: MyPageRasterIcon('info_i', color: iconColor),
             trailingText: version == null ? '…' : _formatVersion(version),
             showArrow: false),
+        const SizedBox(height: 8),
+        // Figma 밖(2026-11-17): Play 정책상 앱 안에도 처리방침 링크가 필요하다.
+        MyPageRow(
+            key: privacyRowKey,
+            title: 'mypage_privacy_title'.tr(),
+            icon: Icon(Icons.privacy_tip_outlined, size: 24, color: iconColor),
+            onTap: () =>
+                openExternalLink(context, ref, LegalLinks.privacyPolicy)),
         const SizedBox(height: 8),
         MyPageRow(
             key: inboxRowKey,

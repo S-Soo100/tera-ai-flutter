@@ -11,7 +11,8 @@
 - **내부 테스트:** 523 (0.178.8) 출시 — 트랙 활성, 테스터 목록 "terra ai 내부 테스터"(terraaidev@gmail.com, bss.rol20@gmail.com). 참여 링크 https://play.google.com/apps/internaltest/4700061742254258722 . 앱 설정·검토 전까지 Play에 임시 이름 `com.vivanaut.app (unreviewed)`로 보인다.
 - **다음 확인:** 기존 APK가 깔린 기기에서 참여 링크로 Play 업데이트가 덮어써지는지(서명 유지).
 - **웹페이지 준비됨(2026-11-16):** 개인정보처리방침 https://www.vivanaut.co.kr/privacy · 계정 삭제 요청 https://www.vivanaut.co.kr/account-deletion (홍보 사이트 커밋 `7900bd4`, 운영 본문 확인).
-- **프로덕션 차단 요소:** 회원 탈퇴(서버 함수 미배포), 앱 안 처리방침 링크 없음 — 아래 [출시 전 막힌 것](#출시-전-막힌-것).
+- **앱 안 링크(0.179.0+526):** 마이 페이지 '개인정보처리방침' 줄, 회원 탈퇴 화면 '웹에서 계정 삭제 요청하기'. Play에 올린 523 빌드에는 없다 — 다음 업로드부터.
+- **프로덕션 차단 요소:** 회원 탈퇴(서버 함수 미배포) — 아래 [출시 전 막힌 것](#출시-전-막힌-것).
 
 ## 개발자 계정
 
@@ -70,7 +71,7 @@ INTERNET, ACCESS_NETWORK_STATE, BLUETOOTH_SCAN(`neverForLocation`)·CONNECT, BLU
 
 1. **개인정보처리방침 URL** — 모든 앱 필수. 공개·로그인 불필요·PDF 아님·SSL·이 앱에 해당하는 내용. 앱 안에도 링크 필요. ✅ **https://www.vivanaut.co.kr/privacy** 공개(2026-11-16, 레포 `~/terra-ai-promotion-website` 커밋 `7900bd4`). 적용 범위에 비바나트 앱(Android·iOS)·회원 서비스 포함, 13개 조항, 시행일 2026-11-16, 문의 bss.rol20@vivanaut.co.kr, 보호책임자 이병무 대표이사.
    - 수탁자·국외 이전: Supabase(서울), AWS Lightsail(서울, terra-server), Fly.io(일본, petcam-api), Cloudflare R2(아시아·태평양), Google(FCM·GA, 미국), Vercel(미국). 영상 AI는 자체 모델을 회사 내부 서버에서 실행(사용자 확인) — Gemini는 방침에서 제외. 14세 미만 조항은 넣지 않음(사용자 결정).
-   - **남은 것: 앱 안 링크.** Play는 Console 칸과 함께 앱 안에도 처리방침 링크·본문을 요구한다. 현재 앱에는 처리방침 링크가 없다(`url_launcher` 미사용).
+   - ✅ 앱 안 링크: 0.179.0+526부터 마이 페이지 '개인정보처리방침' 줄(외부 브라우저, `shared/providers/external_url_launcher.dart`의 `LegalLinks`).
    - 미결: 고객 앱 영상을 사람 라벨링(petcam-lab 라벨링 도구)에 쓰는지 — 쓰면 처리 목적에 "AI 모델 개선(영상 라벨링)"을 추가해야 한다.
 2. **계정 삭제** — 계정을 만들 수 있는 앱은 ① 앱 안에서 찾기 쉬운 삭제 시작 경로 ② 앱 밖 웹 경로(Data safety에 URL 입력) 둘 다 필요. 웹 페이지는 앱 이름 또는 개발자 이름을 적고, 재설치 없이 요청할 수 있어야 하며, 보존 데이터가 있으면 기간을 알린다(간단한 폼·메일 안내 허용).
    - 현재 앱의 회원 탈퇴는 서버 함수 `delete-account`를 부르는데 **운영 Supabase에 배포돼 있지 않다**(2026-11-16 함수 목록 조회: `notification-ingest`, `dispatch-push`만). 그래서 누르면 "아직 준비되지 않았습니다". 2026-09-16 서버 요청서 [`docs/handoffs/2026-09-16-mypage-server-requests.md`](../handoffs/2026-09-16-mypage-server-requests.md) 항목.

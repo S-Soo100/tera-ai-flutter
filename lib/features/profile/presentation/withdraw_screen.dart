@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show FunctionException;
 
 import '../../../core/theme/glass_palette.dart';
+import '../../../shared/providers/external_url_launcher.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../notification/presentation/push_providers.dart';
 import '../../my_cage/presentation/widgets/management_widgets.dart';
@@ -17,6 +18,7 @@ class WithdrawScreen extends ConsumerStatefulWidget {
   const WithdrawScreen({super.key});
 
   static const submitKey = Key('withdraw_submit');
+  static const webDeletionLinkKey = Key('withdraw_web_deletion_link');
 
   @override
   ConsumerState<WithdrawScreen> createState() => _WithdrawScreenState();
@@ -65,6 +67,20 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
         Text('withdraw_description'.tr(),
             textAlign: TextAlign.center,
             style: managementStyle(context, color: glass.bodySecondary)),
+        const SizedBox(height: 16),
+        // Figma 밖(2026-11-17): Play 정책상 앱 밖 삭제 요청 경로도 알린다.
+        // 서버 탈퇴 함수가 없는 동안에는 이 링크가 실제 삭제 경로다.
+        Center(
+          child: TextButton(
+            key: WithdrawScreen.webDeletionLinkKey,
+            onPressed: () =>
+                openExternalLink(context, ref, LegalLinks.accountDeletion),
+            child: Text('withdraw_web_link'.tr(),
+                style: managementStyle(context,
+                        size: 14, color: glass.bodySecondary)
+                    .copyWith(decoration: TextDecoration.underline)),
+          ),
+        ),
       ]),
     );
   }
