@@ -142,6 +142,35 @@ void main() {
     expect(q['kind'], 'neq.camera.weak_signal');
   });
 
+  test('신호 약함 구독은 최근 100건만, 초점 안내는 상한 없이 받는다', () async {
+    final requests = <Uri>[];
+    final client = SupabaseClient('https://example.test', 'test-anon',
+        authOptions: const AuthClientOptions(autoRefreshToken: false),
+        httpClient: MockClient((request) async {
+      requests.add(request.url);
+      return http.Response('[]', 200,
+          headers: {'content-type': 'application/json'}, request: request);
+    }));
+    addTearDown(client.dispose);
+    final store = SupabaseNotificationStore(client);
+    // Realtime 소켓은 테스트 호스트에 못 붙어 오류를 낸다 — 첫 REST 조회만 본다.
+    final a = store
+        .watchKind(cameraWeakSignalNotificationKind)
+        .listen((_) {}, onError: (_) {});
+    final b = store
+        .watchKind(cameraFocusNotificationKind)
+        .listen((_) {}, onError: (_) {});
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await a.cancel();
+    await b.cancel();
+    final weak = requests.firstWhere(
+        (u) => u.queryParameters['kind'] == 'eq.camera.weak_signal');
+    final focus = requests.firstWhere(
+        (u) => u.queryParameters['kind'] == 'eq.camera.focus_needed');
+    expect(weak.queryParameters['limit'], '100');
+    expect(focus.queryParameters.containsKey('limit'), isFalse);
+  });
+
   test('single lookup rejects account mismatch before query', () async {
     final store = MemoryNotificationStore();
     addTearDown(store.changes.close);

@@ -69,8 +69,13 @@ Set<String> _idsFor(Map<String, List<String>> byRef, LiveNoticeCamera camera) =>
 final liveNoticeKindProvider =
     Provider.autoDispose.family<String?, LiveNoticeCamera>((ref, camera) {
   final dismissed = ref.watch(liveNoticeDismissedProvider);
-  for (final kind in liveNoticeKinds) {
-    final ids = _idsFor(ref.watch(liveNoticeIdsByRefProvider(kind)), camera);
+  // 모든 종류를 먼저 watch한다 — 앞 종류에서 바로 return하면 뒤 종류 stream에
+  // 구독자가 없어져, 누를 때 ref.read가 Realtime 구독을 새로 열었다 닫는다.
+  final byKind = [
+    for (final kind in liveNoticeKinds)
+      (kind, _idsFor(ref.watch(liveNoticeIdsByRefProvider(kind)), camera)),
+  ];
+  for (final (kind, ids) in byKind) {
     if (ids.any((id) => !dismissed.contains(id))) return kind;
   }
   return null;
