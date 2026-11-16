@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/glass_palette.dart';
@@ -123,6 +124,19 @@ class EnvDayChart extends StatefulWidget {
   static const double plotInset = 12;
   static const double yLabelWidth = 42;
 
+  /// 격자선 — Figma 1610:5939·1610:6830 3배 PNG 실측 0.5pt `#E3E3E3`
+  /// ([GlassPalette.border]).
+  static const double gridStrokeWidth = 0.5;
+
+  // ── 손가락 표시 (Figma 1610:6830 `Dtail`) ──
+  /// 상자 윗변은 차트 윗변보다 88pt 위(상자 231 / 그래프 319) — 범위 막대
+  /// 위에 겹쳐 뜬다. 세로선은 상자 밑에서 그래프 바닥선까지.
+  static const double scrubBoxLift = 88;
+  static const double scrubLineWidth = 2;
+  static const double scrubDotRadius = 4;
+  static const double scrubDotStroke = 2.5;
+  static const scrubBoxKey = Key('env_day_chart_scrub_box');
+
   @override
   State<EnvDayChart> createState() => _EnvDayChartState();
 }
@@ -189,6 +203,8 @@ class _EnvDayChartState extends State<EnvDayChart> {
       key: EnvDayChart.chartKey,
       height: EnvDayChart.totalHeight,
       child: Stack(
+        // 손가락 표시 상자가 차트 위(범위 막대 자리)로 올라간다.
+        clipBehavior: Clip.none,
         children: [
           Positioned.fill(
             left: EnvDayChart.plotInset,
@@ -226,13 +242,71 @@ class _EnvDayChartState extends State<EnvDayChart> {
                 'stats_axis_humid'.tr(namedArgs: {'v': v.toStringAsFixed(d)}),
             style: labelStyle,
           ),
+          if (widget.scrubX case final scrubX?) _scrubOverlay(glass, scrubX),
         ],
       ),
     );
   }
 
+  /// 손가락 표시(Figma 1610:6830) — 세로선·점·상자. 가로 스크롤 **밖** 층에
+  /// 그려 차트 위로 올라갈 수 있게 하고, 스크롤 위치를 따라 x를 옮긴다.
+  /// 세로선이 보이는 구간(좌우 12pt 안) 밖이면 통째로 숨긴다.
+  Widget _scrubOverlay(GlassPalette glass, double scrubX) {
+    const lift = EnvDayChart.scrubBoxLift;
+    return Positioned(
+      left: 0,
+      right: 0,
+      top: -lift,
+      height: lift + EnvDayChart.markerBand + EnvDayChart.plotHeight,
+      child: IgnorePointer(
+        child: LayoutBuilder(
+          builder: (context, c) => ListenableBuilder(
+            listenable: _controller,
+            builder: (context, _) {
+              final offset = _controller.hasClients ? _controller.offset : 0.0;
+              final x = EnvDayChart.plotInset +
+                  scrubX * EnvDayChart.contentWidth -
+                  offset;
+              if (x < EnvDayChart.plotInset ||
+                  x > c.maxWidth - EnvDayChart.plotInset) {
+                return const SizedBox.shrink();
+              }
+              final t = widget.data.tempNormAt(scrubX);
+              final h = widget.data.humidNormAt(scrubX);
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // 선이 먼저 — 상자(불투명)가 윗부분을 덮는다.
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: _ScrubPainter(
+                        x: x,
+                        lineColor: glass.bodySecondary,
+                        dotFill: glass.surfaceHeader,
+                        dots: [
+                          if (t != null) (norm: t, color: glass.tempAccent),
+                          if (h != null) (norm: h, color: glass.humidAccent),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: CustomSingleChildLayout(
+                      delegate: _ScrubBoxLayout(
+                          lineX: x, inset: EnvDayChart.plotInset),
+                      child: _scrubBox(glass, scrubX),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _content(GlassPalette glass, TextStyle labelStyle) {
-    final scrubX = widget.scrubX;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -249,14 +323,7 @@ class _EnvDayChartState extends State<EnvDayChart> {
               humidPoints: widget.data.humidPoints,
               tempColor: glass.tempAccent,
               humidColor: glass.humidAccent,
-              gridColor: glass.chartGridLine,
-              scrubX: scrubX,
-              scrubTempY:
-                  scrubX == null ? null : widget.data.tempNormAt(scrubX),
-              scrubHumidY:
-                  scrubX == null ? null : widget.data.humidNormAt(scrubX),
-              scrubLineColor: glass.textSecondary,
-              scrubDotFill: glass.overlay,
+              gridColor: glass.border,
             ),
           ),
         ),
@@ -278,7 +345,6 @@ class _EnvDayChartState extends State<EnvDayChart> {
           ),
         ),
         ..._markers(glass),
-        if (scrubX != null) _tooltip(glass, scrubX),
       ],
     );
   }
@@ -324,60 +390,65 @@ class _EnvDayChartState extends State<EnvDayChart> {
     ];
   }
 
-  /// 스크러버 툴팁 — `오전 11:23  35.2°C 59%`. 콘텐츠 좌표라 차트와 같이
-  /// 스크롤된다(세로선과 붙어 다녀야 읽힌다).
-  Widget _tooltip(GlassPalette glass, double scrubX) {
+  /// 손가락 표시 상자(Figma 1610:7245 Box 143×66) — 윗줄 시각 12/500
+  /// `#949090`, 아랫줄 온도·습도 20/600 `#1E1E1E`(사이 12). 면 `#F4F4F4`
+  /// r12, **테두리 없음**. 안쪽 여백 12, 줄 사이 4.
+  Widget _scrubBox(GlassPalette glass, double scrubX) {
     final at = widget.data.timeAt(scrubX);
     final t = widget.data.tempAt(scrubX);
     final h = widget.data.humidAt(scrubX);
-    final values = (t == null || h == null)
-        ? null
-        : 'env_detail_scrub_values'
-            .tr(args: [formatCompact(t), formatCompact(h)]);
-
-    final x = (scrubX * EnvDayChart.contentWidth).clamp(
-      70.0,
-      EnvDayChart.contentWidth - 70.0,
+    final valueStyle = TextStyle(
+      fontFamily: 'Pretendard',
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      letterSpacing: -0.4,
+      height: 23.8671875 / 20,
+      color: glass.textPrimary,
     );
-    return Positioned(
-      left: x,
-      top: 0,
-      child: FractionalTranslation(
-        translation: const Offset(-0.5, 0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-          decoration: BoxDecoration(
-            color: glass.overlay,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: glass.border),
+    return Container(
+      key: EnvDayChart.scrubBoxKey,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: glass.overlay,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            formatAmPmTime(at),
+            maxLines: 1,
+            style: TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.24,
+              height: 14.3203125 / 12,
+              color: glass.textTertiary,
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                formatAmPmTime(at),
-                style: TextStyle(
-                  fontFamily: 'Pretendard',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: glass.textTertiary,
-                ),
+          if (t != null || h != null) ...[
+            const SizedBox(height: 4),
+            // 휴대폰 글자를 키워 화면 폭을 넘을 때만 줄여 맞춘다(크기 자체는 Figma).
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (t != null)
+                    Text('env_detail_scrub_temp'.tr(args: [formatCompact(t)]),
+                        maxLines: 1, style: valueStyle),
+                  if (t != null && h != null) const SizedBox(width: 12),
+                  if (h != null)
+                    Text('env_detail_scrub_humid'.tr(args: [formatCompact(h)]),
+                        maxLines: 1, style: valueStyle),
+                ],
               ),
-              if (values != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  values,
-                  style: TextStyle(
-                    fontFamily: 'Pretendard',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: glass.textPrimary,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -416,8 +487,84 @@ class _EnvDayChartState extends State<EnvDayChart> {
   }
 }
 
-/// 격자 + 온습도 라인 + 스크러버. **직접 그린다** — 524pt 스크롤 캔버스는
-/// 프레임 고정 전제의 fl_chart 배선보다 좌표를 직접 잡는 편이 정확하다.
+/// 손가락 표시 상자 자리 — 세로선 가운데, 좌우 [inset] 안에서 멈춘다.
+class _ScrubBoxLayout extends SingleChildLayoutDelegate {
+  const _ScrubBoxLayout({required this.lineX, required this.inset});
+
+  final double lineX;
+  final double inset;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final maxWidth = constraints.maxWidth - inset * 2;
+    return BoxConstraints(maxWidth: maxWidth < 0 ? 0 : maxWidth);
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final maxLeft = size.width - inset - childSize.width;
+    final left = (lineX - childSize.width / 2)
+        .clamp(inset, maxLeft < inset ? inset : maxLeft);
+    return Offset(left, 0);
+  }
+
+  @override
+  bool shouldRelayout(_ScrubBoxLayout old) =>
+      old.lineX != lineX || old.inset != inset;
+}
+
+/// 손가락 표시 세로선·점(Figma 1610:6830) — 2pt `#626262` 선이 이 층 맨 위
+/// (상자 밑에 가려짐)에서 그래프 바닥선까지, 점은 지름 8 흰 채움 + 지표색
+/// 2.5 테두리. 좌표는 이 층 기준(위로 [EnvDayChart.scrubBoxLift] 올라가 있다).
+class _ScrubPainter extends CustomPainter {
+  const _ScrubPainter({
+    required this.x,
+    required this.lineColor,
+    required this.dotFill,
+    required this.dots,
+  });
+
+  final double x;
+  final Color lineColor;
+  final Color dotFill;
+  final List<({double norm, Color color})> dots;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const plotTop = EnvDayChart.scrubBoxLift + EnvDayChart.markerBand;
+    canvas.drawLine(
+      Offset(x, 0),
+      Offset(x, plotTop + EnvDayChart.plotHeight),
+      Paint()
+        ..color = lineColor
+        ..strokeWidth = EnvDayChart.scrubLineWidth,
+    );
+    final fill = Paint()..color = dotFill;
+    for (final d in dots) {
+      final c = Offset(x, plotTop + _DayPlotPainter._dy(d.norm));
+      canvas.drawCircle(c, EnvDayChart.scrubDotRadius, fill);
+      canvas.drawCircle(
+        c,
+        EnvDayChart.scrubDotRadius,
+        Paint()
+          ..color = d.color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = EnvDayChart.scrubDotStroke,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ScrubPainter old) =>
+      old.x != x ||
+      old.lineColor != lineColor ||
+      old.dotFill != dotFill ||
+      !listEquals(old.dots, dots);
+}
+
+/// 격자 + 온습도 라인. **직접 그린다** — 524pt 스크롤 캔버스는 프레임 고정
+/// 전제의 fl_chart 배선보다 좌표를 직접 잡는 편이 정확하다. 손가락 표시는
+/// 스크롤 밖 층([_ScrubPainter])이 그린다.
 class _DayPlotPainter extends CustomPainter {
   const _DayPlotPainter({
     required this.maxGap,
@@ -426,11 +573,6 @@ class _DayPlotPainter extends CustomPainter {
     required this.tempColor,
     required this.humidColor,
     required this.gridColor,
-    required this.scrubX,
-    required this.scrubTempY,
-    required this.scrubHumidY,
-    required this.scrubLineColor,
-    required this.scrubDotFill,
   });
 
   final double maxGap;
@@ -439,11 +581,6 @@ class _DayPlotPainter extends CustomPainter {
   final Color tempColor;
   final Color humidColor;
   final Color gridColor;
-  final double? scrubX;
-  final double? scrubTempY;
-  final double? scrubHumidY;
-  final Color scrubLineColor;
-  final Color scrubDotFill;
 
   /// 정규화 y(0~1) → 픽셀. 1은 첫 눈금선, 0은 마지막 눈금선.
   static double _dy(double norm) =>
@@ -451,11 +588,10 @@ class _DayPlotPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 가로 격자선 — Y 눈금마다 한 줄 (연회색).
+    // 가로 격자선 — Y 눈금마다 한 줄 (0.5pt #E3E3E3).
     final grid = Paint()
       ..color = gridColor
-      ..strokeWidth = 1
-      ..isAntiAlias = false;
+      ..strokeWidth = EnvDayChart.gridStrokeWidth;
     for (var i = 0; i <= AxisBounds.defaultDivisions + 1; i++) {
       final y = i * EnvDayChart.rowStep;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
@@ -507,29 +643,6 @@ class _DayPlotPainter extends CustomPainter {
 
     drawLinePath(tempPoints, tempColor);
     drawLinePath(humidPoints, humidColor);
-
-    // 스크러버 — 세로선은 플롯 전체, 점은 곡선 위 4pt.
-    if (scrubX case final x?) {
-      final dx = (x * size.width).clamp(0.0, size.width);
-      canvas.drawLine(
-        Offset(dx, 0),
-        Offset(dx, size.height),
-        Paint()
-          ..color = scrubLineColor
-          ..strokeWidth = 1,
-      );
-      final fill = Paint()..color = scrubDotFill;
-      final stroke = Paint()
-        ..color = scrubLineColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1;
-      for (final norm in [scrubTempY, scrubHumidY]) {
-        if (norm == null) continue;
-        final c = Offset(dx, _dy(norm));
-        canvas.drawCircle(c, 2, fill);
-        canvas.drawCircle(c, 2, stroke);
-      }
-    }
   }
 
   @override
@@ -539,8 +652,5 @@ class _DayPlotPainter extends CustomPainter {
       old.humidPoints != humidPoints ||
       old.tempColor != tempColor ||
       old.humidColor != humidColor ||
-      old.gridColor != gridColor ||
-      old.scrubX != scrubX ||
-      old.scrubTempY != scrubTempY ||
-      old.scrubHumidY != scrubHumidY;
+      old.gridColor != gridColor;
 }

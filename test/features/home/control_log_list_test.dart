@@ -19,6 +19,15 @@ Future<void> _pump(WidgetTester tester, List<ControlLogEntry> entries) async {
 }
 
 void main() {
+  testWidgets('제어 기록 영역 위에 구분선을 그리지 않는다(Figma 1610:6830)', (tester) async {
+    // Figma Frame 110은 흰 바닥에서 #FAFAFA 면으로 바로 바뀐다 — 3배 PNG에
+    // 선이 없다(2026-11-16 대조).
+    await _pump(tester, const []);
+    final section =
+        tester.widget<Container>(find.byKey(ControlLogList.sectionKey));
+    expect((section.decoration as BoxDecoration).border, isNull);
+  });
+
   testWidgets('델타 로우 — off + 델타는 부호 붙은 델타를 그린다', (tester) async {
     await _pump(tester, [
       ControlLogEntry(

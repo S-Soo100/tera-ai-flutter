@@ -161,4 +161,77 @@ void main() {
       expect(scrubbed, closeTo(0.3, 0.05));
     });
   });
+
+  group('Figma 1610:6830 — 손가락 표시·격자', () {
+    Widget host(double? scrubX) => MaterialApp(
+          home: Scaffold(
+            body: Padding(
+              // 상자가 차트 위로 88 올라가므로 위 여백을 둔다.
+              padding: const EdgeInsets.only(top: 120),
+              child: SizedBox(
+                width: 393,
+                child: EnvDayChart(data: _data(), scrubX: scrubX),
+              ),
+            ),
+          ),
+        );
+
+    testWidgets('상자는 테두리 없는 r12 회색 면, 차트 위 88pt, 세로선 가운데', (tester) async {
+      await tester.pumpWidget(host(0.3));
+      await tester.pump();
+
+      final chart = tester.getRect(find.byKey(EnvDayChart.chartKey));
+      final boxFinder = find.byKey(EnvDayChart.scrubBoxKey);
+      expect(boxFinder, findsOneWidget);
+      final box = tester.getRect(boxFinder);
+      expect(box.top, closeTo(chart.top - EnvDayChart.scrubBoxLift, 0.01));
+      final lineX =
+          chart.left + EnvDayChart.plotInset + 0.3 * EnvDayChart.contentWidth;
+      // 세로선 가운데, 단 좌우 12pt 안에서 멈춘다.
+      final left = (lineX - box.width / 2).clamp(
+          chart.left + EnvDayChart.plotInset,
+          chart.right - EnvDayChart.plotInset - box.width);
+      expect(box.left, closeTo(left, 0.5));
+      expect(box.right, lessThanOrEqualTo(chart.right - EnvDayChart.plotInset));
+
+      final deco =
+          tester.widget<Container>(boxFinder).decoration as BoxDecoration;
+      expect(deco.border, isNull);
+      expect(deco.borderRadius, BorderRadius.circular(12));
+    });
+
+    testWidgets('윗줄 시각, 아랫줄 온도·습도를 따로 쓴다', (tester) async {
+      await tester.pumpWidget(host(0.3));
+      await tester.pump();
+      final box = find.byKey(EnvDayChart.scrubBoxKey);
+      expect(
+          find.descendant(
+              of: box, matching: find.text('env_detail_scrub_temp')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: box, matching: find.text('env_detail_scrub_humid')),
+          findsOneWidget);
+    });
+
+    testWidgets('세로선이 보이는 구간 밖으로 스크롤되면 상자도 숨는다', (tester) async {
+      await tester.pumpWidget(host(0.1));
+      await tester.pump();
+      expect(find.byKey(EnvDayChart.scrubBoxKey), findsOneWidget);
+      await tester.drag(
+          find.byType(SingleChildScrollView), const Offset(-200, 0));
+      await tester.pumpAndSettle();
+      expect(find.byKey(EnvDayChart.scrubBoxKey), findsNothing);
+    });
+
+    testWidgets('scrubX가 없으면 상자도 없다', (tester) async {
+      await tester.pumpWidget(host(null));
+      await tester.pump();
+      expect(find.byKey(EnvDayChart.scrubBoxKey), findsNothing);
+    });
+
+    test('격자선은 0.5pt', () {
+      expect(EnvDayChart.gridStrokeWidth, 0.5);
+    });
+  });
 }

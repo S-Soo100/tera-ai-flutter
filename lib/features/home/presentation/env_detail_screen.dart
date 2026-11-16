@@ -47,6 +47,7 @@ class EnvDetailScreen extends ConsumerStatefulWidget {
   static const dayNextKey = Key('env_detail_day_next');
   static const weekPrevKey = Key('env_detail_week_prev');
   static const weekNextKey = Key('env_detail_week_next');
+  static const topBarKey = Key('env_detail_top_bar');
 
   @override
   ConsumerState<EnvDetailScreen> createState() => _EnvDetailScreenState();
@@ -83,10 +84,12 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
     // 기기가 없거나 아직 모르면 설정 아이콘을 숨긴다 — 대상 없는 설정 화면은 없다.
     final deviceId = device.isLoading ? null : device.valueOrNull;
     return Container(
+      key: EnvDetailScreen.topBarKey,
       decoration: BoxDecoration(color: glass.appBar),
       // Figma 1081:4873 — 헤더 106(62+44) 안에서 하단선을 그린다(높이 미추가).
+      // 두께 0.5pt(2026-11-16 Figma 1610:5939 3배 PNG 실측 — 1.5px).
       foregroundDecoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: glass.border)),
+        border: Border(bottom: BorderSide(color: glass.border, width: 0.5)),
       ),
       child: SafeArea(
         bottom: false,

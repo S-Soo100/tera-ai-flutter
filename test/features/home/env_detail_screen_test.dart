@@ -166,6 +166,13 @@ Future<void> _pump(
 String _dateLabel(DateTime d) => '${d.year}. ${d.month}. ${d.day}';
 
 void main() {
+  testWidgets('헤더 아래 선은 Figma처럼 0.5pt', (tester) async {
+    await _pump(tester);
+    final bar = tester.widget<Container>(find.byKey(EnvDetailScreen.topBarKey));
+    final border = (bar.foregroundDecoration as BoxDecoration).border as Border;
+    expect(border.bottom.width, 0.5);
+  });
+
   testWidgets('제어 기록 조회 실패는 빈 기록과 구분하고 재시도한다', (tester) async {
     var calls = 0;
     await _pump(tester, loadLog: () async {
