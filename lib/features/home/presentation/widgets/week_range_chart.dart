@@ -74,6 +74,11 @@ class WeekRangeChart extends StatelessWidget {
   static const double frameBottom = gridBottom + rowStep; // 256
   static const double weekdayTop = frameBottom + 10;
   static const double barWidth = 10;
+
+  /// 격자선 두께·색 — Figma 1610:7454 3배 PNG 실측 0.5pt `#E3E3E3`
+  /// ([GlassPalette.border]). 안쪽 요일 경계 6줄은 점선, 양끝은 실선.
+  static const double gridStrokeWidth = 0.5;
+  static const bool innerColumnsDashed = true;
   static const double yLabelWidth = 28;
   static const double valueLabelHeight = 17;
   static const double valueLabelGap = 4;
@@ -226,7 +231,7 @@ class WeekRangeChart extends StatelessWidget {
                     children: [
                       Positioned.fill(
                         child: CustomPaint(
-                          painter: _WeekGridPainter(color: glass.chartGridLine),
+                          painter: _WeekGridPainter(color: glass.border),
                         ),
                       ),
                       for (var i = 0; i < 7; i++)
@@ -340,8 +345,9 @@ class WeekRangeChart extends StatelessWidget {
 
 /// 연한 격자 — 가로선은 여유선 포함 8줄, 세로선은 열 경계(양 끝 포함).
 ///
-/// 원본은 세로선 두 열만 점선으로 그렸다(1081:5052의 목·금 경계). 나머지는
-/// 실선이라 규칙을 실선으로 통일한다.
+/// Figma 1610:7454(2026-11 v4): 0.5pt `#E3E3E3`, 안쪽 요일 경계 6줄은 점선
+/// (2pt 칠·2pt 비움 — 일간 차트 3시간 점선과 같은 문법), 양끝은 실선.
+/// 구 1081:5052는 두 열만 점선이라 실선으로 통일했었다.
 class _WeekGridPainter extends CustomPainter {
   const _WeekGridPainter({required this.color});
 
@@ -351,16 +357,23 @@ class _WeekGridPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final p = Paint()
       ..color = color
-      ..strokeWidth = 1
-      ..isAntiAlias = false;
+      ..strokeWidth = WeekRangeChart.gridStrokeWidth;
     for (var i = 0; i <= WeekRangeChart.divisions + 2; i++) {
       final y = i * WeekRangeChart.rowStep;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), p);
     }
     final columnWidth = size.width / 7;
+    const bottom = WeekRangeChart.frameBottom;
     for (var i = 0; i <= 7; i++) {
-      final x = (i * columnWidth).clamp(0.5, size.width - 0.5);
-      canvas.drawLine(Offset(x, 0), Offset(x, WeekRangeChart.frameBottom), p);
+      final x = (i * columnWidth).clamp(0.25, size.width - 0.25);
+      final edge = i == 0 || i == 7;
+      if (edge || !WeekRangeChart.innerColumnsDashed) {
+        canvas.drawLine(Offset(x, 0), Offset(x, bottom), p);
+        continue;
+      }
+      for (double y = 0; y < bottom; y += 4) {
+        canvas.drawLine(Offset(x, y), Offset(x, (y + 2).clamp(0, bottom)), p);
+      }
     }
   }
 

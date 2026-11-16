@@ -190,4 +190,9 @@ void main() {
     expect(find.text('120°'), findsNothing);
     await tester.binding.setSurfaceSize(null);
   });
+
+  test('주간 격자는 0.5pt, 안쪽 세로선은 점선(Figma 1610:7454)', () {
+    expect(WeekRangeChart.gridStrokeWidth, 0.5);
+    expect(WeekRangeChart.innerColumnsDashed, isTrue);
+  });
 }

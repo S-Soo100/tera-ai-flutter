@@ -91,8 +91,9 @@ class ControlLogList extends StatelessWidget {
         color: Theme.of(context).brightness == Brightness.light
             ? VivaColors.fillBack
             : glass.surfaceHeader,
-        // Figma 1081:4873 Frame 110 — 상단 구분선.
-        border: Border(top: BorderSide(color: glass.border)),
+        // Figma Frame 110은 흰 바닥에서 이 면으로 바로 바뀐다 — 노드엔 테두리
+        // 값이 있지만 화면엔 그려지지 않는다(1609:5101·1610:6830 3배 PNG, 2026-11-16).
+        // 구분선을 되살리지 말 것.
       ),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       child: Column(
