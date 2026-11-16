@@ -361,9 +361,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
               Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: ManagementTopBar(
+                      // Figma 1912:5758 — Wi-Fi 바꾸기는 상단 제목만 바뀐다.
                       title: (widget.wifiTarget == null
                               ? 'device_add_title'
-                              : 'device_wifi_action')
+                              : 'device_wifi_title')
                           .tr(),
                       onBack: () => _back(state, controller),
                       close: step == DeviceAddStep.results,
@@ -520,15 +521,12 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
         return b.rssi.compareTo(a.rssi);
       });
     final target = widget.wifiTarget;
+    // Figma 1912:5758 — Wi-Fi 바꾸기도 본문은 기기 추가와 같다. 대상 이름·
+    // 안내문을 덧붙이지 않는다(2026-11-16 기획자 지적).
     final body = [
-      if (target == null)
-        _heading(
-            context, 'device_add_select_title', 'device_add_select_subtitle',
-            busy: state.busy)
-      else
-        _heading(context, 'device_wifi_select_title',
-            'device_wifi_select_subtitle_${target.kind.name}',
-            titleArgs: {'name': target.name}, busy: state.busy),
+      _heading(
+          context, 'device_add_select_title', 'device_add_select_subtitle',
+          busy: state.busy),
       if (state.targetGone)
         _emptyBox(context, 'device_wifi_target_gone'.tr())
       else if (candidates.isEmpty)
@@ -613,21 +611,6 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                         style: managementStyle(context,
                                             weight: FontWeight.w600,
                                             color: context.glass.textPrimary)),
-                                    if (target != null &&
-                                        state.matched
-                                            .contains(c.physicalId)) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                          key: Key(
-                                              'device_wifi_matched_${c.physicalId}'),
-                                          'device_wifi_matched'.tr(
-                                              namedArgs: {'name': target.name}),
-                                          textAlign: TextAlign.end,
-                                          style: managementStyle(context,
-                                              size: 14,
-                                              color:
-                                                  context.glass.bodySecondary)),
-                                    ],
                                     if (target == null &&
                                         state.registered
                                             .contains(c.physicalId)) ...[
@@ -685,13 +668,6 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                             ])))))
         ]),
     ];
-    // 안 보일 때 할 일 — 카메라는 켜진 뒤 3분만 검색된다(2026-09-25 점검).
-    body.add(Padding(
-        padding: const EdgeInsets.fromLTRB(4, 12, 4, 0),
-        child: Text('device_add_scan_hint'.tr(),
-            key: const Key('device_add_scan_hint'),
-            style: managementStyle(context,
-                size: 14, color: context.glass.bodySecondary))));
     // Figma 971:1837/990:11220 — 미선택은 '다시 스캔'(스캔 중 회색), 선택하면
     // '기기 N개 추가'. 재검색은 선택 해제로 되돌아온다(중복 CTA 없음).
     final footer = [
@@ -761,13 +737,6 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                         ]))))
         ]),
     ];
-    // 5GHz 전용 공유기는 목록에 안 보인다 — 직접 입력해도 실패만 반복된다.
-    body.add(Padding(
-        padding: const EdgeInsets.fromLTRB(4, 12, 4, 0),
-        child: Text('device_add_network_band_hint'.tr(),
-            key: const Key('device_add_network_band_hint'),
-            style: managementStyle(context,
-                size: 14, color: context.glass.bodySecondary))));
     final footer = [
       ManagementButton(
           key: const Key('device_add_network_rescan'),
