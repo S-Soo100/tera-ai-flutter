@@ -160,6 +160,8 @@ void main() {
   testWidgets('회원 탈퇴 — 문구 y122, CTA 696', (tester) async {
     await pump(tester, const WithdrawScreen(), overrides());
     expect(tester.getRect(find.text('회원 탈퇴를 진행하시겠습니까?')).top, closeTo(122, 1));
+    // 서버는 소프트 삭제 + 30일 안 실제 삭제(2026-11-17 사용자 결정) — "즉시 삭제"로 말하지 않는다.
+    expect(find.textContaining('30일 안에 모두 삭제'), findsOneWidget);
     expect(tester.getRect(find.byKey(WithdrawScreen.submitKey)),
         const Rect.fromLTWH(12, 696, 369, 56));
   });
