@@ -107,7 +107,10 @@ class GlassDockFrame extends StatelessWidget {
             builder: (context) => DecoratedBox(
                   decoration: BoxDecoration(
                     color: glass.tabBar,
-                    border: Border(top: BorderSide(color: glass.border)),
+                    // Figma Navigation 위 선은 0.5pt(2026-11-16 Home
+                    // 1913:6994 3배 PNG 실측) — 기본 1pt는 두 배 굵다.
+                    border: Border(
+                        top: BorderSide(color: glass.border, width: 0.5)),
                   ),
                   // 리플이 앉을 면 — 없으면 잉크가 불투명 바 뒤에 그려져 안 보인다.
                   child: Material(
