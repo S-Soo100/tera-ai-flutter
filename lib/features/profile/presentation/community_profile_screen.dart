@@ -203,8 +203,23 @@ class _CommunityProfileScreenState
   }
 }
 
-/// 3택 토글 369×60 r12: 칸 `#F4F4F4` 선 `#E3E3E3`, 제목 16/500 + 설명 14/500,
-/// 선택 칸 `#192553` + check 24 + 흰 글자.
+/// 사육 경험 3택 칸의 선 — Figma 1142:9369는 **바깥 테두리 없이** 선택 안 된
+/// 칸끼리 사이에만 1pt `#E3E3E3` 세로선을 그린다(3배 PNG 실측, 2026-11-16).
+/// 선택 칸(남색)과 닿는 쪽엔 선이 없다. 선이 없으면 null.
+Border? experienceDivider({
+  required int index,
+  required List<String> options,
+  required String? value,
+  required BorderSide side,
+}) {
+  final next = index + 1;
+  if (next >= options.length) return null;
+  if (options[index] == value || options[next] == value) return null;
+  return Border(right: side);
+}
+
+/// 3택 토글 369×60 r12: 칸 `#F4F4F4`, 칸 사이 선 `#E3E3E3`([experienceDivider]),
+/// 제목 16/500 + 설명 14/500, 선택 칸 `#192553` + check 24 + 흰 글자.
 class _ExperienceToggle extends StatelessWidget {
   const _ExperienceToggle({required this.value, required this.onChanged});
   final String? value;
@@ -225,15 +240,11 @@ class _ExperienceToggle extends StatelessWidget {
                         key: CommunityProfileScreen.experienceKey(e),
                         color:
                             value == e ? AppTheme.brandNavy : glass.surfaceTint,
-                        shape: value == e
-                            ? null
-                            : Border(
-                                top: BorderSide(color: glass.border),
-                                bottom: BorderSide(color: glass.border),
-                                left: i == 0
-                                    ? BorderSide(color: glass.border)
-                                    : BorderSide.none,
-                                right: BorderSide(color: glass.border)),
+                        shape: experienceDivider(
+                            index: i,
+                            options: _CommunityProfileScreenState._experiences,
+                            value: value,
+                            side: BorderSide(color: glass.border)),
                         child: InkWell(
                             onTap: () => onChanged(e),
                             child: Row(
