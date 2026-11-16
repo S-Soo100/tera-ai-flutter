@@ -63,9 +63,10 @@ INTERNET, ACCESS_NETWORK_STATE, BLUETOOTH_SCAN(`neverForLocation`)·CONNECT, BLU
 
 ## 출시 전 막힌 것
 
-1. **개인정보처리방침 URL** — 모든 앱 필수. 공개·로그인 불필요·PDF 아님·SSL·이 앱에 해당하는 내용. 앱 안에도 링크 필요. 현재 `www.vivanaut.co.kr/privacy`는 홈으로 돌아간다(페이지 없음). 사이트는 별도 프로젝트(Vercel `terra-ai-promotion-website`).
+1. **개인정보처리방침 URL** — 모든 앱 필수. 공개·로그인 불필요·PDF 아님·SSL·이 앱에 해당하는 내용. 앱 안에도 링크 필요. 현재 `www.vivanaut.co.kr/privacy`는 홈으로 돌아간다(페이지 없음). 사이트는 별도 프로젝트(Vercel `terra-ai-promotion-website`). **백승수가 직접 작성 중(2026-11-16).**
 2. **계정 삭제** — 계정을 만들 수 있는 앱은 ① 앱 안에서 찾기 쉬운 삭제 시작 경로 ② 앱 밖 웹 경로(Data safety에 URL 입력) 둘 다 필요. 웹 페이지는 앱 이름 또는 개발자 이름을 적고, 재설치 없이 요청할 수 있어야 하며, 보존 데이터가 있으면 기간을 알린다(간단한 폼·메일 안내 허용).
    - 현재 앱의 회원 탈퇴는 서버 함수 `delete-account`를 부르는데 **운영 Supabase에 배포돼 있지 않다**(2026-11-16 함수 목록 조회: `notification-ingest`, `dispatch-push`만). 그래서 누르면 "아직 준비되지 않았습니다". 2026-09-16 서버 요청서 [`docs/handoffs/2026-09-16-mypage-server-requests.md`](../handoffs/2026-09-16-mypage-server-requests.md) 항목.
+   - **서버 요청서 초안:** [`docs/handoffs/2026-11-16-delete-account-server-request.md`](../handoffs/2026-11-16-delete-account-server-request.md) — 백승수가 이관훈님께 전달 예정. 운영 DB 실측상 `user_profiles`·`commands.issued_by` 등이 NO ACTION 외래키라 지금은 `deleteUser`만으로는 누구도 못 지운다.
    - Play 기준으로는 완전한 인앱 삭제가 권장이고, 앱 안에 **삭제 요청 웹페이지로 가는 링크**만 있어도 된다. 다만 iOS App Store는 앱 안에서 삭제를 시작할 수 있어야 하므로 함수 배포가 근본 해결이다.
 3. **심사용 앱 접근 정보** — 로그인 필요 앱이라 영어로 데모 계정(만료 없음·OTP 없음)과 안내를 넣는다. 사육장·카메라 기기가 있어야 보이는 화면은 기기가 연결된 데모 계정을 주고 기기 없이 볼 수 있는 범위를 영어로 설명(공식 문서엔 하드웨어 안내 규칙이 따로 없음).
 4. 그 밖의 앱 콘텐츠 양식: Data safety(수집 항목: 이메일·계정, 기기 텔레메트리, 영상, 푸시 토큰 등), 콘텐츠 등급, 타겟층, 광고 여부, 스토어 등록정보(아이콘 512, 그래픽 이미지 1024×500, 휴대전화 스크린샷).
