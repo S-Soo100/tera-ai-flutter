@@ -207,6 +207,8 @@ class AppTheme {
         titleTextStyle: textTheme.titleLarge,
         iconTheme: const IconThemeData(color: textTitle),
       ),
+      // 모든 showDialog의 뒤 덮개 — Figma 확인 창은 덮지 않는다.
+      dialogTheme: DialogThemeData(barrierColor: palette.modalBarrier),
       cardTheme: CardThemeData(
         color: palette.overlay,
         elevation: 0,
@@ -307,6 +309,8 @@ class AppTheme {
         titleTextStyle: textTheme.titleLarge,
         iconTheme: const IconThemeData(color: Color(0xFFE0E0E0)),
       ),
+      dialogTheme:
+          DialogThemeData(barrierColor: GlassPalette.dark.modalBarrier),
       cardTheme: CardThemeData(
         color: _surfaceContainerDark,
         elevation: 0,
