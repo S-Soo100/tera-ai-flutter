@@ -454,16 +454,14 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
 
   /// 제목 18/600 (+ 진행 중이면 오른쪽 8에 20 스피너) / 8 / 부제 14/500.
   Widget _heading(BuildContext context, String title, String subtitle,
-          {List<String> args = const [],
-          Map<String, String>? titleArgs,
-          bool busy = false}) =>
+          {List<String> args = const [], bool busy = false}) =>
       Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Flexible(
-                  child: Text(title.tr(namedArgs: titleArgs),
+                  child: Text(title.tr(),
                       style: managementStyle(context,
                               size: 18, weight: FontWeight.w600)
                           .copyWith(height: 21.48046875 / 18))),

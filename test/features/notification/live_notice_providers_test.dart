@@ -232,4 +232,19 @@ void main() {
     await tester.pump();
     expect(find.text('false/false'), findsOneWidget);
   });
+
+  testWidgets('신호 안내가 보이는 동안에도 초점 안내 구독을 유지한다', (tester) async {
+    store.rows.add(weakRow('w1', 'a'));
+    final ref = await pump(tester);
+    expect(find.text('weak/false'), findsOneWidget);
+    expect(store.operations, contains('watchKind:camera.focus_needed'));
+    final before =
+        store.operations.where((o) => o == 'watchKind:camera.focus_needed').length;
+    await dismissLiveNotices(ref, c1, cameraWeakSignalNotificationKind);
+    await tester.pump();
+    // 누를 때 초점 안내 stream을 새로 열지 않는다(이미 구독 중).
+    expect(
+        store.operations.where((o) => o == 'watchKind:camera.focus_needed').length,
+        before);
+  });
 }

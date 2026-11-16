@@ -20,6 +20,13 @@ const liveNoticeKinds = [
   cameraFocusNotificationKind,
 ];
 
+/// 종류별 실시간 구독(`watchKind`)이 받는 최근 행 수 상한. 신호 약함은 서버가
+/// 자동으로 넣어(카메라당 하루 1건) 행이 계속 쌓인다. 서버는 카메라마다 안 읽은
+/// 행이 있으면 새로 넣지 않으므로 미읽음은 카메라당 최대 1건이고, 최근 100건이면
+/// 카메라 여럿의 미읽음이 밀려나지 않는다. 운영자가 손으로 넣는 초점 안내는
+/// 상한이 없다(오래된 미읽음이 밀려나면 영영 안 뜬다).
+const notificationKindStreamLimit = {cameraWeakSignalNotificationKind: 100};
+
 /// 알림함 목록·미읽음 수·"모두 읽음"에서 빼는 종류 — 막대에만 보인다.
 const inboxHiddenNotificationKinds = {cameraWeakSignalNotificationKind};
 
