@@ -575,7 +575,7 @@
   "pw_change_failed": "비밀번호를 변경하지 못했어요. 다시 시도해 주세요",
   "withdraw_title": "회원 탈퇴",
   "withdraw_question": "회원 탈퇴를 진행하시겠습니까?",
-  "withdraw_description": "기기 및 개체의 데이터도 모두 삭제되며\n복구할 수 없습니다",
+  "withdraw_description": "탈퇴하면 바로 로그인이 막히고\n기기·개체 데이터는 30일 안에 모두 삭제되며\n복구할 수 없습니다",
   "withdraw_submit": "회원 탈퇴",
   "withdraw_not_ready": "회원 탈퇴 처리가 아직 준비되지 않았습니다. 아래 웹 페이지에서 삭제를 요청해 주세요",
   "withdraw_web_link": "웹에서 계정 삭제 요청하기",
