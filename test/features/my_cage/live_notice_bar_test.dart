@@ -227,4 +227,25 @@ void main() {
     expect(find.text('네트워크 신호가 약하니 점검해 주세요'), findsOneWidget);
     expect(find.text('카메라 렌즈 초점을 맞춰주세요'), findsNothing);
   });
+
+  // 막대 어디를 눌러도 이동한다 — "더보기" 글자만이 아니다(2026-11-16 사용자 지시).
+  for (final (camera, dest) in [('c1', 'detail c1'), ('c4', 'device c4')]) {
+    final points = <String, Offset Function(Rect)>{
+      '왼쪽 위 모서리 안': (r) => r.topLeft + const Offset(3, 3),
+      '왼쪽 여백(문구 앞)': (r) => Offset(r.left + 8, r.center.dy),
+      '문구 가운데': (r) => r.center,
+      '문구와 더보기 사이·아래 끝': (r) => Offset(r.right - 70, r.bottom - 3),
+      '오른쪽 아래 모서리 안': (r) => r.bottomRight - const Offset(3, 3),
+    };
+    for (final MapEntry(key: where, value: at) in points.entries) {
+      testWidgets('$camera 막대 $where를 눌러도 이동하고 읽음 처리된다', (tester) async {
+        await pump(tester, cameraId: camera);
+        final rect = tester.getRect(find.byKey(LiveNoticeBar.tapKey));
+        await tester.tapAt(at(rect));
+        await tester.pumpAndSettle();
+        expect(find.text(dest), findsOneWidget);
+        expect(store.operations.where((o) => o.startsWith('read:')), isNotEmpty);
+      });
+    }
+  }
 }
