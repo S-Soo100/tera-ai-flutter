@@ -1,7 +1,7 @@
 # Apple 개발자 계정·iOS 배포 현황 (SOT)
 
 > iOS 배포 계정·번들 ID·법인 정보의 단일 기준. 바뀌면 이 문서를 먼저 고친다.
-> 최종 갱신: 2026-11-16
+> 최종 갱신: 2026-11-17
 
 ## 법인 (D-U-N-S)
 
@@ -26,6 +26,23 @@
 
 - **법인 전환 계획:** 승수님이 공동창업자·등기이사라 개인→조직 전환 자격이 있다. D-U-N-S가 Apple에 반영되면(발급 후 1~2일) developer.apple.com/contact → 멤버십 및 계정에서 `XYNNB47RN3`의 조직 전환을 요청한다. 별도 법인 계정·앱 이전이 필요 없다. 앱이 그대로 유지되는지는 요청할 때 Apple에 확인한다.
 - Apple이 회사 연락처로 권한 확인 전화를 할 수 있다. 대표님께 미리 알린다.
+
+### 법인 전환 요청 준비 (2026-11-17)
+
+| 준비물 | 상태 |
+|---|---|
+| D-U-N-S `697129769` (Apple 조회에서 검색됨) | ✅ |
+| 회사 웹사이트 https://www.vivanaut.co.kr (응답 200, 개인정보처리방침 `/privacy`에 회사 표기) | ✅ |
+| 회사 도메인 메일 `bss.rol20@vivanaut.co.kr` | ✅ |
+| 요청자 권한: 등기이사·CTO (공동창업자) | ✅ — 증빙 요청 시 법인 등기부등본 |
+| 대표님께 Apple 확인 연락 사전 공유 | ⬜ |
+| 진행 중인 TestFlight 업로드 완료 후 요청 | ⬜ |
+
+요청 경로: developer.apple.com/contact → (bss.rol20 로그인) → 멤버십 및 계정 → 개인→조직 전환. 메뉴 이름은 바뀔 수 있다.
+
+요청 문구 초안:
+
+> I would like to convert my individual Apple Developer Program membership (Team ID XYNNB47RN3) to an organization membership for terraai Co.,Ltd. (D-U-N-S 697129769, website https://www.vivanaut.co.kr). I am a co-founder, registered director and CTO of the company and have legal authority to bind it to Apple agreements. Please confirm that existing apps and TestFlight builds on this team will remain after the conversion.
 - 예전 무료 팀 `8NDUMK7C65`(arthurbaek)는 TestFlight 불가. arthurbaek 계정은 Apple이 등록 자격을 거절했다(지원 케이스 진행 중).
 
 ## 번들 ID·앱
