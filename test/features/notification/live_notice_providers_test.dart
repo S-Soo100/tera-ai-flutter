@@ -7,21 +7,31 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/notification/data/notification_repository.dart';
 import 'package:vivanaut/features/notification/domain/app_notification.dart';
-import 'package:vivanaut/features/notification/presentation/focus_notice_providers.dart';
+import 'package:vivanaut/features/notification/presentation/live_notice_providers.dart';
 import 'package:vivanaut/features/notification/presentation/notification_providers.dart';
 
 import 'notification_repository_test.dart';
 
+Map<String, Object?> weakRow(String id, String userId,
+        {String? readAt, String cameraId = 'c1'}) =>
+    focusRow(id, userId,
+        readAt: readAt,
+        cameraId: cameraId,
+        kind: cameraWeakSignalNotificationKind);
+
 Map<String, Object?> focusRow(String id, String userId,
-        {String? readAt, String? cameraId = 'c1', String? deviceId}) =>
+        {String? readAt,
+        String? cameraId = 'c1',
+        String? deviceId,
+        String kind = cameraFocusNotificationKind}) =>
     {
       ...notificationRow(id, userId, '2026-11-10T01:00:00Z'),
-      'kind': cameraFocusNotificationKind,
+      'kind': kind,
       'category': 'camera',
       'route': '/crecam',
       'read_at': readAt,
       'data': <String, Object?>{
-        'kind': cameraFocusNotificationKind,
+        'kind': kind,
         if (cameraId != null) 'camera_id': cameraId,
         if (deviceId != null) 'device_id': deviceId,
       },
@@ -63,8 +73,15 @@ void main() {
       ],
       child: Consumer(builder: (context, ref, _) {
         captured = ref;
-        final a = ref.watch(focusNoticeVisibleProvider(c1));
-        final b = ref.watch(focusNoticeVisibleProvider(c2));
+        // 초점 안내=true, 신호 약함=weak, 없음=false.
+        String k(LiveNoticeCamera c) =>
+            switch (ref.watch(liveNoticeKindProvider(c))) {
+              cameraFocusNotificationKind => 'true',
+              cameraWeakSignalNotificationKind => 'weak',
+              _ => 'false',
+            };
+        final a = k(c1);
+        final b = k(c2);
         return Text('$a/$b', textDirection: TextDirection.ltr);
       }),
     ));
@@ -97,7 +114,7 @@ void main() {
       ..add(focusRow('f1', 'a', cameraId: 'c1'))
       ..add(focusRow('f2', 'a', cameraId: 'p4-c1'));
     final ref = await pump(tester);
-    await dismissFocusNotices(ref, c1);
+    await dismissLiveNotices(ref, c1, cameraFocusNotificationKind);
     await tester.pump();
     expect(store.operations.where((o) => o.startsWith('read:')).toSet(),
         {'read:f1:a', 'read:f2:a'});
@@ -126,7 +143,7 @@ void main() {
       ..add(focusRow('g1', 'a', cameraId: 'c2'));
     final ref = await pump(tester);
     expect(find.text('true/true'), findsOneWidget);
-    final done = dismissFocusNotices(ref, c1);
+    final done = dismissLiveNotices(ref, c1, cameraFocusNotificationKind);
     await tester.pump();
     // 서버 갱신을 기다리지 않고 c1만 바로 숨는다.
     expect(find.text('false/true'), findsOneWidget);
@@ -141,7 +158,7 @@ void main() {
     store.rows.add(focusRow('f1', 'a'));
     store.failIds.add('f1');
     final ref = await pump(tester);
-    await dismissFocusNotices(ref, c1);
+    await dismissLiveNotices(ref, c1, cameraFocusNotificationKind);
     await tester.pump();
     expect(store.operations, contains('fail:f1'));
     expect(find.text('true/false'), findsOneWidget);
@@ -152,7 +169,7 @@ void main() {
       ..add(focusRow('f1', 'a'))
       ..add(focusRow('g1', 'b'));
     final ref = await pump(tester);
-    await dismissFocusNotices(ref, c1);
+    await dismissLiveNotices(ref, c1, cameraFocusNotificationKind);
     await tester.pump();
     expect(find.text('false/false'), findsOneWidget);
 
@@ -176,10 +193,43 @@ void main() {
       ..add(focusRow('f2', 'a', cameraId: 'c1'))
       ..add(focusRow('g1', 'a', cameraId: 'c2'));
     final ref = await pump(tester);
-    ref.read(focusNoticeDismissedProvider.notifier).state = {'old1', 'g1'};
-    await dismissFocusNotices(ref, c1);
+    ref.read(liveNoticeDismissedProvider.notifier).state = {'old1', 'g1'};
+    await dismissLiveNotices(ref, c1, cameraFocusNotificationKind);
     await tester.pump();
     // 지난 id(old1)는 버리고, 아직 미읽음인 다른 카메라 숨김(g1)은 남긴다.
-    expect(ref.read(focusNoticeDismissedProvider), {'g1', 'f2'});
+    expect(ref.read(liveNoticeDismissedProvider), {'g1', 'f2'});
+  });
+
+  // ── 네트워크 신호 약함(camera.weak_signal, 기획 2026-11-14) ──
+
+  testWidgets('신호 약함 안내는 그 카메라(uuid)에만 보인다', (tester) async {
+    store.rows.add(weakRow('w1', 'a', cameraId: 'c2'));
+    await pump(tester);
+    expect(find.text('false/weak'), findsOneWidget);
+    expect(store.operations, contains('watchKind:camera.weak_signal'));
+  });
+
+  testWidgets('같은 카메라에 둘 다 있으면 신호 약함을 먼저, 사라지면 초점 안내', (tester) async {
+    store.rows
+      ..add(focusRow('f1', 'a'))
+      ..add(weakRow('w1', 'a'));
+    final ref = await pump(tester);
+    expect(find.text('weak/false'), findsOneWidget);
+    await dismissLiveNotices(ref, c1, cameraWeakSignalNotificationKind);
+    await tester.pump();
+    expect(find.text('true/false'), findsOneWidget);
+    expect(store.operations.where((o) => o.startsWith('read:')), ['read:w1:a'],
+        reason: '신호 안내만 읽음 — 초점 안내는 그대로');
+  });
+
+  testWidgets('서버가 read_at을 채우면(신호 회복) 막대가 저절로 내려간다', (tester) async {
+    store.rows.add(weakRow('w1', 'a'));
+    await pump(tester);
+    expect(find.text('weak/false'), findsOneWidget);
+    store.rows.single['read_at'] = '2026-11-14T03:00:00Z';
+    store.changes.add(null);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('false/false'), findsOneWidget);
   });
 }

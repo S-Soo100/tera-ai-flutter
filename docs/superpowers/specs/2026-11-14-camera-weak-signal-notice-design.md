@@ -1,6 +1,6 @@
 # 카메라 네트워크 신호 약함 안내 (`camera.weak_signal`) — 앱 기획
 
-> 상태: 📝 **기획 — 사용자 결정 대기** (2026-11-14). 구현 없음.
+> 상태: 🛠 **구현 완료(0.178.0, 브랜치 `feat/camera-weak-signal-notice`) — D2(더보기 이동) 기획 확인 중**, D1·D3~D5는 추천안으로 구현 (2026-11-16). 화면 검수 `docs/design-audits/2026-11-16-camera-weak-signal/RESULTS.md`.
 > 원문: terra-server `docs/APP_CAMERA_WEAK_SIGNAL_2026-11-13.md` (서버 구현 완료·스위치 꺼짐), 서버 계획 `specs/stage-v-camera-weak-signal-notice.md`.
 > Figma: Home 프레임 라이브 위 막대 "네트워크 신호가 약하니 점검해 주세요 / 더보기"(사용자 공유 캡처). 카메라 탭은 같은 자리에 초점 안내.
 > 선례: 초점 안내 카메라 단위 `2026-11-11-camera-focus-notice-per-camera-design.md`.

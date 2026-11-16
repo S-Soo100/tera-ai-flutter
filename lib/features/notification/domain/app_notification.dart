@@ -7,8 +7,25 @@ const envAlertNotificationKind = 'env.alert.triggered';
 /// 운영자가 SQL로 app_notifications에 직접 넣는다 — `docs/ops/camera-focus-notice.md`.
 const cameraFocusNotificationKind = 'camera.focus_needed';
 
+/// 카메라 Wi-Fi 신호가 10분 넘게 약할 때 서버가 넣는 안내(카메라 단위, 푸시 없음).
+/// 회복하면 서버가 `read_at`을 채운다 — terra-server
+/// `docs/APP_CAMERA_WEAK_SIGNAL_2026-11-13.md`, 앱 기획
+/// `docs/superpowers/specs/2026-11-14-camera-weak-signal-notice-design.md`.
+const cameraWeakSignalNotificationKind = 'camera.weak_signal';
+
+/// 라이브 위 막대로 보이는 카메라 단위 안내 — **앞일수록 먼저**. 같은 카메라에
+/// 둘 다 미읽음이면 신호 안내를 먼저 띄우고, 사라지면 초점 안내가 이어 뜬다(D3).
+const liveNoticeKinds = [
+  cameraWeakSignalNotificationKind,
+  cameraFocusNotificationKind,
+];
+
+/// 알림함 목록·미읽음 수·"모두 읽음"에서 빼는 종류 — 막대에만 보인다.
+const inboxHiddenNotificationKinds = {cameraWeakSignalNotificationKind};
+
 const knownNotificationKinds = {
   cameraFocusNotificationKind,
+  cameraWeakSignalNotificationKind,
   'highlight.ready',
   'device.action.started',
   'device.action.ended',
@@ -70,8 +87,13 @@ class AppNotification {
   /// `data.device_id`. 지정 방법은 서버가 정하므로(기획 2026-11-11 Q2)
   /// `cameras.id`(uuid)든 기기 ID(`cameras.camera_id`)든 받는다. 비어 있으면(v1
   /// 사람 단위 행) 라이브 막대는 띄우지 않는다.
-  Set<String> get focusCameraRefs {
-    if (kind != cameraFocusNotificationKind) return const {};
+  Set<String> get focusCameraRefs =>
+      kind == cameraFocusNotificationKind ? liveCameraRefs : const {};
+
+  /// 라이브 막대 안내([liveNoticeKinds])가 가리키는 카메라 표시들 — 위와 같은
+  /// 규칙. 다른 종류면 빈 집합.
+  Set<String> get liveCameraRefs {
+    if (!liveNoticeKinds.contains(kind)) return const {};
     return {
       for (final key in const ['camera_id', 'device_id'])
         if (data[key] case final String id when id.isNotEmpty) id,

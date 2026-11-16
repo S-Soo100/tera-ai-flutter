@@ -9,7 +9,10 @@ abstract interface class NotificationStore {
   Stream<List<Map<String, Object?>>> watchKind(String kind);
   Future<Map<String, Object?>?> findById(String id, String userId);
   Future<void> markRead(String id, String userId, DateTime at);
-  Future<void> markAllRead(String userId, DateTime at);
+
+  /// [exceptKinds] 종류는 건드리지 않는다(막대 전용 안내).
+  Future<void> markAllRead(String userId, DateTime at,
+      {Set<String> exceptKinds = const {}});
 }
 
 class SupabaseNotificationStore implements NotificationStore {
@@ -53,12 +56,17 @@ class SupabaseNotificationStore implements NotificationStore {
   }
 
   @override
-  Future<void> markAllRead(String userId, DateTime at) async {
-    await client
+  Future<void> markAllRead(String userId, DateTime at,
+      {Set<String> exceptKinds = const {}}) async {
+    var query = client
         .from('app_notifications')
         .update({'read_at': at.toUtc().toIso8601String()})
         .eq('user_id', userId)
         .isFilter('read_at', null);
+    for (final kind in exceptKinds) {
+      query = query.neq('kind', kind);
+    }
+    await query;
   }
 }
 
@@ -81,7 +89,10 @@ class NotificationRepository {
       _store.watch(userId).map((rows) {
         final items = rows
             .map(AppNotification.fromJson)
-            .where((item) => item.userId == userId && item.id.isNotEmpty)
+            .where((item) =>
+                item.userId == userId &&
+                item.id.isNotEmpty &&
+                !inboxHiddenNotificationKinds.contains(item.kind))
             .toList();
         items.sort((a, b) => (b.createdAt?.millisecondsSinceEpoch ?? 0)
             .compareTo(a.createdAt?.millisecondsSinceEpoch ?? 0));
@@ -106,6 +117,7 @@ class NotificationRepository {
 
   Future<void> markAllRead(String userId) async {
     if (_currentUserId() != userId) return;
-    await _store.markAllRead(userId, DateTime.now().toUtc());
+    await _store.markAllRead(userId, DateTime.now().toUtc(),
+        exceptKinds: inboxHiddenNotificationKinds);
   }
 }

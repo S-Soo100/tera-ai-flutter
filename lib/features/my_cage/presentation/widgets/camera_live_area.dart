@@ -13,7 +13,7 @@ import '../../../home/presentation/home_set_providers.dart';
 import '../../domain/terra_camera.dart';
 import '../my_cage_providers.dart';
 import '../webrtc_live_controller.dart';
-import 'focus_notice_snack_bar.dart';
+import 'live_notice_bar.dart';
 import 'webrtc_live_view.dart';
 
 /// 카메라 탭 라이브 영역 — Figma Camera Home (668:427), 369×271 radius 12.
@@ -282,7 +282,7 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
             top: 12,
             left: 12,
             right: 12,
-            child: FocusNoticeSnackBar(
+            child: LiveNoticeBar(
                 cameraId: current.id, deviceId: current.cameraId),
           ),
         ],

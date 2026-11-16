@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/notification/data/notification_repository.dart';
+import 'package:vivanaut/features/notification/domain/app_notification.dart';
 import 'package:vivanaut/features/notification/presentation/notification_providers.dart';
 
 class MemoryNotificationStore implements NotificationStore {
@@ -60,9 +61,11 @@ class MemoryNotificationStore implements NotificationStore {
   }
 
   @override
-  Future<void> markAllRead(String userId, DateTime at) async {
+  Future<void> markAllRead(String userId, DateTime at,
+      {Set<String> exceptKinds = const {}}) async {
     operations.add('all:$userId');
-    for (final row in rows.where((r) => r['user_id'] == userId)) {
+    for (final row in rows.where((r) =>
+        r['user_id'] == userId && !exceptKinds.contains(r['kind']))) {
       row['read_at'] ??= at.toIso8601String();
     }
     changes.add(null);
@@ -121,6 +124,24 @@ void main() {
     expect(await store.findById('missing', 'a'), isNull);
   });
 
+  test('Supabase 모두 읽음은 제외 종류를 kind=neq 로 보낸다', () async {
+    final requests = <Uri>[];
+    final client = SupabaseClient('https://example.test', 'test-anon',
+        authOptions: const AuthClientOptions(autoRefreshToken: false),
+        httpClient: MockClient((request) async {
+      requests.add(request.url);
+      return http.Response('', 204, request: request);
+    }));
+    addTearDown(client.dispose);
+    await SupabaseNotificationStore(client).markAllRead(
+        'a', DateTime.utc(2026, 11, 14),
+        exceptKinds: {cameraWeakSignalNotificationKind});
+    final q = requests.single.queryParameters;
+    expect(q['user_id'], 'eq.a');
+    expect(q['read_at'], 'is.null');
+    expect(q['kind'], 'neq.camera.weak_signal');
+  });
+
   test('single lookup rejects account mismatch before query', () async {
     final store = MemoryNotificationStore();
     addTearDown(store.changes.close);
@@ -169,6 +190,26 @@ void main() {
     expect(store.rows[1]['read_at'], isNull);
     expect((await repo.watchNotifications('a').first).where((n) => !n.isRead),
         isEmpty);
+  });
+
+  test('신호 약함 안내는 알림함 목록·미읽음 수에서 빠지고 모두 읽음에도 남는다', () async {
+    final store = MemoryNotificationStore();
+    addTearDown(store.changes.close);
+    store.rows.addAll([
+      notificationRow('n1', 'a', '2026-11-14T00:00:00Z'),
+      {
+        ...notificationRow('w1', 'a', '2026-11-14T01:00:00Z'),
+        'kind': cameraWeakSignalNotificationKind,
+        'category': 'camera',
+        'data': <String, Object?>{'camera_id': 'c1'},
+      },
+    ]);
+    final repo = NotificationRepository(store, currentUserId: () => 'a');
+    expect((await repo.watchNotifications('a').first).map((n) => n.id), ['n1']);
+    await repo.markAllRead('a');
+    expect(store.rows.first['read_at'], isNotNull);
+    expect(store.rows.last['read_at'], isNull,
+        reason: '모두 읽음이 라이브 막대를 내리면 안 된다');
   });
 
   test(
