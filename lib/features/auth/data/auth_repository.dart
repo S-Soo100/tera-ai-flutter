@@ -1,14 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/network/terra_rest_client.dart';
+
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(Supabase.instance.client);
+  return AuthRepository(Supabase.instance.client,
+      restClient: () => ref.read(terraRestClientProvider));
 });
 
 class AuthRepository {
   final SupabaseClient _client;
 
-  AuthRepository(this._client);
+  /// terra-server REST 통로 — 탈퇴([deleteAccount])만 쓴다. 호출 시점에 꺼내
+  /// 세션이 바뀌어도 그때의 토큰을 쓴다.
+  final TerraRestClient Function()? _restClient;
+
+  AuthRepository(this._client, {TerraRestClient Function()? restClient})
+      : _restClient = restClient;
 
   User? get currentUser => _client.auth.currentUser;
 
@@ -103,14 +111,20 @@ class AuthRepository {
     await _client.auth.updateUser(UserAttributes(password: next));
   }
 
-  /// 회원 탈퇴(Figma MyAcc_withdraw 1142:8361). 클라이언트는 `auth.users`를
-  /// 지울 수 없어 Edge Function `delete-account`(service role) 에 위임한다 —
-  /// 2026-09-16 현재 **미배포**(이관훈님 합의 필요, 계획 C6). 없으면
-  /// [FunctionException]이 올라오고 화면이 "아직 준비되지 않았다"고 말한다.
+  /// 회원 탈퇴(Figma MyAcc_withdraw 1142:8361) — terra-server
+  /// `POST /account/delete`(본문 없음, gwanhun/terra-server#67, 2026-11-17).
+  /// 서버가 기기·카메라 연결을 해제한 뒤 계정을 **소프트 삭제**한다(로그인 차단,
+  /// 데이터는 남음 — 보관 기간은 미정). 200 `{deleted:true}`, 이미 탈퇴한
+  /// 계정도 200. 실패는 [TerraRestException]: 409 `admin_account`, 500
+  /// `unlink_failed`/`soft_delete_failed`(다시 불러도 안전).
   /// 삭제만 한다 — 이어지는 로그아웃은 호출자가 푸시 기기 정리 경로
   /// (`pushLifecycleController.logout`)로 수행한다.
   Future<void> deleteAccount() async {
-    await _client.functions.invoke('delete-account');
+    final rest = _restClient;
+    if (rest == null) {
+      throw StateError('AuthRepository: restClient가 없어 탈퇴를 부를 수 없다');
+    }
+    await rest().post('/account/delete');
   }
 }
 
