@@ -522,7 +522,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
     }
 
-    testWidgets('대상 이름으로 찾고, 알아본 기기에 표시하고, 버튼은 "다음"', (tester) async {
+    // Figma 1912:5758 — 상단 제목만 '네트워크 변경'이고 본문은 기기 추가와
+    // 같다. 안내문을 덧붙이지 않는다(2026-11-16 기획자 지적).
+    testWidgets('상단 제목만 "네트워크 변경", 본문은 기기 추가와 같고 버튼은 "다음"',
+        (tester) async {
       await pump(
           tester,
           const DeviceAddState(
@@ -530,11 +533,26 @@ void main() {
               matched: {'physical-a'},
               selected: {PairTargetKind.device: device}));
       expect(tester.takeException(), isNull);
-      expect(find.text('Wi-Fi 바꾸기'), findsOneWidget);
-      expect(find.text('사육장 3 찾기'), findsOneWidget);
+      expect(find.text('네트워크 변경'), findsOneWidget);
+      expect(find.text('추가할 기기 선택'), findsOneWidget);
+      expect(find.text('사육장 모듈 전원을 켜고 스마트폰 가까이 대어 주세요'), findsOneWidget);
+      expect(find.text('사육장 3 찾기'), findsNothing);
       expect(find.byKey(const Key('device_wifi_matched_physical-a')),
-          findsOneWidget);
+          findsNothing);
+      expect(find.byKey(const Key('device_add_scan_hint')), findsNothing);
       expect(find.text('다음'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    // Figma 1912:5813 — 네트워크 선택도 제목·부제뿐, 2.4GHz 안내 없음.
+    testWidgets('네트워크 선택에 덧붙인 안내가 없다', (tester) async {
+      await pump(tester, const DeviceAddState(step: DeviceAddStep.networks));
+      expect(tester.takeException(), isNull);
+      expect(find.text('네트워크 변경'), findsOneWidget);
+      expect(find.text('네트워크 선택'), findsOneWidget);
+      expect(find.byKey(const Key('device_add_network_band_hint')),
+          findsNothing);
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
