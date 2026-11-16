@@ -8,11 +8,12 @@
 
 - **계정:** 조직 계정 생성·등록비 결제·계정 확인 완료(2026-11-16, 본인 인증 완료 알림 수신).
 - **앱:** "비바나트"(`com.vivanaut.app`, 앱 ID `4975696317866126203`) 생성. Play 앱 서명 키 = 기존 릴리즈 키(아래).
-- **내부 테스트:** 523 (0.178.8) 출시 — 트랙 활성, 테스터 목록 "terra ai 내부 테스터"(terraaidev@gmail.com, bss.rol20@gmail.com). 참여 링크 https://play.google.com/apps/internaltest/4700061742254258722 . 앱 설정·검토 전까지 Play에 임시 이름 `com.vivanaut.app (unreviewed)`로 보인다.
+- **내부 테스트:** 최신 526 (0.179.0) 출시(2026-11-17, 처리방침·웹 계정 삭제 링크 포함, 검토 오류·경고 0). 첫 출시 523 (0.178.8, 11-16) — 트랙 활성, 테스터 목록 "terra ai 내부 테스터"(terraaidev@gmail.com, bss.rol20@gmail.com). 참여 링크 https://play.google.com/apps/internaltest/4700061742254258722 . 앱 설정·검토 전까지 Play에 임시 이름 `com.vivanaut.app (unreviewed)`로 보인다.
 - **다음 확인:** 기존 APK가 깔린 기기에서 참여 링크로 Play 업데이트가 덮어써지는지(서명 유지).
 - **웹페이지 준비됨(2026-11-16):** 개인정보처리방침 https://www.vivanaut.co.kr/privacy · 계정 삭제 요청 https://www.vivanaut.co.kr/account-deletion (홍보 사이트 커밋 `7900bd4`, 운영 본문 확인).
-- **앱 안 링크(0.179.0+526):** 마이 페이지 '개인정보처리방침' 줄, 회원 탈퇴 화면 '웹에서 계정 삭제 요청하기'. Play에 올린 523 빌드에는 없다 — 다음 업로드부터.
-- **프로덕션 차단 요소:** 회원 탈퇴(서버 함수 미배포) — 아래 [출시 전 막힌 것](#출시-전-막힌-것).
+- **앱 안 링크(0.179.0+526):** 마이 페이지 '개인정보처리방침' 줄, 회원 탈퇴 화면 '웹에서 계정 삭제 요청하기'. 내부 테스트 526으로 배포됨.
+- **탈퇴 서버 회신(2026-11-17, [gwanhun/terra-server#67](https://github.com/gwanhun/terra-server/pull/67), `docs/BACKEND_REPLY_DELETE_ACCOUNT_2026-11-17.md`):** Edge Function 대신 terra-server `POST /account/delete`, **소프트 삭제**(로그인 차단·기기 연결 해제, DB·R2·Storage 데이터는 남음, 보관 기간 N일 미정). 회신엔 "11-17 배포"로 적혔으나 11-17 확인 시 PR은 OPEN(미머지). 공개한 처리방침·삭제 페이지의 "탈퇴 즉시 전부 삭제"와 맞지 않아 N일 결정과 문구 수정, 커뮤니티 글 숨김, 앱 호출 전환(409·500 문구)이 남았다.
+- **프로덕션 차단 요소:** 회원 탈퇴(위 회신 반영·N일 삭제 작업) — 아래 [출시 전 막힌 것](#출시-전-막힌-것).
 
 ## 개발자 계정
 
