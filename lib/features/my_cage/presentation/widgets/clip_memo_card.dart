@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/figma_icon.dart';
+import '../../../../shared/widgets/viva_shadow.dart';
 import '../../domain/clip_memo.dart';
 import '../clip_memo_colors.dart';
 import '../clip_memo_providers.dart';
@@ -38,7 +39,11 @@ class ClipMemoCard extends StatelessWidget {
                 // 아이콘 아래 8, 안쪽 8/4, 행 90×44 하단선, 18/500.
                 color: context.glass.surfaceHeader,
                 surfaceTintColor: context.glass.surfaceHeader,
-                shape: RoundedRectangleBorder(
+                // Figma 1084:7286 — 둘레로 고르게 번지는 공용 그림자(헤더
+                // 메뉴와 같은 것). Material 기본 elevation은 아래로 치우친다.
+                elevation: 0,
+                shape: VivaShadowRoundedBorder(
+                    shadow: vivaFloatingShadow(context.glass),
                     borderRadius: BorderRadius.circular(12)),
                 constraints: const BoxConstraints(minWidth: 106, maxWidth: 106),
                 menuPadding: const EdgeInsets.fromLTRB(8, 4, 8, 4),

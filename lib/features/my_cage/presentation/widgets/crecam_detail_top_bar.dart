@@ -152,7 +152,8 @@ class CrecamDetailHeaderArea extends StatelessWidget {
         // 2026-09-16 P14: 북마크 날짜 y130·플레이어 영상 y190 정합).
 
         foregroundDecoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: glass.outline)),
+          // 0.5pt — Figma 945:4287·1084:7291·1689:5774 3배 PNG 실측(1.5px).
+          border: Border(bottom: BorderSide(color: glass.outline, width: 0.5)),
         ),
         child: SafeArea(bottom: false, child: child),
       ),
