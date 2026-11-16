@@ -9,6 +9,7 @@ import '../../../../shared/domain/control_log.dart';
 import '../../../../shared/domain/env_chart_data.dart';
 import '../../../../shared/domain/num_format.dart';
 import 'control_log_list.dart';
+import '../../../../core/theme/viva_line.dart';
 
 /// Split a telemetry line wherever at least one 30-minute bucket is absent.
 /// Each metric uses its own points, so one failed sensor never bridges a gap.
@@ -84,7 +85,15 @@ class EnvDayChart extends StatefulWidget {
     this.scrubX,
     this.onScrubChanged,
     this.initialFraction = 0,
+    this.scrubAnchor,
   });
+
+  /// 손가락 표시 상자의 위치 기준 — 화면이 범위 막대(Figma BarGraph)를
+  /// `CompositedTransformTarget`으로 감싸 넘긴다. 상자 아래 변이 막대 아래
+  /// 변보다 1pt 위에 붙는다(Figma 상자 297 / 막대 298). 막대와 차트 사이에
+  /// 다른 줄(지난날 일평균 안내)이 끼어도 상자가 그 줄을 덮지 않는다.
+  /// null이면 차트 윗변에서 [scrubBoxGap] 위에 붙인다.
+  final LayerLink? scrubAnchor;
 
   final EnvChartData data;
 
@@ -126,12 +135,16 @@ class EnvDayChart extends StatefulWidget {
 
   /// 격자선 — Figma 1610:5939·1610:6830 3배 PNG 실측 0.5pt `#E3E3E3`
   /// ([GlassPalette.border]).
-  static const double gridStrokeWidth = 0.5;
+  static const double gridStrokeWidth = kVivaHairline;
 
   // ── 손가락 표시 (Figma 1610:6830 `Dtail`) ──
-  /// 상자 윗변은 차트 윗변보다 88pt 위(상자 231 / 그래프 319) — 범위 막대
-  /// 위에 겹쳐 뜬다. 세로선은 상자 밑에서 그래프 바닥선까지.
-  static const double scrubBoxLift = 88;
+  /// 상자 아래 변 ↔ 차트 윗변 22pt(상자 297 / 그래프 319). 상자는 아래 변을
+  /// 기준으로 **위로** 커진다 — 휴대폰 글자를 키워도 차트를 덮지 않는다.
+  /// 세로선은 이 높이(차트 윗변 22pt 위)에서 그래프 바닥선까지.
+  static const double scrubBoxGap = 22;
+
+  /// 상자를 담는 칸 높이 — 글자 2배(상한)에서도 상자가 들어간다.
+  static const double scrubBoxSlot = 220;
   static const double scrubLineWidth = 2;
   static const double scrubDotRadius = 4;
   static const double scrubDotStroke = 2.5;
@@ -252,12 +265,12 @@ class _EnvDayChartState extends State<EnvDayChart> {
   /// 그려 차트 위로 올라갈 수 있게 하고, 스크롤 위치를 따라 x를 옮긴다.
   /// 세로선이 보이는 구간(좌우 12pt 안) 밖이면 통째로 숨긴다.
   Widget _scrubOverlay(GlassPalette glass, double scrubX) {
-    const lift = EnvDayChart.scrubBoxLift;
+    const gap = EnvDayChart.scrubBoxGap;
     return Positioned(
       left: 0,
       right: 0,
-      top: -lift,
-      height: lift + EnvDayChart.markerBand + EnvDayChart.plotHeight,
+      top: -gap,
+      height: gap + EnvDayChart.markerBand + EnvDayChart.plotHeight,
       child: IgnorePointer(
         child: LayoutBuilder(
           builder: (context, c) => ListenableBuilder(
@@ -273,16 +286,27 @@ class _EnvDayChartState extends State<EnvDayChart> {
               }
               final t = widget.data.tempNormAt(scrubX);
               final h = widget.data.humidNormAt(scrubX);
+              // 상자는 칸 아래쪽에 붙고 위로 커진다(글자 배율).
+              final slot = SizedBox(
+                width: c.maxWidth,
+                height: EnvDayChart.scrubBoxSlot,
+                child: CustomSingleChildLayout(
+                  delegate:
+                      _ScrubBoxLayout(lineX: x, inset: EnvDayChart.plotInset),
+                  child: _scrubBox(glass, scrubX),
+                ),
+              );
+              final anchor = widget.scrubAnchor;
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  // 선이 먼저 — 상자(불투명)가 윗부분을 덮는다.
                   Positioned.fill(
                     child: CustomPaint(
                       painter: _ScrubPainter(
                         x: x,
                         lineColor: glass.bodySecondary,
-                        dotFill: glass.surfaceHeader,
+                        // 점 속은 두 모드 모두 흰색(Figma) — 색 원 안 글리프색.
+                        dotFill: glass.deviceGlyph,
                         dots: [
                           if (t != null) (norm: t, color: glass.tempAccent),
                           if (h != null) (norm: h, color: glass.humidAccent),
@@ -290,13 +314,22 @@ class _EnvDayChartState extends State<EnvDayChart> {
                       ),
                     ),
                   ),
-                  Positioned.fill(
-                    child: CustomSingleChildLayout(
-                      delegate: _ScrubBoxLayout(
-                          lineX: x, inset: EnvDayChart.plotInset),
-                      child: _scrubBox(glass, scrubX),
-                    ),
-                  ),
+                  if (anchor != null)
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      child: CompositedTransformFollower(
+                        link: anchor,
+                        showWhenUnlinked: false,
+                        targetAnchor: Alignment.bottomLeft,
+                        followerAnchor: Alignment.bottomLeft,
+                        offset: const Offset(0, -1),
+                        child: slot,
+                      ),
+                    )
+                  else
+                    Positioned(
+                        left: 0, top: -EnvDayChart.scrubBoxSlot, child: slot),
                 ],
               );
             },
@@ -487,7 +520,8 @@ class _EnvDayChartState extends State<EnvDayChart> {
   }
 }
 
-/// 손가락 표시 상자 자리 — 세로선 가운데, 좌우 [inset] 안에서 멈춘다.
+/// 손가락 표시 상자 자리 — 세로선 가운데, 좌우 [inset] 안에서 멈춘다. 칸
+/// 아래쪽에 붙여 상자가 위로 커지게 한다.
 class _ScrubBoxLayout extends SingleChildLayoutDelegate {
   const _ScrubBoxLayout({required this.lineX, required this.inset});
 
@@ -505,7 +539,7 @@ class _ScrubBoxLayout extends SingleChildLayoutDelegate {
     final maxLeft = size.width - inset - childSize.width;
     final left = (lineX - childSize.width / 2)
         .clamp(inset, maxLeft < inset ? inset : maxLeft);
-    return Offset(left, 0);
+    return Offset(left, size.height - childSize.height);
   }
 
   @override
@@ -514,8 +548,8 @@ class _ScrubBoxLayout extends SingleChildLayoutDelegate {
 }
 
 /// 손가락 표시 세로선·점(Figma 1610:6830) — 2pt `#626262` 선이 이 층 맨 위
-/// (상자 밑에 가려짐)에서 그래프 바닥선까지, 점은 지름 8 흰 채움 + 지표색
-/// 2.5 테두리. 좌표는 이 층 기준(위로 [EnvDayChart.scrubBoxLift] 올라가 있다).
+/// (차트 윗변 [EnvDayChart.scrubBoxGap] 위 = 상자 아래 변)에서 그래프
+/// 바닥선까지, 점은 지름 8 흰 채움 + 지표색 2.5 테두리.
 class _ScrubPainter extends CustomPainter {
   const _ScrubPainter({
     required this.x,
@@ -531,7 +565,7 @@ class _ScrubPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const plotTop = EnvDayChart.scrubBoxLift + EnvDayChart.markerBand;
+    const plotTop = EnvDayChart.scrubBoxGap + EnvDayChart.markerBand;
     canvas.drawLine(
       Offset(x, 0),
       Offset(x, plotTop + EnvDayChart.plotHeight),

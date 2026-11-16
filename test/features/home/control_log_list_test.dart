@@ -28,6 +28,18 @@ void main() {
     expect((section.decoration as BoxDecoration).border, isNull);
   });
 
+  testWidgets('다크에서는 위 구분선을 남긴다 — 바닥과 면이 거의 같은 색', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(brightness: Brightness.dark),
+      home: const Scaffold(
+          body: SingleChildScrollView(child: ControlLogList(entries: []))),
+    ));
+    final section =
+        tester.widget<Container>(find.byKey(ControlLogList.sectionKey));
+    final border = (section.decoration as BoxDecoration).border as Border?;
+    expect(border?.top.width, 1);
+  });
+
   testWidgets('델타 로우 — off + 델타는 부호 붙은 델타를 그린다', (tester) async {
     await _pump(tester, [
       ControlLogEntry(

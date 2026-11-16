@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/features/home/presentation/widgets/env_day_chart.dart';
 import 'package:vivanaut/shared/domain/actuator_marker.dart';
 import 'package:vivanaut/shared/domain/axis_bounds.dart';
@@ -176,7 +177,8 @@ void main() {
           ),
         );
 
-    testWidgets('상자는 테두리 없는 r12 회색 면, 차트 위 88pt, 세로선 가운데', (tester) async {
+    testWidgets('상자는 테두리 없는 r12 회색 면, 아래 변이 차트 위 22pt, 세로선 가운데',
+        (tester) async {
       await tester.pumpWidget(host(0.3));
       await tester.pump();
 
@@ -184,7 +186,7 @@ void main() {
       final boxFinder = find.byKey(EnvDayChart.scrubBoxKey);
       expect(boxFinder, findsOneWidget);
       final box = tester.getRect(boxFinder);
-      expect(box.top, closeTo(chart.top - EnvDayChart.scrubBoxLift, 0.01));
+      expect(box.bottom, closeTo(chart.top - EnvDayChart.scrubBoxGap, 0.01));
       final lineX =
           chart.left + EnvDayChart.plotInset + 0.3 * EnvDayChart.contentWidth;
       // 세로선 가운데, 단 좌우 12pt 안에서 멈춘다.
@@ -230,8 +232,82 @@ void main() {
       expect(find.byKey(EnvDayChart.scrubBoxKey), findsNothing);
     });
 
-    test('격자선은 0.5pt', () {
-      expect(EnvDayChart.gridStrokeWidth, 0.5);
+    testWidgets('기준점(범위 막대)이 있으면 상자 아래 변이 막대 아래 1pt 위 — 사이 줄을 덮지 않는다',
+        (tester) async {
+      final link = LayerLink();
+      const bar = Key('bar');
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 393,
+            child: Column(children: [
+              const SizedBox(height: 100),
+              CompositedTransformTarget(
+                  link: link,
+                  child: const SizedBox(key: bar, height: 70, width: 393)),
+              // 지난날 일평균 안내 줄 자리 — 상자가 덮으면 안 된다.
+              const SizedBox(height: 40),
+              const SizedBox(height: 21),
+              EnvDayChart(data: _data(), scrubX: 0.3, scrubAnchor: link),
+            ]),
+          ),
+        ),
+      ));
+      await tester.pump();
+      final barRect = tester.getRect(find.byKey(bar));
+      final box = tester.getRect(find.byKey(EnvDayChart.scrubBoxKey));
+      expect(box.bottom, closeTo(barRect.bottom - 1, 0.01));
+    });
+
+    testWidgets('휴대폰 글자 2배여도 상자는 위로 커지고 차트를 덮지 않는다', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.only(top: 260),
+              child: SizedBox(
+                  width: 393, child: EnvDayChart(data: _data(), scrubX: 0.3)),
+            ),
+          ),
+        ),
+      ));
+      await tester.pump();
+      final chart = tester.getRect(find.byKey(EnvDayChart.chartKey));
+      final box = tester.getRect(find.byKey(EnvDayChart.scrubBoxKey));
+      expect(box.height, greaterThan(66));
+      expect(
+          box.bottom, lessThanOrEqualTo(chart.top - EnvDayChart.scrubBoxGap));
+    });
+
+    testWidgets('점 속은 다크에서도 흰색(Figma)', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.dark,
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.only(top: 120),
+            child: SizedBox(
+                width: 393, child: EnvDayChart(data: _data(), scrubX: 0.3)),
+          ),
+        ),
+      ));
+      await tester.pump();
+      final scrub = find.byWidgetPredicate((w) =>
+          w is CustomPaint &&
+          w.painter.runtimeType.toString() == '_ScrubPainter');
+      expect(tester.renderObject(scrub),
+          paints..circle(color: const Color(0xFFFFFFFF)));
+    });
+
+    testWidgets('격자를 실제로 0.5pt로 그린다(1pt 선 없음)', (tester) async {
+      await tester.pumpWidget(host(null));
+      await tester.pump();
+      final plot = find.byWidgetPredicate((w) =>
+          w is CustomPaint &&
+          w.painter.runtimeType.toString() == '_DayPlotPainter');
+      final painted = tester.renderObject(plot);
+      expect(painted, paints..line(strokeWidth: 0.5));
+      expect(painted, isNot(paints..line(strokeWidth: 1)));
     });
   });
 }

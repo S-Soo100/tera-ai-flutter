@@ -27,6 +27,7 @@ import 'widgets/env_report_cards.dart';
 import 'widgets/env_range_bar.dart';
 import 'widgets/env_day_chart.dart';
 import 'widgets/week_range_chart.dart';
+import '../../../core/theme/viva_line.dart';
 
 /// 온습도 상세 (`/env-detail`, Figma §A.5·§A.6 — 계획서 T5).
 ///
@@ -59,6 +60,9 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
   /// 스크러버 위치(0~1). 손 떼도 유지, **날짜가 바뀌면 해제**(§A.5).
   double? get _scrubX => ref.watch(envDetailScrubProvider);
 
+  /// 손가락 표시 상자의 위치 기준 — 범위 막대(Figma BarGraph)에 붙인다.
+  final _scrubAnchor = LayerLink();
+
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
@@ -89,7 +93,8 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
       // Figma 1081:4873 — 헤더 106(62+44) 안에서 하단선을 그린다(높이 미추가).
       // 두께 0.5pt(2026-11-16 Figma 1610:5939 3배 PNG 실측 — 1.5px).
       foregroundDecoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: glass.border, width: 0.5)),
+        border: Border(
+            bottom: BorderSide(color: glass.border, width: kVivaHairline)),
       ),
       child: SafeArea(
         bottom: false,
@@ -238,10 +243,14 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
         _dayPager(glass, day),
         // Figma A06 — 날짜(172~212) → 범위 바 228.
         const SizedBox(height: 16),
-        Semantics(
-            label: (day.isToday ? 'env_value_realtime' : 'env_value_daily_mean')
-                .tr(),
-            child: _valueBar(glass, day)),
+        CompositedTransformTarget(
+          link: _scrubAnchor,
+          child: Semantics(
+              label:
+                  (day.isToday ? 'env_value_realtime' : 'env_value_daily_mean')
+                      .tr(),
+              child: _valueBar(glass, day)),
+        ),
         if (!day.isToday) _averageStatus(glass),
         // Figma A06 — 범위 바(228~298) → 그래프 319.
         const SizedBox(height: 21),
@@ -260,6 +269,7 @@ class _EnvDetailScreenState extends ConsumerState<EnvDetailScreen> {
                   onScrubChanged: (x) =>
                       ref.read(envDetailScrubProvider.notifier).state = x,
                   initialFraction: _nowFraction(day),
+                  scrubAnchor: _scrubAnchor,
                 ),
         ),
         ..._alertCard(day),

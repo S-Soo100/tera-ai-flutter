@@ -191,8 +191,15 @@ void main() {
     await tester.binding.setSurfaceSize(null);
   });
 
-  test('주간 격자는 0.5pt, 안쪽 세로선은 점선(Figma 1610:7454)', () {
-    expect(WeekRangeChart.gridStrokeWidth, 0.5);
-    expect(WeekRangeChart.innerColumnsDashed, isTrue);
+  testWidgets('주간 격자를 실제로 0.5pt #E3E3E3로 그리고, 안쪽 세로선은 점선(Figma 1610:7454)',
+      (tester) async {
+    final glass = await pump(tester);
+    final painted = tester.renderObject(grid());
+    expect(painted, paints..line(strokeWidth: 0.5, color: glass.border));
+    expect(painted, isNot(paints..line(strokeWidth: 1)));
+    // 가로 9줄 + 양끝 실선 2줄 + 안쪽 6줄×64조각(256pt를 4pt마다) —
+    // 점선을 실선으로 되돌리면 개수가 15로 줄어 실패한다.
+    expect(painted, paintsExactlyCountTimes(#drawLine, 9 + 2 + 6 * 64));
+    await tester.binding.setSurfaceSize(null);
   });
 }

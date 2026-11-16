@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/figma_icon.dart';
+import '../../../../core/theme/viva_line.dart';
 
 /// 북마크·하이라이트 상세·플레이어 공용 상단바 (Figma 668:717/600/743) —
 /// 높이 44, 마진 12, 좌 back 44×44, 중앙 [title](16 **Bold** textPrimary —
@@ -153,7 +154,8 @@ class CrecamDetailHeaderArea extends StatelessWidget {
 
         foregroundDecoration: BoxDecoration(
           // 0.5pt — Figma 945:4287·1084:7291·1689:5774 3배 PNG 실측(1.5px).
-          border: Border(bottom: BorderSide(color: glass.outline, width: 0.5)),
+          border: Border(
+              bottom: BorderSide(color: glass.outline, width: kVivaHairline)),
         ),
         child: SafeArea(bottom: false, child: child),
       ),
