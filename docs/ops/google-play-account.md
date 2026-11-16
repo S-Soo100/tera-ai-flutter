@@ -10,7 +10,8 @@
 - **앱:** "비바나트"(`com.vivanaut.app`, 앱 ID `4975696317866126203`) 생성. Play 앱 서명 키 = 기존 릴리즈 키(아래).
 - **내부 테스트:** 523 (0.178.8) 출시 — 트랙 활성, 테스터 목록 "terra ai 내부 테스터"(terraaidev@gmail.com, bss.rol20@gmail.com). 참여 링크 https://play.google.com/apps/internaltest/4700061742254258722 . 앱 설정·검토 전까지 Play에 임시 이름 `com.vivanaut.app (unreviewed)`로 보인다.
 - **다음 확인:** 기존 APK가 깔린 기기에서 참여 링크로 Play 업데이트가 덮어써지는지(서명 유지).
-- **프로덕션 차단 요소:** 개인정보처리방침 웹페이지, 회원 탈퇴(서버 함수 미배포), 계정 삭제 웹페이지 — 아래 [출시 전 막힌 것](#출시-전-막힌-것).
+- **웹페이지 준비됨(2026-11-16):** 개인정보처리방침 https://www.vivanaut.co.kr/privacy · 계정 삭제 요청 https://www.vivanaut.co.kr/account-deletion (홍보 사이트 커밋 `7900bd4`, 운영 본문 확인).
+- **프로덕션 차단 요소:** 회원 탈퇴(서버 함수 미배포), 앱 안 처리방침 링크 없음 — 아래 [출시 전 막힌 것](#출시-전-막힌-것).
 
 ## 개발자 계정
 
@@ -67,9 +68,14 @@ INTERNET, ACCESS_NETWORK_STATE, BLUETOOTH_SCAN(`neverForLocation`)·CONNECT, BLU
 
 ## 출시 전 막힌 것
 
-1. **개인정보처리방침 URL** — 모든 앱 필수. 공개·로그인 불필요·PDF 아님·SSL·이 앱에 해당하는 내용. 앱 안에도 링크 필요. 현재 `www.vivanaut.co.kr/privacy`는 홈으로 돌아간다(페이지 없음). 사이트는 별도 프로젝트(Vercel `terra-ai-promotion-website`). **백승수가 직접 작성 중(2026-11-16).**
+1. **개인정보처리방침 URL** — 모든 앱 필수. 공개·로그인 불필요·PDF 아님·SSL·이 앱에 해당하는 내용. 앱 안에도 링크 필요. ✅ **https://www.vivanaut.co.kr/privacy** 공개(2026-11-16, 레포 `~/terra-ai-promotion-website` 커밋 `7900bd4`). 적용 범위에 비바나트 앱(Android·iOS)·회원 서비스 포함, 13개 조항, 시행일 2026-11-16, 문의 bss.rol20@vivanaut.co.kr, 보호책임자 이병무 대표이사.
+   - 수탁자·국외 이전: Supabase(서울), AWS Lightsail(서울, terra-server), Fly.io(일본, petcam-api), Cloudflare R2(아시아·태평양), Google(FCM·GA, 미국), Vercel(미국). 영상 AI는 자체 모델을 회사 내부 서버에서 실행(사용자 확인) — Gemini는 방침에서 제외. 14세 미만 조항은 넣지 않음(사용자 결정).
+   - **남은 것: 앱 안 링크.** Play는 Console 칸과 함께 앱 안에도 처리방침 링크·본문을 요구한다. 현재 앱에는 처리방침 링크가 없다(`url_launcher` 미사용).
+   - 미결: 고객 앱 영상을 사람 라벨링(petcam-lab 라벨링 도구)에 쓰는지 — 쓰면 처리 목적에 "AI 모델 개선(영상 라벨링)"을 추가해야 한다.
 2. **계정 삭제** — 계정을 만들 수 있는 앱은 ① 앱 안에서 찾기 쉬운 삭제 시작 경로 ② 앱 밖 웹 경로(Data safety에 URL 입력) 둘 다 필요. 웹 페이지는 앱 이름 또는 개발자 이름을 적고, 재설치 없이 요청할 수 있어야 하며, 보존 데이터가 있으면 기간을 알린다(간단한 폼·메일 안내 허용).
    - 현재 앱의 회원 탈퇴는 서버 함수 `delete-account`를 부르는데 **운영 Supabase에 배포돼 있지 않다**(2026-11-16 함수 목록 조회: `notification-ingest`, `dispatch-push`만). 그래서 누르면 "아직 준비되지 않았습니다". 2026-09-16 서버 요청서 [`docs/handoffs/2026-09-16-mypage-server-requests.md`](../handoffs/2026-09-16-mypage-server-requests.md) 항목.
+   - ✅ 앱 밖 웹 경로: **https://www.vivanaut.co.kr/account-deletion** (앱 이름·개발자 표시, 앱 안 경로 + 메일 요청, 삭제·보관 데이터 안내). Data safety의 계정 삭제 URL에 넣는다.
+   - **삭제 기준(사용자 확정 2026-11-16): 탈퇴 즉시 전부 삭제** — 기기 연결 해제, 영상·사진 삭제, 식별 불가 통계만 남김. 서버 구현도 이 기준.
    - **서버 요청서 초안:** [`docs/handoffs/2026-11-16-delete-account-server-request.md`](../handoffs/2026-11-16-delete-account-server-request.md) — 백승수가 이관훈님께 전달 예정. 운영 DB 실측상 `user_profiles`·`commands.issued_by` 등이 NO ACTION 외래키라 지금은 `deleteUser`만으로는 누구도 못 지운다.
    - Play 기준으로는 완전한 인앱 삭제가 권장이고, 앱 안에 **삭제 요청 웹페이지로 가는 링크**만 있어도 된다. 다만 iOS App Store는 앱 안에서 삭제를 시작할 수 있어야 하므로 함수 배포가 근본 해결이다.
 3. **심사용 앱 접근 정보** — 로그인 필요 앱이라 영어로 데모 계정(만료 없음·OTP 없음)과 안내를 넣는다. 사육장·카메라 기기가 있어야 보이는 화면은 기기가 연결된 데모 계정을 주고 기기 없이 볼 수 있는 범위를 영어로 설명(공식 문서엔 하드웨어 안내 규칙이 따로 없음).
