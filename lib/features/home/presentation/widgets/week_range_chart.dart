@@ -8,6 +8,7 @@ import '../../../../shared/domain/num_format.dart';
 import '../../../../shared/domain/week_range.dart';
 import '../../../../shared/domain/week_bar_role.dart';
 import '../../../../shared/widgets/figma_icon.dart';
+import '../../../../core/theme/viva_line.dart';
 
 /// 온습도 상세 **주간 범위 바 차트** 섹션 (Figma 1081:5052 → v4 A19 1610:7454)
 /// — 온도·습도가 같은 위젯을 두 번 쓴다(강조색·아이콘·표기만 다르다).
@@ -77,7 +78,7 @@ class WeekRangeChart extends StatelessWidget {
 
   /// 격자선 두께·색 — Figma 1610:7454 3배 PNG 실측 0.5pt `#E3E3E3`
   /// ([GlassPalette.border]). 안쪽 요일 경계 6줄은 점선, 양끝은 실선.
-  static const double gridStrokeWidth = 0.5;
+  static const double gridStrokeWidth = kVivaHairline;
   static const bool innerColumnsDashed = true;
   static const double yLabelWidth = 28;
   static const double valueLabelHeight = 17;
