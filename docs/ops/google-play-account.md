@@ -75,11 +75,11 @@ INTERNET, ACCESS_NETWORK_STATE, BLUETOOTH_SCAN(`neverForLocation`)·CONNECT, BLU
    - ✅ 앱 안 링크: 0.179.0+526부터 마이 페이지 '개인정보처리방침' 줄(외부 브라우저, `shared/providers/external_url_launcher.dart`의 `LegalLinks`).
    - 미결: 고객 앱 영상을 사람 라벨링(petcam-lab 라벨링 도구)에 쓰는지 — 쓰면 처리 목적에 "AI 모델 개선(영상 라벨링)"을 추가해야 한다.
 2. **계정 삭제** — 계정을 만들 수 있는 앱은 ① 앱 안에서 찾기 쉬운 삭제 시작 경로 ② 앱 밖 웹 경로(Data safety에 URL 입력) 둘 다 필요. 웹 페이지는 앱 이름 또는 개발자 이름을 적고, 재설치 없이 요청할 수 있어야 하며, 보존 데이터가 있으면 기간을 알린다(간단한 폼·메일 안내 허용).
-   - 현재 앱의 회원 탈퇴는 서버 함수 `delete-account`를 부르는데 **운영 Supabase에 배포돼 있지 않다**(2026-11-16 함수 목록 조회: `notification-ingest`, `dispatch-push`만). 그래서 누르면 "아직 준비되지 않았습니다". 2026-09-16 서버 요청서 [`docs/handoffs/2026-09-16-mypage-server-requests.md`](../handoffs/2026-09-16-mypage-server-requests.md) 항목.
+   - ✅ 앱 안 경로: 마이페이지 → 계정 → 회원 탈퇴. **0.180.0부터 terra-server `POST /account/delete`**(소프트 삭제 + 기기·카메라 연결 해제, [gwanhun/terra-server#67](https://github.com/gwanhun/terra-server/pull/67)) — 서버 배포 전엔 404 → "웹에서 요청해 주세요" 안내. 탈퇴 화면에 웹 삭제 요청 링크도 있다(0.179.0). 구 Edge Function `delete-account`는 배포된 적 없고 더는 쓰지 않는다.
    - ✅ 앱 밖 웹 경로: **https://www.vivanaut.co.kr/account-deletion** (앱 이름·개발자 표시, 앱 안 경로 + 메일 요청, 삭제·보관 데이터 안내). Data safety의 계정 삭제 URL에 넣는다.
-   - **삭제 기준(사용자 확정 2026-11-16): 탈퇴 즉시 전부 삭제** — 기기 연결 해제, 영상·사진 삭제, 식별 불가 통계만 남김. 서버 구현도 이 기준.
-   - **서버 요청서 초안:** [`docs/handoffs/2026-11-16-delete-account-server-request.md`](../handoffs/2026-11-16-delete-account-server-request.md) — 백승수가 이관훈님께 전달 예정. 운영 DB 실측상 `user_profiles`·`commands.issued_by` 등이 NO ACTION 외래키라 지금은 `deleteUser`만으로는 누구도 못 지운다.
-   - Play 기준으로는 완전한 인앱 삭제가 권장이고, 앱 안에 **삭제 요청 웹페이지로 가는 링크**만 있어도 된다. 다만 iOS App Store는 앱 안에서 삭제를 시작할 수 있어야 하므로 함수 배포가 근본 해결이다.
+   - **삭제 기준(사용자 확정 2026-11-17, 11-16 "즉시 전부 삭제"를 대체): 즉시 로그인 차단·기기 연결 해제, 남은 데이터는 30일 이내 삭제.** 처리방침·삭제 페이지·앱 설명 모두 이 기준으로 공개됨.
+   - ⛔ 남은 서버 일: #67 운영 배포 확인 + 30일 지난 계정 실제 삭제 작업(DB·R2·Storage·auth) — [`docs/handoffs/2026-11-17-account-purge-30d-request.md`](../handoffs/2026-11-17-account-purge-30d-request.md)(백승수 전달 예정). 11-16 요청서 [`2026-11-16-delete-account-server-request.md`](../handoffs/2026-11-16-delete-account-server-request.md)는 이력 보관.
+   - iOS App Store는 앱 안에서 삭제를 시작할 수 있어야 하므로 서버 배포가 근본 해결이다.
 3. **심사용 앱 접근 정보** — 로그인 필요 앱이라 영어로 데모 계정(만료 없음·OTP 없음)과 안내를 넣는다. 사육장·카메라 기기가 있어야 보이는 화면은 기기가 연결된 데모 계정을 주고 기기 없이 볼 수 있는 범위를 영어로 설명(공식 문서엔 하드웨어 안내 규칙이 따로 없음).
 4. 그 밖의 앱 콘텐츠 양식: Data safety(수집 항목: 이메일·계정, 기기 텔레메트리, 영상, 푸시 토큰 등), 콘텐츠 등급, 타겟층, 광고 여부, 스토어 등록정보(아이콘 512, 그래픽 이미지 1024×500, 휴대전화 스크린샷).
 
