@@ -1,5 +1,7 @@
 // 회원 탈퇴 — terra-server `POST /account/delete`(gwanhun/terra-server#67,
 // 회신 docs/BACKEND_REPLY_DELETE_ACCOUNT_2026-11-17.md §3) 응답별 동작.
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,14 +43,28 @@ SupabaseClient _supabase() => SupabaseClient('https://example.test', 'anon',
     authOptions: const AuthClientOptions(autoRefreshToken: false));
 
 class _RecordingAuth extends AuthRepository {
-  _RecordingAuth(this.ops, _FakeRest rest)
+  _RecordingAuth(this.ops, _FakeRest rest, {this.signedIn = true})
       : super(_supabase(), restClient: () => rest);
   final List<String> ops;
+
+  /// 401 뒤 세션이 남아 있는지 — [SupabaseAuthSession]은 refresh token까지
+  /// 거부되면 스스로 signOut한다.
+  final bool signedIn;
+  @override
+  User? get currentUser => signedIn
+      ? const User(
+          id: 'u1',
+          appMetadata: {},
+          userMetadata: {},
+          aud: 'authenticated',
+          createdAt: '2026-11-17T00:00:00Z')
+      : null;
   @override
   Future<void> signOut() async => ops.add('signout');
 }
 
-Future<_FakeRest> _pump(WidgetTester tester, {Object? error}) async {
+Future<_FakeRest> _pump(WidgetTester tester,
+    {Object? error, bool signedIn = true}) async {
   final rest = _FakeRest(error: error);
   final ops = <String>[];
   final devices = RecordingPushDevices();
@@ -74,7 +90,8 @@ Future<_FakeRest> _pump(WidgetTester tester, {Object? error}) async {
   ]);
   addTearDown(router.dispose);
   await tester.pumpWidget(ProviderScope(overrides: [
-    authRepositoryProvider.overrideWithValue(_RecordingAuth(ops, rest)),
+    authRepositoryProvider
+        .overrideWithValue(_RecordingAuth(ops, rest, signedIn: signedIn)),
     pushLifecycleControllerProvider.overrideWithValue(controller),
   ], child: MaterialApp.router(routerConfig: router)));
   await tester.pumpAndSettle();
@@ -104,15 +121,42 @@ void main() {
     expect(find.text('login'), findsNothing);
   });
 
-  testWidgets('404 — 서버에 아직 없으면 준비 안 됨 + 웹 요청 안내', (tester) async {
+  // 회신 §3: 500 code 네 개 모두 "다시 시도"(서버는 끝난 단계를 건너뛴다).
+  for (final code in const [
+    'lookup_failed',
+    'unlink_failed',
+    'mqtt_revoke_failed',
+    'soft_delete_failed',
+  ]) {
+    testWidgets('500 $code — 실패, 다시 시도 안내', (tester) async {
+      await _pump(tester,
+          error: TerraRestException(500, '{"code":"$code"}'));
+      expect(find.text('withdraw_failed'), findsOneWidget);
+      expect(find.text('login'), findsNothing);
+    });
+  }
+
+  testWidgets('404 — 서버가 배포됐으니 "준비 안 됨"이 아니라 다시 시도', (tester) async {
     await _pump(tester, error: const TerraRestException(404, 'Not Found'));
-    expect(find.text('withdraw_not_ready'), findsOneWidget);
+    expect(find.text('withdraw_failed'), findsOneWidget);
   });
 
-  testWidgets('500 — 실패, 다시 시도 안내', (tester) async {
+  testWidgets('401 + 세션 끝남 — 로그인 만료 안내 후 로그인 화면', (tester) async {
     await _pump(tester,
-        error: const TerraRestException(500, '{"code":"unlink_failed"}'));
+        error: const TerraRestException(401, 'Invalid token'), signedIn: false);
+    expect(find.text('withdraw_session_expired'), findsOneWidget);
+    expect(find.text('login'), findsOneWidget);
+  });
+
+  testWidgets('401 + 세션 남음(갱신 망 오류) — 로그아웃하지 않고 다시 시도', (tester) async {
+    await _pump(tester, error: const TerraRestException(401, 'Invalid token'));
     expect(find.text('withdraw_failed'), findsOneWidget);
     expect(find.text('login'), findsNothing);
+  });
+
+  test('ko.json에 더는 쓰지 않는 withdraw_not_ready가 없다', () {
+    final ko = File('assets/l10n/ko.json').readAsStringSync();
+    expect(ko.contains('"withdraw_not_ready"'), isFalse);
+    expect(ko.contains('"withdraw_session_expired"'), isTrue);
   });
 }

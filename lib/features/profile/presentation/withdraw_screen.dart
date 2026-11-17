@@ -38,13 +38,20 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
       await push.logout(auth.signOut);
       if (mounted) context.go('/login');
     } on TerraRestException catch (e) {
-      // 409 = 관리자 계정(앱 탈퇴 불가), 404 = 서버에 탈퇴 API가 아직 없음
-      // (웹 삭제 요청 안내), 그 밖(500 등)은 다시 시도 — 서버가 멱등이다.
-      final key = switch (e.statusCode) {
-        409 => 'withdraw_not_allowed',
-        404 => 'withdraw_not_ready',
-        _ => 'withdraw_failed',
-      };
+      // 회신 docs/BACKEND_REPLY_DELETE_ACCOUNT_2026-11-17.md §3.
+      // 401은 TerraRestClient가 세션 복구를 한 번 해 본 뒤다. refresh token까지
+      // 거부됐으면 세션이 스스로 지워졌으니(SupabaseAuthSession) 로그인 화면으로,
+      // 갱신이 망 오류였을 뿐 세션이 남아 있으면 로그아웃하지 않고 다시 시도.
+      if (e.statusCode == 401 && auth.currentUser == null) {
+        messenger.showSnackBar(
+            SnackBar(content: Text('withdraw_session_expired'.tr())));
+        if (mounted) context.go('/login');
+        return;
+      }
+      // 409 admin_account = 관리자 계정(앱 탈퇴 불가). 그 밖(500 네 가지 등)은
+      // 다시 시도 — 서버가 끝난 단계를 건너뛰어 다시 불러도 안전하다.
+      final key =
+          e.statusCode == 409 ? 'withdraw_not_allowed' : 'withdraw_failed';
       messenger.showSnackBar(SnackBar(content: Text(key.tr())));
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text('withdraw_failed'.tr())));
@@ -73,8 +80,8 @@ class _WithdrawScreenState extends ConsumerState<WithdrawScreen> {
             textAlign: TextAlign.center,
             style: managementStyle(context, color: glass.bodySecondary)),
         const SizedBox(height: 16),
-        // Figma 밖(2026-11-17): Play 정책상 앱 밖 삭제 요청 경로도 알린다.
-        // 서버 탈퇴 함수가 없는 동안에는 이 링크가 실제 삭제 경로다.
+        // Figma 밖(2026-11-17): Play 정책상 앱 밖 삭제 요청 경로도 알린다
+        // (앱을 지운 사용자·관리자 계정은 이 경로로 운영자가 대행한다).
         Center(
           child: TextButton(
             key: WithdrawScreen.webDeletionLinkKey,

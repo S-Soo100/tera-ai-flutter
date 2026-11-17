@@ -114,9 +114,10 @@ class AuthRepository {
   /// 회원 탈퇴(Figma MyAcc_withdraw 1142:8361) — terra-server
   /// `POST /account/delete`(본문 없음, gwanhun/terra-server#67, 2026-11-17).
   /// 서버가 기기·카메라 연결을 해제한 뒤 계정을 **소프트 삭제**한다(로그인 차단,
-  /// 데이터는 남음 — 보관 기간은 미정). 200 `{deleted:true}`, 이미 탈퇴한
-  /// 계정도 200. 실패는 [TerraRestException]: 409 `admin_account`, 500
-  /// `unlink_failed`/`soft_delete_failed`(다시 불러도 안전).
+  /// 데이터는 남고 30일 안에 서버가 지운다 — 그 작업은 서버 별도 과제).
+  /// 200 `{deleted:true}`, 이미 탈퇴한 계정도 200. 실패는 [TerraRestException]:
+  /// 401 `{detail}`(복구 실패 뒤), 409 `admin_account`, 500 `lookup_failed`/
+  /// `unlink_failed`/`mqtt_revoke_failed`/`soft_delete_failed`(다시 불러도 안전).
   /// 삭제만 한다 — 이어지는 로그아웃은 호출자가 푸시 기기 정리 경로
   /// (`pushLifecycleController.logout`)로 수행한다.
   Future<void> deleteAccount() async {
