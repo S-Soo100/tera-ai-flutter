@@ -70,7 +70,7 @@ INTERNET, ACCESS_NETWORK_STATE, BLUETOOTH_SCAN(`neverForLocation`)·CONNECT, BLU
 
 ## 출시 전 막힌 것
 
-1. **개인정보처리방침 URL** — 모든 앱 필수. 공개·로그인 불필요·PDF 아님·SSL·이 앱에 해당하는 내용. 앱 안에도 링크 필요. ✅ **https://www.vivanaut.co.kr/privacy** 공개(2026-11-16, 레포 `~/terra-ai-promotion-website` 커밋 `7900bd4`). 적용 범위에 비바나트 앱(Android·iOS)·회원 서비스 포함, 13개 조항, 시행일 2026-11-16(11-17 30일 기준 개정 `7d5f2c8`), 문의 bss.rol20@vivanaut.co.kr, 보호책임자 이병무 대표이사.
+1. **개인정보처리방침 URL** — 모든 앱 필수. 공개·로그인 불필요·PDF 아님·SSL·이 앱에 해당하는 내용. 앱 안에도 링크 필요. ✅ **https://www.vivanaut.co.kr/privacy** 공개(2026-11-16, 레포 `~/terra-ai-promotion-website` 커밋 `7900bd4`). 적용 범위에 비바나트 앱(Android·iOS)·회원 서비스 포함, 13개 조항, 시행일 2026-11-16(11-17 30일 기준 개정 `7d5f2c8`; 같은 날 베타테스트 내용 제거 `581d8e7` — 적용 범위는 앱·회원 서비스·웹사이트만, 베타는 별도 참여 동의서로 안내, 앱 조항 변경 없음, 운영 번들 `index-DboZJLJZ.js`에서 확인), 문의 bss.rol20@vivanaut.co.kr, 보호책임자 이병무 대표이사.
    - 수탁자·국외 이전: Supabase(서울), AWS Lightsail(서울, terra-server), Fly.io(일본, petcam-api), Cloudflare R2(아시아·태평양), Google(FCM·GA, 미국), Vercel(미국). 영상 AI는 자체 모델을 회사 내부 서버에서 실행(사용자 확인) — Gemini는 방침에서 제외. 14세 미만 조항은 넣지 않음(사용자 결정).
    - ✅ 앱 안 링크: 0.179.0+526부터 마이 페이지 '개인정보처리방침' 줄(외부 브라우저, `shared/providers/external_url_launcher.dart`의 `LegalLinks`).
    - 미결: 고객 앱 영상을 사람 라벨링(petcam-lab 라벨링 도구)에 쓰는지 — 쓰면 처리 목적에 "AI 모델 개선(영상 라벨링)"을 추가해야 한다.
