@@ -36,11 +36,13 @@
 | 회사 도메인 메일 `bss.rol20@vivanaut.co.kr` | ✅ |
 | 요청자 권한: 등기이사·CTO (공동창업자) | ✅ — 증빙 요청 시 법인 등기부등본 |
 | 대표님께 Apple 확인 연락 사전 공유 | ⬜ |
-| 진행 중인 TestFlight 업로드 완료 후 요청 | ⬜ |
+| 진행 중인 TestFlight 업로드 완료 후 요청 | ✅ — 0.178.10(525) 업로드 뒤 제출 |
 
-요청 경로: developer.apple.com/contact → (bss.rol20 로그인) → 멤버십 및 계정 → 개인→조직 전환. 메뉴 이름은 바뀔 수 있다.
+**제출 (2026-11-17): 케이스 ID `30000017939787`** — Apple 회신 대기.
+실제 경로: developer.apple.com/contact → (bss.rol20 로그인) → 멤버십 및 계정 → 하위 주제 **기타 멤버십 또는 계정 질문** → 이메일. 하위 주제에 '조직 전환' 항목은 없고, 주제를 고르면 바로 이메일/전화 선택이 나온다.
+보낸 메일: 제목 `Request to convert individual membership to organization (Team ID XYNNB47RN3)`, 본문에 팀 ID·법인명·D-U-N-S·주소·웹사이트·요청자 권한(공동창업자·등기이사·CTO)을 적고 ① 기존 앱·번들 ID·TestFlight 빌드 유지 여부 ② 필요한 서류·절차를 물었다. 서류 요청이 오면 법인 등기사항전부증명서(영문 번역)를 낸다.
 
-요청 문구 초안:
+처음 쓴 요청 문구 초안:
 
 > I would like to convert my individual Apple Developer Program membership (Team ID XYNNB47RN3) to an organization membership for terraai Co.,Ltd. (D-U-N-S 697129769, website https://www.vivanaut.co.kr). I am a co-founder, registered director and CTO of the company and have legal authority to bind it to Apple agreements. Please confirm that existing apps and TestFlight builds on this team will remain after the conversion.
 - 예전 무료 팀 `8NDUMK7C65`(arthurbaek)는 TestFlight 불가. arthurbaek 계정은 Apple이 등록 자격을 거절했다(지원 케이스 진행 중).
