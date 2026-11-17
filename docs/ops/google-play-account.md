@@ -10,9 +10,9 @@
 - **앱:** "비바나트"(`com.vivanaut.app`, 앱 ID `4975696317866126203`) 생성. Play 앱 서명 키 = 기존 릴리즈 키(아래).
 - **내부 테스트:** 최신 526 (0.179.0) 출시(2026-11-17, 처리방침·웹 계정 삭제 링크 포함, 검토 오류·경고 0). 첫 출시 523 (0.178.8, 11-16) — 트랙 활성, 테스터 목록 "terra ai 내부 테스터"(terraaidev@gmail.com, bss.rol20@gmail.com). 참여 링크 https://play.google.com/apps/internaltest/4700061742254258722 . 앱 설정·검토 전까지 Play에 임시 이름 `com.vivanaut.app (unreviewed)`로 보인다.
 - **다음 확인:** 기존 APK가 깔린 기기에서 참여 링크로 Play 업데이트가 덮어써지는지(서명 유지).
-- **웹페이지 준비됨(2026-11-16):** 개인정보처리방침 https://www.vivanaut.co.kr/privacy · 계정 삭제 요청 https://www.vivanaut.co.kr/account-deletion (홍보 사이트 커밋 `7900bd4`, 운영 본문 확인).
+- **웹페이지 준비됨(2026-11-16):** 개인정보처리방침 https://www.vivanaut.co.kr/privacy · 계정 삭제 요청 https://www.vivanaut.co.kr/account-deletion (홍보 사이트 커밋 `7900bd4`, 운영 본문 확인). **30일 기준으로 개정(2026-11-17, 커밋 `7d5f2c8`, 시행일 2026-11-17):** 처리방침 제3조 앱 회원 행·표 아래 문장 = "탈퇴 시 즉시 로그인 차단·기기 연결 해제, 남은 데이터는 탈퇴일로부터 30일 이내 삭제", 원본 영상 행 = "촬영 후 30일 자동 삭제(탈퇴 기준이 더 빠르면 그때)", 제13조에 11-17 개정 줄. 삭제 페이지 3절 = "요청 즉시 로그인이 막히고 기기·카메라 연결 해제, 아래 데이터는 30일 이내에 모두 삭제", 메일 요청은 앱 탈퇴와 같은 기준, 1절 제목 "앱에서 탈퇴하기". 운영 번들(`index-CUADlljK.js`)에서 문구 직접 확인. 커뮤니티 게시물이 탈퇴 뒤 보일 수 있다는 점은 **적지 않기로**(사용자 결정), 숨김 문구도 없음. ⚠️ 방침에 30일을 공개했으니 서버의 30일 삭제 작업이 그 기한 안에 돌아야 방침과 실제가 맞는다.
 - **앱 안 링크(0.179.0+526):** 마이 페이지 '개인정보처리방침' 줄, 회원 탈퇴 화면 '웹에서 계정 삭제 요청하기'. 내부 테스트 526으로 배포됨.
-- **탈퇴 서버 회신(2026-11-17, [gwanhun/terra-server#67](https://github.com/gwanhun/terra-server/pull/67), `docs/BACKEND_REPLY_DELETE_ACCOUNT_2026-11-17.md`):** Edge Function 대신 terra-server `POST /account/delete`, **소프트 삭제**(로그인 차단·기기 연결 해제, DB·R2·Storage 데이터는 남음, 보관 기간 N일 미정). 회신엔 "11-17 배포"로 적혔으나 11-17 확인 시 PR은 OPEN(미머지). **보관 기간 30일 확정(2026-11-17, 사용자 결정)** — 처리방침·삭제 페이지 문구 수정은 홍보 사이트 세션에 요청, 앱 탈퇴 설명은 0.180.1에서 수정. 30일 뒤 실제 삭제·커뮤니티 숨김·라벨링 데이터 처리는 [서버 요청서](../handoffs/2026-11-17-account-purge-30d-request.md)(백승수 전달 예정). **앱 호출 전환은 0.180.0+527에서 완료**(main, Play 미업로드) — 409 탈퇴 불가·404 웹 요청·그 밖 다시 시도 안내. 탈퇴 화면 설명 "기기 및 개체의 데이터도 모두 삭제되며 복구할 수 없습니다"(Figma 문구)도 소프트 삭제와 맞지 않으니 N일 결정 때 함께 고친다.
+- **탈퇴 서버 회신(2026-11-17, [gwanhun/terra-server#67](https://github.com/gwanhun/terra-server/pull/67), `docs/BACKEND_REPLY_DELETE_ACCOUNT_2026-11-17.md`):** Edge Function 대신 terra-server `POST /account/delete`, **소프트 삭제**(로그인 차단·기기 연결 해제, DB·R2·Storage 데이터는 남음, 보관 기간 N일 미정). 회신엔 "11-17 배포"로 적혔으나 11-17 확인 시 PR은 OPEN(미머지). **보관 기간 30일 확정(2026-11-17, 사용자 결정)** — 처리방침·삭제 페이지 문구는 홍보 사이트 `7d5f2c8`로 운영 반영(위 줄), 앱 탈퇴 설명은 0.180.1에서 수정. 30일 뒤 실제 삭제·커뮤니티 숨김·라벨링 데이터 처리는 [서버 요청서](../handoffs/2026-11-17-account-purge-30d-request.md)(백승수 전달 예정). **앱 호출 전환은 0.180.0+527에서 완료**(main, Play 미업로드) — 409 탈퇴 불가·404 웹 요청·그 밖 다시 시도 안내. 탈퇴 화면 설명은 0.180.1에서 "탈퇴하면 바로 로그인이 막히고 / 기기·개체 데이터는 30일 안에 모두 삭제되며 / 복구할 수 없습니다"로 바꿨다(Figma 원문 "모두 삭제"는 소프트 삭제와 맞지 않아 변경).
 - **프로덕션 차단 요소:** 회원 탈퇴(위 회신 반영·N일 삭제 작업) — 아래 [출시 전 막힌 것](#출시-전-막힌-것).
 
 ## 개발자 계정
@@ -70,7 +70,7 @@ INTERNET, ACCESS_NETWORK_STATE, BLUETOOTH_SCAN(`neverForLocation`)·CONNECT, BLU
 
 ## 출시 전 막힌 것
 
-1. **개인정보처리방침 URL** — 모든 앱 필수. 공개·로그인 불필요·PDF 아님·SSL·이 앱에 해당하는 내용. 앱 안에도 링크 필요. ✅ **https://www.vivanaut.co.kr/privacy** 공개(2026-11-16, 레포 `~/terra-ai-promotion-website` 커밋 `7900bd4`). 적용 범위에 비바나트 앱(Android·iOS)·회원 서비스 포함, 13개 조항, 시행일 2026-11-16, 문의 bss.rol20@vivanaut.co.kr, 보호책임자 이병무 대표이사.
+1. **개인정보처리방침 URL** — 모든 앱 필수. 공개·로그인 불필요·PDF 아님·SSL·이 앱에 해당하는 내용. 앱 안에도 링크 필요. ✅ **https://www.vivanaut.co.kr/privacy** 공개(2026-11-16, 레포 `~/terra-ai-promotion-website` 커밋 `7900bd4`). 적용 범위에 비바나트 앱(Android·iOS)·회원 서비스 포함, 13개 조항, 시행일 2026-11-16(11-17 30일 기준 개정 `7d5f2c8`), 문의 bss.rol20@vivanaut.co.kr, 보호책임자 이병무 대표이사.
    - 수탁자·국외 이전: Supabase(서울), AWS Lightsail(서울, terra-server), Fly.io(일본, petcam-api), Cloudflare R2(아시아·태평양), Google(FCM·GA, 미국), Vercel(미국). 영상 AI는 자체 모델을 회사 내부 서버에서 실행(사용자 확인) — Gemini는 방침에서 제외. 14세 미만 조항은 넣지 않음(사용자 결정).
    - ✅ 앱 안 링크: 0.179.0+526부터 마이 페이지 '개인정보처리방침' 줄(외부 브라우저, `shared/providers/external_url_launcher.dart`의 `LegalLinks`).
    - 미결: 고객 앱 영상을 사람 라벨링(petcam-lab 라벨링 도구)에 쓰는지 — 쓰면 처리 목적에 "AI 모델 개선(영상 라벨링)"을 추가해야 한다.
