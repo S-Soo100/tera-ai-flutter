@@ -4,6 +4,7 @@
 > 설계: [`docs/superpowers/plans/2026-11-16-store-update-and-push-route.md`](../superpowers/plans/2026-11-16-store-update-and-push-route.md) §1·§2.1·§2.4
 > 표 정의: [`supabase/migrations/20261116000000_app_release_policy.sql`](../../supabase/migrations/20261116000000_app_release_policy.sql)
 > 최초 작성: 2026-11-16 (앱 0.181.0+530)
+> **운영 적용: 2026-11-18** — 표·정책·시드(android Play 주소, ios null, 빌드 값 모두 0) 생성. anon SELECT 2행, authenticated UPDATE 거부(42501), `min_build > latest_build` 거부(23514) 확인.
 
 ## 동작 요약
 

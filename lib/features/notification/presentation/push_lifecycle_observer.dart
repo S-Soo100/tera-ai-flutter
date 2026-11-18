@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/router/router_top_path.dart';
 import '../../../core/router/tab_branches.dart';
 import '../../../shared/services/local_notifications.dart';
 import '../../auth/presentation/auth_providers.dart';
@@ -41,10 +42,7 @@ class _PushLifecycleObserverState extends ConsumerState<PushLifecycleObserver> {
   /// 않아(go_router `optionURLReflectsImperativeAPIs` 기본 false) 예약 화면을
   /// 열어도 `/home`으로 남는다 — 알림 탭 판단은 실제 화면 스택으로 한다.
   /// 첫 경로를 읽기 전(스택 비어 있음)은 스플래시로 본다.
-  String get _topPath =>
-      widget.router.routerDelegate.currentConfiguration.lastOrNull
-          ?.matchedLocation ??
-      '/splash';
+  String get _topPath => routerTopPath(widget.router);
 
   @override
   void initState() {

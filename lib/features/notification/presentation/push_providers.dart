@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/router/router_top_path.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import '../../../shared/services/local_notifications.dart';
 import '../../home/data/home_selection_store.dart';
@@ -83,7 +84,9 @@ final pushLifecycleControllerProvider =
             ref.read(selectedHomeDeviceIdProvider.notifier).state = id),
     navigate: (route) {
       final router = ref.read(routerProvider);
-      if (router.routeInformationProvider.value.uri.path != route) {
+      // 주소가 아니라 실제 맨 위 화면으로 본다 — push한 화면 위에서 같은
+      // 화면 푸시를 또 누르면 한 장 더 쌓였다.
+      if (routerTopPath(router) != route) {
         unawaited(router.push<void>(route));
       }
     },
