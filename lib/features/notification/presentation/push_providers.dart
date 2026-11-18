@@ -35,6 +35,14 @@ final pushDevicesProvider = Provider<PushDevicePort>((ref) {
       });
 });
 
+/// 알림 탭이 홈 선택을 옮겨도 되는 내 사육장 기기 id들 — 푸시 탭·로컬 알림
+/// 탭이 같은 목록(홈 세트)을 본다. 테스트는 이 provider를 바꿔 끼운다.
+final notificationDeviceIdsProvider =
+    Provider<Future<Iterable<String>> Function()>(
+        (ref) => () async => (await ref.read(homeDeviceSetsProvider.future))
+            .map((set) => set.device?.id)
+            .whereType<String>());
+
 final pushLifecycleControllerProvider =
     Provider<PushLifecycleController>((ref) {
   final notifications = ref.watch(notificationRepositoryProvider);
@@ -69,10 +77,8 @@ final pushLifecycleControllerProvider =
       await const HiveLcdQuietStore().clearAll();
       await const HiveHomeSelectionStore().clearAll();
     },
-    prepareOpen: (item) => selectNotificationDevice(item,
-        myDeviceIds: () async => (await ref.read(homeDeviceSetsProvider.future))
-            .map((set) => set.device?.id)
-            .whereType<String>(),
+    prepareOpen: (item) => selectNotificationDevice(item.targetDeviceId,
+        myDeviceIds: ref.read(notificationDeviceIdsProvider),
         select: (id) =>
             ref.read(selectedHomeDeviceIdProvider.notifier).state = id),
     navigate: (route) {

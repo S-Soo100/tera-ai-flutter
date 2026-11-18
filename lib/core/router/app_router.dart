@@ -199,8 +199,7 @@ String? resolveAppRedirect(String path,
   if (!authenticated && !isPublic) {
     return '/login';
   }
-  if (authenticated &&
-      (path == '/login' || path == '/signup' || path == '/verify-email')) {
+  if (authenticated && kSignInPaths.contains(path)) {
     return '/home';
   }
   return null;

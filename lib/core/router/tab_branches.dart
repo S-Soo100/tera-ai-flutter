@@ -40,6 +40,14 @@ const List<String> kLegacySecondaryPaths = ['/smart-cage'];
 /// 여기로 간다(`resolveAppRedirect`). 로그인 전에도 떠야 해서 공개 경로다.
 const kUpdateRequiredPath = '/update-required';
 
+/// 로그인 상태가 되면 홈으로 보내는 인증 화면(`resolveAppRedirect`).
+const List<String> kSignInPaths = ['/login', '/signup', '/verify-email'];
+
+/// 로그인·가입·비밀번호 재설정 흐름 전체. 비밀번호 재설정은 복구 세션으로
+/// 로그인 상태가 돼도 머무르므로 [kSignInPaths]에는 없다. 알림 탭 이동이 이
+/// 화면들 위로 끼어들지 않는다(`canOpenLocalTapAt`).
+const List<String> kAuthFlowPaths = [...kSignInPaths, '/forgot-password'];
+
 /// 인증 없이 접근 가능한 경로.
 /// `/crecam`은 탭이지만 **비공개**(카메라는 계정 종속 — 비로그인이면 /login).
 const List<String> kPublicPaths = [

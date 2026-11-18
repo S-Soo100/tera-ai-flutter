@@ -139,7 +139,7 @@ class NotificationCenterScreen extends ConsumerWidget {
     if (item.safeRoute == '/notifications') return;
     if (!context.mounted || ref.read(currentUserProvider)?.id != userId) return;
     context.push(item.safeRoute);
-    unawaited(selectNotificationDevice(item,
+    unawaited(selectNotificationDevice(item.targetDeviceId,
         myDeviceIds: () async => (await ref.read(homeDeviceSetsProvider.future))
             .map((set) => set.device?.id)
             .whereType<String>(),
