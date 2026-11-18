@@ -15,7 +15,10 @@ import 'app_update_providers.dart';
 /// 업데이트 안내 진입점(`app.dart` builder). 화면을 덮지 않는다 — 강제는
 /// 라우터 redirect(`/update-required`)가, 권장은 루트 Navigator 확인 창이 맡는다.
 ///
-/// - 첫 비-스플래시 경로에서 한 번 확인한다.
+/// - 앱이 뜨자마자(첫 프레임, 스플래시 중) 한 번 확인한다 — 강제 대상이 홈을
+///   잠깐 보고 업데이트 화면으로 바뀌지 않게. 스플래시는 redirect가 건드리지
+///   않으므로 스플래시가 다음 화면으로 넘어갈 때 `/update-required`로 간다.
+///   권장 창은 스플래시가 끝난 뒤에만 띄운다.
 /// - 복귀(resume)는 [AppUpdateNotifier.checkOnResume] 규칙(강제면 매번, 아니면 6시간).
 /// - 권장이면 확인 창을 이 실행에서 `latest_build`마다 한 번 띄운다. [나중에]를
 ///   **직접** 눌렀을 때만 기억하고, 바깥 탭·자동 닫힘은 기억하지 않는다(다음
@@ -48,15 +51,16 @@ class _AppUpdateGateState extends ConsumerState<AppUpdateGate> {
     super.initState();
     _lifecycle = AppLifecycleListener(onResume: _onResume);
     widget.router.routeInformationProvider.addListener(_routeChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _routeChanged());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _started = true;
+      unawaited(ref.read(appUpdateProvider.notifier).check());
+      _routeChanged();
+    });
   }
 
   void _routeChanged() {
     if (!mounted || _path == '/splash') return;
-    if (!_started) {
-      _started = true;
-      unawaited(ref.read(appUpdateProvider.notifier).check());
-    }
     _scheduleRecommended();
   }
 

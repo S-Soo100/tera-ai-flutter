@@ -107,10 +107,11 @@ void main() {
     launchOk = true;
   });
 
-  testWidgets('스플래시에서는 확인하지 않고, 첫 비-스플래시 경로에서 한 번', (tester) async {
+  testWidgets('앱이 뜨자마자(스플래시 중) 한 번 확인하고, 경로가 바뀌어도 다시 안 읽는다',
+      (tester) async {
     repo.next = _policy(latest: 0);
     await pumpGate(tester);
-    expect(repo.calls, 0);
+    expect(repo.calls, 1, reason: '스플래시 중에 미리 읽어 홈 깜빡임을 없앤다');
     await goHome(tester);
     expect(repo.calls, 1);
     router.go(kUpdateRequiredPath);
@@ -207,10 +208,12 @@ void main() {
     expect(repo.calls, 1);
   });
 
-  testWidgets('스플래시에서 복귀해도 확인하지 않는다(시작 확인 전)', (tester) async {
-    repo.next = _policy(min: 531, latest: 540);
+  testWidgets('권장 창은 스플래시 중에는 뜨지 않고, 스플래시가 끝나면 뜬다', (tester) async {
+    repo.next = _policy();
     await pumpGate(tester);
-    await resume(tester);
-    expect(repo.calls, 0);
+    expect(repo.calls, 1);
+    expect(find.byKey(_surface), findsNothing);
+    await goHome(tester);
+    expect(find.byKey(_surface), findsOneWidget);
   });
 }
