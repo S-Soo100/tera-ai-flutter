@@ -5,6 +5,7 @@ import '../../../../core/theme/glass_palette.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../domain/redesign_management.dart';
 import '../management_colors.dart';
+import '../../../../core/theme/viva_line.dart';
 
 class ManagementTopBar extends StatelessWidget {
   const ManagementTopBar(
@@ -282,8 +283,9 @@ class ManagementItemRow extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 64),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-                border:
-                    Border(bottom: BorderSide(color: glass.border, width: .5))),
+                border: Border(
+                    bottom:
+                        BorderSide(color: glass.border, width: kVivaHairline))),
             child: Row(children: [
               ManagementItemIcon(item.key.kind),
               const SizedBox(width: 12),

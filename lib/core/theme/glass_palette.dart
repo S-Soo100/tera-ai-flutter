@@ -79,6 +79,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     required this.deviceMist,
     required this.deviceMistBg,
     required this.deviceGlyph,
+    required this.modalBarrier,
     required this.buttonForeground,
     required this.deviceOff,
     required this.tempAccent,
@@ -211,6 +212,12 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
   final Color deviceMistBg; // 분무 잠금(작동 중) 타일 배경 — mistTint(전경)와 역할 분리
   final Color
       deviceGlyph; // 기기색/deviceOff 원 **안** 글리프 — 하드코딩 white 금지(리뷰 2026-09-03)
+
+  /// 대화상자 뒤 덮개 — 테마 [DialogThemeData.barrierColor]로 모든 showDialog에
+  /// 적용된다. 라이트는 Figma 확인 창(1142:8956·1134:7996)처럼 덮지 않고(투명)
+  /// 창 그림자만, 다크는 Figma 미정의라 기존 기본값(검정 54%) 유지(2026-11-16).
+  final Color modalBarrier;
+
   /// Text and glyphs on saturated brand CTAs (VIVA Fill/Back).
   final Color buttonForeground;
   final Color deviceOff; // 꺼짐 상태 아이콘 원 배경
@@ -342,6 +349,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     deviceMist: Color(0xFF00B2F3),
     deviceMistBg: Color(0xFF10333D), // 다크 카드 위 humidAccent 저명도 도출
     deviceGlyph: Color(0xFFFFFFFF),
+    modalBarrier: Color(0x8A000000), // 다크 — Flutter 기본 검정 54% 유지
     buttonForeground: VivaColors.fillBack,
     deviceOff: Color(0xFF3A4152),
     tempAccent: Color(0xFFF85478),
@@ -421,6 +429,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     deviceMist: VivaColors.blue,
     deviceMistBg: VivaColors.fillButton,
     deviceGlyph: Color(0xFFFFFFFF),
+    modalBarrier: Color(0x00000000), // 라이트 — 덮지 않음(Figma)
     buttonForeground: VivaColors.fillBack,
     deviceOff: VivaColors.fillIcon,
     tempAccent: VivaColors.mainLight,
@@ -499,6 +508,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
     Color? deviceMist,
     Color? deviceMistBg,
     Color? deviceGlyph,
+    Color? modalBarrier,
     Color? buttonForeground,
     Color? deviceOff,
     Color? tempAccent,
@@ -574,6 +584,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       deviceMist: deviceMist ?? this.deviceMist,
       deviceMistBg: deviceMistBg ?? this.deviceMistBg,
       deviceGlyph: deviceGlyph ?? this.deviceGlyph,
+      modalBarrier: modalBarrier ?? this.modalBarrier,
       buttonForeground: buttonForeground ?? this.buttonForeground,
       deviceOff: deviceOff ?? this.deviceOff,
       tempAccent: tempAccent ?? this.tempAccent,
@@ -657,6 +668,7 @@ class GlassPalette extends ThemeExtension<GlassPalette> {
       deviceMist: c(deviceMist, other.deviceMist),
       deviceMistBg: c(deviceMistBg, other.deviceMistBg),
       deviceGlyph: c(deviceGlyph, other.deviceGlyph),
+      modalBarrier: c(modalBarrier, other.modalBarrier),
       buttonForeground: c(buttonForeground, other.buttonForeground),
       deviceOff: c(deviceOff, other.deviceOff),
       tempAccent: c(tempAccent, other.tempAccent),

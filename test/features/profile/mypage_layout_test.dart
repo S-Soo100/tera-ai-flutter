@@ -24,6 +24,7 @@ import 'package:vivanaut/features/profile/presentation/profile_providers.dart';
 import 'package:vivanaut/features/profile/presentation/profile_screen.dart';
 import 'package:vivanaut/features/profile/presentation/withdraw_screen.dart';
 import 'package:vivanaut/features/home/presentation/home_control_providers.dart';
+import 'package:vivanaut/shared/providers/external_url_launcher.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/management_widgets.dart'
     show ManagementTopBar;
 import 'package:vivanaut/features/home/presentation/routine_settings_screen.dart'
@@ -159,8 +160,53 @@ void main() {
   testWidgets('회원 탈퇴 — 문구 y122, CTA 696', (tester) async {
     await pump(tester, const WithdrawScreen(), overrides());
     expect(tester.getRect(find.text('회원 탈퇴를 진행하시겠습니까?')).top, closeTo(122, 1));
+    // 서버는 소프트 삭제 + 30일 안 실제 삭제(2026-11-17 사용자 결정) — "즉시 삭제"로 말하지 않는다.
+    expect(find.textContaining('30일 안에 모두 삭제'), findsOneWidget);
     expect(tester.getRect(find.byKey(WithdrawScreen.submitKey)),
         const Rect.fromLTWH(12, 696, 369, 56));
+  });
+
+  testWidgets('개인정보처리방침 행 — 버전 정보 바로 아래, 탭하면 외부 브라우저로 /privacy',
+      (tester) async {
+    final opened = <Uri>[];
+    await pump(tester, const ProfileScreen(), [
+      ...overrides(),
+      externalUrlLauncherProvider.overrideWithValue((uri) async {
+        opened.add(uri);
+        return true;
+      }),
+    ]);
+    final row = tester.getRect(find.byKey(ProfileScreen.privacyRowKey));
+    expect(row, const Rect.fromLTWH(12, 564, 369, 64));
+    expect(find.text('개인정보처리방침'), findsOneWidget);
+    await tester.tap(find.byKey(ProfileScreen.privacyRowKey));
+    await tester.pumpAndSettle();
+    expect(opened, [Uri.parse('https://www.vivanaut.co.kr/privacy')]);
+  });
+
+  testWidgets('회원 탈퇴 — 웹 계정 삭제 요청 링크', (tester) async {
+    final opened = <Uri>[];
+    await pump(tester, const WithdrawScreen(), [
+      ...overrides(),
+      externalUrlLauncherProvider.overrideWithValue((uri) async {
+        opened.add(uri);
+        return true;
+      }),
+    ]);
+    await tester.tap(find.byKey(WithdrawScreen.webDeletionLinkKey));
+    await tester.pumpAndSettle();
+    expect(opened, [Uri.parse('https://www.vivanaut.co.kr/account-deletion')]);
+  });
+
+  testWidgets('링크를 열지 못하면 주소를 안내한다', (tester) async {
+    await pump(tester, const ProfileScreen(), [
+      ...overrides(),
+      externalUrlLauncherProvider.overrideWithValue((uri) async => false),
+    ]);
+    await tester.tap(find.byKey(ProfileScreen.privacyRowKey));
+    await tester.pump();
+    expect(find.textContaining('https://www.vivanaut.co.kr/privacy'),
+        findsOneWidget);
   });
 
   testWidgets('비밀번호 변경 — 필드 153/289/409, 세 칸 채워야 CTA, 규칙 미충족 안내',

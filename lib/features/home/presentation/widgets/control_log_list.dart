@@ -84,16 +84,18 @@ class ControlLogList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
+    final light = Theme.of(context).brightness == Brightness.light;
     return Container(
       key: sectionKey,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.light
-            ? VivaColors.fillBack
-            : glass.surfaceHeader,
-        // Figma Frame 110은 흰 바닥에서 이 면으로 바로 바뀐다 — 노드엔 테두리
-        // 값이 있지만 화면엔 그려지지 않는다(1609:5101·1610:6830 3배 PNG, 2026-11-16).
-        // 구분선을 되살리지 말 것.
+        color: light ? VivaColors.fillBack : glass.surfaceHeader,
+        // 라이트: Figma Frame 110은 흰 바닥에서 이 면으로 바로 바뀐다 — 노드엔
+        // 테두리 값이 있지만 화면엔 그려지지 않는다(1609:5101·1610:6830 3배
+        // PNG, 2026-11-16). 라이트에 구분선을 되살리지 말 것.
+        // 다크: 바닥(#0B0F1A)과 면(#0E1322)이 거의 같아 선이 유일한 경계다
+        // (Figma 다크 미정의, 리뷰 2026-11-16).
+        border: light ? null : Border(top: BorderSide(color: glass.border)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       child: Column(

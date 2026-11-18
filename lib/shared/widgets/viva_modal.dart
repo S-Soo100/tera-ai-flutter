@@ -20,9 +20,8 @@ import 'word_joiner_span.dart';
 ///
 /// 돌려주는 값: 확인 true, 취소·바깥 탭·자동 닫힘 false.
 ///
-/// 뒤 바탕은 어둡게 하지 않는다([kVivaModalBarrierColor]).
-const Color kVivaModalBarrierColor = Colors.transparent;
-
+/// 뒤 덮개는 다른 대화상자와 같은 테마 값([GlassPalette.modalBarrier] →
+/// `DialogThemeData.barrierColor`)을 따른다 — 라이트는 덮지 않는다(Figma).
 Future<bool> showVivaModal(
   BuildContext context, {
   required String message,
@@ -36,10 +35,6 @@ Future<bool> showVivaModal(
   final ok = await showDialog<bool>(
     context: context,
     useSafeArea: false,
-    // Figma 확인 창(1142:8956·1134:7996 등)은 뒤를 어둡게 하지 않는다 — 바탕은
-    // 그대로, 창의 그림자만 띄운다(2026-11-16 대조, 사용자 결정). 바깥 탭으로
-    // 닫히는 것과 뒤 화면 조작 차단은 그대로다.
-    barrierColor: kVivaModalBarrierColor,
     builder: (ctx) {
       final glass = ctx.glass;
       final two = cancelLabel != null;

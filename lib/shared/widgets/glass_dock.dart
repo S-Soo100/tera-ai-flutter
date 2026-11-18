@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_styles.dart';
 import '../../core/theme/glass_palette.dart';
 import 'figma_icon.dart';
+import '../../core/theme/viva_line.dart';
 
 /// 하단 탭바 아래로 스크롤되는 리스트의 padding.
 ///
@@ -110,7 +111,8 @@ class GlassDockFrame extends StatelessWidget {
                     // Figma Navigation 위 선은 0.5pt(2026-11-16 Home
                     // 1913:6994 3배 PNG 실측) — 기본 1pt는 두 배 굵다.
                     border: Border(
-                        top: BorderSide(color: glass.border, width: 0.5)),
+                        top: BorderSide(
+                            color: glass.border, width: kVivaHairline)),
                   ),
                   // 리플이 앉을 면 — 없으면 잉크가 불투명 바 뒤에 그려져 안 보인다.
                   child: Material(

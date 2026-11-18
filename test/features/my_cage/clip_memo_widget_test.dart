@@ -9,6 +9,7 @@ import 'package:vivanaut/features/my_cage/domain/clip_memo.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_memo_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/clip_memo_card.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/clip_memo_editor.dart';
+import 'package:vivanaut/shared/widgets/viva_shadow.dart';
 
 final _account = StateProvider<String?>((ref) => 'a');
 const _key = (ownerId: 'a', clipId: 'clip');
@@ -222,6 +223,15 @@ void main() {
         VivaColors.mainDark);
     expect(
         tester.widget<Text>(find.text('clip_memo_edit')).style!.fontSize, 18);
+    // Figma 1084:7286 — 둘레로 고르게 번지는 공용 그림자(아래로 치우친
+    // Material 기본 그림자 아님).
+    final sheet = tester.widget<Material>(find
+        .ancestor(
+            of: find.byType(PopupMenuItem<String>).first,
+            matching: find.byType(Material))
+        .last);
+    expect(sheet.elevation, 0);
+    expect(sheet.shape, isA<VivaShadowRoundedBorder>());
     await tester.binding.setSurfaceSize(null);
   });
 }

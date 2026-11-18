@@ -82,9 +82,23 @@ class ClipFeedSlivers extends ConsumerWidget {
         for (final e in group.value)
           if (feedEntrySelectable(e)) e.key
       ];
+      // Figma 945:4147 — 날짜가 바뀌는 곳(첫 날짜 제외)에 1pt #E3E3E3 선.
+      // 앞 날짜 마지막 줄 아래 23 → 선 1 → 12 아래 다음 시간 머리줄.
+      final newDay = label != null && !firstGroup;
+      if (newDay) {
+        rows.add((context) => Padding(
+              padding: const EdgeInsets.only(top: 23, bottom: 12),
+              child: Container(
+                  key: ValueKey(
+                      'clip_day_divider_${DateFormat('yyyy-MM-dd').format(date)}'),
+                  height: 1,
+                  decoration: BoxDecoration(color: context.glass.border)),
+            ));
+      }
       rows.add((context) => Padding(
             key: ValueKey('clip_hour_${group.key.toIso8601String()}'),
-            padding: EdgeInsets.only(top: firstGroup ? 0 : 16, bottom: 8),
+            padding:
+                EdgeInsets.only(top: firstGroup || newDay ? 0 : 16, bottom: 8),
             child: Row(children: [
               Expanded(
                   child: Text(formatAmPmTime(group.key),
@@ -202,8 +216,7 @@ class RecordingFeedCell extends StatelessWidget {
       RecordingItemThumb(
           item: item,
           fallback: ClipThumbFallback(
-              icon: Icons.videocam_rounded,
-              color: context.glass.overlayFaint)),
+              icon: Icons.videocam_rounded, color: context.glass.overlayFaint)),
       Positioned(
           left: 4,
           right: 36,

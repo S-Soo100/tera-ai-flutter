@@ -461,6 +461,35 @@ void main() {
     expect(find.text('2026. 8. 31'), findsNWidgets(2));
   });
 
+  testWidgets('날짜가 바뀌는 곳에만 1pt 구분선 — 위 23·아래 12(Figma 945:4147)',
+      (tester) async {
+    final prevDay = MotionClip(
+        id: 'p1',
+        cameraId: _cameraId,
+        startedAt: DateTime(2026, 8, 30, 22, 10),
+        durationSec: 8);
+    await _pump(tester, clips: [..._clips, prevDay], pickedDay: false);
+    // 첫 날짜(8/31) 앞엔 선이 없다.
+    expect(find.byKey(const ValueKey('clip_day_divider_2026-08-31')),
+        findsNothing);
+    final divider = find.byKey(const ValueKey('clip_day_divider_2026-08-30'));
+    await tester.scrollUntilVisible(divider, 200,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    expect(divider, findsOneWidget);
+    final line = tester.getRect(divider);
+    expect(line.height, 1);
+    final deco =
+        (tester.widget<Container>(divider).decoration as BoxDecoration);
+    expect(deco.color, isNotNull);
+    // 앞 날짜 마지막 칸(c3 08:30) 아래 23, 선 아래 12에 다음 시간 머리줄.
+    final lastCell = tester.getRect(find.byKey(const ValueKey('clip_row_c3')));
+    expect(line.top - lastCell.bottom, closeTo(23, 0.5));
+    final header = tester.getRect(find.byKey(
+        ValueKey('clip_hour_${DateTime(2026, 8, 30, 22).toIso8601String()}')));
+    expect(header.top - line.bottom, closeTo(12, 0.5));
+  });
+
   testWidgets('클립 0건 날짜 → 빈 상태 문구 (명시 선택은 자동으로 안 갈아탄다)', (tester) async {
     await _pump(tester, clips: const []);
     // 정책 v2: 통과분만 보이므로 "이 기간엔 뚜렷한 움직임이 없다"로 이유를 밝힌다.
@@ -633,8 +662,7 @@ void main() {
     expect(pushedArgs!.feedFloor, DateTime(2026, 8, 31, 8, 30));
   });
 
-  testWidgets('올리는 중인 녹화 칸은 흐리게·누를 수 없음 — 재생목록·전체 선택에서도 빠진다',
-      (tester) async {
+  testWidgets('올리는 중인 녹화 칸은 흐리게·누를 수 없음 — 재생목록·전체 선택에서도 빠진다', (tester) async {
     await _pump(tester, recordings: [
       rec('up', DateTime(2026, 8, 31, 10, 10),
           state: LiveRecordingUploadState.uploading),
@@ -663,7 +691,8 @@ void main() {
     await tester.pumpAndSettle();
     final container =
         ProviderScope.containerOf(tester.element(find.byType(CrecamScreen)));
-    expect(container.read(clipSelectionProvider(ClipSelectionScope.feed)).active,
+    expect(
+        container.read(clipSelectionProvider(ClipSelectionScope.feed)).active,
         isFalse);
 
     await tester.tap(wait);
