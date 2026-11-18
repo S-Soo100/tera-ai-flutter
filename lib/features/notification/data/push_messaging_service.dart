@@ -44,7 +44,40 @@ abstract interface class PushMessagingPort {
   Future<void> openSettings();
 }
 
-/// Background notification payloads are displayed by Android, never twice here.
+/// iOS는 APNs 토큰이 생긴 뒤에야 FCM 토큰을 준다 — 그 전에 `getToken()`을 부르면
+/// 실패한다. 앱 시작 직후엔 APNs 등록이 아직 안 끝났을 수 있어 [attempts]번까지
+/// [retryDelay] 간격으로 다시 본다. 끝내 없으면 null — 다음 동기화(복귀·토큰
+/// 갱신·계정 연결)에서 다시 시도한다. Android는 바로 FCM에 묻는다.
+Future<String?> fetchPushToken({
+  required bool needsApns,
+  required Future<String?> Function() apnsToken,
+  required Future<String?> Function() fcmToken,
+  int attempts = 3,
+  Duration retryDelay = const Duration(milliseconds: 500),
+  Future<void> Function(Duration)? wait,
+}) async {
+  if (needsApns) {
+    final pause = wait ?? Future<void>.delayed;
+    var ready = false;
+    for (var i = 0; i < attempts && !ready; i++) {
+      if (i > 0) await pause(retryDelay);
+      final token = await apnsToken();
+      ready = token != null && token.isNotEmpty;
+    }
+    if (!ready) return null;
+  }
+  return fcmToken();
+}
+
+/// FCM을 켜는 플랫폼 — Android와 iOS. 둘 다 Firebase 앱이 있어야 실제로 켜진다
+/// (iOS는 `GoogleService-Info.plist`가 없으면 초기화가 예외로 끝나 꺼진 채).
+bool _pushPlatform() =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS);
+
+/// Background notification payloads are displayed by the OS (Android·iOS),
+/// never twice here.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -52,14 +85,11 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 class PushMessagingService implements PushMessagingPort {
   @override
-  bool get supported =>
-      !kIsWeb &&
-      defaultTargetPlatform == TargetPlatform.android &&
-      Firebase.apps.isNotEmpty;
+  bool get supported => _pushPlatform() && Firebase.apps.isNotEmpty;
   FirebaseMessaging get _messaging => FirebaseMessaging.instance;
 
   static Future<void> initialize() async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    if (!_pushPlatform()) return;
     try {
       await Firebase.initializeApp();
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
@@ -87,8 +117,13 @@ class PushMessagingService implements PushMessagingPort {
       ? _permission((await _messaging.requestPermission()).authorizationStatus)
       : PushPermission.unavailable;
   @override
-  Future<String?> getToken() async =>
-      supported ? await _messaging.getToken() : null;
+  Future<String?> getToken() async {
+    if (!supported) return null;
+    return fetchPushToken(
+        needsApns: defaultTargetPlatform == TargetPlatform.iOS,
+        apnsToken: _messaging.getAPNSToken,
+        fcmToken: _messaging.getToken);
+  }
   @override
   Future<void> deleteToken() async {
     if (supported) await _messaging.deleteToken();

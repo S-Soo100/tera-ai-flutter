@@ -6,11 +6,13 @@ import 'package:vivanaut/features/notification/data/push_messaging_service.dart'
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test(
-      'non-Android platforms do not initialize Firebase or request permissions',
-      () async {
+      'without a Firebase app (iOS before GoogleService-Info.plist) and on '
+      'desktop, push stays off and never asks for permission', () async {
     addTearDown(() => debugDefaultTargetPlatformOverride = null);
     for (final platform in [
+      // iOS도 초기화는 시도한다 — 설정 파일이 없으면 예외로 끝나 앱이 없다.
       TargetPlatform.iOS,
+      TargetPlatform.android,
       TargetPlatform.macOS,
       TargetPlatform.windows,
       TargetPlatform.linux
@@ -40,5 +42,80 @@ void main() {
     expect(message.route, '');
     expect(message.title, '제목');
     expect(message.body, '본문');
+  });
+
+  group('fetchPushToken', () {
+    late List<String> calls;
+    late List<Duration> waits;
+    Future<void> wait(Duration d) async => waits.add(d);
+    setUp(() {
+      calls = [];
+      waits = [];
+    });
+
+    test('Android asks FCM directly', () async {
+      final token = await fetchPushToken(
+          needsApns: false,
+          apnsToken: () async {
+            calls.add('apns');
+            return null;
+          },
+          fcmToken: () async {
+            calls.add('fcm');
+            return 'fcm-token';
+          },
+          wait: wait);
+      expect(token, 'fcm-token');
+      expect(calls, ['fcm']);
+    });
+
+    test('iOS waits for the APNs token, retrying a few times', () async {
+      final apns = <String?>[null, null, 'apns-token'];
+      final token = await fetchPushToken(
+          needsApns: true,
+          apnsToken: () async {
+            calls.add('apns');
+            return apns.removeAt(0);
+          },
+          fcmToken: () async {
+            calls.add('fcm');
+            return 'fcm-token';
+          },
+          retryDelay: const Duration(milliseconds: 300),
+          wait: wait);
+      expect(token, 'fcm-token');
+      expect(calls, ['apns', 'apns', 'apns', 'fcm']);
+      expect(waits, const [
+        Duration(milliseconds: 300),
+        Duration(milliseconds: 300)
+      ]);
+    });
+
+    test('iOS gives up after 3 tries without asking FCM (next sync retries)',
+        () async {
+      final token = await fetchPushToken(
+          needsApns: true,
+          apnsToken: () async {
+            calls.add('apns');
+            return null;
+          },
+          fcmToken: () async {
+            calls.add('fcm');
+            return 'fcm-token';
+          },
+          wait: wait);
+      expect(token, isNull);
+      expect(calls, ['apns', 'apns', 'apns']);
+      expect(waits, hasLength(2));
+    });
+
+    test('an empty APNs token counts as missing', () async {
+      final token = await fetchPushToken(
+          needsApns: true,
+          apnsToken: () async => '',
+          fcmToken: () async => 'fcm-token',
+          wait: wait);
+      expect(token, isNull);
+    });
   });
 }

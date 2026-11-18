@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/notification/data/push_device_repository.dart';
 
@@ -38,5 +39,30 @@ void main() {
     expect(calls.last.$1, 'deactivate_push_device');
     expect(
         calls.last.$2, <String, Object?>{'p_installation_id': 'installation'});
+  });
+
+  test('p_platform is the running platform (iOS registers as ios)', () async {
+    final calls = <Map<String, Object?>>[];
+    for (final platform in ['ios', 'android']) {
+      await PushDeviceRepository(
+        currentUserId: () => 'a',
+        platform: () => platform,
+        rpc: (_, params) async => calls.add(params),
+      ).register(
+          userId: 'a',
+          installationId: 'installation',
+          token: 'test-token',
+          appVersion: '1+1',
+          locale: 'ko');
+    }
+    expect(calls.map((c) => c['p_platform']), ['ios', 'android']);
+  });
+
+  test('platform name follows the target platform', () {
+    expect(pushPlatformName(TargetPlatform.iOS), 'ios');
+    expect(pushPlatformName(TargetPlatform.android), 'android');
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    expect(pushPlatformName(), 'ios');
   });
 }

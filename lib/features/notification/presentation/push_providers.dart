@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/router/router_top_path.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import '../../../shared/services/local_notifications.dart';
 import '../../home/data/home_selection_store.dart';
@@ -34,6 +35,14 @@ final pushDevicesProvider = Provider<PushDevicePort>((ref) {
         await client.rpc(name, params: params);
       });
 });
+
+/// 알림 탭이 홈 선택을 옮겨도 되는 내 사육장 기기 id들 — 푸시 탭·로컬 알림
+/// 탭이 같은 목록(홈 세트)을 본다. 테스트는 이 provider를 바꿔 끼운다.
+final notificationDeviceIdsProvider =
+    Provider<Future<Iterable<String>> Function()>(
+        (ref) => () async => (await ref.read(homeDeviceSetsProvider.future))
+            .map((set) => set.device?.id)
+            .whereType<String>());
 
 final pushLifecycleControllerProvider =
     Provider<PushLifecycleController>((ref) {
@@ -69,15 +78,15 @@ final pushLifecycleControllerProvider =
       await const HiveLcdQuietStore().clearAll();
       await const HiveHomeSelectionStore().clearAll();
     },
-    prepareOpen: (item) => selectNotificationDevice(item,
-        myDeviceIds: () async => (await ref.read(homeDeviceSetsProvider.future))
-            .map((set) => set.device?.id)
-            .whereType<String>(),
+    prepareOpen: (item) => selectNotificationDevice(item.targetDeviceId,
+        myDeviceIds: ref.read(notificationDeviceIdsProvider),
         select: (id) =>
             ref.read(selectedHomeDeviceIdProvider.notifier).state = id),
     navigate: (route) {
       final router = ref.read(routerProvider);
-      if (router.routeInformationProvider.value.uri.path != route) {
+      // 주소가 아니라 실제 맨 위 화면으로 본다 — push한 화면 위에서 같은
+      // 화면 푸시를 또 누르면 한 장 더 쌓였다.
+      if (routerTopPath(router) != route) {
         unawaited(router.push<void>(route));
       }
     },

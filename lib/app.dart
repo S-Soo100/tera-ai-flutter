@@ -6,6 +6,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_text_scaler.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
+import 'features/app_update/presentation/app_update_gate.dart';
 import 'features/home/presentation/fan_timer_resync_observer.dart';
 import 'features/my_cage/presentation/live_recording_upload_queue.dart';
 import 'features/notification/presentation/push_lifecycle_observer.dart';
@@ -45,23 +46,28 @@ class App extends ConsumerWidget {
           // 재동기화 — 다른 폰에서 취소된 타이머의 유령 알림을 내린다.
           child: PushLifecycleObserver(
             router: router,
-            child: FanTimerResyncObserver(
-              // 입력칸 바깥 탭 = 키보드 닫기(전 화면 공통).
-              child: DismissKeyboardOnTap(
-                child: Stack(
-                  children: [
-                    child!,
-                    // 연결이 끊겨도 화면을 덮지 않는다 — 위쪽 안내만(UX-05).
-                    if (!online)
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        top: 0,
-                        child: OfflineBanner(
-                          onRetry: () => ref.invalidate(connectivityProvider),
+            // 업데이트 안내 — 강제는 redirect(`/update-required`), 권장은
+            // 루트 Navigator 확인 창. 화면을 덮지 않는다.
+            child: AppUpdateGate(
+              router: router,
+              child: FanTimerResyncObserver(
+                // 입력칸 바깥 탭 = 키보드 닫기(전 화면 공통).
+                child: DismissKeyboardOnTap(
+                  child: Stack(
+                    children: [
+                      child!,
+                      // 연결이 끊겨도 화면을 덮지 않는다 — 위쪽 안내만(UX-05).
+                      if (!online)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          top: 0,
+                          child: OfflineBanner(
+                            onRetry: () => ref.invalidate(connectivityProvider),
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

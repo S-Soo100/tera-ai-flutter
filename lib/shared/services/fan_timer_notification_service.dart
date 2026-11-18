@@ -6,6 +6,11 @@
 /// 예약/취소인가)은 순수 함수 [FanTimerNotificationPlan]에 있고 여기는 플러그인
 /// 배선만 맡는다. 초기화·권한은 [LocalNotifications] 공용 코어 경유.
 ///
+/// payload `fan:<기기 id>`(2026-11-16) — 탭하면 그 사육장을 홈에서 선택한다
+/// (`LocalTapRouter`). 예약 알림 정리는 `sched:` 접두만 지우므로 이 알림은
+/// 건드리지 않는다. 업데이트 전에 걸린 payload 없는 알림은 앱을 열 때 재동기화
+/// (`FanTimerResyncObserver`)가 다시 걸며 payload가 붙는다.
+///
 /// **알림 실패가 팬 제어를 막으면 안 된다** — 권한 거부·플러그인 오류는 전부
 /// 삼키고 debugPrint만 남긴다. 알림은 부가 기능이고 명령은 이미 나갔다.
 library;
@@ -16,6 +21,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../features/notification/domain/local_notification_target.dart';
 import '../domain/fan_timer_notification_plan.dart';
 import '../domain/fan_actuator.dart';
 import 'local_notifications.dart';
@@ -81,6 +87,7 @@ class FanTimerNotificationService {
         scheduledDate: tz.TZDateTime.from(endsAt, tz.local),
         notificationDetails: _details(),
         androidScheduleMode: await _core.scheduleMode(),
+        payload: fanNotificationPayload(deviceId),
       );
     } catch (e, st) {
       debugPrint('[fan-timer-notif] resync failed for $deviceId: $e\n$st');
@@ -98,6 +105,7 @@ class FanTimerNotificationService {
       scheduledDate: tz.TZDateTime.now(tz.local).add(plan.duration),
       notificationDetails: _details(),
       androidScheduleMode: await _core.scheduleMode(),
+      payload: fanNotificationPayload(deviceId),
     );
   }
 

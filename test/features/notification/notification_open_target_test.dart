@@ -29,40 +29,59 @@ void main() {
   }
 
   test('env alert switches the home device when it is one of mine', () async {
-    await selectNotificationDevice(_item('env.alert.triggered'),
-        myDeviceIds: mine, select: selected.add);
+    final done = await selectNotificationDevice(
+        _item('env.alert.triggered').targetDeviceId,
+        myDeviceIds: mine,
+        select: selected.add);
     expect(selected, ['dev-2']);
+    expect(done, isTrue);
   });
 
   test('env alert for a device not in my list leaves the selection alone',
       () async {
-    await selectNotificationDevice(
-        _item('env.alert.triggered', deviceId: 'someone-else'),
+    final done = await selectNotificationDevice(
+        _item('env.alert.triggered', deviceId: 'someone-else').targetDeviceId,
         myDeviceIds: mine,
         select: selected.add);
     expect(selected, isEmpty);
+    expect(done, isFalse);
   });
 
   test('other kinds and missing device ids never load the device list',
       () async {
-    await selectNotificationDevice(_item('safety.alert'),
-        myDeviceIds: mine, select: selected.add);
-    await selectNotificationDevice(_item('env.alert.triggered', deviceId: null),
-        myDeviceIds: mine, select: selected.add);
+    final results = [
+      await selectNotificationDevice(_item('safety.alert').targetDeviceId,
+          myDeviceIds: mine, select: selected.add),
+      await selectNotificationDevice(
+          _item('env.alert.triggered', deviceId: null).targetDeviceId,
+          myDeviceIds: mine,
+          select: selected.add),
+    ];
     expect(loads, 0);
     expect(selected, isEmpty);
+    expect(results, [false, false]);
   });
 
   test('device list failure or timeout keeps the selection and does not throw',
       () async {
-    await selectNotificationDevice(_item('env.alert.triggered'),
+    final failed = await selectNotificationDevice('dev-2',
         myDeviceIds: () async => throw StateError('offline'),
         select: selected.add);
     final never = Completer<Iterable<String>>();
-    await selectNotificationDevice(_item('env.alert.triggered'),
+    final timedOut = await selectNotificationDevice('dev-2',
         myDeviceIds: () => never.future,
         select: selected.add,
         timeout: const Duration(milliseconds: 10));
     expect(selected, isEmpty);
+    expect([failed, timedOut], [false, false]);
+  });
+
+  test('any device id works — local schedule and fan taps reuse this',
+      () async {
+    expect(
+        await selectNotificationDevice('dev-1',
+            myDeviceIds: mine, select: selected.add),
+        isTrue);
+    expect(selected, ['dev-1']);
   });
 }
