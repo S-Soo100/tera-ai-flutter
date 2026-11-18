@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import '../../features/app_update/presentation/app_update_providers.dart';
+import '../../features/app_update/presentation/update_required_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/my_pets/presentation/my_pets_screen.dart';
 import '../../features/my_cage/presentation/nightly_report_view.dart';
@@ -152,7 +154,7 @@ GoRoute buildLcdSettingsRoute() => GoRoute(
       ],
     );
 
-/// 인증 상태 변경 시 redirect만 재평가 (GoRouter 재생성 방지)
+/// 인증·강제 업데이트 상태 변경 시 redirect만 재평가 (GoRouter 재생성 방지)
 class _AuthChangeNotifier extends ChangeNotifier {
   void notify() => notifyListeners();
 }
@@ -162,45 +164,71 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen(isAuthenticatedProvider, (_, __) {
     authNotifier.notify();
   });
+  // 강제 여부가 바뀔 때만 — 권장·확인 시각 변화로는 redirect를 다시 돌리지 않는다.
+  ref.listen(appUpdateProvider.select((s) => s.isRequired), (_, __) {
+    authNotifier.notify();
+  });
 
   return buildAppRouter(
     isAuthenticated: () => ref.read(isAuthenticatedProvider),
+    isUpdateRequired: () => ref.read(appUpdateProvider).isRequired,
     refreshListenable: authNotifier,
   );
 });
 
-/// 라우터 조립. `isAuthenticated`를 주입받아 ProviderContainer 없이도
-/// 테스트에서 구성 가능하게 한다.
+/// 앱 전체 redirect 규칙. 라우터와 테스트가 같은 함수를 쓴다.
+///
+/// 1. 스플래시는 앱 시작 시에만 — 간섭 없음(강제여도 시작 흐름은 그대로).
+/// 2. 강제 업데이트면 그 밖의 모든 경로 → [kUpdateRequiredPath]. 푸시 탭 이동·
+///    딥링크도 여기서 막힌다. 업데이트 화면 자신은 그대로(루프 없음).
+/// 3. 강제가 아닌데 업데이트 화면이면 스플래시로 — 스플래시가 로그인 여부를
+///    다시 보고 홈·로그인으로 보낸다(스플래시는 1번이라 다시 돌아오지 않는다).
+/// 4. 그 밖은 기존 인증 규칙.
+String? resolveAppRedirect(String path,
+    {required bool authenticated, required bool updateRequired}) {
+  if (path == '/splash') return null;
+  if (updateRequired) {
+    return path == kUpdateRequiredPath ? null : kUpdateRequiredPath;
+  }
+  if (path == kUpdateRequiredPath) return '/splash';
+
+  final isPublic = kPublicPaths.any(
+    (p) => path == p || path.startsWith('$p/'),
+  );
+
+  if (!authenticated && !isPublic) {
+    return '/login';
+  }
+  if (authenticated &&
+      (path == '/login' || path == '/signup' || path == '/verify-email')) {
+    return '/home';
+  }
+  return null;
+}
+
+/// 라우터 조립. `isAuthenticated`·`isUpdateRequired`를 주입받아
+/// ProviderContainer 없이도 테스트에서 구성 가능하게 한다.
 GoRouter buildAppRouter({
   required bool Function() isAuthenticated,
+  bool Function()? isUpdateRequired,
   Listenable? refreshListenable,
 }) {
   return GoRouter(
     initialLocation: '/splash',
     refreshListenable: refreshListenable,
-    redirect: (context, state) {
-      final path = state.uri.path;
-
-      // 스플래시는 앱 시작 시에만 — redirect 간섭 없음
-      if (path == '/splash') return null;
-
-      final isPublic = kPublicPaths.any(
-        (p) => path == p || path.startsWith('$p/'),
-      );
-
-      if (!isAuthenticated() && !isPublic) {
-        return '/login';
-      }
-      if (isAuthenticated() &&
-          (path == '/login' || path == '/signup' || path == '/verify-email')) {
-        return '/home';
-      }
-      return null;
-    },
+    redirect: (context, state) => resolveAppRedirect(state.uri.path,
+        authenticated: isAuthenticated(),
+        updateRequired: isUpdateRequired?.call() ?? false),
     routes: [
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
+      ),
+      // 강제 업데이트(Figma 밖, 2026-11-16). redirect로만 들어와 스택의 유일한
+      // 페이지가 된다 — 뒤로 가기는 앱 종료뿐.
+      GoRoute(
+        path: kUpdateRequiredPath,
+        builder: (context, state) => const UpdateRequiredScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -603,8 +631,8 @@ GoRouter buildAppRouter({
               routes: [
                 GoRoute(
                   path: ':name',
-                  builder: (context, state) => TextSpacingCheckPage(
-                      name: state.pathParameters['name']!),
+                  builder: (context, state) =>
+                      TextSpacingCheckPage(name: state.pathParameters['name']!),
                 ),
               ],
             ),

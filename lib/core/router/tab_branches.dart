@@ -36,6 +36,10 @@ const List<String> kHomeTabIconAssets = [
 /// (`/crecam/cameras/pair` 등)는 셸 밖 최상위 라우트로 그대로 산다.
 const List<String> kLegacySecondaryPaths = ['/smart-cage'];
 
+/// 강제 업데이트 화면(2026-11-16). 강제 상태면 스플래시를 뺀 모든 경로가
+/// 여기로 간다(`resolveAppRedirect`). 로그인 전에도 떠야 해서 공개 경로다.
+const kUpdateRequiredPath = '/update-required';
+
 /// 인증 없이 접근 가능한 경로.
 /// `/crecam`은 탭이지만 **비공개**(카메라는 계정 종속 — 비로그인이면 /login).
 const List<String> kPublicPaths = [
@@ -51,4 +55,5 @@ const List<String> kPublicPaths = [
   '/verify-email',
   '/forgot-password',
   '/error',
+  kUpdateRequiredPath,
 ];

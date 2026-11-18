@@ -101,11 +101,12 @@ final appUpdateProvider =
             ));
 
 /// 업데이트 화면의 [다시 확인]이 도는 중.
-final updateRecheckingProvider = StateProvider.autoDispose<bool>((ref) => false);
-
-/// 업데이트 화면에서 스토어를 열지 못했다(한 줄 안내).
-final updateStoreFailedProvider =
+final updateRecheckingProvider =
     StateProvider.autoDispose<bool>((ref) => false);
+
+/// 업데이트 화면의 한 줄 안내(ko.json 키). 스토어 열기 실패·다시 확인해도
+/// 여전히 강제일 때. 없으면 null.
+final updateNoticeProvider = StateProvider.autoDispose<String?>((ref) => null);
 
 /// 지금 정책의 스토어를 외부 앱으로 연다. 주소가 없거나 열지 못하면 false.
 Future<bool> openUpdateStore(WidgetRef ref) async {

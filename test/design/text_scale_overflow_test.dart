@@ -34,6 +34,11 @@ import 'package:vivanaut/features/my_pets/presentation/my_pets_providers.dart';
 import 'package:vivanaut/features/profile/presentation/password_change_screen.dart';
 import 'package:vivanaut/shared/widgets/offline_banner.dart';
 import 'package:vivanaut/shared/widgets/viva_modal.dart';
+import 'package:vivanaut/features/app_update/data/app_release_policy_repository.dart';
+import 'package:vivanaut/features/app_update/data/update_dismissal_store.dart';
+import 'package:vivanaut/features/app_update/domain/update_policy.dart';
+import 'package:vivanaut/features/app_update/presentation/app_update_providers.dart';
+import 'package:vivanaut/features/app_update/presentation/update_required_screen.dart';
 
 import 'package:vivanaut/core/router/tab_branches.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
@@ -83,6 +88,22 @@ class _Strings extends AssetLoader {
   Future<Map<String, dynamic>> load(String p, Locale l) async =>
       jsonDecode(File('assets/l10n/ko.json').readAsStringSync())
           as Map<String, dynamic>;
+}
+
+class _UpdatePolicyRepo implements AppReleasePolicyRepository {
+  @override
+  Future<UpdatePolicy?> fetch(String platform) async => const UpdatePolicy(
+      minBuild: 530,
+      latestBuild: 530,
+      latestVersion: '0.181.0',
+      storeUrl: 'https://play.google.com/store/apps/details?id=com.vivanaut.app');
+}
+
+class _NoDismissals implements UpdateDismissalStore {
+  @override
+  int? load() => null;
+  @override
+  Future<void> save(int build) async {}
 }
 
 class _Prefs implements LoginPrefsRepository {
@@ -258,6 +279,23 @@ void main() {
 
       testWidgets('비밀번호 변경', (tester) async {
         await _pump(tester, system, const PasswordChangeScreen());
+      });
+
+      testWidgets('강제 업데이트 — 버전·한 줄 안내', (tester) async {
+        final update = AppUpdateNotifier(
+            repository: _UpdatePolicyRepo(),
+            dismissals: _NoDismissals(),
+            readBuildInfo: () async => const AppBuildInfo(
+                packageName: kUpdateTargetPackage,
+                buildNumber: '1',
+                platform: TargetPlatform.android));
+        await update.check();
+        await _pump(tester, system, const UpdateRequiredScreen(), overrides: [
+          appUpdateProvider.overrideWith((ref) => update),
+          updateNoticeProvider.overrideWith((ref) => 'app_update_store_failed'),
+        ]);
+        expect(find.byKey(UpdateRequiredScreen.noticeKey), findsOneWidget);
+        expect(find.byKey(UpdateRequiredScreen.recheckKey), findsOneWidget);
       });
 
       testWidgets('마이크레 — 개체 없음·조회 실패', (tester) async {

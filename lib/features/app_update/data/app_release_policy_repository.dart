@@ -41,6 +41,6 @@ class SupabaseAppReleasePolicyRepository implements AppReleasePolicyRepository {
   }
 }
 
-final appReleasePolicyRepositoryProvider =
-    Provider<AppReleasePolicyRepository>((ref) =>
+final appReleasePolicyRepositoryProvider = Provider<AppReleasePolicyRepository>(
+    (ref) =>
         SupabaseAppReleasePolicyRepository(ref.watch(supabaseClientProvider)));

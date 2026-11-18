@@ -12,7 +12,10 @@ import 'package:vivanaut/features/app_update/presentation/app_update_providers.d
 const _store = 'https://play.google.com/store/apps/details?id=com.vivanaut.app';
 
 UpdatePolicy policy({int min = 0, int latest = 0}) => UpdatePolicy(
-    minBuild: min, latestBuild: latest, latestVersion: '0.182.0', storeUrl: _store);
+    minBuild: min,
+    latestBuild: latest,
+    latestVersion: '0.182.0',
+    storeUrl: _store);
 
 class FakePolicyRepository implements AppReleasePolicyRepository {
   UpdatePolicy? next;

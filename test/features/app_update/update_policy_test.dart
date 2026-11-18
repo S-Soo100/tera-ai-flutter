@@ -38,7 +38,8 @@ void main() {
     test('store_url이 null·빈 값·주소 아님 → 강제 기준이어도 안내 없음', () {
       expect(decideUpdate('1', _policy(url: null), null), AppUpdateStatus.none);
       expect(decideUpdate('1', _policy(url: ''), null), AppUpdateStatus.none);
-      expect(decideUpdate('1', _policy(url: '   '), null), AppUpdateStatus.none);
+      expect(
+          decideUpdate('1', _policy(url: '   '), null), AppUpdateStatus.none);
       expect(decideUpdate('1', _policy(url: 'not a url'), null),
           AppUpdateStatus.none);
     });

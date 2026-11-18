@@ -35,5 +35,5 @@ class HiveUpdateDismissalStore implements UpdateDismissalStore {
   }
 }
 
-final updateDismissalStoreProvider = Provider<UpdateDismissalStore>(
-    (ref) => const HiveUpdateDismissalStore());
+final updateDismissalStoreProvider =
+    Provider<UpdateDismissalStore>((ref) => const HiveUpdateDismissalStore());
