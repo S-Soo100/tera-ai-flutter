@@ -152,6 +152,26 @@ void main() {
     expect(opened, ['/home/routines', '/home']);
   });
 
+  test('a tap arriving while a dropped one was loading still runs (review 11-18)',
+      () async {
+    final gate = Completer<Iterable<String>>();
+    devices = () => gate.future;
+    router.hold(_schedule);
+    final first = router.flush();
+    await Future<void>.delayed(Duration.zero);
+    // 처리 중 계정 전환 → 첫 탭은 버려진다. 그 사이 새 계정 기기의 팬 알림 탭.
+    user = 'b';
+    const fan = DeviceNotificationTarget(DeviceNotificationKind.fan, _mine);
+    router.hold(fan);
+    devices = () async => const [_mine];
+    gate.complete(const [_mine]);
+    await first;
+    expect(router.hasPending, isFalse,
+        reason: '버려진 처리 뒤에도 기다리던 탭을 이어서 처리해야 한다');
+    expect(opened, ['/home']);
+    expect(selected, [_mine], reason: '새 계정 기준으로 한 번만 선택');
+  });
+
   test('the newest held tap wins', () async {
     user = null;
     router.hold(_schedule);
