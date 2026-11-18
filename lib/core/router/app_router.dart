@@ -181,8 +181,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 /// 1. 스플래시는 앱 시작 시에만 — 간섭 없음(강제여도 시작 흐름은 그대로).
 /// 2. 강제 업데이트면 그 밖의 모든 경로 → [kUpdateRequiredPath]. 푸시 탭 이동·
 ///    딥링크도 여기서 막힌다. 업데이트 화면 자신은 그대로(루프 없음).
-/// 3. 강제가 아닌데 업데이트 화면이면 스플래시로 — 스플래시가 로그인 여부를
-///    다시 보고 홈·로그인으로 보낸다(스플래시는 1번이라 다시 돌아오지 않는다).
+/// 3. 강제가 아닌데 업데이트 화면이면 로그인 여부대로 홈·로그인으로. 스플래시로
+///    보내지 않는다 — 스플래시는 "앱 시작" 로직(자동 로그인 끔 → 로그아웃)을
+///    다시 돌려 실행 중 해제에 쓰던 세션을 끊는다(코드 리뷰 2026-11-18).
 /// 4. 그 밖은 기존 인증 규칙.
 String? resolveAppRedirect(String path,
     {required bool authenticated, required bool updateRequired}) {
@@ -190,7 +191,7 @@ String? resolveAppRedirect(String path,
   if (updateRequired) {
     return path == kUpdateRequiredPath ? null : kUpdateRequiredPath;
   }
-  if (path == kUpdateRequiredPath) return '/splash';
+  if (path == kUpdateRequiredPath) return authenticated ? '/home' : '/login';
 
   final isPublic = kPublicPaths.any(
     (p) => path == p || path.startsWith('$p/'),
