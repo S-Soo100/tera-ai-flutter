@@ -86,11 +86,19 @@ class UpdateRequiredScreen extends ConsumerWidget {
                 onPressed: () => _openStore(context, ref),
               ),
               const SizedBox(height: 8),
-              ManagementButton(
+              // 글자 버튼 — 회색 채움 버튼(ManagementButton grey)은 비활성과
+              // 똑같아 보여 누를 수 없는 것처럼 읽혔다(2026-11-18 시뮬 확인).
+              // 로그인 "비밀번호를 잊으셨나요?"와 같은 문법.
+              TextButton(
                 key: recheckKey,
-                grey: true,
-                label: 'app_update_recheck'.tr(),
                 onPressed: rechecking ? null : () => _recheck(context, ref),
+                style: TextButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 44),
+                    foregroundColor: glass.textSecondary,
+                    disabledForegroundColor: glass.border,
+                    textStyle: managementStyle(context,
+                        size: 16, weight: FontWeight.w500)),
+                child: Text('app_update_recheck'.tr()),
               ),
             ],
           ),
