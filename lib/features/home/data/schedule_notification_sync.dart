@@ -7,8 +7,8 @@
 ///
 /// 동기화 시점은 `SchedulesNotifier`(목록 로드·모든 수정 경로). 전량
 /// 지우고 다시 걸어 삭제·수정·토글이 자연히 반영된다. 우리 것만 지우도록
-/// payload에 `sched:{deviceId}` 마커를 심는다 — 팬 타이머 알림(payload 없음)은
-/// 건드리지 않는다.
+/// payload에 `sched:{deviceId}` 마커를 심는다 — 팬 타이머 알림(`fan:{deviceId}`,
+/// 2026-11-16 전에는 payload 없음)은 건드리지 않는다.
 ///
 /// **알림 실패가 예약 CRUD를 막으면 안 된다** — 전부 삼키고 debugPrint만.
 library;
