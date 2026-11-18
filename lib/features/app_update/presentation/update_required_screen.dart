@@ -117,11 +117,15 @@ class UpdateRequiredScreen extends ConsumerWidget {
   Future<void> _recheck(BuildContext context, WidgetRef ref) async {
     ref.read(updateNoticeProvider.notifier).state = null;
     ref.read(updateRecheckingProvider.notifier).state = true;
-    await ref.read(appUpdateProvider.notifier).check();
+    final fetched = await ref.read(appUpdateProvider.notifier).check();
     // 풀렸으면 redirect가 이미 이 화면을 내렸다.
     if (!context.mounted) return;
     ref.read(updateRecheckingProvider.notifier).state = false;
-    if (ref.read(appUpdateProvider).isRequired) {
+    // 조회 실패는 "여전히 강제"가 아니다 — 기준이 이미 되돌려졌어도 오프라인
+    // 사용자는 알 수 없으니 연결 확인을 안내한다.
+    if (!fetched) {
+      ref.read(updateNoticeProvider.notifier).state = 'app_update_check_failed';
+    } else if (ref.read(appUpdateProvider).isRequired) {
       ref.read(updateNoticeProvider.notifier).state =
           'app_update_still_required';
     }

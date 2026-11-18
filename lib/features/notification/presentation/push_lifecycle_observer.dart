@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/router_top_path.dart';
+import '../../app_update/presentation/app_update_providers.dart';
 import '../../../core/router/tab_branches.dart';
 import '../../../shared/services/local_notifications.dart';
 import '../../auth/presentation/auth_providers.dart';
@@ -90,7 +91,7 @@ class _PushLifecycleObserverState extends ConsumerState<PushLifecycleObserver> {
           core.onTap = _localTap;
           _tapAttached = true;
           try {
-            await core.ensureInitialized();
+            await core.ensurePluginReady();
             if (!mounted) return;
             await core.deliverInitialTap();
           } catch (_) {
@@ -147,7 +148,12 @@ class _PushLifecycleObserverState extends ConsumerState<PushLifecycleObserver> {
   /// 예약 화면은 셸 밖 최상위 라우트라 서버 푸시 이동과 같이 `push` — 뒤로
   /// 가면 보던 화면으로 돌아간다.
   void _openLocal(String route) {
-    if (!mounted || _topPath == route) return;
+    // 처리 중(기기 목록 대기) 강제 업데이트로 바뀌었을 수 있다.
+    if (!mounted ||
+        !shouldOpenFromNotification(widget.router, route,
+            updateRequired: ref.read(updateRequiredProvider))) {
+      return;
+    }
     if (kHomeTabPaths.contains(route)) {
       widget.router.go(route);
     } else {

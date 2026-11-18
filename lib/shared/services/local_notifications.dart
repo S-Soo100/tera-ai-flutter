@@ -21,27 +21,45 @@ class LocalNotifications {
 
   final FlutterLocalNotificationsPlugin plugin =
       FlutterLocalNotificationsPlugin();
-  bool _initialized = false;
-  Future<void>? _initializing;
+  bool _pluginReady = false;
+  Future<void>? _pluginInitializing;
+  bool _timezoneReady = false;
+  Future<void>? _timezoneLoading;
   bool _initialTapDelivered = false;
   void Function(String payload)? onTap;
 
   /// 이 폰에 걸어 둔 로컬 알림(예약 시각·팬 타이머)을 모두 내린다. 로그아웃
   /// 뒤에도 이전 계정 기기의 예약 알림이 매일 울렸다(2026-09-25 점검).
   Future<void> cancelAll() async {
-    await ensureInitialized();
+    await ensurePluginReady();
     await plugin.cancelAll();
   }
 
-  /// 지연 초기화 — 알림을 처음 쓸 때 한 번. 앱 기동을 안 건드리고, 알림을 한
-  /// 번도 안 쓰는 사용자는 timezone DB 파싱 비용도 안 낸다.
-  Future<void> ensureInitialized() {
-    if (_initialized) return Future.value();
-    return _initializing ??=
-        _initialize().whenComplete(() => _initializing = null);
+  /// **예약용** 초기화 — 플러그인 + 시간대 DB. 시각 예약(`zonedSchedule`)과
+  /// `tz.local`을 쓰는 곳은 이것을 부른다. 알림을 한 번도 예약하지 않는
+  /// 사용자는 시간대 DB 파싱 비용을 내지 않는다.
+  Future<void> ensureInitialized() async {
+    await ensurePluginReady();
+    await _ensureTimezone();
   }
 
-  Future<void> _initialize() async {
+  /// 플러그인만 — 알림 탭 콜백·앱 실행 정보·즉시 표시·전체 취소용. 앱이
+  /// 백그라운드에 있다가 알림을 누르면 이 프로세스에서 초기화된 적이 있어야
+  /// 탭이 전달되므로 앱 시작 때 부른다(`PushLifecycleObserver`). 시간대 DB는
+  /// 읽지 않는다(코드 리뷰 2026-11-18 — 시작 비용).
+  Future<void> ensurePluginReady() {
+    if (_pluginReady) return Future.value();
+    return _pluginInitializing ??=
+        _initializePlugin().whenComplete(() => _pluginInitializing = null);
+  }
+
+  Future<void> _ensureTimezone() {
+    if (_timezoneReady) return Future.value();
+    return _timezoneLoading ??=
+        _loadTimezone().whenComplete(() => _timezoneLoading = null);
+  }
+
+  Future<void> _loadTimezone() async {
     tzdata.initializeTimeZones();
     try {
       // 시각 반복 알림(daily 09:15 등)은 tz.local의 벽시계 성분으로 반복된다
@@ -53,6 +71,10 @@ class LocalNotifications {
     } catch (e) {
       debugPrint('[local-notif] timezone detect failed, using default: $e');
     }
+    _timezoneReady = true;
+  }
+
+  Future<void> _initializePlugin() async {
     await plugin.initialize(
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -83,12 +105,12 @@ class LocalNotifications {
       description: 'push_channel_safety_description'.tr(),
       importance: Importance.high,
     ));
-    _initialized = true;
+    _pluginReady = true;
   }
 
   Future<void> deliverInitialTap() async {
     if (_initialTapDelivered || onTap == null) return;
-    await ensureInitialized();
+    await ensurePluginReady();
     final launch = await plugin.getNotificationAppLaunchDetails();
     if (_initialTapDelivered) return;
     _initialTapDelivered = true;
@@ -106,7 +128,7 @@ class LocalNotifications {
       required String body,
       required bool safety,
       required String payload}) async {
-    await ensureInitialized();
+    await ensurePluginReady();
     await plugin.show(
       id: id,
       title: title,

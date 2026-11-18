@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/router/router_top_path.dart';
 import '../../../core/supabase/supabase_provider.dart';
+import '../../app_update/presentation/app_update_providers.dart';
 import '../../../shared/services/local_notifications.dart';
 import '../../home/data/home_selection_store.dart';
 import '../../home/presentation/home_set_providers.dart';
@@ -84,9 +85,10 @@ final pushLifecycleControllerProvider =
             ref.read(selectedHomeDeviceIdProvider.notifier).state = id),
     navigate: (route) {
       final router = ref.read(routerProvider);
-      // 주소가 아니라 실제 맨 위 화면으로 본다 — push한 화면 위에서 같은
-      // 화면 푸시를 또 누르면 한 장 더 쌓였다.
-      if (routerTopPath(router) != route) {
+      // 강제 업데이트 중이면 옮기지 않고, 이미 그 화면(실제 맨 위)이면 다시
+      // 열지 않는다 — 주소는 push한 화면을 반영하지 않는다.
+      if (shouldOpenFromNotification(router, route,
+          updateRequired: ref.read(updateRequiredProvider))) {
         unawaited(router.push<void>(route));
       }
     },

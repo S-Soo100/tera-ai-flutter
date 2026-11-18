@@ -114,11 +114,16 @@ void main() {
     expect(find.text('app_update_still_required'), findsNothing);
   });
 
-  testWidgets('[다시 확인]이 실패하면 강제는 그대로', (tester) async {
+  testWidgets('[다시 확인]이 실패하면 강제는 그대로, 안내는 연결 확인(여전히 강제가 아님)',
+      (tester) async {
     await pump(tester);
     repo.next = null;
     await tester.tap(find.byKey(UpdateRequiredScreen.recheckKey));
     await tester.pumpAndSettle();
     expect(container.read(appUpdateProvider).isRequired, isTrue);
+    expect(find.text('app_update_check_failed'), findsOneWidget);
+    expect(find.text('app_update_still_required'), findsNothing,
+        reason: '조회 실패를 "아직 업데이트가 필요해요"로 말하면 기준을 되돌린 뒤에도 '
+            '오프라인 사용자는 스토어로 간다');
   });
 }

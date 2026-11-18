@@ -37,4 +37,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(routerTopPath(router), '/community-player/$id');
   });
+
+  testWidgets('알림 이동: 강제 업데이트 중이면 이동하지 않는다(코드 리뷰 2026-11-18)',
+      (tester) async {
+    await pump(tester);
+    expect(shouldOpenFromNotification(router, '/env-detail',
+            updateRequired: true),
+        isFalse,
+        reason: 'push가 redirect된 업데이트 화면을 한 장 더 쌓는다');
+    expect(shouldOpenFromNotification(router, '/env-detail',
+            updateRequired: false),
+        isTrue);
+  });
+
+  testWidgets('알림 이동: 이미 맨 위 화면이면 다시 열지 않는다', (tester) async {
+    await pump(tester);
+    router.push('/env-detail');
+    await tester.pumpAndSettle();
+    expect(shouldOpenFromNotification(router, '/env-detail',
+            updateRequired: false),
+        isFalse);
+    expect(shouldOpenFromNotification(router, '/home', updateRequired: false),
+        isTrue);
+  });
 }

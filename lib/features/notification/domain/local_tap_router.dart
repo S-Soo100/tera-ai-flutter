@@ -61,19 +61,25 @@ class LocalTapRouter {
     _pending = null;
     _busy = true;
     try {
-      bool stillValid() => !_disposed && _currentUserId() == userId;
-      final selected = await selectNotificationDevice(target.deviceId,
-          myDeviceIds: _myDeviceIds,
-          select: (id) {
-            if (stillValid()) _select(id);
-          },
-          timeout: _timeout);
-      if (!stillValid()) return;
-      _open(target.routeAfterSelect(selected: selected));
+      await _process(target, userId);
     } finally {
       _busy = false;
     }
+    // 처리하던 탭을 버렸어도(계정 전환) 그사이 들어온 탭은 이어서 본다 —
+    // 처리 본문에서 return하면 여기를 건너뛰었다(코드 리뷰 2026-11-18).
     if (_pending != null) await flush();
+  }
+
+  Future<void> _process(DeviceNotificationTarget target, String userId) async {
+    bool stillValid() => !_disposed && _currentUserId() == userId;
+    final selected = await selectNotificationDevice(target.deviceId,
+        myDeviceIds: _myDeviceIds,
+        select: (id) {
+          if (stillValid()) _select(id);
+        },
+        timeout: _timeout);
+    if (!stillValid()) return;
+    _open(target.routeAfterSelect(selected: selected));
   }
 
   void dispose() {

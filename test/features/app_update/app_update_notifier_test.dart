@@ -83,6 +83,17 @@ void main() {
         reason: '실패는 성공 확인 시각을 바꾸지 않는다');
   });
 
+  test('check는 기준을 읽었는지 돌려준다 — 화면이 실패와 "여전히 강제"를 구분', () async {
+    final n = make();
+    repo.next = policy(min: 531, latest: 540);
+    expect(await at(n.check), isTrue);
+    repo.next = null;
+    expect(await at(n.check), isFalse);
+    packageName = 'com.vivanaut.beta';
+    expect(await at(make().check), isTrue,
+        reason: '안내 대상이 아닌 번들은 실패가 아니다(확인할 것이 없음)');
+  });
+
   test('처음부터 조회 실패면 안내 없음', () async {
     final n = make();
     repo.next = null;

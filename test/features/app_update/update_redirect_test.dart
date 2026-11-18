@@ -78,13 +78,17 @@ void main() {
           isNull);
     });
 
-    test('풀리면 업데이트 화면에서 스플래시(원래 흐름)로', () {
-      for (final authed in [true, false]) {
-        expect(
-            resolveAppRedirect(kUpdateRequiredPath,
-                authenticated: authed, updateRequired: false),
-            '/splash');
-      }
+    test('풀리면 스플래시를 다시 거치지 않고 로그인 여부대로 홈·로그인으로', () {
+      // 스플래시는 "앱 시작" 로직(자동 로그인 끔 → 로그아웃)을 다시 돌린다 —
+      // 실행 중 해제에 거치면 쓰던 세션이 끊긴다(코드 리뷰 2026-11-18).
+      expect(
+          resolveAppRedirect(kUpdateRequiredPath,
+              authenticated: true, updateRequired: false),
+          '/home');
+      expect(
+          resolveAppRedirect(kUpdateRequiredPath,
+              authenticated: false, updateRequired: false),
+          '/login');
     });
 
     test('강제가 아니면 기존 규칙 그대로', () {
@@ -176,7 +180,7 @@ void main() {
       await finish(tester);
     });
 
-    testWidgets('풀리면 원래 흐름(스플래시)으로 — redirect 루프 없음', (tester) async {
+    testWidgets('풀리면 원래 흐름(로그인 상태라 홈)으로 — redirect 루프 없음', (tester) async {
       await pumpApp(tester);
       router.go('/home');
       await tester.pumpAndSettle();
@@ -186,7 +190,7 @@ void main() {
       refresh.notify();
       await tester.pump();
       await tester.pump();
-      expect(_location(router), '/splash');
+      expect(_location(router), '/home');
       expect(router.canPop(), isFalse);
       await finish(tester);
     });
@@ -234,7 +238,7 @@ void main() {
       required = false;
       refresh.notify();
       await tester.pumpAndSettle();
-      expect(_location(router), '/splash');
+      expect(_location(router), '/home');
     });
   });
 }
