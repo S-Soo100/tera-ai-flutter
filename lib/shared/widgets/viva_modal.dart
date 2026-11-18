@@ -15,10 +15,11 @@ import 'word_joiner_span.dart';
 /// [detail]은 문구 아래 보조 설명(Figma 밖, 2026-09-30 시청 기기 전환에서 추가 —
 /// 제목만으론 결과를 알 수 없을 때).
 ///
-/// [dismissOn]이 끝나면 창이 아직 떠 있을 때 스스로 닫힌다(false) — 창을 띄운
+/// [dismissOn]이 끝나면 창이 아직 떠 있을 때 스스로 닫힌다(false·dismissed) — 창을 띄운
 /// 이유가 사라졌을 때(예: 녹화 중단 확인 중 녹화가 2분에 끝남, 2026-10-21).
 ///
-/// 돌려주는 값: 확인 true, 취소·바깥 탭·자동 닫힘 false.
+/// 돌려주는 값: 확인 true, 취소·바깥 탭·자동 닫힘 false. 취소 버튼을 직접
+/// 눌렀는지 구분해야 하면 [showVivaModalChoice]를 쓴다.
 ///
 /// 뒤 덮개는 다른 대화상자와 같은 테마 값([GlassPalette.modalBarrier] →
 /// `DialogThemeData.barrierColor`)을 따른다 — 라이트는 덮지 않는다(Figma).
@@ -31,14 +32,50 @@ Future<bool> showVivaModal(
   Color? confirmColor,
   Key? confirmKey,
   Future<void>? dismissOn,
+}) async =>
+    await showVivaModalChoice(context,
+        message: message,
+        detail: detail,
+        confirmLabel: confirmLabel,
+        cancelLabel: cancelLabel,
+        confirmColor: confirmColor,
+        confirmKey: confirmKey,
+        dismissOn: dismissOn) ==
+    VivaModalResult.confirm;
+
+/// [showVivaModalChoice]의 결과.
+enum VivaModalResult {
+  /// 확인 버튼.
+  confirm,
+
+  /// 취소 버튼을 **직접** 눌렀다.
+  cancel,
+
+  /// 바깥 탭·뒤로 가기·[dismissOn] 자동 닫힘·화면 전환으로 닫혔다.
+  dismissed,
+}
+
+/// [showVivaModal]과 같은 창이고, 취소 버튼 직접 탭([VivaModalResult.cancel])과
+/// 그 밖의 닫힘([VivaModalResult.dismissed])을 구분해 돌려준다(2026-11-16 —
+/// 권장 업데이트 창은 [나중에]를 직접 눌렀을 때만 기억한다).
+Future<VivaModalResult> showVivaModalChoice(
+  BuildContext context, {
+  required String message,
+  String? detail,
+  String? confirmLabel,
+  String? cancelLabel,
+  Color? confirmColor,
+  Key? confirmKey,
+  Future<void>? dismissOn,
 }) async {
-  final ok = await showDialog<bool>(
+  final result = await showDialog<VivaModalResult>(
     context: context,
     useSafeArea: false,
     builder: (ctx) {
       final glass = ctx.glass;
       final two = cancelLabel != null;
-      Widget button(String label, Color color, bool value, Key? key) =>
+      Widget button(
+              String label, Color color, VivaModalResult value, Key? key) =>
           SizedBox(
               height: 44,
               child: FilledButton(
@@ -96,7 +133,7 @@ Future<bool> showVivaModal(
                               button(
                                   confirmLabel ?? 'common_confirm'.tr(),
                                   confirmColor ?? glass.textPrimary,
-                                  true,
+                                  VivaModalResult.confirm,
                                   confirmKey ?? const Key('viva_modal_confirm'))
                             else
                               Row(children: [
@@ -104,14 +141,14 @@ Future<bool> showVivaModal(
                                     child: button(
                                         cancelLabel,
                                         glass.textPrimary,
-                                        false,
+                                        VivaModalResult.cancel,
                                         const Key('viva_modal_cancel'))),
                                 const SizedBox(width: 13),
                                 Expanded(
                                     child: button(
                                         confirmLabel ?? 'common_confirm'.tr(),
                                         confirmColor ?? glass.navSelected,
-                                        true,
+                                        VivaModalResult.confirm,
                                         confirmKey ??
                                             const Key('viva_modal_confirm'))),
                               ]),
@@ -121,7 +158,7 @@ Future<bool> showVivaModal(
           : _DismissOn(signal: dismissOn, child: dialog);
     },
   );
-  return ok == true;
+  return result ?? VivaModalResult.dismissed;
 }
 
 /// [signal]이 끝나면 자기 라우트를 걷는다(이미 닫혔으면 아무것도 안 함).
@@ -143,7 +180,7 @@ class _DismissOnState extends State<_DismissOn> {
       final route = ModalRoute.of(context);
       if (route == null || !route.isActive) return;
       if (route.isCurrent) {
-        Navigator.of(context).pop(false);
+        Navigator.of(context).pop();
       } else {
         Navigator.of(context).removeRoute(route);
       }
