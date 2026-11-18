@@ -10,6 +10,7 @@ import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/notification/presentation/push_lifecycle_observer.dart';
 import 'package:vivanaut/features/notification/presentation/push_providers.dart';
+import 'package:vivanaut/features/app_update/presentation/app_update_providers.dart';
 import 'package:vivanaut/shared/services/local_notifications.dart';
 import 'notification_repository_test.dart';
 import 'push_lifecycle_controller_test.dart';
@@ -46,6 +47,7 @@ Future<_Harness> _pump(
   String initial = '/home',
   Object? launchPayload,
   Future<Iterable<String>> Function()? devices,
+  bool updateRequired = false,
 }) async {
   AndroidFlutterLocalNotificationsPlugin.registerWith();
   final messenger = tester.binding.defaultBinaryMessenger;
@@ -79,6 +81,7 @@ Future<_Harness> _pump(
   final container = ProviderContainer(overrides: [
     currentUserProvider.overrideWith((ref) => ref.watch(auth)),
     pushMessagingProvider.overrideWithValue(messaging),
+    updateRequiredProvider.overrideWith((ref) => updateRequired),
     // FCM이 꺼져 있으면 컨트롤러(Supabase·Firebase 배선)를 만들지 않아야 한다.
     pushLifecycleControllerProvider
         .overrideWith((ref) => throw StateError('controller must not be read')),
@@ -223,5 +226,14 @@ void main() {
     h.tap('garbage');
     await tester.pumpAndSettle();
     expect(h.path, '/crecam');
+  });
+
+  testWidgets(
+      'forced update in effect when the tap is processed: no navigation '
+      '(review 11-18 — push would stack the update page)', (tester) async {
+    final h = await _pump(tester, initial: '/env-detail', updateRequired: true);
+    h.tap('fan:$_mine');
+    await tester.pumpAndSettle();
+    expect(h.path, '/env-detail');
   });
 }

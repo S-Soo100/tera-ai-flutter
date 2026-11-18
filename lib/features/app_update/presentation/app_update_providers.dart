@@ -103,6 +103,11 @@ final appUpdateProvider =
               readBuildInfo: () => ref.read(appBuildInfoProvider.future),
             ));
 
+/// 지금 강제 업데이트 중인가 — 알림 이동처럼 강제 여부만 보면 되는 곳이 읽는다
+/// (전체 상태·조회 저장소에 묶이지 않게, 테스트는 이것만 덮어 쓴다).
+final updateRequiredProvider =
+    Provider<bool>((ref) => ref.watch(appUpdateProvider).isRequired);
+
 /// 업데이트 화면의 [다시 확인]이 도는 중.
 final updateRecheckingProvider =
     StateProvider.autoDispose<bool>((ref) => false);
