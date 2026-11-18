@@ -90,7 +90,7 @@ class _PushLifecycleObserverState extends ConsumerState<PushLifecycleObserver> {
           core.onTap = _localTap;
           _tapAttached = true;
           try {
-            await core.ensureInitialized();
+            await core.ensurePluginReady();
             if (!mounted) return;
             await core.deliverInitialTap();
           } catch (_) {
