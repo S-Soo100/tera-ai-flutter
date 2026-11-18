@@ -1565,6 +1565,7 @@
   "app_update_action": "업데이트",
   "app_update_recheck": "다시 확인",
   "app_update_still_required": "아직 업데이트가 필요해요. 스토어에서 업데이트한 뒤 다시 확인해 주세요.",
+  "app_update_check_failed": "확인하지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.",
   "app_update_store_failed": "스토어를 열지 못했어요. 스토어 앱에서 비바나트를 검색해 주세요.",
   "app_update_recommended_title": "새 버전이 나왔어요",
   "app_update_later": "나중에"

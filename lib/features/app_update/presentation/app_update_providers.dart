@@ -22,7 +22,9 @@ final appBuildInfoProvider = FutureProvider<AppBuildInfo>((ref) async {
 
 /// 업데이트 안내 상태(계획 §1-C·D, §2.1).
 ///
-/// - [check]: 앱 시작 1회·[다시 확인]. 동시에 불리면 조회는 한 번.
+/// - [check]: 앱 시작 1회·[다시 확인]. 동시에 불리면 조회는 한 번. 기준을
+///   읽었으면(또는 안내 대상이 아니면) true, 조회에 실패하면 false — 화면이
+///   "인터넷 확인"과 "여전히 강제"를 구분한다.
 /// - [checkOnResume]: 강제 상태면 매번, 아니면 마지막 성공 확인에서
 ///   [kUpdateRecheckInterval]이 지났을 때만.
 /// - 조회 실패는 이전 상태를 그대로 둔다(강제를 실패로 풀지 않고, 오프라인에
@@ -42,9 +44,9 @@ class AppUpdateNotifier extends StateNotifier<AppUpdateState> {
   final Future<AppBuildInfo> Function() _readBuildInfo;
 
   AppBuildInfo? _build;
-  Future<void>? _inFlight;
+  Future<bool>? _inFlight;
 
-  Future<void> check() =>
+  Future<bool> check() =>
       _inFlight ??= _check().whenComplete(() => _inFlight = null);
 
   Future<void> checkOnResume() {
@@ -67,18 +69,19 @@ class AppUpdateNotifier extends StateNotifier<AppUpdateState> {
     state = state.copyWith(status: AppUpdateStatus.none);
   }
 
-  Future<void> _check() async {
+  Future<bool> _check() async {
     final build = await _buildInfo();
-    if (build == null) return;
+    if (build == null) return false;
     final platform = updatePlatformFor(
         packageName: build.packageName, platform: build.platform);
-    if (platform == null) return; // 베타 번들·그 밖의 플랫폼 — 안내 없음.
+    if (platform == null) return true; // 베타 번들·그 밖의 플랫폼 — 안내 없음.
     final policy = await _repository.fetch(platform);
-    if (!mounted || policy == null) return;
+    if (!mounted || policy == null) return false;
     state = AppUpdateState(
         status: decideUpdate(build.buildNumber, policy, _dismissals.load()),
         policy: policy,
         lastCheckedAt: clock.now());
+    return true;
   }
 
   Future<AppBuildInfo?> _buildInfo() async {
