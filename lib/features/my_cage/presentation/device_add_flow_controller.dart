@@ -268,6 +268,9 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   /// 미리 체크를 이미 한 행 id — 유저가 풀면 다시 고르지 않는다.
   final Set<String> _autoPicked = {};
 
+  /// [다시 찾기]로 다시 고를 실패·미확인 기기의 행 id — 미리 체크 대상에 더한다.
+  final Set<String> _retryRowIds = {};
+
   /// 마지막으로 남긴 매칭 로그(BLE 주소 → `row|via`) — 바뀔 때만 찍는다.
   final Map<String, String> _matchLog = {};
 
@@ -996,8 +999,16 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       for (final e in state.selected.entries)
         if (owned.containsKey(e.key)) e.key: e.value
     };
+    // 골라 둔 기기가 목록에서 빠지면(광고가 잠깐 끊김) 다시 잡혔을 때 미리
+    // 체크할 수 있게 한다. 유저가 직접 푼 것은 select()로 오므로 여기 없다.
+    for (final key in state.selected.keys) {
+      if (owned.containsKey(key)) continue;
+      if (state.owned[key]?.device.id case final rowId?) {
+        _autoPicked.remove(rowId);
+      }
+    }
     if (state.step == DeviceAddStep.scan) {
-      for (final rowId in _network!.preferredIds) {
+      for (final rowId in {..._network!.preferredIds, ..._retryRowIds}) {
         if (_autoPicked.contains(rowId)) continue;
         for (final c in candidates) {
           if (owned[c.physicalId]!.device.id != rowId) continue;
@@ -1163,7 +1174,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         continue;
       }
       final rowId = r.registeredId ?? state.owned[e.key]?.device.id;
-      if (rowId != null) _autoPicked.remove(rowId);
+      if (rowId != null) {
+        _autoPicked.remove(rowId);
+        // 재검색에서 늦게 다시 잡혀도 미리 체크한다(지금 목록에 없을 수 있다).
+        _retryRowIds.add(rowId);
+      }
       final candidate =
           state.candidates.where((c) => c.physicalId == e.key).firstOrNull;
       if (candidate != null) again[e.key] = candidate;

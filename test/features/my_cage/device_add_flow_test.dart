@@ -1280,6 +1280,23 @@ void main() {
           reason: '연결된 기기는 다시 고르지 않는다');
     });
 
+    test('[다시 찾기] 뒤 목록에서 사라졌다 다시 잡힌 실패 기기도 다시 체크', () async {
+      await found([cageA, cageB]);
+      controller.select(cageA);
+      controller.select(cageB);
+      await controller.connect('home', 'password');
+      rows = [d1(seen: t0.add(const Duration(seconds: 30))), d2()];
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await controller.continueAdding();
+      // 재검색 첫 결과엔 사육장 B가 없다(아직 광고 전).
+      gateway.events.add([cageA]);
+      await settle();
+      expect(controller.state.selected, isEmpty);
+      gateway.events.add([cageA, cageB]);
+      await settle();
+      expect(controller.state.selected.keys, {cageB.physicalId});
+    });
+
     test('dispose 뒤 응답 무시', () async {
       final late = Completer<List<OwnedNetworkDevice>>();
       loadRows = () => late.future;
