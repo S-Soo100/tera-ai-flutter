@@ -1,3 +1,4 @@
+import 'network_manage.dart';
 import 'pair_target_kind.dart';
 import 'wifi_access_point.dart';
 
@@ -28,6 +29,18 @@ class WifiChangeTarget {
   final String id;
   final String name;
 }
+
+/// 네트워크 관리로 열었을 때(2026-11-19, Figma 1913:6462) — 등록 없이 근처의
+/// 이 계정 기기 여러 대에 Wi-Fi만 보낸다. [preferredIds]는 미리 체크할 행 id
+/// (`devices.id`/`cameras.id`) — 신호 약함 모달·기기 상세·라이브 오프라인에서 연
+/// 그 기기. 헤더 메뉴에서 열면 비어 있다.
+class NetworkManageRequest {
+  const NetworkManageRequest({this.preferredIds = const {}});
+  final Set<String> preferredIds;
+}
+
+/// 네트워크 관리 결과 화면의 갈래 — 전부 붙었으면 완료 화면, 아니면 기기별 결과.
+enum NetworkResultsState { checking, allConnected, someFailed }
 
 /// 서버에 남아 있는 이 계정의 기기 행 — 해제·타 계정이면 조회 결과가 null이다.
 /// [isOnline]은 Wi-Fi 변경 판정에 쓴다: 대상이 원래 Wi-Fi로 온라인이면 새
@@ -98,7 +111,9 @@ enum DeviceRegistrationIssue { legacyFirmware, pairFailed, noPairReply }
 /// 블루투스가 안 붙어도 "비밀번호를 다시 확인해 주세요"가 떴다.
 /// [ble]: 기기를 못 찾았거나 블루투스 연결·응답이 끊겼다(멀다·광고 끝남).
 /// [session]: 로그인 토큰을 못 얻었다. [rejected]: 기기가 이름·토큰을 거절했다.
-enum DeviceProvisionFailure { ble, session, rejected }
+/// [notOwned]: 네트워크 관리에서 보내기 직전 그 행이 해제·대체됐다(보내지 않음).
+/// [notChecked]: 네트워크 관리에서 보내기 직전 재확인 조회가 실패했다(보내지 않음).
+enum DeviceProvisionFailure { ble, session, rejected, notOwned, notChecked }
 
 class DeviceAddCandidate {
   const DeviceAddCandidate(
@@ -205,12 +220,29 @@ class DeviceAddState {
       this.groupError = false,
       this.registered = const {},
       this.matched = const {},
-      this.targetGone = false});
+      this.targetGone = false,
+      this.networkManage = false,
+      this.owned = const {},
+      this.ownedLoadFailed = false,
+      this.connectingIndex = 0,
+      this.connectingTotal = 0});
   final DeviceAddStep step;
   final List<DeviceAddCandidate> candidates;
-  final Map<PairTargetKind, DeviceAddCandidate> selected;
+
+  /// 고른 기기 — 키는 BLE 주소(`physicalId`). 기기 추가는 종류별 1대만 둔다.
+  final Map<String, DeviceAddCandidate> selected;
   final List<WifiAccessPoint> networks;
-  final Map<PairTargetKind, DeviceAddResult> results;
+
+  /// 기기별 결과 — 키는 `candidate.physicalId`. 기기 추가는 종류별 1개만 둔다.
+  final Map<String, DeviceAddResult> results;
+
+  /// 그 종류로 고른 첫 기기(기기 추가 화면·판정용).
+  DeviceAddCandidate? selectedOf(PairTargetKind kind) =>
+      selected.values.where((c) => c.kind == kind).firstOrNull;
+
+  /// 그 종류의 첫 결과(기기 추가 화면·자동 그룹용).
+  DeviceAddResult? resultOf(PairTargetKind kind) =>
+      results.values.where((r) => r.candidate.kind == kind).firstOrNull;
   final bool busy, remember, showPassword, groupError;
   final String ssid;
   final String? errorKey, activePhysicalId, groupId;
@@ -225,12 +257,40 @@ class DeviceAddState {
   /// Wi-Fi 바꾸기 대상 행이 해제됐거나 이 계정 것이 아니다 — Wi-Fi만 붙여도
   /// 목록에 안 보이니 진행하지 않는다. (errorKey는 다음 갱신에 지워진다.)
   final bool targetGone;
+
+  /// 네트워크 관리 모드(2026-11-19) — 같은 종류 여러 대, 등록 없이 Wi-Fi만.
+  final bool networkManage;
+
+  /// 네트워크 관리: 근처 BLE 후보(physicalId) → 알아본 이 계정 기기 행.
+  final Map<String, NetworkMatch> owned;
+
+  /// 네트워크 관리: 이 계정 기기 목록을 못 읽었다 — [다시 스캔]이 다시 읽는다.
+  final bool ownedLoadFailed;
+
+  /// 네트워크 관리 연결 중 n/N(1부터). 0이면 표시하지 않는다.
+  final int connectingIndex, connectingTotal;
+
+  /// 네트워크 관리 결과 갈래. 확인 중이 하나라도 있으면 [checking], 전부 새
+  /// 접속이 확인됐으면 [allConnected], 그 외(실패·확인 못 함·결과 없음)는
+  /// [someFailed].
+  NetworkResultsState get networkResults {
+    if (results.values.any((r) => r.reconnect == CameraReconnect.waiting)) {
+      return NetworkResultsState.checking;
+    }
+    if (results.isNotEmpty &&
+        results.values.every(
+            (r) => r.reconnect == CameraReconnect.online && !r.unverified)) {
+      return NetworkResultsState.allConnected;
+    }
+    return NetworkResultsState.someFailed;
+  }
+
   DeviceAddState copyWith(
           {DeviceAddStep? step,
           List<DeviceAddCandidate>? candidates,
-          Map<PairTargetKind, DeviceAddCandidate>? selected,
+          Map<String, DeviceAddCandidate>? selected,
           List<WifiAccessPoint>? networks,
-          Map<PairTargetKind, DeviceAddResult>? results,
+          Map<String, DeviceAddResult>? results,
           bool? busy,
           bool? remember,
           bool? showPassword,
@@ -241,7 +301,11 @@ class DeviceAddState {
           bool? groupError,
           Set<String>? registered,
           Set<String>? matched,
-          bool? targetGone}) =>
+          bool? targetGone,
+          Map<String, NetworkMatch>? owned,
+          bool? ownedLoadFailed,
+          int? connectingIndex,
+          int? connectingTotal}) =>
       DeviceAddState(
           step: step ?? this.step,
           candidates: candidates ?? this.candidates,
@@ -258,7 +322,12 @@ class DeviceAddState {
           groupError: groupError ?? this.groupError,
           registered: registered ?? this.registered,
           matched: matched ?? this.matched,
-          targetGone: targetGone ?? this.targetGone);
+          targetGone: targetGone ?? this.targetGone,
+          networkManage: networkManage,
+          owned: owned ?? this.owned,
+          ownedLoadFailed: ownedLoadFailed ?? this.ownedLoadFailed,
+          connectingIndex: connectingIndex ?? this.connectingIndex,
+          connectingTotal: connectingTotal ?? this.connectingTotal);
 }
 
 class DeviceProvisionReceipt {

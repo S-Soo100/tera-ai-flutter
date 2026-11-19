@@ -9,6 +9,7 @@ import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/my_cage/data/device_add_registration_repository.dart';
 import 'package:vivanaut/features/my_cage/data/redesign_group_repository.dart';
 import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
+import 'package:vivanaut/features/my_cage/domain/network_manage.dart';
 import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_route.dart';
@@ -143,6 +144,15 @@ class FakeRegistration implements DeviceAddRegistrationRepository {
 
   @override
   Future<OwnedDeviceRow?> owned(
+          String account, PairTargetKind kind, String id) async =>
+      null;
+
+  @override
+  Future<List<OwnedNetworkDevice>> networkDevices(String account) async =>
+      const [];
+
+  @override
+  Future<OwnedNetworkDevice?> networkDevice(
           String account, PairTargetKind kind, String id) async =>
       null;
 }

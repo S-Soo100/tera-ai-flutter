@@ -135,6 +135,11 @@ GoRouter _router() => GoRouter(
           builder: (_, __) =>
               const Scaffold(body: Center(child: Text('profile-screen'))),
         ),
+        GoRoute(
+          path: '/devices/network',
+          builder: (_, state) => Scaffold(
+              body: Center(child: Text('network-screen ${state.extra}'))),
+        ),
       ],
     );
 
@@ -337,6 +342,32 @@ void main() {
     await tester.tap(find.text('redesign_device_add'));
     await tester.pumpAndSettle();
     expect(find.text('pair-screen'), findsOneWidget);
+  });
+
+  // 네트워크 관리(2026-11-19) — 세 탭 공용 헤더라 카메라 탭 메뉴에도 4번째로 뜬다.
+  testWidgets('관리 메뉴 4항목 — 마지막 네트워크 관리만 구분선 없음, 누르면 네트워크 관리',
+      (tester) async {
+    await _pump(tester);
+    await tester.tap(find.byTooltip('redesign_manage'));
+    await tester.pumpAndSettle();
+    const labels = [
+      'redesign_device_add',
+      'redesign_device_manage',
+      'redesign_pet_manage',
+      'network_manage_title',
+    ];
+    for (final (i, label) in labels.indexed) {
+      final item = find.ancestor(
+          of: find.text(label), matching: find.byType(PopupMenuItem<String>));
+      expect(item, findsOneWidget, reason: label);
+      final box = tester.widget<Container>(find
+          .ancestor(of: find.text(label), matching: find.byType(Container))
+          .first);
+      expect(box.decoration == null, i == labels.length - 1, reason: label);
+    }
+    await tester.tap(find.text('network_manage_title'));
+    await tester.pumpAndSettle();
+    expect(find.text('network-screen null'), findsOneWidget);
   });
 
   testWidgets('DB is_online=false여도 라이브를 시도한다 — 홈과 동일 계약', (tester) async {

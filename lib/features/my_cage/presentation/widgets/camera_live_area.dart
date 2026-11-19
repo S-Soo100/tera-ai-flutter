@@ -301,8 +301,7 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
           // 네트워크 신호 약함 모달(Figma 2020:11196) — 자리는 차지하지 않는다.
           WeakSignalNoticePrompt(
               cameraId: current.id,
-              deviceId: current.cameraId,
-              cameraName: current.name),
+              deviceId: current.cameraId),
         ],
       ),
     );

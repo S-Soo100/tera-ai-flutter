@@ -10,8 +10,6 @@ import '../../../../shared/widgets/viva_check_row.dart';
 import '../../../../shared/widgets/viva_modal.dart';
 import '../../../notification/presentation/live_notice_providers.dart';
 import '../../../notification/presentation/notification_providers.dart';
-import '../../domain/device_add_flow.dart';
-import '../../domain/pair_target_kind.dart';
 import '../my_cage_providers.dart';
 
 /// 카메라 신호 약함 안내 끄기(`cameras.weak_signal_notice_off_at`) — 테스트 교체용.
@@ -28,8 +26,8 @@ final weakSignalNoticeOffWriterProvider =
 /// (사용자 결정: 신호가 약해 라이브가 실패하는 사용자에게 더 필요하다).
 ///
 /// - [닫기]·바깥 탭: 읽음 처리. 서버가 24시간에 1회만 넣으므로 하루 최대 한 번.
-/// - [변경]: 읽음 처리 + 그 카메라 Wi-Fi 바꾸기(`/devices/wifi`). Figma의
-///   "네트워크 관리" 흐름이 생기면 그쪽으로 바꾼다(2026-11-19 사용자 결정).
+/// - [변경]: 읽음 처리 + 그 카메라를 미리 체크한 네트워크 관리(`/devices/network`,
+///   Figma 2020:11196 → 1913:6462).
 /// - "알림 다시 보지 않기"를 고르고 닫으면(어느 버튼이든) 그 카메라 안내를 끈다.
 ///   다시 켜는 메뉴는 없다(사용자 결정 — 재등록하면 서버가 초기화).
 class WeakSignalNoticePrompt extends ConsumerStatefulWidget {
@@ -37,7 +35,6 @@ class WeakSignalNoticePrompt extends ConsumerStatefulWidget {
     super.key,
     required this.cameraId,
     required this.deviceId,
-    required this.cameraName,
   });
 
   /// `cameras.id`(uuid).
@@ -45,7 +42,6 @@ class WeakSignalNoticePrompt extends ConsumerStatefulWidget {
 
   /// 기기 ID(`cameras.camera_id`).
   final String deviceId;
-  final String cameraName;
 
   static const checkKey = Key('weak_signal_dont_show');
 
@@ -120,11 +116,7 @@ class _WeakSignalNoticePromptState
     dontShow.dispose();
 
     if (result == VivaModalResult.confirm && mounted) {
-      unawaited(context.push('/devices/wifi',
-          extra: WifiChangeTarget(
-              kind: PairTargetKind.camera,
-              id: widget.cameraId,
-              name: widget.cameraName)));
+      unawaited(context.push('/devices/network', extra: widget.cameraId));
     }
     await Future.wait([
       for (final id in ids)

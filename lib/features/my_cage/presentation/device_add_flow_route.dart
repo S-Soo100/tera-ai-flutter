@@ -18,11 +18,17 @@ class DeviceAddFlowRoute extends ConsumerWidget {
       this.initialKind,
       this.onProvisioned,
       this.flowKey,
-      this.wifiTarget});
+      this.wifiTarget,
+      this.networkManage})
+      : assert(wifiTarget == null || networkManage == null);
   final PairTargetKind? initialKind;
 
   /// [Wi-Fi 바꾸기]로 열었으면 그 기기 — 등록 없이 Wi-Fi만 보낸다(2026-09-28).
   final WifiChangeTarget? wifiTarget;
+
+  /// 네트워크 관리로 열었으면 그 요청 — 근처의 이 계정 기기 여러 대에 등록 없이
+  /// Wi-Fi만 보낸다(2026-11-19).
+  final NetworkManageRequest? networkManage;
   final VoidCallback? onProvisioned;
 
   /// 통합 테스트가 이 Route 안의 flow 컨트롤러를 찾을 때만 쓴다.
@@ -35,6 +41,7 @@ class DeviceAddFlowRoute extends ConsumerWidget {
         key: ValueKey(account),
         overrides: [
           deviceAddWifiTargetProvider.overrideWithValue(wifiTarget),
+          deviceAddNetworkManageProvider.overrideWithValue(networkManage),
           deviceAddCompletedProvider.overrideWith(
               (ref) => ref.read(managementMutationCompletedProvider)),
           deviceAddAutoGroupProvider.overrideWith((ref) {
@@ -87,6 +94,7 @@ class DeviceAddFlowRoute extends ConsumerWidget {
         child: DeviceAddFlowScreen(
             initialKind: wifiTarget?.kind ?? initialKind,
             wifiTarget: wifiTarget,
+            networkManage: networkManage,
             onProvisioned: onProvisioned,
             flowKey: flowKey));
   }

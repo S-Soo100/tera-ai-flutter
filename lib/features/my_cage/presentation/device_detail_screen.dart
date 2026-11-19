@@ -75,6 +75,10 @@ class _DeviceDetailBody extends ConsumerWidget {
             : ref
                 .watch(deviceWifiNameProvider((wifiKind, item.key.id)))
                 .valueOrNull;
+    // 오프라인이면 Figma 1913:7510 "추가하기" — 옛 이름을 알아도 지금 연결된
+    // 네트워크가 아니다. 그 외엔 이름, 모르면 '--'.
+    final wifiValue =
+        item.isOnline == false ? 'network_manage_add'.tr() : wifiName ?? '--';
     // 재시작·Wi-Fi 약함 대상 — 개체(pet)엔 없다.
     final SysTarget? sysTarget = switch (item.key.kind) {
       ManagementKind.camera => (PairTargetKind.camera, item.key.id),
@@ -281,10 +285,11 @@ class _DeviceDetailBody extends ConsumerWidget {
                                                   color: glass.textSecondary),
                                             ])),
                                   ]),
-                                  // Wi-Fi 바꾸기(2026-09-28, Figma 밖 — 흐름 점검 C1)
-                                  // — 공유기를 바꿔도 지우지 않고 같은 기기로 다시
-                                  // 붙인다. 오른쪽은 이 폰이 마지막에 붙인 Wi-Fi
-                                  // 이름(서버는 모른다), 모르면 '--'.
+                                  // 연결된 네트워크(2026-11-19, Figma 1913:7413·
+                                  // 7510) — 공유기를 바꿔도 지우지 않고 같은 기기로
+                                  // 다시 붙인다. 누르면 이 기기를 미리 체크한
+                                  // 네트워크 관리. 오른쪽은 서버 wifi_ssid → 이
+                                  // 폰이 붙인 이름 → 오프라인이면 '추가하기' → '--'.
                                   if (wifiKind != null) ...[
                                     const SizedBox(height: 24),
                                     InkWell(
@@ -294,21 +299,18 @@ class _DeviceDetailBody extends ConsumerWidget {
                                         onTap: draft.saving
                                             ? null
                                             : () => context.push(
-                                                '/devices/wifi',
-                                                extra: WifiChangeTarget(
-                                                    kind: wifiKind,
-                                                    id: item.key.id,
-                                                    name: item.name)),
+                                                '/devices/network',
+                                                extra: item.key.id),
                                         child: Row(children: [
                                           ManagementSymbolBadge(
                                               'redesign_v2/wifi'),
                                           const SizedBox(width: 12),
-                                          Text('device_wifi_action'.tr(),
+                                          Text('network_manage_connected'.tr(),
                                               style: managementStyle(context,
                                                   weight: FontWeight.w600)),
                                           const SizedBox(width: 12),
                                           Expanded(
-                                              child: Text(wifiName ?? '--',
+                                              child: Text(wifiValue,
                                                   key: const Key(
                                                       'device_wifi_name'),
                                                   textAlign: TextAlign.right,

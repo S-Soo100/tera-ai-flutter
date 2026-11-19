@@ -491,7 +491,17 @@ GoRouter buildAppRouter({
       GoRoute(
           path: '/devices/add',
           builder: (context, state) => const DeviceAddFlowRoute()),
-      // [Wi-Fi 바꾸기] — 기기 상세·라이브 오프라인 안내에서 대상과 함께 연다.
+      // 네트워크 관리(2026-11-19, Figma 1913:6462) — 헤더 메뉴·신호 약함 모달·
+      // 기기 상세·라이브 오프라인에서 연다. extra가 문자열이면 그 행 id(기기·
+      // 카메라)를 미리 체크한다. 메뉴는 extra 없이 연다.
+      GoRoute(
+          path: '/devices/network',
+          builder: (context, state) => DeviceAddFlowRoute(
+              networkManage: NetworkManageRequest(preferredIds: {
+            if (state.extra case final String id) id
+          }))),
+      // [Wi-Fi 바꾸기] — 옛 단일 대상 모드. 진입점은 모두 `/devices/network`로
+      // 옮겼고, 실기기 확인 뒤 지운다(계획 Task 7).
       GoRoute(
           path: '/devices/wifi',
           builder: (context, state) => state.extra is WifiChangeTarget

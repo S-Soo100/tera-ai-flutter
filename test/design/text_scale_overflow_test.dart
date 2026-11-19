@@ -77,7 +77,13 @@ import 'package:vivanaut/features/my_cage/presentation/lcd_quiet_time_screen.dar
 import 'package:vivanaut/features/my_cage/presentation/lcd_saver_screen.dart';
 import 'package:vivanaut/features/my_cage/presentation/lcd_settings_screen.dart';
 
+import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
+import 'package:vivanaut/features/my_cage/presentation/device_add_flow_screen.dart';
+
 import '../features/home/control_sheet_fixtures.dart';
+import '../features/my_cage/device_add_flow_screen_test.dart' show Controller;
+import '../features/my_cage/network_manage_screen_fixtures.dart';
 import '../features/my_cage/lcd_fixtures.dart';
 import '../features/home/env_v4_screen_fixtures.dart';
 import '../helpers/inert_live_controller.dart';
@@ -595,6 +601,46 @@ void main() {
         expect(find.text('사진 자르기'), findsOneWidget);
         expect(find.byKey(LcdPhotoCropScreen.doneKey), findsOneWidget);
       });
+
+      // 네트워크 관리(Figma 1913:6570·7778) — 목록(이름·hw_id / Wi-Fi 이름·dBm·
+      // 연결 없음), 완료 화면, 기기별 결과 8갈래 중 넷.
+      for (final (name, state) in [
+        (
+          '목록',
+          nmScan(selected: {
+            nmCamera.physicalId: nmCamera,
+            nmDevice.physicalId: nmDevice
+          })
+        ),
+        (
+          '완료',
+          nmResults({
+            nmCamera.physicalId:
+                nmUpdated(nmCamera, 'c4', CameraReconnect.online),
+          })
+        ),
+        ('결과', nmMixedResults()),
+      ]) {
+        testWidgets('네트워크 관리 — $name', (tester) async {
+          await _pump(
+              tester,
+              system,
+              const DeviceAddFlowScreen(
+                  flowKey: 'nm', networkManage: NetworkManageRequest()),
+              overrides: [
+                deviceAddAccountProvider.overrideWithValue('a'),
+                deviceWifiNameStoreProvider.overrideWithValue(NmWifiNames()),
+                deviceAddFlowProvider('nm')
+                    .overrideWith((ref) => Controller(state)),
+              ]);
+          expect(
+              find.text(switch (name) {
+                '완료' => '네트워크 연결 완료',
+                _ => '네트워크 관리',
+              }),
+              findsOneWidget);
+        });
+      }
 
       // 카메라 오프라인 안내(Figma 1525:10689) — 홈·카메라 탭 면(369:271)과
       // 확대 세로 면(4:3). 낮은 면은 안에서 스크롤, 버튼 라벨은 한 줄 축소.

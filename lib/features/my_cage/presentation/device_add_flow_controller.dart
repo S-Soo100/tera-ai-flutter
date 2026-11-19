@@ -13,8 +13,10 @@ import '../data/device_wifi_name_store.dart';
 import '../data/known_device_store.dart';
 import '../data/wifi_credentials_store.dart';
 import '../domain/device_add_flow.dart';
+import '../domain/network_manage.dart';
 import '../domain/pair_target_kind.dart';
 import '../domain/redesign_management.dart';
+import '../domain/wifi_access_point.dart';
 import 'supabase_module_providers.dart';
 
 final deviceAddAccountProvider = Provider<String?>(
@@ -53,6 +55,11 @@ final deviceAddCompletedProvider =
 final deviceAddWifiTargetProvider =
     Provider<WifiChangeTarget?>((ref) => null, dependencies: const []);
 
+/// 네트워크 관리로 열었을 때의 요청 — `DeviceAddFlowRoute`가 안쪽 scope에서
+/// 넣는다. null이면 네트워크 관리가 아니다(2026-11-19).
+final deviceAddNetworkManageProvider =
+    Provider<NetworkManageRequest?>((ref) => null, dependencies: const []);
+
 /// 등록 확인(읽기 전용)·세션 계정 확인. 통합 테스트가 실제 Route·컨트롤러를
 /// 그대로 두고 서버만 바꿔 끼울 수 있게 provider로 뺐다.
 final deviceAddRegistrationProvider = Provider<DeviceAddRegistrationRepository>(
@@ -74,6 +81,7 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
   final freshToken = ref.watch(freshAccessTokenProvider);
   final known = ref.watch(knownDeviceStoreProvider);
   final target = ref.watch(deviceAddWifiTargetProvider);
+  final networkManage = ref.watch(deviceAddNetworkManageProvider);
   final wifiNames = ref.watch(deviceWifiNameStoreProvider);
   var active = true;
   ref.onDispose(() => active = false);
@@ -98,6 +106,11 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
       autoGroup: group,
       completed: completed,
       target: target,
+      networkManage: networkManage,
+      networkDevices: () => registration.networkDevices(account!),
+      networkDevice: (kind, id) =>
+          registration.networkDevice(account!, kind, id),
+      rememberedId: (candidate) => known.load(account!, candidate),
       // 기억한 기기라도 이 계정에 행이 남아 있어야 Wi-Fi만 바꾼다.
       knownId: (candidate) async {
         final id = known.load(account!, candidate);
@@ -132,7 +145,8 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
 }, dependencies: [
   deviceAddAutoGroupProvider,
   deviceAddCompletedProvider,
-  deviceAddWifiTargetProvider
+  deviceAddWifiTargetProvider,
+  deviceAddNetworkManageProvider
 ]);
 
 class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
@@ -149,6 +163,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       required DeviceAddAutoGroup autoGroup,
       void Function()? completed,
       WifiChangeTarget? target,
+      NetworkManageRequest? networkManage,
+      Future<List<OwnedNetworkDevice>> Function()? networkDevices,
+      Future<OwnedNetworkDevice?> Function(PairTargetKind, String)?
+          networkDevice,
+      String? Function(DeviceAddCandidate)? rememberedId,
       Future<String?> Function(DeviceAddCandidate)? knownId,
       Future<bool> Function(DeviceAddCandidate)? registered,
       Future<void> Function(DeviceAddCandidate, String)? rememberId,
@@ -160,7 +179,13 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       Future<void> Function(bool)? saveRemember,
       this.reconnectPoll = const Duration(seconds: 5),
       this.reconnectTimeout = const Duration(seconds: 90)})
-      : _target = target,
+      : assert(target == null || networkManage == null,
+            'Wi-Fi 바꾸기 대상과 네트워크 관리는 함께 쓰지 않는다'),
+        _target = target,
+        _network = networkManage,
+        _networkDevices = networkDevices,
+        _networkDevice = networkDevice,
+        _rememberedId = rememberedId,
         _known = knownId,
         _registered = registered,
         _rememberId = rememberId,
@@ -180,10 +205,15 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         _read = readCredentials,
         _group = autoGroup,
         _completed = completed,
-        super(const DeviceAddState()) {
+        super(DeviceAddState(networkManage: networkManage != null)) {
     if (readRemember != null) unawaited(_loadRemember(readRemember));
     _scan = gateway.scanResults.listen((all) {
       if (!_active) return;
+      if (_network != null) {
+        _raw = List.unmodifiable(all);
+        _rematch();
+        return;
+      }
       // Wi-Fi 바꾸기는 대상과 같은 종류만 보인다.
       final rows = [
         for (final c in all)
@@ -225,6 +255,39 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   /// 대상의 서버 `hw_id` — 근처 기기 중 대상을 알아보는 힌트([bleMatchesHardware]).
   String? _targetHardware;
 
+  /// 네트워크 관리로 열었으면 그 요청 — 같은 종류 여러 대, 등록 없이 Wi-Fi만
+  /// 보내고 그 행의 서버 값으로 판정한다(2026-11-19).
+  final NetworkManageRequest? _network;
+  final Future<List<OwnedNetworkDevice>> Function()? _networkDevices;
+
+  /// 행 하나만 다시 읽는다(보내기 직전 재확인·확인 중 폴링) — 목록 전체를
+  /// 5초마다 기기 수만큼 읽지 않게(2026-11-19 리뷰). 없으면 목록에서 찾는다.
+  final Future<OwnedNetworkDevice?> Function(PairTargetKind, String)?
+      _networkDevice;
+
+  /// 이 폰의 기억(`KnownDeviceStore`) — BLE 주소 → 행 id.
+  final String? Function(DeviceAddCandidate)? _rememberedId;
+
+  /// 네트워크 관리: 걸러지기 전 스캔 목록과 마지막으로 읽은 이 계정 기기 행.
+  List<DeviceAddCandidate> _raw = const [];
+  List<OwnedNetworkDevice>? _rows;
+
+  /// 기기 목록 조회 세대 — [다시 스캔] 연타 때 늦게 온 앞 응답을 버린다.
+  int _loadGen = 0;
+
+  /// 미리 체크를 이미 한 행 id — 유저가 풀면 다시 고르지 않는다.
+  final Set<String> _autoPicked = {};
+
+  /// [다시 찾기]로 다시 고를 실패·미확인 기기의 행 id — 미리 체크 대상에 더한다.
+  final Set<String> _retryRowIds = {};
+
+  /// 유저가 직접 체크한 행 id — 다시 검색(빈 목록부터 다시 온다)으로 목록에서
+  /// 잠깐 빠졌다 돌아와도 다시 체크한다. 직접 풀면 뺀다(2026-11-19 리뷰).
+  final Set<String> _userPickedRowIds = {};
+
+  /// 마지막으로 남긴 매칭 로그(BLE 주소 → `row|via`) — 바뀔 때만 찍는다.
+  final Map<String, String> _matchLog = {};
+
   /// 이 폰이 등록해 둔 기기인지(BLE 주소 → 행 id). 있으면 JWT 없이
   /// Wi-Fi만 바꾼다 — 펌웨어는 JWT를 받을 때마다 새 행으로 등록한다
   /// (카메라 2026-09-21, 사육장 2026-09-28 [kWifiChangeDeviceEnabled]).
@@ -260,6 +323,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       _targetLoaded = true;
       unawaited(_loadTarget());
     }
+    if (_network != null) unawaited(_loadOwned());
     try {
       await _gateway.startScan();
       if (!_active) return;
@@ -331,7 +395,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     state = state.copyWith(
         matched: Set.unmodifiable({...state.matched, candidate.physicalId}),
         selected: state.selected.isEmpty && state.step == DeviceAddStep.scan
-            ? Map.unmodifiable({candidate.kind: candidate})
+            ? Map.unmodifiable({candidate.physicalId: candidate})
             : null);
   }
 
@@ -341,18 +405,22 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   }
 
   void select(DeviceAddCandidate candidate) {
-    if (!_active ||
-        state.targetGone ||
-        state.results[candidate.kind]?.canRetry == false) {
+    if (_network != null) {
+      _selectNetwork(candidate);
       return;
     }
-    final selected = {...state.selected};
-    if (selected[candidate.kind]?.physicalId == candidate.physicalId) {
-      selected.remove(candidate.kind);
-    } else {
-      selected[candidate.kind] = candidate;
+    if (!_active ||
+        state.targetGone ||
+        state.resultOf(candidate.kind)?.canRetry == false) {
+      return;
     }
-    state = state.copyWith(selected: Map.unmodifiable(selected));
+    if (state.selected.containsKey(candidate.physicalId)) {
+      state = state.copyWith(
+          selected: Map.unmodifiable(
+              {...state.selected}..remove(candidate.physicalId)));
+    } else {
+      state = state.copyWith(selected: _withSelected(candidate));
+    }
   }
 
   Future<void> loadNetworks() async {
@@ -362,7 +430,9 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     try {
       await _gateway.stopScan();
       if (!_active) return;
-      final networks = await _gateway.networks(state.selected.values.first);
+      final networks = _network != null
+          ? await _networksFromStrongest()
+          : await _gateway.networks(state.selected.values.first);
       if (_active) {
         state =
             state.copyWith(networks: List.unmodifiable(networks), busy: false);
@@ -428,8 +498,12 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       state = state.copyWith(errorKey: 'device_add_credentials_invalid');
       return;
     }
+    if (_network != null) {
+      await _connectNetwork(ssid, password);
+      return;
+    }
     final pending = state.selected.values
-        .where((c) => state.results[c.kind]?.canRetry != false)
+        .where((c) => state.resultOf(c.kind)?.canRetry != false)
         .toList()
       // 카메라부터 — 카메라는 켜진 뒤 3분만 검색·연결된다. 사육장(최대 약
       // 100초)을 먼저 하면 카메라 차례에 광고가 끝나 있기 쉬웠다(2026-09-25).
@@ -498,9 +572,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
                         ? DeviceAddOutcome.failed
                         : DeviceAddOutcome.wifiFailed)
                     : DeviceAddOutcome.registrationPending);
-        state = state.copyWith(
-            results:
-                Map.unmodifiable({...state.results, candidate.kind: result}));
+        state = state.copyWith(results: _withResult(result));
         if (id != null) {
           await _remember(candidate, id);
           await _saveWifi(candidate.kind, id, ssid);
@@ -535,7 +607,8 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         continue;
       }
       try {
-        final id = await _confirm(entry.key, result.hardwareId!);
+        final kind = result.candidate.kind;
+        final id = await _confirm(kind, result.hardwareId!);
         if (!_active) return confirmed;
         if (id != null) {
           results[entry.key] = DeviceAddResult(
@@ -546,9 +619,9 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
               hardwareId: result.hardwareId,
               wifiConnected: result.wifiConnected);
           await _remember(result.candidate, id);
-          await _saveWifi(entry.key, id, state.ssid);
+          await _saveWifi(kind, id, state.ssid);
           // "새 카메라로 등록"이 늦게 확인돼도 옛 행을 해제한다.
-          await _unlinkReplaced(entry.key, id);
+          await _unlinkReplaced(kind, id);
           _completed?.call();
           confirmed = true;
         }
@@ -561,13 +634,14 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   }
 
   Future<void> groupConfirmed() async {
-    if (!_active || state.groupId != null) return;
+    // 네트워크 관리는 등록하지 않는다 — 묶을 새 기기가 없다.
+    if (!_active || state.groupId != null || _network != null) return;
     // 새로 등록한 기기끼리만 묶는다. Wi-Fi만 바꾼 카메라는 이미 제 사육
     // 환경이 있을 수 있어 자동으로 옮기지 않는다.
     final ids = <PairTargetKind, String>{
       for (final e in state.results.entries)
         if (e.value.outcome == DeviceAddOutcome.registered)
-          if (e.value.registeredId case final id?) e.key: id
+          if (e.value.registeredId case final id?) e.value.candidate.kind: id
     };
     if (ids.length != 2) return;
     state = state.copyWith(busy: true, groupError: false);
@@ -623,6 +697,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   /// 등록된 기기면 그 행 id — 새 등록 없이 Wi-Fi만 보낸다. "새 기기로 등록"을
   /// 고른 종류([_replacing])는 등록한다.
   Future<String?> _existingId(DeviceAddCandidate candidate) async {
+    if (_network != null) return state.owned[candidate.physicalId]?.device.id;
     if (_replacing.containsKey(candidate.kind)) return null;
     if (_target case final target? when target.kind == candidate.kind) {
       return target.id;
@@ -635,8 +710,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     }
   }
 
+  /// [network]: 네트워크 관리에서 보내기 직전 재확인한 그 행의 기준값과
+  /// 알아본 방법. 있으면 `owned()` 대신 `networkDevices()`로 판정한다.
   Future<void> _updateWifi(DeviceAddCandidate candidate, String id, String ssid,
-      String password, bool remember) async {
+      String password, bool remember,
+      {_NetworkBaseline? network}) async {
     final receipt = await _gateway.provision(candidate,
         ssid: ssid,
         password: password,
@@ -659,7 +737,8 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     // 서버 감시가 오히려 오판한다(옛 Wi-Fi 하트비트가 계속 온다) — 즉시 실패.
     // last_seen_at을 볼 수 없을 때도 예전처럼 즉시 실패.
     final owned = _owned;
-    final probe = owned != null && receipt.worthWatching;
+    final probe = (network != null ? _networkDevices != null : owned != null) &&
+        receipt.worthWatching;
     final result = receipt.wifiConnected || probe
         ? DeviceAddResult(
             candidate: candidate,
@@ -674,7 +753,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
                 : DeviceAddOutcome.wifiFailed,
             failure: receipt.failure);
     state = state.copyWith(
-        results: Map.unmodifiable({...state.results, candidate.kind: result}));
+        results: network != null ? _putResult(result) : _withResult(result));
     if (receipt.wifiConnected) _completed?.call();
     // 서버로 확인할 수 없으면 BLE 성공으로 기억한다. 확인할 수 있으면 그 행
     // 신호가 온 뒤에 — 다른 기기를 골랐을 수 있다(Wi-Fi 바꾸기).
@@ -690,25 +769,39 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       DateTime? baseline;
       var baselineKnown = false;
       var wasOnline = true; // 모르면 온라인으로 본다(보수적으로).
-      try {
-        final row = await owned!(candidate.kind, id);
-        baseline = row?.lastSeen;
-        wasOnline = row?.isOnline != false;
-        baselineKnown = true;
-      } catch (_) {/* 아래 폴백 */}
+      if (network != null) {
+        // 온라인·가동 시간은 보내기 직전 값(재부팅 전), 마지막 접속 기준만 여기서.
+        wasOnline = network.wasOnline;
+        try {
+          baseline = (await _networkRow(candidate.kind, id))?.lastSeen;
+          baselineKnown = true;
+        } catch (_) {/* 아래 폴백 */}
+      } else {
+        try {
+          final row = await owned!(candidate.kind, id);
+          baseline = row?.lastSeen;
+          wasOnline = row?.isOnline != false;
+          baselineKnown = true;
+        } catch (_) {/* 아래 폴백 */}
+      }
       if (!_active) return;
       // 대상이 원래 Wi-Fi로 온라인이면 새 하트비트는 옛 접속에서도 온다 —
       // 목록에서 알아본 기기(이 폰의 기억·hw_id)를 골랐을 때만 그 신호를 이
       // 기기의 새 접속으로 믿는다. 일반 기기 추가의 Wi-Fi 변경은 기억한 기기다.
-      final trusted = _target == null ||
-          state.matched.contains(candidate.physicalId) ||
-          !wasOnline;
+      // 네트워크 관리(사용자 결정 6): 기억으로 알아봤거나 원래 오프라인이면 믿는다.
+      // 카메라는 폴링에서 가동 시간이 줄었으면(재부팅) 추가로 믿는다.
+      final trusted = network != null
+          ? network.via == NetworkMatchVia.memory || !wasOnline
+          : _target == null ||
+              state.matched.contains(candidate.physicalId) ||
+              !wasOnline;
       unawaited(_watchReconnect(candidate, id,
           ssid: ssid,
           trusted: trusted,
           since: since,
           baseline: baseline,
-          baselineKnown: baselineKnown));
+          baselineKnown: baselineKnown,
+          network: network));
     }
   }
 
@@ -719,10 +812,13 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       required bool trusted,
       required DateTime since,
       required DateTime? baseline,
-      required bool baselineKnown}) async {
+      required bool baselineKnown,
+      _NetworkBaseline? network}) async {
     final owned = _owned;
-    if (owned == null) return;
+    final networkDevices = _networkDevices;
+    if (network != null ? networkDevices == null : owned == null) return;
     final kind = candidate.kind;
+    final key = candidate.physicalId;
     bool isNew(DateTime seen) => baselineKnown
         ? (baseline == null || seen.isAfter(baseline))
         : seen.isAfter(since);
@@ -730,27 +826,36 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     while (true) {
       await Future<void>.delayed(reconnectPoll);
       if (!_active) return;
-      final current = state.results[kind];
+      final current = state.results[key];
       if (current?.registeredId != id ||
           current?.reconnect != CameraReconnect.waiting) {
         return;
       }
       DateTime? seen;
+      var rebooted = false;
       try {
-        seen = (await owned(kind, id))?.lastSeen;
+        if (network != null) {
+          final row = await _networkRow(kind, id);
+          seen = row?.lastSeen;
+          rebooted = kind == PairTargetKind.camera &&
+              _uptimeDropped(network.uptimeBefore, row?.uptimeSeconds);
+        } else {
+          seen = (await owned!(kind, id))?.lastSeen;
+        }
       } catch (_) {/* 다음 주기에 다시 본다. */}
       if (!_active) return;
       final online = seen != null && isNew(seen);
+      final believed = trusted || (online && rebooted);
       final expired = !DateTime.now().isBefore(deadline);
       if (!online && !expired) continue;
-      final latest = state.results[kind];
+      final latest = state.results[key];
       if (latest?.registeredId != id) return;
       state = state.copyWith(
           results: Map.unmodifiable({
         ...state.results,
-        kind: latest!.withReconnect(
+        key: latest!.withReconnect(
             online ? CameraReconnect.online : CameraReconnect.missing,
-            unverified: online && !trusted)
+            unverified: online && !believed)
       }));
       // BLE 성공 없이 서버로만 확인된 경우 — 지금이 연결 완료 시점이다.
       if (online && !latest.wifiConnected) _completed?.call();
@@ -758,12 +863,48 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       // 바로 알아본다(다른 폰에서 등록한 기기를 Wi-Fi 바꾸기로 고른 경우).
       // 확인할 수 없으면 기억하지 않는다 — 다른 기기를 대상으로 기억하면 그
       // 기기의 다음 등록이 Wi-Fi 변경으로 새어 영영 등록되지 않는다.
-      if (online && trusted) {
+      if (online && believed) {
         await _remember(candidate, id);
         await _saveWifi(kind, id, ssid);
       }
       return;
     }
+  }
+
+  /// 고른다 — 기기 추가는 종류별 1대라 같은 종류의 다른 선택을 그 자리에서
+  /// 바꾼다. 키가 종류이던 때와 같은 순서다(Wi-Fi 목록은 첫 선택 기기로 받는다).
+  Map<String, DeviceAddCandidate> _withSelected(DeviceAddCandidate candidate) {
+    final next = <String, DeviceAddCandidate>{};
+    var placed = false;
+    for (final e in state.selected.entries) {
+      if (e.value.kind != candidate.kind) {
+        next[e.key] = e.value;
+      } else if (!placed) {
+        next[candidate.physicalId] = candidate;
+        placed = true;
+      }
+    }
+    if (!placed) next[candidate.physicalId] = candidate;
+    return Map.unmodifiable(next);
+  }
+
+  /// 결과를 넣는다 — 기기 추가는 종류별 1개라 같은 종류의 앞 결과(다시 시도 전
+  /// 실패 등)를 그 자리에서 바꾼다. 키가 종류이던 때(~2026-11-19)와 같은 동작·
+  /// 같은 순서다(결과 목록은 이 순서로 그린다).
+  Map<String, DeviceAddResult> _withResult(DeviceAddResult result) {
+    final kind = result.candidate.kind;
+    final next = <String, DeviceAddResult>{};
+    var placed = false;
+    for (final e in state.results.entries) {
+      if (e.value.candidate.kind != kind) {
+        next[e.key] = e.value;
+      } else if (!placed) {
+        next[result.candidate.physicalId] = result;
+        placed = true;
+      }
+    }
+    if (!placed) next[result.candidate.physicalId] = result;
+    return Map.unmodifiable(next);
   }
 
   /// "새 카메라로 등록"이 대체하는 옛 카메라 행 — 새 등록이 **성공한 뒤** 해제한다.
@@ -785,25 +926,31 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
 
   /// 저장값이 지워진 카메라처럼 Wi-Fi 변경으로는 안 붙는 경우 — 기억을 지우고
   /// 다음 연결에서 새로 등록한다. 옛 행은 새 등록 성공 뒤 해제한다.
-  Future<void> registerAsNew(PairTargetKind kind) async {
-    final result = state.results[kind];
+  Future<void> registerAsNew(String physicalId) async {
+    // 네트워크 관리는 등록하지 않는다(Global Constraints) — 버튼도 없다.
+    if (_network != null) return;
+    final result = state.results[physicalId];
     if (!_active || state.busy || result == null) return;
+    final kind = result.candidate.kind;
     if (result.registeredId case final old?) _replacing[kind] = old;
     try {
       await _forgetId?.call(result.candidate);
     } catch (_) {/* 기억이 남으면 다시 Wi-Fi만 바꾸게 된다. */}
     if (!_active) return;
-    final results = {...state.results}..remove(kind);
+    final results = {...state.results}..remove(physicalId);
     state = state.copyWith(
         registered: Set.unmodifiable(
             {...state.registered}..remove(result.candidate.physicalId)),
         results: Map.unmodifiable(results),
-        selected:
-            Map.unmodifiable({...state.selected, kind: result.candidate}));
+        selected: _withSelected(result.candidate));
   }
 
   Future<void> continueAdding() async {
     if (!_active || state.busy) return;
+    if (_network != null) {
+      await _retryNetwork();
+      return;
+    }
     // Wi-Fi 바꾸기의 [다시 찾기] — 알아본 대상 기기는 처음처럼 골라 둔다.
     final matched = _target == null
         ? null
@@ -813,7 +960,270 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     state = state.copyWith(
         selected: matched == null
             ? const {}
-            : Map.unmodifiable({matched.kind: matched}),
+            : Map.unmodifiable({matched.physicalId: matched}),
+        step: DeviceAddStep.scan,
+        networks: const []);
+    await scan();
+  }
+
+  // ── 네트워크 관리 모드(2026-11-19) ─────────────────────────────────────
+
+  /// 이 계정 기기 목록을 다시 읽는다 — 최신 세대 응답만 반영한다.
+  Future<void> _loadOwned() async {
+    final load = _networkDevices;
+    if (load == null) return;
+    final gen = ++_loadGen;
+    try {
+      final rows = await load();
+      if (!_active || gen != _loadGen) return;
+      _rows = List.unmodifiable(rows);
+      state = state.copyWith(ownedLoadFailed: false);
+      _rematch();
+    } catch (_) {
+      if (_active && gen == _loadGen) {
+        state = state.copyWith(ownedLoadFailed: true);
+      }
+    }
+  }
+
+  /// 스캔 목록을 이 계정 기기 행에 다시 맞추고, 빠진 후보는 선택에서 빼고,
+  /// scan 단계면 미리 체크할 행을 고른다.
+  void _rematch() {
+    if (!_active) return;
+    final rows = _rows ?? const <OwnedNetworkDevice>[];
+    final remembered = <String, String>{};
+    for (final c in _raw) {
+      try {
+        if (_rememberedId?.call(c) case final id?) {
+          remembered[c.physicalId] = id;
+        }
+      } catch (_) {/* 기억을 못 읽으면 hw_id로만 알아본다. */}
+    }
+    final matches = matchOwnedDevices(_raw, rows, remembered);
+    final owned = <String, NetworkMatch>{
+      for (final e in matches.entries)
+        if (supportsWifiChange(e.value.device.kind)) e.key: e.value
+    };
+    _logMatches(owned);
+    final candidates = [
+      for (final c in _raw)
+        if (owned.containsKey(c.physicalId)) c
+    ];
+    final selected = <String, DeviceAddCandidate>{
+      for (final e in state.selected.entries)
+        if (owned.containsKey(e.key)) e.key: e.value
+    };
+    // 골라 둔 기기가 목록에서 빠지면(광고가 잠깐 끊김) 다시 잡혔을 때 미리
+    // 체크할 수 있게 한다. 유저가 직접 푼 것은 select()로 오므로 여기 없다.
+    for (final key in state.selected.keys) {
+      if (owned.containsKey(key)) continue;
+      if (state.owned[key]?.device.id case final rowId?) {
+        _autoPicked.remove(rowId);
+      }
+    }
+    if (state.step == DeviceAddStep.scan) {
+      for (final rowId in {
+        ..._network!.preferredIds,
+        ..._retryRowIds,
+        ..._userPickedRowIds
+      }) {
+        if (_autoPicked.contains(rowId)) continue;
+        for (final c in candidates) {
+          if (owned[c.physicalId]!.device.id != rowId) continue;
+          if (state.results[c.physicalId]?.canRetry == false) break;
+          selected[c.physicalId] = c;
+          _autoPicked.add(rowId);
+          break;
+        }
+      }
+    }
+    state = state.copyWith(
+        candidates: List.unmodifiable(candidates),
+        owned: Map.unmodifiable(owned),
+        selected: Map.unmodifiable(selected));
+  }
+
+  /// 실기기에서 알아보기가 맞는지 보려는 기록 — 결과가 바뀔 때만(스캔 갱신마다
+  /// 찍지 않는다). 릴리스 logcat에도 남으니 행 id는 끝 4자리만.
+  void _logMatches(Map<String, NetworkMatch> owned) {
+    for (final c in _raw) {
+      final m = owned[c.physicalId];
+      final sig = m == null ? 'none' : '${m.device.id}|${m.via.name}';
+      if (_matchLog[c.physicalId] == sig) continue;
+      _matchLog[c.physicalId] = sig;
+      debugPrint(
+          '[device-add] network-match name=${c.name} kind=${c.kind.name} '
+          'row=…${_tail(m?.device.id)} via=${m?.via.name ?? 'none'}');
+    }
+  }
+
+  /// 같은 종류 제한 없이 BLE 주소로만 넣고 뺀다. 알아보지 못한 기기·이미 끝난
+  /// 기기는 고르지 않는다.
+  void _selectNetwork(DeviceAddCandidate candidate) {
+    final key = candidate.physicalId;
+    if (!_active ||
+        !state.owned.containsKey(key) ||
+        state.results[key]?.canRetry == false) {
+      return;
+    }
+    final next = {...state.selected};
+    final rowId = state.owned[key]!.device.id;
+    if (next.remove(key) == null) {
+      next[key] = candidate;
+      _userPickedRowIds.add(rowId);
+    } else {
+      _userPickedRowIds.remove(rowId);
+      // 미리 체크 대상이어도 유저가 푼 것은 다시 고르지 않는다.
+      _autoPicked.add(rowId);
+    }
+    state = state.copyWith(selected: Map.unmodifiable(next));
+  }
+
+  /// 고른 기기 중 BLE 신호가 가장 센 기기로 Wi-Fi 목록을 받는다. 실패하면 다음
+  /// 기기, 모두 실패하면 마지막 오류를 그대로 던진다(기존 오류 안내·직접 입력).
+  Future<List<WifiAccessPoint>> _networksFromStrongest() async {
+    final order = state.selected.values.toList()
+      ..sort((a, b) => b.rssi.compareTo(a.rssi));
+    Object? last;
+    for (final candidate in order) {
+      if (!_active) break;
+      try {
+        return await _gateway.networks(candidate);
+      } catch (e) {
+        last = e;
+      }
+    }
+    throw last ?? StateError('no device');
+  }
+
+  /// 이 계정 기기 목록을 다시 읽어 그 행을 찾는다. 해제·대체됐으면 null.
+  Future<OwnedNetworkDevice?> _networkRow(
+      PairTargetKind kind, String id) async {
+    if (_networkDevice case final one?) return one(kind, id);
+    final rows = await _networkDevices!();
+    return rows.where((r) => r.kind == kind && r.id == id).firstOrNull;
+  }
+
+  /// 카메라는 Wi-Fi를 받으면 재부팅한다 — 가동 시간이 보내기 직전보다 줄었으면
+  /// 새 접속의 증거다(사용자 결정 6). 리셋 사유는 보지 않는다: BLE 재설정은
+  /// `SW:ble_reprov`라 `SysHealth.rebootedSince`(`SW:mqtt_reboot` 검사)는 늘
+  /// 거짓이다(2026-11-19 정정). 둘 중 하나라도 모르면 증거가 아니다.
+  static bool _uptimeDropped(int? before, int? now) =>
+      before != null && now != null && now < before;
+
+  /// 결과를 BLE 주소로만 넣는다 — 같은 종류 여러 대의 결과가 모두 남는다.
+  Map<String, DeviceAddResult> _putResult(DeviceAddResult result) =>
+      Map.unmodifiable({...state.results, result.candidate.physicalId: result});
+
+  /// 고른 기기 전부에 Wi-Fi만 보낸다 — 카메라 먼저(같은 종류는 고른 순서).
+  /// 기기마다 보내기 직전 그 행을 다시 읽어 기준값을 잡고, 사라졌거나 못 읽었으면
+  /// 그 기기만 실패로 두고 다음 기기로 간다. 등록(JWT·NAME·UNPAIR)은 하지 않는다.
+  Future<void> _connectNetwork(String ssid, String password) async {
+    final ready = [
+      for (final c in state.selected.values)
+        if (state.results[c.physicalId]?.canRetry != false) c
+    ];
+    final pending = [
+      ...ready.where((c) => c.kind == PairTargetKind.camera),
+      ...ready.where((c) => c.kind != PairTargetKind.camera),
+    ];
+    if (pending.isEmpty) return;
+    final remember = state.remember;
+    state = state.copyWith(
+        step: DeviceAddStep.connecting,
+        busy: true,
+        ssid: ssid,
+        connectingIndex: 0,
+        connectingTotal: pending.length);
+    try {
+      for (var i = 0; i < pending.length; i++) {
+        if (!_active) return;
+        final candidate = pending[i];
+        state = state.copyWith(
+            activePhysicalId: candidate.physicalId, connectingIndex: i + 1);
+        final match = state.owned[candidate.physicalId];
+        final id = match?.device.id;
+        OwnedNetworkDevice? row;
+        DeviceProvisionFailure? failure;
+        if (match == null || id == null) {
+          failure = DeviceProvisionFailure.notOwned;
+        } else {
+          try {
+            row = await _networkRow(candidate.kind, id);
+            if (row == null) failure = DeviceProvisionFailure.notOwned;
+          } catch (_) {
+            failure = DeviceProvisionFailure.notChecked;
+          }
+        }
+        if (!_active) return;
+        if (failure != null || row == null || match == null || id == null) {
+          state = state.copyWith(
+              results: _putResult(DeviceAddResult(
+                  candidate: candidate,
+                  outcome: DeviceAddOutcome.failed,
+                  failure: failure ?? DeviceProvisionFailure.notOwned)));
+          continue;
+        }
+        try {
+          await _updateWifi(candidate, id, ssid, password, remember, network: (
+            via: match.via,
+            wasOnline: row.isOnline != false,
+            uptimeBefore: row.uptimeSeconds
+          ));
+        } catch (e) {
+          // 이 기기만 실패로 두고 다음 기기로 간다 — 앞 기기 결과(확인 중 포함)를
+          // 버리고 비밀번호 화면으로 돌아가지 않는다(2026-11-19 리뷰).
+          debugPrint('[device-add] network-send failed '
+              'row=…${_tail(id)} $e');
+          if (!_active) return;
+          state = state.copyWith(
+              results: _putResult(DeviceAddResult(
+                  candidate: candidate, outcome: DeviceAddOutcome.failed)));
+        }
+      }
+      if (!_active) return;
+      state = state.copyWith(
+          step: DeviceAddStep.results,
+          busy: false,
+          connectingIndex: 0,
+          connectingTotal: 0);
+    } catch (_) {
+      if (_active) {
+        state = state.copyWith(
+            step: DeviceAddStep.credentials,
+            busy: false,
+            connectingIndex: 0,
+            connectingTotal: 0,
+            errorKey: 'device_add_connection_error');
+      }
+    }
+  }
+
+  /// [다시 찾기] — 새 접속이 확인된 결과만 남기고 실패·확인 못 함 결과를 지운다
+  /// (미확인은 `canRetry == false`라 지우지 않으면 다시 못 고른다). 그 기기를
+  /// 다시 체크해 두고 미리 체크 기록에서도 빼서 늦게 잡혀도 다시 고른다.
+  Future<void> _retryNetwork() async {
+    final kept = <String, DeviceAddResult>{};
+    final again = <String, DeviceAddCandidate>{};
+    for (final e in state.results.entries) {
+      final r = e.value;
+      if (r.reconnect == CameraReconnect.online && !r.unverified) {
+        kept[e.key] = r;
+        continue;
+      }
+      final rowId = r.registeredId ?? state.owned[e.key]?.device.id;
+      if (rowId != null) {
+        _autoPicked.remove(rowId);
+        // 재검색에서 늦게 다시 잡혀도 미리 체크한다(지금 목록에 없을 수 있다).
+        _retryRowIds.add(rowId);
+      }
+      final candidate =
+          state.candidates.where((c) => c.physicalId == e.key).firstOrNull;
+      if (candidate != null) again[e.key] = candidate;
+    }
+    state = state.copyWith(
+        results: Map.unmodifiable(kept),
+        selected: Map.unmodifiable(again),
         step: DeviceAddStep.scan,
         networks: const []);
     await scan();
@@ -827,3 +1237,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     super.dispose();
   }
 }
+
+/// 네트워크 관리에서 보내기 직전 재확인한 행의 기준값. 마지막 접속 시각은 여기
+/// 없다 — BLE 응답 뒤에 다시 읽는다(옛 Wi-Fi 접속을 새 접속으로 읽지 않게).
+typedef _NetworkBaseline = ({
+  NetworkMatchVia via,
+  bool wasOnline,
+  int? uptimeBefore
+});

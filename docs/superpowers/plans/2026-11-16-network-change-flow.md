@@ -31,7 +31,7 @@
 3. **결과:** 전부 붙으면 Figma 완료 화면, 하나라도 안 붙거나 확인 못 하면 기기별 결과 목록 + [다시 찾기](Figma 밖, 기존 결과 틀).
 4. **카메라 3분 광고 안내:** 넣지 않는다(Figma 문구만). 검수에서 "진입 1이 빈 목록이 되기 쉽다"는 지적이 있었고, 실기기 확인(Task 8) 결과를 보고 다시 정한다.
 5. **실기기 확인 시점:** 구현하면서 나중에. 단 **옛 단일 대상 모드 삭제(Task 7)와 main 병합은 실기기 확인 뒤**.
-6. **새 접속 판정(검수 C2, 추천안 적용 — 바꾸려면 승인 때 말씀):** 카메라는 Wi-Fi를 받으면 재부팅하므로, 보내기 직전 `clip_stats.sys.uptime_s`보다 가동 시간이 줄었으면(`SysHealth.rebootedSince`) 원래 온라인이었어도 새 접속으로 믿는다. 사육장은 재부팅 없이 다시 붙어 이 증거가 없다 → 기억으로 알아봤거나 원래 오프라인일 때만 믿고, 그 외엔 서버 `wifi_ssid` 보고 전까지 "확인 못 함"
+6. **새 접속 판정(검수 C2, 추천안 적용 — 바꾸려면 승인 때 말씀):** 카메라는 Wi-Fi를 받으면 재부팅하므로, 보내기 직전 `clip_stats.sys.uptime_s`보다 가동 시간이 줄었으면 원래 온라인이었어도 새 접속으로 믿는다(리셋 사유는 보지 않는다 — BLE 재설정은 `SW:ble_reprov`라 `SysHealth.rebootedSince`의 `SW:mqtt_reboot` 검사를 쓰면 늘 거짓, 2026-11-19 구현 중 정정). 사육장은 재부팅 없이 다시 붙어 이 증거가 없다 → 기억으로 알아봤거나 원래 오프라인일 때만 믿고, 그 외엔 서버 `wifi_ssid` 보고 전까지 "확인 못 함"
 
 ## 가정
 
@@ -238,9 +238,9 @@ expect(sorted([good('a', -50), weak('b', -80), offline('c'), pref('d', -40)]).ma
   - `select`: 같은 종류 제한 없음(여러 대). 매칭 없는 후보는 무시.
   - 미리 체크: `step == scan`일 때 `preferredIds`의 **행 id마다 한 번** 그 행에 매칭된 후보를 고른다(`_autoPicked: Set<String>` 행 id). 유저가 풀면 그대로. 늦게 잡힌 다른 미리 체크 기기도 고른다.
   - Wi-Fi 목록(`loadNetworks`): 고른 기기 중 BLE `rssi`가 가장 센 기기로 받는다. 실패하면 다음으로 센 기기, 모두 실패면 기존 오류(`device_add_network_error`)와 [직접 입력].
-  - 연결: 고른 기기 전부, 카메라 먼저(같은 종류는 고른 순서), `connectingIndex/Total` 갱신. 보내기 직전 `owned(kind, id)` 재확인 — null이면 `failure: notOwned`, **예외면 `failure: notChecked`(보내지 않음)**, 둘 다 결과 `failed`로 두고 **다음 기기 계속**. 재확인 때 그 행 `lastSeen`·`isOnline`·`uptimeSeconds`를 기준값으로 함께 잡는다(앞 기기를 기다리는 동안의 갱신을 성공으로 오인하지 않게 — 기준값은 기기마다 보내기 직전).
+  - 연결: 고른 기기 전부, 카메라 먼저(같은 종류는 고른 순서), `connectingIndex/Total` 갱신. 보내기 직전 `owned(kind, id)` 재확인 — null이면 `failure: notOwned`, **예외면 `failure: notChecked`(보내지 않음)**, 둘 다 결과 `failed`로 두고 **다음 기기 계속**. 재확인 때 그 행 `isOnline`·`uptimeSeconds`를 기준값으로 잡는다(기기마다 보내기 직전). `lastSeen` 기준은 지금처럼 **BLE 응답 뒤** 다시 읽어 잡는다 — BLE로 보내는 동안 옛 Wi-Fi로 온 접속이 새 접속으로 읽히지 않게(`_updateWifi` 기존 안전장치, 2026-11-19 구현 중 정정). 재확인·폴링은 `networkDevices()`를 다시 읽어 그 행을 찾는다.
   - `_existingId(c)` = `state.owned[c.physicalId]?.device.id`.
-  - 판정(사용자 결정 6): 카메라는 `_watchReconnect`에서 `last_seen_at`이 기준보다 새롭고 **가동 시간이 기준보다 줄었으면**(`SysHealth.rebootedSince(uptimeBefore)` — 카메라 행 `clip_stats` 조회) 원래 온라인이어도 신뢰. 그 외 `trusted` = `via == memory || !wasOnline`.
+  - 판정(사용자 결정 6): 카메라는 `_watchReconnect`에서 `last_seen_at`이 기준보다 새롭고 **가동 시간이 기준보다 줄었으면**(둘 다 값이 있을 때, 리셋 사유는 보지 않음) 원래 온라인이어도 신뢰. 그 외 `trusted` = `via == memory || !wasOnline`.
   - `registerAsNew`·`groupConfirmed`·자동 그룹·새 이름: 이 모드에선 부르지 않는다/즉시 return.
   - `continueAdding`([다시 찾기]): 실패·미확인 결과를 **지우고**(지우지 않으면 미확인은 `canRetry == false`라 못 고른다 — `device_add_flow.dart:169-174`) 그 행 id를 `_autoPicked`에서 빼 다시 미리 체크, scan으로. 성공 결과는 남긴다.
   - 로그: `debugPrint('[device-add] network-match name=… kind=… row=…${tail} via=memory|hardware|none')` — **매칭 결과가 바뀔 때만**(스캔 갱신마다 찍지 않는다).

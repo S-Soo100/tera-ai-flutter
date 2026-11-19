@@ -25,6 +25,14 @@ class RedesignTabHeader extends StatelessWidget {
   final ValueChanged<String> onSelected;
   final Key? pillKey, arrowKey, managementKey, accountKey;
 
+  /// 관리 메뉴(경로, 문구 키) — 네트워크 관리는 2026-11-19 Figma 1913:7111.
+  static const _menuItems = [
+    ('/devices/add', 'redesign_device_add'),
+    ('/devices/manage', 'redesign_device_manage'),
+    ('/my-pets/manage', 'redesign_pet_manage'),
+    ('/devices/network', 'network_manage_title'),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final glass = context.glass;
@@ -171,11 +179,7 @@ class RedesignTabHeader extends StatelessWidget {
                   constraints: const BoxConstraints(minWidth: 149),
                   onSelected: (route) => context.push(route),
                   itemBuilder: (_) => [
-                        for (final (i, (route, key)) in const [
-                          ('/devices/add', 'redesign_device_add'),
-                          ('/devices/manage', 'redesign_device_manage'),
-                          ('/my-pets/manage', 'redesign_pet_manage'),
-                        ].indexed)
+                        for (final (i, (route, key)) in _menuItems.indexed)
                           PopupMenuItem(
                               value: route,
                               height: 44,
@@ -186,7 +190,8 @@ class RedesignTabHeader extends StatelessWidget {
                                   alignment: Alignment.centerLeft,
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 12),
-                                  decoration: i == 2
+                                  // 줄 사이 선 — 마지막 줄만 없다.
+                                  decoration: i == _menuItems.length - 1
                                       ? null
                                       : BoxDecoration(
                                           border: Border(
