@@ -39,6 +39,9 @@ class _FakeCameraRepo implements CameraRepository {
 
   @override
   Future<bool> reboot(String cameraUuid) async => false;
+
+  @override
+  Future<void> turnOffWeakSignalNotice(String cameraId) async {}
 }
 
 TerraCamera _camera({bool capable = true, bool rotate180 = false}) =>

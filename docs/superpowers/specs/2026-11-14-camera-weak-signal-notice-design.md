@@ -1,6 +1,12 @@
 # 카메라 네트워크 신호 약함 안내 (`camera.weak_signal`) — 앱 기획
 
-> 상태: 🛠 **구현 완료(0.178.0, 브랜치 `feat/camera-weak-signal-notice`) — D2(더보기 이동) 기획 확인 중**, D1·D3~D5는 추천안으로 구현 (2026-11-16). 화면 검수 `docs/design-audits/2026-11-16-camera-weak-signal/RESULTS.md`.
+> ⚠️ **2026-11-19 변경 — 막대 → 모달 + "알림 다시 보지 않기"(0.185.0).** 아래 §3~§5의 막대·D2·D3은 옛 내용이다. 현행은 이 상자가 기준이다.
+> - 근거: Figma 섹션 1877:14741 EditLog(2020:11226) "스낵바 → 모달, 알림 다시 보지 않기 옵션 추가 — 네트워크 변경이 영구적으로 불가능한 사용자가 있음". 옛 막대는 asis(2020:11224)로 옮겨졌다. 모달 2020:11196: 345×212 흰 r12, 안쪽 24, 문구 18/500/28 "네트워크 신호가 약하니 기기와 연결된 네트워크를 변경해 주세요", 버튼 [닫기] #1E1E1E·[변경] #C00306(각 142.5×44 r12, 사이 13), 16 아래 체크 행 "알림 다시 보지 않기"(24 + 4 + 14/500 #3C3C3C). 서버 문서 §5(2026-11-19) `cameras.weak_signal_notice_off_at`.
+> - 사용자 결정(2026-11-19): ① 띄우는 횟수 — 안내 1건당 한 번, [닫기]·바깥 탭도 읽음 처리(서버 24시간 1회라 하루 최대 1번), 다시 보지 않기면 안 뜸 ② [변경] = 지금 Wi-Fi 바꾸기(`/devices/wifi`, 그 카메라 지정) — Figma "네트워크 관리" 흐름이 생기면 교체 ③ 다시 켜는 메뉴 없음(재등록 시 서버가 초기화) ④ 영상 상태와 무관하게 띄움.
+> - 구현: `WeakSignalNoticePrompt`(크기 0, 홈 `TopFixedArea`·카메라 탭 `CameraLiveArea`). 그 화면이 보일 때만(TickerMode·`ModalRoute.isCurrent`, 가려졌으면 2초마다 다시 봄) 띄우고, 띄운 id는 `weakSignalPromptedProvider`에 넣어 두 자리·읽음 실패 때 다시 띄우지 않는다. 체크하고 닫으면(어느 버튼이든) `cameras.weak_signal_notice_off_at = now()` 직결 UPDATE(`CameraRepository.turnOffWeakSignalNotice`), 실패하면 스낵바. 막대(`LiveNoticeBar`)는 초점 안내만 — D3 우선순위는 사라졌다. 알림함·배지·모두 읽음 제외는 그대로.
+> - 미확인: 실기기에서 직결 UPDATE가 RLS로 통과하는지(서버 문서는 된다고 함), 서버가 값이 있는 카메라에 새로 넣지 않는지.
+
+> 상태(옛): 🛠 **구현 완료(0.178.0, 브랜치 `feat/camera-weak-signal-notice`) — D2(더보기 이동) 기획 확인 중**, D1·D3~D5는 추천안으로 구현 (2026-11-16). 화면 검수 `docs/design-audits/2026-11-16-camera-weak-signal/RESULTS.md`.
 > 원문: terra-server `docs/APP_CAMERA_WEAK_SIGNAL_2026-11-13.md` (서버 구현 완료·스위치 꺼짐), 서버 계획 `specs/stage-v-camera-weak-signal-notice.md`.
 > Figma: Home 프레임 라이브 위 막대 "네트워크 신호가 약하니 점검해 주세요 / 더보기"(사용자 공유 캡처). 카메라 탭은 같은 자리에 초점 안내.
 > 선례: 초점 안내 카메라 단위 `2026-11-11-camera-focus-notice-per-camera-design.md`.

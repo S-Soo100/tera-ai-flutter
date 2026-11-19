@@ -89,7 +89,7 @@ Future<void> dismissLiveNotices(
   final ids = _idsFor(ref.read(liveNoticeIdsByRefProvider(kind)), camera);
   if (ids.isEmpty) return;
   final unread = {
-    for (final k in liveNoticeKinds)
+    for (final k in cameraNoticeKinds)
       for (final n in ref.read(liveNoticesProvider(k)).valueOrNull ?? const [])
         n.id
   };
@@ -108,3 +108,24 @@ Future<void> dismissLiveNotices(
     }
   }));
 }
+
+// ── 네트워크 신호 약함 모달(2026-11-19, Figma 2020:11196) ──
+
+/// 이번 실행에서 이미 모달로 띄운 신호 약함 안내 id — 홈·카메라 탭 두 자리가
+/// 같은 안내를 두 번 띄우지 않고, 읽음 저장에 실패해도 다시 띄우지 않는다(다음
+/// 실행에선 미읽음이면 다시 뜬다). 계정이 바뀌면 비운다.
+final weakSignalPromptedProvider = StateProvider<Set<String>>((ref) {
+  ref.watch(currentUserProvider.select((u) => u?.id));
+  return const {};
+});
+
+/// [camera]에 아직 띄우지 않은 미읽음 신호 약함 안내 id. 서버는 카메라마다 안 읽은
+/// 행이 있으면 새로 넣지 않고 24시간에 1회라, 하루 최대 한 번 뜬다.
+final weakSignalNoticeIdsProvider =
+    Provider.autoDispose.family<Set<String>, LiveNoticeCamera>((ref, camera) {
+  final prompted = ref.watch(weakSignalPromptedProvider);
+  final ids = _idsFor(
+      ref.watch(liveNoticeIdsByRefProvider(cameraWeakSignalNotificationKind)),
+      camera);
+  return ids.difference(prompted);
+});

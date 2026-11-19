@@ -72,6 +72,16 @@ class CameraRepository {
         .update({'enclosure_id': enclosureId}).eq('id', cameraId);
   }
 
+  /// 네트워크 신호 약함 안내 끄기(terra-server
+  /// `docs/APP_CAMERA_WEAK_SIGNAL_2026-11-13.md` §5) — 값이 있으면 서버가 그
+  /// 카메라엔 새 안내를 넣지 않는다. 본인 카메라 행 UPDATE는 기존 RLS로 된다.
+  /// 다시 켜는 메뉴는 두지 않는다(2026-11-19 사용자 결정 — 재등록하면 초기화).
+  Future<void> turnOffWeakSignalNotice(String cameraId) async {
+    await _supabase.from('cameras').update({
+      'weak_signal_notice_off_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', cameraId);
+  }
+
   // ── terra-server REST ──────────────────────────────────────────────────────
 
   /// 180° 회전 설정 (회신 2026-09-08 §5 — **REST 전용**). 서버가 DB 갱신 후
