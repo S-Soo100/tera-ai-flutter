@@ -369,11 +369,11 @@ void main() {
           find.descendant(
               of: button, matching: find.text('network_manage_connected')),
           findsOneWidget);
-      // 오른쪽은 이 폰이 마지막에 붙인 Wi-Fi 이름, 모르고 오프라인이면 '추가하기'.
+      // 오프라인이면 기억한 이름(사육장 home_2.4G)이 있어도 '추가하기'
+      // (Figma 1913:7510, 2026-11-19 리뷰).
       final name =
           tester.widget<Text>(find.byKey(const Key('device_wifi_name')));
-      expect(name.data,
-          kind == ManagementKind.device ? 'home_2.4G' : 'network_manage_add');
+      expect(name.data, 'network_manage_add');
       await tester.ensureVisible(button);
       await tester.tap(button);
       await tester.pumpAndSettle();
@@ -439,6 +439,23 @@ void main() {
           tester.widget<Text>(find.byKey(const Key('device_wifi_name'))).data,
           expected,
           reason: 'isOnline=$online');
+    }
+  });
+
+  // Figma 1913:7510 — 네트워크 연결이 없으면 옛 이름을 알아도 '추가하기'.
+  testWidgets('오프라인이면 기억한 이름·서버 이름이 있어도 추가하기', (tester) async {
+    for (final wifiName in [null, 'server_ssid']) {
+      await pumpDetail(
+          tester,
+          ManagementItem(
+              key: const ManagementKey(kind: ManagementKind.camera, id: 'row'),
+              name: '카메라',
+              isOnline: false,
+              wifiName: wifiName));
+      expect(
+          tester.widget<Text>(find.byKey(const Key('device_wifi_name'))).data,
+          'network_manage_add',
+          reason: 'wifiName=$wifiName');
     }
   });
 

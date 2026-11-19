@@ -75,10 +75,10 @@ class _DeviceDetailBody extends ConsumerWidget {
             : ref
                 .watch(deviceWifiNameProvider((wifiKind, item.key.id)))
                 .valueOrNull;
-    // 이름을 모르면 — 오프라인은 Figma 1913:7510 "추가하기", 그 외(온라인·
-    // 상태 모름)는 '--'.
-    final wifiValue = wifiName ??
-        (item.isOnline == false ? 'network_manage_add'.tr() : '--');
+    // 오프라인이면 Figma 1913:7510 "추가하기" — 옛 이름을 알아도 지금 연결된
+    // 네트워크가 아니다. 그 외엔 이름, 모르면 '--'.
+    final wifiValue =
+        item.isOnline == false ? 'network_manage_add'.tr() : wifiName ?? '--';
     // 재시작·Wi-Fi 약함 대상 — 개체(pet)엔 없다.
     final SysTarget? sysTarget = switch (item.key.kind) {
       ManagementKind.camera => (PairTargetKind.camera, item.key.id),

@@ -125,6 +125,42 @@ void main() {
         isNot(contains('superseded_at')));
   });
 
+  // 리뷰(2026-11-19): 보내기 직전 재확인·폴링은 그 행 하나만 읽는다.
+  test('networkDevice는 그 종류 테이블에서 그 행 하나만 읽는다', () async {
+    final requests = <http.Request>[];
+    final client = SupabaseClient('https://example.test', 'anon',
+        httpClient: MockClient((request) async {
+      requests.add(request);
+      final body = request.url.path == '/rest/v1/cameras'
+          ? [
+              {
+                'id': 'c1',
+                'name': '카메라 4',
+                'is_online': true,
+                'clip_stats': {
+                  'sys': {'rssi': -78, 'uptime_s': 30}
+                },
+              }
+            ]
+          : [];
+      return http.Response(jsonEncode(body), 200,
+          request: request, headers: {'content-type': 'application/json'});
+    }));
+    addTearDown(client.dispose);
+    final repo =
+        DeviceAddRegistrationRepository(client, accountIdProvider: () => 'a');
+    final cam = await repo.networkDevice('a', PairTargetKind.camera, 'c1');
+    expect(requests.single.url.path, '/rest/v1/cameras');
+    expect(requests.single.url.queryParameters,
+        containsPair('id', 'eq.c1'));
+    expect(requests.single.url.queryParameters,
+        containsPair('owner_id', 'eq.a'));
+    expect(cam!.uptimeSeconds, 30);
+    expect(cam.wifiRssi, -78);
+    expect(await repo.networkDevice('a', PairTargetKind.device, 'gone'),
+        isNull);
+  });
+
   // 네트워크 관리(2026-11-19): 화면 열 때·다시 스캔 때만 읽는다. 전체 열을
   // 골라 서버에 wifi_ssid가 생기면 앱 수정 없이 읽고, superseded_at은 cameras에만
   // 있어 서버 필터로 걸지 않고 앱에서 거른다.

@@ -108,6 +108,8 @@ final deviceAddFlowProvider = StateNotifierProvider.autoDispose
       target: target,
       networkManage: networkManage,
       networkDevices: () => registration.networkDevices(account!),
+      networkDevice: (kind, id) =>
+          registration.networkDevice(account!, kind, id),
       rememberedId: (candidate) => known.load(account!, candidate),
       // 기억한 기기라도 이 계정에 행이 남아 있어야 Wi-Fi만 바꾼다.
       knownId: (candidate) async {
@@ -163,6 +165,8 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       WifiChangeTarget? target,
       NetworkManageRequest? networkManage,
       Future<List<OwnedNetworkDevice>> Function()? networkDevices,
+      Future<OwnedNetworkDevice?> Function(PairTargetKind, String)?
+          networkDevice,
       String? Function(DeviceAddCandidate)? rememberedId,
       Future<String?> Function(DeviceAddCandidate)? knownId,
       Future<bool> Function(DeviceAddCandidate)? registered,
@@ -180,6 +184,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         _target = target,
         _network = networkManage,
         _networkDevices = networkDevices,
+        _networkDevice = networkDevice,
         _rememberedId = rememberedId,
         _known = knownId,
         _registered = registered,
@@ -255,6 +260,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   final NetworkManageRequest? _network;
   final Future<List<OwnedNetworkDevice>> Function()? _networkDevices;
 
+  /// 행 하나만 다시 읽는다(보내기 직전 재확인·확인 중 폴링) — 목록 전체를
+  /// 5초마다 기기 수만큼 읽지 않게(2026-11-19 리뷰). 없으면 목록에서 찾는다.
+  final Future<OwnedNetworkDevice?> Function(PairTargetKind, String)?
+      _networkDevice;
+
   /// 이 폰의 기억(`KnownDeviceStore`) — BLE 주소 → 행 id.
   final String? Function(DeviceAddCandidate)? _rememberedId;
 
@@ -270,6 +280,10 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
 
   /// [다시 찾기]로 다시 고를 실패·미확인 기기의 행 id — 미리 체크 대상에 더한다.
   final Set<String> _retryRowIds = {};
+
+  /// 유저가 직접 체크한 행 id — 다시 검색(빈 목록부터 다시 온다)으로 목록에서
+  /// 잠깐 빠졌다 돌아와도 다시 체크한다. 직접 풀면 뺀다(2026-11-19 리뷰).
+  final Set<String> _userPickedRowIds = {};
 
   /// 마지막으로 남긴 매칭 로그(BLE 주소 → `row|via`) — 바뀔 때만 찍는다.
   final Map<String, String> _matchLog = {};
@@ -1008,7 +1022,11 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       }
     }
     if (state.step == DeviceAddStep.scan) {
-      for (final rowId in {..._network!.preferredIds, ..._retryRowIds}) {
+      for (final rowId in {
+        ..._network!.preferredIds,
+        ..._retryRowIds,
+        ..._userPickedRowIds
+      }) {
         if (_autoPicked.contains(rowId)) continue;
         for (final c in candidates) {
           if (owned[c.physicalId]!.device.id != rowId) continue;
@@ -1049,7 +1067,15 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       return;
     }
     final next = {...state.selected};
-    if (next.remove(key) == null) next[key] = candidate;
+    final rowId = state.owned[key]!.device.id;
+    if (next.remove(key) == null) {
+      next[key] = candidate;
+      _userPickedRowIds.add(rowId);
+    } else {
+      _userPickedRowIds.remove(rowId);
+      // 미리 체크 대상이어도 유저가 푼 것은 다시 고르지 않는다.
+      _autoPicked.add(rowId);
+    }
     state = state.copyWith(selected: Map.unmodifiable(next));
   }
 
@@ -1073,6 +1099,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   /// 이 계정 기기 목록을 다시 읽어 그 행을 찾는다. 해제·대체됐으면 null.
   Future<OwnedNetworkDevice?> _networkRow(
       PairTargetKind kind, String id) async {
+    if (_networkDevice case final one?) return one(kind, id);
     final rows = await _networkDevices!();
     return rows.where((r) => r.kind == kind && r.id == id).firstOrNull;
   }
@@ -1137,11 +1164,22 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
                   failure: failure ?? DeviceProvisionFailure.notOwned)));
           continue;
         }
-        await _updateWifi(candidate, id, ssid, password, remember, network: (
-          via: match.via,
-          wasOnline: row.isOnline != false,
-          uptimeBefore: row.uptimeSeconds
-        ));
+        try {
+          await _updateWifi(candidate, id, ssid, password, remember, network: (
+            via: match.via,
+            wasOnline: row.isOnline != false,
+            uptimeBefore: row.uptimeSeconds
+          ));
+        } catch (e) {
+          // 이 기기만 실패로 두고 다음 기기로 간다 — 앞 기기 결과(확인 중 포함)를
+          // 버리고 비밀번호 화면으로 돌아가지 않는다(2026-11-19 리뷰).
+          debugPrint('[device-add] network-send failed '
+              'row=…${_tail(id)} $e');
+          if (!_active) return;
+          state = state.copyWith(
+              results: _putResult(DeviceAddResult(
+                  candidate: candidate, outcome: DeviceAddOutcome.failed)));
+        }
       }
       if (!_active) return;
       state = state.copyWith(

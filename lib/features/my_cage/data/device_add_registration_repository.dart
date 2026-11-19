@@ -113,6 +113,21 @@ class DeviceAddRegistrationRepository {
     ];
   }
 
+  /// [networkDevices]의 행 하나 — 보내기 직전 재확인·확인 중 폴링용(목록 전체를
+  /// 5초마다 기기 수만큼 읽지 않게, 2026-11-19 리뷰). 해제·대체됐으면 null.
+  Future<OwnedNetworkDevice?> networkDevice(
+      String account, PairTargetKind kind, String id) async {
+    _guard(account);
+    final rows = await client
+        .from(kind == PairTargetKind.camera ? 'cameras' : 'devices')
+        .select()
+        .eq('owner_id', account)
+        .eq('id', id)
+        .limit(1);
+    _guard(account);
+    return rows.isEmpty ? null : _networkRow(rows.first, kind);
+  }
+
   static OwnedNetworkDevice? _networkRow(
       Map<String, dynamic> row, PairTargetKind kind) {
     if (row['unlinked_at'] != null || row['superseded_at'] != null) {

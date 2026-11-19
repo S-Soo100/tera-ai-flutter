@@ -26,6 +26,9 @@ class Gateway implements DeviceAddGateway {
   final jwts = <String>[];
   final networkCalls = <String>[];
   final networkFails = <String>{};
+
+  /// BLE 연결 자체가 예외로 끝나는 기기(광고가 사라짐 등).
+  final provisionFails = <String>{};
   Completer<void>? pending;
   @override
   Stream<List<DeviceAddCandidate>> get scanResults => events.stream;
@@ -52,6 +55,9 @@ class Gateway implements DeviceAddGateway {
       required bool Function() isCurrent,
       bool wifiOnly = false}) async {
     sent.add(candidate.physicalId);
+    if (provisionFails.contains(candidate.physicalId)) {
+      throw StateError('Physical device unavailable');
+    }
     this.wifiOnly.add(wifiOnly);
     jwts.add(jwt);
     await pending?.future;
@@ -876,6 +882,7 @@ void main() {
     late List<OwnedNetworkDevice> rows;
     late Future<List<OwnedNetworkDevice>> Function() loadRows;
     late int rowLoads;
+    late int rowLookups;
     late Map<String, String> remembered;
     late Map<String, String> rememberedSaved;
     late List<String> forgotten;
@@ -900,6 +907,11 @@ void main() {
               rowLoads++;
               return loadRows();
             },
+            networkDevice: (kind, id) async {
+              rowLookups++;
+              final all = await loadRows();
+              return all.where((r) => r.kind == kind && r.id == id).firstOrNull;
+            },
             rememberedId: (c) => remembered[c.physicalId],
             rememberId: (c, id) async => rememberedSaved[c.physicalId] = id,
             forgetId: (c) async => forgotten.add(c.physicalId),
@@ -911,6 +923,7 @@ void main() {
       rows = [d1(), d2(), c1()];
       loadRows = () async => rows;
       rowLoads = 0;
+      rowLookups = 0;
       remembered = {camMemory.physicalId: 'c1'};
       rememberedSaved = {};
       forgotten = [];
@@ -1295,6 +1308,48 @@ void main() {
       gateway.events.add([cageA, cageB]);
       await settle();
       expect(controller.state.selected.keys, {cageB.physicalId});
+    });
+
+    // 리뷰 1: 실제 BLE 어댑터는 다시 검색할 때 빈 목록을 먼저 낸다.
+    test('Wi-Fi 목록에서 뒤로 가 다시 검색해도 직접 고른 기기는 다시 체크', () async {
+      await found([cageA, cageB]);
+      controller.select(cageA);
+      controller.select(cageB);
+      controller.select(cageB); // 직접 푼 기기는 다시 체크하지 않는다.
+      await controller.loadNetworks();
+      await controller.scan();
+      gateway.events.add(const []);
+      await settle();
+      gateway.events.add([cageA, cageB]);
+      await settle();
+      expect(controller.state.selected.keys, {cageA.physicalId});
+    });
+
+    // 리뷰 2: 한 기기의 BLE 예외가 나머지 기기를 막지 않는다.
+    test('한 기기가 BLE 예외면 그 기기만 실패하고 다음 기기는 보낸다', () async {
+      await found([cageA, cageB]);
+      controller.select(cageA);
+      controller.select(cageB);
+      gateway.provisionFails.add(cageA.physicalId);
+      await controller.connect('home', 'password');
+      await settle();
+      expect(controller.state.step, DeviceAddStep.results);
+      expect(controller.state.results[cageA.physicalId]!.outcome,
+          DeviceAddOutcome.failed);
+      expect(gateway.sent, [cageA.physicalId, cageB.physicalId]);
+      expect(controller.state.results[cageB.physicalId]!.outcome,
+          DeviceAddOutcome.wifiUpdated);
+    });
+
+    // 리뷰 3: 보내기 직전 재확인·확인 중 폴링은 그 행만 조회한다.
+    test('재확인·폴링은 목록 전체가 아니라 그 행만 읽는다', () async {
+      await found([cageA]);
+      controller.select(cageA);
+      final before = rowLoads;
+      await controller.connect('home', 'password');
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      expect(rowLoads, before, reason: '전체 목록을 다시 읽지 않는다');
+      expect(rowLookups, greaterThan(1));
     });
 
     test('dispose 뒤 응답 무시', () async {

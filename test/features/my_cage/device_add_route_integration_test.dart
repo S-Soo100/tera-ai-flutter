@@ -150,6 +150,11 @@ class FakeRegistration implements DeviceAddRegistrationRepository {
   @override
   Future<List<OwnedNetworkDevice>> networkDevices(String account) async =>
       const [];
+
+  @override
+  Future<OwnedNetworkDevice?> networkDevice(
+          String account, PairTargetKind kind, String id) async =>
+      null;
 }
 
 void main() {

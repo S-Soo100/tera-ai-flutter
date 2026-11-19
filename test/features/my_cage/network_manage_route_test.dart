@@ -34,6 +34,11 @@ class _OwnedRegistration extends FakeRegistration {
   @override
   Future<List<OwnedNetworkDevice>> networkDevices(String account) async =>
       rows;
+
+  @override
+  Future<OwnedNetworkDevice?> networkDevice(
+          String account, PairTargetKind kind, String id) async =>
+      rows.where((r) => r.kind == kind && r.id == id).firstOrNull;
 }
 
 class _NoKnown implements KnownDeviceStore {
