@@ -43,8 +43,9 @@ class _OffsetRepo implements TempOffsetRepository {
   bool get userContract => false;
 
   @override
-  Future<String?> send(String deviceId, TempOffset offset) async {
-    sent.add(offset.toDeviceValue());
+  Future<String?> send(String deviceId, TempOffset offset,
+      {double factoryBase = TempOffset.factoryDeviceValue}) async {
+    sent.add(offset.toDeviceValue(factoryBase: factoryBase));
     if (fail) throw const TerraRestException(500, 'boom');
     return 'c${sent.length}';
   }
@@ -77,14 +78,17 @@ class _Device {
 }
 
 /// 목록 스냅샷 — 옛 계약 컬럼(합산값)에 같은 보정을 담는다.
-Device _row(TempOffset? offset) => Device(
+/// [hub]면 허브 카메라(공장 보정 0).
+Device _row(TempOffset? offset, {bool hub = false}) => Device(
     id: kEnvV4DeviceId,
     ownerId: 'u1',
     enclosureId: null,
     name: '거실 사육장',
     isOnline: true,
     lastSeenAt: null,
-    tempOffsetC: offset?.toDeviceValue());
+    capabilities: hub ? const {'hub': true} : null,
+    tempOffsetC:
+        offset?.toDeviceValue(factoryBase: hub ? 0 : TempOffset.factoryDeviceValue));
 
 bool _switchOn(WidgetTester tester) => tester
     .widget<ScheduleSwitch>(find.byKey(TempHumidSettingScreen.offsetToggleKey))
@@ -102,6 +106,7 @@ void main() {
     required TempOffset? deviceOffset,
     double reported = 24.7,
     bool online = true,
+    bool hub = false,
     _OffsetRepo? repo,
   }) async {
     await tester.binding.setSurfaceSize(const Size(393, 852));
@@ -117,7 +122,8 @@ void main() {
     final now = DateTime.now();
     await tester.pumpWidget(ProviderScope(
       overrides: [
-        deviceListProvider.overrideWith((ref) async => [_row(deviceOffset)]),
+        deviceListProvider
+            .overrideWith((ref) async => [_row(deviceOffset, hub: hub)]),
         deviceOffsetProvider(kEnvV4DeviceId)
             .overrideWith((ref) => device.offsetStream()),
         commandRowProvider
@@ -366,6 +372,27 @@ void main() {
     device.report(const TempOffset(0));
     await tester.pumpAndSettle();
     expect(_switchOn(tester), isFalse);
+  });
+
+  testWidgets('허브 카메라: 끄기는 0, 더하기 1.0은 1.0을 보낸다(공장 보정 0)',
+      (tester) async {
+    final (_, device, repo) = await pump(tester,
+        deviceOffset: const TempOffset(1.0), hub: true);
+    await tester.tap(find.byKey(TempHumidSettingScreen.offsetToggleKey));
+    await tester.pump();
+    expect(repo.sent, [0]);
+    device.report(const TempOffset(0));
+    await tester.pumpAndSettle();
+    expect(_switchOn(tester), isFalse);
+
+    await turnOnAndOpen(tester);
+    await tester.tap(find.byKey(TempOffsetScreen.addKey));
+    setMagnitude(tester, 10);
+    await tester.pumpAndSettle();
+    await tapSave(tester);
+    expect(repo.sent, [0, 1.0]);
+    device.report(const TempOffset(1.0));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('끄기 실패(no_ack) → 켜짐으로 돌아오고 안내', (tester) async {
