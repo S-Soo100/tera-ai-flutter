@@ -184,16 +184,21 @@ class TempOffset {
     return TempOffset((subtract ? -t : t) / 10);
   }
 
-  /// 공장 보정(보드 발열 상쇄) — 펌웨어 빌드 기본값. 기기에는 값이 하나뿐이라
-  /// (NVS가 기본값을 **덮어쓴다**) "공장 보정 + 사용자 보정"을 합쳐 보낸다
-  /// (서버 회신 2026-11-02 §1.2). 보드별로 달라지면 서버가 `capabilities`로
-  /// 알려 주기로 했다 — 그때 이 상수를 기기별 값으로 바꾼다.
+  /// 공장 보정(보드 발열 상쇄) — 사육장 보드(terra-fw) 펌웨어 빌드 기본값.
+  /// 기기에는 값이 하나뿐이라(NVS가 기본값을 **덮어쓴다**) "공장 보정 + 사용자
+  /// 보정"을 합쳐 보낸다(서버 회신 2026-11-02 §1.2).
+  ///
+  /// ⚠️ 모든 기기가 이 값은 아니다 — 허브 카메라(p4hub)는 0이다(2026-11-19
+  /// 승수홈 사고). 기기별 기준은 `device.dart`의 `factoryOffsetBaseFromRow`·
+  /// `Device.factoryOffsetBase`로 정해 `factoryBase`에 넘긴다. 이 상수는 기준을
+  /// 모를 때의 기본값이다.
   static const double factoryDeviceValue = -1.5;
 
-  /// 기기가 보고한 `devices.temp_offset_c` → 사용자 보정값(공장 보정을 뺀 값).
-  /// throw 없음(편집기 밖은 [outOfEditorRange]로 드러낸다). 0.1 단위로 맞춘다.
-  static TempOffset fromDevice(double deviceValue) =>
-      TempOffset(_tenths(deviceValue - factoryDeviceValue) / 10);
+  /// 기기가 보고한 `devices.temp_offset_c` → 사용자 보정값(공장 보정 [factoryBase]를
+  /// 뺀 값). throw 없음(편집기 밖은 [outOfEditorRange]로 드러낸다). 0.1 단위로 맞춘다.
+  static TempOffset fromDevice(double deviceValue,
+          {double factoryBase = factoryDeviceValue}) =>
+      TempOffset(_tenths(deviceValue - factoryBase) / 10);
 
   /// 새 계약 `devices.temp_offset_user_c` 원문 → 사용자 보정값. 숫자 문자열도
   /// 읽는다([parseDouble] — `Device.parseTempOffset`과 같은 규칙). 숫자 아님·
@@ -206,14 +211,18 @@ class TempOffset {
     return TempOffset(_tenths(v) / 10);
   }
 
-  /// 기기 명령 `set_temp_offset`의 `offset_c` — 끔(0)이면 공장 보정 −1.5.
-  /// 편집기 끝값(±4)이면 −5.5 ~ +2.5로 서버 허용 ±10 안이다.
-  double toDeviceValue() => _tenths(value + factoryDeviceValue) / 10;
+  /// 기기 명령 `set_temp_offset`의 `offset_c` — 끔(0)이면 공장 보정 [factoryBase]
+  /// (사육장 보드 −1.5, 허브 0). 편집기 끝값(±4)이면 −5.5 ~ +4.0으로 서버 허용
+  /// ±10 안이다.
+  double toDeviceValue({double factoryBase = factoryDeviceValue}) =>
+      _tenths(value + factoryBase) / 10;
 
   /// 화면의 "현재 측정 온도" — 기기가 보낸 보정 후 온도(`t_a`)에서 사용자 보정만
   /// 걷어낸 값(공장 보정은 남긴다: 보정 꺼짐일 때 홈에 보이는 값과 같다).
-  static double measuredFrom(double reportedTemp, double deviceOffset) =>
-      measuredFromUser(reportedTemp, fromDevice(deviceOffset));
+  static double measuredFrom(double reportedTemp, double deviceOffset,
+          {double factoryBase = factoryDeviceValue}) =>
+      measuredFromUser(
+          reportedTemp, fromDevice(deviceOffset, factoryBase: factoryBase));
 
   /// [measuredFrom]의 사용자 보정값판 — 보고 온도 − 사용자 보정. 두 계약 모두
   /// 이 식 하나로 계산한다.
