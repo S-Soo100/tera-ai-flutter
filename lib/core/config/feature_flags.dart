@@ -13,12 +13,13 @@ abstract final class FeatureFlags {
   /// 보정값만** 주고받는다(보내기 `user_offset_c`, 읽기
   /// `devices.temp_offset_user_c`). 서버 `APP_TEMP_OFFSET_SERVER_BASE_2026-11-05.md`.
   ///
-  /// 꺼 둔 이유: 서버가 아직 배포 전이다(같은 문서 §6 배포 순서 — 서버 먼저).
-  /// 먼저 켜면 새 컬럼 조회가 실패하고 명령이 400으로 거절된다. 꺼진 동안은
-  /// 옛 계약(합산값 `offset_c`·`temp_offset_c`)을 그대로 쓴다. 서버 문서 맨 위가
-  /// '배포 완료'로 바뀐 것을 확인한 뒤 켠다(계획
-  /// `docs/superpowers/plans/2026-11-05-temp-offset-user-contract.md` Task 3).
-  static const bool tempOffsetUserContract = false;
+  /// 2026-11-19 켬(0.185.1): 서버 Stage S(11-05 `ce61eca`)·Stage T(11-10, 보드별
+  /// 공장 기준 `temp_offset_base_c`) 배포 완료, 서버 `APP_TEMP_OFFSET_2026-11-10.md`
+  /// 요청. 옛 계약은 앱 상수 −1.5로 풀어 기준이 다른 보드에서 틀렸다.
+  /// 공장 기준(허브 포함)은 서버·펌웨어 몫 — 앱에서 기기별로 가정하지 말 것
+  /// (0.184.2 "허브 = 0" 가정은 오판이라 되돌렸다). 되돌릴 땐 false로만 바꾼다
+  /// (옛 경로는 그대로 남겨 두었다).
+  static const bool tempOffsetUserContract = true;
 }
 
 /// 테스트가 덮어쓸 수 있게 provider로 꺼낸다.
