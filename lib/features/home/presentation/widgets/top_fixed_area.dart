@@ -73,8 +73,7 @@ class TopFixedArea extends ConsumerWidget {
       // 네트워크 신호 약함 모달(Figma 2020:11196) — 자리는 차지하지 않는다.
       WeakSignalNoticePrompt(
           cameraId: camera.id,
-          deviceId: camera.cameraId,
-          cameraName: camera.name),
+          deviceId: camera.cameraId),
     ]);
   }
 }

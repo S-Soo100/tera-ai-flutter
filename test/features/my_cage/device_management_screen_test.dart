@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -321,9 +324,11 @@ void main() {
     expect(find.text('Device'), findsWidgets);
   });
 
-  // 기기 상세 [Wi-Fi 바꾸기](2026-09-28) — 지우고 다시 등록하면 새 기기가 된다.
+  // 기기 상세 "연결된 네트워크"(2026-11-19, Figma 1913:7413·7510) — 누르면 그
+  // 기기를 미리 체크한 네트워크 관리. 지우고 다시 등록하면 새 기기가 된다.
   for (final kind in [ManagementKind.device, ManagementKind.camera]) {
-    testWidgets('${kind.name} 상세의 Wi-Fi 바꾸기는 그 기기를 대상으로 연다', (tester) async {
+    testWidgets('${kind.name} 상세의 연결된 네트워크는 그 기기를 미리 체크한 네트워크 관리를 연다',
+        (tester) async {
       final inventory = ManagementInventory(groups: [], items: [
         ManagementItem(
             key: ManagementKey(kind: kind, id: 'row'),
@@ -336,7 +341,7 @@ void main() {
             path: '/',
             builder: (_, __) => DeviceDetailScreen(kind: kind, itemId: 'row')),
         GoRoute(
-            path: '/devices/wifi',
+            path: '/devices/network',
             builder: (_, state) {
               pushed = state.extra;
               return const SizedBox();
@@ -360,25 +365,26 @@ void main() {
         expect(button, findsNothing);
         return;
       }
-      // 오른쪽은 이 폰이 마지막에 붙인 Wi-Fi 이름, 모르면 '--'.
+      expect(
+          find.descendant(
+              of: button, matching: find.text('network_manage_connected')),
+          findsOneWidget);
+      // 오른쪽은 이 폰이 마지막에 붙인 Wi-Fi 이름, 모르고 오프라인이면 '추가하기'.
       final name =
           tester.widget<Text>(find.byKey(const Key('device_wifi_name')));
-      expect(name.data, kind == ManagementKind.device ? 'home_2.4G' : '--');
+      expect(name.data,
+          kind == ManagementKind.device ? 'home_2.4G' : 'network_manage_add');
       await tester.ensureVisible(button);
       await tester.tap(button);
       await tester.pumpAndSettle();
-      final target = pushed! as WifiChangeTarget;
-      expect(target.id, 'row');
-      expect(target.name, '기기 3');
-      expect(
-          target.kind,
-          kind == ManagementKind.device
-              ? PairTargetKind.device
-              : PairTargetKind.camera);
+      expect(pushed, 'row');
     });
   }
 
-  Future<void> pumpDetail(WidgetTester tester, ManagementItem item) async {
+  Future<void> pumpDetail(WidgetTester tester, ManagementItem item,
+      {Map<(String, PairTargetKind, String), String> names = const {
+        ('a', PairTargetKind.camera, 'row'): 'local_ssid'
+      }}) async {
     await tester.pumpWidget(ProviderScope(
         key: UniqueKey(),
         overrides: [
@@ -388,8 +394,7 @@ void main() {
               RedesignGroupRepository(
                   loadRows: (_) async => [], rpc: (_, __) async => null)),
           deviceAddAccountProvider.overrideWithValue('a'),
-          deviceWifiNameStoreProvider.overrideWithValue(
-              _WifiNames({('a', PairTargetKind.camera, 'row'): 'local_ssid'})),
+          deviceWifiNameStoreProvider.overrideWithValue(_WifiNames({...names})),
         ],
         child: MaterialApp(
             theme: AppTheme.light,
@@ -415,6 +420,36 @@ void main() {
             name: '카메라'));
     expect(tester.widget<Text>(find.byKey(const Key('device_wifi_name'))).data,
         'local_ssid');
+  });
+
+  testWidgets('이름을 모르면 오프라인은 추가하기, 온라인·모름은 --', (tester) async {
+    for (final (online, expected) in [
+      (false, 'network_manage_add'),
+      (true, '--'),
+      (null, '--'),
+    ]) {
+      await pumpDetail(
+          tester,
+          ManagementItem(
+              key: const ManagementKey(kind: ManagementKind.camera, id: 'row'),
+              name: '카메라',
+              isOnline: online),
+          names: const {});
+      expect(
+          tester.widget<Text>(find.byKey(const Key('device_wifi_name'))).data,
+          expected,
+          reason: 'isOnline=$online');
+    }
+  });
+
+  test('삭제 확인 문구는 [네트워크 관리]를 가리킨다', () {
+    final ko = jsonDecode(File('assets/l10n/ko.json').readAsStringSync())
+        as Map<String, dynamic>;
+    final text = ko['management_delete_confirm_wifi'] as String;
+    expect(text, contains('[네트워크 관리]'));
+    expect(text, isNot(contains('Wi-Fi 바꾸기')));
+    expect(ko['network_manage_connected'], '연결된 네트워크');
+    expect(ko['network_manage_add'], '추가하기');
   });
 
   testWidgets('삭제 확인은 Wi-Fi 바꾸기가 있는 기기에만 그 안내를 붙인다', (tester) async {

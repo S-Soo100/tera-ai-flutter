@@ -84,6 +84,11 @@ GoRouter _router() => GoRouter(
               body: Center(child: Text('enclosure-link-screen'))),
         ),
         GoRoute(
+          path: '/devices/network',
+          builder: (_, state) => Scaffold(
+              body: Center(child: Text('network-screen ${state.extra}'))),
+        ),
+        GoRoute(
           path: '/env-settings',
           builder: (_, __) =>
               const Scaffold(body: Center(child: Text('env-settings-screen'))),
@@ -135,6 +140,30 @@ void main() {
     await tester.tap(find.text('redesign_device_add'));
     await tester.pumpAndSettle();
     expect(find.text('device-pair-screen'), findsOneWidget);
+  });
+  // 네트워크 관리(2026-11-19, Figma 1913:7111) — 메뉴 4번째, 마지막만 구분선 없음.
+  testWidgets('관리 메뉴 4번째 네트워크 관리 — 마지막만 구분선 없음, 대상 없이 연다',
+      (tester) async {
+    await _pump(tester, [_set('e1', 'A')]);
+    await tester.tap(find.byKey(HomeHeaderBar.addButtonKey));
+    await tester.pumpAndSettle();
+    const labels = [
+      'redesign_device_add',
+      'redesign_device_manage',
+      'redesign_pet_manage',
+      'network_manage_title',
+    ];
+    final tops = [for (final l in labels) tester.getTopLeft(find.text(l)).dy];
+    expect(tops, orderedEquals([...tops]..sort()));
+    for (final (i, label) in labels.indexed) {
+      final box = tester.widget<Container>(find
+          .ancestor(of: find.text(label), matching: find.byType(Container))
+          .first);
+      expect(box.decoration == null, i == labels.length - 1, reason: label);
+    }
+    await tester.tap(find.text('network_manage_title'));
+    await tester.pumpAndSettle();
+    expect(find.text('network-screen null'), findsOneWidget);
   });
   testWidgets('계정 아이콘은 프로필로 이동한다', (tester) async {
     await _pump(tester, [_set('e1', 'A')]);

@@ -15,8 +15,6 @@ import '../../../../shared/widgets/live_surface.dart';
 import '../../../../shared/providers/clock_providers.dart';
 import '../../../../shared/widgets/viva_modal.dart';
 import '../../domain/live_limit.dart';
-import '../../domain/device_add_flow.dart';
-import '../../domain/pair_target_kind.dart';
 import '../../domain/sys_health.dart';
 import '../live_limit_providers.dart';
 import '../live_zoom_providers.dart';
@@ -522,11 +520,8 @@ class _FailedView extends ConsumerWidget {
         onRetry: onRetry,
         onWifiChange: wifiCamera == null
             ? null
-            : () => context.push('/devices/wifi',
-                extra: WifiChangeTarget(
-                    kind: PairTargetKind.camera,
-                    id: wifiCamera.id,
-                    name: wifiCamera.name)),
+            // 네트워크 관리(2026-11-19) — 그 카메라를 미리 체크해 연다.
+            : () => context.push('/devices/network', extra: wifiCamera.id),
       );
     }
     // 카메라 쪽이 멈췄고 재시작할 수 있는 카메라면 재시작을 준다. 방금 보냈거나

@@ -989,6 +989,30 @@ void main() {
       await tester.pump();
     });
 
+    // 진입점이 기기 상세·모달·라이브라 결과 화면 ✕는 홈이 아니라 들어온 화면으로.
+    testWidgets('결과 화면 닫기(✕)는 들어온 화면으로 돌아간다', (tester) async {
+      await pump(
+          tester,
+          nmResults({
+            nmCamera.physicalId:
+                nmUpdated(nmCamera, 'c4', CameraReconnect.online),
+            nmDevice.physicalId:
+                nmUpdated(nmDevice, 'd1', CameraReconnect.missing),
+          }),
+          pushed: true);
+      expect(tester.takeException(), isNull);
+      final close = find.byWidgetPredicate(
+          (w) => w is FigmaIcon && w.name == FigmaIcons.close);
+      expect(close, findsOneWidget);
+      await tester.tap(close);
+      await tester.pumpAndSettle();
+      expect(find.text('entry'), findsOneWidget);
+      expect(find.byKey(Key('network_manage_result_${nmCamera.physicalId}')),
+          findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
     testWidgets('결과 문구 8갈래', (tester) async {
       DeviceAddCandidate c(String id) => DeviceAddCandidate(
           physicalId: id, kind: PairTargetKind.device, name: 'x', rssi: -40);

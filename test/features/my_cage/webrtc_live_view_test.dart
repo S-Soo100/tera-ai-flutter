@@ -5,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vivanaut/features/my_cage/data/camera_repository.dart';
-import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
 import 'package:vivanaut/features/my_cage/domain/live_limit.dart';
-import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/domain/sys_health.dart';
 import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
 import 'package:vivanaut/features/my_cage/presentation/my_cage_providers.dart';
@@ -110,7 +108,9 @@ void main() {
   });
 
   // 공유기를 바꿔 꺼진 카메라 — 지우지 않고 Wi-Fi만 바꾸는 길을 준다(2026-09-28).
-  testWidgets('오프라인이면 [Wi-Fi 바꾸기]가 그 카메라를 대상으로 연다', (tester) async {
+  // 2026-11-19: 목적지는 네트워크 관리(그 카메라를 미리 체크, extra = 행 id).
+  testWidgets('오프라인이면 [네트워크 변경]이 그 카메라를 미리 체크한 네트워크 관리를 연다',
+      (tester) async {
     Object? pushed;
     final router = GoRouter(routes: [
       GoRoute(
@@ -121,7 +121,7 @@ void main() {
                   height: 271,
                   child: WebRtcLiveView(cameraUuid: _cam)))),
       GoRoute(
-          path: '/devices/wifi',
+          path: '/devices/network',
           builder: (_, state) {
             pushed = state.extra;
             return const SizedBox();
@@ -150,14 +150,10 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(WebRtcLiveView.wifiButtonKey));
     await tester.pumpAndSettle();
-    expect(pushed, isA<WifiChangeTarget>());
-    final target = pushed! as WifiChangeTarget;
-    expect(target.kind, PairTargetKind.camera);
-    expect(target.id, _cam);
-    expect(target.name, '카메라 2');
+    expect(pushed, _cam);
   });
 
-  testWidgets('오프라인이 아닌 실패엔 [Wi-Fi 바꾸기]가 없다', (tester) async {
+  testWidgets('오프라인이 아닌 실패엔 [네트워크 변경]이 없다', (tester) async {
     await _pump(
         tester,
         const WebRtcLiveState(
@@ -167,7 +163,7 @@ void main() {
   });
 
   // 리뷰(2026-09-28): 가로 전체화면에서 열면 Wi-Fi 바꾸기가 가로로 열린다.
-  testWidgets('showWifiChange=false면 오프라인이어도 [Wi-Fi 바꾸기]가 없다', (tester) async {
+  testWidgets('showWifiChange=false면 오프라인이어도 [네트워크 변경]이 없다', (tester) async {
     await tester.pumpWidget(ProviderScope(
       overrides: [
         webrtcLiveControllerProvider(_cam).overrideWith((ref) => _Fixed(

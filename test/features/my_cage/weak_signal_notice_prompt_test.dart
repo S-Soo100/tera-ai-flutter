@@ -11,8 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/core/theme/viva_colors.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
-import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
-import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/weak_signal_notice_prompt.dart';
 import 'package:vivanaut/features/notification/data/notification_repository.dart';
 import 'package:vivanaut/features/notification/domain/app_notification.dart';
@@ -62,22 +60,19 @@ void main() {
           builder: (_, __) => Scaffold(
                   body: Column(children: [
                 WeakSignalNoticePrompt(
-                    cameraId: cameraId,
-                    deviceId: 'p4-$cameraId',
-                    cameraName: '카메라1'),
+                    cameraId: cameraId, deviceId: 'p4-$cameraId'),
                 if (twoHosts)
                   WeakSignalNoticePrompt(
-                      cameraId: cameraId,
-                      deviceId: 'p4-$cameraId',
-                      cameraName: '카메라1'),
+                      cameraId: cameraId, deviceId: 'p4-$cameraId'),
                 const Text('home'),
               ]))),
       GoRoute(
           path: '/other', builder: (_, __) => const Scaffold(body: Text('other'))),
-      GoRoute(path: '/devices/wifi', builder: (_, s) {
-        final t = s.extra! as WifiChangeTarget;
-        return Scaffold(body: Text('wifi ${t.kind.name} ${t.id} ${t.name}'));
-      }),
+      // 네트워크 관리(2026-11-19) — extra는 미리 체크할 카메라 행 id.
+      GoRoute(
+          path: '/devices/network',
+          builder: (_, s) =>
+              Scaffold(body: Text('network ${s.extra! as String}'))),
     ]);
     addTearDown(router.dispose);
     await tester.pumpWidget(ProviderScope(
@@ -146,12 +141,11 @@ void main() {
     expect(reads(), ['read:w1:a']);
   });
 
-  testWidgets('변경 → 그 카메라 Wi-Fi 바꾸기 화면, 읽음 처리', (tester) async {
+  testWidgets('변경 → 그 카메라를 미리 체크한 네트워크 관리, 읽음 처리', (tester) async {
     await pump(tester);
     await tester.tap(find.text('변경'));
     await tester.pumpAndSettle();
-    expect(find.text('wifi ${PairTargetKind.camera.name} c1 카메라1'),
-        findsOneWidget);
+    expect(find.text('network c1'), findsOneWidget);
     expect(reads(), ['read:w1:a']);
   });
 
@@ -172,7 +166,7 @@ void main() {
     await tester.tap(find.text('변경'));
     await tester.pumpAndSettle();
     expect(turnedOff, ['c1']);
-    expect(find.textContaining('wifi camera c1'), findsOneWidget);
+    expect(find.text('network c1'), findsOneWidget);
   });
 
   testWidgets('체크를 다시 풀면 끄지 않는다', (tester) async {

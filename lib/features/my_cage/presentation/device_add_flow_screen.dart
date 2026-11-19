@@ -223,6 +223,12 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
 
   void _home() {
     if (!mounted) return;
+    // 네트워크 관리는 메뉴·기기 상세·신호 약함 모달·라이브에서 연다 — 결과 ✕·
+    // 중단 모두 들어온 화면으로 돌아간다(돌아갈 곳이 없으면 홈).
+    if (_networkMode) {
+      _pop();
+      return;
+    }
     // Wi-Fi 바꾸기는 기기 상세·라이브에서 열었다 — 그 화면으로 돌아간다.
     if (widget.wifiTarget != null && context.canPop()) {
       context.pop();
