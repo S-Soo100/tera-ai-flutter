@@ -94,6 +94,7 @@ class DeviceAddFlowRoute extends ConsumerWidget {
         child: DeviceAddFlowScreen(
             initialKind: wifiTarget?.kind ?? initialKind,
             wifiTarget: wifiTarget,
+            networkManage: networkManage,
             onProvisioned: onProvisioned,
             flowKey: flowKey));
   }

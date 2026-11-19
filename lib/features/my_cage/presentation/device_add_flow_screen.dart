@@ -47,8 +47,15 @@ class DeviceAddFlowScreen extends ConsumerStatefulWidget {
       this.initialKind,
       this.onProvisioned,
       this.flowKey,
-      this.wifiTarget});
+      this.wifiTarget,
+      this.networkManage})
+      : assert(wifiTarget == null || networkManage == null);
   final PairTargetKind? initialKind;
+
+  /// 네트워크 관리로 열었으면 그 요청(2026-11-19, Figma 1913:6570) — 근처의 이
+  /// 계정 기기 여러 대에 등록 없이 Wi-Fi만. [NetworkManageRequest.preferredIds]가
+  /// 목록 맨 위로 온다.
+  final NetworkManageRequest? networkManage;
 
   /// [Wi-Fi 바꾸기]로 열었으면 그 기기(2026-09-28) — 목록은 같은 종류만,
   /// 대상으로 보이는 기기는 미리 골라 두고, 끝나면 연 화면으로 돌아간다.
@@ -197,6 +204,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     }
   }
 
+  bool get _networkMode => widget.networkManage != null;
+
   Future<void> _close() async {
     final state = ref.read(deviceAddFlowProvider(_key));
     if (state.step == DeviceAddStep.results) {
@@ -338,8 +347,13 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     });
     final controller = ref.read(deviceAddFlowProvider(_key).notifier);
     final step = state.step;
-    final showsTopBar = step != DeviceAddStep.results ||
-        state.results.values.any((r) => !_succeeded(r));
+    // 네트워크 관리 완료 화면(Figma 1913:7778)만 상단바가 없다 — 기기별 결과는
+    // 확인 중이어도 닫기가 있어야 한다.
+    final showsTopBar = _networkMode
+        ? step != DeviceAddStep.results ||
+            state.networkResults != NetworkResultsState.allConnected
+        : step != DeviceAddStep.results ||
+            state.results.values.any((r) => !_succeeded(r));
     final (body, footer, above) = switch (step) {
       DeviceAddStep.scan => _scan(context, state, controller),
       DeviceAddStep.networks => _networks(context, state, controller),
@@ -363,9 +377,12 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: ManagementTopBar(
                       // Figma 1912:5758 — Wi-Fi 바꾸기는 상단 제목만 바뀐다.
-                      title: (widget.wifiTarget == null
-                              ? 'device_add_title'
-                              : 'device_wifi_title')
+                      // 네트워크 관리는 모든 단계가 "네트워크 관리".
+                      title: (_networkMode
+                              ? 'network_manage_title'
+                              : widget.wifiTarget == null
+                                  ? 'device_add_title'
+                                  : 'device_wifi_title')
                           .tr(),
                       onBack: () => _back(state, controller),
                       close: step == DeviceAddStep.results,
@@ -429,7 +446,8 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                   ])),
             ])),
           ])),
-          if (step == DeviceAddStep.connecting) const _ConnectingOverlay(),
+          if (step == DeviceAddStep.connecting)
+            _ConnectingOverlay(progress: _networkProgress(state)),
         ])));
   }
 
@@ -455,7 +473,9 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
 
   /// 제목 18/600 (+ 진행 중이면 오른쪽 8에 20 스피너) / 8 / 부제 14/500.
   Widget _heading(BuildContext context, String title, String subtitle,
-          {List<String> args = const [], bool busy = false}) =>
+          {List<String> args = const [],
+          bool busy = false,
+          double subtitleLineHeight = 16.70703125}) =>
       Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child:
@@ -475,7 +495,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
             Text(subtitle.tr(args: args),
                 style: managementStyle(context,
                         size: 14, color: context.glass.bodySecondary)
-                    .copyWith(height: 16.70703125 / 14)),
+                    .copyWith(height: subtitleLineHeight / 14)),
             const SizedBox(height: 16)
           ]));
   Widget _surface(BuildContext context, List<Widget> children) => ClipRRect(
@@ -505,6 +525,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
 
   (List<Widget>, List<Widget>, Widget?) _scan(BuildContext context,
       DeviceAddState state, DeviceAddFlowController controller) {
+    if (_networkMode) return _networkScan(context, state, controller);
     final candidates = [
       for (final candidate in state.candidates)
         if (state.resultOf(candidate.kind)?.canRetry != false) candidate
@@ -867,6 +888,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
 
   (List<Widget>, List<Widget>, Widget?) _results(BuildContext context,
       DeviceAddState state, DeviceAddFlowController controller) {
+    if (_networkMode) return _networkResults(context, state, controller);
     if (state.results.isNotEmpty &&
         state.results.values
             .every((r) => r.outcome == DeviceAddOutcome.wifiUpdated)) {
@@ -1196,11 +1218,11 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
           yield 'device_add_session_failed_hint'.tr();
         case DeviceProvisionFailure.rejected:
           yield 'device_add_rejected_hint'.tr();
-        // 네트워크 관리(2026-11-19) — 정식 문구는 Task 5에서 넣는다.
+        // 네트워크 관리(2026-11-19) — 그 모드는 기기별 결과 줄이 따로 그린다.
         case DeviceProvisionFailure.notOwned:
-          yield 'device_wifi_target_gone'.tr();
+          yield 'network_manage_result_not_owned'.tr();
         case DeviceProvisionFailure.notChecked:
-          yield 'device_add_connection_error'.tr();
+          yield 'network_manage_result_not_checked'.tr();
         case null:
           break;
       }
@@ -1221,6 +1243,168 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       case null:
         return;
     }
+  }
+
+  /// 연결 중 "n/N · 기기 이름"(Figma 밖) — 네트워크 관리에서만.
+  String? _networkProgress(DeviceAddState state) {
+    if (!_networkMode ||
+        state.connectingIndex <= 0 ||
+        state.connectingTotal <= 0) {
+      return null;
+    }
+    final id = state.activePhysicalId;
+    final name = (id == null ? null : state.owned[id]?.device.name) ??
+        (id == null ? null : state.selected[id]?.name) ??
+        '';
+    return 'network_manage_progress'.tr(
+        args: ['${state.connectingIndex}', '${state.connectingTotal}', name]);
+  }
+
+  /// 네트워크 관리 기기 선택(Figma 1913:6462·6570) — 알아본 이 계정 기기만,
+  /// 같은 종류 여러 대. 끝난(다시 못 고르는) 기기는 빠진다.
+  (List<Widget>, List<Widget>, Widget?) _networkScan(BuildContext context,
+      DeviceAddState state, DeviceAddFlowController controller) {
+    final preferred = widget.networkManage?.preferredIds ?? const <String>{};
+    final rows = [
+      for (final c in state.candidates)
+        if (state.owned[c.physicalId] case final match?)
+          if (state.results[c.physicalId]?.canRetry != false) (c, match)
+    ]..sort((a, b) => compareNetworkRows(a.$2, b.$2, preferred));
+    final body = [
+      _heading(context, 'network_manage_select_title',
+          'network_manage_select_subtitle',
+          busy: state.busy, subtitleLineHeight: 20),
+      // 목록을 못 읽었으면 아무것도 못 알아본다 — 빈 상태보다 먼저 밝힌다.
+      if (state.ownedLoadFailed) ...[
+        _emptyBox(context, 'network_manage_load_failed'.tr()),
+        if (rows.isNotEmpty) const SizedBox(height: 12),
+      ] else if (rows.isEmpty)
+        _emptyBox(
+            context,
+            (state.busy ? 'device_add_searching' : 'device_add_no_devices')
+                .tr()),
+      if (rows.isNotEmpty)
+        _surface(context, [
+          for (final (c, match) in rows)
+            _NetworkDeviceRow(
+                key: Key('network_manage_row_${c.physicalId}'),
+                candidate: c,
+                device: match.device,
+                selected: state.selected.containsKey(c.physicalId),
+                onTap: () => controller.select(c)),
+        ]),
+    ];
+    // Figma 1913:6573 — 미선택은 [다시 스캔], 고르면 "기기 N개 네트워크 연결".
+    // 기기 추가의 한 대 선택 안내(990:7601)는 이 모드에 없다.
+    final footer = [
+      if (state.selected.isEmpty)
+        ManagementButton(
+            key: const Key('device_add_rescan'),
+            label: 'device_add_rescan'.tr(),
+            icon: 'redesign_v2/restart_alt',
+            onPressed: state.busy ? null : controller.scan)
+      else
+        ManagementButton(
+            key: const Key('device_add_continue'),
+            label: 'network_manage_selected'
+                .tr(args: ['${state.selected.length}']),
+            onPressed: controller.loadNetworks),
+    ];
+    return (body, footer, null);
+  }
+
+  /// 네트워크 관리 결과 — 전부 새 접속이 확인되면 완료 화면(Figma 1913:7778),
+  /// 아니면 기기별 결과(Figma 밖). 새 기기로 등록하는 길은 없다.
+  (List<Widget>, List<Widget>, Widget?) _networkResults(BuildContext context,
+      DeviceAddState state, DeviceAddFlowController controller) {
+    final verdict = state.networkResults;
+    if (verdict == NetworkResultsState.allConnected) {
+      return (
+        [
+          // 체크 64 y321.5(상단바 없음: 62+16+243.5). 작은 화면은 비율로 줄인다.
+          SizedBox(
+              height:
+                  math.min(243.5, MediaQuery.sizeOf(context).height * 0.29)),
+          Center(
+              child: FigmaIcon.tinted('redesign_v2/check_circle',
+                  size: 64, color: context.glass.textPrimary)),
+          const SizedBox(height: 24),
+          Text('network_manage_done'.tr(),
+              key: const Key('network_manage_done'),
+              textAlign: TextAlign.center,
+              style: managementStyle(context, size: 18, weight: FontWeight.w600)
+                  .copyWith(height: 21.48046875 / 18)),
+        ],
+        [
+          ManagementButton(
+              key: const Key('network_manage_confirm'),
+              label: 'common_confirm'.tr(),
+              onPressed: _pop),
+        ],
+        null
+      );
+    }
+    final body = [
+      // 기존 결과 제목("연결 결과") 18/600 + 16 — 부제는 없다.
+      Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+          child: Text('device_add_results'.tr(),
+              style: managementStyle(context, size: 18, weight: FontWeight.w600)
+                  .copyWith(height: 21.48046875 / 18))),
+      _surface(context, [
+        for (final entry in state.results.entries)
+          _NetworkResultRow(
+              key: Key('network_manage_result_${entry.key}'),
+              name: state.owned[entry.key]?.device.name ??
+                  entry.value.candidate.name,
+              status: _networkStatus(entry.value).tr()),
+      ]),
+    ];
+    // 확인 중인 기기가 있으면 다시 찾지 않는다 — 그 기기 판정이 끝나기 전이다.
+    final footer = [
+      if (verdict == NetworkResultsState.someFailed)
+        ManagementButton(
+            key: const Key('device_wifi_retry'),
+            label: 'device_wifi_retry'.tr(),
+            onPressed: state.busy ? null : controller.continueAdding),
+    ];
+    return (body, footer, null);
+  }
+
+  /// 기기별 결과 문구 키(계획서 Task 5 표).
+  static String _networkStatus(DeviceAddResult r) => switch (r.outcome) {
+        DeviceAddOutcome.failed => switch (r.failure) {
+            DeviceProvisionFailure.notOwned =>
+              'network_manage_result_not_owned',
+            DeviceProvisionFailure.notChecked =>
+              'network_manage_result_not_checked',
+            _ => 'network_manage_result_failed',
+          },
+        DeviceAddOutcome.wifiFailed => 'network_manage_result_wifi_failed',
+        DeviceAddOutcome.wifiUpdated => switch (r.reconnect) {
+            CameraReconnect.waiting => 'network_manage_result_checking',
+            CameraReconnect.online => r.unverified
+                ? 'network_manage_result_unverified'
+                : 'network_manage_result_ok',
+            CameraReconnect.missing => 'network_manage_result_missing',
+            // 서버로 확인하지 못했다 — 붙었다고 단정하지 않는다.
+            null => 'network_manage_result_unverified',
+          },
+        // 이 모드는 등록하지 않는다 — 오면 확인 못 함으로 보인다.
+        DeviceAddOutcome.registered ||
+        DeviceAddOutcome.registrationPending =>
+          'network_manage_result_unverified',
+      };
+
+  /// 완료 화면 [확인] — 들어온 화면으로 돌아간다. 돌아갈 곳이 없으면 홈.
+  void _pop() {
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    context.go('/home');
   }
 
   String _kind(PairTargetKind kind) => (kind == PairTargetKind.device
@@ -1277,7 +1461,10 @@ class _PairingTextButton extends StatelessWidget {
 /// Wi-Fi 연결 대기 (Figma 982:3604) — 흰 dim이 입력을 막고 가운데 62 스피너
 /// + 12 + 'WiFi 연결 중' 18/600 #3C3C3C. 상단 닫기까지 가려진다.
 class _ConnectingOverlay extends StatelessWidget {
-  const _ConnectingOverlay();
+  const _ConnectingOverlay({this.progress});
+
+  /// 네트워크 관리의 "n/N · 기기 이름" 한 줄(Figma 밖). null이면 없다.
+  final String? progress;
   @override
   Widget build(BuildContext context) => Positioned.fill(
       key: const Key('device_add_connecting_overlay'),
@@ -1292,5 +1479,154 @@ class _ConnectingOverlay extends StatelessWidget {
                     style: managementStyle(context,
                             size: 18, weight: FontWeight.w600)
                         .copyWith(height: 28 / 18)),
+                if (progress case final line?) ...[
+                  const SizedBox(height: 8),
+                  Text(line,
+                      key: const Key('network_manage_progress'),
+                      textAlign: TextAlign.center,
+                      style: managementStyle(context,
+                          size: 14, color: context.glass.bodySecondary)),
+                ],
               ])))));
+}
+
+/// 네트워크 관리 목록 줄(Figma 1913:6570) — 줄 64·안쪽 16, 아이콘 36 + 12 +
+/// 이름 600/16 #3C3C3C / 4 / `hw_id` 500/14 #949090. 오른쪽 정렬로 Wi-Fi 이름
+/// 600/16 #1E1E1E(한 줄 말줄임) / 4 / dBm 500/14 #949090 + 신호 16 #B4AEAE,
+/// 오프라인이면 "네트워크 연결 없음" 600/14 #949090 한 줄. 체크 24(글과 사이 12).
+class _NetworkDeviceRow extends ConsumerWidget {
+  const _NetworkDeviceRow(
+      {super.key,
+      required this.candidate,
+      required this.device,
+      required this.selected,
+      required this.onTap});
+  final DeviceAddCandidate candidate;
+  final OwnedNetworkDevice device;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final offline = networkOffline(device);
+    final serverSsid = device.wifiSsid;
+    // 서버 보고가 우선, 없으면 이 폰이 붙인 이름(사용자 결정 1). 오프라인이면
+    // 이름을 보이지 않으니 기억도 읽지 않는다.
+    final ssid = offline
+        ? null
+        : serverSsid ??
+            ref
+                .watch(deviceWifiNameProvider((device.kind, device.id)))
+                .valueOrNull;
+    final rssi = offline ? null : device.wifiRssi;
+    final id = candidate.physicalId;
+    final hw = device.hardwareId;
+    final tertiary = context.glass.textTertiary;
+    final right = <Widget>[
+      if (offline)
+        Text('network_manage_no_connection'.tr(),
+            textAlign: TextAlign.end,
+            style: managementStyle(context,
+                size: 14, weight: FontWeight.w600, color: tertiary)),
+      if (ssid != null && ssid.isNotEmpty)
+        Text(ssid,
+            key: Key('network_manage_ssid_$id'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+            style: managementStyle(context,
+                weight: FontWeight.w600, color: context.glass.textPrimary)),
+      if (rssi != null) ...[
+        if (ssid != null && ssid.isNotEmpty) const SizedBox(height: 4),
+        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+          Flexible(
+              child: Text('network_manage_dbm'.tr(args: ['$rssi']),
+                  key: Key('network_manage_dbm_$id'),
+                  textAlign: TextAlign.end,
+                  style: managementStyle(context, size: 14, color: tertiary))),
+          const SizedBox(width: 4),
+          FigmaIcon.tinted(networkSignalIcon(rssi),
+              size: 16, color: context.glass.deviceOff),
+        ]),
+      ],
+    ];
+    return Semantics(
+        selected: selected,
+        child: InkWell(
+            onTap: onTap,
+            child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 64),
+                child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Row(children: [
+                      ManagementItemIcon(device.kind == PairTargetKind.device
+                          ? ManagementKind.device
+                          : ManagementKind.camera),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Text(device.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: managementStyle(context,
+                                    weight: FontWeight.w600)),
+                            if (hw != null && hw.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(hw,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: managementStyle(context,
+                                      size: 14, color: tertiary)),
+                            ],
+                          ])),
+                      if (right.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        Flexible(
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: right)),
+                      ],
+                      const SizedBox(width: 12),
+                      FigmaIcon.tinted(
+                          selected
+                              ? 'redesign_v2/check_box_400'
+                              : 'redesign_v2/check_box_outline_blank_400',
+                          size: 24,
+                          color: selected
+                              ? context.glass.navSelected
+                              : context.glass.deviceOff),
+                    ])))));
+  }
+}
+
+/// 네트워크 관리 기기별 결과 줄(Figma 밖) — 목록 줄과 같은 면, 이름 600/16 +
+/// 상태 500/14 #626262.
+class _NetworkResultRow extends StatelessWidget {
+  const _NetworkResultRow(
+      {super.key, required this.name, required this.status});
+  final String name;
+  final String status;
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+      // 면 Column이 가운데 정렬이라 폭을 채워 왼쪽에 붙인다.
+      constraints:
+          const BoxConstraints(minHeight: 64, minWidth: double.infinity),
+      child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: managementStyle(context, weight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Text(status,
+                    style: managementStyle(context,
+                        size: 14, color: context.glass.bodySecondary)),
+              ])));
 }
