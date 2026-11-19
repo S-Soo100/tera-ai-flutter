@@ -79,12 +79,12 @@ void main() {
           ],
           results: step == DeviceAddStep.results
               ? {
-                  PairTargetKind.device: const DeviceAddResult(
+                  'physical-a': const DeviceAddResult(
                       candidate: device,
                       outcome: DeviceAddOutcome.registered,
                       registeredId: 'd'),
                   if (!single)
-                    PairTargetKind.camera: const DeviceAddResult(
+                    'physical-b': const DeviceAddResult(
                         candidate: camera,
                         outcome: DeviceAddOutcome.registrationPending,
                         wifiConnected: true),
@@ -128,7 +128,7 @@ void main() {
       addTearDown(tester.view.reset);
       final initial =
           DeviceAddState(step: DeviceAddStep.results, ssid: 'home', results: {
-        PairTargetKind.camera: DeviceAddResult(
+        'physical-b': DeviceAddResult(
             candidate: camera,
             outcome: DeviceAddOutcome.wifiUpdated,
             registeredId: 'existing',
@@ -182,7 +182,7 @@ void main() {
       addTearDown(tester.view.reset);
       final initial =
           DeviceAddState(step: DeviceAddStep.results, ssid: 'home', results: {
-        PairTargetKind.camera: DeviceAddResult(
+        'physical-b': DeviceAddResult(
             candidate: camera,
             outcome: DeviceAddOutcome.wifiUpdated,
             registeredId: 'existing',
@@ -233,12 +233,12 @@ void main() {
       addTearDown(tester.view.reset);
       final initial =
           DeviceAddState(step: DeviceAddStep.results, ssid: 'home', results: {
-        PairTargetKind.device: const DeviceAddResult(
+        'physical-a': const DeviceAddResult(
             candidate: device,
             outcome: DeviceAddOutcome.registered,
             registeredId: 'device-uuid',
             wifiConnected: true),
-        PairTargetKind.camera: DeviceAddResult(
+        'physical-b': DeviceAddResult(
             candidate: camera,
             outcome: DeviceAddOutcome.wifiUpdated,
             registeredId: 'existing',
@@ -329,12 +329,12 @@ void main() {
     addTearDown(tester.view.reset);
     const initial =
         DeviceAddState(step: DeviceAddStep.results, ssid: 'home', results: {
-      PairTargetKind.device: DeviceAddResult(
+      'physical-a': DeviceAddResult(
           candidate: device,
           outcome: DeviceAddOutcome.registered,
           registeredId: 'new-device',
           wifiConnected: true),
-      PairTargetKind.camera: DeviceAddResult(
+      'physical-b': DeviceAddResult(
           candidate: camera,
           outcome: DeviceAddOutcome.wifiUpdated,
           registeredId: 'existing-camera',
@@ -375,7 +375,7 @@ void main() {
     addTearDown(tester.view.reset);
     const initial =
         DeviceAddState(step: DeviceAddStep.results, ssid: 'home', results: {
-      PairTargetKind.device: DeviceAddResult(
+      'physical-a': DeviceAddResult(
           candidate: device,
           outcome: DeviceAddOutcome.registrationPending,
           wifiConnected: true,
@@ -423,17 +423,17 @@ void main() {
           step: step,
           candidates: [device, camera],
           selected: {
-            PairTargetKind.device: device,
-            PairTargetKind.camera: camera
+            'physical-a': device,
+            'physical-b': camera
           },
           ssid: 'KT_GIGA_2G',
           results: step == DeviceAddStep.results
               ? {
-                  PairTargetKind.device: const DeviceAddResult(
+                  'physical-a': const DeviceAddResult(
                       candidate: device,
                       outcome: DeviceAddOutcome.registered,
                       registeredId: 'd'),
-                  PairTargetKind.camera: const DeviceAddResult(
+                  'physical-b': const DeviceAddResult(
                       candidate: camera,
                       outcome: DeviceAddOutcome.registered,
                       registeredId: 'c'),
@@ -531,7 +531,7 @@ void main() {
           const DeviceAddState(
               candidates: [device],
               matched: {'physical-a'},
-              selected: {PairTargetKind.device: device}));
+              selected: {'physical-a': device}));
       expect(tester.takeException(), isNull);
       expect(find.text('네트워크 변경'), findsOneWidget);
       expect(find.text('추가할 기기 선택'), findsOneWidget);
@@ -588,7 +588,7 @@ void main() {
               step: DeviceAddStep.results,
               ssid: 'home',
               results: {
-                PairTargetKind.device: DeviceAddResult(
+                'physical-a': DeviceAddResult(
                     candidate: device,
                     outcome: DeviceAddOutcome.wifiUpdated,
                     registeredId: 'row-3',
@@ -611,7 +611,7 @@ void main() {
               step: DeviceAddStep.results,
               ssid: 'home',
               results: {
-                PairTargetKind.device: DeviceAddResult(
+                'physical-a': DeviceAddResult(
                     candidate: device,
                     outcome: DeviceAddOutcome.wifiUpdated,
                     registeredId: 'row-3',
@@ -634,7 +634,7 @@ void main() {
               step: DeviceAddStep.results,
               ssid: 'home',
               results: {
-                PairTargetKind.device: DeviceAddResult(
+                'physical-a': DeviceAddResult(
                     candidate: device,
                     outcome: DeviceAddOutcome.wifiUpdated,
                     registeredId: 'row-3',

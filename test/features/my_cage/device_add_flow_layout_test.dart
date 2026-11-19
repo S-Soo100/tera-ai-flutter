@@ -9,7 +9,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
-import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/domain/wifi_access_point.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_screen.dart';
@@ -274,7 +273,7 @@ void main() {
     await pump(
         tester,
         const DeviceAddState(step: DeviceAddStep.results, results: {
-          PairTargetKind.device: DeviceAddResult(
+          'physical-a': DeviceAddResult(
               candidate: device,
               outcome: DeviceAddOutcome.registered,
               registeredId: 'd'),
@@ -300,7 +299,7 @@ void main() {
         step: DeviceAddStep.results,
         ssid: 'home',
         results: {
-          PairTargetKind.device: DeviceAddResult(
+          'physical-a': DeviceAddResult(
               candidate: device, outcome: DeviceAddOutcome.wifiFailed),
         }));
     await tester.pump();
@@ -347,7 +346,7 @@ void main() {
         const DeviceAddState(step: DeviceAddStep.connecting, ssid: 'home'),
         overrides: joinOverrides(rpcCalls));
     c.set(const DeviceAddState(step: DeviceAddStep.results, results: {
-      PairTargetKind.camera: DeviceAddResult(
+      'physical-b': DeviceAddResult(
           candidate: camera,
           outcome: DeviceAddOutcome.registered,
           registeredId: 'c1'),
@@ -404,7 +403,7 @@ void main() {
               ManagementInventory(groups: const [], items: const [])),
         ]);
     c.set(const DeviceAddState(step: DeviceAddStep.results, results: {
-      PairTargetKind.camera: DeviceAddResult(
+      'physical-b': DeviceAddResult(
           candidate: camera,
           outcome: DeviceAddOutcome.registered,
           registeredId: 'c1'),
@@ -431,7 +430,7 @@ void main() {
               .overrideWithValue(() => refreshed++),
         ]);
     c.set(const DeviceAddState(step: DeviceAddStep.results, results: {
-      PairTargetKind.camera: DeviceAddResult(
+      'physical-b': DeviceAddResult(
           candidate: camera,
           outcome: DeviceAddOutcome.registered,
           registeredId: 'c1',
@@ -468,11 +467,11 @@ void main() {
         step: DeviceAddStep.results,
         groupError: true,
         results: {
-          PairTargetKind.device: DeviceAddResult(
+          'physical-a': DeviceAddResult(
               candidate: device,
               outcome: DeviceAddOutcome.registered,
               registeredId: 'd9'),
-          PairTargetKind.camera: DeviceAddResult(
+          'physical-b': DeviceAddResult(
               candidate: camera,
               outcome: DeviceAddOutcome.registered,
               registeredId: 'c1'),

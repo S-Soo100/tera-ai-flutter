@@ -506,7 +506,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
       DeviceAddState state, DeviceAddFlowController controller) {
     final candidates = [
       for (final candidate in state.candidates)
-        if (state.results[candidate.kind]?.canRetry != false) candidate
+        if (state.resultOf(candidate.kind)?.canRetry != false) candidate
     ]..sort((a, b) {
         // 이미 등록한 기기는 아래로 — 등록을 마친 기기도 몇 분간 광고해
         // 방금 설치한 기기가 다시 잡힌다(2026-09-21).
@@ -536,18 +536,17 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
         _surface(context, [
           for (final c in candidates)
             Semantics(
-                selected: state.selected[c.kind]?.physicalId == c.physicalId,
+                selected: state.selected.containsKey(c.physicalId),
                 child: InkWell(
                     key: Key('device_add_candidate_${c.physicalId}'),
-                    onTap: state.results[c.kind]?.canRetry == false
+                    onTap: state.resultOf(c.kind)?.canRetry == false
                         ? null
                         : () async {
                             // 등록된 사육장을 다시 연결하면 서버가 새 기기로
                             // 등록한다(UNPAIR) — 이름·그룹·예약·기록이 끊긴다는
                             // 걸 먼저 알린다(2026-09-25).
                             final choosing =
-                                state.selected[c.kind]?.physicalId !=
-                                    c.physicalId;
+                                !state.selected.containsKey(c.physicalId);
                             // Wi-Fi 바꾸기에서 대상으로 못 알아본 기기 — 맞는지
                             // 확인한다. 틀려도 그 기기 Wi-Fi만 바뀌고 등록은
                             // 그대로다(최종 판정은 대상 행의 서버 신호).
@@ -654,13 +653,12 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                   ])),
                               const SizedBox(width: 12),
                               FigmaIcon.tinted(
-                                  state.selected[c.kind]?.physicalId ==
-                                          c.physicalId
+                                  state.selected.containsKey(c.physicalId)
                                       ? 'redesign_v2/check_box_400'
                                       : 'redesign_v2/check_box_outline_blank_400',
                                   size: 24,
-                                  color: state.selected[c.kind]?.physicalId ==
-                                          c.physicalId
+                                  color: state.selected
+                                          .containsKey(c.physicalId)
                                       ? context.glass.navSelected
                                       : context.glass.deviceOff),
                             ])))))
@@ -884,7 +882,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     final updated = state.results.values
         .any((r) => r.outcome == DeviceAddOutcome.wifiUpdated);
     bool isNew(PairTargetKind kind) =>
-        state.results[kind]?.outcome == DeviceAddOutcome.registered;
+        state.resultOf(kind)?.outcome == DeviceAddOutcome.registered;
     final retry = state.results.values.any((r) => r.canRetry);
     final pending = state.results.values
         .any((r) => r.outcome == DeviceAddOutcome.registrationPending);
@@ -1153,7 +1151,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                         confirmLabel: 'device_add_continue_anyway'.tr(),
                         confirmKey: const Key('device_add_register_new_ok'));
                     if (!ok || !mounted) return;
-                    await controller.registerAsNew(result.candidate.kind);
+                    await controller.registerAsNew(result.candidate.physicalId);
                     if (mounted) await _network(state.ssid);
                   }),
       ManagementButton(

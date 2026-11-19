@@ -33,7 +33,6 @@ import 'package:vivanaut/features/my_cage/domain/motion_clip.dart';
 import 'package:vivanaut/features/my_cage/presentation/clip_playlist_player_screen.dart';
 import 'package:vivanaut/core/theme/glass_palette.dart';
 import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
-import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/domain/wifi_access_point.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_screen.dart';
@@ -596,7 +595,7 @@ void main() {
     await capture(tester, boundary, 'p03-scan-unselected');
     controller.set(const DeviceAddState(
         candidates: [device, camera],
-        selected: {PairTargetKind.device: device}));
+        selected: {'physical-a': device}));
     await capture(tester, boundary, 'p03-scan-one');
     controller.set(const DeviceAddState());
     await capture(tester, boundary, 'p03-scan-none');
@@ -622,7 +621,7 @@ void main() {
         step: DeviceAddStep.results,
         ssid: 'iptime_office',
         results: {
-          PairTargetKind.device: DeviceAddResult(
+          'physical-a': DeviceAddResult(
               candidate: device, outcome: DeviceAddOutcome.wifiFailed),
         }));
     await tester.pump();
@@ -631,18 +630,18 @@ void main() {
     await tester.tap(find.text('확인'));
     await tester.pumpAndSettle();
     controller.set(const DeviceAddState(step: DeviceAddStep.results, results: {
-      PairTargetKind.device: DeviceAddResult(
+      'physical-a': DeviceAddResult(
           candidate: device,
           outcome: DeviceAddOutcome.registered,
           registeredId: 'd'),
     }));
     await capture(tester, boundary, 'p05-result-device');
     controller.set(const DeviceAddState(step: DeviceAddStep.results, results: {
-      PairTargetKind.device: DeviceAddResult(
+      'physical-a': DeviceAddResult(
           candidate: device,
           outcome: DeviceAddOutcome.registered,
           registeredId: 'd'),
-      PairTargetKind.camera: DeviceAddResult(
+      'physical-b': DeviceAddResult(
           candidate: camera,
           outcome: DeviceAddOutcome.registered,
           registeredId: 'c'),

@@ -93,7 +93,7 @@ void main() {
     gateway.receipts[camera.physicalId] =
         const DeviceProvisionReceipt(wifiConnected: false, retrySafe: true);
     await controller.connect('home', 'password');
-    expect(controller.state.results[PairTargetKind.device]?.registeredId,
+    expect(controller.state.resultOf(PairTargetKind.device)?.registeredId,
         'device-uuid');
     expect(groups, isEmpty);
     gateway.receipts.clear();
@@ -181,6 +181,28 @@ void main() {
     expect(groups.single.length, 2);
   });
 
+  // 선택·결과 키가 BLE 주소로 바뀌어도(2026-11-19) 기기 추가는 종류별 1대다.
+  const otherCamera = DeviceAddCandidate(
+      physicalId: 'physical-c',
+      kind: PairTargetKind.camera,
+      name: 'FB2_P4_CAM',
+      rssi: -50);
+  test('기기 추가는 같은 종류를 바꿔 고른다', () {
+    controller.select(camera);
+    controller.select(otherCamera);
+    expect(controller.state.selected.keys, {otherCamera.physicalId});
+    expect(controller.state.selectedOf(PairTargetKind.camera), otherCamera);
+  });
+  test('등록 끝난 종류는 이어 추가에서 다시 못 고른다', () async {
+    controller.select(camera);
+    await controller.connect('home', 'password');
+    expect(controller.state.resultOf(PairTargetKind.camera)?.outcome,
+        DeviceAddOutcome.registered);
+    await controller.continueAdding();
+    controller.select(otherCamera);
+    expect(controller.state.selected, isEmpty);
+  });
+
   /// 이미 등록된 카메라는 Wi-Fi만 바꾼다(2026-09-21). 카메라 펌웨어는 JWT가
   /// 오면 매번 새 camera_id로 등록해 cameras에 행이 하나씩 늘어났다. JWT를
   /// 빼면 pair를 호출하지 않고 NVS의 기존 camera_id로 재접속한다.
@@ -240,7 +262,7 @@ void main() {
       await controller.connect('home', 'password');
       expect(gateway.wifiOnly, [kWifiChangeDeviceEnabled]);
       if (kWifiChangeDeviceEnabled) {
-        final result = controller.state.results[PairTargetKind.device]!;
+        final result = controller.state.resultOf(PairTargetKind.device)!;
         expect(result.outcome, DeviceAddOutcome.wifiUpdated);
         expect(result.registeredId, 'existing-device');
       }
@@ -261,7 +283,7 @@ void main() {
       known[camera.physicalId] = 'existing-camera';
       controller.select(camera);
       await controller.connect('home', 'password');
-      final result = controller.state.results[PairTargetKind.camera]!;
+      final result = controller.state.resultOf(PairTargetKind.camera)!;
       expect(gateway.wifiOnly, [true]);
       expect(result.outcome, DeviceAddOutcome.wifiUpdated);
       expect(result.registeredId, 'existing-camera');
@@ -286,14 +308,14 @@ void main() {
       gateway.receipts[camera.physicalId] = droppedAfterConnect;
       controller.select(camera);
       await controller.connect('home', 'password');
-      final result = controller.state.results[PairTargetKind.camera]!;
+      final result = controller.state.resultOf(PairTargetKind.camera)!;
       expect(result.outcome, DeviceAddOutcome.wifiUpdated);
       expect(result.wifiConnected, isFalse);
       expect(result.reconnect, CameraReconnect.waiting);
       expect(result.canRetry, isFalse); // 확인 중엔 다시 연결 버튼 없음
       lastSeen = DateTime.now().add(const Duration(seconds: 1));
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+      expect(controller.state.resultOf(PairTargetKind.camera)!.reconnect,
           CameraReconnect.online);
     });
 
@@ -307,7 +329,7 @@ void main() {
       controller.select(camera);
       await controller.connect('home', 'password');
       await Future<void>.delayed(const Duration(milliseconds: 80));
-      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+      expect(controller.state.resultOf(PairTargetKind.camera)!.reconnect,
           CameraReconnect.missing);
     });
 
@@ -320,7 +342,7 @@ void main() {
       await controller.connect('home', 'password');
       lastSeen = stale.add(const Duration(seconds: 15));
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+      expect(controller.state.resultOf(PairTargetKind.camera)!.reconnect,
           CameraReconnect.online);
     });
 
@@ -334,7 +356,7 @@ void main() {
           wifiRejected: true);
       controller.select(camera);
       await controller.connect('home', 'password');
-      final result = controller.state.results[PairTargetKind.camera]!;
+      final result = controller.state.resultOf(PairTargetKind.camera)!;
       expect(result.outcome, DeviceAddOutcome.wifiFailed);
       expect(result.canRetry, isTrue);
     });
@@ -346,7 +368,7 @@ void main() {
           const DeviceProvisionReceipt(wifiConnected: false, retrySafe: true);
       controller.select(camera);
       await controller.connect('home', 'password');
-      expect(controller.state.results[PairTargetKind.camera]!.outcome,
+      expect(controller.state.resultOf(PairTargetKind.camera)!.outcome,
           DeviceAddOutcome.wifiFailed);
     });
 
@@ -357,7 +379,7 @@ void main() {
       controller.select(camera);
       await controller.connect('home', 'password');
       await Future<void>.delayed(const Duration(milliseconds: 80));
-      final result = controller.state.results[PairTargetKind.camera]!;
+      final result = controller.state.resultOf(PairTargetKind.camera)!;
       expect(result.reconnect, CameraReconnect.missing);
       expect(result.unconfirmedFailed, isTrue);
       expect(result.canRetry, isTrue);
@@ -366,7 +388,7 @@ void main() {
           const DeviceProvisionReceipt(wifiConnected: true);
       await controller.connect('home', 'password');
       expect(gateway.wifiOnly, [true, true]);
-      expect(controller.state.results[PairTargetKind.camera]!.wifiConnected,
+      expect(controller.state.resultOf(PairTargetKind.camera)!.wifiConnected,
           isTrue);
     });
 
@@ -374,11 +396,11 @@ void main() {
       known[camera.physicalId] = 'existing-camera';
       controller.select(camera);
       await controller.connect('home', 'password');
-      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+      expect(controller.state.resultOf(PairTargetKind.camera)!.reconnect,
           CameraReconnect.waiting);
       lastSeen = DateTime.now().add(const Duration(seconds: 1));
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+      expect(controller.state.resultOf(PairTargetKind.camera)!.reconnect,
           CameraReconnect.online);
     });
 
@@ -388,15 +410,15 @@ void main() {
       controller.select(camera);
       await controller.connect('home', 'password');
       await Future<void>.delayed(const Duration(milliseconds: 80));
-      expect(controller.state.results[PairTargetKind.camera]!.reconnect,
+      expect(controller.state.resultOf(PairTargetKind.camera)!.reconnect,
           CameraReconnect.missing);
 
-      await controller.registerAsNew(PairTargetKind.camera);
+      await controller.registerAsNew(camera.physicalId);
       expect(forgotten, [camera.physicalId]);
       expect(controller.state.results, isEmpty);
       await controller.connect('home', 'password');
       expect(gateway.wifiOnly, [true, false]);
-      expect(controller.state.results[PairTargetKind.camera]!.outcome,
+      expect(controller.state.resultOf(PairTargetKind.camera)!.outcome,
           DeviceAddOutcome.registered);
     });
   });
@@ -470,14 +492,14 @@ void main() {
         wifiConnected: false, retrySafe: true, connectSent: true);
     await c.connect('home', 'password');
     await Future<void>.delayed(const Duration(milliseconds: 20));
-    expect(c.state.results[PairTargetKind.camera]?.reconnect,
+    expect(c.state.resultOf(PairTargetKind.camera)?.reconnect,
         CameraReconnect.missing);
-    await c.registerAsNew(PairTargetKind.camera);
+    await c.registerAsNew(camera.physicalId);
     expect(unlinked, isEmpty, reason: '새 등록 전에 지우면 실패 시 카메라가 사라진다');
     gateway.receipts[camera.physicalId] =
         const DeviceProvisionReceipt(wifiConnected: true, hardwareId: 'mqtt');
     await c.connect('home', 'password');
-    expect(c.state.results[PairTargetKind.camera]?.registeredId, 'camera-new');
+    expect(c.state.resultOf(PairTargetKind.camera)?.registeredId, 'camera-new');
     expect(unlinked, ['camera-old']);
   });
 
@@ -511,11 +533,11 @@ void main() {
         wifiConnected: false, retrySafe: true, connectSent: true);
     await c.connect('home', 'password');
     await Future<void>.delayed(const Duration(milliseconds: 20));
-    await c.registerAsNew(PairTargetKind.camera);
+    await c.registerAsNew(camera.physicalId);
     gateway.receipts[camera.physicalId] =
         const DeviceProvisionReceipt(wifiConnected: true, hardwareId: 'mqtt');
     await c.connect('home', 'password');
-    expect(c.state.results[PairTargetKind.camera]?.outcome,
+    expect(c.state.resultOf(PairTargetKind.camera)?.outcome,
         DeviceAddOutcome.registrationPending);
     expect(unlinked, isEmpty);
     expect(await c.recheckRegistration(), isTrue);
@@ -590,7 +612,7 @@ void main() {
       expect(controller.state.candidates.map((c) => c.physicalId),
           [device.physicalId, androidCage.physicalId]);
       expect(controller.state.matched, {androidCage.physicalId});
-      expect(controller.state.selected[PairTargetKind.device], androidCage);
+      expect(controller.state.selectedOf(PairTargetKind.device), androidCage);
     });
 
     test('이 폰이 기억한 기기도 대상으로 알아본다', () async {
@@ -599,7 +621,7 @@ void main() {
       gateway.events.add([device]);
       await settle();
       expect(controller.state.matched, {device.physicalId});
-      expect(controller.state.selected[PairTargetKind.device], device);
+      expect(controller.state.selectedOf(PairTargetKind.device), device);
     });
 
     test('못 알아본 기기를 골라도 등록 없이 대상 행으로 Wi-Fi만 보낸다', () async {
@@ -610,7 +632,7 @@ void main() {
       controller.select(device);
       await controller.connect('home', 'password');
       expect(gateway.wifiOnly, [true]);
-      final result = controller.state.results[PairTargetKind.device]!;
+      final result = controller.state.resultOf(PairTargetKind.device)!;
       expect(result.outcome, DeviceAddOutcome.wifiUpdated);
       expect(result.registeredId, 'row-3');
       expect(ownedCalls.last, (PairTargetKind.device, 'row-3'));
@@ -619,11 +641,11 @@ void main() {
     test('대상 신호가 새로 오면 연결 완료로 보고 그 BLE 주소를 기억한다', () async {
       controller.select(device);
       await controller.connect('home', 'password');
-      expect(controller.state.results[PairTargetKind.device]!.reconnect,
+      expect(controller.state.resultOf(PairTargetKind.device)!.reconnect,
           CameraReconnect.waiting);
       lastSeen = DateTime.now().add(const Duration(seconds: 1));
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      expect(controller.state.results[PairTargetKind.device]!.reconnect,
+      expect(controller.state.resultOf(PairTargetKind.device)!.reconnect,
           CameraReconnect.online);
       expect(known[device.physicalId], 'row-3');
       expect(wifiNames, {'row-3': 'home'}, reason: '기기 상세에 보일 Wi-Fi 이름');
@@ -633,7 +655,7 @@ void main() {
       controller.select(device);
       await controller.connect('home', 'password');
       await Future<void>.delayed(const Duration(milliseconds: 80));
-      final result = controller.state.results[PairTargetKind.device]!;
+      final result = controller.state.resultOf(PairTargetKind.device)!;
       expect(result.wifiConnected, isTrue);
       expect(result.reconnect, CameraReconnect.missing);
       expect(result.canRetry, isTrue);
@@ -649,7 +671,7 @@ void main() {
       await controller.connect('home', 'password');
       lastSeen = DateTime.now().add(const Duration(seconds: 1));
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      final result = controller.state.results[PairTargetKind.device]!;
+      final result = controller.state.resultOf(PairTargetKind.device)!;
       expect(result.reconnect, CameraReconnect.online);
       expect(result.unverified, isTrue);
       expect(known, isEmpty);
@@ -661,11 +683,11 @@ void main() {
       await controller.scan();
       gateway.events.add([androidCage]);
       await settle();
-      expect(controller.state.selected[PairTargetKind.device], androidCage);
+      expect(controller.state.selectedOf(PairTargetKind.device), androidCage);
       await controller.connect('home', 'password');
       lastSeen = DateTime.now().add(const Duration(seconds: 1));
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      final result = controller.state.results[PairTargetKind.device]!;
+      final result = controller.state.resultOf(PairTargetKind.device)!;
       expect(result.unverified, isFalse);
       expect(known[androidCage.physicalId], 'row-3');
       expect(wifiNames, {'row-3': 'home'});
@@ -677,11 +699,11 @@ void main() {
       await settle();
       await controller.connect('home', 'password');
       await Future<void>.delayed(const Duration(milliseconds: 80));
-      expect(controller.state.results[PairTargetKind.device]!.reconnect,
+      expect(controller.state.resultOf(PairTargetKind.device)!.reconnect,
           CameraReconnect.missing);
       await controller.continueAdding();
       expect(controller.state.step, DeviceAddStep.scan);
-      expect(controller.state.selected[PairTargetKind.device], androidCage);
+      expect(controller.state.selectedOf(PairTargetKind.device), androidCage);
     });
 
     test('대상 행이 해제됐으면 진행하지 않는다', () async {
@@ -701,10 +723,10 @@ void main() {
       controller.select(device);
       await controller.connect('home', 'password');
       await Future<void>.delayed(const Duration(milliseconds: 80));
-      await controller.registerAsNew(PairTargetKind.device);
+      await controller.registerAsNew(device.physicalId);
       await controller.connect('home', 'password');
       expect(gateway.wifiOnly, [true, false]);
-      expect(controller.state.results[PairTargetKind.device]!.outcome,
+      expect(controller.state.resultOf(PairTargetKind.device)!.outcome,
           DeviceAddOutcome.registered);
       expect(unlinked, ['device:row-3']);
       expect(wifiNames, {'device-uuid': 'home'}, reason: '새로 등록한 행에 이름을 남긴다');

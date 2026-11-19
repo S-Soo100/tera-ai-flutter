@@ -331,7 +331,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     state = state.copyWith(
         matched: Set.unmodifiable({...state.matched, candidate.physicalId}),
         selected: state.selected.isEmpty && state.step == DeviceAddStep.scan
-            ? Map.unmodifiable({candidate.kind: candidate})
+            ? Map.unmodifiable({candidate.physicalId: candidate})
             : null);
   }
 
@@ -343,16 +343,16 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
   void select(DeviceAddCandidate candidate) {
     if (!_active ||
         state.targetGone ||
-        state.results[candidate.kind]?.canRetry == false) {
+        state.resultOf(candidate.kind)?.canRetry == false) {
       return;
     }
-    final selected = {...state.selected};
-    if (selected[candidate.kind]?.physicalId == candidate.physicalId) {
-      selected.remove(candidate.kind);
+    if (state.selected.containsKey(candidate.physicalId)) {
+      state = state.copyWith(
+          selected: Map.unmodifiable(
+              {...state.selected}..remove(candidate.physicalId)));
     } else {
-      selected[candidate.kind] = candidate;
+      state = state.copyWith(selected: _withSelected(candidate));
     }
-    state = state.copyWith(selected: Map.unmodifiable(selected));
   }
 
   Future<void> loadNetworks() async {
@@ -429,7 +429,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       return;
     }
     final pending = state.selected.values
-        .where((c) => state.results[c.kind]?.canRetry != false)
+        .where((c) => state.resultOf(c.kind)?.canRetry != false)
         .toList()
       // 카메라부터 — 카메라는 켜진 뒤 3분만 검색·연결된다. 사육장(최대 약
       // 100초)을 먼저 하면 카메라 차례에 광고가 끝나 있기 쉬웠다(2026-09-25).
@@ -498,9 +498,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
                         ? DeviceAddOutcome.failed
                         : DeviceAddOutcome.wifiFailed)
                     : DeviceAddOutcome.registrationPending);
-        state = state.copyWith(
-            results:
-                Map.unmodifiable({...state.results, candidate.kind: result}));
+        state = state.copyWith(results: _withResult(result));
         if (id != null) {
           await _remember(candidate, id);
           await _saveWifi(candidate.kind, id, ssid);
@@ -535,7 +533,8 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
         continue;
       }
       try {
-        final id = await _confirm(entry.key, result.hardwareId!);
+        final kind = result.candidate.kind;
+        final id = await _confirm(kind, result.hardwareId!);
         if (!_active) return confirmed;
         if (id != null) {
           results[entry.key] = DeviceAddResult(
@@ -546,9 +545,9 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
               hardwareId: result.hardwareId,
               wifiConnected: result.wifiConnected);
           await _remember(result.candidate, id);
-          await _saveWifi(entry.key, id, state.ssid);
+          await _saveWifi(kind, id, state.ssid);
           // "새 카메라로 등록"이 늦게 확인돼도 옛 행을 해제한다.
-          await _unlinkReplaced(entry.key, id);
+          await _unlinkReplaced(kind, id);
           _completed?.call();
           confirmed = true;
         }
@@ -567,7 +566,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     final ids = <PairTargetKind, String>{
       for (final e in state.results.entries)
         if (e.value.outcome == DeviceAddOutcome.registered)
-          if (e.value.registeredId case final id?) e.key: id
+          if (e.value.registeredId case final id?) e.value.candidate.kind: id
     };
     if (ids.length != 2) return;
     state = state.copyWith(busy: true, groupError: false);
@@ -673,8 +672,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
                 ? DeviceAddOutcome.failed
                 : DeviceAddOutcome.wifiFailed,
             failure: receipt.failure);
-    state = state.copyWith(
-        results: Map.unmodifiable({...state.results, candidate.kind: result}));
+    state = state.copyWith(results: _withResult(result));
     if (receipt.wifiConnected) _completed?.call();
     // 서버로 확인할 수 없으면 BLE 성공으로 기억한다. 확인할 수 있으면 그 행
     // 신호가 온 뒤에 — 다른 기기를 골랐을 수 있다(Wi-Fi 바꾸기).
@@ -723,6 +721,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     final owned = _owned;
     if (owned == null) return;
     final kind = candidate.kind;
+    final key = candidate.physicalId;
     bool isNew(DateTime seen) => baselineKnown
         ? (baseline == null || seen.isAfter(baseline))
         : seen.isAfter(since);
@@ -730,7 +729,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     while (true) {
       await Future<void>.delayed(reconnectPoll);
       if (!_active) return;
-      final current = state.results[kind];
+      final current = state.results[key];
       if (current?.registeredId != id ||
           current?.reconnect != CameraReconnect.waiting) {
         return;
@@ -743,12 +742,12 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       final online = seen != null && isNew(seen);
       final expired = !DateTime.now().isBefore(deadline);
       if (!online && !expired) continue;
-      final latest = state.results[kind];
+      final latest = state.results[key];
       if (latest?.registeredId != id) return;
       state = state.copyWith(
           results: Map.unmodifiable({
         ...state.results,
-        kind: latest!.withReconnect(
+        key: latest!.withReconnect(
             online ? CameraReconnect.online : CameraReconnect.missing,
             unverified: online && !trusted)
       }));
@@ -764,6 +763,42 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
       }
       return;
     }
+  }
+
+  /// 고른다 — 기기 추가는 종류별 1대라 같은 종류의 다른 선택을 그 자리에서
+  /// 바꾼다. 키가 종류이던 때와 같은 순서다(Wi-Fi 목록은 첫 선택 기기로 받는다).
+  Map<String, DeviceAddCandidate> _withSelected(DeviceAddCandidate candidate) {
+    final next = <String, DeviceAddCandidate>{};
+    var placed = false;
+    for (final e in state.selected.entries) {
+      if (e.value.kind != candidate.kind) {
+        next[e.key] = e.value;
+      } else if (!placed) {
+        next[candidate.physicalId] = candidate;
+        placed = true;
+      }
+    }
+    if (!placed) next[candidate.physicalId] = candidate;
+    return Map.unmodifiable(next);
+  }
+
+  /// 결과를 넣는다 — 기기 추가는 종류별 1개라 같은 종류의 앞 결과(다시 시도 전
+  /// 실패 등)를 그 자리에서 바꾼다. 키가 종류이던 때(~2026-11-19)와 같은 동작·
+  /// 같은 순서다(결과 목록은 이 순서로 그린다).
+  Map<String, DeviceAddResult> _withResult(DeviceAddResult result) {
+    final kind = result.candidate.kind;
+    final next = <String, DeviceAddResult>{};
+    var placed = false;
+    for (final e in state.results.entries) {
+      if (e.value.candidate.kind != kind) {
+        next[e.key] = e.value;
+      } else if (!placed) {
+        next[result.candidate.physicalId] = result;
+        placed = true;
+      }
+    }
+    if (!placed) next[result.candidate.physicalId] = result;
+    return Map.unmodifiable(next);
   }
 
   /// "새 카메라로 등록"이 대체하는 옛 카메라 행 — 새 등록이 **성공한 뒤** 해제한다.
@@ -785,21 +820,21 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
 
   /// 저장값이 지워진 카메라처럼 Wi-Fi 변경으로는 안 붙는 경우 — 기억을 지우고
   /// 다음 연결에서 새로 등록한다. 옛 행은 새 등록 성공 뒤 해제한다.
-  Future<void> registerAsNew(PairTargetKind kind) async {
-    final result = state.results[kind];
+  Future<void> registerAsNew(String physicalId) async {
+    final result = state.results[physicalId];
     if (!_active || state.busy || result == null) return;
+    final kind = result.candidate.kind;
     if (result.registeredId case final old?) _replacing[kind] = old;
     try {
       await _forgetId?.call(result.candidate);
     } catch (_) {/* 기억이 남으면 다시 Wi-Fi만 바꾸게 된다. */}
     if (!_active) return;
-    final results = {...state.results}..remove(kind);
+    final results = {...state.results}..remove(physicalId);
     state = state.copyWith(
         registered: Set.unmodifiable(
             {...state.registered}..remove(result.candidate.physicalId)),
         results: Map.unmodifiable(results),
-        selected:
-            Map.unmodifiable({...state.selected, kind: result.candidate}));
+        selected: _withSelected(result.candidate));
   }
 
   Future<void> continueAdding() async {
@@ -813,7 +848,7 @@ class DeviceAddFlowController extends StateNotifier<DeviceAddState> {
     state = state.copyWith(
         selected: matched == null
             ? const {}
-            : Map.unmodifiable({matched.kind: matched}),
+            : Map.unmodifiable({matched.physicalId: matched}),
         step: DeviceAddStep.scan,
         networks: const []);
     await scan();

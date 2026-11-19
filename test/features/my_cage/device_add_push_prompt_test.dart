@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vivanaut/core/theme/app_theme.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
-import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_screen.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_management_controller.dart';
@@ -31,7 +30,7 @@ void main() {
   const connecting = DeviceAddState(
       step: DeviceAddStep.connecting, candidates: [device, camera]);
 
-  DeviceAddState results(Map<PairTargetKind, DeviceAddResult> r) =>
+  DeviceAddState results(Map<String, DeviceAddResult> r) =>
       DeviceAddState(
           step: DeviceAddStep.results,
           candidates: const [device, camera],
@@ -94,7 +93,7 @@ void main() {
 
   testWidgets('사육장 등록 성공 → 결과 화면 위에 팝업, 받기는 시스템 권한 요청', (tester) async {
     final r =
-        await run(tester, results({PairTargetKind.device: deviceRegistered}));
+        await run(tester, results({'physical-a': deviceRegistered}));
     expect(prompt, findsOneWidget);
     await tester.tap(find.text('알림 받기'));
     await tester.pump(const Duration(milliseconds: 500));
@@ -107,8 +106,8 @@ void main() {
     await run(
         tester,
         results({
-          PairTargetKind.device: deviceRegistered,
-          PairTargetKind.camera: const DeviceAddResult(
+          'physical-a': deviceRegistered,
+          'physical-b': const DeviceAddResult(
               candidate: camera,
               outcome: DeviceAddOutcome.registered,
               registeredId: 'c'),
@@ -118,7 +117,7 @@ void main() {
 
   testWidgets('받지 않기 → 닫기만(수신 거부 완료 없음)', (tester) async {
     final r = await run(
-        tester, results({PairTargetKind.device: deviceRegistered}),
+        tester, results({'physical-a': deviceRegistered}),
         permission: PushPermission.denied);
     await tester.tap(find.text('알림 받지 않기'));
     await tester.pump(const Duration(milliseconds: 500));
@@ -131,7 +130,7 @@ void main() {
     final r = await run(
         tester,
         results({
-          PairTargetKind.camera: const DeviceAddResult(
+          'physical-b': const DeviceAddResult(
               candidate: camera,
               outcome: DeviceAddOutcome.registered,
               registeredId: 'c'),
@@ -144,7 +143,7 @@ void main() {
     await run(
         tester,
         results({
-          PairTargetKind.device: const DeviceAddResult(
+          'physical-a': const DeviceAddResult(
               candidate: device,
               outcome: DeviceAddOutcome.registrationPending,
               wifiConnected: true),
@@ -154,14 +153,14 @@ void main() {
 
   testWidgets('시스템 알림이 이미 허용됐으면 묻지 않고 기회도 남긴다', (tester) async {
     final r = await run(
-        tester, results({PairTargetKind.device: deviceRegistered}),
+        tester, results({'physical-a': deviceRegistered}),
         permission: PushPermission.authorized);
     expect(prompt, findsNothing);
     expect(r.asked, isEmpty);
   });
 
   testWidgets('iOS(시스템 권한 미지원)는 묻지 않는다', (tester) async {
-    await run(tester, results({PairTargetKind.device: deviceRegistered}),
+    await run(tester, results({'physical-a': deviceRegistered}),
         permission: PushPermission.unavailable);
     expect(prompt, findsNothing);
   });
@@ -169,7 +168,7 @@ void main() {
   testWidgets('이미 물었던 기기는 다시 묻지 않는다', (tester) async {
     // 한 번 답한 뒤 같은 기록(asked)으로 두 번째 등록 흐름을 연다.
     final first =
-        await run(tester, results({PairTargetKind.device: deviceRegistered}));
+        await run(tester, results({'physical-a': deviceRegistered}));
     await tester.tap(find.text('알림 받기'));
     await tester.pump(const Duration(milliseconds: 500));
     expect(first.asked, {PushTopic.device});
@@ -207,7 +206,7 @@ void main() {
                         localizationsDelegates: context.localizationDelegates,
                         home: const DeviceAddFlowScreen(flowKey: 'test'))))));
     await tester.pump();
-    controller.state = results({PairTargetKind.device: deviceRegistered});
+    controller.state = results({'physical-a': deviceRegistered});
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(prompt, findsNothing);
@@ -215,7 +214,7 @@ void main() {
   });
 
   testWidgets('로그아웃 상태면 묻지 않는다', (tester) async {
-    await run(tester, results({PairTargetKind.device: deviceRegistered}),
+    await run(tester, results({'physical-a': deviceRegistered}),
         signedIn: false);
     expect(prompt, findsNothing);
   });

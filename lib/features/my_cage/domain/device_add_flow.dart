@@ -208,9 +208,21 @@ class DeviceAddState {
       this.targetGone = false});
   final DeviceAddStep step;
   final List<DeviceAddCandidate> candidates;
-  final Map<PairTargetKind, DeviceAddCandidate> selected;
+
+  /// 고른 기기 — 키는 BLE 주소(`physicalId`). 기기 추가는 종류별 1대만 둔다.
+  final Map<String, DeviceAddCandidate> selected;
   final List<WifiAccessPoint> networks;
-  final Map<PairTargetKind, DeviceAddResult> results;
+
+  /// 기기별 결과 — 키는 `candidate.physicalId`. 기기 추가는 종류별 1개만 둔다.
+  final Map<String, DeviceAddResult> results;
+
+  /// 그 종류로 고른 첫 기기(기기 추가 화면·판정용).
+  DeviceAddCandidate? selectedOf(PairTargetKind kind) =>
+      selected.values.where((c) => c.kind == kind).firstOrNull;
+
+  /// 그 종류의 첫 결과(기기 추가 화면·자동 그룹용).
+  DeviceAddResult? resultOf(PairTargetKind kind) =>
+      results.values.where((r) => r.candidate.kind == kind).firstOrNull;
   final bool busy, remember, showPassword, groupError;
   final String ssid;
   final String? errorKey, activePhysicalId, groupId;
@@ -228,9 +240,9 @@ class DeviceAddState {
   DeviceAddState copyWith(
           {DeviceAddStep? step,
           List<DeviceAddCandidate>? candidates,
-          Map<PairTargetKind, DeviceAddCandidate>? selected,
+          Map<String, DeviceAddCandidate>? selected,
           List<WifiAccessPoint>? networks,
-          Map<PairTargetKind, DeviceAddResult>? results,
+          Map<String, DeviceAddResult>? results,
           bool? busy,
           bool? remember,
           bool? showPassword,
