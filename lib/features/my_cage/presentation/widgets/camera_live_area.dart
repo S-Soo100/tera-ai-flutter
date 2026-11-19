@@ -14,6 +14,7 @@ import '../../domain/terra_camera.dart';
 import '../my_cage_providers.dart';
 import '../webrtc_live_controller.dart';
 import 'live_notice_bar.dart';
+import 'weak_signal_notice_prompt.dart';
 import 'webrtc_live_view.dart';
 
 /// 카메라 탭 라이브 영역 — Figma Camera Home (668:427), 369×271 radius 12.
@@ -297,6 +298,11 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
             child: LiveNoticeBar(
                 cameraId: current.id, deviceId: current.cameraId),
           ),
+          // 네트워크 신호 약함 모달(Figma 2020:11196) — 자리는 차지하지 않는다.
+          WeakSignalNoticePrompt(
+              cameraId: current.id,
+              deviceId: current.cameraId,
+              cameraName: current.name),
         ],
       ),
     );

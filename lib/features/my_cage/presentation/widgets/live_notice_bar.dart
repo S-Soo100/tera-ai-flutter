@@ -10,23 +10,17 @@ import '../webrtc_live_controller.dart';
 import 'management_widgets.dart';
 
 /// 막대에 쓸 문구 키 — 행의 `title`이 아니라 앱 문구로 그린다(서버 문구·구 행에
-/// 흔들리지 않게).
-String liveNoticeTextKey(String kind) => switch (kind) {
-      cameraWeakSignalNotificationKind => 'camera_weak_signal_notice',
-      _ => 'camera_focus_notice',
-    };
+/// 흔들리지 않게). 지금은 초점 안내뿐이다(신호 약함은 2026-11-19부터 모달).
+String liveNoticeTextKey(String kind) => 'camera_focus_notice';
 
-/// 막대를 누르면 갈 곳.
-/// - 초점: 그 카메라 세로 확대 라이브(Figma 1813:8265 "카메라 상세 화면으로 이동").
-/// - 신호 약함: ⏳ 기획 확인 중(2026-11-16). 임시로 그 카메라 **기기 상세** —
-///   Wi-Fi 약함 안내·[Wi-Fi 바꾸기]·[카메라 재시작]이 있는 곳(기획 D2 추천안).
-String liveNoticeTapPath(String kind, String cameraId) => switch (kind) {
-      cameraWeakSignalNotificationKind => '/devices/camera/$cameraId',
-      _ => '/crecam/cameras/$cameraId/live',
-    };
+/// 막대를 누르면 갈 곳 — 그 카메라 세로 확대 라이브(Figma 1813:8265 "카메라
+/// 상세 화면으로 이동").
+String liveNoticeTapPath(String kind, String cameraId) =>
+    '/crecam/cameras/$cameraId/live';
 
-/// 라이브 위 카메라 단위 안내 막대 — 렌즈 초점 Figma 1813:8260(카메라 탭)·
-/// 네트워크 신호 약함 Figma 1877:15097(홈). 두 막대는 같은 컴포넌트다(면 #F4F4F4
+/// 라이브 위 카메라 단위 안내 막대 — 렌즈 초점 Figma 1813:8260(카메라 탭).
+/// 네트워크 신호 약함 막대(Figma 1877:15097)는 2026-11-19 모달로 바뀌어 asis로
+/// 옮겨졌다(`WeakSignalNoticePrompt`). 막대 수치는 둘이 같았다(면 #F4F4F4
 /// r8·테두리·그림자 없음, 345×36, 좌우 16, 문구 16 Medium #3C3C3C·줄높이 28·자간
 /// −0.32, "더보기" 16 SemiBold #C00306).
 ///

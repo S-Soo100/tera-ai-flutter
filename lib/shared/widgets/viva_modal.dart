@@ -15,6 +15,9 @@ import 'word_joiner_span.dart';
 /// [detail]은 문구 아래 보조 설명(Figma 밖, 2026-09-30 시청 기기 전환에서 추가 —
 /// 제목만으론 결과를 알 수 없을 때).
 ///
+/// [footer]는 버튼 16 아래에 붙는 줄(Figma 밖 공통 규격 아님 — 신호 약함 모달
+/// 2020:11196의 "알림 다시 보지 않기" 체크, 2026-11-19).
+///
 /// [dismissOn]이 끝나면 창이 아직 떠 있을 때 스스로 닫힌다(false·dismissed) — 창을 띄운
 /// 이유가 사라졌을 때(예: 녹화 중단 확인 중 녹화가 2분에 끝남, 2026-10-21).
 ///
@@ -32,6 +35,7 @@ Future<bool> showVivaModal(
   Color? confirmColor,
   Key? confirmKey,
   Future<void>? dismissOn,
+  Widget? footer,
 }) async =>
     await showVivaModalChoice(context,
         message: message,
@@ -40,7 +44,8 @@ Future<bool> showVivaModal(
         cancelLabel: cancelLabel,
         confirmColor: confirmColor,
         confirmKey: confirmKey,
-        dismissOn: dismissOn) ==
+        dismissOn: dismissOn,
+        footer: footer) ==
     VivaModalResult.confirm;
 
 /// [showVivaModalChoice]의 결과.
@@ -67,6 +72,7 @@ Future<VivaModalResult> showVivaModalChoice(
   Color? confirmColor,
   Key? confirmKey,
   Future<void>? dismissOn,
+  Widget? footer,
 }) async {
   final result = await showDialog<VivaModalResult>(
     context: context,
@@ -152,6 +158,10 @@ Future<VivaModalResult> showVivaModalChoice(
                                         confirmKey ??
                                             const Key('viva_modal_confirm'))),
                               ]),
+                            if (footer != null) ...[
+                              const SizedBox(height: 16),
+                              footer,
+                            ],
                           ])))));
       return dismissOn == null
           ? dialog

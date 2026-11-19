@@ -200,51 +200,73 @@ void main() {
     expect(ref.read(liveNoticeDismissedProvider), {'g1', 'f2'});
   });
 
-  // ── 네트워크 신호 약함(camera.weak_signal, 기획 2026-11-14) ──
+  // ── 네트워크 신호 약함(camera.weak_signal) — 2026-11-19 막대 → 모달 ──
 
-  testWidgets('신호 약함 안내는 그 카메라(uuid)에만 보인다', (tester) async {
+  testWidgets('신호 약함 안내는 막대 종류가 아니다', (tester) async {
     store.rows.add(weakRow('w1', 'a', cameraId: 'c2'));
     await pump(tester);
-    expect(find.text('false/weak'), findsOneWidget);
+    expect(find.text('false/false'), findsOneWidget);
+  });
+
+  /// 'c1/c2' 카메라별 모달 대상 id를 그린다.
+  Future<WidgetRef> pumpWeak(WidgetTester tester) async {
+    late WidgetRef captured;
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        currentUserProvider.overrideWith((ref) => ref.watch(user)),
+        notificationRepositoryProvider.overrideWith((ref) =>
+            NotificationRepository(store,
+                currentUserId: () => ref.read(user)?.id)),
+      ],
+      child: Consumer(builder: (context, ref, _) {
+        captured = ref;
+        String k(LiveNoticeCamera c) =>
+            (ref.watch(weakSignalNoticeIdsProvider(c)).toList()..sort())
+                .join(',');
+        return Text('${k(c1)}/${k(c2)}', textDirection: TextDirection.ltr);
+      }),
+    ));
+    await tester.pump();
+    await tester.pump();
+    return captured;
+  }
+
+  testWidgets('모달 대상은 그 카메라(uuid·기기 ID)의 미읽음 신호 안내만', (tester) async {
+    store.rows
+      ..add(weakRow('w1', 'a', cameraId: 'c1'))
+      ..add(weakRow('w2', 'a', cameraId: 'p4-c1'))
+      ..add(weakRow('w3', 'a', cameraId: 'c2', readAt: '2026-11-14T03:00:00Z'))
+      ..add(focusRow('f1', 'a', cameraId: 'c2'));
+    await pumpWeak(tester);
+    expect(find.text('w1,w2/'), findsOneWidget);
     expect(store.operations, contains('watchKind:camera.weak_signal'));
   });
 
-  testWidgets('같은 카메라에 둘 다 있으면 신호 약함을 먼저, 사라지면 초점 안내', (tester) async {
-    store.rows
-      ..add(focusRow('f1', 'a'))
-      ..add(weakRow('w1', 'a'));
-    final ref = await pump(tester);
-    expect(find.text('weak/false'), findsOneWidget);
-    await dismissLiveNotices(ref, c1, cameraWeakSignalNotificationKind);
+  testWidgets('한 번 띄운 안내는 다시 대상이 되지 않는다', (tester) async {
+    store.rows.add(weakRow('w1', 'a'));
+    final ref = await pumpWeak(tester);
+    ref.read(weakSignalPromptedProvider.notifier).state = {'w1'};
     await tester.pump();
-    expect(find.text('true/false'), findsOneWidget);
-    expect(store.operations.where((o) => o.startsWith('read:')), ['read:w1:a'],
-        reason: '신호 안내만 읽음 — 초점 안내는 그대로');
+    expect(find.text('/'), findsOneWidget);
   });
 
-  testWidgets('서버가 read_at을 채우면(신호 회복) 막대가 저절로 내려간다', (tester) async {
+  testWidgets('서버가 read_at을 채우면(신호 회복) 대상에서 빠진다', (tester) async {
     store.rows.add(weakRow('w1', 'a'));
-    await pump(tester);
-    expect(find.text('weak/false'), findsOneWidget);
+    await pumpWeak(tester);
+    expect(find.text('w1/'), findsOneWidget);
     store.rows.single['read_at'] = '2026-11-14T03:00:00Z';
     store.changes.add(null);
     await tester.pump();
     await tester.pump();
-    expect(find.text('false/false'), findsOneWidget);
+    expect(find.text('/'), findsOneWidget);
   });
 
-  testWidgets('신호 안내가 보이는 동안에도 초점 안내 구독을 유지한다', (tester) async {
+  testWidgets('계정이 바뀌면 띄운 기록을 비운다', (tester) async {
     store.rows.add(weakRow('w1', 'a'));
-    final ref = await pump(tester);
-    expect(find.text('weak/false'), findsOneWidget);
-    expect(store.operations, contains('watchKind:camera.focus_needed'));
-    final before =
-        store.operations.where((o) => o == 'watchKind:camera.focus_needed').length;
-    await dismissLiveNotices(ref, c1, cameraWeakSignalNotificationKind);
+    final ref = await pumpWeak(tester);
+    ref.read(weakSignalPromptedProvider.notifier).state = {'w1'};
+    ref.read(user.notifier).state = notificationUser('b');
     await tester.pump();
-    // 누를 때 초점 안내 stream을 새로 열지 않는다(이미 구독 중).
-    expect(
-        store.operations.where((o) => o == 'watchKind:camera.focus_needed').length,
-        before);
+    expect(ref.read(weakSignalPromptedProvider), isEmpty);
   });
 }

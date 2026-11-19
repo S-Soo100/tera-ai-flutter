@@ -6,6 +6,7 @@ import '../../../../shared/widgets/figma_icon.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../my_cage/presentation/webrtc_live_controller.dart';
 import '../../../my_cage/presentation/widgets/live_notice_bar.dart';
+import '../../../my_cage/presentation/widgets/weak_signal_notice_prompt.dart';
 import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
 import '../home_set_providers.dart';
 
@@ -69,6 +70,11 @@ class TopFixedArea extends ConsumerWidget {
           right: 12,
           child: LiveNoticeBar(
               cameraId: camera.id, deviceId: camera.cameraId)),
+      // 네트워크 신호 약함 모달(Figma 2020:11196) — 자리는 차지하지 않는다.
+      WeakSignalNoticePrompt(
+          cameraId: camera.id,
+          deviceId: camera.cameraId,
+          cameraName: camera.name),
     ]);
   }
 }

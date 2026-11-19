@@ -32,7 +32,6 @@ void main() {
     final ko = jsonDecode(File('assets/l10n/ko.json').readAsStringSync())
         as Map<String, dynamic>;
     expect(ko['camera_focus_notice'], '카메라 렌즈 초점을 맞춰주세요');
-    expect(ko['camera_weak_signal_notice'], '네트워크 신호가 약하니 점검해 주세요');
     expect(ko['live_notice_more'], '더보기');
   });
 
@@ -75,10 +74,6 @@ void main() {
                         child: LiveNoticeBar(
                             cameraId: cameraId, deviceId: 'p4-$cameraId')),
                   ])))),
-      GoRoute(
-          path: '/devices/camera/:id',
-          builder: (_, s) =>
-              Scaffold(body: Text('device ${s.pathParameters['id']}'))),
       GoRoute(
           path: '/crecam/cameras/:id/live',
           builder: (_, s) =>
@@ -179,44 +174,14 @@ void main() {
         greaterThan(36));
   });
 
-  // ── 네트워크 신호 약함(Figma 1877:15097) ──
+  // ── 네트워크 신호 약함 — 2026-11-19 막대에서 모달로 바뀜(Figma 2020:11196) ──
 
-  testWidgets('신호 약함 막대도 Figma 수치 그대로(초점 막대와 같은 컴포넌트)', (tester) async {
+  testWidgets('신호 약함 안내만 있는 카메라엔 막대를 그리지 않는다(모달이 맡는다)', (tester) async {
     await pump(tester, cameraId: 'c4');
-    final bar = find.byKey(LiveNoticeBar.tapKey);
-    final rect = tester.getRect(bar);
-    // 높이 36·한 줄 여부는 실제 Pretendard가 필요해 시뮬레이터로 본다 — 테스트
-    // 글꼴은 글자마다 16px라 이 문구가 두 줄이 된다.
-    expect(rect.width, 345);
-    const text = '네트워크 신호가 약하니 점검해 주세요';
-    final body = tester.widget<Text>(find.text(text));
-    expect(body.style!.fontSize, 16);
-    expect(body.style!.fontWeight, FontWeight.w500);
-    expect(body.style!.height, 28 / 16);
-    expect(body.style!.letterSpacing, closeTo(-0.32, 1e-9));
-    expect(body.style!.color, VivaColors.labelSecondary);
-    expect(body.maxLines, 2);
-    final more = tester.widget<Text>(find.text('더보기'));
-    expect(more.style!.fontWeight, FontWeight.w600);
-    expect(more.style!.color, VivaColors.mainDark);
-    expect(tester.getTopLeft(find.text(text)).dx - rect.left, 16);
-    expect(rect.right - tester.getTopRight(find.text('더보기')).dx, 16);
-    final material = tester.widget<Material>(
-        find.ancestor(of: bar, matching: find.byType(Material)).first);
-    expect(material.color, VivaColors.fillButton);
-    expect(material.elevation, 0);
-    expect(material.shape, isNull, reason: '테두리 없음');
+    expect(find.byKey(LiveNoticeBar.tapKey), findsNothing);
   });
 
-  testWidgets('신호 약함 막대를 누르면 그 카메라 기기 상세로 가고 그 안내만 읽음', (tester) async {
-    await pump(tester, cameraId: 'c4');
-    await tester.tap(find.byKey(LiveNoticeBar.tapKey));
-    await tester.pumpAndSettle();
-    expect(find.text('device c4'), findsOneWidget);
-    expect(store.operations.where((o) => o.startsWith('read:')), ['read:w1:a']);
-  });
-
-  testWidgets('같은 카메라에 둘 다 있으면 신호 약함 문구 하나만', (tester) async {
+  testWidgets('같은 카메라에 둘 다 있으면 막대는 초점 안내', (tester) async {
     store.rows.add({
       ...notificationRow('w2', 'a', '2026-11-10T02:00:00Z'),
       'kind': cameraWeakSignalNotificationKind,
@@ -224,12 +189,11 @@ void main() {
     });
     await pump(tester);
     expect(find.byKey(LiveNoticeBar.tapKey), findsOneWidget);
-    expect(find.text('네트워크 신호가 약하니 점검해 주세요'), findsOneWidget);
-    expect(find.text('카메라 렌즈 초점을 맞춰주세요'), findsNothing);
+    expect(find.text('카메라 렌즈 초점을 맞춰주세요'), findsOneWidget);
   });
 
   // 막대 어디를 눌러도 이동한다 — "더보기" 글자만이 아니다(2026-11-16 사용자 지시).
-  for (final (camera, dest) in [('c1', 'detail c1'), ('c4', 'device c4')]) {
+  for (final (camera, dest) in [('c1', 'detail c1')]) {
     final points = <String, Offset Function(Rect)>{
       '왼쪽 위 모서리 안': (r) => r.topLeft + const Offset(3, 3),
       '왼쪽 여백(문구 앞)': (r) => Offset(r.left + 8, r.center.dy),

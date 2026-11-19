@@ -13,12 +13,17 @@ const cameraFocusNotificationKind = 'camera.focus_needed';
 /// `docs/superpowers/specs/2026-11-14-camera-weak-signal-notice-design.md`.
 const cameraWeakSignalNotificationKind = 'camera.weak_signal';
 
-/// 라이브 위 막대로 보이는 카메라 단위 안내 — **앞일수록 먼저**. 같은 카메라에
-/// 둘 다 미읽음이면 신호 안내를 먼저 띄우고, 사라지면 초점 안내가 이어 뜬다(D3).
-const liveNoticeKinds = [
-  cameraWeakSignalNotificationKind,
+/// 라이브 위 막대로 보이는 카메라 단위 안내 — **앞일수록 먼저**. 신호 약함은
+/// 2026-11-19 Figma 변경(2020:11196)으로 막대가 아니라 모달이다
+/// (`WeakSignalNoticePrompt`).
+const liveNoticeKinds = [cameraFocusNotificationKind];
+
+/// `data.camera_id`/`device_id`로 카메라를 가리키는 안내 — 막대([liveNoticeKinds])와
+/// 신호 약함 모달.
+const cameraNoticeKinds = {
   cameraFocusNotificationKind,
-];
+  cameraWeakSignalNotificationKind,
+};
 
 /// 종류별 실시간 구독(`watchKind`)이 받는 최근 행 수 상한. 신호 약함은 서버가
 /// 자동으로 넣어(카메라당 하루 1건) 행이 계속 쌓인다. 서버는 카메라마다 안 읽은
@@ -27,7 +32,7 @@ const liveNoticeKinds = [
 /// 상한이 없다(오래된 미읽음이 밀려나면 영영 안 뜬다).
 const notificationKindStreamLimit = {cameraWeakSignalNotificationKind: 100};
 
-/// 알림함 목록·미읽음 수·"모두 읽음"에서 빼는 종류 — 막대에만 보인다.
+/// 알림함 목록·미읽음 수·"모두 읽음"에서 빼는 종류 — 카메라 화면 모달에만 보인다.
 const inboxHiddenNotificationKinds = {cameraWeakSignalNotificationKind};
 
 const knownNotificationKinds = {
@@ -97,10 +102,10 @@ class AppNotification {
   Set<String> get focusCameraRefs =>
       kind == cameraFocusNotificationKind ? liveCameraRefs : const {};
 
-  /// 라이브 막대 안내([liveNoticeKinds])가 가리키는 카메라 표시들 — 위와 같은
+  /// 카메라 단위 안내([cameraNoticeKinds])가 가리키는 카메라 표시들 — 위와 같은
   /// 규칙. 다른 종류면 빈 집합.
   Set<String> get liveCameraRefs {
-    if (!liveNoticeKinds.contains(kind)) return const {};
+    if (!cameraNoticeKinds.contains(kind)) return const {};
     return {
       for (final key in const ['camera_id', 'device_id'])
         if (data[key] case final String id when id.isNotEmpty) id,
