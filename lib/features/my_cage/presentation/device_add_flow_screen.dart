@@ -13,6 +13,7 @@ import '../../../shared/widgets/viva_modal.dart';
 import '../../notification/domain/push_consent_flow.dart';
 import '../../notification/presentation/push_pre_popup.dart';
 import '../domain/device_add_flow.dart';
+import '../domain/network_manage.dart';
 import '../domain/pair_target_kind.dart';
 import '../domain/redesign_management.dart';
 import 'device_add_flow_controller.dart';
@@ -522,8 +523,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
     // Figma 1912:5758 — Wi-Fi 바꾸기도 본문은 기기 추가와 같다. 대상 이름·
     // 안내문을 덧붙이지 않는다(2026-11-16 기획자 지적).
     final body = [
-      _heading(
-          context, 'device_add_select_title', 'device_add_select_subtitle',
+      _heading(context, 'device_add_select_title', 'device_add_select_subtitle',
           busy: state.busy),
       if (state.targetGone)
         _emptyBox(context, 'device_wifi_target_gone'.tr())
@@ -641,11 +641,7 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                                           .textTertiary))),
                                           const SizedBox(width: 4),
                                           FigmaIcon.tinted(
-                                              c.rssi >= -60
-                                                  ? 'redesign_v2/signal_cellular_alt'
-                                                  : c.rssi >= -75
-                                                      ? 'redesign_v2/signal_cellular_alt_2_bar'
-                                                      : 'redesign_v2/signal_cellular_alt_1_bar',
+                                              networkSignalIcon(c.rssi),
                                               size: 16,
                                               // Figma 신호 그림 #B4AEAE.
                                               color: context.glass.deviceOff),
@@ -657,10 +653,10 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
                                       ? 'redesign_v2/check_box_400'
                                       : 'redesign_v2/check_box_outline_blank_400',
                                   size: 24,
-                                  color: state.selected
-                                          .containsKey(c.physicalId)
-                                      ? context.glass.navSelected
-                                      : context.glass.deviceOff),
+                                  color:
+                                      state.selected.containsKey(c.physicalId)
+                                          ? context.glass.navSelected
+                                          : context.glass.deviceOff),
                             ])))))
         ]),
     ];
