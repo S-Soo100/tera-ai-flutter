@@ -1196,6 +1196,11 @@ class _DeviceAddFlowScreenState extends ConsumerState<DeviceAddFlowScreen> {
           yield 'device_add_session_failed_hint'.tr();
         case DeviceProvisionFailure.rejected:
           yield 'device_add_rejected_hint'.tr();
+        // 네트워크 관리(2026-11-19) — 정식 문구는 Task 5에서 넣는다.
+        case DeviceProvisionFailure.notOwned:
+          yield 'device_wifi_target_gone'.tr();
+        case DeviceProvisionFailure.notChecked:
+          yield 'device_add_connection_error'.tr();
         case null:
           break;
       }

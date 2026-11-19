@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vivanaut/features/my_cage/domain/device_add_flow.dart';
+import 'package:vivanaut/features/my_cage/domain/network_manage.dart';
 import 'package:vivanaut/features/my_cage/domain/pair_target_kind.dart';
 import 'package:vivanaut/features/my_cage/domain/wifi_access_point.dart';
 import 'package:vivanaut/features/my_cage/presentation/device_add_flow_controller.dart';
@@ -21,6 +23,9 @@ class Gateway implements DeviceAddGateway {
   final sent = <String>[];
   final wifiOnly = <bool>[];
   final receipts = <String, DeviceProvisionReceipt>{};
+  final jwts = <String>[];
+  final networkCalls = <String>[];
+  final networkFails = <String>{};
   Completer<void>? pending;
   @override
   Stream<List<DeviceAddCandidate>> get scanResults => events.stream;
@@ -29,8 +34,14 @@ class Gateway implements DeviceAddGateway {
   @override
   Future<void> stopScan() async {}
   @override
-  Future<List<WifiAccessPoint>> networks(DeviceAddCandidate candidate) async =>
-      [];
+  Future<List<WifiAccessPoint>> networks(DeviceAddCandidate candidate) async {
+    networkCalls.add(candidate.physicalId);
+    if (networkFails.contains(candidate.physicalId)) {
+      throw StateError('ble failed');
+    }
+    return [];
+  }
+
   @override
   Future<DeviceProvisionReceipt> provision(DeviceAddCandidate candidate,
       {required String ssid,
@@ -42,6 +53,7 @@ class Gateway implements DeviceAddGateway {
       bool wifiOnly = false}) async {
     sent.add(candidate.physicalId);
     this.wifiOnly.add(wifiOnly);
+    jwts.add(jwt);
     await pending?.future;
     final receipt = receipts[candidate.physicalId] ??
         const DeviceProvisionReceipt(wifiConnected: true, hardwareId: 'mqtt');
@@ -805,6 +817,478 @@ void main() {
       expect(c.state.remember, isTrue);
       expect(writes, [true]);
       c.dispose();
+    });
+  });
+
+  /// 네트워크 관리(2026-11-19, Figma 1913:6462) — 근처의 이 계정 기기를 같은
+  /// 종류도 여러 대 골라 등록 없이 Wi-Fi만 바꾼다. 판정은 그 행의 서버 값.
+  group('네트워크 관리 모드', () {
+    // hw_id 차이 2로 알아보는 사육장 두 대, 못 알아보는 사육장 하나.
+    const cageA = DeviceAddCandidate(
+        physicalId: '28:84:85:6F:25:4A',
+        kind: PairTargetKind.device,
+        name: 'terra-iot',
+        rssi: -50);
+    const cageB = DeviceAddCandidate(
+        physicalId: 'AA:BB:CC:DD:EE:12',
+        kind: PairTargetKind.device,
+        name: 'terra-iot',
+        rssi: -40);
+    const cageStranger = DeviceAddCandidate(
+        physicalId: '11:22:33:44:55:66',
+        kind: PairTargetKind.device,
+        name: 'terra-iot',
+        rssi: -45);
+    // 이 폰이 기억한 카메라, hw_id로만 알아보는 카메라.
+    const camMemory = DeviceAddCandidate(
+        physicalId: 'physical-cam',
+        kind: PairTargetKind.camera,
+        name: 'FB2_P4_CAM',
+        rssi: -60);
+    const camHw = DeviceAddCandidate(
+        physicalId: 'AA:BB:CC:00:11:22',
+        kind: PairTargetKind.camera,
+        name: 'FB2_P4_CAM',
+        rssi: -55);
+    final t0 = DateTime.utc(2026, 11, 19, 10);
+    OwnedNetworkDevice row(PairTargetKind kind, String id,
+            {String? hw, bool online = false, DateTime? seen, int? up}) =>
+        OwnedNetworkDevice(
+            kind: kind,
+            id: id,
+            name: id,
+            hardwareId: hw,
+            isOnline: online,
+            lastSeen: seen ?? t0,
+            uptimeSeconds: up);
+    OwnedNetworkDevice d1({bool online = false, DateTime? seen}) =>
+        row(PairTargetKind.device, 'd1',
+            hw: '2884856F2548', online: online, seen: seen);
+    OwnedNetworkDevice d2({bool online = false, DateTime? seen}) =>
+        row(PairTargetKind.device, 'd2',
+            hw: 'AABBCCDDEE10', online: online, seen: seen);
+    OwnedNetworkDevice c1({bool online = false, DateTime? seen}) =>
+        row(PairTargetKind.camera, 'c1', online: online, seen: seen);
+    OwnedNetworkDevice c2({bool online = true, DateTime? seen, int? up}) =>
+        row(PairTargetKind.camera, 'c2',
+            hw: 'AABBCC001120', online: online, seen: seen, up: up);
+
+    late List<OwnedNetworkDevice> rows;
+    late Future<List<OwnedNetworkDevice>> Function() loadRows;
+    late int rowLoads;
+    late Map<String, String> remembered;
+    late Map<String, String> rememberedSaved;
+    late List<String> forgotten;
+    DeviceAddFlowController build(
+            {Set<String> preferred = const {}, DeviceAddGateway? via}) =>
+        DeviceAddFlowController(
+            gateway: via ?? gateway,
+            accountId: 'owner',
+            isCurrent: () => active,
+            token: () => 'jwt',
+            namePrefix: (kind) => kind == PairTargetKind.device ? '사육장' : '카메라',
+            names: () async => [],
+            confirm: (kind, id) async => '${kind.name}-uuid',
+            saveCredentials: (ssid, password) async {},
+            readCredentials: () async => {},
+            autoGroup: (owner, ids) async {
+              groups.add(ids);
+              return 'group';
+            },
+            networkManage: NetworkManageRequest(preferredIds: preferred),
+            networkDevices: () {
+              rowLoads++;
+              return loadRows();
+            },
+            rememberedId: (c) => remembered[c.physicalId],
+            rememberId: (c, id) async => rememberedSaved[c.physicalId] = id,
+            forgetId: (c) async => forgotten.add(c.physicalId),
+            reconnectPoll: const Duration(milliseconds: 5),
+            reconnectTimeout: const Duration(milliseconds: 40));
+    setUp(() {
+      controller.dispose();
+      gateway = Gateway();
+      rows = [d1(), d2(), c1()];
+      loadRows = () async => rows;
+      rowLoads = 0;
+      remembered = {camMemory.physicalId: 'c1'};
+      rememberedSaved = {};
+      forgotten = [];
+      controller = build();
+    });
+    Future<void> settle() =>
+        Future<void>.delayed(const Duration(milliseconds: 10));
+    Future<void> found(List<DeviceAddCandidate> all,
+        [DeviceAddFlowController? c]) async {
+      await (c ?? controller).scan();
+      gateway.events.add(all);
+      await settle();
+    }
+
+    test('알아본 이 계정 기기만 보인다', () async {
+      await found([cageA, cageStranger, camMemory]);
+      final state = controller.state;
+      expect(state.networkManage, isTrue);
+      expect(state.candidates.map((c) => c.physicalId),
+          [cageA.physicalId, camMemory.physicalId]);
+      expect(state.owned[cageA.physicalId]!.device.id, 'd1');
+      expect(state.owned[cageA.physicalId]!.via, NetworkMatchVia.hardware);
+      expect(state.owned[camMemory.physicalId]!.device.id, 'c1');
+      expect(state.owned[camMemory.physicalId]!.via, NetworkMatchVia.memory);
+      expect(state.owned.containsKey(cageStranger.physicalId), isFalse);
+      controller.select(cageStranger);
+      expect(controller.state.selected, isEmpty, reason: '알아보지 못한 기기는 고를 수 없다');
+    });
+
+    test('같은 종류 여러 대를 고른다', () async {
+      await found([cageA, cageB]);
+      controller.select(cageA);
+      controller.select(cageB);
+      expect(
+          controller.state.selected.keys, {cageA.physicalId, cageB.physicalId});
+      controller.select(cageA);
+      expect(controller.state.selected.keys, {cageB.physicalId});
+    });
+
+    test('같은 종류 2대의 결과가 둘 다 남는다', () async {
+      await found([cageA, cageB]);
+      controller.select(cageA);
+      controller.select(cageB);
+      await controller.connect('home', 'password');
+      final results = controller.state.results;
+      expect(results.keys, {cageA.physicalId, cageB.physicalId});
+      expect(results[cageA.physicalId]!.registeredId, 'd1');
+      expect(results[cageB.physicalId]!.registeredId, 'd2');
+      expect(results.values.map((r) => r.outcome),
+          everyElement(DeviceAddOutcome.wifiUpdated));
+    });
+
+    test('행 로드 뒤 이미 잡힌 후보를 다시 맞춘다', () async {
+      final late = Completer<List<OwnedNetworkDevice>>();
+      loadRows = () => late.future;
+      await found([cageA]);
+      expect(controller.state.candidates, isEmpty);
+      late.complete(rows);
+      await settle();
+      expect(controller.state.candidates.single, cageA);
+      expect(controller.state.owned[cageA.physicalId]!.device.id, 'd1');
+    });
+
+    test('미리 체크는 scan 단계에서 한 번만', () async {
+      controller.dispose();
+      gateway = Gateway();
+      controller = build(preferred: {'d1'});
+      await found([cageA]);
+      expect(controller.state.selected.keys, {cageA.physicalId});
+      controller.select(cageA); // 유저가 푼다
+      gateway.events.add([cageA]);
+      await settle();
+      expect(controller.state.selected, isEmpty, reason: '푼 것은 다시 고르지 않는다');
+
+      controller.dispose();
+      gateway = Gateway();
+      controller = build(preferred: {'d2'});
+      await found([cageA]);
+      controller.select(cageA);
+      await controller.loadNetworks();
+      gateway.events.add([cageA, cageB]);
+      await settle();
+      expect(controller.state.selected.keys, {cageA.physicalId},
+          reason: '네트워크 단계 뒤 늦은 매칭은 고르지 않는다');
+    });
+
+    test('미리 체크는 행마다 한 번 — 늦게 잡힌 기기도 고른다', () async {
+      controller.dispose();
+      gateway = Gateway();
+      controller = build(preferred: {'d1', 'd2'});
+      await found([cageA]);
+      expect(controller.state.selected.keys, {cageA.physicalId});
+      gateway.events.add([cageA, cageB]);
+      await settle();
+      expect(
+          controller.state.selected.keys, {cageA.physicalId, cageB.physicalId});
+    });
+
+    test('Wi-Fi만 보낸다, 카메라 먼저', () async {
+      await found([cageA, cageB, camMemory]);
+      controller.select(cageA);
+      controller.select(cageB);
+      controller.select(camMemory);
+      await controller.connect('home', 'password');
+      expect(gateway.sent,
+          [camMemory.physicalId, cageA.physicalId, cageB.physicalId]);
+      expect(gateway.wifiOnly, [true, true, true]);
+      expect(gateway.jwts, ['', '', '']);
+      final results = controller.state.results;
+      expect(results.values.map((r) => r.outcome),
+          everyElement(DeviceAddOutcome.wifiUpdated));
+      expect(results[camMemory.physicalId]!.registeredId, 'c1');
+      expect(results[cageA.physicalId]!.registeredId, 'd1');
+      expect(results[cageB.physicalId]!.registeredId, 'd2');
+      expect(controller.state.step, DeviceAddStep.results);
+      expect(controller.state.connectingIndex, 0);
+    });
+
+    test('연결 중 n/N을 기기마다 갱신한다', () async {
+      await found([cageA, cageB]);
+      controller.select(cageA);
+      controller.select(cageB);
+      gateway.pending = Completer<void>();
+      final work = controller.connect('home', 'password');
+      await settle();
+      expect(controller.state.connectingTotal, 2);
+      expect(controller.state.connectingIndex, 1);
+      gateway.pending!.complete();
+      await work;
+      expect(controller.state.connectingIndex, 0);
+    });
+
+    test('보내기 직전 행이 사라지면 그 기기만 실패하고 다음 기기는 보낸다', () async {
+      await found([cageA, cageB]);
+      controller.select(cageA);
+      controller.select(cageB);
+      rows = [d2(), c1()]; // d1이 해제됐다
+      await controller.connect('home', 'password');
+      final gone = controller.state.results[cageA.physicalId]!;
+      expect(gone.outcome, DeviceAddOutcome.failed);
+      expect(gone.failure, DeviceProvisionFailure.notOwned);
+      expect(gateway.sent, [cageB.physicalId]);
+      expect(controller.state.results[cageB.physicalId]!.outcome,
+          DeviceAddOutcome.wifiUpdated);
+    });
+
+    test('재확인 예외면 그 기기만 notChecked, 다음 기기는 보낸다', () async {
+      await found([cageA, cageB]);
+      controller.select(cageA);
+      controller.select(cageB);
+      var first = true;
+      loadRows = () async {
+        if (first) {
+          first = false;
+          throw StateError('network');
+        }
+        return rows;
+      };
+      await controller.connect('home', 'password');
+      final failed = controller.state.results[cageA.physicalId]!;
+      expect(failed.outcome, DeviceAddOutcome.failed);
+      expect(failed.failure, DeviceProvisionFailure.notChecked);
+      expect(gateway.sent, [cageB.physicalId]);
+    });
+
+    test('hardware로만 알아본 온라인 기기는 unverified / memory면 online', () async {
+      remembered[cageB.physicalId] = 'd2';
+      rows = [d1(online: true), d2(online: true)];
+      await found([cageA, cageB]);
+      expect(controller.state.owned[cageB.physicalId]!.via,
+          NetworkMatchVia.memory);
+      controller.select(cageA);
+      controller.select(cageB);
+      await controller.connect('home', 'password');
+      final later = t0.add(const Duration(seconds: 30));
+      rows = [d1(online: true, seen: later), d2(online: true, seen: later)];
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      final a = controller.state.results[cageA.physicalId]!;
+      final b = controller.state.results[cageB.physicalId]!;
+      expect(a.reconnect, CameraReconnect.online);
+      expect(a.unverified, isTrue);
+      expect(b.reconnect, CameraReconnect.online);
+      expect(b.unverified, isFalse);
+      expect(rememberedSaved, {cageB.physicalId: 'd2'},
+          reason: '확인 못 한 기기는 기억하지 않는다');
+    });
+
+    test('networkResults — 확인 중 / 전부 연결 / 하나 실패', () async {
+      await found([cageA, cageB]);
+      controller.select(cageA);
+      controller.select(cageB);
+      await controller.connect('home', 'password');
+      expect(controller.state.networkResults, NetworkResultsState.checking);
+      final later = t0.add(const Duration(seconds: 30));
+      rows = [d1(seen: later), d2(seen: later)];
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(controller.state.networkResults, NetworkResultsState.allConnected);
+
+      controller.dispose();
+      gateway = Gateway();
+      rows = [d1(), d2(), c1()];
+      controller = build();
+      await found([cageA, cageB]);
+      controller.select(cageA);
+      controller.select(cageB);
+      await controller.connect('home', 'password');
+      rows = [d1(seen: later), d2()];
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(controller.state.results[cageB.physicalId]!.reconnect,
+          CameraReconnect.missing);
+      expect(controller.state.networkResults, NetworkResultsState.someFailed);
+    });
+
+    test('카메라는 재부팅 흔적이면 원래 온라인이어도 연결됨', () async {
+      rows = [c2(up: 5000)];
+      await found([camHw]);
+      expect(controller.state.owned[camHw.physicalId]!.via,
+          NetworkMatchVia.hardware);
+      controller.select(camHw);
+      await controller.connect('home', 'password');
+      // 리셋 사유는 보지 않는다 — BLE 재설정은 SW:ble_reprov다.
+      rows = [c2(seen: t0.add(const Duration(seconds: 30)), up: 12)];
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      final result = controller.state.results[camHw.physicalId]!;
+      expect(result.reconnect, CameraReconnect.online);
+      expect(result.unverified, isFalse);
+      expect(rememberedSaved, {camHw.physicalId: 'c2'});
+    });
+
+    test('카메라 가동 시간이 줄지 않았으면 원래 온라인이면 확인 못 함', () async {
+      rows = [c2(up: 5000)];
+      await found([camHw]);
+      controller.select(camHw);
+      await controller.connect('home', 'password');
+      rows = [c2(seen: t0.add(const Duration(seconds: 30)), up: 5030)];
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      final result = controller.state.results[camHw.physicalId]!;
+      expect(result.reconnect, CameraReconnect.online);
+      expect(result.unverified, isTrue);
+      expect(rememberedSaved, isEmpty);
+    });
+
+    test('카메라 가동 시간을 모르면 재부팅 증거가 아니다', () async {
+      rows = [c2()];
+      await found([camHw]);
+      controller.select(camHw);
+      await controller.connect('home', 'password');
+      rows = [c2(seen: t0.add(const Duration(seconds: 30)), up: 3)];
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(controller.state.results[camHw.physicalId]!.unverified, isTrue);
+    });
+
+    test('기준값은 기기마다 — 앞 기기를 기다리는 동안의 갱신은 접속이 아니다', () async {
+      await found([camMemory, cageA]);
+      controller.select(camMemory);
+      controller.select(cageA);
+      gateway.pending = Completer<void>();
+      final work = controller.connect('home', 'password');
+      await settle();
+      expect(gateway.sent, [camMemory.physicalId]);
+      // 카메라를 기다리는 동안 사육장이 옛 Wi-Fi로 보고했다.
+      final during = t0.add(const Duration(seconds: 10));
+      rows = [d1(seen: during), d2(), c1()];
+      gateway.pending!.complete();
+      await work;
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(controller.state.results[cageA.physicalId]!.reconnect,
+          CameraReconnect.missing);
+    });
+
+    test('늦은 목록 응답은 버린다', () {
+      fakeAsync((async) {
+        final gw = Gateway();
+        final first = Completer<List<OwnedNetworkDevice>>();
+        final second = Completer<List<OwnedNetworkDevice>>();
+        final queue = [first, second];
+        loadRows = () => queue.removeAt(0).future;
+        final c = build(via: gw);
+        unawaited(c.scan());
+        async.flushMicrotasks();
+        gw.events.add([cageA, cageB]);
+        async.elapse(const Duration(seconds: 16)); // 검색 끝 — 다시 스캔 가능
+        unawaited(c.scan());
+        async.flushMicrotasks();
+        second.complete([d2()]);
+        async.flushMicrotasks();
+        first.complete([d1()]);
+        async.flushMicrotasks();
+        expect(c.state.owned.keys, {cageB.physicalId});
+        c.dispose();
+      });
+    });
+
+    test('목록 조회 실패는 유지 플래그, 다시 스캔하면 재조회', () {
+      fakeAsync((async) {
+        final gw = Gateway();
+        var fail = true;
+        loadRows = () async {
+          if (fail) throw StateError('offline');
+          return rows;
+        };
+        final c = build(via: gw);
+        unawaited(c.scan());
+        async.flushMicrotasks();
+        gw.events.add([cageA]);
+        async.flushMicrotasks();
+        expect(c.state.ownedLoadFailed, isTrue);
+        expect(c.state.candidates, isEmpty);
+        async.elapse(const Duration(seconds: 16));
+        expect(c.state.ownedLoadFailed, isTrue, reason: '다른 갱신에 지워지지 않는다');
+        fail = false;
+        unawaited(c.scan());
+        async.flushMicrotasks();
+        expect(rowLoads, 2);
+        expect(c.state.ownedLoadFailed, isFalse);
+        expect(c.state.candidates.single, cageA);
+        c.dispose();
+      });
+    });
+
+    test('Wi-Fi 목록은 신호가 가장 센 선택 기기로, 실패하면 다음 기기', () async {
+      await found([cageA, cageB]);
+      controller.select(cageA); // -50
+      controller.select(cageB); // -40
+      gateway.networkFails.add(cageB.physicalId);
+      await controller.loadNetworks();
+      expect(gateway.networkCalls, [cageB.physicalId, cageA.physicalId]);
+      expect(controller.state.errorKey, isNull);
+
+      gateway.networkCalls.clear();
+      gateway.networkFails.add(cageA.physicalId);
+      await controller.loadNetworks();
+      expect(gateway.networkCalls, [cageB.physicalId, cageA.physicalId]);
+      expect(controller.state.errorKey, 'device_add_network_error');
+    });
+
+    test('registerAsNew는 아무것도 안 한다, 자동 그룹을 부르지 않는다', () async {
+      await found([cageA, camMemory]);
+      controller.select(cageA);
+      controller.select(camMemory);
+      await controller.connect('home', 'password');
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      final before = controller.state.results;
+      await controller.registerAsNew(cageA.physicalId);
+      await controller.groupConfirmed();
+      expect(controller.state.results, same(before));
+      expect(forgotten, isEmpty);
+      expect(groups, isEmpty);
+      expect(gateway.wifiOnly, everyElement(isTrue));
+    });
+
+    test('[다시 찾기]는 실패·미확인 결과를 지우고 그 기기만 다시 체크', () async {
+      await found([cageA, cageB]);
+      controller.select(cageA);
+      controller.select(cageB);
+      await controller.connect('home', 'password');
+      rows = [d1(seen: t0.add(const Duration(seconds: 30))), d2()];
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(controller.state.results[cageB.physicalId]!.reconnect,
+          CameraReconnect.missing);
+      await controller.continueAdding();
+      expect(controller.state.step, DeviceAddStep.scan);
+      expect(controller.state.results.keys, {cageA.physicalId});
+      expect(controller.state.selected.keys, {cageB.physicalId});
+      controller.select(cageA);
+      expect(controller.state.selected.keys, {cageB.physicalId},
+          reason: '연결된 기기는 다시 고르지 않는다');
+    });
+
+    test('dispose 뒤 응답 무시', () async {
+      final late = Completer<List<OwnedNetworkDevice>>();
+      loadRows = () => late.future;
+      final gw = Gateway();
+      final c = build(via: gw);
+      await c.scan();
+      c.dispose();
+      late.complete(rows);
+      await settle(); // 해제 뒤 state= 이면 여기서 예외
     });
   });
 }
