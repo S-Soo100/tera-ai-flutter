@@ -16,6 +16,7 @@ import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.da
 import 'package:vivanaut/features/my_cage/presentation/widgets/camera_focus_guide.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/management_widgets.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
+import 'package:vivanaut/shared/widgets/pinch_zoom_view.dart';
 
 const _id = 'cam-uuid-1';
 const _newFw = 'fb2-p4 0.2.0-20260928';
@@ -54,6 +55,8 @@ class _Fixed extends WebRtcLiveController {
   _Fixed(super.ref, super.cameraUuid, WebRtcLiveState s) {
     state = s;
   }
+
+  void set(WebRtcLiveState s) => state = s;
 }
 
 void main() {
@@ -220,5 +223,86 @@ void main() {
         .toList();
     expect(bg, contains(AppTheme.landscapeBackdrop));
     expect(AppTheme.landscapeBackdrop, const Color(0xFF626262));
+  });
+
+  group('두 손가락 확대(2026-11-19)', () {
+    WebRtcLiveState streaming() => WebRtcLiveState(
+        phase: WebRtcLivePhase.streaming, renderer: _FakeRenderer());
+
+    Future<void> pinchOut(WidgetTester tester) async {
+      final c = tester.getCenter(find.byKey(WebRtcLiveView.zoomKey));
+      final a = await tester.startGesture(c - const Offset(20, 0), pointer: 1);
+      final b = await tester.startGesture(c + const Offset(20, 0), pointer: 2);
+      await tester.pump();
+      for (var i = 0; i < 8; i++) {
+        await a.moveBy(const Offset(-10, 0));
+        await b.moveBy(const Offset(10, 0));
+        await tester.pump();
+      }
+      await a.up();
+      await b.up();
+      await tester.pumpAndSettle();
+    }
+
+    double scale(WidgetTester tester) => tester
+        .state<PinchZoomViewState>(find.byKey(WebRtcLiveView.zoomKey))
+        .scale;
+
+    ScrollPhysics? physics(WidgetTester tester) => tester
+        .widget<SingleChildScrollView>(find.byType(SingleChildScrollView))
+        .physics;
+
+    testWidgets('세로에서 확대하면 화면 스크롤을 잠그고, 두 번 탭하면 푼다', (tester) async {
+      await pump(tester, live: streaming());
+      expect(physics(tester), isNull);
+      await pinchOut(tester);
+      expect(scale(tester), greaterThan(1.5));
+      expect(physics(tester), isA<NeverScrollableScrollPhysics>());
+
+      final c = tester.getCenter(find.byKey(WebRtcLiveView.zoomKey));
+      await tester.tapAt(c);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tapAt(c);
+      await tester.pumpAndSettle();
+      expect(scale(tester), 1);
+      expect(physics(tester), isNull);
+    });
+
+    testWidgets('가로로 갔다 오면 1배로 돌아가고 스크롤 잠금도 풀린다', (tester) async {
+      await pump(tester, live: streaming());
+      await pinchOut(tester);
+      expect(physics(tester), isA<NeverScrollableScrollPhysics>());
+
+      await tester.tap(find.byKey(CameraLiveFullscreenScreen.orientationButtonKey));
+      await tester.pumpAndSettle();
+      expect(scale(tester), 1, reason: '옛 화면 크기의 배율을 가로로 가져가지 않는다');
+      await tester.tap(find.byKey(CameraLiveFullscreenScreen.orientationButtonKey));
+      await tester.pumpAndSettle();
+      expect(scale(tester), 1);
+      expect(physics(tester), isNull);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('재연결해도 확대가 유지되고 잠금도 남는다', (tester) async {
+      await pump(tester, live: streaming());
+      await pinchOut(tester);
+      final zoomed = scale(tester);
+      final controller = ProviderScope.containerOf(
+              tester.element(find.byType(CameraLiveFullscreenScreen)))
+          .read(webrtcLiveControllerProvider(_id).notifier) as _Fixed;
+
+      controller.set(const WebRtcLiveState(phase: WebRtcLivePhase.recovering));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byKey(WebRtcLiveView.zoomKey), findsNothing);
+      expect(physics(tester), isNull, reason: '영상이 없는 동안은 스크롤 가능');
+
+      controller.set(streaming());
+      await tester.pump();
+      await tester.pump();
+      expect(scale(tester), zoomed);
+      expect(physics(tester), isA<NeverScrollableScrollPhysics>());
+      expect(tester.takeException(), isNull);
+    });
   });
 }

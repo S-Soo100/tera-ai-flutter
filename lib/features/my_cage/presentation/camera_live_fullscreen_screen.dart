@@ -267,6 +267,7 @@ class _CameraLiveFullscreenScreenState
                                       key: _liveKey,
                                       cameraUuid: cameraId,
                                       zoomable: true,
+                                      zoomResetKey: Orientation.portrait,
                                       onZoomLockChanged: _setZoomLock,
                                       // 재시작은 맨 아래 버튼 하나로(중복 방지).
                                       showReboot: false),
@@ -364,6 +365,10 @@ class _CameraLiveFullscreenScreenState
                   key: _liveKey,
                   cameraUuid: widget.cameraId,
                   zoomable: true,
+                  // 세로와 같은 콜백 — GlobalKey로 옮겨 온 확대 면이 가로에서
+                  // 1배로 돌아갈 때도 세로 스크롤 잠금이 풀린다.
+                  zoomResetKey: Orientation.landscape,
+                  onZoomLockChanged: _setZoomLock,
                   showWifiChange: false),
               // 회전 버튼은 가로에서 뺐다(Figma 메모 — 세로 목록 토글로).
               // 숨겨진 동안(사라지는 중 포함)은 탭을 받지 않는다.

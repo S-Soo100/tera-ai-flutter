@@ -1071,6 +1071,10 @@ class _ClipPlaylistPlayerScreenState
           : 'clip_hide_action')
       .tr();
 
+  /// 두 번 탭의 두 번째 누름 위치 — 빌드 사이에도 남도록 상태에 둔다(그 사이
+  /// 다시 그려지면 지역 변수는 사라져 왼쪽 탭이 +10초로 갔다).
+  Offset? _doubleTapAt;
+
   Widget _videoArea(GlassPalette glass, BoxConstraints outer,
       {bool fill = false}) {
     final ar = _initialized ? _controller?.value.aspectRatio ?? 16 / 9 : 16 / 9;
@@ -1090,17 +1094,16 @@ class _ClipPlaylistPlayerScreenState
     return SizedBox(
         height: height,
         child: LayoutBuilder(builder: (context, box) {
-          Offset? doubleTapAt;
           return Stack(fit: StackFit.expand, children: [
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: _initialized ? toggleControls : null,
               onDoubleTapDown:
-                  _initialized ? (d) => doubleTapAt = d.localPosition : null,
+                  _initialized ? (d) => _doubleTapAt = d.localPosition : null,
               onDoubleTap: _initialized
                   ? () {
                       final left =
-                          (doubleTapAt?.dx ?? box.maxWidth) < box.maxWidth / 2;
+                          (_doubleTapAt?.dx ?? box.maxWidth) < box.maxWidth / 2;
                       _seekBy(Duration(seconds: left ? -10 : 10));
                     }
                   : null,

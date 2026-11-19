@@ -45,6 +45,7 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
     this.showWifiChange = true,
     this.showReboot = true,
     this.zoomable = false,
+    this.zoomResetKey,
     this.onZoomLockChanged,
   });
 
@@ -54,6 +55,11 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
   /// 화면만 켠다. 홈·카메라 탭 미리보기는 스크롤·카메라 넘기기와 겹쳐 끈다.
   /// 안내 알약은 확대하지 않는다. 두 번 탭하면 1배로.
   final bool zoomable;
+
+  /// 이 값이 바뀌면 확대를 1배로 되돌린다 — 확대 라이브 화면은 GlobalKey로 이
+  /// 뷰를 세로↔가로로 옮기므로 방향을 넘긴다(옛 화면 크기의 배율·위치가 새 화면에
+  /// 그대로 남지 않게). 재연결로는 되돌리지 않는다(배율은 이 뷰가 들고 있다).
+  final Object? zoomResetKey;
 
   /// [zoomable]일 때 두 손가락이 닿았거나 확대 중이면 true — 바깥 세로 스크롤을
   /// 잠그는 데 쓴다.
@@ -125,6 +131,9 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
   WebRtcLiveController? _controller;
   bool? _visible;
 
+  /// 확대 배율 — 재연결로 영상 면이 다시 만들어져도 유지한다.
+  final _zoom = TransformationController();
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -135,6 +144,10 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
   void didUpdateWidget(WebRtcLiveView old) {
     super.didUpdateWidget(old);
     if (old.cameraUuid != widget.cameraUuid) _report();
+    if (old.cameraUuid != widget.cameraUuid ||
+        old.zoomResetKey != widget.zoomResetKey) {
+      _zoom.value = Matrix4.identity();
+    }
   }
 
   /// 이 뷰가 화면에 보이는지 컨트롤러에 알린다. 다른 탭(indexedStack)이거나
@@ -186,6 +199,7 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
   @override
   void dispose() {
     _detach();
+    _zoom.dispose();
     super.dispose();
   }
 
@@ -232,6 +246,7 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
           renderer: state.renderer!,
           cover: widget.cover,
           zoomable: widget.zoomable,
+          zoom: _zoom,
           onZoomLockChanged: widget.onZoomLockChanged,
           pillLabelKey: WebRtcLiveView.pillKeyFor(state),
           liveUntil: state.liveUntil,
@@ -323,6 +338,7 @@ class _StreamingView extends StatelessWidget {
     required this.renderer,
     required this.cover,
     this.zoomable = false,
+    this.zoom,
     this.onZoomLockChanged,
     this.pillLabelKey,
     this.liveUntil,
@@ -331,6 +347,7 @@ class _StreamingView extends StatelessWidget {
   final RTCVideoRenderer renderer;
   final bool cover;
   final bool zoomable;
+  final TransformationController? zoom;
   final ValueChanged<bool>? onZoomLockChanged;
   final String? pillLabelKey;
 
@@ -348,6 +365,7 @@ class _StreamingView extends StatelessWidget {
     final video = zoomable
         ? PinchZoomView(
             key: WebRtcLiveView.zoomKey,
+            controller: zoom,
             doubleTapToReset: true,
             onGestureLockChanged: onZoomLockChanged,
             child: raw)

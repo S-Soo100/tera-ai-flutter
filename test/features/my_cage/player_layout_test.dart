@@ -23,6 +23,7 @@ import 'package:vivanaut/features/my_cage/presentation/player_view_providers.dar
 import 'package:vivanaut/features/my_cage/presentation/thumbnail_cache_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/clip_filmstrip.dart';
 import 'package:vivanaut/shared/widgets/figma_icon.dart';
+import 'package:vivanaut/shared/widgets/pinch_zoom_view.dart';
 import 'package:vivanaut/shared/widgets/video_seek_bar.dart';
 
 class _Favorite extends Fake implements FavoriteClipRepository {
@@ -449,5 +450,41 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     expect(find.byKey(const Key('clip_toast')), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  group('두 손가락 확대와 함께 쓰는 손짓(2026-11-19)', () {
+    testWidgets('왼쪽 절반 두 번 탭은 -10초, 오른쪽은 +10초', (tester) async {
+      await pump(tester, const Size(393, 852));
+      final rect = tester.getRect(find.byType(PinchZoomView));
+      final chip = find.byKey(const Key('player_seek_feedback'));
+
+      Future<void> doubleTap(Offset at) async {
+        await tester.tapAt(at);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tapAt(at);
+        await tester.pump();
+      }
+
+      await doubleTap(Offset(rect.left + rect.width / 4, rect.center.dy));
+      expect(chip, findsOneWidget);
+      expect(tester.getCenter(chip).dx, lessThan(rect.center.dx));
+      await tester.pump(const Duration(seconds: 2));
+
+      await doubleTap(Offset(rect.right - rect.width / 4, rect.center.dy));
+      expect(chip, findsOneWidget);
+      expect(tester.getCenter(chip).dx, greaterThan(rect.center.dx));
+      await tester.pump(const Duration(seconds: 2));
+    });
+
+    testWidgets('1배에서 왼쪽으로 넘기면 다음 영상, 영상이 바뀌면 확대 면도 새로', (tester) async {
+      await pump(tester, const Size(393, 852));
+      expect(find.byKey(const ValueKey('player_zoom_b_p')), findsOneWidget);
+      await tester.fling(find.byType(PinchZoomView), const Offset(-120, 0), 1000);
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byKey(const ValueKey('player_zoom_c_p')), findsOneWidget);
+      await tester.fling(find.byType(PinchZoomView), const Offset(120, 0), 1000);
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byKey(const ValueKey('player_zoom_b_p')), findsOneWidget);
+    });
   });
 }
