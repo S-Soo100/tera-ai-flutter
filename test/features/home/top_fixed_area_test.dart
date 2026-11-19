@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:vivanaut/features/auth/presentation/auth_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:vivanaut/features/home/domain/enclosure_set.dart';
 import 'package:vivanaut/features/home/presentation/home_set_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
 import 'package:vivanaut/shared/widgets/live_surface.dart';
+import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
 
 import '../../helpers/inert_live_controller.dart';
 import 'package:vivanaut/features/home/presentation/widgets/top_fixed_area.dart';
@@ -101,5 +103,51 @@ void main() {
   testWidgets('빈 선택은 라이브를 만들지 않는다', (tester) async {
     await _pump(tester, []);
     expect(find.byType(LiveSurface), findsNothing);
+  });
+
+  group('영상 탭 → 확대 라이브 화면(2026-11-19)', () {
+    Future<void> pumpRouted(WidgetTester tester, {required bool offline}) async {
+      final c = ProviderContainer(overrides: [
+        currentUserProvider.overrideWithValue(null),
+        homeDeviceSetsProvider
+            .overrideWith((ref) async => [_set('e1', dev: true, cam: true)]),
+        webrtcLiveControllerProvider.overrideWith((ref, uuid) => offline
+            ? OfflineLiveController(ref, uuid)
+            : StreamingLiveController(ref, uuid)),
+        nowTickProvider
+            .overrideWith((ref) => Stream.value(DateTime(2026, 9, 14, 12))),
+      ]);
+      addTearDown(c.dispose);
+      final router = GoRouter(routes: [
+        GoRoute(
+            path: '/',
+            builder: (_, __) => const Scaffold(body: TopFixedArea())),
+        GoRoute(
+            path: '/crecam/cameras/:cameraId/live',
+            builder: (_, state) => Scaffold(
+                body: Text(
+                    'live-fullscreen-${state.pathParameters['cameraId']}'))),
+      ]);
+      await tester.pumpWidget(UncontrolledProviderScope(
+          container: c, child: MaterialApp.router(routerConfig: router)));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('영상을 탭하면 확대 버튼과 같은 화면으로 간다 — 여기선 확대하지 않는다',
+        (tester) async {
+      await pumpRouted(tester, offline: false);
+      expect(find.byKey(WebRtcLiveView.zoomKey), findsNothing);
+      await tester.tap(find.byKey(TopFixedArea.liveTapKey));
+      await tester.pumpAndSettle();
+      expect(find.text('live-fullscreen-c-e1'), findsOneWidget);
+    });
+
+    testWidgets('오프라인 안내 중엔 탭해도 가지 않는다(확대 버튼도 숨김)', (tester) async {
+      await pumpRouted(tester, offline: true);
+      await tester.tapAt(tester.getTopLeft(find.byKey(TopFixedArea.liveTapKey)) +
+          const Offset(20, 20));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('live-fullscreen'), findsNothing);
+    });
   });
 }

@@ -12,7 +12,6 @@ import '../../../home/domain/enclosure_set.dart';
 import '../../../home/presentation/home_set_providers.dart';
 import '../../domain/terra_camera.dart';
 import '../my_cage_providers.dart';
-import '../live_zoom_providers.dart';
 import '../webrtc_live_controller.dart';
 import 'live_notice_bar.dart';
 import 'webrtc_live_view.dart';
@@ -44,6 +43,7 @@ class CameraLiveArea extends ConsumerStatefulWidget {
 
   static const pageViewKey = Key('crecam_live_pageview');
   static const expandButtonKey = Key('crecam_live_expand');
+  static const liveTapKey = Key('crecam_live_tap');
   static const emptyCardKey = Key('crecam_live_empty');
   static const indicatorKey = Key('crecam_live_indicator');
 
@@ -248,11 +248,6 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
         child: PageView.builder(
           key: CameraLiveArea.pageViewKey,
           controller: _controller,
-          // 확대 중엔 카메라 넘기기를 잠근다 — 한 손가락 옮기기·두 손가락
-          // 확대를 넘기기가 빼앗는다. 두 번 탭으로 1배로 돌리면 다시 넘긴다.
-          physics: ref.watch(liveZoomLockProvider(LiveZoomScope.cameraTab))
-              ? const NeverScrollableScrollPhysics()
-              : null,
           itemCount: cameras.length,
           // 정착 페이지만 라이브 — 드래그로 스쳐 가는 이웃 페이지가 세션
           // 생성→즉시 철거(offer/ICE/closeSession 왕복)를 반복하지 않게
@@ -268,7 +263,18 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
       borderRadius: const BorderRadius.all(Radius.circular(12)),
       child: Stack(
         children: [
-          surface,
+          // 영상을 탭해도 확대 버튼과 같은 확대 라이브 화면으로 간다 — 두 손가락
+          // 확대는 거기서 한다(여기서 확대하면 스크롤·카메라 넘기기가 멈춰 불편,
+          // 2026-11-19 사용자 결정). 오프라인 안내 중엔 확대 버튼처럼 막는다.
+          GestureDetector(
+            key: CameraLiveArea.liveTapKey,
+            // 영상 텍스처는 탭을 받지 않는다 — 면 전체를 탭 영역으로.
+            behavior: HitTestBehavior.opaque,
+            onTap: offline
+                ? null
+                : () => context.push('/crecam/cameras/${current.id}/live'),
+            child: surface,
+          ),
           // 카메라 오프라인 안내 중엔 숨긴다(Figma 1525:10689 메모 "이때는 가로
           // 크게보기 버튼 사라짐").
           if (!offline)
@@ -312,11 +318,7 @@ class _CameraPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!active) return const SizedBox.expand();
-    return WebRtcLiveView(
-        cameraUuid: camera.id,
-        cover: true,
-        zoomable: true,
-        zoomLockScope: LiveZoomScope.cameraTab);
+    return WebRtcLiveView(cameraUuid: camera.id, cover: true);
   }
 }
 

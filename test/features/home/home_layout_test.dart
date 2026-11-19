@@ -22,18 +22,13 @@ import 'package:vivanaut/features/my_cage/domain/device.dart';
 import 'package:vivanaut/features/my_cage/domain/enclosure.dart';
 import 'package:vivanaut/features/my_cage/domain/telemetry_reading.dart';
 import 'package:vivanaut/features/my_cage/presentation/supabase_module_providers.dart';
-import 'package:vivanaut/features/my_cage/domain/terra_camera.dart';
-import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
-import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
-import 'package:vivanaut/shared/widgets/pinch_zoom_view.dart';
-import '../../helpers/inert_live_controller.dart';
 import 'package:vivanaut/shared/domain/env_extremes.dart';
 
 const _deviceId = 'd-e1';
 
 /// 캠 없는 세트 — WebRtcLiveView가 실피어 연결을 시도하지 않게 라이브 자리는
 /// 접힌 상태(`home_no_camera` 한 줄)로 검증한다.
-EnclosureSet _set({bool camera = false}) => EnclosureSet(
+EnclosureSet _set() => EnclosureSet(
       enclosure:
           Enclosure(id: 'e1', name: '1번 사육장', createdAt: DateTime(2026, 1, 1)),
       device: Device(
@@ -44,15 +39,7 @@ EnclosureSet _set({bool camera = false}) => EnclosureSet(
         isOnline: true,
         lastSeenAt: null,
       ),
-      camera: camera
-          ? TerraCamera(
-              id: 'cam-e1',
-              cameraId: 'p4cam-e1',
-              name: 'cam',
-              isOnline: true,
-              enclosureId: 'e1',
-              createdAt: DateTime(2026, 1, 1))
-          : null,
+      camera: null,
       pet: null,
     );
 
@@ -85,9 +72,7 @@ final _reloadTick = StateProvider<int>((ref) => 0);
 final _deviceReloadTick = StateProvider<int>((ref) => 0);
 
 Future<void> _pump(WidgetTester tester,
-    {Completer<void>? reloadGate,
-    Completer<void>? deviceReloadGate,
-    bool liveCamera = false}) async {
+    {Completer<void>? reloadGate, Completer<void>? deviceReloadGate}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -98,11 +83,8 @@ Future<void> _pump(WidgetTester tester,
           // 첫 조립은 바로 끝나고, 방아쇠가 당겨진 뒤의 재조립만 gate에서 멈춘다.
           final tick = ref.watch(_reloadTick);
           if (tick > 0 && reloadGate != null) await reloadGate.future;
-          return [_set(camera: liveCamera)];
+          return [_set()];
         }),
-        if (liveCamera)
-          webrtcLiveControllerProvider.overrideWith(
-              (ref, uuid) => StreamingLiveController(ref, uuid)),
         currentUserProvider.overrideWithValue(null),
         currentDeviceIdProvider.overrideWith((ref) async {
           final tick = ref.watch(_deviceReloadTick);
@@ -226,24 +208,5 @@ void main() {
     await tester.tap(find.byKey(HomeScreen.scheduleRowKey));
     await tester.pumpAndSettle();
     expect(find.text('routines-screen'), findsOneWidget);
-  });
-
-  testWidgets('홈 라이브 두 손가락 확대 중엔 홈 스크롤을 잠그고, 두 번 탭하면 푼다',
-      (tester) async {
-    await _pump(tester, liveCamera: true);
-    final zoom = find.byKey(WebRtcLiveView.zoomKey);
-    expect(zoom, findsOneWidget);
-    ScrollPhysics? physics() => tester
-        .widget<SingleChildScrollView>(find.byType(SingleChildScrollView).first)
-        .physics;
-    expect(physics(), isNull);
-
-    await pinchOutAt(tester, zoom);
-    expect(tester.state<PinchZoomViewState>(zoom).scale, greaterThan(1.5));
-    expect(physics(), isA<NeverScrollableScrollPhysics>());
-
-    await doubleTapAt(tester, zoom);
-    expect(tester.state<PinchZoomViewState>(zoom).scale, 1);
-    expect(physics(), isNull);
   });
 }

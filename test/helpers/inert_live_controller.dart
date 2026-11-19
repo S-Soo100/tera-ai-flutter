@@ -47,28 +47,3 @@ class FakeLiveRenderer extends RTCVideoRenderer {
   // ignore: must_call_super
   Future<void> dispose() async {}
 }
-
-/// 라이브 면 가운데서 두 손가락으로 벌린다.
-Future<void> pinchOutAt(WidgetTester tester, Finder target) async {
-  final c = tester.getCenter(target);
-  final a = await tester.startGesture(c - const Offset(20, 0), pointer: 1);
-  final b = await tester.startGesture(c + const Offset(20, 0), pointer: 2);
-  await tester.pump();
-  for (var i = 0; i < 8; i++) {
-    await a.moveBy(const Offset(-10, 0));
-    await b.moveBy(const Offset(10, 0));
-    await tester.pump();
-  }
-  await a.up();
-  await b.up();
-  await tester.pumpAndSettle();
-}
-
-/// 두 번 탭.
-Future<void> doubleTapAt(WidgetTester tester, Finder target) async {
-  final c = tester.getCenter(target);
-  await tester.tapAt(c);
-  await tester.pump(const Duration(milliseconds: 50));
-  await tester.tapAt(c);
-  await tester.pumpAndSettle();
-}

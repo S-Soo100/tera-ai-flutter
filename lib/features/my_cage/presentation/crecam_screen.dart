@@ -27,7 +27,6 @@ import '../../../shared/widgets/redesign_empty_state.dart';
 import '../../home/domain/group_display_label.dart';
 import '../../notification/domain/push_consent_flow.dart';
 import '../../notification/presentation/push_pre_popup.dart';
-import 'live_zoom_providers.dart';
 
 /// 카메라 탭 Camera Home — Figma 668:427 (2026-09-04 재설계 T2, 전면 재작성).
 ///
@@ -362,11 +361,7 @@ class _CrecamScreenState extends ConsumerState<CrecamScreen>
                               key: PageStorageKey(
                                   ref.watch(clipFeedQueryProvider)),
                               controller: _scroll,
-                              // 라이브 확대·옮기기 중엔 스크롤이 손짓을 빼앗지 않게.
-                              physics: ref.watch(liveZoomLockProvider(
-                                      LiveZoomScope.cameraTab))
-                                  ? const NeverScrollableScrollPhysics()
-                                  : const AlwaysScrollableScrollPhysics(),
+                              physics: const AlwaysScrollableScrollPhysics(),
                               slivers: [
                                 SliverToBoxAdapter(
                                     child: AnimatedBuilder(

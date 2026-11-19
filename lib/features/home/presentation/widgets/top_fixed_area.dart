@@ -5,7 +5,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../my_cage/presentation/webrtc_live_controller.dart';
-import '../../../my_cage/presentation/live_zoom_providers.dart';
 import '../../../my_cage/presentation/widgets/live_notice_bar.dart';
 import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
 import '../home_set_providers.dart';
@@ -20,6 +19,7 @@ class TopFixedArea extends ConsumerWidget {
   static const noCameraLineKey = Key('top_fixed_no_camera_line');
   static const indicatorKey = Key('top_fixed_indicator');
   static const expandButtonKey = Key('top_fixed_expand');
+  static const liveTapKey = Key('top_fixed_live_tap');
   static const aspectRatio = 369 / 271;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,18 +28,23 @@ class TopFixedArea extends ConsumerWidget {
     // 카메라 오프라인 안내 중엔 확대 버튼을 숨긴다(Figma 1525:10689 메모).
     final offline = ref.watch(webrtcLiveControllerProvider(camera.id)
         .select(WebRtcLiveView.isOfflineNotice));
+    void openLive() => context.push('/crecam/cameras/${camera.id}/live');
     return Stack(children: [
-      LiveSurface(
-          aspectRatio: aspectRatio,
-          child: KeyedSubtree(
-              key: ValueKey(camera.id),
-              // 두 손가락 확대(2026-11-19) — 확대 중엔 홈 스크롤을 잠근다.
-              child: WebRtcLiveView(
-                  key: liveKey,
-                  cameraUuid: camera.id,
-                  cover: true,
-                  zoomable: true,
-                  zoomLockScope: LiveZoomScope.home))),
+      // 영상을 탭해도 확대 버튼과 같은 확대 라이브 화면으로 간다 — 두 손가락
+      // 확대는 거기서 한다(홈에서 확대하면 스크롤이 멈춰 불편, 2026-11-19 사용자
+      // 결정). 확대 버튼이 숨는 오프라인 안내 중엔 가지 않는다. 재시도 같은 안의
+      // 버튼은 그 버튼이 먼저 받는다.
+      GestureDetector(
+          key: liveTapKey,
+          // 영상 텍스처는 탭을 받지 않는다 — 면 전체를 탭 영역으로.
+          behavior: HitTestBehavior.opaque,
+          onTap: offline ? null : openLive,
+          child: LiveSurface(
+              aspectRatio: aspectRatio,
+              child: KeyedSubtree(
+                  key: ValueKey(camera.id),
+                  child: WebRtcLiveView(
+                      key: liveKey, cameraUuid: camera.id, cover: true)))),
       if (!offline)
         Positioned(
             right: 20,
@@ -50,8 +55,7 @@ class TopFixedArea extends ConsumerWidget {
                 shape: const CircleBorder(),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
-                    onTap: () =>
-                        context.push('/crecam/cameras/${camera.id}/live'),
+                    onTap: openLive,
                     child: const SizedBox(
                         width: 32,
                         height: 32,
