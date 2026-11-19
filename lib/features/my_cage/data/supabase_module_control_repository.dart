@@ -90,10 +90,7 @@ class SupabaseModuleControlRepository {
       {required bool userContract}) async {
     final rows = await _supabase
         .from('devices')
-        .select(userContract
-            ? tempOffsetColumn(userContract: true)
-            // 옛 계약은 공장 보정 기준(허브 0)을 같이 읽어야 풀 수 있다.
-            : '${tempOffsetColumn(userContract: false)},$kTempOffsetBaseColumns')
+        .select(tempOffsetColumn(userContract: userContract))
         .eq('id', deviceId)
         .limit(1);
     final list = (rows as List).cast<Map<String, dynamic>>();

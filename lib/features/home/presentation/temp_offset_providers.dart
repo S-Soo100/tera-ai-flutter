@@ -147,16 +147,6 @@ class TempOffsetSaver extends AutoDisposeFamilyNotifier<TempOffset?, String> {
     return null;
   }
 
-  /// 이 기기의 공장 보정 기준(허브 0, 사육장 보드 −1.5). 목록에 없으면 기본값 —
-  /// 보정 화면은 목록에서 기기를 찾아 들어오므로 보통 있다.
-  double _factoryBase() {
-    final devices = ref.read(deviceListProvider).valueOrNull ?? const [];
-    for (final d in devices) {
-      if (d.id == arg) return d.factoryOffsetBase;
-    }
-    return TempOffset.factoryDeviceValue;
-  }
-
   /// [offset]을 기기에 보내고 확인될 때까지 기다린다. 이미 저장 중이면 보내지
   /// 않는다(화면이 버튼을 막는다 — 여기선 [TempOffsetSaveResult.failed]).
   ///
@@ -189,9 +179,8 @@ class TempOffsetSaver extends AutoDisposeFamilyNotifier<TempOffset?, String> {
         final v = next.valueOrNull;
         if (v != null && v == offset) finish(TempOffsetSaveResult.saved);
       });
-      final commandId = await ref
-          .read(tempOffsetRepositoryProvider)
-          .send(arg, offset, factoryBase: _factoryBase());
+      final commandId =
+          await ref.read(tempOffsetRepositoryProvider).send(arg, offset);
       timer = Timer(
           kTempOffsetConfirmTimeout,
           () => finish(acked

@@ -13,9 +13,8 @@ import '../../../shared/domain/env_thresholds.dart';
 ///
 /// 보내는 키는 계약([userContract])에 따라 하나뿐이다 — 한 명령에 둘을 같이
 /// 보내면 서버가 400으로 거절한다.
-/// - 옛 계약: `offset_c` = [TempOffset.toDeviceValue](공장 보정 [factoryBase] +
-///   사용자 보정 — 서버 회신 2026-11-02 §1.2). 기준은 기기마다 다르다(사육장
-///   보드 −1.5, 허브 0 — `Device.factoryOffsetBase`).
+/// - 옛 계약: `offset_c` = [TempOffset.toDeviceValue](공장 보정 −1.5 + 사용자
+///   보정 — 서버 회신 2026-11-02 §1.2).
 /// - 새 계약: `user_offset_c` = 사용자 보정값 그대로(0.1 단위). 공장 보정은 서버가
 ///   더한다(서버 `APP_TEMP_OFFSET_SERVER_BASE_2026-11-05.md`).
 ///
@@ -30,14 +29,13 @@ class TempOffsetRepository {
   /// 보낸 명령의 `commands` 행 id. 응답에 id가 없으면 null — 결과
   /// (`commands.result == ok`)는 호출부가 그 행으로 본다. 실패는
   /// [TerraRestException]을 그대로 올린다(404 = 해제·타인 기기, 400 = 범위 밖).
-  Future<String?> send(String deviceId, TempOffset offset,
-      {double factoryBase = TempOffset.factoryDeviceValue}) async {
+  Future<String?> send(String deviceId, TempOffset offset) async {
     final body = await _rest.post('/devices/$deviceId/commands', {
       'action': 'set_temp_offset',
       'payload': userContract
           // 편집기 값은 0.1 단위지만 const 생성자는 단위를 보장하지 않는다.
           ? {'user_offset_c': (offset.value * 10).round() / 10}
-          : {'offset_c': offset.toDeviceValue(factoryBase: factoryBase)},
+          : {'offset_c': offset.toDeviceValue()},
     });
     final id = body is Map ? body['id'] : null;
     return id is String && id.isNotEmpty ? id : null;

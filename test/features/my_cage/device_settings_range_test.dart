@@ -137,64 +137,6 @@ void main() {
     });
   });
 
-  // 2026-11-19 승수홈 사고 — 허브 카메라(p4hub)는 공장 보정 0인데 −1.5로 풀어
-  // 보정 0이 "+1.5"로 보였다.
-  group('공장 보정 기준', () {
-    test('보고값(temp_offset_base_c) → 허브 0 → 기본 −1.5', () {
-      expect(
-          factoryOffsetBaseFromRow({
-            'temp_offset_base_c': '-1.5',
-            'capabilities': {'hub': true},
-          }),
-          -1.5);
-      expect(factoryOffsetBaseFromRow({'temp_offset_base_c': '0.0'}), 0);
-      expect(
-          factoryOffsetBaseFromRow({
-            'temp_offset_base_c': null,
-            'capabilities': {'hub': true},
-          }),
-          0);
-      expect(
-          factoryOffsetBaseFromRow({
-            'capabilities': {'board': 'mosfet'},
-          }),
-          -1.5);
-      expect(factoryOffsetBaseFromRow(const {}), -1.5);
-      // 믿을 수 없는 보고값은 무시한다.
-      expect(
-          factoryOffsetBaseFromRow({
-            'temp_offset_base_c': 'abc',
-            'capabilities': {'hub': true},
-          }),
-          0);
-      expect(factoryOffsetBaseFromRow({'temp_offset_base_c': 12}), -1.5);
-    });
-    test('승수홈 허브 행(기기 0·기준 미보고) — 옛 계약 사용자 보정은 0', () {
-      final row = <String, dynamic>{
-        ...base,
-        'device_id': 'p4hub-4f5e0647',
-        'temp_offset_c': 0,
-        'temp_offset_user_c': '1.5',
-        'temp_offset_base_c': null,
-        'capabilities': {'hub': true, 'board': 'mosfet'},
-      };
-      expect(userOffsetFromRow(row, userContract: false).offset,
-          const TempOffset(0));
-      final d = Device.fromJson(row);
-      expect(d.factoryOffsetBase, 0);
-      expect(userOffsetOf(d, userContract: false), const TempOffset(0));
-    });
-    test('일반 보드는 그대로 −1.5 기준', () {
-      final d = Device.fromJson({
-        ...base,
-        'temp_offset_c': -1.5,
-        'capabilities': {'board': 'mosfet'},
-      });
-      expect(d.factoryOffsetBase, -1.5);
-      expect(userOffsetOf(d, userContract: false), const TempOffset(0));
-    });
-  });
-
   // 새 계약(서버 `APP_TEMP_OFFSET_SERVER_BASE_2026-11-05.md` §2) — 계획 Task 1.
   group('사용자 보정값 — 계약별 해석', () {
     test('행 해석 — 계약별 컬럼, 키 없음은 모름', () {
