@@ -22,6 +22,7 @@ import '../live_limit_providers.dart';
 import '../my_cage_providers.dart';
 import '../sys_health_controllers.dart';
 import '../../../../shared/widgets/keep_screen_on.dart';
+import '../../../../shared/widgets/pinch_zoom_view.dart';
 import '../webrtc_live_controller.dart';
 import 'live_control_rows.dart' show LiveRasterIcon;
 import 'sys_health_widgets.dart';
@@ -43,9 +44,20 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
     this.cover = false,
     this.showWifiChange = true,
     this.showReboot = true,
+    this.zoomable = false,
+    this.onZoomLockChanged,
   });
 
   final String cameraUuid;
+
+  /// 재생 중 영상을 두 손가락으로 확대할 수 있게 한다(2026-11-19) — 확대 라이브
+  /// 화면만 켠다. 홈·카메라 탭 미리보기는 스크롤·카메라 넘기기와 겹쳐 끈다.
+  /// 안내 알약은 확대하지 않는다. 두 번 탭하면 1배로.
+  final bool zoomable;
+
+  /// [zoomable]일 때 두 손가락이 닿았거나 확대 중이면 true — 바깥 세로 스크롤을
+  /// 잠그는 데 쓴다.
+  final ValueChanged<bool>? onZoomLockChanged;
 
   /// true면 영상이 면을 **꽉 채운다**(가장자리 크롭 허용). 홈 풀블리드 면이
   /// 쓴다. 기본 false(contain) — 카메라 상세는 프레임 전체를 보여준다.
@@ -62,6 +74,7 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
   static const wifiButtonKey = Key('webrtc_live_wifi_change');
   static const pillKey = Key('webrtc_live_pill');
   static const rebootButtonKey = Key('webrtc_live_reboot');
+  static const zoomKey = Key('webrtc_live_zoom');
 
   /// 카메라 쪽이 멈춘 실패 — 재시작할 수 있는 카메라면 [카메라 재시작]을 준다
   /// (2026-10-03 D1). 망·오프라인·인증 실패는 재시작으로 안 풀려 제외한다.
@@ -218,6 +231,8 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
       WebRtcLivePhase.streaming || WebRtcLivePhase.stalled => _StreamingView(
           renderer: state.renderer!,
           cover: widget.cover,
+          zoomable: widget.zoomable,
+          onZoomLockChanged: widget.onZoomLockChanged,
           pillLabelKey: WebRtcLiveView.pillKeyFor(state),
           liveUntil: state.liveUntil,
         ),
@@ -307,12 +322,16 @@ class _StreamingView extends StatelessWidget {
   const _StreamingView({
     required this.renderer,
     required this.cover,
+    this.zoomable = false,
+    this.onZoomLockChanged,
     this.pillLabelKey,
     this.liveUntil,
   });
 
   final RTCVideoRenderer renderer;
   final bool cover;
+  final bool zoomable;
+  final ValueChanged<bool>? onZoomLockChanged;
   final String? pillLabelKey;
 
   /// 서버가 라이브를 끝낼 시각 — 마지막 [kLiveEndingSoon]만 알약으로 알린다.
@@ -320,12 +339,19 @@ class _StreamingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final video = RTCVideoView(
+    final Widget raw = RTCVideoView(
       renderer,
       objectFit: cover
           ? RTCVideoViewObjectFit.RTCVideoViewObjectFitCover
           : RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
     );
+    final video = zoomable
+        ? PinchZoomView(
+            key: WebRtcLiveView.zoomKey,
+            doubleTapToReset: true,
+            onGestureLockChanged: onZoomLockChanged,
+            child: raw)
+        : raw;
     final key = pillLabelKey;
     final until = liveUntil;
     if (key == null && until == null) return video;

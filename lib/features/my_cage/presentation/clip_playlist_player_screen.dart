@@ -35,6 +35,7 @@ import 'clip_visibility_providers.dart';
 import 'widgets/clip_hide_dialog.dart';
 import '../../../shared/widgets/arc_spinner.dart';
 import '../../../shared/widgets/keep_screen_on.dart';
+import '../../../shared/widgets/pinch_zoom_view.dart';
 import '../domain/player_entry.dart';
 import '../domain/recording_item.dart';
 import 'live_recording_actions.dart';
@@ -1078,49 +1079,45 @@ class _ClipPlaylistPlayerScreenState
         ? outer.maxHeight
         : math.min(
             outer.maxWidth / ratio, math.max(80.0, outer.maxHeight - 260));
+    void toggleControls() {
+      final provider = playerControlsVisibleProvider(_orientationKey);
+      ref.read(provider.notifier).state = !ref.read(provider);
+    }
+
+    // 두 손가락 확대(2026-11-19). 좌우 넘기기는 확대 면이 1배일 때만 받는다 —
+    // 바깥 가로 드래그가 있으면 두 손가락 확대를 빼앗긴다. 탭·두 번 탭은 확대와
+    // 상관없이 화면 기준 왼쪽/오른쪽 절반으로 판정한다.
     return SizedBox(
         height: height,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onHorizontalDragEnd: (details) {
-            final velocity = details.primaryVelocity ?? 0;
-            if (velocity.abs() > 150) _go(velocity < 0 ? 1 : -1);
-          },
-          child: Stack(fit: StackFit.expand, children: [
-            _video(glass),
-            if (_initialized)
-              Row(children: [
-                Expanded(
-                    child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          final provider =
-                              playerControlsVisibleProvider(_orientationKey);
-                          ref.read(provider.notifier).state =
-                              !ref.read(provider);
-                        },
-                        onDoubleTap: () =>
-                            _seekBy(const Duration(seconds: -10)))),
-                Expanded(
-                    child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          final provider =
-                              playerControlsVisibleProvider(_orientationKey);
-                          ref.read(provider.notifier).state =
-                              !ref.read(provider);
-                        },
-                        onDoubleTap: () =>
-                            _seekBy(const Duration(seconds: 10)))),
-              ]),
+        child: LayoutBuilder(builder: (context, box) {
+          Offset? doubleTapAt;
+          return Stack(fit: StackFit.expand, children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _initialized ? toggleControls : null,
+              onDoubleTapDown:
+                  _initialized ? (d) => doubleTapAt = d.localPosition : null,
+              onDoubleTap: _initialized
+                  ? () {
+                      final left =
+                          (doubleTapAt?.dx ?? box.maxWidth) < box.maxWidth / 2;
+                      _seekBy(Duration(seconds: left ? -10 : 10));
+                    }
+                  : null,
+              child: PinchZoomView(
+                  key: ValueKey(
+                      'player_zoom_${_currentEntry.key}_${fill ? 'l' : 'p'}'),
+                  onSwipe: _go,
+                  child: _video(glass)),
+            ),
             if (ref.watch(_seekFeedbackProvider(_orientationKey))
                 case final seconds?)
               IgnorePointer(
                   child: Align(
                       alignment: Alignment(seconds < 0 ? -0.5 : 0.5, 0),
                       child: _SeekFeedbackChip(seconds: seconds))),
-          ]),
-        ));
+          ]);
+        }));
   }
 
   Widget _video(GlassPalette glass) {

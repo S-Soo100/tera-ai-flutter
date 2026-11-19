@@ -220,6 +220,11 @@ class _CameraLiveFullscreenScreenState
         recording: recording, onLeave: _confirmLeaveIfRecording, child: body);
   }
 
+  void _setZoomLock(bool locked) {
+    if (!mounted) return;
+    ref.read(_liveZoomLockProvider(widget.cameraId).notifier).state = locked;
+  }
+
   Widget _buildPortrait(BuildContext context,
       {required TerraCamera? camera,
       required bool available,
@@ -246,6 +251,10 @@ class _CameraLiveFullscreenScreenState
                 child: Column(children: [
                   Expanded(
                       child: SingleChildScrollView(
+                          // 영상 확대·옮기기 중엔 화면 스크롤이 손짓을 빼앗지 않게.
+                          physics: ref.watch(_liveZoomLockProvider(cameraId))
+                              ? const NeverScrollableScrollPhysics()
+                              : null,
                           child: Column(children: [
                     Padding(
                         padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
@@ -257,6 +266,8 @@ class _CameraLiveFullscreenScreenState
                                   WebRtcLiveView(
                                       key: _liveKey,
                                       cameraUuid: cameraId,
+                                      zoomable: true,
+                                      onZoomLockChanged: _setZoomLock,
                                       // 재시작은 맨 아래 버튼 하나로(중복 방지).
                                       showReboot: false),
                                   // 가로 전환 — 영상 오른쪽 아래(안쪽 12) 32 원.
@@ -352,6 +363,7 @@ class _CameraLiveFullscreenScreenState
               WebRtcLiveView(
                   key: _liveKey,
                   cameraUuid: widget.cameraId,
+                  zoomable: true,
                   showWifiChange: false),
               // 회전 버튼은 가로에서 뺐다(Figma 메모 — 세로 목록 토글로).
               // 숨겨진 동안(사라지는 중 포함)은 탭을 받지 않는다.
@@ -478,6 +490,11 @@ class _CircleIconButton extends StatelessWidget {
     );
   }
 }
+
+/// 세로 화면에서 영상 확대 중(두 손가락이 닿았거나 1배 초과) — 화면 스크롤을
+/// 잠근다(2026-11-19).
+final _liveZoomLockProvider =
+    StateProvider.autoDispose.family<bool, String>((ref, id) => false);
 
 /// 회전 PATCH를 보낸 뒤 적용될 때까지의 목표값(null = 대기 없음).
 final _liveRotatePendingProvider =
