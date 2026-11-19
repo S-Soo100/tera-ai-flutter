@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/figma_icon.dart';
 import '../../../../shared/widgets/live_surface.dart';
 import '../../../my_cage/presentation/webrtc_live_controller.dart';
+import '../../../my_cage/presentation/live_zoom_providers.dart';
 import '../../../my_cage/presentation/widgets/live_notice_bar.dart';
 import '../../../my_cage/presentation/widgets/webrtc_live_view.dart';
 import '../home_set_providers.dart';
@@ -32,8 +33,13 @@ class TopFixedArea extends ConsumerWidget {
           aspectRatio: aspectRatio,
           child: KeyedSubtree(
               key: ValueKey(camera.id),
+              // 두 손가락 확대(2026-11-19) — 확대 중엔 홈 스크롤을 잠근다.
               child: WebRtcLiveView(
-                  key: liveKey, cameraUuid: camera.id, cover: true))),
+                  key: liveKey,
+                  cameraUuid: camera.id,
+                  cover: true,
+                  zoomable: true,
+                  zoomLockScope: LiveZoomScope.home))),
       if (!offline)
         Positioned(
             right: 20,

@@ -12,6 +12,7 @@ import '../../../home/domain/enclosure_set.dart';
 import '../../../home/presentation/home_set_providers.dart';
 import '../../domain/terra_camera.dart';
 import '../my_cage_providers.dart';
+import '../live_zoom_providers.dart';
 import '../webrtc_live_controller.dart';
 import 'live_notice_bar.dart';
 import 'webrtc_live_view.dart';
@@ -247,6 +248,11 @@ class _CameraLiveAreaState extends ConsumerState<CameraLiveArea> {
         child: PageView.builder(
           key: CameraLiveArea.pageViewKey,
           controller: _controller,
+          // 확대 중엔 카메라 넘기기를 잠근다 — 한 손가락 옮기기·두 손가락
+          // 확대를 넘기기가 빼앗는다. 두 번 탭으로 1배로 돌리면 다시 넘긴다.
+          physics: ref.watch(liveZoomLockProvider(LiveZoomScope.cameraTab))
+              ? const NeverScrollableScrollPhysics()
+              : null,
           itemCount: cameras.length,
           // 정착 페이지만 라이브 — 드래그로 스쳐 가는 이웃 페이지가 세션
           // 생성→즉시 철거(offer/ICE/closeSession 왕복)를 반복하지 않게
@@ -306,7 +312,11 @@ class _CameraPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!active) return const SizedBox.expand();
-    return WebRtcLiveView(cameraUuid: camera.id, cover: true);
+    return WebRtcLiveView(
+        cameraUuid: camera.id,
+        cover: true,
+        zoomable: true,
+        zoomLockScope: LiveZoomScope.cameraTab);
   }
 }
 

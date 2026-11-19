@@ -20,6 +20,7 @@ import 'widgets/device_offline_notice.dart';
 import 'widgets/env_summary_card.dart';
 import 'widgets/home_header_bar.dart';
 import 'widgets/top_fixed_area.dart';
+import '../../my_cage/presentation/live_zoom_providers.dart';
 
 /// 홈 탭 — Figma `vivanaut app` Home (668:833) **단일 스크롤**.
 ///
@@ -83,6 +84,11 @@ class HomeScreen extends ConsumerWidget {
                         buttonText: 'redesign_device_add'.tr(),
                         onPressed: () => context.push('/devices/add'))
                     : SingleChildScrollView(
+                        // 라이브 확대·옮기기 중엔 스크롤이 손짓을 빼앗지 않게.
+                        physics: ref.watch(
+                                liveZoomLockProvider(LiveZoomScope.home))
+                            ? const NeverScrollableScrollPhysics()
+                            : null,
                         padding: EdgeInsets.only(
                           // 플로팅 독 높이만큼 비워야 마지막 섹션이 안 가려진다.
                           bottom: glassDockListPadding(context).bottom,

@@ -30,6 +30,7 @@ import 'package:vivanaut/features/my_cage/presentation/widgets/camera_live_area.
 import 'package:vivanaut/features/my_cage/presentation/webrtc_live_controller.dart';
 
 import '../../helpers/inert_live_controller.dart';
+import 'package:vivanaut/shared/widgets/pinch_zoom_view.dart';
 import 'package:vivanaut/features/my_cage/presentation/widgets/webrtc_live_view.dart';
 import 'package:vivanaut/features/my_cage/domain/live_recording.dart';
 import 'package:vivanaut/features/my_cage/presentation/live_recording_controller.dart';
@@ -171,6 +172,7 @@ Future<void> _pump(
   VoidCallback? onFeedLoad,
   VoidCallback? onLiveCreate,
   bool liveOffline = false,
+  bool liveStreaming = false,
   List<LiveRecording> recordings = const [],
   List<ServerLiveRecording> serverRecordings = const [],
 }) async {
@@ -211,6 +213,7 @@ Future<void> _pump(
         // 실피어 차단 — startConnection()을 부르지 않은 inert 컨트롤러.
         webrtcLiveControllerProvider.overrideWith((ref, uuid) {
           onLiveCreate?.call();
+          if (liveStreaming) return StreamingLiveController(ref, uuid);
           return liveOffline
               ? OfflineLiveController(ref, uuid)
               : InertLiveController(ref, uuid);
@@ -841,5 +844,43 @@ void main() {
     expect(find.text('clip_select_count'), findsNothing);
     expect(
         tester.getCenter(thumb).dy, moreOrLessEquals(before.dy, epsilon: 24));
+  });
+
+  testWidgets('라이브 두 손가락 확대 중엔 카메라 넘기기·목록 스크롤을 잠그고, 두 번 탭하면 푼다',
+      (tester) async {
+    await _pump(
+      tester,
+      liveStreaming: true,
+      cameras: [_offlineCamera(id: 'camA'), _offlineCamera(id: 'camB')],
+      sets: [_setWithCamera('camA'), _setWithCamera('camB')],
+    );
+    await tester.pumpAndSettle();
+    final zoom = find.byKey(WebRtcLiveView.zoomKey);
+    expect(zoom, findsOneWidget);
+    ScrollPhysics? pagePhysics() => tester
+        .widget<PageView>(find.byKey(CameraLiveArea.pageViewKey))
+        .physics;
+    ScrollPhysics? listPhysics() =>
+        tester.widget<CustomScrollView>(find.byType(CustomScrollView)).physics;
+    expect(pagePhysics(), isNull);
+    expect(listPhysics(), isA<AlwaysScrollableScrollPhysics>());
+
+    await pinchOutAt(tester, zoom);
+    expect(tester.state<PinchZoomViewState>(zoom).scale, greaterThan(1.5));
+    expect(pagePhysics(), isA<NeverScrollableScrollPhysics>());
+    expect(listPhysics(), isA<NeverScrollableScrollPhysics>());
+    // 확대 중 한 손가락 이동은 화면 옮기기 — 카메라가 넘어가지 않는다.
+    await tester.fling(zoom, const Offset(-200, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(_liveFor('camA'), findsOneWidget);
+
+    await doubleTapAt(tester, zoom);
+    expect(tester.state<PinchZoomViewState>(zoom).scale, 1);
+    expect(pagePhysics(), isNull);
+    expect(listPhysics(), isA<AlwaysScrollableScrollPhysics>());
+    await tester.fling(
+        find.byKey(CameraLiveArea.pageViewKey), const Offset(-400, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(_liveFor('camB'), findsOneWidget);
   });
 }

@@ -19,6 +19,7 @@ import '../../domain/device_add_flow.dart';
 import '../../domain/pair_target_kind.dart';
 import '../../domain/sys_health.dart';
 import '../live_limit_providers.dart';
+import '../live_zoom_providers.dart';
 import '../my_cage_providers.dart';
 import '../sys_health_controllers.dart';
 import '../../../../shared/widgets/keep_screen_on.dart';
@@ -46,7 +47,7 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
     this.showReboot = true,
     this.zoomable = false,
     this.zoomResetKey,
-    this.onZoomLockChanged,
+    this.zoomLockScope,
   });
 
   final String cameraUuid;
@@ -61,9 +62,9 @@ class WebRtcLiveView extends ConsumerStatefulWidget {
   /// 그대로 남지 않게). 재연결로는 되돌리지 않는다(배율은 이 뷰가 들고 있다).
   final Object? zoomResetKey;
 
-  /// [zoomable]일 때 두 손가락이 닿았거나 확대 중이면 true — 바깥 세로 스크롤을
-  /// 잠그는 데 쓴다.
-  final ValueChanged<bool>? onZoomLockChanged;
+  /// [zoomable]일 때 두 손가락이 닿았거나 확대 중이면 [liveZoomLockProvider]의
+  /// 이 scope를 true로 — 그 화면이 세로 스크롤·카메라 넘기기를 잠근다.
+  final String? zoomLockScope;
 
   /// true면 영상이 면을 **꽉 채운다**(가장자리 크롭 허용). 홈 풀블리드 면이
   /// 쓴다. 기본 false(contain) — 카메라 상세는 프레임 전체를 보여준다.
@@ -134,9 +135,24 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
   /// 확대 배율 — 재연결로 영상 면이 다시 만들어져도 유지한다.
   final _zoom = TransformationController();
 
+  /// 잠금 해제는 이 뷰가 해체된 뒤(다음 프레임)에도 와야 한다 — 그때 ref는 못
+  /// 쓰니 컨테이너를 들고 있는다(안 풀리면 홈 스크롤이 잠긴 채 남는다).
+  ProviderContainer? _container;
+
+  void _setZoomLock(bool locked) {
+    final scope = widget.zoomLockScope;
+    if (scope == null) return;
+    try {
+      _container?.read(liveZoomLockProvider(scope).notifier).state = locked;
+    } on StateError {
+      // 컨테이너째 닫혔다(앱·테스트 종료) — 풀어 줄 화면도 없다.
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _container = ProviderScope.containerOf(context, listen: false);
     _report();
   }
 
@@ -247,7 +263,7 @@ class _WebRtcLiveViewState extends ConsumerState<WebRtcLiveView> {
           cover: widget.cover,
           zoomable: widget.zoomable,
           zoom: _zoom,
-          onZoomLockChanged: widget.onZoomLockChanged,
+          onZoomLockChanged: _setZoomLock,
           pillLabelKey: WebRtcLiveView.pillKeyFor(state),
           liveUntil: state.liveUntil,
         ),
