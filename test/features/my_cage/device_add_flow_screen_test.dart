@@ -820,6 +820,24 @@ void main() {
       await tester.pump();
     });
 
+    // Figma 1913:6570 — 체크는 줄마다 오른쪽 끝(x341), 오프라인 줄도 같다.
+    testWidgets('체크는 모든 줄에서 같은 오른쪽 끝', (tester) async {
+      await pump(tester, nmScan());
+      double checkRight(DeviceAddCandidate c) => tester
+          .getRect(find
+              .descendant(of: row(c), matching: find.byType(FigmaIcon))
+              .last)
+          .right;
+      final rights = {
+        for (final c in [nmCamera, nmDevice, nmOffline, nmBare])
+          checkRight(c).roundToDouble()
+      };
+      expect(rights, hasLength(1), reason: '$rights');
+      expect(tester.getRect(row(nmOffline)).right - rights.single, 16);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
     testWidgets('rssi·이름 둘 다 없으면 오른쪽 비움', (tester) async {
       await pump(tester, nmScan());
       final bare = row(nmBare);

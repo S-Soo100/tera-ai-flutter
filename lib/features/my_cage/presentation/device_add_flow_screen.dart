@@ -1565,12 +1565,18 @@ class _NetworkDeviceRow extends ConsumerWidget {
                 child: Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
-                    child: Row(children: [
+                    // Figma 1913:6570 — 왼쪽 글은 내용만큼(Hug), 오른쪽 Wi-Fi
+                    // 이름이 남은 폭을 다 쓰고, 체크는 늘 오른쪽 끝(x341).
+                    // 왼쪽은 줄 폭의 절반까지만(긴 이름이 오른쪽을 밀지 않게).
+                    child: LayoutBuilder(
+                        builder: (context, box) => Row(children: [
                       ManagementItemIcon(device.kind == PairTargetKind.device
                           ? ManagementKind.device
                           : ManagementKind.camera),
                       const SizedBox(width: 12),
-                      Expanded(
+                      ConstrainedBox(
+                          constraints:
+                              BoxConstraints(maxWidth: box.maxWidth * 0.5 - 48),
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -1588,13 +1594,11 @@ class _NetworkDeviceRow extends ConsumerWidget {
                                       size: 14, color: tertiary)),
                             ],
                           ])),
-                      if (right.isNotEmpty) ...[
-                        const SizedBox(width: 12),
-                        Flexible(
-                            child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: right)),
-                      ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: right)),
                       const SizedBox(width: 12),
                       FigmaIcon.tinted(
                           selected
@@ -1604,7 +1608,7 @@ class _NetworkDeviceRow extends ConsumerWidget {
                           color: selected
                               ? context.glass.navSelected
                               : context.glass.deviceOff),
-                    ])))));
+                    ]))))));
   }
 }
 
