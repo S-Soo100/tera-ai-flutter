@@ -181,18 +181,6 @@ void main() {
       expect(TempOffset.fromDevice(-1.7).value, -0.2);
       expect(const TempOffset(0.3).toDeviceValue(), -1.2);
     });
-    // 2026-11-19 승수홈 사고: 허브(p4hub) 펌웨어는 공장 보정이 0이다. −1.5로
-    // 가정하면 보정 0인 기기가 "+1.5"로 보이고, 끄기가 −1.5를 보낸다.
-    test('공장 보정 기준이 0인 기기(허브)', () {
-      expect(TempOffset.fromDevice(0, factoryBase: 0).isOff, isTrue);
-      expect(TempOffset.fromDevice(1.0, factoryBase: 0).value, 1.0);
-      expect(const TempOffset(0).toDeviceValue(factoryBase: 0), 0);
-      expect(const TempOffset(-0.5).toDeviceValue(factoryBase: 0), -0.5);
-      expect(TempOffset.measuredFrom(24.7, 0, factoryBase: 0),
-          closeTo(24.7, 1e-9));
-      // 기본값은 그대로 −1.5.
-      expect(TempOffset.fromDevice(0).value, 1.5);
-    });
     test('표시 문자열: +1 / -2 / 0.5', () {
       expect(const TempOffset(1).signedLabel, '+1');
       expect(const TempOffset(-2).signedLabel, '-2');

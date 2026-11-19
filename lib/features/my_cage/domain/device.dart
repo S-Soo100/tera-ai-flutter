@@ -68,7 +68,6 @@ class Device {
     this.lcdScreen = DeviceLcdScreen.unknown,
     this.tempOffsetC,
     this.tempOffsetUserC,
-    this.tempOffsetBaseC,
     this.autoEnv = AutoEnvState.none,
   });
 
@@ -88,15 +87,6 @@ class Device {
 
   /// `relay` / `mosfet` / null(미보고).
   String? get boardType => capabilities?['board'] as String?;
-
-  /// 펌웨어가 보고한 공장 보정 기준(`devices.temp_offset_base_c`, ℃). null =
-  /// 미보고. 직접 쓰지 말고 [factoryOffsetBase]를 거친다.
-  final double? tempOffsetBaseC;
-
-  /// 이 기기의 공장 보정 기준 — 옛 계약에서 `temp_offset_c`를 사용자 보정으로
-  /// 풀고 다시 합칠 때 쓴다. 규칙은 [factoryOffsetBaseOf].
-  double get factoryOffsetBase =>
-      factoryOffsetBaseOf(baseC: tempOffsetBaseC, capabilities: capabilities);
 
   /// `temp_offset_c` 원문 → ℃. 숫자 아님·±10 밖은 null(구 펌웨어와 같게 본다).
   static double? parseTempOffset(Object? raw) {
@@ -123,40 +113,10 @@ class Device {
       lcdScreen: DeviceLcdScreen.fromJson(j),
       tempOffsetC: parseTempOffset(j['temp_offset_c']),
       tempOffsetUserC: TempOffset.parseUser(j['temp_offset_user_c']),
-      tempOffsetBaseC: parseTempOffset(j['temp_offset_base_c']),
       autoEnv: AutoEnvState.fromJson(j['auto_env_state']),
     );
   }
 }
-
-/// 공장 보정 기준(℃) — ① 펌웨어가 보고한 `temp_offset_base_c`(숫자·±10 안)
-/// ② 없으면 허브 카메라(`capabilities.hub == true`)는 0 ③ 그 외 사육장 보드는
-/// [TempOffset.factoryDeviceValue](−1.5).
-///
-/// 2026-11-19 승수홈 사고: 허브 펌웨어(`terra-hub-p4`)는 공장 보정이 0인데 앱이
-/// 모든 기기를 −1.5로 풀어, 보정 0인 허브가 "+1.5"로 보였고 끄기를 누르면
-/// −1.5가 나가 오히려 온도를 깎았다. 허브 0.5.32는 기준을 보고하지 않는다
-/// (0.5.31은 `0.0` 보고) — 서버 요청 `docs/handoffs/2026-11-19-hub-temp-offset-base-request.md`.
-double factoryOffsetBaseOf({
-  required double? baseC,
-  required Map<String, dynamic>? capabilities,
-}) {
-  if (baseC != null) return baseC;
-  if (capabilities?['hub'] == true) return 0;
-  return TempOffset.factoryDeviceValue;
-}
-
-/// `devices` 행 원문 → 공장 보정 기준([factoryOffsetBaseOf]).
-double factoryOffsetBaseFromRow(Map<String, dynamic> row) {
-  final caps = row['capabilities'];
-  return factoryOffsetBaseOf(
-    baseC: Device.parseTempOffset(row['temp_offset_base_c']),
-    capabilities: caps is Map ? caps.cast<String, dynamic>() : null,
-  );
-}
-
-/// 옛 계약 조회에서 [userOffsetFromRow]가 기준을 정하려면 함께 읽어야 하는 컬럼.
-const kTempOffsetBaseColumns = 'temp_offset_base_c,capabilities';
 
 /// 온도 보정 컬럼 — 새 계약이면 사용자값 `temp_offset_user_c`, 옛 계약이면
 /// 기기에 걸린 합산값 `temp_offset_c`(서버 `APP_TEMP_OFFSET_SERVER_BASE_2026-11-05.md`).
@@ -186,10 +146,7 @@ String tempOffsetColumn({required bool userContract}) =>
   final device = Device.parseTempOffset(raw);
   return (
     known: true,
-    offset: device == null
-        ? null
-        : TempOffset.fromDevice(device,
-            factoryBase: factoryOffsetBaseFromRow(row)),
+    offset: device == null ? null : TempOffset.fromDevice(device),
   );
 }
 
@@ -198,9 +155,7 @@ String tempOffsetColumn({required bool userContract}) =>
 TempOffset? userOffsetOf(Device d, {required bool userContract}) {
   if (userContract) return d.tempOffsetUserC;
   final device = d.tempOffsetC;
-  return device == null
-      ? null
-      : TempOffset.fromDevice(device, factoryBase: d.factoryOffsetBase);
+  return device == null ? null : TempOffset.fromDevice(device);
 }
 
 /// 기기 연결 상태만 — `devices` 실시간 UPDATE와 목록 스냅샷 공용(2026-09-25).
