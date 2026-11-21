@@ -51,3 +51,9 @@ push 후 빌드번호(`version: X.Y.Z+B`의 B)가 원격보다 **낮아지면** 
 ## 복원 지점
 
 `stable/redesign-2026-09-18` 태그 = 재설계 병합 + 후속 수정이 모두 반영된 확인 완료 지점. 최악의 경우 이 태그에서 브랜치를 만들어 복구한다.
+
+## 브랜치 규칙 원문 (CLAUDE.md에서 옮김)
+
+`CLAUDE.md`(커밋 `5675f3b2`)의 해당 문단을 문장 그대로 옮겼다(2026-11-21, CLAUDE.md 축소 2단계). 사고 경위, 보관 태그(`archive/*`) 목록, Clarity 보류 결정이 들어 있다.
+
+**⚠️ 브랜치 규칙 (2026-09-18 사고 후 확정):** 재설계는 `81a5f25`(0.111.4+280)로 **main에 병합됐고 main이 유일한 기준**이다. 재설계 138커밋이 별도 worktree 브랜치에만 있어 main 빌드가 구화면으로 보인 사고가 있었다. ① 새 작업 브랜치·worktree는 **반드시 현재 main에서** 만든다 ② 작업 브랜치는 오래 두지 말고 끝나면 즉시 main에 병합·삭제한다(화면 확인은 main 빌드로) ③ `tools/git-hooks/pre-push`가 `81a5f25`를 포함하지 않는 브랜치 push와 **빌드번호 역행 push**를 **차단**하고, `post-checkout`이 경고한다 ④ `test/regression/redesign_baseline_guard_test.dart`가 재설계 핵심 파일·표지를 감시한다 — 화면을 의도적으로 바꿀 땐 목록을 고치되 **지워서 우회하지 말 것** ⑤ 복원 지점 태그 `stable/redesign-2026-09-18`. 정리된 옛 브랜치는 `archive/*` 태그로 보관(`codex/figma-redesign-20260915`, `feat/prd-redesign`, `feat/highlights-petcam-api`, `feat/knowledge-graph-layer`). **Clarity 분석(`archive/codex/clarity-policy`, 커밋 `9dfea3b`)은 사용자 결정으로 통째 보류** — main에 없는 재설계 이전 구현이다. **기본 SDK(`2ee69d8`)는 main에 있었으나 동의·마스킹 없이 전 빌드에서 수집 중이어서 2026-09-25 꺼 두었다**(0.134.2, `main.dart`에서 `ClarityWidget` 제거 — 패키지·`clarity_setup.dart`는 존치). 재개 시 정책 커밋은 재설계 전 화면 21개에 이벤트를 심어 충돌이 크므로 cherry-pick하지 말고, 뼈대(`core/analytics/` 신규 12파일)만 가져오고 이벤트 지점·마스킹(로그인·비밀번호·Wi-Fi 입력 포함)은 현재 화면 기준으로 다시 설계한다.
