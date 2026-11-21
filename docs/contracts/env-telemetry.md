@@ -23,3 +23,7 @@
 ## 목표 온습도(setpoint) (2026-08-18)
 
 **목표 온습도(setpoint)는 REST `device_settings`**(2026-08-18) — `my_cage/data/device_settings_repository.dart` + `presentation/device_settings_providers.dart`. 미설정 기기는 404가 아니라 전부 null인 200이고 화면은 "목표 미설정"으로 그린다(**앱이 임의 기본값을 채우지 않는다**). 편집은 환경설정(`/env-settings`) `SetpointSettingTile`(홈 세트의 기기 — title에 기기명 표시, 2026-09-08 사육장 연동에서 이동) **또는 사육장 탭 카드의 목표 줄 탭**(`showSetpointSheet`, 그 카드의 기기) — 두 화면의 기기 축이 달라 어느 쪽에서 고치든 "보고 있는 기기"가 대상이 되게 했다. 서버와 같은 범위 검증(−20~60℃/0~100%). 카드는 로딩·에러면 목표 줄을 비우고 서버가 null일 때만 "미설정". **환경설정의 "현재 세트 기기" 타일은 `DeviceSettingTile`/`DeviceSettingSheet`/`submitAndClose`(`my_cage/presentation/widgets/device_setting_sheet.dart`)를 경유한다**(LCD·setpoint 공용 — 새 기기 설정을 추가하면 이걸 쓰고 타일/시트를 복붙하지 말 것). 숫자 표기·JSON double 파싱은 `shared/domain/num_format.dart`(`formatCompact`·`parseDouble`) — 흩어진 `_fmt`/`_parseDouble` 복제는 2026-08-18에 여기로 통합했다. 정지형 가드(히터 목표온도 정지)가 생기면 이 값이 기준이다.
+
+## 정정 (2026-11-21)
+
+- "온습도 추이 차트" 문단의 `telemetry_history_chart.dart`와 "목표 온습도" 문단의 "사육장 탭 카드의 목표 줄 탭(`showSetpointSheet`)"은 구 사육장 화면과 함께 0.186.4에서 지웠다. 추이는 `/env-detail`(`EnvDayChart`·`WeekRangeChart`)이 맡는다. `telemetry_30m` 0값 센티넬과 "임의 수치 금지"는 그대로 유효하다. `SpeciesComfort`는 provider에서 계속 쓰이고, 판정 함수 `classifyComfort`는 호출하는 곳이 없어졌다.

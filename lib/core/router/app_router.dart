@@ -21,7 +21,6 @@ import '../../features/my_cage/domain/device_add_flow.dart';
 import '../../features/my_cage/domain/redesign_management.dart';
 import '../../features/my_cage/presentation/crecam_screen.dart';
 import '../../features/my_cage/presentation/clip_selection_providers.dart';
-import '../../features/my_cage/presentation/smart_cage_screen.dart';
 import '../../features/my_cage/presentation/camera_detail_screen.dart';
 import '../../features/my_cage/presentation/camera_live_fullscreen_screen.dart';
 import '../../features/my_cage/presentation/clip_player_screen.dart';
@@ -30,10 +29,7 @@ import '../../features/my_cage/presentation/clip_playlist_player_screen.dart';
 import '../../features/my_cage/presentation/bookmarks_screen.dart';
 import '../../features/my_cage/domain/player_entry.dart';
 import '../../features/my_cage/presentation/highlights_screen.dart';
-import '../../features/my_cage/presentation/device_pairing_screen.dart';
 import '../../features/my_cage/presentation/camera_pairing_screen.dart';
-import '../../features/my_cage/presentation/enclosure_list_screen.dart';
-import '../../features/my_cage/presentation/enclosure_detail_screen.dart';
 import '../../features/community/presentation/community_screen.dart';
 import '../../features/community/presentation/community_player_screen.dart';
 import '../../features/community/presentation/clip_select_screen.dart';
@@ -58,7 +54,6 @@ import '../../features/dev/design_lab/variant_a_shell.dart';
 import '../../features/dev/design_lab/variant_b_shell.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/notification/presentation/notification_center_screen.dart';
-import '../../features/my_cage/presentation/enclosure_settings_screen.dart';
 import '../../features/my_cage/presentation/env_settings_screen.dart';
 import '../../features/home/presentation/routine_settings_screen.dart';
 import '../../features/home/presentation/env_detail_screen.dart';
@@ -431,30 +426,9 @@ GoRouter buildAppRouter({
           );
         },
       ),
-      // 사육장 (탭에서 제거 — 홈 탭이 흡수. 화면·딥링크는 보존)
-      GoRoute(
-        path: '/smart-cage',
-        builder: (context, state) => const SmartCageScreen(),
-        routes: [
-          GoRoute(
-            path: 'devices/pair',
-            builder: (context, state) => const DevicePairingScreen(),
-          ),
-          GoRoute(
-            path: 'enclosures',
-            builder: (context, state) => const EnclosureListScreen(),
-            routes: [
-              GoRoute(
-                path: ':enclosureId',
-                builder: (context, state) {
-                  final id = state.pathParameters['enclosureId']!;
-                  return EnclosureDetailScreen(enclosureId: id);
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
+      // 구 사육장 화면(`/smart-cage`)과 사육장 연동(`/enclosure-settings`)은 앱 안에서
+      // 여는 곳이 없어 2026-11-21 라우트·화면을 지웠다. 제어는 홈, 기기·그룹 관리는
+      // `/devices/*`·`/groups/*`가 맡는다.
       // 위키·검색 라우트는 2026-09-02 PRD 재설계로 제거(진입점 폐지).
       // lib/features/wiki/는 화면·출처 인프라를 지우고(2026-09-07 A6) 개체
       // 등록이 쓰는 데이터 계층(care_info·morph_genetics)만 남았다.
@@ -665,10 +639,6 @@ GoRouter buildAppRouter({
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationCenterScreen(),
-      ),
-      GoRoute(
-        path: '/enclosure-settings',
-        builder: (context, state) => const EnclosureSettingsScreen(),
       ),
       // 환경설정(기기·카메라 설정) — 사육장 연동에서 분리(2026-09-08).
       GoRoute(

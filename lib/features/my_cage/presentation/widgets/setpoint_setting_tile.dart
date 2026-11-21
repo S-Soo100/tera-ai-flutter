@@ -11,11 +11,10 @@ import 'device_setting_sheet.dart';
 /// 사육장 설정의 목표 온습도(setpoint) 진입점 (2026-08-18 회신 §5).
 ///
 /// 대상은 **현재 세트의 제어 기기**(홈이 보고 있는 세트 — LCD·예약과 같은
-/// 기준, 껍데기는 [DeviceSettingTile]). 사육장 탭의 카드는 자기 기기
-/// (`currentDeviceProvider`)를 따로 고르므로 두 축이 다를 수 있다 — 그래서
-/// 여기서는 **대상 기기 이름을 title에 밝히고**, 카드 쪽에는
-/// [showSetpointSheet]로 그 카드의 기기를 바로 고치는 진입점을 따로 둔다.
-/// 어느 화면에서 고치든 "지금 보고 있는 기기"가 대상이다.
+/// 기준, 껍데기는 [DeviceSettingTile]). **대상 기기 이름을 title에 밝힌다.**
+/// 다른 화면에서 특정 기기를 바로 고칠 때는 [showSetpointSheet]에 그 기기 id를
+/// 넘긴다 — 어느 화면에서 고치든 "지금 보고 있는 기기"가 대상이다.
+/// (구 사육장 탭 카드의 진입점은 2026-11-21 화면과 함께 지웠다.)
 class SetpointSettingTile extends StatelessWidget {
   const SetpointSettingTile({super.key});
 

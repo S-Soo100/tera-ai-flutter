@@ -8,8 +8,8 @@ import 'widgets/setpoint_setting_tile.dart';
 /// 환경설정 — 현재 세트의 기기·카메라에 묶인 **설정**만 모은 화면
 /// (2026-09-08 사용자 결정: 사육장 설정에서 연동과 설정을 분리).
 ///
-/// 연동(개체 배정·페어링·사육장 관리)은 `EnclosureSettingsScreen`
-/// ("사육장 연동", `[+]` 메뉴)에 남는다. 진입점은 홈 헤더 ⚙️ 하나.
+/// 연동(기기 등록·그룹·개체 배정)은 기기 추가·그룹 화면(`/devices/*`·`/groups/*`)이
+/// 맡는다(구 "사육장 연동" 화면은 2026-11-21 삭제). 진입점은 홈 헤더 ⚙️ 하나.
 /// 새 기기/카메라 설정이 생기면 여기로 — `DeviceSettingTile` 문법을 따를 것.
 class EnvSettingsScreen extends StatelessWidget {
   const EnvSettingsScreen({super.key});

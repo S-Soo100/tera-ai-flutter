@@ -24,11 +24,8 @@ void main() {
       expect(kHomeTabLabelKeys, isNot(contains('tab_stats')));
     });
 
-    test('사육장은 탭이 아니라 보조 경로로 살아있다 — 기존 딥링크 보존', () {
+    test('구 사육장 경로는 탭에 없다 (화면·라우트는 2026-11-21 삭제)', () {
       expect(kHomeTabPaths, isNot(contains('/smart-cage')));
-      expect(kLegacySecondaryPaths, contains('/smart-cage'));
-      // 크레캠은 카메라 탭으로 승격 — 보조 경로 목록에서 빠진다.
-      expect(kLegacySecondaryPaths, isNot(contains('/crecam')));
     });
   });
 

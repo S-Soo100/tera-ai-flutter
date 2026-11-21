@@ -1,7 +1,6 @@
 ---
 paths:
   - "lib/features/home/**"
-  - "lib/features/my_cage/presentation/widgets/actuator_controls.dart"
   - "lib/features/my_cage/presentation/supabase_module_providers.dart"
   - "lib/features/my_cage/domain/device_command.dart"
   - "lib/features/my_cage/domain/telemetry_reading.dart"
