@@ -16,7 +16,7 @@ paths:
 프로토콜 SOT: `docs/ble-provisioning-protocol.md`(§0-A 시퀀스 표, §8 앱 구현 메모).
 
 ## 등록
-- 공용 구현은 `DeviceAddFlowRoute`다. `camera_pairing_screen.dart`(`/crecam/cameras/pair`)는 그 흐름을 여는 진입점이다. 옛 래퍼 `WifiProvisioningView`는 쓰는 곳이 없어 2026-11-21에 삭제했다.
+- 공용 구현은 `DeviceAddFlowRoute`다. `camera_pairing_screen.dart`(`/crecam/cameras/pair`)는 그 흐름을 여는 진입점이다.
 - `WIFI_OK`는 등록 완료가 아니다. `PAIR_OK`의 ID와 현재 계정 소유 행을 확인해야 완료다. ID 추측이나 목록 차이로 등록을 판정하지 않는다.
 - 카메라에는 `UNPAIR`를 보내지 않는다. `NAME:`을 모르는 구 펌웨어면 JWT를 보내지 않는다. JWT 확인(`JWT_BEGIN`/`JWT_OK`)이 실패하거나 길이가 다르면 `CONNECT`를 보내지 않는다.
 - 재등록하면 서버가 **새 행**을 만든다(이름·그룹·예약·기록이 끊긴다). 등록된 사육장 재연결은 경고를 거치고, "새 카메라로 등록"은 새 등록 성공 뒤 옛 행을 unlink한다. 예외: 다른 계정 등록으로 `superseded_at`이 찍힌 카메라는 새로 등록하면 서버가 같은 행을 돌려준다. 그 컬럼은 cameras에만 있다(devices 조회에 넣으면 400).
