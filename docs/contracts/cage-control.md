@@ -59,3 +59,7 @@
 ## 백엔드 계약 결정 로그 이관 안내
 
 백엔드 계약 결정 로그(timer-mist §10·08-14 계약 요약)는 **git 이력으로 이관**(2026-09-07 docs 정리). ⚠️ 팬타이머·LCD 실동작은 **펌웨어 플래시 선행**.
+
+## 정정 (2026-11-21)
+
+- "팬 타이머" 문단의 "`RunningTimerChip` 클래스는 `running_timer_chip.dart`에 남아 있으나"는 더 이상 맞지 않는다. 0.186.3에서 클래스와 전용 문구(`home_timer_running`)·포맷 함수(`formatRemaining`)를 지웠다. 그 파일에는 `runningTimersProvider`만 남아 있다.

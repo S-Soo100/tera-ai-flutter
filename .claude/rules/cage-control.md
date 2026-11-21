@@ -44,7 +44,7 @@ paths:
 
 ## 팬 타이머
 - `fan_on` + `payload.duration_ms`(최대 2h). 자동 OFF는 펌웨어, 취소는 `fan_off`. 히터 타이머는 미지원.
-- 진행 표시는 타일 부제 카운트다운이다. 상단 `RunningTimerChip`을 화면에 되살리지 않는다.
+- 진행 표시는 타일 부제 카운트다운이다. 홈 상단 타이머 칩(구 `RunningTimerChip`, 2026-11-21 코드 삭제)을 되살리지 않는다.
 - 남은 시간은 서버 상태가 아니라 `commands` 이력의 `issued_at + duration_ms`로 계산한다(`RunningTimer.fanTimerFrom`).
 - 미ACK(`pending`/`sent`) 명령은 발행 15초(`kCommandAckGrace`)까지만 인정한다. `sent`는 publish 성공일 뿐이고 단절 중 명령은 영영 전달되지 않는다.
 - 최신 유효 팬 명령이 `source='auto'`(서버 자동 환기)면 타이머가 아니다.

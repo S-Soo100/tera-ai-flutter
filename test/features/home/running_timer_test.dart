@@ -35,22 +35,6 @@ void main() {
     });
   });
 
-  group('formatRemaining — PRD 목업 문구', () {
-    test('18분 20초', () {
-      expect(
-          formatRemaining(const Duration(minutes: 18, seconds: 20)), '18분 20초');
-    });
-
-    test('1분 미만은 초만', () {
-      expect(formatRemaining(const Duration(seconds: 7)), '7초');
-    });
-
-    test('1시간 이상은 시간 포함', () {
-      expect(formatRemaining(const Duration(hours: 1, minutes: 5, seconds: 3)),
-          '1시간 5분 3초');
-    });
-  });
-
   group('RunningTimer.fanTimerFrom — commands 이력에서 계산 (A안)', () {
     Map<String, dynamic> cmd(String action, String status, String issuedAt,
             {int? durationMs, String? source}) =>

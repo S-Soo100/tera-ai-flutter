@@ -141,8 +141,8 @@ void main() {
     // 서브탭·타임라인은 폐기됐다.
     expect(find.text('home_subtab_control'), findsNothing);
     expect(find.text('home_subtab_timeline'), findsNothing);
-    // 타이머 없음 → 칩 비노출.
-    expect(find.byKey(RunningTimerChip.chipKey), findsNothing);
+    // 상단 타이머 칩은 지웠다(2026-11-21) — 같은 키의 위젯이 되살아나지 않는다.
+    expect(find.byKey(const Key('running_timer_chip')), findsNothing);
   });
 
   testWidgets('세트가 다시 조립되는 동안 본문을 스켈레톤으로 갈아 끼우지 않는다', (tester) async {
