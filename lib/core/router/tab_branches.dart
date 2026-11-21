@@ -31,10 +31,8 @@ const List<String> kHomeTabIconAssets = [
   'nav_community',
 ];
 
-/// 탭에서 내렸지만 화면·딥링크는 유지하는 경로.
-/// `/crecam`은 2026-09-02 카메라 탭으로 **승격** — 여기서 뺀다. 하위 경로
-/// (`/crecam/cameras/pair` 등)는 셸 밖 최상위 라우트로 그대로 산다.
-const List<String> kLegacySecondaryPaths = ['/smart-cage'];
+/// `/crecam`은 2026-09-02 카메라 탭으로 승격했다. 하위 경로(`/crecam/cameras/pair` 등)는
+/// 셸 밖 최상위 라우트로 산다. 구 사육장 경로(`/smart-cage`)는 2026-11-21 삭제.
 
 /// 강제 업데이트 화면(2026-11-16). 강제 상태면 스플래시를 뺀 모든 경로가
 /// 여기로 간다(`resolveAppRedirect`). 로그인 전에도 떠야 해서 공개 경로다.

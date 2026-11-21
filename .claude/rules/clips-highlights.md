@@ -26,5 +26,5 @@ paths:
 - 읽음은 실제 재생 진전으로 처리한다.
 - 영상 목록은 기본 전체 기간, 60개 복합 커서 pagination, 로컬 썸네일 캐시 200MB. 카메라 상태 갱신이 feed를 초기화하면 안 된다.
 - 플레이어·라이브 확대는 세로 진입, 명시 버튼으로 가로 전환(`PlayerOrientationController`). 커뮤니티 플레이어는 이 결정의 범위 밖이다.
-- 활동·클립의 하루는 07:00~익일 07:00(`DayWindow`)이다.
+- 활동·클립의 하루는 07:00~익일 07:00이다(`activityRangeBounds`, `my_cage/domain/cage_activity.dart`).
 - 미결: 어젯밤 리포트의 하이라이트 영역은 현행 유지(기획서 §6).

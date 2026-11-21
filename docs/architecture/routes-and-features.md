@@ -48,3 +48,5 @@
 사육장 IoT 데이터 계층: `my_cage/data/{ble_pairing_repository,supabase_module_control_repository}.dart`, `my_cage/domain/{device,telemetry_reading,telemetry_bucket,device_command,actuator_state,wifi_access_point,pair_target_kind,species_comfort}.dart`.
 
 SmartCageScreen UI(2026-06-12 개편): 현황(`module_status_card`)+제어(`actuator_controls`)를 단일 통합 카드로 병합 + 테두리. 액추에이터='사육장 제어'(iOS 제어센터 스타일 한 row 타일). LED는 앱이 `CommandAction.ledOff`를 선제 추가(terra-server 계약에 led_off·LED telemetry 없음 → 메모리 `project_led_control_gap`).
+
+> 2026-11-21 덧붙임: 위 표의 `/smart-cage`와 `/enclosure-settings` 라우트·화면은 0.186.4에서 삭제됐다.

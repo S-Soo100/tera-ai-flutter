@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vivanaut/features/my_cage/presentation/enclosure_settings_screen.dart';
 import 'package:vivanaut/features/my_pets/data/pet_assignment_service.dart';
 import 'package:vivanaut/features/my_pets/data/supabase_pet_repository.dart';
 
@@ -26,7 +25,6 @@ class _FakeSync {
 }
 
 void main() {
-  _errorMessageTests();
 
   group('petFromRow — 서버 행 → Pet 매핑', () {
     test('enclosure_id를 복원한다 (sync 왕복 보존의 핵심)', () {
@@ -119,45 +117,6 @@ void main() {
         svc.assign(petId: 'pet-1', enclosureId: 'enc-1'),
         throwsStateError,
       );
-    });
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 서버 예외 → 사용자 문구 매핑
-// (easy_localization 미초기화 상태에서 .tr()은 키를 그대로 반환하므로
-//  키 자체로 분기를 검증한다.)
-
-void _errorMessageTests() {
-  group('assignmentErrorMessage', () {
-    test('소유권 거부는 전용 안내로 매핑', () {
-      expect(
-        assignmentErrorMessage(
-            StateError('ownership mismatch: pets.user_id=a owner_id=b')),
-        'enclosure_settings_assign_denied',
-      );
-      expect(
-        assignmentErrorMessage(StateError('pet x is not owned by caller')),
-        'enclosure_settings_assign_denied',
-      );
-      expect(
-        assignmentErrorMessage(StateError('not authenticated')),
-        'enclosure_settings_assign_denied',
-      );
-    });
-
-    test('미로그인은 로그인 안내', () {
-      expect(
-        assignmentErrorMessage(StateError('로그인이 필요합니다')),
-        'enclosure_settings_login_required',
-      );
-    });
-
-    test('그 외는 일반 실패 문구 — 원문 노출 금지', () {
-      final msg = assignmentErrorMessage(
-          StateError('duplicate key value violates unique constraint'));
-      expect(msg, 'enclosure_settings_assign_failed');
-      expect(msg, isNot(contains('duplicate')));
     });
   });
 }

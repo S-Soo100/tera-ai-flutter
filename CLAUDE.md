@@ -104,9 +104,9 @@ lib/
 ## 파일을 열기 전에 알아야 하는 함정
 
 - **⚠️ 제어는 toggle이 아니라 절대 상태 명령을 쓴다**(`fan_on/off`·`heater_on/off`·`relay_on/off`). 계약서 `APP_INTEGRATION.md §3.2` 표에는 toggle만 적혀 있지만 절대 명령은 펌웨어에 처음부터 있었다. 뒤집기는 기기의 현재 상태를 전제하는데, 그 전제가 어긋나면 끄려던 조작이 켠다. 히터에서는 과열=폐사다.
-- **⚠️ 사육장 제어 명령은 반드시 `home/presentation/cage_control_actions.dart`를 경유한다.** 히터 2단 안전확인이 거기 있다. 진입점은 홈 `CageControlGrid`이고, 새 진입점을 만들더라도 이 모듈을 거친다(구 사육장 탭 `/smart-cage`의 `ActuatorControls`는 이 모듈 이전의 옛 진입점으로 남아 있다 — 팬·분무·LED 절대 명령만 보낸다). **히터 켜기 진입점은 사용자 지시가 있을 때까지 만들지 않는다.**
+- **⚠️ 사육장 제어 명령은 반드시 `home/presentation/cage_control_actions.dart`를 경유한다.** 히터 2단 안전확인이 거기 있다. 진입점은 홈 `CageControlGrid` 하나뿐이고, 새 진입점을 만들더라도 이 모듈을 거친다(이 모듈을 거치지 않던 구 사육장 탭 `/smart-cage`는 2026-11-21 삭제). **히터 켜기 진입점은 사용자 지시가 있을 때까지 만들지 않는다.**
 - **⚠️ 새 명령을 추가하면 `shared/domain/actuator_marker.dart`의 `_kindByAction`과 `shared/domain/control_log.dart`의 `_entryByAction`을 같이 고친다.** 안 하면 그 동작만 차트(마커)와 제어 기록에서 에러 없이 조용히 사라진다.
-- **하루 경계 셋을 섞지 않는다**(PRD §3.1): 활동·클립 귀속 = 07:00~익일 07:00(`DayWindow`) / 밤 집계 = 22~06시 / 온습도 하루 = 자정~자정(`EnvDay`).
+- **하루 경계 셋을 섞지 않는다**(PRD §3.1): 활동·클립 귀속 = 07:00~익일 07:00(`activityRangeBounds`, `my_cage/domain/cage_activity.dart`) / 밤 집계 = 22~06시 / 온습도 하루 = 자정~자정(`EnvDay`).
 - **기기를 재등록하면 서버가 새 행을 만든다**(사육장 새 `device_id`, 카메라 새 `camera_id`). 이름·그룹·예약·기록이 끊긴다. Wi-Fi만 바꿀 때는 등록을 유지하는 경로(`/devices/network`)를 쓴다. 예외: `superseded_at`이 찍힌 카메라는 새로 등록하면 같은 행을 돌려받는다.
 - **`camerasProvider`에 heartbeat(`clip_stats`)·라이브 세션처럼 자주 바뀌는 값을 넣지 않는다.** 생존 신호만 바뀐 갱신을 일부러 버리는 곳이라, 넣으면 홈이 깜빡인다.
 

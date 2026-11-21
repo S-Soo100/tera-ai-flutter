@@ -63,3 +63,4 @@
 ## 정정 (2026-11-21)
 
 - "팬 타이머" 문단의 "`RunningTimerChip` 클래스는 `running_timer_chip.dart`에 남아 있으나"는 더 이상 맞지 않는다. 0.186.3에서 클래스와 전용 문구(`home_timer_running`)·포맷 함수(`formatRemaining`)를 지웠다. 그 파일에는 `runningTimersProvider`만 남아 있다.
+- (0.186.4) 구 사육장 탭(`/smart-cage`, `SmartCageScreen`·`ActuatorControls`)을 지웠다. 앱 안에서 여는 곳이 없었고, `cage_control_actions.dart`를 거치지 않고 `relay_on/off`를 지속시간 없이 보내던 옛 진입점이었다. 위 문단들의 "사육장 탭 `actuator_controls`" 언급은 더 이상 해당하지 않는다. 제어 진입점은 홈 `CageControlGrid` 하나다.
