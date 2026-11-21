@@ -62,3 +62,9 @@
 **운영 분석은 담당자가 수집 기준·보호·데이터 확인을 마친 뒤 시작한다.** 동의 방식을 택한다면 거부·철회가 앱 사용을 막지 않아야 한다. 이 문서 수정으로 현재 수집 설정이 바뀌지는 않는다.
 
 근거: [정책 평가 체크리스트와 개선 결과](clarity-policy-review.md). 실제 SDK 지원 범위는 [Microsoft 공식 패키지 문서](https://pub.dev/packages/clarity_flutter/versions/1.10.0)를 개발 담당자가 확인한다.
+
+## 앱의 현재 상태와 재개 방법 (CLAUDE.md에서 옮김)
+
+`CLAUDE.md`(커밋 `5675f3b2`)의 해당 문단을 문장 그대로 옮겼다(2026-11-21, CLAUDE.md 축소 2단계). 원문은 "브랜치 규칙" 문단의 뒷부분이다.
+
+**Clarity 분석(`archive/codex/clarity-policy`, 커밋 `9dfea3b`)은 사용자 결정으로 통째 보류** — main에 없는 재설계 이전 구현이다. **기본 SDK(`2ee69d8`)는 main에 있었으나 동의·마스킹 없이 전 빌드에서 수집 중이어서 2026-09-25 꺼 두었다**(0.134.2, `main.dart`에서 `ClarityWidget` 제거 — 패키지·`clarity_setup.dart`는 존치). 재개 시 정책 커밋은 재설계 전 화면 21개에 이벤트를 심어 충돌이 크므로 cherry-pick하지 말고, 뼈대(`core/analytics/` 신규 12파일)만 가져오고 이벤트 지점·마스킹(로그인·비밀번호·Wi-Fi 입력 포함)은 현재 화면 기준으로 다시 설계한다.
