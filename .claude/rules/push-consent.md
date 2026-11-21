@@ -5,6 +5,7 @@ paths:
   - "lib/features/my_cage/presentation/crecam_screen.dart"
   - "lib/features/my_cage/presentation/device_add_flow_screen.dart"
   - "lib/features/community/presentation/compose_screen.dart"
+  - "lib/features/auth/**"
 ---
 # 알림 권한 규칙
 

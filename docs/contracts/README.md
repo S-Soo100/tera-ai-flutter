@@ -13,5 +13,6 @@
 | [env-telemetry.md](env-telemetry.md) | 온습도 표시·온도 보정·추이 차트·목표 온습도 |
 | [clips-highlights.md](clips-highlights.md) | 영상 목록·플레이어 방향·하이라이트 정책 |
 | [push-consent.md](push-consent.md) | 알림 권한 프리팝업 |
+| [ui-common.md](ui-common.md) | 색·글자 배율·화면 꺼짐 방지·오프라인 안내·Figma 검수 지시 원문 |
 
 BLE Wi-Fi 프로비저닝은 [`../ble-provisioning-protocol.md`](../ble-provisioning-protocol.md), 화면·라우트 구성 스냅샷은 [`../architecture/routes-and-features.md`](../architecture/routes-and-features.md).

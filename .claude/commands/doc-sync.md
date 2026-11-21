@@ -12,9 +12,9 @@ description: 대형 커밋 후 5종 SOT 문서를 코드 실제 상태와 대조
 ## 대상 SOT 문서 (5종)
 - `docs/supabase-schema.md` — DB DDL (메인 15개 + terra-server IoT 테이블)
 - `docs/supabase-setup.md` — 테이블 현황 / RLS / 연동 코드
-- `docs/spec.md` — 백엔드 / IA(탭) / 기능
+- `docs/prd-implementation-gap.md` — 기획 ↔ 구현 대조표 (기획안 `docs/prd-vivanaut-app.md` 본문은 "구현 역산 금지"라 코드에 맞춰 고치지 않는다)
 - `docs/flutter-cloud-migration-plan.md` — Phase C/D 진행 현황
-- `CLAUDE.md` — 프로젝트 개요 / Phase / feature 매핑 / 금지사항
+- `CLAUDE.md` — 구조 / 서버 쓰기 경로 표 / 문서 색인 (기능별 규칙은 `.claude/rules/*.md`, 경위는 `docs/contracts/*.md`)
 
 ## 절차
 
@@ -27,9 +27,10 @@ description: 대형 커밋 후 5종 SOT 문서를 코드 실제 상태와 대조
 |----------------|-------------|
 | `domain/*.dart` (모델·enum·wire 값) | supabase-schema.md (DDL) |
 | `data/*repository.dart` | supabase-setup.md (테이블·RLS·연동) |
-| `lib/core/router/` (라우트·탭) | spec.md §3, CLAUDE.md feature 테이블 |
-| 새 feature 폴더 추가/삭제 | spec.md, CLAUDE.md, migration-plan |
-| `pubspec.yaml` | CLAUDE.md 스택, migration-plan |
+| `lib/core/router/` (라우트·탭) | prd-implementation-gap.md, CLAUDE.md 구조 절 |
+| 새 feature 폴더 추가/삭제 | prd-implementation-gap.md, CLAUDE.md 구조 절, migration-plan |
+| `pubspec.yaml` | CLAUDE.md 스택(첫 절), migration-plan |
+| 서버 쓰기 경로·기능 계약(제어·라이브·재시작·페어링 등) | CLAUDE.md 서버 쓰기 경로 표, 해당 `docs/contracts/*.md`·`.claude/rules/*.md` |
 
 ### 3. 대조 + 불일치 보고 (표로)
 | 문서 | 항목 | 코드 현재값 | 문서 값 | 수정 필요? |
@@ -39,7 +40,7 @@ description: 대형 커밋 후 5종 SOT 문서를 코드 실제 상태와 대조
 
 ### 4. 승인 후 패치
 - 사용자가 승인한 항목만 Edit. **사실관계만 수정**, 기획/프로세스 구조(섹션 구성·Phase 로드맵)는 보존.
-- terra-server IoT 관련은 단일 진실 소스 `~/Downloads/APP_INTEGRATION.md` 우선.
+- terra-server IoT 관련은 `~/Downloads/APP_INTEGRATION.md`(레포 밖, §3.2 표는 불완전)와 CLAUDE.md "서버 쓰기 경로"를 함께 본다.
 
 ## 원칙
 - 수정 전 항상 보고 → 승인. 무단 패치 금지.
