@@ -33,3 +33,10 @@
 ## SVG mask·신규 역할색
 
 Final Design runtime SVG의 불투명 alpha mask는 흰 mask로 정규화한다. 원본 export는 보존한다. 신규 역할색은 `envTempValue/envHumidValue`, `envTempPeak/envHumidPeak`, `envBarNeutral/envBarMinimum`, `navSelected/navUnselected`.
+
+## 정정 (2026-11-21, 코드 대조)
+
+위 문단은 `CLAUDE.md`에서 문장 그대로 옮긴 것이라 한 문단 안에 뒤집힌 결정이 함께 실려 있다. 아래가 현행이다.
+
+- **"업데이트 N일 전"의 기준**: 서버 `published_at`이 없을 때 "최신 밤 묶음 day_key의 다음 날"로 본다는 서술은 정책 v2 이전 것이다. 현행은 D+2일 08:00 KST publication을 앱이 합성하고 그 공개 시각의 최댓값을 쓴다 — `highlight_night_policy.dart`의 `publishedAt`, `my_cage_providers.dart`의 `latestHighlightAtProvider` 주석.
+- **판정 전 영상**: "맨 위 페이지에만 붙인다"는 서술은 옛 것이다. 현행은 판정 전 구간을 끝까지 다 읽은 뒤 통과 목록으로 넘어간다(한 카메라에 판정 전 1187건 실측, 60건만 얹으면 가운데가 뚫린다) — `passed_clip_feed_source.dart`의 `loadPage` 주석.
