@@ -57,3 +57,9 @@
 - 업로드: `tools/testflight.sh` (스킬 `testflight`). 베타 값은 빌드할 때만 임시로 바꾸며 main의 `project.pbxproj`에는 넣지 않는다.
 - 업로드 경고: 배포 대상 iOS 14.0 → 2027년 4월부터 15.0 이상 필요(ITMS-90068).
 - 암호화 수출 규정 답변: "OS 암호화를 대체하거나 병행하는 표준 알고리즘"(Flutter BoringSSL·WebRTC DTLS/SRTP), 프랑스 배포 없음.
+
+## TestFlight 업로드 절차 원문 (CLAUDE.md에서 옮김)
+
+`CLAUDE.md`(커밋 `5675f3b2`)의 문단을 문장 그대로 옮겼다(2026-11-21).
+
+**iOS TestFlight 업로드(2026-11-10)**: `tools/testflight.sh`(스킬 `testflight`) — 최신 origin/main을 임시 작업 공간에서 팀 `XYNNB47RN3`(개인 멤버십)·번들 `com.vivanaut.beta`("비바나트 베타")로만 바꿔 빌드·업로드하고 지운다. 이 두 값을 main의 `project.pbxproj`에 넣지 말 것(`com.vivanaut.app`은 법인 팀용). 업로드는 Xcode에 bss.rol20이 로그인된 이 Mac에서만 된다. `--dry-run`은 빌드까지만. 계정·D-U-N-S·번들 ID 현황 SOT는 [`docs/ops/apple-developer-account.md`](../../docs/ops/apple-developer-account.md).

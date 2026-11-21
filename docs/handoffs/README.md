@@ -11,7 +11,7 @@
 | TURN·연결 로그 | [9/22 서버 요청](2026-09-22-camera-live-stability-server-requests.md) | TURN 운영 확인과 상세 요청 이력 보존. 로그 구현·과거 첫 프레임 설명은 위 최신 종합 요청서 §4를 함께 읽을 것 |
 | 분무 5/10초 | [서버·펌웨어 요청](2026-09-23-mist-duration-5-7-10-server-request.md) | 서버 허용값·펌웨어 제한 변경 대기. 파일명의 7초가 현행 정책을 뜻하지 않음 |
 | 그룹·기기 해제·RPC | [회신 반영 원장](2026-09-16-assumed-server-contracts.md) | 배포 확인·잔여 계약 추적에 필요. 원장에 연결된 요청서·결정 답신·SQL 회신도 보존 |
-| 재설계 재개·담당 구분 | [체크포인트](2026-09-15-redesign-session-checkpoint.md), [담당 구분](2026-09-15-redesign-server-work-split.md) | CLAUDE.md에서 참조하며 외부 의존·전달 이력 포함. 과거 구현 상태와 현행 main을 구분 |
+| 재설계 재개·담당 구분 | [체크포인트](2026-09-15-redesign-session-checkpoint.md), [담당 구분](2026-09-15-redesign-server-work-split.md) | 아래 "재설계 확정 기준·재개 순서" 절에서 참조하며 외부 의존·전달 이력 포함. 과거 구현 상태와 현행 main을 구분 |
 | 알림 배포·기기 이벤트 | [배포 체크리스트](2026-09-15-fcm-deployment-checklist.md), [재개 기록](2026-09-15-fcm-session-checkpoint.md), [이벤트 요청](2026-09-15-terra-server-notification-events-request.md) | 실기기 수신·생산자 연동·미확인 후속 작업이 남아 있음. 후속 9/16 회신·결정을 우선 확인 |
 | 하이라이트 | [정책 v2 요청](2026-09-19-petcam-lab-highlight-policy-v2-request.md) | 구 승인 스냅샷 정책을 대체. 배포 확인 기록과 남은 요청 보존 |
 | 마이페이지 | [서버 요청](2026-09-16-mypage-server-requests.md) | 서버 의존 항목의 완료 근거가 확인되지 않아 보존 |

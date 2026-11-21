@@ -10,7 +10,7 @@ paths:
 ---
 # 테마·공용 위젯 규칙
 
-색 매핑·출처: `docs/design-system-viva-colors.md`. 방향: `docs/design-direction.md`. 화면 공통 금지(하드코딩 색, 고정 `TextScaler.linear`, `KeepScreenOn` 라우트 단위, 전체 차단 오버레이)는 CLAUDE.md에 있다.
+색 매핑·출처: `docs/design-system-viva-colors.md`. 방향: `docs/design-direction.md`. 경위 원문: `docs/contracts/ui-common.md`. 화면 공통 금지(하드코딩 색, 고정 `TextScaler.linear`, `KeepScreenOn` 라우트 단위, 전체 차단 오버레이)는 CLAUDE.md에 있다.
 
 - 공통색 원본은 `VivaColors`(`viva_colors.dart`), 라이트 역할 매핑은 `GlassPalette.light`·`AppTheme.light`.
 - 팔레트 필드를 추가하면 선언·생성자·dark·light·copyWith·lerp **6곳을 같이** 고친다.
