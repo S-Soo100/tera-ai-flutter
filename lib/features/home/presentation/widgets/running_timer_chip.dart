@@ -1,15 +1,16 @@
 import 'dart:async';
 
-import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_styles.dart';
 import '../../../../core/supabase/supabase_provider.dart';
 import '../../../../shared/domain/fan_actuator.dart';
-import '../../../../shared/providers/clock_providers.dart';
 import '../../domain/running_timer.dart';
 import '../home_control_providers.dart';
+
+// 이 파일에는 진행 중 팬 타이머 provider만 남아 있다. 홈 상단 타이머 칩
+// 위젯(`RunningTimerChip`)은 2026-09-16부터 화면에서 쓰지 않아 2026-11-21에
+// 지웠다 — 진행 표시는 제어 타일 부제의 카운트다운이다. 파일 이름은 import
+// 경로를 유지하려고 그대로 둔다.
 
 // 1초 tick은 라이브 쉼 카운트다운도 써서 shared로 옮겼다(2026-09-30). 기존
 // import 경로를 그대로 두려고 다시 내보낸다.
@@ -74,60 +75,3 @@ final runningTimersProvider =
     return const [];
   }
 });
-
-/// PRD §3.4 진행 중 타이머 칩. 가동 중 타이머가 있을 때만 노출.
-class RunningTimerChip extends ConsumerWidget {
-  const RunningTimerChip({super.key});
-
-  static const chipKey = Key('running_timer_chip');
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // 타이머 목록을 **먼저** 본다. 비어 있으면 tick을 구독하지 않고 빠진다 —
-    // 반대로 하면 표시할 타이머가 없어도(대부분의 시간이 그렇다) 홈이 떠 있는
-    // 내내 매초 리빌드가 돈다.
-    final timers = ref.watch(runningTimersProvider).valueOrNull ?? const [];
-    if (timers.isEmpty) return const SizedBox.shrink();
-
-    final now = ref.watch(secondTickProvider).valueOrNull ?? DateTime.now();
-    final active = timers.where((t) => t.isActive(now)).toList();
-    if (active.isEmpty) return const SizedBox.shrink();
-
-    final scheme = Theme.of(context).colorScheme;
-
-    // 홈 단일 스크롤의 카드 리듬(좌우 12·섹션 간 12) — DeviceOfflineNotice와
-    // 같은 규칙. 위쪽 여백은 홈의 섹션 gap이 제공한다.
-    return Padding(
-      key: chipKey,
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      child: Container(
-        padding: const EdgeInsets.all(AppStyles.spacing12),
-        decoration: BoxDecoration(
-          color: scheme.primaryContainer,
-          borderRadius: BorderRadius.circular(AppStyles.chipRadius),
-        ),
-        child: Column(
-          children: [
-            for (final t in active)
-              Row(
-                children: [
-                  const Icon(Icons.timer_outlined, size: 16),
-                  const SizedBox(width: AppStyles.spacing8),
-                  Expanded(
-                    child: Text(
-                      'home_timer_running'.tr(args: [
-                        t.actuatorLabelKey.tr(),
-                        '${t.durationMinutes}',
-                        formatRemaining(t.remaining(now)),
-                      ]),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              )
-          ],
-        ),
-      ),
-    );
-  }
-}

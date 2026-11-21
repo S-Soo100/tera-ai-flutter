@@ -48,10 +48,10 @@
 | 라이브 우하단 **전체화면 버튼**(zoom_out_map) | 없음 | ❌ 후속 — 라이브 전체화면 라우트 미정 |
 | 캠 없는 세트의 라이브 자리 | 캠 0대=면 접고 안내 한 줄, 일부 세트만 없음=페이지 내 안내 | 🟡 PRD §6 P 미결의 잠정 구현 |
 | 온습도 요약 카드(현재값 + **오늘 자정~ 최고/최저**, 탭→상세) | `EnvSummaryCard` + `homeTodayExtremesProvider` | ✅ |
-| 제어 그리드 5타일(환기팬·분무·냉각팬·히터팬·LED) | `CageControlGrid` — 환기팬=`handleFanTap`·분무=`openMistSheet`(5초 잠금)·LED=`openLedSheet`(밝기 게이지) | ✅ |
+| 제어 그리드 4타일(환기팬·분무·냉각팬·LED) + 히터팬(켜짐·안전잠금일 때만) | `CageControlGrid` — 타일 탭은 `openDeviceControlSheet`(제어 시트, 전원 스위치로 시작·정지). 분무는 시트의 "1회 분사 시작"(`sendMistWith`, 잠금 = 분사 시간 + 3초), LED 밝기 슬라이더는 `ledDimmable` 보드만, 히터는 `handleHeaterTap`(2단 확인). 2026-11-21 함수 이름을 현행으로 정정(구 `handleFanTap`·`openMistSheet`·`openLedSheet`) | ✅ |
 | 냉각팬·히터팬 (API 없음 — UI 먼저) | 미배선, 탭 시 "준비 중" SnackBar | ✅ PRD §6 Q대로 |
 | 일정 설정 진입 | 라벨 + 로우 버튼 → `/home/routines` | ✅ |
-| 진행 중 타이머 칩·기기 오프라인 고지 | `RunningTimerChip`·`DeviceOfflineNotice` 유지 | ✅ |
+| 진행 중 타이머 표시·기기 오프라인 고지 | 타이머는 제어 타일 부제의 카운트다운(상단 `RunningTimerChip`은 2026-09-16 화면에서 빼고 2026-11-21 코드 삭제), `DeviceOfflineNotice` 유지 | ✅ |
 | ~~서브탭·타임라인·홈 차트·개체 프로필 분기~~ | 홈에서 제거(파일은 후속 정리 커밋 대기) | ✅ 폐기 반영 |
 
 > 구 타임라인(요약 칩·날짜 스크롤러·필터·클립 피드)의 역할은 **카메라 탭 2단계**가 흡수 예정(PRD §4.4·§6 S). 클립 전체화면 가로 재생(`MotionClipPlayerScreen`)은 존치.

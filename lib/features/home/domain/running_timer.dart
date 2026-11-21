@@ -108,16 +108,6 @@ class RunningTimer {
   }
 }
 
-/// `18분 20초` / `7초` / `1시간 5분 3초` 형식. PRD 목업 문구를 따른다.
-String formatRemaining(Duration d) {
-  final h = d.inHours;
-  final m = d.inMinutes % 60;
-  final s = d.inSeconds % 60;
-  if (h > 0) return '$h시간 $m분 $s초';
-  if (m > 0) return '$m분 $s초';
-  return '$s초';
-}
-
 /// 타일 부제용 짧은 카운트다운 — Figma 타일 "30m 56s 뒤 꺼짐", "1h 20m 뒤 꺼짐"
 /// (1107:7995 Button/Enabled). 시간이 있으면 초는 생략한다.
 String formatCountdownShort(Duration d) {

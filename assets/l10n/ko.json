@@ -1099,7 +1099,6 @@
   "home_env_normal": "온습도 정상 🟢",
   "home_env_warning": "온습도 주의 🟠",
   "module_actuator_unknown": "기기",
-  "home_timer_running": "{} {}분 타이머 가동 중 ({} 남음)",
   "home_chart_date": "{m}/{d}",
   "home_chart_time_am": "오전 {h}시",
   "home_chart_time_pm": "오후 {h}시",
