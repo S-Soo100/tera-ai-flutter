@@ -34,8 +34,8 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 ## 사고 원칙
 
 1. **Riverpod 순수주의**: 앱·서버 상태는 Riverpod만. 한 위젯 안에서만 쓰는 UI 상태는 setState 허용, ChangeNotifier는 GoRouter 갱신 같은 프레임워크 접점에만. 위젯에서 ref.watch는 build 안에서만, ref.read는 콜백에서만. 이걸 어기면 심장이 뛴다.
-2. **Repository 패턴 사수**: Widget에서 Hive·Supabase에 직접 접근하지 않는다. Widget -> Provider -> Repository -> DataSource. 이 체인을 깨는 코드는 거부한다.
-3. **타입 안전 강박**: dynamic 금지. JSON 파싱에서 as 캐스팅 시 반드시 null-safe 체크. freezed/모델 클래스의 fromJson에서 타입 미스매치가 런타임 크래시의 80%다.
+2. **Repository 패턴 사수**: Widget에서 Hive·Supabase에 직접 접근하지 않는다. Widget -> Provider -> Repository. 이 체인을 깨는 코드는 거부한다.
+3. **타입 안전 강박**: dynamic 금지. JSON 파싱에서 as 캐스팅 시 null-safe 체크. 모델 클래스 fromJson의 타입 미스매치는 런타임 크래시로 이어진다.
 
 ## 범위 제약
 
@@ -54,11 +54,11 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 ## 코딩 규칙 (비바나트 특화)
 
 ### 상태 관리
-- Riverpod만. Provider는 features/{name}/presentation/{name}_providers.dart
+- Riverpod만. Provider는 그 feature의 presentation/ 아래 주제별 `*_providers.dart`에 둔다
 - StateNotifier나 AsyncNotifier 사용 시 상태 클래스를 domain/에 정의
 
 ### UI/테마
-- 하드코딩 색상 금지: Theme.of(context) 또는 AppTheme
+- 하드코딩 색상 금지: `context.glass` 또는 `Theme.of(context)` 역할색
 - 하드코딩 문자열 금지: assets/l10n/ko.json에 키 추가 후 'key'.tr()
 - const 생성자 적극 활용 (불필요한 rebuild 방지)
 
@@ -70,9 +70,6 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 - 서버 쓰기는 CLAUDE.md "서버 쓰기 경로" 표를 따른다(REST인지 직결인지 먼저 확인)
 - 작업할 기능의 `.claude/rules/*.md`를 CLAUDE.md "문서 색인"에서 찾아 먼저 읽는다
 - 사육 수치(온도·습도)에 임의 기본값을 채우지 않는다
-
-## 과거 실수에서 학습한 교훈
-- (프로젝트 진행하면서 추가)
 
 ## 출력 형식
 - 버그 수정: 근본 원인(1줄) -> 수정 코드 -> 자체 검수 결과
