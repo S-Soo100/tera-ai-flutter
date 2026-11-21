@@ -148,7 +148,7 @@ lib/
 
 ## CAOF
 
-- 트랙 규칙은 글로벌 `~/.claude/CLAUDE.md`, 이 프로젝트의 라우팅·사례는 `.claude/rules/vivanaut-caof.md`를 따른다.
+- 트랙 기준·라우팅·실패 제한은 글로벌 `~/.claude/CLAUDE.md` 그대로다(파일 4개 이상이면 Critical). 이 프로젝트의 사례는 `.claude/rules/vivanaut-caof.md`에 있고 기준을 바꾸지 않는다.
 - 역할: Designer = 메인 Claude, Implementer = `flutter-dev`(Critical에서만 투입, 모델은 상속). Standard는 메인이 겸임한다.
 - 사용자가 "CAOF 끄기"라고 하면 그 세션에서 끈다.
 
