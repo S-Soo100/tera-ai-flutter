@@ -395,7 +395,7 @@ CREATE INDEX idx_camera_clips_motion
 ```
 
 ## Seed Data Sources (현재 앱 내 로컬 데이터)
-- species: `lib/features/home/data/species_repository.dart` (하드코딩 16종)
+- species: `lib/features/home/data/species_repository.dart` (하드코딩 17종 — 2026-11-21 삭제, 원본은 git `9de681d7`. 전에 16종으로 적혀 있던 것은 오기)
 - care_info: `assets/data/care_info/*.json`
 - morph_genetics: `assets/data/morphs/*.json`
 - guide: `assets/data/guide.json`

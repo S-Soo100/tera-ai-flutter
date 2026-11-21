@@ -161,6 +161,6 @@ BLE 페어링(2026-07-02 개편): Wi-Fi 프로비저닝 프로토콜(`SCAN`→`S
 위 §8 문단은 `CLAUDE.md`에서 문장 그대로 옮긴 것이라 그 뒤 바뀐 구현이 반영돼 있지 않다. 아래가 현행이다.
 
 - **Wi-Fi 바꾸기 진입점**: `/devices/network`(`NetworkManageRequest`, 2026-11-19 네트워크 관리)가 현행이다. `/devices/wifi`(`WifiChangeTarget`)는 옛 단일 대상 경로로, 실기기 확인 뒤 지운다 — `lib/core/router/app_router.dart`의 `/devices/network`·`/devices/wifi` 주석.
-- **공용 구현**: `DeviceAddFlowRoute`다. `WifiProvisioningView`는 호환 진입점이고, `WIFI_OK`는 계정 등록 완료를 뜻하지 않는다 — `wifi_provisioning_view.dart` 머리 주석.
+- **공용 구현**: `DeviceAddFlowRoute`다. 호환 진입점이던 `WifiProvisioningView`(`wifi_provisioning_view.dart`)는 쓰는 곳이 없어 2026-11-21에 삭제했다. `WIFI_OK`는 계정 등록 완료를 뜻하지 않는다(삭제한 파일의 머리 주석에 있던 문장).
 - **비밀번호 저장**: `WIFI_OK` 뒤 자동 저장이 아니라, 사용자가 "기억하기"를 골랐을 때만 저장한다. 계정·SSID별로 격리하고 옛 전역 저장값은 읽지 않는다 — `device_add_flow_controller.dart`의 `onWifiConnected`, `wifi_credentials_store.dart` 머리 주석.
 - **재등록 = 새 행의 예외**: 다른 계정이 같은 보드를 등록해 서버가 `superseded_at`을 찍은 카메라는, 새로 등록하면 서버가 같은 행을 돌려준다(2026-11-10). 이 컬럼은 cameras에만 있다(devices 조회에 넣으면 PostgREST 400) — `device_add_registration_repository.dart`의 `owned` 주석.

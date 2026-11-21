@@ -327,8 +327,8 @@ class _CameraPane extends ConsumerWidget {
   }
 }
 
-// 좌하단 카메라 이름 배지는 CameraNameBadge로 공용화됐다(2026-09-08 —
-// 홈 TopFixedArea에도 같은 배지가 달린다). camera_name_badge.dart 참조.
+// 좌하단 카메라 이름 배지(구 CameraNameBadge)는 쓰는 화면이 없어
+// 2026-11-21에 위젯 파일을 지웠다.
 
 /// 우하단 확장 — 32pt 원형(black 30%), 라이브 전체화면으로(홈 _ExpandButton 문법).
 class _ExpandButton extends StatelessWidget {

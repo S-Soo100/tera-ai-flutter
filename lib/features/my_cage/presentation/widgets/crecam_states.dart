@@ -6,7 +6,7 @@ import '../../../../core/theme/glass_palette.dart';
 /// 카메라 탭 계열 공용 빈 상태 — 중앙 단문(Pretendard 14 Medium textTertiary).
 ///
 /// 북마크·하이라이트 상세에 바이트 동일 복붙 2벌로 있던 것을 승격(리뷰
-/// 2026-09-04). shared `EmptyState`(테두리 박스)와 문법이 달라 — 이 계열은
+/// 2026-09-04). 구 shared `EmptyState`(테두리 박스, 2026-11-21 삭제)와 문법이 달라 — 이 계열은
 /// Figma가 중앙 단문이다 — 별도 위젯으로 둔다.
 class CrecamEmptyMessage extends StatelessWidget {
   const CrecamEmptyMessage({super.key, required this.message});

@@ -127,8 +127,8 @@ idx_graph_relations_to       → graph_relations(to_entity)
 
 | DB 테이블 | 로컬 파일 |
 |-----------|-----------|
-| species_categories | `species_repository.dart`에서 추출 (4개 카테고리) |
-| species | `lib/features/home/data/species_repository.dart` (17종) |
+| species_categories | `species_repository.dart`에서 추출 (4개 카테고리) — 파일은 2026-11-21 삭제, 원본은 git `9de681d7` |
+| species | `lib/features/home/data/species_repository.dart` (17종) — 2026-11-21 삭제, 원본은 git `9de681d7` |
 | care_info | `assets/data/care_info/*.json` (3파일) |
 | morph_genetics | `assets/data/morphs/*.json` (3파일) |
 | guide | `assets/data/guide_steps.json` |
