@@ -1,92 +1,27 @@
-## 비바나트 CAOF 라우팅
+## 비바나트 CAOF 사례
 
-이 프로젝트는 CAOF를 따른다. 트랙 규칙의 원본은 글로벌 `~/.claude/CLAUDE.md`와 `/Users/baek/ideaBank/frameworks/claude-agent-orchestration.md`이고, 이 파일은 이 프로젝트의 사례·역할 매핑을 적는다(글로벌 표와 다르면 이 파일이 우선).
+트랙 기준·라우팅·실패 제한·보고 형식은 글로벌 `~/.claude/CLAUDE.md` 그대로다(파일 4개 이상·새 시스템·외부 의존성이면 Critical, 판단 기준은 줄 수가 아니라 실패 시 되돌리기 비용). 이 파일은 이 프로젝트에서 헷갈리기 쉬운 사례와 역할 매핑만 적고, 기준을 바꾸지 않는다. 원본: `/Users/baek/ideaBank/frameworks/claude-agent-orchestration.md`.
 
-### 역할 매핑 (에이전트 분리는 Critical 트랙만 — CAOF v1.3)
-- **Designer**: 메인 Claude -- 분석/설계/Phase 전환 판단
-- **Implementer**: flutter-dev -- Dart/Flutter 구현 (Critical에서 투입, 모델은 상속 기본)
-- Standard는 메인이 역할 겸임 (분석서 → 합의 → 직접 구현)
+### 역할 매핑 (에이전트 분리는 Critical 트랙만)
+- **Designer**: 메인 Claude — 분석·설계·Phase 전환 판단
+- **Implementer**: `flutter-dev` — Dart/Flutter 구현 (Critical에서 투입, 모델은 상속)
+- Standard는 메인이 겸임한다(분석서 → 합의 → 직접 구현).
+- 사용자가 "CAOF 끄기"라고 하면 그 세션에서 끈다.
 
-### 적용 트리거
-비바나트 프로젝트 내 코드 변경 요청 시 CAOF 트랙을 판단한다. 사용자가 "CAOF 끄기"라고 하면 그 세션에서 끈다.
+### 트랙 사례
+- **Critical**: 새 feature(새 탭·새 화면·새 feature 폴더), Phase 전환, 새 RLS 정책·소셜 로그인 도입. 기존 기능이라도 파일 4개 이상에 걸치면 Critical이다 — 동작이 바뀌지 않는 정리·삭제도 같다(2026-11-21 사용자 결정으로 글로벌 기준에 맞춤).
+- **Standard**: 기존 feature 수정·개선(2~3 파일), 새 위젯, Provider·Repository 추가나 로직 수정, GoRouter 경로 변경(딥링크 영향), Repository 데이터 수정(종 정보·CareInfo — 정확성 검증 필요), 기존 RLS·인증 수정, 버그 수정(진단 먼저).
+- **Trivial**: 오타·상수·스타일·레이아웃 수정, ko.json 문자열 수정·키 추가.
+- 패키지 추가·버전 조정은 트랙과 별개로 재량이다(사전 승인 불필요, 빌드 확인).
 
-### 트랙 분류 (이 프로젝트의 사례)
+### Critical에서 이 프로젝트가 더하는 단계
+- 새 feature: 기획안(`docs/prd-vivanaut-app.md`)과 CLAUDE.md "기획·디자인 기준" 대조 → 설계(파일 구조 + Provider + Repository + 라우트) → 사용자 승인 → `flutter-dev` 구현 → `flutter analyze` + 자체 검수.
+- Phase 전환: 영향 범위 전수 조사 → 마이그레이션 계획서 → 사용자 승인 → 단계별 구현.
 
-| 트랙 | 기준 | 파이프라인 |
-|------|------|-----------|
-| Trivial | 상수 수정, 스타일 변경, 텍스트 수정 | 메인 직접 처리 |
-| Standard | 기존 feature 수정, 새 위젯, Provider 추가 | 메인이 분석서 -> 합의 -> 직접 구현 |
-| Critical | 새 feature, Phase 전환 (패키지 도입 제외 — 자유 재량) | 풀 GATE (에이전트 분리) |
-
-**판단 기준은 줄 수가 아니라 "실패 시 되돌리기 비용"이다.**
-
-### 라우팅 트리
-
-```
-비바나트 요청 수신
-├─ 버그/에러/안 돼/크래시 → 메인 Claude 원인 분석 → 직접 수정 (Standard, 진단 먼저)
-├─ 새 feature 추가 (새 탭, 새 화면) → Critical 트랙 (풀 GATE)
-│   ① 기획안(docs/prd-vivanaut-app.md)과 CLAUDE.md "기획·디자인 기준" 대조 확인
-│   ② 메인 Claude 설계 (파일 구조 + Provider + Repository + 라우트)
-│   ③ 사용자 승인
-│   ④ flutter-dev 구현
-│   ⑤ flutter analyze + 자체 검수
-├─ Phase 전환 (P0→P1, P1→P2) → Critical 트랙
-│   ① 영향 범위 전수 조사
-│   ② 마이그레이션 계획서
-│   ③ 사용자 승인
-│   ④ flutter-dev 단계별 구현
-├─ 새 패키지 도입/버전 조정 → 자유 재량 (사전승인 불필요, 2026-07-08). 되돌리기 비용 사안별 — 대개 Trivial~Standard
-├─ 기존 feature 수정/개선 (2~3 파일) → Standard 트랙
-│   ① 메인 Claude 변경 범위 분석 + 수정 방향
-│   ② 사용자 합의
-│   ③ 메인 Claude 직접 구현
-├─ Provider/Repository 추가 (기존 feature 내) → Standard
-├─ 오타/상수/스타일/문자열 수정 → Trivial (메인 직접)
-├─ ko.json 문자열 키 추가 → Trivial
-├─ RLS/인증 관련 → Supabase 실연동 완료. 기존 RLS/인증 수정 = Standard, 새 RLS 정책·소셜 로그인 도입 = Critical
-└─ 단순 질문 → 메인 Claude 직접
-```
-
-### 비바나트 특화 되돌리기 비용 판단
-
-| 변경 유형 | 되돌리기 비용 | 최소 트랙 |
-|----------|-------------|----------|
-| ko.json 문자열 수정 | < 1분 | Trivial |
-| 위젯 스타일/레이아웃 | < 5분 | Trivial |
-| Provider 로직 수정 | < 30분 | Standard |
-| Repository 데이터 수정 (종 정보, CareInfo) | 중간 (데이터 정확성 검증 필요) | Standard |
-| GoRouter 경로 변경 | 중간 (딥링크 영향) | Standard |
-| 새 feature 폴더 추가 | 높음 (구조 결정) | Critical |
-| pubspec.yaml 패키지 추가/버전 | 낮음~중간 (빌드 확인) | 자유 재량 |
-| Phase 전환 | 매우 높음 | Critical |
-
-### Designer 분석 시 필수 확인 (메인 Claude)
-
-**데이터 정확성:**
-- 파충류 사육 정보(온도, 습도, 먹이)는 생명과 직결. 데이터 수정 시 반드시 출처 확인.
-- 온습도·안심존·목표값에 임의 수치나 기본값을 채우지 않는다.
-
-**현재 경계 (2026-11-21 갱신):**
-- P0 "로컬 전용/인증 없음" 제약은 **해제됨** — Supabase 인증·유저 CRUD, terra-server 사육장 IoT, 4탭 UI가 운영 중이다.
-- onboarding은 기획 확정 전 구현하지 않는다(auth·profile·notification은 구현 완료).
-- terra-server IoT 작업 전 `~/Downloads/APP_INTEGRATION.md`(레포 밖. §3.2 표는 toggle만 적혀 있어 불완전)와 CLAUDE.md "서버 쓰기 경로"를 확인한다.
-- Standard 이상 분석서를 쓰기 전에 CLAUDE.md "문서 색인"에서 관련 `.claude/rules/*.md`를 직접 읽는다(경로 규칙은 그 파일을 열 때만 실린다).
-
-**Riverpod 패턴:**
-- 새 Provider 추가 시 기존 Provider와 의존 관계 확인
-- StateNotifier vs Notifier(Riverpod 2.0) 선택 일관성
-
-### Designer 겸임 보완 (메인 Claude)
-
-Standard 이상 트랙에서:
-1. 구현 후 flutter analyze 에러 0 확인
-2. Riverpod Provider 의존 관계 순환 없는지 확인
-3. 새 화면이면 GoRouter 등록 + 네비게이션 테스트
-
-### 실패 에스컬레이션
-```
-1회 실패: 원인 분석 후 재시도
-2회 실패: Designer 역할로 원인 재분석 -> 다른 접근법
-3회 실패: 즉시 중단 + 사용자에게 보고 + 범위 축소 또는 대안 제시
-```
+### 분석할 때 필수 확인 (메인 Claude)
+- **규칙 파일**: Standard 이상 분석서를 쓰기 전에 CLAUDE.md "문서 색인"에서 관련 `.claude/rules/*.md`를 직접 읽는다(경로 규칙은 그 파일을 열 때만 실린다).
+- **데이터 정확성**: 파충류 사육 정보(온도·습도·먹이)는 생명과 직결된다. 데이터를 고칠 때는 출처를 확인하고, 온습도·안심존·목표값에 임의 수치나 기본값을 채우지 않는다.
+- **서버 계약**: terra-server IoT 작업 전 `~/Downloads/APP_INTEGRATION.md`(레포 밖. §3.2 표는 toggle만 적혀 있어 불완전)와 CLAUDE.md "서버 쓰기 경로"를 확인한다.
+- **현재 경계**: Supabase 인증·유저 CRUD, terra-server 사육장 IoT, 4탭 UI가 운영 중이다. onboarding은 기획 확정 전 구현하지 않는다.
+- **Riverpod**: 새 Provider를 추가하면 기존 Provider와의 의존 관계와 순환을 확인하고, StateNotifier와 Notifier 선택을 주변 코드와 맞춘다.
+- **구현 뒤**: `flutter analyze` 에러 0, 새 화면이면 GoRouter 등록과 네비게이션 테스트.

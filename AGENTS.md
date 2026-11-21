@@ -16,7 +16,7 @@
   - "파일을 열기 전에 알아야 하는 함정"과 "서버 쓰기 경로" 표
   - **기능별 규칙은 자동으로 실리지 않는다.** 작업할 기능의 `.claude/rules/*.md`를 CLAUDE.md "문서 색인"에서 찾아 **직접 읽고** 따른다(Claude Code는 해당 경로 파일을 열 때 자동으로 싣지만 Codex는 그렇지 않다)
   - 패키지 설치·버전 조정은 재량(사전 승인 불필요)
-  - CAOF 트랙 규칙 + 상세 라우팅: [`.claude/rules/vivanaut-caof.md`](.claude/rules/vivanaut-caof.md)
+  - CAOF 트랙 기준은 글로벌 `~/.claude/CLAUDE.md`, 이 프로젝트의 사례·역할 매핑은 [`.claude/rules/vivanaut-caof.md`](.claude/rules/vivanaut-caof.md)
   - 검증 기준: `flutter analyze` 에러 0
 - **기타 도구** → CLAUDE.md + `docs/prd-vivanaut-app.md`(기획안).
 
