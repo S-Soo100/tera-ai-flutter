@@ -18,7 +18,7 @@ import 'glass_chip.dart';
 ///
 /// 홈도 렌더링은 여기에 위임한다 — 세트 분기·알림 점 같은 로직만
 /// `HomeHeaderBar`에 남는다. 구 `ScreenHeader`(56pt 고정)는 참조가 0이 되어
-/// 삭제했다(`screen_header.dart`에는 [HeaderAction]만 남았다).
+/// 삭제했다(`screen_header.dart`도 2026-11-21에 지웠다).
 class GlassTabHeader extends StatelessWidget {
   const GlassTabHeader({
     super.key,
