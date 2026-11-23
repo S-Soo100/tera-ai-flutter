@@ -54,6 +54,8 @@
 
 **전환 시작 (2026-11-23):** 같은 날 두 메일 수신 — ① `koreadev@apple.com`(Saedee, 같은 케이스): 전환 시작 확인, 등록 링크가 담긴 자동 메일이 갔다, 전환이 끝날 때까지 Certificates·Identifiers·Profiles 포털 접근 불가, [회사 등록 정보 제출](https://developer.apple.com/enroll/migrate) 뒤 다음 단계 안내. 취소·등록 중 경고 해결은 그 메일에 회신. ② Apple Developer Relations 자동 메일: 사용권 계약 양도 요청 접수, 조직 정보로 등록 내용을 [업데이트](https://developer.apple.com/enroll)하라, 양도 완료까지 멤버십 혜택 일시 중단. **→ 지금 할 일: bss.rol20으로 developer.apple.com/enroll/migrate에서 회사 등록 정보 제출.** 입력값은 위 "법인 (D-U-N-S)" 표 그대로(법인명은 D&B 표기 `terraai Co.,Ltd.`와 글자까지 같게, 업무 메일은 웹사이트와 같은 도메인 `bss.rol20@vivanaut.co.kr`, 직책 CTO, 법적 구속 권한 있음). 회사 전화번호는 사용자가 직접 입력한다(레포에 적지 않음).
 
+**회사 등록 정보 제출 (2026-11-23): 등록 ID `QQ7VH5R7Z8`** — "등록 신청을 처리하는 중입니다." 법인 유형 회사/기관, 법인명·D-U-N-S·주소는 D&B 자동 채움(주소에 Room 310 빠짐, 수정 불가), 서명 권한은 "대표/설립자로서 구속할 권한 있음", 직장 이메일 코드 인증 완료. **다음: Apple이 서명 권한을 확인(회사 연락처로 전화 가능 — 대표님께 공유됨)하면 등록 완료 방법을 메일로 보낸다.** 그 메일이 오면 이 문서를 갱신한다. 전환 완료 전까지 TestFlight 업로드 보류.
+
 실제 경로: developer.apple.com/contact → (bss.rol20 로그인) → 멤버십 및 계정 → 하위 주제 **기타 멤버십 또는 계정 질문** → 이메일. 하위 주제에 '조직 전환' 항목은 없고, 주제를 고르면 바로 이메일/전화 선택이 나온다.
 보낸 메일: 제목 `Request to convert individual membership to organization (Team ID XYNNB47RN3)`, 본문에 팀 ID·법인명·D-U-N-S·주소·웹사이트·요청자 권한(공동창업자·등기이사·CTO)을 적고 ① 기존 앱·번들 ID·TestFlight 빌드 유지 여부 ② 필요한 서류·절차를 물었다. 서류 요청이 오면 법인 등기사항전부증명서(영문 번역)를 낸다.
 
