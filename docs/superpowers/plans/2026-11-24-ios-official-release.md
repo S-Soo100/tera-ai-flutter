@@ -196,8 +196,7 @@
   - `safety.recovered`·`community.comment` → `message.apns` deep-equals `{ payload: { aps: { sound: 'default' } } }`.
   - 모든 경우 `message.android`가 기존 기대값과 같다.
 - [ ] **Step 2:** FAIL. **Step 3:** 구현. **Step 4:** PASS.
-- [x] **Step 1~5 완료 (2026-11-24)** — 49/49 통과, 버전 0.187.0+553·CHANGELOG를 이 커밋에서 만들었다(Task 1은 이 항목에 덧붙인다).
-- [ ] **Step 5: Commit** `feat(push): iOS 알림 소리·경보 시간 민감(apns)` (CHANGELOG 같은 항목)
+- [x] **Step 1~5 완료 (2026-11-24)** — 49/49 통과, 버전 0.187.0+553·CHANGELOG를 이 커밋에서 만들었다(Task 1은 이 항목에 덧붙인다). 커밋 `38e85e34`.
 - [ ] **Step 6 (사용자 승인 뒤):** `dispatch-push` 운영 배포 → Android 실기기 1건 수신 회귀 확인.
 
 **병합:** Task 1~4를 한 브랜치에서 끝내고 Task 3 Acceptance(브랜치 dry-run) 통과 뒤 `tools/worktree.sh finish`.
