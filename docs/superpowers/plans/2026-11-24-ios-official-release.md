@@ -68,7 +68,7 @@
 ## 검증 방법
 
 - `flutter analyze` 에러 0, `flutter test test/build/ios_release_config_test.dart` 통과.
-- `node --test supabase/functions/_shared/firebase-message.test.mjs` 통과.
+- `node --test 'supabase/functions/_shared/*.test.mjs'` 통과.
 - `tools/testflight.sh --dry-run --ref docs/…브랜치` 통과: 산출물에서 `aps-environment = production`, `com.apple.developer.usernotifications.time-sensitive = true`, 앱 안 plist `BUNDLE_ID = com.vivanaut.app`.
 - 실기기(U5, **사용자만 확인 가능**) — 체크리스트 §6 전체:
   1. 로그인 후 운영 `push_devices`에 `platform = 'ios'` 활성 행(메인이 조회, 읽기만).
@@ -189,13 +189,14 @@
 - Depends on: 없음(Task 1~3과 독립, 같은 브랜치)
 - Produces: `export function usesTimeSensitive(kind)` — `kind === 'env.alert.triggered' || kind === 'safety.alert'`. `usesSafetyChannel`(Android 채널)과 분리.
 - Must know: Android 블록 불변. 운영 배포는 사용자 승인 뒤 `docs/handoffs/2026-09-15-fcm-deployment-checklist.md` 절차.
-- Acceptance: `node --test supabase/functions/_shared/` PASS.
+- Acceptance: `node --test 'supabase/functions/_shared/*.test.mjs'` PASS (디렉터리 인자는 Node 22에서 MODULE_NOT_FOUND — 2026-11-24 구현 때 정정).
 
 - [ ] **Step 1: 테스트**
   - `env.alert.triggered`·`safety.alert` → `message.apns` deep-equals `{ payload: { aps: { sound: 'default', 'interruption-level': 'time-sensitive' } } }`.
   - `safety.recovered`·`community.comment` → `message.apns` deep-equals `{ payload: { aps: { sound: 'default' } } }`.
   - 모든 경우 `message.android`가 기존 기대값과 같다.
 - [ ] **Step 2:** FAIL. **Step 3:** 구현. **Step 4:** PASS.
+- [x] **Step 1~5 완료 (2026-11-24)** — 49/49 통과, 버전 0.187.0+553·CHANGELOG를 이 커밋에서 만들었다(Task 1은 이 항목에 덧붙인다).
 - [ ] **Step 5: Commit** `feat(push): iOS 알림 소리·경보 시간 민감(apns)` (CHANGELOG 같은 항목)
 - [ ] **Step 6 (사용자 승인 뒤):** `dispatch-push` 운영 배포 → Android 실기기 1건 수신 회귀 확인.
 
