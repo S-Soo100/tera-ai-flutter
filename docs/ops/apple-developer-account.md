@@ -20,7 +20,7 @@
 | 항목 | 값 |
 |---|---|
 | 팀 ID | `XYNNB47RN3` |
-| 형태 | 개인 멤버십 (2026-11-10 활성화) |
+| 형태 | **조직** (2026-11-10 개인 멤버십 활성화 → 2026-11-24 조직 전환 완료, 법인 terraai Co.,Ltd.) |
 | 계정 소유자 | 백승수 (등기이사·CTO), Apple 계정 bss.rol20 |
 | 알림 메일 | `bss.rol20@vivanaut.co.kr` (Cloudflare 라우팅) |
 
@@ -69,6 +69,9 @@
 **서류 업로드 (2026-11-23):** 사용자가 file-upload 페이지에 신분증·법인 등기사항전부증명서·영문 사업자등록증명 3건을 올렸다(첨부 상한 3개). 대표 확인서는 내지 않았다 — Apple이 소속 증빙을 더 요구하면 그때 낸다. 이제 Apple 검토 → 등록 완료 안내 메일 대기.
 
 **등록 요청 수락 (2026-11-24 수신):** Apple Developer Relations — 조직 등록 요청이 수락됐다. 마무리: 웹사이트로 등록했으므로 https://developer.apple.com/enroll 에 bss.rol20으로 로그인 → **Apple Developer Program 사용권 계약 동의 → 멤버십 구입**. 계약 동의·결제는 사용자가 직접 한다. 개인 멤버십을 2026-11-10에 결제했으므로 구입 화면 금액이 전액이면 중복 결제인지 결제 전에 확인한다.
+
+**✅ 조직 전환 완료 (2026-11-24 확인, 멤버십 세부 사항 화면):** 법인명 terraai Co.,Ltd. / **팀 ID `XYNNB47RN3` 그대로** / 등록 유형 **조직** / 계정 소유자 Seungsoo Baek(계정 소유자 역할) / 갱신일·기기 재설정 날짜 2027-11-11(개인 멤버십 기간 그대로 이어짐) / 연회비 ₩129,000. 인증서·ID·프로파일 포털 다시 열림 → TestFlight 업로드 재개 가능(팀 ID가 같아 `tools/testflight.sh` 수정 불필요).
+- 남은 정리: ① App Store Connect 판매자명·계약(무료 앱 계약) 상태 확인 ② "베타=XYNNB47RN3 / `com.vivanaut.app`=법인 팀" 구분이 이제 같은 팀이 됨 — main `project.pbxproj`는 아직 옛 무료 팀 `8NDUMK7C65`. 정식 번들 `com.vivanaut.app` 등록과 main 팀 ID 교체는 사용자 결정 뒤 별도 작업.
 
 실제 경로: developer.apple.com/contact → (bss.rol20 로그인) → 멤버십 및 계정 → 하위 주제 **기타 멤버십 또는 계정 질문** → 이메일. 하위 주제에 '조직 전환' 항목은 없고, 주제를 고르면 바로 이메일/전화 선택이 나온다.
 보낸 메일: 제목 `Request to convert individual membership to organization (Team ID XYNNB47RN3)`, 본문에 팀 ID·법인명·D-U-N-S·주소·웹사이트·요청자 권한(공동창업자·등기이사·CTO)을 적고 ① 기존 앱·번들 ID·TestFlight 빌드 유지 여부 ② 필요한 서류·절차를 물었다. 서류 요청이 오면 법인 등기사항전부증명서(영문 번역)를 낸다.
