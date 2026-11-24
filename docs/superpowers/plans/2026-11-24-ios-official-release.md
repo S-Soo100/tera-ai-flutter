@@ -24,7 +24,7 @@
   - 심사 관련: 앱 안 회원 탈퇴·커뮤니티 신고·차단 있음, 소셜 로그인·인앱 결제 없음. 개인정보처리방침·계정 삭제 페이지 공개.
   - 552 업로드 경고는 SDK·dSYM뿐 — privacy manifest(ITMS-91053) 경고 없음.
 - 미확인:
-  - `com.vivanaut.app`을 팀 `XYNNB47RN3`에 등록할 수 있는지(옛 무료 팀 `8NDUMK7C65` 점유 가능) → **U0**.
+  - `com.vivanaut.app`을 팀 `XYNNB47RN3`에 등록할 수 있는지(다른 Apple 계정 arthurbaek@icloud.com의 무료 팀 `8NDUMK7C65` 점유 가능) → **U0**.
   - 조직 전환 뒤 App Store Connect 최신 계약 동의 필요 여부 → U0.
   - 운영 서버의 온습도 경보 발송 스위치(`PUSH_ENV_ALERTS_ENABLED`·허용 목록) 상태(메모리 `project_env_alerts_v4`: 서버 단계 켜기 남음) → U5에서 다른 알림 종류로 검증, 경보는 켜져 있을 때만.
   - 서버의 탈퇴 30일 삭제 작업이 실제로 도는지(`google-play-account.md` 13행 ⚠️) → U4 전 확인.
@@ -111,7 +111,7 @@
 
 ## 콘솔 선행: U0 (코드 작업 전)
 
-> **2026-11-24 U0-1 결과: 등록 거절** — `com.vivanaut.app`을 옛 무료 팀 `8NDUMK7C65`가 점유(이 Mac의 무료 팀 프로필, 만료 11-26). 실패 시나리오 1행대로 코드 작업 중단, Apple 지원 해제 요청 + 만료 뒤 재시도. 경과는 `docs/ops/apple-developer-account.md` 번들 표.
+> **2026-11-24 U0-1 결과: 등록 거절** — `com.vivanaut.app`을 다른 Apple 계정(arthurbaek@icloud.com)의 무료 팀 `8NDUMK7C65`가 점유(이 Mac의 무료 팀 프로필, 만료 11-26). 실패 시나리오 1행대로 코드 작업 중단, Apple 지원 해제 요청 + 만료 뒤 재시도. 경과는 `docs/ops/apple-developer-account.md` 번들 표.
 
 
 | 할 일 | 누가 | 완료 판정 |

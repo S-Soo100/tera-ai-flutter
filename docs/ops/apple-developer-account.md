@@ -79,7 +79,7 @@
 처음 쓴 요청 문구 초안:
 
 > I would like to convert my individual Apple Developer Program membership (Team ID XYNNB47RN3) to an organization membership for terraai Co.,Ltd. (D-U-N-S 697129769, website https://www.vivanaut.co.kr). I am a co-founder, registered director and CTO of the company and have legal authority to bind it to Apple agreements. Please confirm that existing apps and TestFlight builds on this team will remain after the conversion.
-- 예전 무료 팀 `8NDUMK7C65`(arthurbaek)는 TestFlight 불가. arthurbaek 계정은 Apple이 등록 자격을 거절했다(지원 케이스 진행 중).
+- 무료 팀 `8NDUMK7C65`는 조직 팀의 이전 형태가 아니라 **다른 Apple 계정(arthurbaek@icloud.com)에 딸린 무료 개발 팀**이다. TestFlight 불가. arthurbaek 계정은 Apple이 등록 자격을 거절했다(지원 케이스 진행 중).
 
 ## 번들 ID·앱
 
