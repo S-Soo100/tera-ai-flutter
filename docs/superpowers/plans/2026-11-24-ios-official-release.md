@@ -111,6 +111,9 @@
 
 ## 콘솔 선행: U0 (코드 작업 전)
 
+> **2026-11-24 U0-1 결과: 등록 거절** — `com.vivanaut.app`을 옛 무료 팀 `8NDUMK7C65`가 점유(이 Mac의 무료 팀 프로필, 만료 11-26). 실패 시나리오 1행대로 코드 작업 중단, Apple 지원 해제 요청 + 만료 뒤 재시도. 경과는 `docs/ops/apple-developer-account.md` 번들 표.
+
+
 | 할 일 | 누가 | 완료 판정 |
 |---|---|---|
 | developer.apple.com → Identifiers → "+" App IDs → Explicit `com.vivanaut.app`, 설명 "Vivanaut", 기능 Push Notifications·Time Sensitive Notifications 체크 → 등록 | 사용자(메인이 화면 안내, 등록 직전 확인) | 등록 성공. 거절이면 실패 시나리오 1행 후 **중단** |

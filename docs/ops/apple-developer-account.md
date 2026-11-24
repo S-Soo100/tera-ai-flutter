@@ -86,8 +86,9 @@
 | 번들 ID | App Store Connect 앱 | 용도 |
 |---|---|---|
 | `com.vivanaut.beta` | 비바나트 베타 (SKU `vivanaut-beta`) | TestFlight 전용. **스토어 출시 금지**(중복 앱 반려 위험) |
-| `com.vivanaut.app` | (미생성) | 정식 출시용. Android와 같은 ID. 팀 등록 가능 여부 확인 필요(예전 무료 팀이 잡고 있을 수 있음) |
+| `com.vivanaut.app` | (미생성) | 정식 출시용. Android와 같은 ID. **2026-11-24 팀 XYNNB47RN3 등록 거절**("An App ID with Identifier 'com.vivanaut.app' is not available") — 옛 무료 개인 팀 `8NDUMK7C65`(arthurbaek, "승수 백")이 잡고 있다. 근거: 이 Mac의 프로필 `8NDUMK7C65.com.vivanaut.app`(생성 2026-11-19, 만료 2026-11-26, 무료 팀 7일 프로필). 해제 요청·재시도 경과는 아래 |
 
+- **App ID 점유 해제 (2026-11-24~):** 무료 팀은 포털에 접근할 수 없어 직접 지울 수 없다. ① 이 번들로 무료 팀 실기기 실행(`flutter run`, Xcode 실행)을 멈춰 7일 프로필이 갱신되지 않게 한다 ② Apple 지원(케이스 30000017939787 메일)에 8NDUMK7C65에서 해제 요청 ③ 프로필 만료(11-26) 뒤 등록 재시도. 해제가 안 되면 iOS 번들 변경을 사용자와 재결정.
 - 업로드: `tools/testflight.sh` (스킬 `testflight`). 베타 값은 빌드할 때만 임시로 바꾸며 main의 `project.pbxproj`에는 넣지 않는다.
 - 업로드 경고: 배포 대상 iOS 14.0 → 2027년 4월부터 15.0 이상 필요(ITMS-90068).
 - 암호화 수출 규정 답변: "OS 암호화를 대체하거나 병행하는 표준 알고리즘"(Flutter BoringSSL·WebRTC DTLS/SRTP), 프랑스 배포 없음.
