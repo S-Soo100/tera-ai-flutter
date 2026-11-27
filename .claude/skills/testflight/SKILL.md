@@ -1,17 +1,20 @@
 ---
 name: testflight
-description: iOS 베타("비바나트 베타", com.vivanaut.beta)를 TestFlight에 올린다. 최신 origin/main을 임시 작업 공간에서 빌드해 App Store Connect에 업로드하고 정리한다. 트리거 — "TestFlight 올려", "테플 올려줘", "iOS 베타 올려", "아이폰 테스트 빌드 올려". 빌드만 확인하려면 --dry-run. 업로드는 외부 전송이라 사용자가 요청했을 때만 실행한다.
+description: iOS 앱을 TestFlight에 올린다(대상은 정식 앱 "비바나트" com.vivanaut.app — 2026-11-24 결정, 스크립트 전환은 출시 계획 Task 3). 최신 origin/main을 임시 작업 공간에서 빌드해 App Store Connect에 업로드하고 정리한다. 트리거 — "TestFlight 올려", "테플 올려줘", "iOS 베타 올려", "아이폰 테스트 빌드 올려". 빌드만 확인하려면 --dry-run. 업로드는 외부 전송이라 사용자가 요청했을 때만 실행한다.
 ---
 
 # TestFlight 업로드
 
 `tools/testflight.sh`가 전부 한다. 이 스킬은 실행 전 확인, 실행, 결과 보고를 맡는다.
 
+> **2026-11-24 사용자 결정: TestFlight도 정식 앱으로 올린다.** main이 정식 값(팀 `XYNNB47RN3`·번들 `com.vivanaut.app`·iPhone 전용)을 들고 있고, `com.vivanaut.beta`("비바나트 베타")는 은퇴했다(마지막 빌드 552).
+> **Task 3(testflight.sh 정식 앱 전환) 전까지 이 스크립트는 아직 베타 번들로 바꿔 올린다** — 임시 작업 공간에서 `PRODUCT_BUNDLE_IDENTIFIER`를 `com.vivanaut.beta`로 바꾸고(팀은 이미 같은 값) 빌드·업로드한다. 지금 실행하면 빌드는 "비바나트 베타"로 간다.
+
 ## 1. 실행 전 확인
 
 - **올라갈 코드는 origin/main이다.** 로컬에만 있는 커밋이나 작업 공간 브랜치는 들어가지 않는다. 사용자가 기대하는 변경이 origin/main에 있는지 `git log origin/main -5 --oneline`으로 확인하고, 없으면 먼저 병합·push할지 묻는다.
 - **빌드 번호**: `git show origin/main:pubspec.yaml | grep ^version:`의 `+` 뒤 숫자가 마지막으로 올린 번호보다 커야 한다. 마지막 번호는 메모리 `project_apple_developer_team`에 있다. 같거나 작으면 Apple이 업로드를 거절하니, 실행하지 말고 main 버전을 먼저 올려야 한다고 알린다.
-- Xcode에 베타 팀(XYNNB47RN3, bss.rol20) 계정이 로그인돼 있어야 한다. 사용자의 비밀번호를 대신 입력하지 않는다.
+- Xcode에 조직 팀(XYNNB47RN3, bss.rol20) 계정이 로그인돼 있어야 한다. 사용자의 비밀번호를 대신 입력하지 않는다.
 
 ## 2. 실행
 

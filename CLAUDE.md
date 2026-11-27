@@ -35,10 +35,11 @@ flutter build apk --debug            # Claude Code 안에서 직접 실행 가�
 tools/worktree.sh new <type>/<이름>  # 최신 main에서 ../tera-ai-flutter-<이름> 작업 공간 (.env 링크·pub get 자동)
 tools/worktree.sh finish <branch>    # main 병합·push·작업 공간 정리
 tools/worktree.sh list
-tools/testflight.sh [--dry-run]      # iOS 베타 업로드 — 스킬 `testflight`, 사용자가 요청했을 때만
+tools/testflight.sh [--dry-run]      # iOS TestFlight 업로드 — 스킬 `testflight`, 사용자가 요청했을 때만
 ```
 
-- TestFlight 빌드는 팀 `XYNNB47RN3`·번들 `com.vivanaut.beta`로만 바꿔 올린다. **이 두 값을 main의 `project.pbxproj`에 넣지 않는다**(`com.vivanaut.app`은 법인 팀용). 계정 현황 `docs/ops/apple-developer-account.md`.
+- **main의 iOS 설정이 정식 값이다**(팀 `XYNNB47RN3`·번들 `com.vivanaut.app`·iPhone 전용, `test/build/ios_release_config_test.dart`가 감시). TestFlight도 정식 앱으로 올린다(2026-11-24 사용자 결정). `com.vivanaut.beta`는 은퇴(마지막 빌드 552).
+- 로컬 실기기 실행은 Xcode에 bss.rol20 계정이 로그인돼 있어야 한다. 계정 현황 `docs/ops/apple-developer-account.md`.
 
 ## 브랜치·작업 공간
 
