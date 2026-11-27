@@ -224,6 +224,8 @@
 
 순서: U0 → Task 1~4 → (브랜치 dry-run) → 병합 → U2 → U1 → U3 → U4 → U5 → U6. Task 4 운영 배포는 U5 전.
 
+> **2026-11-27 순서 정정·진행:** 업로드(U1)는 App Store Connect 앱 레코드가 있어야 하므로 **U3를 U1 앞에** 둔다. ✅ U0~Task 4 병합(`6b267594`). ✅ **U3 완료** — 앱 "비바나트" 생성, Apple ID `6839900395`(생성 때 "사용자 액세스 설정을 저장할 수 없음" 경고가 떴지만 결과는 모든 사용자 접근 = 전체 액세스와 같음). 남은 순서: U2(APNs 키) → Task 4 운영 배포 → U1 → U4 → U5 → U6. 출시 뒤 iOS 업데이트 안내 주소는 `https://apps.apple.com/app/id6839900395`.
+
 ## 후속 (이 계획 밖)
 
 심사 제출 클릭(사용자) → 승인 → 수동 출시 → 운영 `app_release_policy` ios `store_url`(운영 DB, 승인) → 슬랙 공유. ITSAppUsesNonExemptEncryption 키로 업로드마다의 수출 규정 답 생략은 선택 과제.
