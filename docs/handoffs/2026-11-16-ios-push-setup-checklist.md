@@ -2,6 +2,8 @@
 
 > 관련: [스토어 출시 준비 계획 §2.3](../superpowers/plans/2026-11-16-store-update-and-push-route.md) · [Apple 개발자 계정 SOT](../ops/apple-developer-account.md)
 > 상태: **앱 코드는 준비됨(0.182.0), 설정은 아직 아무것도 안 함.** 아래를 다 하기 전까지 iOS 푸시는 꺼져 있다.
+>
+> ⚠️ **2026-11-27 갱신:** 이 문서의 베타 번들(`com.vivanaut.beta`)·sed 교체·`TESTFLIGHT_BUNDLE_ID` 전제는 더 이상 맞지 않는다. 정식 앱 일원화(2026-11-24 결정)에 따라 Firebase·Xcode 기능·스크립트 작업은 [iOS 정식 출시 계획](../superpowers/plans/2026-11-24-ios-official-release.md) Task 1~3에서 `com.vivanaut.app` 기준으로 끝냈다(plist는 `ios/Runner/`, 베타용 plist는 두지 않음). 남은 것은 APNs 키(U2)와 6절 실기기 확인이다.
 
 ## 0. 지금 코드가 하는 일
 

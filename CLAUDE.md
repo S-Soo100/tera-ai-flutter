@@ -35,7 +35,7 @@ flutter build apk --debug            # Claude Code 안에서 직접 실행 가�
 tools/worktree.sh new <type>/<이름>  # 최신 main에서 ../tera-ai-flutter-<이름> 작업 공간 (.env 링크·pub get 자동)
 tools/worktree.sh finish <branch>    # main 병합·push·작업 공간 정리
 tools/worktree.sh list
-tools/testflight.sh [--dry-run]      # iOS TestFlight 업로드 — 스킬 `testflight`, 사용자가 요청했을 때만
+tools/testflight.sh [--dry-run] [--ref <ref>]  # iOS TestFlight 업로드(origin/main만) — 스킬 `testflight`, 사용자가 요청했을 때만. 병합 전 검증은 --dry-run --ref origin/<브랜치>
 ```
 
 - **main의 iOS 설정이 정식 값이다**(팀 `XYNNB47RN3`·번들 `com.vivanaut.app`·iPhone 전용, `test/build/ios_release_config_test.dart`가 감시). TestFlight도 정식 앱으로 올린다(2026-11-24 사용자 결정). `com.vivanaut.beta`는 은퇴(마지막 빌드 552).
