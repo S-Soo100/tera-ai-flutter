@@ -152,6 +152,8 @@
 
 ### Task 2: iOS 푸시 기능 — Xcode 기능·Firebase plist
 
+> **✅ 2026-11-27 완료.** App ID에 Push·Time Sensitive 저장(포털), Firebase iOS 앱 "비바나트 iOS"(`1:204097603991:ios:d7a5516ed8a60a3d5e9cd2`) 등록·plist 확보. Xcode 작업 중 Location Push가 잘못 들어가고 plist 참조가 프로젝트 루트에 붙어 `ios/` 사본을 가리켜 바로잡았다 — 테스트에 "Runner 그룹 안·ios/ 사본 없음" 검사를 더했다.
+
 **Files:**
 - Create: `ios/Runner/Runner.entitlements` (Xcode가 생성)
 - Create: `ios/Runner/GoogleService-Info.plist` (U0 파일 그대로)

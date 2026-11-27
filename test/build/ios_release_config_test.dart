@@ -25,6 +25,16 @@ const List<String> kProjectLevelConfigIds = [
   '97C147041CF9000F007C117D', // Release
 ];
 
+/// RunnerTests 타깃 설정 3벌(Debug·Release·Profile). 푸시 entitlements가 들어가면 안 된다.
+const List<String> kRunnerTestsConfigIds = [
+  '331C8088294A63A400263BE5', // Debug
+  '331C8089294A63A400263BE5', // Release
+  '331C808A294A63A400263BE5', // Profile
+];
+
+const String kEntitlementsPath = 'ios/Runner/Runner.entitlements';
+const String kFirebasePlistPath = 'ios/Runner/GoogleService-Info.plist';
+
 /// pbxproj의 XCBuildConfiguration 섹션에서 [configId] 항목
 /// (`<id> /* Debug|Release|Profile */ = { … };`)의 `{ … }` 블록 문자열을 돌려준다.
 /// 항목이 없으면 [StateError] — id가 바뀌었으면 조용히 통과하지 않고 실패한다.
@@ -96,6 +106,53 @@ void main() {
           reason: '모든 HTTP 허용 키는 심사 질문 거리만 남깁니다');
       expect(infoPlist, contains('NSAllowsLocalNetworking'),
           reason: '로컬 네트워크(기기 직접 통신) 예외는 유지합니다');
+    });
+
+    // Task 2 — iOS 푸시(Xcode Signing & Capabilities에서 추가한 결과).
+    test('푸시 entitlements는 Runner에만', () {
+      const line = 'CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;';
+      for (final id in kRunnerTargetConfigIds) {
+        expect(buildSettingsBlock(pbx, id), contains(line),
+            reason: '$id: Runner 타깃에 entitlements가 연결돼야 합니다');
+      }
+      for (final id in [...kRunnerTestsConfigIds, ...kProjectLevelConfigIds]) {
+        expect(buildSettingsBlock(pbx, id),
+            isNot(contains('CODE_SIGN_ENTITLEMENTS')),
+            reason: '$id: Runner 타깃 밖에는 entitlements를 두지 않습니다');
+      }
+      final ent = File(kEntitlementsPath);
+      expect(ent.existsSync(), isTrue, reason: '$kEntitlementsPath 가 없습니다');
+      final text = ent.readAsStringSync();
+      expect(text, contains('aps-environment'));
+      expect(text,
+          contains('com.apple.developer.usernotifications.time-sensitive'));
+    });
+
+    test('원격 알림 백그라운드 모드', () {
+      expect(infoPlist, contains('UIBackgroundModes'));
+      expect(infoPlist, contains('<string>remote-notification</string>'));
+    });
+
+    test('Firebase plist가 정식 번들용이고 앱 리소스에 등록', () {
+      final plist = File(kFirebasePlistPath);
+      expect(plist.existsSync(), isTrue, reason: '$kFirebasePlistPath 가 없습니다');
+      expect(
+          RegExp(r'<key>BUNDLE_ID</key>\s*<string>com\.vivanaut\.app</string>')
+              .hasMatch(plist.readAsStringSync()),
+          isTrue,
+          reason: 'Firebase plist BUNDLE_ID가 com.vivanaut.app이어야 합니다');
+      expect(pbx, contains('GoogleService-Info.plist in Resources'),
+          reason: 'Runner 타깃 Copy Bundle Resources에 들어가야 앱에 포함됩니다');
+      // 파일 참조는 Runner 그룹(path = Runner) 안에 있어야 ios/Runner/ 파일을 가리킨다.
+      // 프로젝트 맨 위에 붙으면 ios/ 사본을 가리키게 된다(2026-11-27 실제로 발생).
+      final runnerGroup = RegExp(
+        r'97C146F01CF9000F007C117D /\* Runner \*/ = \{\s*isa = PBXGroup;\s*children = \(([^)]*)\)',
+      ).firstMatch(pbx);
+      expect(runnerGroup, isNotNull, reason: 'Runner 그룹을 찾지 못했습니다');
+      expect(runnerGroup!.group(1), contains('GoogleService-Info.plist'),
+          reason: 'GoogleService-Info.plist 참조가 Runner 그룹 밖에 있습니다');
+      expect(File('ios/GoogleService-Info.plist').existsSync(), isFalse,
+          reason: 'ios/ 아래에 사본이 남아 있습니다');
     });
   });
 }
