@@ -6,6 +6,7 @@ import {
   canRetryDelivery,
   extractFcmFailure,
   retryDelaySeconds,
+  usesTimeSensitive,
 } from './firebase-message.mjs';
 
 test('builds string-only data and safety channel', () => {
@@ -89,4 +90,52 @@ test('honors Retry-After and waits at least one minute before the first quota re
 test('retries through attempt seven and terminates attempt eight', () => {
   assert.equal(canRetryDelivery(7), true);
   assert.equal(canRetryDelivery(8), false);
+});
+
+const buildFor = (kind) => buildFirebaseMessage({
+  token: 'token',
+  notificationId: 'n1',
+  kind,
+  title: '제목',
+  body: '본문',
+  route: '/notifications',
+});
+
+test('alert kinds get default sound and time-sensitive interruption on iOS', () => {
+  for (const kind of ['env.alert.triggered', 'safety.alert']) {
+    assert.deepStrictEqual(buildFor(kind).message.apns, {
+      payload: { aps: { sound: 'default', 'interruption-level': 'time-sensitive' } },
+    }, kind);
+  }
+});
+
+test('non-alert kinds get default sound only on iOS (no interruption-level key)', () => {
+  for (const kind of ['safety.recovered', 'community.comment']) {
+    assert.deepStrictEqual(buildFor(kind).message.apns, {
+      payload: { aps: { sound: 'default' } },
+    }, kind);
+  }
+});
+
+test('android block is unchanged by the apns block', () => {
+  const expected = {
+    'env.alert.triggered': 'vivanaut_safety',
+    'safety.alert': 'vivanaut_safety',
+    'safety.recovered': 'vivanaut_safety',
+    'community.comment': 'vivanaut_default',
+  };
+  for (const [kind, channelId] of Object.entries(expected)) {
+    assert.deepStrictEqual(buildFor(kind).message.android, {
+      priority: 'high',
+      notification: { channel_id: channelId },
+    }, kind);
+  }
+});
+
+test('usesTimeSensitive is true only for active alerts', () => {
+  assert.equal(usesTimeSensitive('env.alert.triggered'), true);
+  assert.equal(usesTimeSensitive('safety.alert'), true);
+  assert.equal(usesTimeSensitive('safety.recovered'), false);
+  assert.equal(usesTimeSensitive('community.comment'), false);
+  assert.equal(usesTimeSensitive(''), false);
 });

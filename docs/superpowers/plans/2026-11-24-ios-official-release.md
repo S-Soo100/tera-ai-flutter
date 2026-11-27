@@ -68,7 +68,7 @@
 ## 검증 방법
 
 - `flutter analyze` 에러 0, `flutter test test/build/ios_release_config_test.dart` 통과.
-- `node --test supabase/functions/_shared/firebase-message.test.mjs` 통과.
+- `node --test 'supabase/functions/_shared/*.test.mjs'` 통과.
 - `tools/testflight.sh --dry-run --ref docs/…브랜치` 통과: 산출물에서 `aps-environment = production`, `com.apple.developer.usernotifications.time-sensitive = true`, 앱 안 plist `BUNDLE_ID = com.vivanaut.app`.
 - 실기기(U5, **사용자만 확인 가능**) — 체크리스트 §6 전체:
   1. 로그인 후 운영 `push_devices`에 `platform = 'ios'` 활성 행(메인이 조회, 읽기만).
@@ -126,6 +126,8 @@
 
 ### Task 1: 정식 팀·iPhone 전용·규칙 문서 + 가드 테스트
 
+> **✅ 2026-11-27 완료 — 커밋 `482280a9`.** 버전은 Task 4에서 이미 올린 0.187.0+553을 같은 릴리스로 유지하고 CHANGELOG 항목에 `### 변경`을 덧붙였다(아래 "patch+1, build+1"은 적용 안 함). Xcode 서명은 Task 3 dry-run에서 확인.
+
 **Files:**
 - Modify: `ios/Runner.xcodeproj/project.pbxproj`
 - Modify: `ios/Runner/Info.plist` (`NSAllowsArbitraryLoads` 제거, `NSAllowsLocalNetworking` 유지)
@@ -150,6 +152,8 @@
 
 ### Task 2: iOS 푸시 기능 — Xcode 기능·Firebase plist
 
+> **✅ 2026-11-27 완료.** App ID에 Push·Time Sensitive 저장(포털), Firebase iOS 앱 "비바나트 iOS"(`1:204097603991:ios:d7a5516ed8a60a3d5e9cd2`) 등록·plist 확보. Xcode 작업 중 Location Push가 잘못 들어가고 plist 참조가 프로젝트 루트에 붙어 `ios/` 사본을 가리켜 바로잡았다 — 테스트에 "Runner 그룹 안·ios/ 사본 없음" 검사를 더했다.
+
 **Files:**
 - Create: `ios/Runner/Runner.entitlements` (Xcode가 생성)
 - Create: `ios/Runner/GoogleService-Info.plist` (U0 파일 그대로)
@@ -171,6 +175,8 @@
 
 ### Task 3: TestFlight 스크립트 — 검사형·`--ref`·export 산출물 검사
 
+> **✅ 2026-11-27 완료 — 커밋 `b43ff082`.** Acceptance 3건 통과: 브랜치 업로드 시도 즉시 die / `--dry-run --ref origin/main` 팀 검사 die / `--dry-run --ref origin/feat/ios-official-release` 빌드·로컬 export·산출물 검사 통과(서명 팀 XYNNB47RN3, aps-environment production, time-sensitive true, Firebase BUNDLE_ID com.vivanaut.app). 실제 업로드는 ASC 앱 레코드(U3) 전이라 미실행.
+
 **Files:**
 - Modify: `tools/testflight.sh`, `.claude/skills/testflight/SKILL.md`
 
@@ -191,14 +197,14 @@
 - Depends on: 없음(Task 1~3과 독립, 같은 브랜치)
 - Produces: `export function usesTimeSensitive(kind)` — `kind === 'env.alert.triggered' || kind === 'safety.alert'`. `usesSafetyChannel`(Android 채널)과 분리.
 - Must know: Android 블록 불변. 운영 배포는 사용자 승인 뒤 `docs/handoffs/2026-09-15-fcm-deployment-checklist.md` 절차.
-- Acceptance: `node --test supabase/functions/_shared/` PASS.
+- Acceptance: `node --test 'supabase/functions/_shared/*.test.mjs'` PASS (디렉터리 인자는 Node 22에서 MODULE_NOT_FOUND — 2026-11-24 구현 때 정정).
 
 - [ ] **Step 1: 테스트**
   - `env.alert.triggered`·`safety.alert` → `message.apns` deep-equals `{ payload: { aps: { sound: 'default', 'interruption-level': 'time-sensitive' } } }`.
   - `safety.recovered`·`community.comment` → `message.apns` deep-equals `{ payload: { aps: { sound: 'default' } } }`.
   - 모든 경우 `message.android`가 기존 기대값과 같다.
 - [ ] **Step 2:** FAIL. **Step 3:** 구현. **Step 4:** PASS.
-- [ ] **Step 5: Commit** `feat(push): iOS 알림 소리·경보 시간 민감(apns)` (CHANGELOG 같은 항목)
+- [x] **Step 1~5 완료 (2026-11-24)** — 49/49 통과, 버전 0.187.0+553·CHANGELOG를 이 커밋에서 만들었다(Task 1은 이 항목에 덧붙인다). 커밋 `38e85e34`.
 - [ ] **Step 6 (사용자 승인 뒤):** `dispatch-push` 운영 배포 → Android 실기기 1건 수신 회귀 확인.
 
 **병합:** Task 1~4를 한 브랜치에서 끝내고 Task 3 Acceptance(브랜치 dry-run) 통과 뒤 `tools/worktree.sh finish`.

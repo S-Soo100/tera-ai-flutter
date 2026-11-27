@@ -5,6 +5,13 @@ export function usesSafetyChannel(kind) {
   return value.startsWith('safety.') || value === 'env.alert.triggered';
 }
 
+// iOS 시간 민감(방해 금지 통과) 알림. 진행 중인 경보만 해당한다.
+// 회복 알림(safety.recovered)은 Android에선 안전 채널이지만 급하지 않아 여기서 뺀다.
+export function usesTimeSensitive(kind) {
+  const value = String(kind);
+  return value === 'env.alert.triggered' || value === 'safety.alert';
+}
+
 export function buildFirebaseMessage({
   token,
   notificationId,
@@ -31,6 +38,13 @@ export function buildFirebaseMessage({
           channel_id: usesSafetyChannel(kind)
             ? 'vivanaut_safety'
             : 'vivanaut_default',
+        },
+      },
+      apns: {
+        payload: {
+          aps: usesTimeSensitive(kind)
+            ? { sound: 'default', 'interruption-level': 'time-sensitive' }
+            : { sound: 'default' },
         },
       },
     },
