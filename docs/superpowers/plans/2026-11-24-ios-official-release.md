@@ -111,6 +111,8 @@
 
 ## 콘솔 선행: U0 (코드 작업 전)
 
+> **2026-11-27 U0-1 재시도: ✅ 등록 성공** — 팀 XYNNB47RN3에 `com.vivanaut.app` App ID 생성(기능 미설정). 번들 변경 없음, Task 1~3 진행 가능.
+>
 > **2026-11-24 U0-1 결과: 등록 거절** — `com.vivanaut.app`을 다른 Apple 계정(arthurbaek@icloud.com)의 무료 팀 `8NDUMK7C65`가 점유(이 Mac의 무료 팀 프로필, 만료 11-26). 실패 시나리오 1행대로 코드 작업 중단, Apple 지원 해제 요청 + 만료 뒤 재시도. 경과는 `docs/ops/apple-developer-account.md` 번들 표.
 
 
