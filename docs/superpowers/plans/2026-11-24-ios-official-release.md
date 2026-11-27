@@ -126,6 +126,8 @@
 
 ### Task 1: 정식 팀·iPhone 전용·규칙 문서 + 가드 테스트
 
+> **✅ 2026-11-27 완료 — 커밋 `482280a9`.** 버전은 Task 4에서 이미 올린 0.187.0+553을 같은 릴리스로 유지하고 CHANGELOG 항목에 `### 변경`을 덧붙였다(아래 "patch+1, build+1"은 적용 안 함). Xcode 서명은 Task 3 dry-run에서 확인.
+
 **Files:**
 - Modify: `ios/Runner.xcodeproj/project.pbxproj`
 - Modify: `ios/Runner/Info.plist` (`NSAllowsArbitraryLoads` 제거, `NSAllowsLocalNetworking` 유지)
