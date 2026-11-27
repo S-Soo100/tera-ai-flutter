@@ -175,6 +175,8 @@
 
 ### Task 3: TestFlight 스크립트 — 검사형·`--ref`·export 산출물 검사
 
+> **✅ 2026-11-27 완료 — 커밋 `b43ff082`.** Acceptance 3건 통과: 브랜치 업로드 시도 즉시 die / `--dry-run --ref origin/main` 팀 검사 die / `--dry-run --ref origin/feat/ios-official-release` 빌드·로컬 export·산출물 검사 통과(서명 팀 XYNNB47RN3, aps-environment production, time-sensitive true, Firebase BUNDLE_ID com.vivanaut.app). 실제 업로드는 ASC 앱 레코드(U3) 전이라 미실행.
+
 **Files:**
 - Modify: `tools/testflight.sh`, `.claude/skills/testflight/SKILL.md`
 
